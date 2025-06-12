@@ -283,7 +283,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
       const containerHeight = textareaHeight + 16; // 8px上下padding
       setInputHeight(containerHeight);
     }
-  }, [message, isFullExpanded, isActivated]);
+  }, [message, isFullExpanded, isActivated, textareaRef]);
 
   // 处理输入框激活
   const handleInputFocus = () => {
