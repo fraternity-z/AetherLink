@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IconButton, CircularProgress, Badge, Tooltip } from '@mui/material';
-import { Send, Plus, Link, Square, ChevronDown, ChevronUp, Keyboard, Mic } from 'lucide-react';
+import { Send, Plus, Link, Square, ChevronDown, ChevronUp, Keyboard, Mic, Wrench } from 'lucide-react';
 
 import { useChatInputLogic } from '../shared/hooks/useChatInputLogic';
 import { useFileUpload } from '../shared/hooks/useFileUpload';
@@ -24,23 +24,31 @@ import { useVoiceRecognition } from '../shared/hooks/useVoiceRecognition';
 import { EnhancedVoiceInput } from './VoiceRecognition';
 import { getThemeColors } from '../shared/utils/themeUtils';
 import { useTheme } from '@mui/material/styles';
+import { EventEmitter, EVENT_NAMES } from '../shared/services/EventService';
+import ToolsMenu from './ToolsMenu';
+import KnowledgeSelector from './chat/KnowledgeSelector';
 
 interface ChatInputProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
-  onSendMultiModelMessage?: (message: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void; // 多模型发送回调
-  onStartDebate?: (question: string, config: DebateConfig) => void; // 开始AI辩论回调
-  onStopDebate?: () => void; // 停止AI辩论回调
+  onSendMultiModelMessage?: (message: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
+  onStartDebate?: (question: string, config: DebateConfig) => void;
+  onStopDebate?: () => void;
   isLoading?: boolean;
-  allowConsecutiveMessages?: boolean; // 允许连续发送消息，即使AI尚未回复
-  imageGenerationMode?: boolean; // 是否处于图像生成模式
-  onSendImagePrompt?: (prompt: string) => void; // 发送图像生成提示词的回调
-  webSearchActive?: boolean; // 是否处于网络搜索模式
-  onDetectUrl?: (url: string) => Promise<string>; // 用于检测并解析URL的回调
-  onStopResponse?: () => void; // 停止AI回复的回调
-  isStreaming?: boolean; // 是否正在流式响应中
-  isDebating?: boolean; // 是否正在AI辩论中
-  toolsEnabled?: boolean; // 工具开关状态
-  availableModels?: any[]; // 可用模型列表
+  allowConsecutiveMessages?: boolean;
+  imageGenerationMode?: boolean;
+  onSendImagePrompt?: (prompt: string) => void;
+  webSearchActive?: boolean;
+  onDetectUrl?: (url: string) => Promise<string>;
+  onStopResponse?: () => void;
+  isStreaming?: boolean;
+  isDebating?: boolean;
+  toolsEnabled?: boolean;
+  availableModels?: any[];
+  // 新增属性
+  toggleImageGenerationMode?: () => void; // 切换图像生成模式
+  toggleWebSearch?: () => void; // 切换网络搜索模式
+  onClearTopic?: () => void; // 清空话题内容
+  onToolsEnabledChange?: (enabled: boolean) => void; // 工具开关变化
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -58,12 +66,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
   isStreaming = false,
   isDebating = false, // 默认不在辩论中
   toolsEnabled = true, // 默认启用工具
-  availableModels = [] // 默认空数组
+  availableModels = [], // 默认空数组
+  toggleImageGenerationMode,
+  toggleWebSearch,
+  onClearTopic,
+  onToolsEnabledChange
 }) => {
   // 基础状态
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [uploadMenuAnchorEl, setUploadMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [multiModelSelectorOpen, setMultiModelSelectorOpen] = useState(false);
+  const [toolsMenuAnchorEl, setToolsMenuAnchorEl] = useState<null | HTMLElement>(null); // 新增工具菜单状态
   const [isIOS, setIsIOS] = useState(false); // 新增: 是否是iOS设备
   // 语音识别三状态管理
   const [voiceState, setVoiceState] = useState<'normal' | 'voice-mode' | 'recording'>('normal');
@@ -435,6 +448,78 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleCloseUploadMenu = () => {
     setUploadMenuAnchorEl(null);
+  };
+
+  // 新增工具菜单处理函数
+  const handleOpenToolsMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setToolsMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseToolsMenu = () => {
+    setToolsMenuAnchorEl(null);
+  };
+
+  // 添加知识库选择器状态
+  const [showKnowledgeSelector, setShowKnowledgeSelector] = useState(false);
+
+  // 处理通用功能
+  const handleImageGeneration = () => {
+    if (toggleImageGenerationMode) {
+      toggleImageGenerationMode();
+    } else {
+      console.log('触发图片生成功能');
+    }
+    handleCloseToolsMenu();
+  };
+
+  const handleWebSearch = () => {
+    if (toggleWebSearch) {
+      toggleWebSearch();
+    } else {
+      console.log('触发网页搜索功能');
+    }
+    handleCloseToolsMenu();
+  };
+
+  const handleKnowledgeBase = () => {
+    setShowKnowledgeSelector(true);
+    handleCloseToolsMenu();
+  };
+
+  const handleNewTopic = () => {
+    EventEmitter.emit(EVENT_NAMES.ADD_NEW_TOPIC);
+    handleCloseToolsMenu();
+  };
+
+  const handleClearTopic = () => {
+    if (onClearTopic) {
+      onClearTopic();
+    } else {
+      console.log('触发清空话题功能');
+      EventEmitter.emit(EVENT_NAMES.CLEAR_MESSAGES);
+    }
+    handleCloseToolsMenu();
+  };
+
+  // 处理知识库选择
+  const handleKnowledgeSelect = (knowledgeBase: any, searchResults: any[]) => {
+    console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
+
+    // 存储选中的知识库信息到sessionStorage
+    const knowledgeData = {
+      knowledgeBase: {
+        id: knowledgeBase.id,
+        name: knowledgeBase.name
+      },
+      isSelected: true,
+      searchOnSend: true
+    };
+
+    console.log('[ChatInput] 保存知识库选择到sessionStorage:', knowledgeData);
+    window.sessionStorage.setItem('selectedKnowledgeBase', JSON.stringify(knowledgeData));
+
+    // 关闭选择器
+    setShowKnowledgeSelector(false);
   };
 
   // 文件上传处理函数 - 包装 hook 提供的函数以更新本地状态
@@ -1074,6 +1159,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
               </IconButton>
             </Tooltip>
 
+            {/* 新增工具菜单按钮 */}
+            <Tooltip title="工具">
+              <IconButton
+                size={isTablet ? "large" : "medium"}
+                onClick={handleOpenToolsMenu}
+                disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
+                style={{
+                  color: iconColor,
+                  padding: isTablet ? '10px' : '8px',
+                  marginRight: isTablet ? '4px' : '0'
+                }}
+              >
+                <Wrench size={isTablet ? 24 : 20} />
+              </IconButton>
+            </Tooltip>
+
             {/* AI辩论按钮 */}
             {showAIDebateButton && (
               <AIDebateButton
@@ -1172,13 +1273,37 @@ const ChatInput: React.FC<ChatInputProps> = ({
         maxSelection={5}
       />
 
+      {/* 工具菜单 */}
+      <ToolsMenu
+        anchorEl={toolsMenuAnchorEl}
+        open={Boolean(toolsMenuAnchorEl)}
+        onClose={handleCloseToolsMenu}
+        onNewTopic={handleNewTopic}
+        onClearTopic={handleClearTopic}
+        onKnowledgeBase={handleKnowledgeBase}
+        onImageGeneration={handleImageGeneration}
+        onWebSearch={handleWebSearch}
+        imageGenerationMode={imageGenerationMode}
+        webSearchActive={webSearchActive}
+        toolsEnabled={toolsEnabled}
+        onToolsEnabledChange={onToolsEnabledChange || (() => {})}
+      />
+
+      {/* 知识库选择器 */}
+      {showKnowledgeSelector && (
+        <KnowledgeSelector
+          open={showKnowledgeSelector}
+          onClose={() => setShowKnowledgeSelector(false)}
+          onSelect={handleKnowledgeSelect}
+        />
+      )}
+
       {/* Toast通知 */}
       <EnhancedToast
         messages={toastMessages}
         onClose={(id) => toastManager.remove(id)}
         maxVisible={3}
       />
-
 
     </div>
   );

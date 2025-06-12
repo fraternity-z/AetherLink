@@ -182,10 +182,10 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     }
   }), [themeColors]);
 
-  // 根据布局样式决定是否显示工具栏
+  // 根据布局样式决定是否显示工具栏 - 移除重复的顶部工具栏
   const shouldShowToolbar = useMemo(() =>
-    inputLayoutStyle === 'default',
-    [inputLayoutStyle]
+    false, // 始终不显示顶部工具栏，避免与下拉菜单重复
+    []
   );
 
   // 滑动手势处理 - 右滑打开侧边栏，左滑关闭侧边栏
@@ -335,7 +335,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
         return null;
     }
   }, [
-    isMobile,
+    // 移除了 isMobile，因为函数体中没有使用它
     mergedTopToolbarSettings,
     setDrawerOpen,
     drawerOpen,
@@ -387,7 +387,12 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     isDebating,
     onStartDebate: handleStartDebate,
     onStopDebate: handleStopDebate,
-    toolsEnabled
+    toolsEnabled,
+    // 添加缺失的函数
+    toggleImageGenerationMode,
+    toggleWebSearch,
+    onClearTopic: handleClearTopic,
+    onNewTopic: handleCreateTopic
   }), [
     handleSendMessage,
     handleMultiModelSend,
@@ -402,7 +407,12 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     isDebating,
     handleStartDebate,
     handleStopDebate,
-    toolsEnabled
+    toolsEnabled,
+    // 添加依赖项
+    toggleImageGenerationMode,
+    toggleWebSearch,
+    handleClearTopic,
+    handleCreateTopic
   ]);
 
   // 优化渲染输入框组件函数 - 使用 useCallback
@@ -411,11 +421,6 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
       return (
         <CompactChatInput
           {...commonProps}
-          onClearTopic={handleClearTopic}
-          onNewTopic={handleCreateTopic}
-          toggleImageGenerationMode={toggleImageGenerationMode}
-          toggleWebSearch={toggleWebSearch}
-          toggleToolsEnabled={toggleToolsEnabled}
         />
       );
     } else {
@@ -423,12 +428,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     }
   }, [
     inputLayoutStyle,
-    commonProps,
-    handleClearTopic,
-    handleCreateTopic,
-    toggleImageGenerationMode,
-    toggleWebSearch,
-    toggleToolsEnabled
+    commonProps
   ]);
 
   return (
