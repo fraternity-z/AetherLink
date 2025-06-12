@@ -80,6 +80,7 @@
     "@emotion/styled": "^11.14.0",
     "@google/genai": "^1.2.0",
     "@google/generative-ai": "^0.24.1",
+    "@headlessui/react": "^2.2.4",
     "@hello-pangea/dnd": "^18.0.1",
     "@mendable/firecrawl-js": "^1.25.1",
     "@modelcontextprotocol/sdk": "^1.12.0",
