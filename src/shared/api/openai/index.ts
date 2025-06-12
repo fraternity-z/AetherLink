@@ -18,8 +18,8 @@ export {
   isAzureOpenAI
 } from './client';
 
-// 导入聊天完成函数以便包装和增强
-import { sendChatRequest as originalSendChatRequest } from './chat';
+// 导入统一的聊天模块
+import { sendChatMessage } from './chat';
 
 // 导出模型管理模块
 export {
@@ -40,10 +40,12 @@ export {
   WEB_SEARCH_TOOL
 } from './tools';
 
-// 导出流式响应模块
+// 导出统一流式响应模块
 export {
-  streamCompletion
-} from './stream';
+  unifiedStreamCompletion as streamCompletion,
+  createAdvancedStreamProcessor as OpenAIStreamProcessor,
+  createUnifiedStreamProcessor
+} from './unifiedStreamProcessor';
 
 // 导出图像生成模块
 export {
@@ -57,6 +59,25 @@ export {
   OpenAIProvider
 } from './provider';
 
+// 导出参数管理器
+export {
+  OpenAIParameterManager,
+  createParameterManager,
+  getParameterManager,
+  type ParameterConfig,
+  type BaseParameters,
+  type OpenAISpecificParameters,
+  type ReasoningParameters,
+  type CompleteAPIParameters
+} from './parameterManager';
+
+// 导出统一聊天模块
+export {
+  sendChatMessage,
+  type ChatOptions,
+  type ChatResponse
+} from './chat';
+
 // 导出响应处理器
 export {
   createResponseHandler,
@@ -64,7 +85,7 @@ export {
   defaultResponseHandler
 } from './responseHandler';
 
-// 包装聊天请求函数以添加调试信息
+// 使用统一聊天模块的包装函数
 export async function sendChatRequest(
   messages: any[],
   model: Model,
@@ -76,15 +97,12 @@ export async function sendChatRequest(
   const onUpdate = options?.onUpdate;
   const systemPrompt = options?.systemPrompt || '';
 
-  console.log(`[openai/index.ts] 调用sendChatRequest - 模型ID: ${model.id}, 消息数量: ${messages.length}, 系统提示: ${systemPrompt ? '有' : '无'}`);
-  try {
-    const response = await originalSendChatRequest(messages, model, onUpdate);
-    console.log(`[openai/index.ts] sendChatRequest成功返回`);
-    return response;
-  } catch (error) {
-    console.error(`[openai/index.ts] sendChatRequest执行失败:`, error);
-    throw error;
-  }
+  console.log(`[openai/index.ts] 使用统一聊天模块 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
+
+  return sendChatMessage(messages, model, {
+    onUpdate,
+    systemPrompt
+  });
 }
 
 /**
@@ -107,7 +125,7 @@ export function createOpenAIAPI(model: Model) {
 
   return {
     /**
-     * 发送消息并获取响应
+     * 发送消息并获取响应 - 使用统一聊天模块
      */
     sendMessage: (
       messages: Message[],
@@ -116,11 +134,14 @@ export function createOpenAIAPI(model: Model) {
         enableWebSearch?: boolean;
         systemPrompt?: string;
         enableTools?: boolean;
+        mcpTools?: import('../../types').MCPTool[];
+        mcpMode?: 'prompt' | 'function';
+        abortSignal?: AbortSignal;
+        assistant?: any;
       }
     ) => {
-      const systemPrompt = options?.systemPrompt || '';
-      console.log(`[openai/index.ts] 通过API适配器发送消息 - 模型ID: ${model.id}, 消息数量: ${messages.length}, 系统提示: ${systemPrompt ? '有' : '无'}`);
-      return provider.sendChatMessage(messages, options);
+      console.log(`[openai/index.ts] 通过统一聊天模块发送消息 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
+      return sendChatMessage(messages, model, options);
     },
 
     /**

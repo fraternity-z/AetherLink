@@ -273,21 +273,22 @@ export default function ContextSettings({
                 精确值:
               </Typography>
               <TextField
-                type="number"
+                type="text"
                 value={maxOutputTokens}
                 onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value) && value >= 256 && value <= 2000000) {
-                    onMaxOutputTokensChange(value);
-                    // 触发自定义事件通知其他组件
-                    window.dispatchEvent(new CustomEvent('maxOutputTokensChanged', { detail: value }));
+                  const value = e.target.value;
+                  // 允许空值或纯数字
+                  if (value === '' || /^\d+$/.test(value)) {
+                    const numValue = value === '' ? 0 : parseInt(value);
+                    if (numValue <= 2000000) {
+                      onMaxOutputTokensChange(numValue);
+                      // 触发自定义事件通知其他组件
+                      window.dispatchEvent(new CustomEvent('maxOutputTokensChanged', { detail: numValue }));
+                    }
                   }
                 }}
                 size="small"
                 sx={{ width: 120 }}
-                slotProps={{
-                  htmlInput: { min: 256, max: 2000000 }
-                }}
               />
               <Typography variant="body2" color="text.secondary">
                 tokens

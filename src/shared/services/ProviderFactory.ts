@@ -239,6 +239,128 @@ function getDefaultGroupName(modelId: string): string {
 }
 
 /**
+ * 从默认端点获取模型列表
+ * @param provider 提供商配置
+ * @param providerType 提供商类型
+ * @returns 原始模型列表
+ */
+async function fetchModelsFromEndpoint(provider: any, providerType: string): Promise<any[]> {
+  let rawModels: any[] = [];
+
+  // 简化的Provider选择逻辑，与最佳实例保持一致
+  switch (providerType.toLowerCase()) {
+    case 'anthropic':
+      rawModels = await anthropicApi.fetchModels(provider);
+      break;
+    case 'gemini':
+      rawModels = await geminiApi.fetchModels(provider);
+      break;
+    case 'deepseek':
+      // DeepSeek使用OpenAI兼容API，失败时返回预设列表
+      try {
+        rawModels = await openaiApi.fetchModels(provider);
+      } catch (error) {
+        console.warn(`[fetchModelsFromEndpoint] DeepSeek模型获取失败，返回预设列表:`, error);
+        rawModels = [
+          { id: 'deepseek-chat', name: 'DeepSeek-V3', description: 'DeepSeek最新的大型语言模型，具有优秀的中文和代码能力。', owned_by: 'deepseek' },
+          { id: 'deepseek-reasoner', name: 'DeepSeek-R1', description: 'DeepSeek的推理模型，擅长解决复杂推理问题。', owned_by: 'deepseek' }
+        ];
+      }
+      break;
+    case 'zhipu':
+      // 智谱AI不支持标准的 /v1/models 接口，返回预设列表
+      console.log(`[fetchModelsFromEndpoint] 智谱AI使用预设模型列表`);
+      rawModels = [
+        { id: 'glm-5-plus', name: 'GLM-5-Plus', description: 'GLM-5增强版，最新一代大模型', owned_by: 'zhipu' },
+        { id: 'glm-5-air', name: 'GLM-5-Air', description: 'GLM-5轻量版，平衡性能与速度', owned_by: 'zhipu' },
+        { id: 'glm-4-0520', name: 'GLM-4-0520', description: 'GLM-4最新版本，性能优化', owned_by: 'zhipu' },
+        { id: 'glm-4-plus', name: 'GLM-4-Plus', description: 'GLM-4增强版，更强推理能力', owned_by: 'zhipu' },
+        { id: 'glm-4-long', name: 'GLM-4-Long', description: 'GLM-4长文本版，支持超长上下文', owned_by: 'zhipu' },
+        { id: 'glm-4-air', name: 'GLM-4-Air', description: 'GLM-4轻量版，快速响应', owned_by: 'zhipu' },
+        { id: 'glm-4-airx', name: 'GLM-4-AirX', description: 'GLM-4轻量增强版', owned_by: 'zhipu' },
+        { id: 'glm-4-flash', name: 'GLM-4-Flash', description: 'GLM-4极速版，超快响应', owned_by: 'zhipu' },
+        { id: 'glm-4-flashx', name: 'GLM-4-FlashX', description: 'GLM-4极速增强版', owned_by: 'zhipu' },
+        { id: 'glm-4v', name: 'GLM-4V', description: 'GLM-4视觉版，支持图像理解', owned_by: 'zhipu' },
+        { id: 'glm-4v-flash', name: 'GLM-4V-Flash', description: 'GLM-4V极速版', owned_by: 'zhipu' },
+        { id: 'glm-4v-plus', name: 'GLM-4V-Plus', description: 'GLM-4V增强版', owned_by: 'zhipu' },
+        { id: 'glm-4-alltools', name: 'GLM-4-AllTools', description: 'GLM-4全工具版，支持网络搜索等工具', owned_by: 'zhipu' }
+      ];
+      break;
+    case 'openai-aisdk':
+      // AI SDK版本使用相同的模型获取逻辑
+      console.log(`[fetchModelsFromEndpoint] AI SDK OpenAI使用标准模型获取`);
+      rawModels = await openaiApi.fetchModels(provider);
+      break;
+    case 'openai':
+    case 'google':
+    default:
+      // 默认使用OpenAI兼容API
+      rawModels = await openaiApi.fetchModels(provider);
+      break;
+  }
+
+  return rawModels;
+}
+
+/**
+ * 从自定义端点获取模型列表
+ * @param customEndpoint 自定义端点完整URL
+ * @param provider 原始提供商配置（用于API密钥等）
+ * @returns 原始模型列表
+ */
+async function fetchModelsFromCustomEndpoint(customEndpoint: string, provider: any): Promise<any[]> {
+  try {
+    // 直接使用自定义端点，不进行任何URL处理
+    console.log(`[fetchModelsFromCustomEndpoint] 直接请求自定义端点: ${customEndpoint}`);
+
+    // 构建请求头
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    // 添加API密钥（如果有）
+    if (provider.apiKey) {
+      headers['Authorization'] = `Bearer ${provider.apiKey}`;
+    }
+
+    // 添加自定义请求头（如果有）
+    if (provider.extraHeaders) {
+      Object.assign(headers, provider.extraHeaders);
+    }
+
+    // 直接请求自定义端点，不通过OpenAI的fetchModels函数
+    const response = await fetch(customEndpoint, {
+      method: 'GET',
+      headers: headers
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`[fetchModelsFromCustomEndpoint] 自定义端点请求失败: ${response.status}, ${errorText}`);
+      throw new Error(`自定义端点请求失败: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`[fetchModelsFromCustomEndpoint] 成功获取模型列表, 找到 ${(data.data || data || []).length} 个模型`);
+
+    // 处理不同的响应格式
+    if (data.data && Array.isArray(data.data)) {
+      // 标准OpenAI格式: {data: [...]}
+      return data.data;
+    } else if (Array.isArray(data)) {
+      // 直接返回数组格式
+      return data;
+    } else {
+      console.warn(`[fetchModelsFromCustomEndpoint] 未知的响应格式:`, data);
+      return [];
+    }
+  } catch (error) {
+    console.error(`[fetchModelsFromCustomEndpoint] 自定义端点请求失败:`, error);
+    throw error;
+  }
+}
+
+/**
  * 获取模型列表 - 简化版本，参考最佳实例架构
  * @param provider 提供商配置
  * @returns 格式化的模型列表
@@ -253,62 +375,43 @@ export async function fetchModels(provider: any): Promise<any[]> {
       providerType = 'openai';
     }
 
-    let rawModels: any[] = [];
+    let allModels: any[] = [];
 
-    // 简化的Provider选择逻辑，与最佳实例保持一致
-    switch (providerType.toLowerCase()) {
-      case 'anthropic':
-        rawModels = await anthropicApi.fetchModels(provider);
-        break;
-      case 'gemini':
-        rawModels = await geminiApi.fetchModels(provider);
-        break;
-      case 'deepseek':
-        // DeepSeek使用OpenAI兼容API，失败时返回预设列表
-        try {
-          rawModels = await openaiApi.fetchModels(provider);
-        } catch (error) {
-          console.warn(`[fetchModels] DeepSeek模型获取失败，返回预设列表:`, error);
-          rawModels = [
-            { id: 'deepseek-chat', name: 'DeepSeek-V3', description: 'DeepSeek最新的大型语言模型，具有优秀的中文和代码能力。', owned_by: 'deepseek' },
-            { id: 'deepseek-reasoner', name: 'DeepSeek-R1', description: 'DeepSeek的推理模型，擅长解决复杂推理问题。', owned_by: 'deepseek' }
-          ];
-        }
-        break;
-      case 'zhipu':
-        // 智谱AI不支持标准的 /v1/models 接口，返回预设列表
-        console.log(`[fetchModels] 智谱AI使用预设模型列表`);
-        rawModels = [
-          { id: 'glm-5-plus', name: 'GLM-5-Plus', description: 'GLM-5增强版，最新一代大模型', owned_by: 'zhipu' },
-          { id: 'glm-5-air', name: 'GLM-5-Air', description: 'GLM-5轻量版，平衡性能与速度', owned_by: 'zhipu' },
-          { id: 'glm-4-0520', name: 'GLM-4-0520', description: 'GLM-4最新版本，性能优化', owned_by: 'zhipu' },
-          { id: 'glm-4-plus', name: 'GLM-4-Plus', description: 'GLM-4增强版，更强推理能力', owned_by: 'zhipu' },
-          { id: 'glm-4-long', name: 'GLM-4-Long', description: 'GLM-4长文本版，支持超长上下文', owned_by: 'zhipu' },
-          { id: 'glm-4-air', name: 'GLM-4-Air', description: 'GLM-4轻量版，快速响应', owned_by: 'zhipu' },
-          { id: 'glm-4-airx', name: 'GLM-4-AirX', description: 'GLM-4轻量增强版', owned_by: 'zhipu' },
-          { id: 'glm-4-flash', name: 'GLM-4-Flash', description: 'GLM-4极速版，超快响应', owned_by: 'zhipu' },
-          { id: 'glm-4-flashx', name: 'GLM-4-FlashX', description: 'GLM-4极速增强版', owned_by: 'zhipu' },
-          { id: 'glm-4v', name: 'GLM-4V', description: 'GLM-4视觉版，支持图像理解', owned_by: 'zhipu' },
-          { id: 'glm-4v-flash', name: 'GLM-4V-Flash', description: 'GLM-4V极速版', owned_by: 'zhipu' },
-          { id: 'glm-4v-plus', name: 'GLM-4V-Plus', description: 'GLM-4V增强版', owned_by: 'zhipu' },
-          { id: 'glm-4-alltools', name: 'GLM-4-AllTools', description: 'GLM-4全工具版，支持网络搜索等工具', owned_by: 'zhipu' }
-        ];
-        break;
-      case 'openai-aisdk':
-        // AI SDK版本使用相同的模型获取逻辑
-        console.log(`[fetchModels] AI SDK OpenAI使用标准模型获取`);
-        rawModels = await openaiApi.fetchModels(provider);
-        break;
-      case 'openai':
-      case 'google':
-      default:
-        // 默认使用OpenAI兼容API
-        rawModels = await openaiApi.fetchModels(provider);
-        break;
+    // 1. 从默认端点获取模型
+    console.log(`[fetchModels] 从默认端点获取模型: ${provider.id}`);
+    try {
+      const defaultModels = await fetchModelsFromEndpoint(provider, providerType);
+      allModels.push(...defaultModels);
+      console.log(`[fetchModels] 默认端点获取到 ${defaultModels.length} 个模型`);
+    } catch (error) {
+      console.warn(`[fetchModels] 默认端点获取失败:`, error);
     }
 
-    // 统一格式化模型数据 - 整合APIService中的逻辑
-    const formattedModels = rawModels.map(model => ({
+    // 2. 如果有自定义端点，也从自定义端点获取模型
+    if (provider.customModelEndpoint) {
+      console.log(`[fetchModels] 从自定义端点获取模型: ${provider.customModelEndpoint}`);
+      try {
+        const customModels = await fetchModelsFromCustomEndpoint(provider.customModelEndpoint, provider);
+        allModels.push(...customModels);
+        console.log(`[fetchModels] 自定义端点获取到 ${customModels.length} 个模型`);
+      } catch (error) {
+        console.warn(`[fetchModels] 自定义端点获取失败:`, error);
+      }
+    }
+
+    // 3. 去重处理 - 根据模型ID去重，保留第一个
+    const uniqueModels = new Map();
+    allModels.forEach(model => {
+      if (!uniqueModels.has(model.id)) {
+        uniqueModels.set(model.id, model);
+      }
+    });
+
+    const deduplicatedModels = Array.from(uniqueModels.values());
+    console.log(`[fetchModels] 去重后共 ${deduplicatedModels.length} 个模型`);
+
+    // 4. 统一格式化模型数据
+    const formattedModels = deduplicatedModels.map(model => ({
       id: model.id,
       name: model.name || model.id,
       provider: provider.id,

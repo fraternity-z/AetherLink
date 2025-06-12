@@ -21,8 +21,7 @@ import type { RootState } from '../shared/store';
 import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../shared/types';
 import type { DebateConfig } from '../shared/services/AIDebateService';
 import { dexieStorage } from '../shared/services/DexieStorageService';
-import { VoiceButton } from './VoiceRecognition';
-import EnhancedVoiceInput from './VoiceRecognition/EnhancedVoiceInput';
+import { VoiceButton, EnhancedVoiceInput } from './VoiceRecognition';
 
 
 interface CompactChatInputProps {
@@ -157,6 +156,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   const {
     isListening,
     error: voiceRecognitionError,
+    startRecognition,
     stopRecognition,
   } = useVoiceRecognition();
 
@@ -606,7 +606,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     <Box sx={{
       width: '100%',
       maxWidth: '800px',
-      margin: '0 auto',
+      margin: '0 16px', // 改为左右边距，避免被侧边栏遮挡
       // 添加全局滚动条样式
       '& textarea::-webkit-scrollbar': {
         width: '6px',
@@ -656,10 +656,11 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
           isDarkMode={isDarkMode}
           onClose={() => setIsVoiceMode(false)}
           onSendMessage={handleVoiceSendMessage}
-          onInsertText={(text) => {
+          onInsertText={(text: string) => {
             setMessage(prev => prev + text);
             setIsVoiceMode(false);
           }}
+          startRecognition={startRecognition}
         />
       ) : (
         /* 文本输入模式 */

@@ -71,8 +71,9 @@ const VoiceSettings: React.FC = () => {
   const [siliconFlowSettings, setSiliconFlowSettings] = useState<SiliconFlowTTSSettings>({
     apiKey: '',
     showApiKey: false,
-    selectedModel: 'FishSpeech',
-    selectedVoice: 'fishaudio_fish_speech_1',
+    selectedModel: 'FunAudioLLM/CosyVoice2-0.5B',
+    selectedVoice: 'alex',
+    useStream: false, // 默认不启用流式输出
   });
 
   const [openaiSettings, setOpenaiSettings] = useState<OpenAITTSSettings>({
@@ -157,8 +158,9 @@ const VoiceSettings: React.FC = () => {
 
         // 加载基础设置
         const storedApiKey = await getStorageItem<string>('siliconflow_api_key') || '';
-        const storedModel = await getStorageItem<string>('tts_model') || 'FishSpeech';
-        const storedVoice = await getStorageItem<string>('tts_voice') || 'fishaudio_fish_speech_1';
+        const storedModel = await getStorageItem<string>('tts_model') || 'FunAudioLLM/CosyVoice2-0.5B';
+        const storedVoice = await getStorageItem<string>('tts_voice') || 'alex';
+        const storedUseStream = (await getStorageItem<string>('siliconflow_tts_stream')) === 'true';
         const storedEnableTTS = (await getStorageItem<string>('enable_tts')) !== 'false'; // 默认启用
 
         // 加载OpenAI设置
@@ -208,6 +210,7 @@ const VoiceSettings: React.FC = () => {
           showApiKey: false,
           selectedModel: storedModel,
           selectedVoice: storedVoice,
+          useStream: storedUseStream,
         });
 
         setOpenaiSettings({
@@ -324,6 +327,7 @@ const VoiceSettings: React.FC = () => {
       await setStorageItem('siliconflow_api_key', siliconFlowSettings.apiKey);
       await setStorageItem('tts_model', siliconFlowSettings.selectedModel);
       await setStorageItem('tts_voice', siliconFlowSettings.selectedVoice);
+      await setStorageItem('siliconflow_tts_stream', siliconFlowSettings.useStream.toString());
       await setStorageItem('enable_tts', enableTTS.toString());
 
       // 保存OpenAI设置
@@ -369,6 +373,7 @@ const VoiceSettings: React.FC = () => {
 
       // 更新TTSService
       ttsService.setApiKey(siliconFlowSettings.apiKey);
+      ttsService.setUseSiliconFlowStream(siliconFlowSettings.useStream);
       ttsService.setDefaultVoice(siliconFlowSettings.selectedModel, `${siliconFlowSettings.selectedModel}:${siliconFlowSettings.selectedVoice}`);
 
       // 更新OpenAI设置
@@ -465,6 +470,7 @@ const VoiceSettings: React.FC = () => {
     } else {
       // 使用硅基流动TTS
       ttsService.setApiKey(siliconFlowSettings.apiKey);
+      ttsService.setUseSiliconFlowStream(siliconFlowSettings.useStream);
       ttsService.setDefaultVoice(siliconFlowSettings.selectedModel, `${siliconFlowSettings.selectedModel}:${siliconFlowSettings.selectedVoice}`);
     }
 
@@ -827,6 +833,10 @@ const VoiceSettings: React.FC = () => {
                 value={selectedTTSService}
                 onChange={(e) => handleServiceChange(e.target.value)}
                 label="选择TTS服务"
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableRestoreFocus: true
+                }}
                 sx={{
                   '& .MuiSelect-select': {
                     py: { xs: 1.5, sm: 2 }, // 响应式内边距
@@ -1479,6 +1489,10 @@ const VoiceSettings: React.FC = () => {
                     value={speechRecognitionSettings.language}
                     onChange={(e) => setSpeechRecognitionSettings(prev => ({ ...prev, language: e.target.value }))}
                     label="默认语言"
+                    MenuProps={{
+                      disableAutoFocus: true,
+                      disableRestoreFocus: true
+                    }}
                   >
                     <MenuItem value="zh-CN">中文 (普通话)</MenuItem>
                     <MenuItem value="en-US">English (US)</MenuItem>

@@ -495,53 +495,77 @@ export function findCitationBlocks(message: Message): CitationMessageBlock[] {
   return citationBlocks;
 }
 
+// 用于去重日志的缓存
+const loggedWarnings = new Set<string>();
+
+// 内容缓存，避免重复计算
+const contentCache = new Map<string, { content: string; timestamp: number }>();
+const CACHE_TTL = 5000; // 缓存5秒
+
 /**
  * 获取消息的主要文本内容
- * 优化版本：增强错误处理和内容获取逻辑，特别针对移动端优化
+ * 优化版本：减少重复日志输出，添加缓存提高性能
  */
 export function getMainTextContent(message: Message): string {
   // 安全检查
   if (!message) {
-    console.warn('[getMainTextContent] 消息对象为空');
+    const warningKey = 'empty-message';
+    if (!loggedWarnings.has(warningKey)) {
+      console.warn('[getMainTextContent] 消息对象为空');
+      loggedWarnings.add(warningKey);
+    }
     return '';
   }
 
-  try {
-    // 减少日志输出，只在调试时启用
-    // console.log(`[getMainTextContent] 开始获取消息内容:`, {
-    //   messageId: message.id,
-    //   role: message.role,
-    //   hasBlocks: !!message.blocks,
-    //   blocksCount: message.blocks?.length || 0,
-    //   hasContent: !!(message as any).content
-    // });
+  // 检查缓存
+  const cacheKey = `${message.id}-${message.updatedAt || message.createdAt}`;
+  const cached = contentCache.get(cacheKey);
+  const now = Date.now();
 
+  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+    return cached.content;
+  }
+
+  try {
     //  优先检查是否有保存的content字段（多模型对比选择后的内容或编辑后的内容）
     if (typeof (message as any).content === 'string' && (message as any).content.trim()) {
       const content = (message as any).content.trim();
+      // 缓存结果
+      contentCache.set(cacheKey, { content, timestamp: now });
       return content;
     }
 
     // 检查是否有blocks
     if (!message.blocks || message.blocks.length === 0) {
-      console.warn(`[getMainTextContent] 消息 ${message.id} 没有blocks`);
+      const warningKey = `no-blocks-${message.id}`;
+      if (!loggedWarnings.has(warningKey)) {
+        console.warn(`[getMainTextContent] 消息 ${message.id} 没有blocks`);
+        loggedWarnings.add(warningKey);
+      }
 
       // 尝试从旧版本的content属性获取内容（兼容性处理）
       if (typeof (message as any).content === 'string') {
         const legacyContent = (message as any).content.trim();
         if (legacyContent) {
-          console.log(`[getMainTextContent] 使用旧版本content字段，内容长度: ${legacyContent.length}`);
+          // 缓存结果
+          contentCache.set(cacheKey, { content: legacyContent, timestamp: now });
           return legacyContent;
         }
       }
 
+      // 缓存空结果
+      contentCache.set(cacheKey, { content: '', timestamp: now });
       return '';
     }
 
     // 获取Redux状态
     const state = store.getState();
     if (!state) {
-      console.error('[getMainTextContent] Redux状态不可用');
+      const warningKey = 'redux-unavailable';
+      if (!loggedWarnings.has(warningKey)) {
+        console.error('[getMainTextContent] Redux状态不可用');
+        loggedWarnings.add(warningKey);
+      }
       return '';
     }
 
@@ -558,26 +582,31 @@ export function getMainTextContent(message: Message): string {
           }
         }
       } catch (error) {
-        console.error(`[getMainTextContent] 检查对比块 ${blockId} 失败:`, error);
+        const warningKey = `comparison-block-error-${blockId}`;
+        if (!loggedWarnings.has(warningKey)) {
+          console.error(`[getMainTextContent] 检查对比块 ${blockId} 失败:`, error);
+          loggedWarnings.add(warningKey);
+        }
       }
     }
 
     // 如果没有对比块选中内容，继续查找普通文本块
     const textBlocks: MainTextMessageBlock[] = [];
+    const missingBlocks: string[] = [];
 
     for (const blockId of message.blocks) {
       try {
         const block = messageBlocksSelectors.selectById(state, blockId);
         if (!block) {
-          console.warn(`[getMainTextContent] 块 ${blockId} 不存在`);
+          missingBlocks.push(blockId);
           continue;
         }
 
         // 兼容性处理：同时支持 MAIN_TEXT、UNKNOWN 和字符串类型的块类型
-        const blockType = block && typeof block === 'object' ? 
-          (typeof (block as any).type === 'string' ? (block as any).type : MessageBlockType.UNKNOWN) : 
+        const blockType = block && typeof block === 'object' ?
+          (typeof (block as any).type === 'string' ? (block as any).type : MessageBlockType.UNKNOWN) :
           MessageBlockType.UNKNOWN;
-        
+
         if (blockType === MessageBlockType.MAIN_TEXT ||
             blockType === MessageBlockType.UNKNOWN ||
             blockType === 'main_text' ||
@@ -586,11 +615,22 @@ export function getMainTextContent(message: Message): string {
           textBlocks.push(block as MainTextMessageBlock);
         }
       } catch (error) {
-        console.error(`[getMainTextContent] 获取块 ${blockId} 失败:`, error);
+        const warningKey = `block-error-${blockId}`;
+        if (!loggedWarnings.has(warningKey)) {
+          console.error(`[getMainTextContent] 获取块 ${blockId} 失败:`, error);
+          loggedWarnings.add(warningKey);
+        }
       }
     }
 
-    console.log(`[getMainTextContent] 找到 ${textBlocks.length} 个文本块`);
+    // 只在有缺失块时输出一次警告
+    if (missingBlocks.length > 0) {
+      const warningKey = `missing-blocks-${message.id}`;
+      if (!loggedWarnings.has(warningKey)) {
+        console.warn(`[getMainTextContent] 消息 ${message.id} 缺失 ${missingBlocks.length} 个块:`, missingBlocks);
+        loggedWarnings.add(warningKey);
+      }
+    }
 
     // 过滤掉空内容的块
     const nonEmptyBlocks = textBlocks.filter(block => {
@@ -598,35 +638,62 @@ export function getMainTextContent(message: Message): string {
       return content && typeof content === 'string' && content.trim();
     });
 
-    // 减少日志输出
-
     if (nonEmptyBlocks.length === 0) {
-      console.warn(`[getMainTextContent] 消息 ${message.id} 没有有效的文本内容`);
+      const warningKey = `no-content-${message.id}`;
+      if (!loggedWarnings.has(warningKey)) {
+        console.warn(`[getMainTextContent] 消息 ${message.id} 没有有效的文本内容`);
+        loggedWarnings.add(warningKey);
+      }
       return '';
     }
 
     // 连接所有文本块的内容
     const result = nonEmptyBlocks.map(block => block.content.trim()).join('\n\n');
-    // 减少日志输出
+
+    // 缓存结果
+    contentCache.set(cacheKey, { content: result, timestamp: now });
 
     return result;
   } catch (error) {
-    console.error('[getMainTextContent] 获取消息内容失败:', error);
+    const warningKey = `general-error-${message.id}`;
+    if (!loggedWarnings.has(warningKey)) {
+      console.error('[getMainTextContent] 获取消息内容失败:', error);
+      loggedWarnings.add(warningKey);
+    }
 
     // 最后的兜底方案：尝试直接从消息对象获取任何可能的文本内容
     try {
       if (typeof (message as any).content === 'string') {
         const fallbackContent = (message as any).content.trim();
         if (fallbackContent) {
-          console.log(`[getMainTextContent] 使用兜底方案，内容长度: ${fallbackContent.length}`);
           return fallbackContent;
         }
       }
     } catch (fallbackError) {
-      console.error('[getMainTextContent] 兜底方案也失败:', fallbackError);
+      const fallbackWarningKey = `fallback-error-${message.id}`;
+      if (!loggedWarnings.has(fallbackWarningKey)) {
+        console.error('[getMainTextContent] 兜底方案也失败:', fallbackError);
+        loggedWarnings.add(fallbackWarningKey);
+      }
     }
 
     return '';
+  }
+}
+
+// 清理缓存的函数（可选，用于长时间运行的应用）
+export function clearGetMainTextContentCache() {
+  loggedWarnings.clear();
+  contentCache.clear();
+}
+
+// 清理过期缓存
+export function cleanupExpiredCache() {
+  const now = Date.now();
+  for (const [key, value] of contentCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      contentCache.delete(key);
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { startTransition, useCallback, useMemo, memo } from 'react';
+import React, { startTransition, useCallback, useMemo, memo, useEffect, useState } from 'react';
 import {
   ListItemButton,
   ListItemText,
@@ -31,6 +31,39 @@ const AssistantItem = memo(function AssistantItem({
   onOpenMenu,
   onDeleteAssistant
 }: AssistantItemProps) {
+  // 添加本地状态来强制更新话题数显示
+  const [forceUpdateKey, setForceUpdateKey] = useState(0);
+
+  // 监听话题清空事件
+  useEffect(() => {
+    const handleTopicsCleared = (event: CustomEvent) => {
+      const { assistantId } = event.detail;
+      if (assistantId === assistant.id) {
+        console.log(`[AssistantItem] 收到话题清空事件，助手: ${assistant.name}`);
+        // 强制更新组件以刷新话题数显示
+        setForceUpdateKey(prev => prev + 1);
+      }
+    };
+
+    // 监听助手更新事件
+    const handleAssistantUpdated = (event: CustomEvent) => {
+      const { assistant: updatedAssistant } = event.detail;
+      if (updatedAssistant.id === assistant.id) {
+        console.log(`[AssistantItem] 收到助手更新事件，助手: ${assistant.name}`);
+        // 强制更新组件
+        setForceUpdateKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('topicsCleared', handleTopicsCleared as EventListener);
+    window.addEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener('topicsCleared', handleTopicsCleared as EventListener);
+      window.removeEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
+    };
+  }, [assistant.id, assistant.name]);
+
   // 使用 useCallback 缓存事件处理函数，避免每次渲染都创建新函数
   const handleAssistantClick = useCallback(() => {
     // 先触发切换到话题标签页事件，确保UI已经切换到话题标签页
@@ -54,9 +87,12 @@ const AssistantItem = memo(function AssistantItem({
   }, [assistant.id, onDeleteAssistant]);
 
   // 使用 useMemo 缓存计算结果，避免每次渲染都重新计算
+  // 添加forceUpdateKey作为依赖，确保话题清空后能重新计算
   const topicCount = useMemo(() => {
-    return assistant.topics?.length || assistant.topicIds?.length || 0;
-  }, [assistant.topics?.length, assistant.topicIds?.length]);
+    const count = assistant.topics?.length || assistant.topicIds?.length || 0;
+    console.log(`[AssistantItem] 计算话题数 - 助手: ${assistant.name}, 话题数: ${count}, forceUpdateKey: ${forceUpdateKey}`);
+    return count;
+  }, [assistant.topics?.length, assistant.topicIds?.length, forceUpdateKey]);
 
   // 缓存头像显示内容 - 支持自定义头像、Lucide图标和emoji
   const avatarContent = useMemo(() => {

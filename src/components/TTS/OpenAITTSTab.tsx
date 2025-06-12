@@ -132,6 +132,10 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             value={settings.selectedModel}
             onChange={(e) => handleModelChange(e.target.value)}
             label="TTS模型"
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
           >
             {OPENAI_MODELS.map((model) => (
               <MenuItem key={model.value} value={model.value}>
@@ -150,6 +154,10 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             value={settings.selectedVoice}
             onChange={(e) => handleVoiceChange(e.target.value)}
             label="语音选择"
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
           >
             {OPENAI_VOICES.map((voice) => (
               <MenuItem key={voice.value} value={voice.value}>
@@ -168,6 +176,10 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             value={settings.selectedFormat}
             onChange={(e) => handleFormatChange(e.target.value)}
             label="输出格式"
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
           >
             {OPENAI_FORMATS.map((format) => (
               <MenuItem key={format.value} value={format.value}>

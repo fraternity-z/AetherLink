@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { ChevronRight as ChevronRightIcon, Palette as FormatColorFillIcon } from 'lucide-react';
 import { Settings as SettingsApplicationsIcon, Sliders as TuneIcon, Wand2 as AutoFixHighIcon, GitBranch } from 'lucide-react';
-import { Code as CodeIcon, MessageSquare as ForumIcon, BookOpen as MenuBookIcon } from 'lucide-react';
+import { Code as CodeIcon, MessageSquare as ForumIcon, BookOpen as MenuBookIcon, Folder as WorkspaceIcon } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -68,6 +68,7 @@ const SettingsPage: React.FC = () => {
     {
       title: '其他设置',
       items: [
+        { id: 'workspace-settings', title: '工作区管理', description: '创建和管理文件工作区', icon: <WorkspaceIcon />, path: '/settings/workspace', color: '#f59e0b' },
         { id: 'knowledge-settings', title: '知识库设置', description: '管理知识库配置和嵌入模型', icon: <MenuBookIcon />, path: '/settings/knowledge', color: '#059669' },
         { id: 'data-settings', title: '数据设置', description: '管理数据存储和隐私选项', icon: <StorageIcon />, path: '/settings/data', color: '#0ea5e9' },
         { id: 'voice-settings', title: '语音功能', description: '语音识别和文本转语音设置', icon: <RecordVoiceOverIcon />, path: '/settings/voice', color: '#8b5cf6' },

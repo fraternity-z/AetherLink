@@ -4,7 +4,8 @@ import type { Assistant } from '../types/Assistant';
 import type { ChatTopic, QuickPhrase } from '../types';
 import type { MessageBlock } from '../types';
 import type { Message } from '../types/newMessage.ts';
-import { DB_CONFIG } from '../types/DatabaseSchema';
+import { DB_CONFIG, VERSION_CONFIGS } from '../database/config';
+import { databaseMigrationManager } from '../database/migrations';
 import { throttle } from 'lodash';
 import { makeSerializable, diagnoseSerializationIssues } from '../utils/serialization';
 import { DataRepairService } from './DataRepairService';
@@ -34,184 +35,38 @@ export class DexieStorageService extends Dexie {
   constructor() {
     super(DB_CONFIG.NAME);
 
-    this.version(4).stores({
-      [DB_CONFIG.STORES.ASSISTANTS]: 'id',
-      [DB_CONFIG.STORES.TOPICS]: 'id, _lastMessageTimeNum',
-      [DB_CONFIG.STORES.SETTINGS]: 'id',
-      [DB_CONFIG.STORES.IMAGES]: 'id',
-      [DB_CONFIG.STORES.IMAGE_METADATA]: 'id, topicId, created',
-      [DB_CONFIG.STORES.METADATA]: 'id',
-      [DB_CONFIG.STORES.MESSAGE_BLOCKS]: 'id, messageId',
-      [DB_CONFIG.STORES.MESSAGES]: 'id, topicId, assistantId',
-    }).upgrade(() => this.upgradeToV4());
+    // 使用配置文件中的版本定义和新的迁移系统
+    this.version(4).stores(VERSION_CONFIGS[4].stores)
+      .upgrade(async () => {
+        const result = await databaseMigrationManager.executeSingleMigration(this, 4);
+        if (!result.success) {
+          throw new Error(`版本4迁移失败: ${result.error}`);
+        }
+      });
 
-    // 添加版本5，将消息直接存储在topics表中
-    this.version(5).stores({
-      [DB_CONFIG.STORES.ASSISTANTS]: 'id',
-      [DB_CONFIG.STORES.TOPICS]: 'id, _lastMessageTimeNum, messages',
-      [DB_CONFIG.STORES.SETTINGS]: 'id',
-      [DB_CONFIG.STORES.IMAGES]: 'id',
-      [DB_CONFIG.STORES.IMAGE_METADATA]: 'id, topicId, created',
-      [DB_CONFIG.STORES.METADATA]: 'id',
-      [DB_CONFIG.STORES.MESSAGE_BLOCKS]: 'id, messageId',
-      [DB_CONFIG.STORES.MESSAGES]: 'id, topicId, assistantId',
-    }).upgrade(() => this.upgradeToV5());
+    this.version(5).stores(VERSION_CONFIGS[5].stores)
+      .upgrade(async () => {
+        const result = await databaseMigrationManager.executeSingleMigration(this, 5);
+        if (!result.success) {
+          throw new Error(`版本5迁移失败: ${result.error}`);
+        }
+      });
 
-    // 添加版本6，增加文件存储表、知识库相关表和快捷短语表
-    this.version(6).stores({
-      [DB_CONFIG.STORES.ASSISTANTS]: 'id',
-      [DB_CONFIG.STORES.TOPICS]: 'id, _lastMessageTimeNum, messages',
-      [DB_CONFIG.STORES.SETTINGS]: 'id',
-      [DB_CONFIG.STORES.IMAGES]: 'id',
-      [DB_CONFIG.STORES.IMAGE_METADATA]: 'id, topicId, created',
-      [DB_CONFIG.STORES.METADATA]: 'id',
-      [DB_CONFIG.STORES.MESSAGE_BLOCKS]: 'id, messageId',
-      [DB_CONFIG.STORES.MESSAGES]: 'id, topicId, assistantId',
-      files: 'id, name, origin_name, size, ext, type, created_at, count, hash',
-      knowledge_bases: 'id, name, model, dimensions, created_at, updated_at',
-      knowledge_documents: 'id, knowledgeBaseId, content, metadata.source, metadata.timestamp',
-      quick_phrases: 'id, title, content, createdAt, updatedAt, order',
-    }).upgrade(() => this.upgradeToV6());
-
-
+    this.version(6).stores(VERSION_CONFIGS[6].stores)
+      .upgrade(async () => {
+        const result = await databaseMigrationManager.executeSingleMigration(this, 6);
+        if (!result.success) {
+          throw new Error(`版本6迁移失败: ${result.error}`);
+        }
+      });
   }
 
 
 
-  /**
-   * 升级到数据库版本6：添加文件存储表、知识库相关表和快捷短语表
-   */
-  private async upgradeToV6(): Promise<void> {
-    console.log('开始升级到数据库版本6: 添加文件存储表、知识库相关表和快捷短语表...');
-    // 文件表、知识库表和快捷短语表会自动创建，无需特殊处理
-    console.log('数据库升级到版本6完成');
-  }
+  // 旧的迁移方法已移动到 src/shared/database/migrations/index.ts
+  // 现在使用统一的迁移管理器
 
-  /**
-   * 升级到数据库版本5：将消息直接存储在topics表中
-   * 实现最佳实例原版的存储方式
-   */
-  private async upgradeToV5(): Promise<void> {
-    console.log('开始升级到数据库版本5: 将消息直接存储在topics表中...');
 
-    try {
-      // 获取所有话题
-      const topics = await this.topics.toArray();
-      console.log(`找到 ${topics.length} 个话题需要迁移`);
-
-      // 逐个处理话题
-      for (const topic of topics) {
-        // 初始化messages数组（如果不存在）
-        if (!topic.messages) {
-          topic.messages = [];
-        }
-
-        // 从messageIds加载消息
-        if (topic.messageIds && Array.isArray(topic.messageIds)) {
-          console.log(`处理话题 ${topic.id} 的 ${topic.messageIds.length} 条消息`);
-
-          // 加载所有消息
-          for (const messageId of topic.messageIds) {
-            const message = await this.messages.get(messageId);
-            if (message) {
-              // 将消息添加到topic.messages数组
-              topic.messages.push(message);
-            }
-          }
-
-          // 保存更新后的话题
-          await this.topics.put(topic);
-          console.log(`话题 ${topic.id} 处理完成，共迁移 ${topic.messages.length} 条消息`);
-        } else {
-          console.log(`话题 ${topic.id} 没有messageIds数组，跳过`);
-        }
-      }
-
-      console.log('数据库迁移完成: 所有消息已存储在topics表中');
-    } catch (error) {
-      console.error('数据库升级失败:', error);
-      throw error;
-    }
-  }
-
-  private async upgradeToV4(): Promise<void> {
-    console.log('开始升级到数据库版本4: 规范化消息存储...');
-
-    try {
-      // 获取所有话题
-      const topics = await this.topics.toArray();
-      console.log(`找到 ${topics.length} 个话题需要迁移`);
-
-      // 逐个处理话题中的消息
-      for (const topic of topics) {
-        // 跳过没有messages数组的话题
-        if (!topic.messages || !Array.isArray(topic.messages) || topic.messages.length === 0) {
-          console.log(`话题 ${topic.id} 没有消息，跳过`);
-          // 初始化空的messageIds数组
-          topic.messageIds = [];
-          await this.topics.put(topic);
-          continue;
-        }
-
-        console.log(`开始处理话题 ${topic.id} 的 ${topic.messages.length} 条消息`);
-
-        // 初始化messageIds数组
-        topic.messageIds = [];
-
-        // 逐个处理消息
-        for (const message of topic.messages) {
-          if (!message.id) {
-            console.log('跳过无效消息（没有ID）');
-            continue;
-          }
-
-          // 将消息ID添加到messageIds数组
-          topic.messageIds.push(message.id);
-
-          // 保存消息到messages表
-          try {
-            await this.messages.put(message);
-            console.log(`保存消息 ${message.id} 到messages表成功`);
-
-            // 处理消息块
-            if (message.blocks && Array.isArray(message.blocks)) {
-              try {
-                // 检查blocks数组的第一个元素类型
-                const firstBlock = message.blocks[0];
-                if (firstBlock && typeof firstBlock === 'object' && 'type' in firstBlock) {
-                  // blocks是对象数组（旧格式）
-                  for (const block of message.blocks) {
-                    if (block && typeof block === 'object' && 'id' in block) {
-                      await this.message_blocks.put(block as any);
-                      console.log(`保存消息块 ${(block as any).id} 到message_blocks表成功`);
-                    }
-                  }
-                } else {
-                  // blocks是ID字符串数组（新格式），块已经在message_blocks表中
-                  console.log(`消息 ${message.id} 使用新格式，blocks是ID数组`);
-                }
-              } catch (blockError) {
-                console.error(`处理消息 ${message.id} 的块时出错:`, blockError);
-              }
-            }
-          } catch (error) {
-            console.error(`保存消息 ${message.id} 失败:`, error);
-          }
-        }
-
-        // 保存更新后的话题
-        await this.topics.put(topic);
-        console.log(`话题 ${topic.id} 处理完成`);
-      }
-
-      console.log('数据库迁移完成: 所有消息已规范化存储');
-    } catch (error) {
-      console.error('数据库升级失败:', error);
-      throw error;
-    }
-
-    console.log('数据库升级到版本4完成');
-  }
 
   public static getInstance(): DexieStorageService {
     if (!DexieStorageService.instance) {

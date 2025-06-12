@@ -24,10 +24,29 @@ const SystemPromptBubble: React.FC<SystemPromptBubbleProps> = React.memo(({ topi
   // 使用默认提示词替代旧的系统提示词
   const activeSystemPrompt = '';
 
-  // 获取系统提示词 - 优先显示助手的系统提示词，与编辑对话框保持一致
-  // 如果没有助手提示词，则显示话题提示词或默认提示词
-  const systemPrompt =
-    (assistant?.systemPrompt || topic?.prompt || activeSystemPrompt || '点击此处编辑系统提示词');
+  // 获取系统提示词 - 实现追加模式显示
+  // 逻辑：助手提示词 + 话题提示词追加（如果有的话）
+  const getDisplayPrompt = () => {
+    let displayPrompt = '';
+
+    if (assistant?.systemPrompt) {
+      displayPrompt = assistant.systemPrompt;
+
+      // 如果话题有追加提示词，则追加显示
+      if (topic?.prompt) {
+        displayPrompt = displayPrompt + '\n\n[追加] ' + topic.prompt;
+      }
+    } else if (topic?.prompt) {
+      // 如果助手没有提示词，则单独显示话题提示词
+      displayPrompt = topic.prompt;
+    } else {
+      displayPrompt = activeSystemPrompt || '点击此处编辑系统提示词';
+    }
+
+    return displayPrompt;
+  };
+
+  const systemPrompt = getDisplayPrompt();
 
   return (
     <Paper

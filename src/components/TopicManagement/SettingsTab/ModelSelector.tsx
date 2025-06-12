@@ -122,6 +122,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         value={value}
         onChange={handleModelChange}
         label="选择模型"
+        MenuProps={{
+          disableAutoFocus: true,
+          disableRestoreFocus: true
+        }}
         renderValue={(selected) => {
           const model = getModelById(selected as string);
           if (!model) {

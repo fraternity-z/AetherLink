@@ -5,9 +5,8 @@ import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import type { Message } from '../../shared/types/newMessage.ts';
 import { UserMessageStatus, AssistantMessageStatus } from '../../shared/types/newMessage.ts';
 import { dexieStorage } from '../../shared/services/DexieStorageService';
-// 开发环境日志工具 - 减少日志输出
+// 开发环境日志工具 - 只保留错误日志
 const isDev = process.env.NODE_ENV === 'development';
-const devLog = (..._args: any[]) => {}; // 禁用详细日志
 const devError = isDev ? console.error : () => {};
 
 interface MessageEditorProps {
@@ -24,72 +23,92 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
 
   // 🚀 简化：只在保存时需要查找主文本块，移除不必要的selector
 
-  // � 修复：确保消息块加载到Redux后再获取内容
+  // 🔧 重写：基于信息块系统架构的内容获取逻辑
   const loadInitialContent = useCallback(async () => {
-    devLog('[MessageEditor] 开始加载内容，消息ID:', message.id);
-    devLog('[MessageEditor] 消息blocks:', message.blocks);
-
-    // 方法1: 检查消息的content字段
+    // 方法1：检查消息是否有直接的 content 字段（编辑后的内容）
     if (typeof (message as any).content === 'string' && (message as any).content.trim()) {
-      const content = (message as any).content.trim();
-      devLog('[MessageEditor] 从消息content字段获取内容:', content.length);
-      return content;
+      return (message as any).content.trim();
     }
 
-    // 方法2: 确保消息块已加载到Redux，然后获取内容
-    if (message.blocks && message.blocks.length > 0) {
-      try {
-        // 首先从数据库加载所有消息块到Redux
-        const messageBlocks: any[] = [];
+    // 方法2：检查消息是否有 blocks 数组
+    if (!message.blocks || message.blocks.length === 0) {
+      return '';
+    }
+
+    // 方法3：从数据库批量加载所有消息块
+    try {
+      const messageBlocks = await dexieStorage.getMessageBlocksByMessageId(message.id);
+
+      if (messageBlocks.length === 0) {
+        // 如果批量获取失败，尝试逐个获取
+        const individualBlocks = [];
         for (const blockId of message.blocks) {
-          const block = await dexieStorage.getMessageBlock(blockId);
-          if (block) {
-            messageBlocks.push(block);
-            devLog(`[MessageEditor] 从数据库加载块 ${blockId}:`, {
-              type: block.type,
-              hasContent: !!(block as any).content,
-              contentLength: typeof (block as any).content === 'string' ? (block as any).content.length : 0
-            });
-          } else {
-            devLog(`[MessageEditor] 数据库中找不到块: ${blockId}`);
+          try {
+            const block = await dexieStorage.getMessageBlock(blockId);
+            if (block) {
+              individualBlocks.push(block);
+            }
+          } catch (error) {
+            devError('[MessageEditor] 获取块失败:', blockId, error);
           }
         }
-
-        // 将块加载到Redux
-        if (messageBlocks.length > 0) {
-          dispatch({ type: 'messageBlocks/upsertMany', payload: messageBlocks });
-          devLog('[MessageEditor] 已将块加载到Redux，数量:', messageBlocks.length);
-        }
-
-        // 现在从加载的块中获取主文本内容
-        for (const block of messageBlocks) {
-          if ((block.type === 'main_text' || block.type === 'unknown') && (block as any).content) {
-            const content = (block as any).content;
-            devLog('[MessageEditor] 找到主文本内容，长度:', content.length);
-            return content;
-          }
-        }
-      } catch (error) {
-        devError('[MessageEditor] 加载消息块失败:', error);
+        messageBlocks.push(...individualBlocks);
       }
-    }
 
-    devLog('[MessageEditor] 未找到任何内容');
-    return '';
-  }, [message, dispatch]);
+      // 方法4：查找主文本块或未知类型块
+      const textBlocks = messageBlocks.filter(block =>
+        block.type === 'main_text' ||
+        block.type === 'unknown'
+      );
+
+      for (const block of textBlocks) {
+        const blockContent = (block as any).content;
+        if (blockContent && typeof blockContent === 'string' && blockContent.trim()) {
+          return blockContent.trim();
+        }
+      }
+
+      // 方法5：如果没有找到主文本块，检查所有块是否有 content 字段
+      for (const block of messageBlocks) {
+        const blockContent = (block as any).content;
+        if (blockContent && typeof blockContent === 'string' && blockContent.trim()) {
+          return blockContent.trim();
+        }
+      }
+
+      return '';
+
+    } catch (error) {
+      devError('[MessageEditor] 加载消息块时出错:', error);
+      return '';
+    }
+  }, [message]);
 
   const [editedContent, setEditedContent] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
   const isUser = message.role === 'user';
 
-  // � 修复：异步加载内容的逻辑
+  // 🚀 改进：异步加载内容的逻辑，添加清理函数防止内存泄漏
   useEffect(() => {
+    let isMounted = true; // 防止组件卸载后设置状态
+
     if (open && !isInitialized) {
       const initContent = async () => {
-        const content = await loadInitialContent();
-        devLog('[MessageEditor] 初始化编辑内容:', content.substring(0, 50));
-        setEditedContent(content);
-        setIsInitialized(true);
+        try {
+          const content = await loadInitialContent();
+
+          // 只有在组件仍然挂载时才设置状态
+          if (isMounted) {
+            setEditedContent(content);
+            setIsInitialized(true);
+          }
+        } catch (error) {
+          devError('[MessageEditor] 初始化内容失败:', error);
+          if (isMounted) {
+            setEditedContent('');
+            setIsInitialized(true); // 即使失败也标记为已初始化，避免无限重试
+          }
+        }
       };
       initContent();
     } else if (!open) {
@@ -97,6 +116,11 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
       setIsInitialized(false);
       setEditedContent('');
     }
+
+    // 清理函数
+    return () => {
+      isMounted = false;
+    };
   }, [open, isInitialized, loadInitialContent]);
 
   // 🚀 性能优化：保存逻辑 - 减少数据库调用和日志输出
@@ -105,13 +129,6 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
     const editedText = typeof editedContent === 'string'
       ? editedContent.trim()
       : '';
-
-    devLog('[MessageEditor] 保存编辑内容:', {
-      messageId: message.id,
-      topicId,
-      editedTextLength: editedText.length,
-      hasBlocks: message.blocks?.length > 0
-    });
 
     if (!topicId || !editedText) {
       devError('[MessageEditor] 保存失败: 缺少topicId或内容为空');
@@ -131,7 +148,7 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
         }
       }
 
-      devLog('[MessageEditor] 找到主文本块:', mainTextBlockId);
+
 
       // � 性能优化：批量更新数据库和Redux状态
       const updatedAt = new Date().toISOString();
@@ -164,7 +181,7 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
           }
         });
 
-        devLog('[MessageEditor] 批量数据库更新完成');
+
       } catch (dbError) {
         devError('[MessageEditor] 数据库更新失败:', dbError);
         throw dbError; // 重新抛出错误以便后续处理
@@ -189,7 +206,7 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
         changes: messageUpdates
       }));
 
-      devLog('[MessageEditor] Redux状态更新完成');
+
 
       // � 性能优化：直接关闭Dialog，移除不必要的延迟和事件
       // Redux状态更新是同步的，不需要额外的延迟或全局事件
@@ -203,7 +220,6 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
 
   // 🚀 性能优化：关闭处理 - 使用useCallback
   const handleClose = useCallback(() => {
-    devLog('[MessageEditor] 关闭编辑器');
     onClose();
   }, [onClose]);
 

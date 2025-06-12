@@ -314,6 +314,10 @@ const WebSearchSettings: React.FC = () => {
               onChange={handleProviderChange}
               input={<OutlinedInput label="搜索服务商" />}
               disabled={!webSearchSettings.enabled}
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="bing-free">🆓 Bing 免费搜索 (推荐)</MenuItem>
               <MenuItem value="tavily">💎 Tavily (付费)</MenuItem>
@@ -499,6 +503,10 @@ const WebSearchSettings: React.FC = () => {
               onChange={handleSearchModeChange}
               input={<OutlinedInput label="搜索模式" />}
               disabled={!webSearchSettings.enabled}
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="auto">自动搜索 (AI 自动判断何时搜索)</MenuItem>
               <MenuItem value="manual">手动搜索 (点击搜索按钮启动)</MenuItem>
@@ -631,6 +639,10 @@ const WebSearchSettings: React.FC = () => {
                 onChange={handleSearchDepthChange}
                 input={<OutlinedInput label="搜索深度" />}
                 disabled={!webSearchSettings.enabled || webSearchSettings.enableSmartSearch}
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableRestoreFocus: true
+                }}
               >
                 <MenuItem value="basic">基础搜索 (更快)</MenuItem>
                 <MenuItem value="advanced">高级搜索 (更准确，推荐)</MenuItem>
@@ -692,6 +704,10 @@ const WebSearchSettings: React.FC = () => {
                 onChange={handleTimeRangeChange}
                 input={<OutlinedInput label="时间范围过滤" />}
                 disabled={!webSearchSettings.enabled}
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableRestoreFocus: true
+                }}
               >
                 <MenuItem value="day">最近一天</MenuItem>
                 <MenuItem value="week">最近一周</MenuItem>

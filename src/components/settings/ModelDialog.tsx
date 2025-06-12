@@ -210,6 +210,10 @@ const ModelDialog: React.FC<ModelDialogProps> = ({
               value={selectedPreset?.id || ''}
               onChange={handlePresetChange}
               label="预设模型"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="">自定义模型</MenuItem>
               {presetModels.map((preset) => (

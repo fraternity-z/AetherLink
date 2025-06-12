@@ -10,6 +10,7 @@ interface SettingsState {
   theme: 'light' | 'dark' | 'system';
   themeStyle: 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk'; // 新增主题风格
   fontSize: number;
+  fontFamily: string; // 新增字体家族设置
   language: string;
   sendWithEnter: boolean;
   enableNotifications: boolean;
@@ -101,6 +102,17 @@ interface SettingsState {
   // 控制信息气泡上小功能气泡的显示
   showMicroBubbles?: boolean; // 是否显示消息气泡上的小功能气泡（播放和版本切换）
 
+  // 消息操作显示模式
+  messageActionMode?: 'bubbles' | 'toolbar'; // 消息操作显示模式：气泡模式或工具栏模式
+
+  // 自定义气泡颜色设置
+  customBubbleColors?: {
+    userBubbleColor?: string; // 用户气泡背景色
+    userTextColor?: string; // 用户气泡字体颜色
+    aiBubbleColor?: string; // AI气泡背景色
+    aiTextColor?: string; // AI气泡字体颜色
+  };
+
   // 系统提示词变量注入设置
   systemPromptVariables?: {
     enableTimeVariable?: boolean;
@@ -125,6 +137,7 @@ const getInitialState = (): SettingsState => {
     theme: 'system' as 'light' | 'dark' | 'system',
     themeStyle: 'default' as 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk',
     fontSize: 16,
+    fontFamily: 'system', // 默认使用系统字体
     language: 'zh-CN',
     sendWithEnter: true,
     enableNotifications: true,
@@ -199,6 +212,17 @@ const getInitialState = (): SettingsState => {
 
     // 小功能气泡默认设置
     showMicroBubbles: true, // 默认显示消息气泡上的小功能气泡
+
+    // 消息操作显示模式默认设置
+    messageActionMode: 'bubbles', // 默认使用气泡模式
+
+    // 自定义气泡颜色默认设置
+    customBubbleColors: {
+      userBubbleColor: '', // 空字符串表示使用默认颜色
+      userTextColor: '',
+      aiBubbleColor: '',
+      aiTextColor: ''
+    },
 
     // 系统提示词变量注入默认设置
     systemPromptVariables: {
@@ -341,6 +365,11 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
         };
       }
 
+      // 如果没有字体家族设置，使用默认值
+      if (!savedSettings.fontFamily) {
+        savedSettings.fontFamily = 'system';
+      }
+
       // 如果没有长文本粘贴为文件设置，使用默认值
       if (savedSettings.pasteLongTextAsFile === undefined) {
         savedSettings.pasteLongTextAsFile = false;
@@ -390,6 +419,9 @@ const settingsSlice = createSlice({
     },
     setFontSize: (state, action: PayloadAction<number>) => {
       state.fontSize = action.payload;
+    },
+    setFontFamily: (state, action: PayloadAction<string>) => {
+      state.fontFamily = action.payload;
     },
     setLanguage: (state, action: PayloadAction<string>) => {
       state.language = action.payload;
@@ -674,6 +706,7 @@ export const {
   setTheme,
   setThemeStyle,
   setFontSize,
+  setFontFamily,
   setLanguage,
   setSendWithEnter,
   setEnableNotifications,

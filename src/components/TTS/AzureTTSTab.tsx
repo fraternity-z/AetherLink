@@ -217,6 +217,10 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             value={settings.region}
             onChange={(e) => handleRegionChange(e.target.value)}
             label="服务区域"
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
           >
             {AZURE_REGIONS.map((region) => (
               <MenuItem key={region.value} value={region.value}>
@@ -235,6 +239,10 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             value={settings.voiceName}
             onChange={(e) => handleVoiceChange(e.target.value)}
             label="语音选择"
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
           >
             {AZURE_VOICES.map((voice) => (
               <MenuItem key={voice.value} value={voice.value}>

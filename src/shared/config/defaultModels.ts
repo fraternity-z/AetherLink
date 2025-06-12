@@ -48,6 +48,7 @@ export interface ModelProvider {
   providerType?: string;
   isSystem?: boolean; // 标记是否为系统供应商
   extraHeaders?: Record<string, string>; // 额外的请求头
+  customModelEndpoint?: string; // 自定义模型端点URL
 }
 
 // 默认模型供应商配置

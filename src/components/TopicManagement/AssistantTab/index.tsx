@@ -185,6 +185,14 @@ export default function AssistantTab({
                   size="small"
                   startIcon={<FolderPlus size={16} />}
                   onClick={handleOpenGroupDialog}
+                  sx={{
+                    color: 'text.primary',
+                    borderColor: 'text.secondary',
+                    '&:hover': {
+                      borderColor: 'text.primary',
+                      backgroundColor: 'action.hover'
+                    }
+                  }}
                 >
                   创建分组
                 </Button>
@@ -195,6 +203,14 @@ export default function AssistantTab({
                   size="small"
                   startIcon={<Plus size={16} />}
                   onClick={handleOpenAssistantDialog}
+                  sx={{
+                    color: 'text.primary',
+                    borderColor: 'text.secondary',
+                    '&:hover': {
+                      borderColor: 'text.primary',
+                      backgroundColor: 'action.hover'
+                    }
+                  }}
                 >
                   添加助手
                 </Button>

@@ -75,14 +75,19 @@ export const ImageUploadService = {
           input.type = 'file';
           input.accept = 'image/*';
           input.multiple = true;
-          
+
+          let isResolved = false;
+
           input.onchange = async (event) => {
+            if (isResolved) return;
+            isResolved = true;
+
             const files = (event.target as HTMLInputElement).files;
             if (!files || files.length === 0) {
               resolve([]);
               return;
             }
-            
+
             try {
               const imageContents = await Promise.all(
                 Array.from(files).map(file => this.processFile(file))
@@ -92,7 +97,26 @@ export const ImageUploadService = {
               reject(error);
             }
           };
-          
+
+          // 处理用户取消选择的情况
+          input.oncancel = () => {
+            if (isResolved) return;
+            isResolved = true;
+            resolve([]);
+          };
+
+          // 添加焦点失去事件处理，用于检测用户取消
+          const handleWindowFocus = () => {
+            setTimeout(() => {
+              if (!isResolved && (!input.files || input.files.length === 0)) {
+                isResolved = true;
+                resolve([]);
+              }
+              window.removeEventListener('focus', handleWindowFocus);
+            }, 300); // 延迟检查，给文件选择器时间完成
+          };
+
+          window.addEventListener('focus', handleWindowFocus);
           input.click();
         });
       }

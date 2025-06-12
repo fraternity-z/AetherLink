@@ -153,6 +153,11 @@ const ModelProviderSettings: React.FC = () => {
   const [newHeaderValue, setNewHeaderValue] = useState('');
   const [openHeadersDialog, setOpenHeadersDialog] = useState(false);
 
+  // 自定义模型端点相关状态
+  const [customModelEndpoint, setCustomModelEndpoint] = useState('');
+  const [openCustomEndpointDialog, setOpenCustomEndpointDialog] = useState(false);
+  const [customEndpointError, setCustomEndpointError] = useState('');
+
   // 多 Key 管理相关状态
   const [currentTab, setCurrentTab] = useState(0);
   const [multiKeyEnabled, setMultiKeyEnabled] = useState(false);
@@ -329,6 +334,42 @@ const ModelProviderSettings: React.FC = () => {
       newHeaders[newKey] = newValue;
       return newHeaders;
     });
+  };
+
+  // 自定义模型端点相关函数
+  const handleOpenCustomEndpointDialog = () => {
+    setCustomModelEndpoint('');
+    setCustomEndpointError('');
+    setOpenCustomEndpointDialog(true);
+  };
+
+  const handleSaveCustomEndpoint = () => {
+    const endpoint = customModelEndpoint.trim();
+
+    // 验证URL是否完整
+    if (!endpoint) {
+      setCustomEndpointError('请输入端点URL');
+      return;
+    }
+
+    if (!isValidUrl(endpoint)) {
+      setCustomEndpointError('请输入有效的完整URL');
+      return;
+    }
+
+    // 保存自定义端点并打开模型管理对话框
+    if (provider) {
+      // 临时保存自定义端点到provider中
+      dispatch(updateProvider({
+        id: provider.id,
+        updates: {
+          customModelEndpoint: endpoint
+        }
+      }));
+
+      setOpenCustomEndpointDialog(false);
+      setOpenModelManagementDialog(true);
+    }
   };
 
   const handleAddModel = () => {
@@ -1051,23 +1092,38 @@ const ModelProviderSettings: React.FC = () => {
                 >
                   点击✓测试单个模型
                 </Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<Zap size={16} />}
-                  onClick={handleOpenModelManagement}
-                  sx={{
-                    mr: 2,
-                    borderRadius: 2,
-                    borderColor: (theme) => alpha(theme.palette.info.main, 0.5),
-                    color: 'info.main',
-                    '&:hover': {
-                      borderColor: 'info.main',
-                      bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
-                    },
-                  }}
-                >
-                  自动获取
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Zap size={16} />}
+                    onClick={handleOpenModelManagement}
+                    sx={{
+                      borderRadius: 2,
+                      borderColor: (theme) => alpha(theme.palette.info.main, 0.5),
+                      color: 'info.main',
+                      '&:hover': {
+                        borderColor: 'info.main',
+                        bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
+                      },
+                    }}
+                  >
+                    自动获取
+                  </Button>
+                  <IconButton
+                    size="small"
+                    onClick={handleOpenCustomEndpointDialog}
+                    sx={{
+                      ml: 0.5,
+                      color: 'info.main',
+                      '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
+                      },
+                    }}
+                    title="配置自定义模型端点"
+                  >
+                    <Settings size={16} />
+                  </IconButton>
+                </Box>
                 <Button
                   startIcon={<Plus size={16} />}
                   onClick={() => setOpenAddModelDialog(true)}
@@ -1575,6 +1631,65 @@ const ModelProviderSettings: React.FC = () => {
           <Button onClick={() => setOpenHeadersDialog(false)}>取消</Button>
           <Button
             onClick={() => setOpenHeadersDialog(false)}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+              '&:hover': {
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+              },
+              borderRadius: 2,
+            }}
+          >
+            确定
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 自定义模型端点配置对话框 */}
+      <Dialog
+        open={openCustomEndpointDialog}
+        onClose={() => setOpenCustomEndpointDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{
+          fontWeight: 600,
+          backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
+          backgroundClip: 'text',
+          color: 'transparent',
+        }}>
+          配置自定义模型端点
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            输入完整的模型端点URL，系统将同时从默认端点和自定义端点获取模型列表并合并。
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
+            示例：https://api.example.com/v1/models
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="自定义端点URL"
+            placeholder="https://api.example.com/v1/models"
+            type="url"
+            fullWidth
+            variant="outlined"
+            value={customModelEndpoint}
+            onChange={(e) => {
+              setCustomModelEndpoint(e.target.value);
+              setCustomEndpointError('');
+            }}
+            error={!!customEndpointError}
+            helperText={customEndpointError || '请输入完整的URL，包括协议（http://或https://）'}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpenCustomEndpointDialog(false)}>取消</Button>
+          <Button
+            onClick={handleSaveCustomEndpoint}
+            disabled={!customModelEndpoint.trim()}
             sx={{
               bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
               color: 'primary.main',

@@ -9,6 +9,8 @@ import {
   MenuItem,
   IconButton,
   FormHelperText,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 
@@ -18,6 +20,7 @@ export interface SiliconFlowTTSSettings {
   showApiKey: boolean;
   selectedModel: string;
   selectedVoice: string;
+  useStream: boolean; // 是否使用流式输出
 }
 
 // 组件Props接口
@@ -28,18 +31,22 @@ interface SiliconFlowTTSTabProps {
 
 // 硅基流动TTS模型选项
 const SILICONFLOW_MODELS = [
-  { value: 'FishSpeech', label: 'FishSpeech - 高质量语音合成' },
-  { value: 'ChatTTS', label: 'ChatTTS - 对话式语音' },
+  { value: 'FunAudioLLM/CosyVoice2-0.5B', label: 'CosyVoice2-0.5B - 多语言语音合成' },
 ];
 
 // 硅基流动TTS语音选项
 const SILICONFLOW_VOICES = {
-  FishSpeech: [
-    { value: 'fishaudio_fish_speech_1', label: '标准语音' },
-    { value: 'fishaudio_fish_speech_1_4', label: '增强语音' },
-  ],
-  ChatTTS: [
-    { value: 'chattts', label: 'ChatTTS标准' },
+  'FunAudioLLM/CosyVoice2-0.5B': [
+    // 男生音色
+    { value: 'alex', label: 'Alex - 沉稳男声' },
+    { value: 'benjamin', label: 'Benjamin - 低沉男声' },
+    { value: 'charles', label: 'Charles - 磁性男声' },
+    { value: 'david', label: 'David - 欢快男声' },
+    // 女生音色
+    { value: 'anna', label: 'Anna - 沉稳女声' },
+    { value: 'bella', label: 'Bella - 激情女声' },
+    { value: 'claire', label: 'Claire - 温柔女声' },
+    { value: 'diana', label: 'Diana - 欢快女声' },
   ],
 };
 
@@ -71,6 +78,10 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
 
   const handleVoiceChange = useCallback((value: string) => {
     onSettingsChange({ ...settings, selectedVoice: value });
+  }, [settings, onSettingsChange]);
+
+  const handleStreamToggle = useCallback((checked: boolean) => {
+    onSettingsChange({ ...settings, useStream: checked });
   }, [settings, onSettingsChange]);
 
   // 获取当前模型的语音选项
@@ -178,6 +189,30 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
             }
           </FormHelperText>
         </FormControl>
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={settings.useStream}
+              onChange={(e) => handleStreamToggle(e.target.checked)}
+              color="primary"
+              size={window.innerWidth < 600 ? "small" : "medium"}
+            />
+          }
+          label="启用流式输出"
+          sx={{
+            '& .MuiFormControlLabel-label': {
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              fontWeight: 500,
+            },
+            '& .MuiSwitch-root': {
+              ml: { xs: 1, sm: 2 },
+            },
+          }}
+        />
+        <FormHelperText sx={{ mt: -1, ml: 0 }}>
+          流式输出可以实现更快的语音响应，音频将边生成边播放
+        </FormHelperText>
       </Stack>
     </>
   );

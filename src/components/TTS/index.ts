@@ -33,8 +33,8 @@ export const TTS_SERVICES: TTSTabConfig[] = [
     id: 'siliconflow',
     label: '硅基流动 TTS',
     component: SiliconFlowTTSTab,
-    description: '国产化TTS服务，支持多种模型',
-    features: ['FishSpeech', 'ChatTTS', '高性价比'],
+    description: '国产化TTS服务，支持多语言语音合成',
+    features: ['CosyVoice2-0.5B', '多语言支持', '情感控制', '高性价比'],
   },
   {
     id: 'openai',

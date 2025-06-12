@@ -41,7 +41,8 @@ export default function SidebarTabsContent() {
     mcpMode,
     toolsEnabled,
     handleMCPModeChange,
-    handleToolsToggle
+    handleToolsToggle,
+    refreshTopics
   } = useSidebarContext();
 
   // 获取主题和主题工具
@@ -62,6 +63,17 @@ export default function SidebarTabsContent() {
     if (newValue === 1) { // 切换到话题标签页
       console.log('[SidebarTabs] 切换到话题标签页，话题详情:',
         assistantWithTopics?.topics?.map((t) => ({id: t.id, name: t.name})) || []);
+
+      // 切换到话题标签页时刷新话题数据
+      if (refreshTopics) {
+        console.log('[SidebarTabs] 刷新话题数据');
+        refreshTopics();
+      }
+    }
+
+    if (newValue === 0) { // 切换到助手标签页
+      console.log('[SidebarTabs] 切换到助手标签页');
+      // 可以在这里添加助手数据刷新逻辑
     }
 
     setValue(newValue);

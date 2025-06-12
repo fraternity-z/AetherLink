@@ -93,13 +93,12 @@ const AboutPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="sm" sx={{ 
+      <Container maxWidth="sm" sx={{
         py: 4,
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        overflowY: 'auto',
       }}>
         <Fade in timeout={800}>
           <Paper
@@ -284,9 +283,71 @@ const AboutPage: React.FC = () => {
           50% { filter: drop-shadow(0 0 8px #a18cd1); }
           100% { filter: drop-shadow(0 0 0 #a18cd1); }
         }
+
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: rgba(147, 51, 234, 0.1);
+          border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, #a18cd1, #9333ea);
+          border-radius: 4px;
+          transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, #9333ea, #7c3aed);
+          transform: scale(1.1);
+        }
+
+        /* 移动端滚动条优化 */
+        @media (max-width: 768px) {
+          ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+          }
+
+          ::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.6);
+            border-radius: 3px;
+          }
+
+          ::-webkit-scrollbar-track {
+            background: rgba(147, 51, 234, 0.05);
+            border-radius: 3px;
+          }
+        }
+
         /* 增强移动端滚动体验 */
         html, body {
           -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+        }
+
+        /* 确保滚动容器在移动端正常工作 */
+        @media (max-width: 768px) {
+          .MuiBox-root {
+            overflow-x: hidden;
+          }
+        }
+
+        /* 小屏设备特殊优化 */
+        @media (max-width: 480px) {
+          ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+          }
+
+          ::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.8);
+            border-radius: 2px;
+          }
         }
       `}</style>
     </Box>

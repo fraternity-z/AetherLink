@@ -170,7 +170,17 @@ const assistantsSlice = createSlice({
           });
         }
 
-        console.log(`[assistantsSlice] 更新助手: ${action.payload.id} (${action.payload.name})`);
+        // 记录话题数变化
+        const oldTopicCount = oldAssistant.topics?.length || oldAssistant.topicIds?.length || 0;
+        const newTopicCount = action.payload.topics?.length || action.payload.topicIds?.length || 0;
+        if (oldTopicCount !== newTopicCount) {
+          console.log(`[assistantsSlice] 助手话题数变化: ${action.payload.id} (${action.payload.name})`, {
+            oldCount: oldTopicCount,
+            newCount: newTopicCount
+          });
+        }
+
+        console.log(`[assistantsSlice] 更新助手: ${action.payload.id} (${action.payload.name}), 话题数: ${newTopicCount}`);
       } else {
         console.warn(`[assistantsSlice] 未找到要更新的助手: ${action.payload.id}`);
       }

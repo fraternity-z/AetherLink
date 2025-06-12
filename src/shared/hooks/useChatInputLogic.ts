@@ -114,16 +114,59 @@ export const useChatInputLogic = ({
     // 的逻辑是：用户消息先发送，然后在AI处理前搜索知识库
     // 知识库搜索应该在消息处理阶段进行，而不是在发送阶段
 
-    // 创建正确的图片格式
-    const formattedImages: SiliconFlowImageFormat[] = [...images, ...files.filter(f => f.mimeType.startsWith('image/'))].map(img => ({
-      type: 'image_url',
-      image_url: {
-        url: img.base64Data || img.url
-      }
-    }));
+    // 合并images数组和files中的图片文件
+    const allImages = [
+      ...images,
+      ...files.filter(f => f.mimeType.startsWith('image/')).map(file => ({
+        base64Data: file.base64Data,
+        url: file.url || '',
+        width: file.width,
+        height: file.height
+      } as ImageContent))
+    ];
+
+    // 创建正确的图片格式，避免重复处理
+    const formattedImages: SiliconFlowImageFormat[] = await Promise.all(
+      allImages.map(async (img) => {
+        let imageUrl = img.base64Data || img.url;
+
+        // 如果是图片引用格式，需要从数据库加载实际图片
+        if (img.url && img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/)) {
+          const refMatch = img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/);
+          if (refMatch && refMatch[1]) {
+            try {
+              const imageId = refMatch[1];
+              const { dexieStorage } = await import('../services/DexieStorageService');
+              const blob = await dexieStorage.getImageBlob(imageId);
+              if (blob) {
+                // 将Blob转换为base64
+                const base64 = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+                });
+                imageUrl = base64;
+              }
+            } catch (error) {
+              console.error('加载图片引用失败:', error);
+            }
+          }
+        }
+
+        return {
+          type: 'image_url',
+          image_url: {
+            url: imageUrl
+          }
+        } as SiliconFlowImageFormat;
+      })
+    );
+
+    // 过滤掉图片文件，避免重复发送
+    const nonImageFiles = files.filter(f => !f.mimeType.startsWith('image/'));
 
     // 调用父组件的回调
-    onSendMessage(processedMessage, formattedImages.length > 0 ? formattedImages : undefined, toolsEnabled, files);
+    onSendMessage(processedMessage, formattedImages.length > 0 ? formattedImages : undefined, toolsEnabled, nonImageFiles);
 
     // 重置状态
     setMessage('');

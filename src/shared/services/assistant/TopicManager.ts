@@ -175,48 +175,100 @@ export class TopicManager {
    */
   static async clearAssistantTopics(assistantId: string): Promise<boolean> {
     try {
-      console.log(`尝试清空助手 ${assistantId} 的话题`);
+      console.log(`[TopicManager] 开始清空助手 ${assistantId} 的所有话题`);
 
       // 获取助手 - 使用dexieStorage替代dataService
       const assistant = await dexieStorage.getAssistant(assistantId);
       if (!assistant) {
-        console.error(`助手 ${assistantId} 不存在`);
+        console.error(`[TopicManager] 助手 ${assistantId} 不存在`);
         return false;
       }
 
-      // 获取原有话题ID列表以备通知
+      // 获取原有话题ID列表以备删除和通知
       const originalTopicIds = Array.isArray(assistant.topicIds) ? assistant.topicIds : [];
+      console.log(`[TopicManager] 助手 ${assistant.name} 有 ${originalTopicIds.length} 个话题需要删除:`, originalTopicIds);
 
-      // 更新助手
-      const updatedAssistant = {
-        ...assistant,
-        topicIds: []
-      };
-
-      // 保存更新后的助手
-      const success = await AssistantManager.updateAssistant(updatedAssistant);
-
-      if (success) {
-        console.log(`成功清空助手 ${assistantId} 的话题`);
-
-        // 发送事件通知其他组件更新
-        if (originalTopicIds.length > 0) {
-          const event = new CustomEvent('topicsCleared', {
-            detail: {
-              assistantId,
-              clearedTopicIds: originalTopicIds
-            }
-          });
-          window.dispatchEvent(event);
-          console.log('已派发topicsCleared事件', { assistantId, originalTopicIds });
-        }
-      } else {
-        console.error(`无法清空助手 ${assistantId} 的话题`);
+      if (originalTopicIds.length === 0) {
+        console.log(`[TopicManager] 助手 ${assistant.name} 没有话题，无需清空`);
+        return true;
       }
 
-      return success;
+      // 使用事务确保数据一致性
+      const success = await dexieStorage.transaction('rw', [
+        dexieStorage.topics,
+        dexieStorage.messages,
+        dexieStorage.assistants
+      ], async () => {
+        // 1. 删除所有相关的话题和消息
+        for (const topicId of originalTopicIds) {
+          try {
+            console.log(`[TopicManager] 正在删除话题 ${topicId}`);
+
+            // 获取话题信息
+            const topic = await dexieStorage.getTopic(topicId);
+            if (topic) {
+              // 删除话题相关的所有消息
+              if (topic.messageIds && topic.messageIds.length > 0) {
+                console.log(`[TopicManager] 删除话题 ${topicId} 的 ${topic.messageIds.length} 条消息`);
+                for (const messageId of topic.messageIds) {
+                  await dexieStorage.deleteMessage(messageId);
+                }
+              }
+
+              // 如果话题有内嵌的messages数组，也要清理
+              if (topic.messages && topic.messages.length > 0) {
+                console.log(`[TopicManager] 话题 ${topicId} 有 ${topic.messages.length} 条内嵌消息`);
+                for (const message of topic.messages) {
+                  if (message.id) {
+                    await dexieStorage.deleteMessage(message.id);
+                  }
+                }
+              }
+            }
+
+            // 删除话题本身
+            await dexieStorage.deleteTopic(topicId);
+            console.log(`[TopicManager] 已删除话题 ${topicId}`);
+          } catch (error) {
+            console.error(`[TopicManager] 删除话题 ${topicId} 时出错:`, error);
+            // 继续删除其他话题，不中断整个过程
+          }
+        }
+
+        // 2. 更新助手，清空topicIds和topics数组
+        const updatedAssistant = {
+          ...assistant,
+          topicIds: [],
+          topics: [] // 也清空topics数组
+        };
+
+        // 保存更新后的助手
+        await dexieStorage.saveAssistant(updatedAssistant);
+        console.log(`[TopicManager] 已更新助手 ${assistant.name}，清空话题引用`);
+
+        return true;
+      });
+
+      if (success) {
+        console.log(`[TopicManager] 成功清空助手 ${assistantId} 的所有话题，共删除 ${originalTopicIds.length} 个话题`);
+
+        // 发送事件通知其他组件更新
+        const event = new CustomEvent('topicsCleared', {
+          detail: {
+            assistantId,
+            clearedTopicIds: originalTopicIds
+          }
+        });
+        window.dispatchEvent(event);
+        console.log('[TopicManager] 已派发topicsCleared事件', { assistantId, originalTopicIds });
+
+        return true;
+      } else {
+        console.error(`[TopicManager] 清空助手 ${assistantId} 的话题失败`);
+        return false;
+      }
     } catch (error) {
-      console.error(`清空助手话题失败: ${error}`);
+      console.error(`[TopicManager] 清空助手话题失败:`, error);
       return false;
     }
   }

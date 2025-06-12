@@ -267,6 +267,8 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           }
         }}
         MenuProps={{
+          disableAutoFocus: true,
+          disableRestoreFocus: true,
           PaperProps: {
             sx: {
               maxHeight: '70vh', // 增加最大高度到视口高度的70%

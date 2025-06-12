@@ -11,10 +11,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Tooltip
 } from '@mui/material';
@@ -29,12 +25,12 @@ import {
   Trash2,
   Edit,
   Save,
-  Send,
   Plus,
   ChevronLeft,
   ChevronRight,
   FileText
 } from 'lucide-react';
+import TokenDisplay from '../chat/TokenDisplay';
 import type { Message, MessageVersion } from '../../shared/types/newMessage.ts';
 import MessageEditor from './MessageEditor';
 import ExportMenu from './ExportMenu';
@@ -58,6 +54,7 @@ interface MessageActionsProps {
   onSwitchVersion?: (messageId: string) => void;
   onResend?: (messageId: string) => void; // 新增重新发送回调
   renderMode?: 'full' | 'menuOnly' | 'toolbar'; // 新增渲染模式参数
+  customTextColor?: string; // 自定义文字颜色
 }
 
 // 优化：将样式常量移到组件外部，避免每次渲染重新计算
@@ -68,11 +65,16 @@ const getThemeColors = (isDark: boolean) => ({
 });
 
 // 优化：将重复的样式对象移到组件外部
-const toolbarIconButtonStyle = {
+const getToolbarIconButtonStyle = (customColor?: string) => ({
   padding: 0.5,
-  opacity: 0.7,
-  '&:hover': { opacity: 1 }
-};
+  opacity: 0.8,
+  color: customColor || 'text.primary',
+  '&:hover': {
+    opacity: 1,
+    transform: 'scale(1.1)'
+  },
+  transition: 'all 0.2s ease-in-out'
+});
 
 const menuButtonStyle = (isDark: boolean) => ({
   padding: 0.5,
@@ -92,9 +94,12 @@ const menuButtonStyle = (isDark: boolean) => ({
 });
 
 // 删除按钮的特殊样式
-const deleteButtonStyle = (errorColor: string) => ({
-  ...toolbarIconButtonStyle,
-  color: errorColor
+const getDeleteButtonStyle = (isClicked: boolean, errorColor: string, customColor?: string) => ({
+  ...getToolbarIconButtonStyle(customColor),
+  color: isClicked ? errorColor : (customColor || 'text.primary'),
+  opacity: isClicked ? 1 : 0.8,
+  transform: isClicked ? 'scale(1.1)' : 'scale(1)',
+  transition: 'all 0.2s ease-in-out'
 });
 
 const MessageActions: React.FC<MessageActionsProps> = React.memo(({
@@ -105,10 +110,14 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   onDelete,
   onSwitchVersion,
   onResend,
-  renderMode = 'full' // 默认为完整渲染模式
+  renderMode = 'full', // 默认为完整渲染模式
+  customTextColor
 }) => {
   const isUser = message.role === 'user';
   const theme = useTheme();
+
+  // 获取工具栏按钮样式
+  const toolbarIconButtonStyle = getToolbarIconButtonStyle(customTextColor);
 
   // 获取版本切换样式设置
   const settings = useAppSelector((state) => state.settings);
@@ -138,13 +147,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
   const exportMenuOpen = Boolean(exportAnchorEl);
 
-  // 确认对话框状态
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
-    title: string;
-    content: string;
-    onConfirm: () => void;
-  }>({ title: '', content: '', onConfirm: () => {} });
+  // 删除按钮状态（两次点击确认）
+  const [deleteButtonClicked, setDeleteButtonClicked] = useState(false);
 
   // TTS播放状态
   const [isPlaying, setIsPlaying] = useState(false);
@@ -261,21 +265,24 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [handleMenuClose]);
 
-  // 删除消息 - 添加确认对话框
+  // 删除消息 - 两次点击确认逻辑
   const handleDeleteClick = useCallback(() => {
-    setConfirmDialogConfig({
-      title: '删除消息',
-      content: '确定要删除此消息吗？此操作不可撤销。',
-      onConfirm: () => {
-        if (onDelete) {
-          onDelete(message.id);
-        }
-        setConfirmDialogOpen(false);
+    if (!deleteButtonClicked) {
+      // 第一次点击：变红，准备删除
+      setDeleteButtonClicked(true);
+      // 3秒后自动重置状态
+      setTimeout(() => {
+        setDeleteButtonClicked(false);
+      }, 3000);
+    } else {
+      // 第二次点击：执行删除
+      if (onDelete) {
+        onDelete(message.id);
       }
-    });
-    setConfirmDialogOpen(true);
+      setDeleteButtonClicked(false);
+    }
     handleMenuClose();
-  }, [onDelete, message.id]);
+  }, [deleteButtonClicked, onDelete, message.id]);
 
   // 重新生成消息 - 优化：使用useCallback
   const handleRegenerateClick = useCallback(() => {
@@ -726,17 +733,26 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 
       {/* 工具栏模式 - 显示操作按钮 */}
       {renderMode === 'toolbar' && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {/* 复制按钮 */}
-          <Tooltip title="复制内容">
-            <IconButton
-              size="small"
-              onClick={handleCopyContent}
-              sx={toolbarIconButtonStyle}
-            >
-              <Copy size={16} />
-            </IconButton>
-          </Tooltip>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%' }}>
+          {/* 用户消息：Token显示在左侧 */}
+          {isUser && (
+            <TokenDisplay
+              currentMessage={message}
+              showCurrentMessage={true}
+            />
+          )}
+          {/* 工具栏按钮组 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+            {/* 复制按钮 */}
+            <Tooltip title="复制内容">
+              <IconButton
+                size="small"
+                onClick={handleCopyContent}
+                sx={toolbarIconButtonStyle}
+              >
+                <Copy size={16} />
+              </IconButton>
+            </Tooltip>
 
           {/* 编辑按钮 */}
           <Tooltip title="编辑">
@@ -760,6 +776,17 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </IconButton>
           </Tooltip>
 
+          {/* 导出按钮 */}
+          <Tooltip title="导出信息">
+            <IconButton
+              size="small"
+              onClick={handleExportClick}
+              sx={toolbarIconButtonStyle}
+            >
+              <FileText size={16} />
+            </IconButton>
+          </Tooltip>
+
           {/* 用户消息：重新发送 */}
           {isUser && (
             <Tooltip title="重新发送">
@@ -768,7 +795,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 onClick={handleResendClick}
                 sx={toolbarIconButtonStyle}
               >
-                <Send size={16} />
+                <RefreshCw size={16} />
               </IconButton>
             </Tooltip>
           )}
@@ -794,9 +821,13 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 onClick={handleTextToSpeech}
                 sx={{
                   padding: 0.5,
-                  opacity: isPlaying ? 1 : 0.7,
-                  color: isPlaying ? theme.palette.primary.main : 'inherit',
-                  '&:hover': { opacity: 1 }
+                  opacity: isPlaying ? 1 : 0.8,
+                  color: isPlaying ? theme.palette.primary.main : 'text.primary',
+                  '&:hover': {
+                    opacity: 1,
+                    transform: 'scale(1.1)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
                 }}
               >
                 {isPlaying ? <Volume2 size={16} /> : <VolumeX size={16} />}
@@ -829,15 +860,25 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
           </Tooltip>
 
           {/* 删除按钮 */}
-          <Tooltip title="删除">
+          <Tooltip title={deleteButtonClicked ? "再次点击确认删除" : "删除"}>
             <IconButton
               size="small"
               onClick={handleDeleteClick}
-              sx={deleteButtonStyle(theme.palette.error.main)}
+              sx={getDeleteButtonStyle(deleteButtonClicked, theme.palette.error.main, customTextColor)}
             >
               <Trash2 size={16} />
             </IconButton>
           </Tooltip>
+
+          </Box>
+
+          {/* AI消息：Token显示在右侧 */}
+          {!isUser && (
+            <TokenDisplay
+              currentMessage={message}
+              showCurrentMessage={true}
+            />
+          )}
         </Box>
       )}
 
@@ -846,6 +887,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         open={versionPopoverOpen}
         anchorEl={versionAnchorEl}
         onClose={() => setVersionAnchorEl(null)}
+        disableAutoFocus={true}
+        disableRestoreFocus={true}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'left',
@@ -1043,6 +1086,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         anchorEl={anchorEl}
         open={menuOpen}
         onClose={handleMenuClose}
+        disableAutoFocus={true}
+        disableRestoreFocus={true}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'left', // 改为left，避免菜单覆盖主聊天内容
@@ -1090,24 +1135,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         onClose={() => setEditDialogOpen(false)}
       />
 
-      {/* 确认对话框 */}
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
-      >
-        <DialogTitle>{confirmDialogConfig.title}</DialogTitle>
-        <DialogContent>
-          <Typography>{confirmDialogConfig.content}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>
-            取消
-          </Button>
-          <Button onClick={confirmDialogConfig.onConfirm} variant="contained" color="error">
-            确认
-          </Button>
-        </DialogActions>
-      </Dialog>
+
 
       {/* 导出菜单 */}
       <ExportMenu

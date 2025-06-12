@@ -53,14 +53,29 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
   // 当对话框打开时，初始化提示词
   useEffect(() => {
     if (open) {
-      //  修复：与气泡组件保持一致的优先级 - 优先显示助手的系统提示词
-      // 优先级：助手提示词 > 话题提示词 > 默认提示词
-      setPrompt(assistant?.systemPrompt || topic?.prompt || activeSystemPrompt || '');
+      // 实现追加模式显示 - 显示组合后的完整提示词
+      // 逻辑：助手提示词 + 话题提示词追加（如果有的话）
+      let displayPrompt = '';
+
+      if (assistant?.systemPrompt) {
+        displayPrompt = assistant.systemPrompt;
+
+        // 如果话题有追加提示词，则追加显示
+        if (topic?.prompt) {
+          displayPrompt = displayPrompt + '\n\n' + topic.prompt;
+        }
+      } else if (topic?.prompt) {
+        // 如果助手没有提示词，则单独显示话题提示词
+        displayPrompt = topic.prompt;
+      } else {
+        displayPrompt = activeSystemPrompt || '';
+      }
+
+      setPrompt(displayPrompt);
 
       // 简单估算token数量 (英文按照单词计算，中文按照字符计算)
-      const text = assistant?.systemPrompt || topic?.prompt || activeSystemPrompt || '';
-      const estimatedTokens = Math.ceil(text.split(/\s+/).length +
-        text.replace(/[\u4e00-\u9fa5]/g, '').length / 4);
+      const estimatedTokens = Math.ceil(displayPrompt.split(/\s+/).length +
+        displayPrompt.replace(/[\u4e00-\u9fa5]/g, '').length / 4);
       setTokensCount(estimatedTokens);
 
       // 重置错误状态

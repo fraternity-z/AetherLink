@@ -498,15 +498,15 @@ export default class GeminiProvider extends BaseProvider {
       ? `<start_of_turn>user\n${assistant.prompt}<end_of_turn>\n<start_of_turn>user\n${content}<end_of_turn>`
       : content;
 
+    // 使用 GeminiConfigBuilder 构建配置
+    const configBuilder = new GeminiConfigBuilder(assistant, model, maxTokens, assistant.prompt, []);
+    const config = configBuilder.build();
+
     if (!onResponse) {
       const response = await withRetry(
         () => this.sdk.models.generateContent({
           model: model.id,
-          config: {
-            maxOutputTokens: maxTokens,
-            temperature: assistant?.settings?.temperature || assistant?.temperature || model?.temperature || 0.7,
-            systemInstruction: isGemmaModel(model) ? undefined : assistant.prompt
-          },
+          config: config,
           contents: [{ role: 'user', parts: [{ text: _content }] }]
         }),
         'Gemini Translate'
@@ -517,11 +517,7 @@ export default class GeminiProvider extends BaseProvider {
     const response = await withRetry(
       () => this.sdk.models.generateContentStream({
         model: model.id,
-        config: {
-          maxOutputTokens: maxTokens,
-          temperature: assistant?.settings?.temperature || assistant?.temperature || model?.temperature || 0.7,
-          systemInstruction: isGemmaModel(model) ? undefined : assistant.prompt
-        },
+        config: config,
         contents: [{ role: 'user', parts: [{ text: content }] }]
       }),
       'Gemini Translate Stream'
@@ -563,11 +559,13 @@ export default class GeminiProvider extends BaseProvider {
       ? `<start_of_turn>user\n${systemMessage.content}<end_of_turn>\n<start_of_turn>user\n${userMessage.content}<end_of_turn>`
       : userMessage.content;
 
+    // 使用 GeminiConfigBuilder 构建配置
+    const configBuilder = new GeminiConfigBuilder(assistant, model, 4096, systemMessage.content, []);
+    const config = configBuilder.build();
+
     const response = await this.sdk.models.generateContent({
       model: model.id,
-      config: {
-        systemInstruction: isGemmaModel(model) ? undefined : systemMessage.content
-      },
+      config: config,
       contents: [{ role: 'user', parts: [{ text: content }] }]
     });
 
@@ -583,11 +581,16 @@ export default class GeminiProvider extends BaseProvider {
       ? `<start_of_turn>user\n${prompt}<end_of_turn>\n<start_of_turn>user\n${content}<end_of_turn>`
       : content;
 
+    // 创建临时助手对象用于配置构建
+    const tempAssistant = { prompt: prompt };
+
+    // 使用 GeminiConfigBuilder 构建配置
+    const configBuilder = new GeminiConfigBuilder(tempAssistant, model, 4096, prompt, []);
+    const config = configBuilder.build();
+
     const response = await this.sdk.models.generateContent({
       model: model.id,
-      config: {
-        systemInstruction: isGemmaModel(model) ? undefined : prompt
-      },
+      config: config,
       contents: [{ role: 'user', parts: [{ text: MessageContent }] }]
     });
 
@@ -617,14 +620,21 @@ export default class GeminiProvider extends BaseProvider {
     const { abortController, cleanup } = this.createAbortController(lastUserMessage?.id);
     const { signal } = abortController;
 
+    // 使用 GeminiConfigBuilder 构建配置
+    const configBuilder = new GeminiConfigBuilder(assistant, model, 4096, systemMessage.content, []);
+    const config = configBuilder.build();
+
+    // 添加特定的配置项
+    const finalConfig = {
+      ...config,
+      httpOptions: { timeout: 20 * 1000 },
+      abortSignal: signal
+    };
+
     const response = await this.sdk.models
       .generateContent({
         model: model.id,
-        config: {
-          systemInstruction: isGemmaModel(model) ? undefined : systemMessage.content,
-          httpOptions: { timeout: 20 * 1000 },
-          abortSignal: signal
-        },
+        config: finalConfig,
         contents: [{ role: 'user', parts: [{ text: content }] }]
       })
       .finally(cleanup);

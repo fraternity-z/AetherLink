@@ -25,9 +25,10 @@ class VoiceRecognitionService {
   private webSpeechRecognition: SpeechRecognition | null = null; // Web Speech API 实例
 
   private constructor() {
-    // 检测是否在Web环境中
-    this.isWebEnvironment = typeof window !== 'undefined' &&
-                           !Object.prototype.hasOwnProperty.call(window, 'Capacitor');
+    // 检测是否在Web环境中 - 强制在浏览器中使用Web API
+    const hasWindow = typeof window !== 'undefined';
+    const isInBrowser = hasWindow && typeof navigator !== 'undefined' && !!navigator.userAgent;
+    this.isWebEnvironment = isInBrowser;
 
 
 
@@ -139,18 +140,27 @@ class VoiceRecognitionService {
       // Web环境使用Web API
       if (this.isWebEnvironment) {
         try {
-          // 在Web环境下，直接尝试访问麦克风来检查权限
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          stream.getTracks().forEach(track => track.stop()); // 立即停止
-          return { speechRecognition: 'granted' };
-        } catch (error) {
-
-          // 如果是权限被拒绝
-          if (error instanceof DOMException && error.name === 'NotAllowedError') {
-            return { speechRecognition: 'denied' };
+          // 优先使用 Permissions API 来检查权限状态，避免触发权限请求
+          if ('permissions' in navigator) {
+            try {
+              const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+              if (permissionStatus.state === 'granted') {
+                return { speechRecognition: 'granted' };
+              } else if (permissionStatus.state === 'denied') {
+                return { speechRecognition: 'denied' };
+              } else {
+                return { speechRecognition: 'prompt' };
+              }
+            } catch (permError) {
+              return { speechRecognition: 'unknown' };
+            }
+          } else {
+            // 如果不支持 Permissions API，返回 unknown，让 requestPermissions 处理
+            return { speechRecognition: 'unknown' };
           }
-          // 其他情况返回unknown
-          return { speechRecognition: 'prompt' };
+        } catch (error) {
+          // 如果 Permissions API 失败，返回 unknown
+          return { speechRecognition: 'unknown' };
         }
       } else {
         // 非Web环境使用Capacitor
@@ -163,15 +173,21 @@ class VoiceRecognitionService {
     } else {
       // OpenAI Whisper使用Web API，所以需要检查麦克风权限
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop()); // 立即停止
-        return { speechRecognition: 'granted' };
-      } catch (error) {
-
-        if (error instanceof DOMException && error.name === 'NotAllowedError') {
-          return { speechRecognition: 'denied' };
+        // 优先使用 Permissions API
+        if ('permissions' in navigator) {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          if (permissionStatus.state === 'granted') {
+            return { speechRecognition: 'granted' };
+          } else if (permissionStatus.state === 'denied') {
+            return { speechRecognition: 'denied' };
+          } else {
+            return { speechRecognition: 'prompt' };
+          }
+        } else {
+          return { speechRecognition: 'unknown' };
         }
-        return { speechRecognition: 'prompt' };
+      } catch (error) {
+        return { speechRecognition: 'unknown' };
       }
     }
   }
@@ -188,7 +204,6 @@ class VoiceRecognitionService {
           stream.getTracks().forEach(track => track.stop()); // 立即停止，只是为了请求权限
           return { speechRecognition: 'granted' };
         } catch (error) {
-
           if (error instanceof DOMException && error.name === 'NotAllowedError') {
             return { speechRecognition: 'denied' };
           }

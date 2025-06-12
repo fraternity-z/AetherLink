@@ -127,6 +127,8 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
         anchorEl={anchorEl}
         open={open}
         onClose={onClose}
+        disableAutoFocus={true}
+        disableRestoreFocus={true}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'right',

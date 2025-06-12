@@ -33,6 +33,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   toggleImageGenerationMode,
   webSearchActive = false,
   toggleWebSearch,
+  toolsEnabled = true,
   onToolsEnabledChange
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -509,7 +510,10 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           {/* MCP 按钮 - 合并工具开关和MCP工具功能 */}
           {onToolsEnabledChange && (
             <Box sx={{ mr: 1 }}>
-              <MCPToolsButton />
+              <MCPToolsButton
+                toolsEnabled={toolsEnabled}
+                onToolsEnabledChange={onToolsEnabledChange}
+              />
             </Box>
           )}
 

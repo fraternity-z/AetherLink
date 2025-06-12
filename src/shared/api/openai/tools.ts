@@ -11,6 +11,7 @@ import {
   CODE_TOOL
 } from '../../types/tools';
 import { isReasoningModel } from '../../config/models';
+import type { MCPTool, MCPToolResponse, MCPCallToolResponse, Model } from '../../types';
 
 // 重新导出工具类型和工具定义，保持向后兼容
 export const ToolType = ToolTypeEnum;
@@ -174,4 +175,135 @@ export function openAIToolToTool(tools: any[], toolCall: any): any {
     description: tool.function.description,
     inputSchema: tool.function.parameters
   };
+}
+
+/**
+ * 将 MCP 工具转换为 OpenAI 工具格式
+ * @param mcpTools MCP工具列表
+ * @returns OpenAI格式的工具列表
+ */
+export function convertMcpToolsToOpenAI<T>(mcpTools: MCPTool[]): T[] {
+  return mcpTools.map((tool) => {
+    // 清理工具名称，确保符合各种模型的要求
+    let toolName = tool.id || tool.name;
+
+    // 如果名称以数字开头，添加前缀
+    if (/^\d/.test(toolName)) {
+      toolName = `mcp_${toolName}`;
+    }
+
+    // 移除不允许的字符，只保留字母、数字、下划线、点和短横线
+    toolName = toolName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+
+    // 确保名称不超过64个字符
+    if (toolName.length > 64) {
+      toolName = toolName.substring(0, 64);
+    }
+
+    // 确保名称以字母或下划线开头
+    if (!/^[a-zA-Z_]/.test(toolName)) {
+      toolName = `tool_${toolName}`;
+    }
+
+    console.log(`[OpenAI] 转换工具名称: ${tool.id || tool.name} -> ${toolName}`);
+
+    return {
+      type: 'function',
+      function: {
+        name: toolName,
+        description: tool.description,
+        parameters: tool.inputSchema
+      }
+    };
+  }) as T[];
+}
+
+/**
+ * 将 MCP 工具调用响应转换为 OpenAI 消息格式
+ * @param mcpToolResponse MCP工具响应
+ * @param resp MCP调用工具响应
+ * @param model 模型对象
+ * @returns OpenAI消息格式
+ */
+export function mcpToolCallResponseToOpenAIMessage(
+  mcpToolResponse: MCPToolResponse,
+  resp: MCPCallToolResponse,
+  _model: Model
+): any {
+  if ('toolCallId' in mcpToolResponse && mcpToolResponse.toolCallId) {
+    return {
+      role: 'tool',
+      tool_call_id: mcpToolResponse.toolCallId,
+      content: `Here is the result of mcp tool use \`${mcpToolResponse.tool.name}\`:\n\n${JSON.stringify(resp.content)}`
+    };
+  }
+
+  return {
+    role: 'user',
+    content: `Here is the result of mcp tool use \`${mcpToolResponse.tool.name}\`:\n\n${JSON.stringify(resp.content)}`
+  };
+}
+
+/**
+ * 根据名称查找 MCP 工具
+ * @param mcpTools MCP工具列表
+ * @param toolName 工具名称
+ * @returns 找到的MCP工具或undefined
+ */
+export function findMcpToolByName(mcpTools: MCPTool[], toolName: string): MCPTool | undefined {
+  return mcpTools.find(tool => {
+    // 检查原始名称
+    if (tool.id === toolName || tool.name === toolName) {
+      return true;
+    }
+
+    // 检查转换后的名称
+    let convertedName = tool.id || tool.name;
+    if (/^\d/.test(convertedName)) {
+      convertedName = `mcp_${convertedName}`;
+    }
+    convertedName = convertedName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    if (convertedName.length > 64) {
+      convertedName = convertedName.substring(0, 64);
+    }
+    if (!/^[a-zA-Z_]/.test(convertedName)) {
+      convertedName = `tool_${convertedName}`;
+    }
+
+    return convertedName === toolName;
+  });
+}
+
+/**
+ * 将工具调用转换为 MCP 工具响应
+ * @param toolCalls 工具调用列表
+ * @param mcpTools MCP工具列表
+ * @returns MCP工具响应列表
+ */
+export function convertToolCallsToMcpResponses(
+  toolCalls: any[],
+  mcpTools: MCPTool[]
+): MCPToolResponse[] {
+  return toolCalls
+    .map((toolCall) => {
+      const mcpTool = findMcpToolByName(mcpTools, toolCall.function.name);
+      if (!mcpTool) return undefined;
+
+      const parsedArgs = (() => {
+        try {
+          return JSON.parse(toolCall.function.arguments);
+        } catch {
+          return toolCall.function.arguments;
+        }
+      })();
+
+      return {
+        id: toolCall.id,
+        toolCallId: toolCall.id,
+        tool: mcpTool,
+        arguments: parsedArgs,
+        status: 'pending' as const
+      } as MCPToolResponse;
+    })
+    .filter((t): t is MCPToolResponse => typeof t !== 'undefined');
 }

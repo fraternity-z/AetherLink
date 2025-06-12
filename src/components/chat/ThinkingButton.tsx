@@ -123,6 +123,8 @@ const ThinkingButton: React.FC<ThinkingButtonProps> = ({
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
+        disableAutoFocus={true}
+        disableRestoreFocus={true}
       >
         {/* 关闭选项始终显示 */}
         <MenuItem

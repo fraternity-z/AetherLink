@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Collapse, IconButton, Typography, useTheme } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import FilePreview from './FilePreview';
 import type { FileStatus } from './FilePreview';
 import type { FileContent, ImageContent } from '../shared/types';
+import { dexieStorage } from '../shared/services/DexieStorageService';
 
 interface IntegratedFilePreviewProps {
   files: FileContent[];
@@ -26,6 +27,63 @@ const IntegratedFilePreview: React.FC<IntegratedFilePreviewProps> = ({
 }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+
+  // 处理图片引用格式的加载
+  const loadImageFromReference = useCallback(async (imageId: string, imageIndex: number) => {
+    try {
+      // 检查缓存
+      const cacheKey = `img_cache_${imageId}`;
+      const cachedUrl = sessionStorage.getItem(cacheKey);
+      if (cachedUrl) {
+        setImageUrls(prev => ({ ...prev, [imageIndex]: cachedUrl }));
+        return;
+      }
+
+      // 从数据库获取图片Blob
+      const blob = await dexieStorage.getImageBlob(imageId);
+      if (!blob) {
+        console.warn('图片不存在:', imageId);
+        return;
+      }
+
+      // 创建Blob URL
+      const url = URL.createObjectURL(blob);
+
+      // 缓存到sessionStorage
+      sessionStorage.setItem(cacheKey, url);
+
+      // 更新状态
+      setImageUrls(prev => ({ ...prev, [imageIndex]: url }));
+    } catch (error) {
+      console.error('加载图片引用失败:', error);
+    }
+  }, []);
+
+  // 获取图片显示URL
+  const getImageSrc = useCallback((image: ImageContent, index: number) => {
+    // 优先使用base64数据
+    if (image.base64Data) {
+      return image.base64Data;
+    }
+
+    // 检查是否为图片引用格式
+    if (image.url) {
+      const refMatch = image.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/);
+      if (refMatch && refMatch[1]) {
+        const imageId = refMatch[1];
+        // 如果还没有加载，触发加载
+        if (!imageUrls[index]) {
+          loadImageFromReference(imageId, index);
+          return ''; // 返回空字符串，显示加载状态
+        }
+        return imageUrls[index];
+      }
+      return image.url;
+    }
+
+    return '';
+  }, [imageUrls, loadImageFromReference]);
 
   const totalItems = files.length + images.length;
   const hasItems = totalItems > 0;
@@ -91,48 +149,68 @@ const IntegratedFilePreview: React.FC<IntegratedFilePreviewProps> = ({
               marginBottom: visibleFiles.length > 0 ? '8px' : 0
             }}
           >
-            {visibleImages.map((image, index) => (
-              <Box
-                key={`image-${index}`}
-                sx={{
-                  position: 'relative',
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                <img
-                  src={image.base64Data || image.url}
-                  alt={`预览 ${index + 1}`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => onRemoveImage(index)}
+            {visibleImages.map((image, index) => {
+              const imageSrc = getImageSrc(image, index);
+              return (
+                <Box
+                  key={`image-${index}`}
                   sx={{
-                    position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    color: 'white',
-                    padding: '2px',
-                    width: '16px',
-                    height: '16px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                    },
+                    position: 'relative',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(0, 0, 0, 0.1)',
+                    backgroundColor: !imageSrc ? 'rgba(0, 0, 0, 0.05)' : 'transparent'
                   }}
                 >
-                  <ExpandMoreIcon size={10} style={{ transform: 'rotate(45deg)' }} />
-                </IconButton>
-              </Box>
-            ))}
+                  {imageSrc ? (
+                    <img
+                      src={imageSrc}
+                      alt={`预览 ${index + 1}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: 'rgba(0, 0, 0, 0.5)'
+                      }}
+                    >
+                      加载中...
+                    </Box>
+                  )}
+                  <IconButton
+                    size="small"
+                    onClick={() => onRemoveImage(index)}
+                    sx={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -6,
+                      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                      color: 'white',
+                      padding: '2px',
+                      width: '16px',
+                      height: '16px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(244, 67, 54, 0.8)',
+                      },
+                    }}
+                  >
+                    <ExpandMoreIcon size={10} style={{ transform: 'rotate(45deg)' }} />
+                  </IconButton>
+                </Box>
+              );
+            })}
           </Box>
         )}
 
@@ -178,48 +256,69 @@ const IntegratedFilePreview: React.FC<IntegratedFilePreviewProps> = ({
                   marginBottom: '8px'
                 }}
               >
-                {images.slice(maxVisibleItems).map((image, index) => (
-                  <Box
-                    key={`extra-image-${index}`}
-                    sx={{
-                      position: 'relative',
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      border: '1px solid rgba(0, 0, 0, 0.1)'
-                    }}
-                  >
-                    <img
-                      src={image.base64Data || image.url}
-                      alt={`预览 ${maxVisibleItems + index + 1}`}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => onRemoveImage(maxVisibleItems + index)}
+                {images.slice(maxVisibleItems).map((image, index) => {
+                  const actualIndex = maxVisibleItems + index;
+                  const imageSrc = getImageSrc(image, actualIndex);
+                  return (
+                    <Box
+                      key={`extra-image-${index}`}
                       sx={{
-                        position: 'absolute',
-                        top: -6,
-                        right: -6,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        color: 'white',
-                        padding: '2px',
-                        width: '16px',
-                        height: '16px',
-                        '&:hover': {
-                          backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                        },
+                        position: 'relative',
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(0, 0, 0, 0.1)',
+                        backgroundColor: !imageSrc ? 'rgba(0, 0, 0, 0.05)' : 'transparent'
                       }}
                     >
-                      <ExpandMoreIcon size={10} style={{ transform: 'rotate(45deg)' }} />
-                    </IconButton>
-                  </Box>
-                ))}
+                      {imageSrc ? (
+                        <img
+                          src={imageSrc}
+                          alt={`预览 ${actualIndex + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            color: 'rgba(0, 0, 0, 0.5)'
+                          }}
+                        >
+                          加载中...
+                        </Box>
+                      )}
+                      <IconButton
+                        size="small"
+                        onClick={() => onRemoveImage(actualIndex)}
+                        sx={{
+                          position: 'absolute',
+                          top: -6,
+                          right: -6,
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                          color: 'white',
+                          padding: '2px',
+                          width: '16px',
+                          height: '16px',
+                          '&:hover': {
+                            backgroundColor: 'rgba(244, 67, 54, 0.8)',
+                          },
+                        }}
+                      >
+                        <ExpandMoreIcon size={10} style={{ transform: 'rotate(45deg)' }} />
+                      </IconButton>
+                    </Box>
+                  );
+                })}
               </Box>
             )}
 

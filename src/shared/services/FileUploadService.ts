@@ -56,17 +56,30 @@ export const FileUploadService = {
               base64Data: file.data ? `data:${file.mimeType};base64,${file.data}` : ''
             });
 
-            fileContents.push({
+            // 创建FileContent对象
+            const fileContent: FileContent = {
               name: file.name,
               mimeType: file.mimeType,
               extension: file.name.split('.').pop() || '',
               size: file.size,
-              base64Data: file.data ? `data:${file.mimeType};base64,${file.data}` : undefined,
+              base64Data: uploadedFile.base64Data ? `data:${file.mimeType};base64,${uploadedFile.base64Data}` : undefined,
               url: '',
-              // 添加文件ID用于后续引用
               fileId: uploadedFile.id,
               fileRecord: uploadedFile
-            });
+            };
+
+            // 如果是图片文件，添加宽高信息
+            if (file.mimeType.startsWith('image/') && uploadedFile.base64Data) {
+              try {
+                const dimensions = await this.getImageDimensions(`data:${file.mimeType};base64,${uploadedFile.base64Data}`);
+                fileContent.width = dimensions.width;
+                fileContent.height = dimensions.height;
+              } catch (error) {
+                console.warn('获取图片尺寸失败:', error);
+              }
+            }
+
+            fileContents.push(fileContent);
           } catch (uploadError) {
             console.error('文件上传失败:', uploadError);
             await Toast.show({
@@ -84,7 +97,12 @@ export const FileUploadService = {
           input.type = 'file';
           input.multiple = true;
 
+          let isResolved = false;
+
           input.onchange = async (event) => {
+            if (isResolved) return;
+            isResolved = true;
+
             const files = (event.target as HTMLInputElement).files;
             if (!files || files.length === 0) {
               resolve([]);
@@ -108,21 +126,38 @@ export const FileUploadService = {
               const fileContents = [];
               for (const file of validFiles) {
                 try {
-                  const processedFile = await this.processFile(file);
-
-                  // 使用文件存储服务处理文件
+                  // 直接使用文件存储服务处理文件，避免重复处理
                   const uploadedFile = await mobileFileStorage.uploadFile({
                     name: file.name,
                     mimeType: file.type,
                     size: file.size,
-                    base64Data: processedFile.base64Data || ''
+                    base64Data: await this.readFileAsBase64(file)
                   });
 
-                  // 添加文件ID到处理结果
-                  processedFile.fileId = uploadedFile.id;
-                  processedFile.fileRecord = uploadedFile;
+                  // 创建FileContent对象
+                  const fileContent: FileContent = {
+                    name: file.name,
+                    mimeType: file.type,
+                    extension: file.name.split('.').pop() || '',
+                    size: file.size,
+                    base64Data: uploadedFile.base64Data ? `data:${file.type};base64,${uploadedFile.base64Data}` : undefined,
+                    url: '',
+                    fileId: uploadedFile.id,
+                    fileRecord: uploadedFile
+                  };
 
-                  fileContents.push(processedFile);
+                  // 如果是图片文件，添加宽高信息
+                  if (file.type.startsWith('image/') && uploadedFile.base64Data) {
+                    try {
+                      const dimensions = await this.getImageDimensions(`data:${file.type};base64,${uploadedFile.base64Data}`);
+                      fileContent.width = dimensions.width;
+                      fileContent.height = dimensions.height;
+                    } catch (error) {
+                      console.warn('获取图片尺寸失败:', error);
+                    }
+                  }
+
+                  fileContents.push(fileContent);
                 } catch (uploadError) {
                   console.error('文件上传失败:', uploadError);
                   alert(`文件 ${file.name} 上传失败: ${uploadError instanceof Error ? uploadError.message : '未知错误'}`);
@@ -134,6 +169,25 @@ export const FileUploadService = {
             }
           };
 
+          // 处理用户取消选择的情况
+          input.oncancel = () => {
+            if (isResolved) return;
+            isResolved = true;
+            resolve([]);
+          };
+
+          // 添加焦点失去事件处理，用于检测用户取消
+          const handleWindowFocus = () => {
+            setTimeout(() => {
+              if (!isResolved && (!input.files || input.files.length === 0)) {
+                isResolved = true;
+                resolve([]);
+              }
+              window.removeEventListener('focus', handleWindowFocus);
+            }, 300); // 延迟检查，给文件选择器时间完成
+          };
+
+          window.addEventListener('focus', handleWindowFocus);
           input.click();
         });
       }
@@ -147,109 +201,7 @@ export const FileUploadService = {
     }
   },
 
-  /**
-   * 处理文件，转换为FileContent对象
-   * @param file 文件对象
-   * @returns Promise<FileContent> 处理后的文件内容
-   */
-  async processFile(file: File): Promise<FileContent> {
-    return new Promise((resolve, reject) => {
-      try {
-        // 限制文件大小
-        if (file.size > MAX_FILE_SIZE) {
-          reject(new Error(`文件太大，最大允许50MB`));
-          return;
-        }
 
-        // 处理不同类型的文件
-        if (file.type.startsWith('image/')) {
-          // 图片文件特殊处理，读取宽高信息
-          this.processImageFile(file)
-            .then(resolve)
-            .catch(reject);
-        } else {
-          // 其他类型文件简单处理
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            if (!event.target || !event.target.result) {
-              reject(new Error('读取文件失败'));
-              return;
-            }
-
-            const base64Data = event.target.result as string;
-            const fileContent: FileContent = {
-              name: file.name,
-              mimeType: file.type,
-              extension: file.name.split('.').pop() || '',
-              size: file.size,
-              base64Data,
-              url: '',
-            };
-            resolve(fileContent);
-          };
-          reader.onerror = () => {
-            reject(new Error('读取文件失败'));
-          };
-          reader.readAsDataURL(file);
-        }
-      } catch (error) {
-        reject(error);
-      }
-    });
-  },
-
-  /**
-   * 处理图片文件，获取宽高信息
-   * @param file 图片文件
-   * @returns Promise<FileContent> 处理后的图片内容
-   */
-  async processImageFile(file: File): Promise<FileContent> {
-    return new Promise((resolve, reject) => {
-      try {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (!event.target || !event.target.result) {
-            reject(new Error('读取文件失败'));
-            return;
-          }
-
-          const base64Data = event.target.result as string;
-          const img = new Image();
-          img.onload = () => {
-            const fileContent: FileContent = {
-              name: file.name,
-              mimeType: file.type,
-              extension: file.name.split('.').pop() || '',
-              size: file.size,
-              base64Data,
-              url: '',
-              width: img.width,
-              height: img.height,
-            };
-            resolve(fileContent);
-          };
-          img.onerror = () => {
-            // 图片加载失败，但仍然返回基本信息
-            resolve({
-              name: file.name,
-              mimeType: file.type,
-              extension: file.name.split('.').pop() || '',
-              size: file.size,
-              base64Data,
-              url: '',
-            });
-          };
-          img.src = base64Data;
-        };
-        reader.onerror = () => {
-          reject(new Error('读取文件失败'));
-        };
-        reader.readAsDataURL(file);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  },
 
   /**
    * 根据MIME类型获取文件图标
@@ -276,6 +228,46 @@ export const FileUploadService = {
     } else {
       return 'insert_drive_file';
     }
+  },
+
+  /**
+   * 读取文件为base64格式
+   * @param file 文件对象
+   * @returns Promise<string> base64数据（包含data:前缀）
+   */
+  async readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (!event.target || !event.target.result) {
+          reject(new Error('读取文件失败'));
+          return;
+        }
+        resolve(event.target.result as string);
+      };
+      reader.onerror = () => {
+        reject(new Error('读取文件失败'));
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  /**
+   * 获取图片尺寸
+   * @param base64Data base64图片数据
+   * @returns Promise<{width: number, height: number}> 图片尺寸
+   */
+  async getImageDimensions(base64Data: string): Promise<{width: number, height: number}> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({ width: img.width, height: img.height });
+      };
+      img.onerror = () => {
+        reject(new Error('图片加载失败'));
+      };
+      img.src = base64Data;
+    });
   },
 
   /**

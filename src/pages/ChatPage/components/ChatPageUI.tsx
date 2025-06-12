@@ -16,6 +16,8 @@ import { TopicService } from '../../../shared/services/TopicService';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { useTheme } from '@mui/material/styles';
+import { useSidebarSwipeGesture } from '../../../hooks/useSwipeGesture';
+import { SwipeIndicator, SwipeProgressIndicator } from '../../../components/SwipeIndicator';
 
 
 
@@ -109,6 +111,10 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   const dispatch = useDispatch();
   const theme = useTheme();
 
+  // 滑动指示器状态
+  const [swipeProgress, setSwipeProgress] = React.useState(0);
+  const [swipeDirection, setSwipeDirection] = React.useState<'left' | 'right'>('right');
+
   // 获取主题风格
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
   const themeColors = getThemeColors(theme, themeStyle);
@@ -180,6 +186,45 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   const shouldShowToolbar = useMemo(() =>
     inputLayoutStyle === 'default',
     [inputLayoutStyle]
+  );
+
+  // 滑动手势处理 - 右滑打开侧边栏，左滑关闭侧边栏
+  const handleOpenSidebar = useCallback(() => {
+    if (!drawerOpen) {
+      setDrawerOpen(true);
+      // 用户成功使用滑动手势，标记为已看过提示
+      try {
+        localStorage.setItem('sidebar-swipe-hint-seen', 'true');
+      } catch (error) {
+        console.warn('无法保存滑动提示状态:', error);
+      }
+    }
+  }, [drawerOpen, setDrawerOpen]);
+
+  const handleCloseSidebar = useCallback(() => {
+    if (drawerOpen) {
+      setDrawerOpen(false);
+      // 用户成功使用滑动手势，标记为已看过提示
+      try {
+        localStorage.setItem('sidebar-swipe-hint-seen', 'true');
+      } catch (error) {
+        console.warn('无法保存滑动提示状态:', error);
+      }
+    }
+  }, [drawerOpen, setDrawerOpen]);
+
+  // 滑动进度处理
+  const handleSwipeProgress = useCallback((progress: number, direction: 'left' | 'right') => {
+    setSwipeProgress(progress);
+    setSwipeDirection(direction);
+  }, []);
+
+  // 使用滑动手势Hook
+  const { swipeHandlers } = useSidebarSwipeGesture(
+    handleOpenSidebar,
+    handleCloseSidebar,
+    true, // 始终启用手势
+    handleSwipeProgress // 传递进度回调
   );
 
   // 优化创建新话题函数 - 使用 useCallback 避免不必要的重新渲染
@@ -387,7 +432,10 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   ]);
 
   return (
-    <Box sx={dynamicStyles.mainContainer}>
+    <Box
+      sx={dynamicStyles.mainContainer}
+      {...swipeHandlers} // 添加滑动手势处理
+    >
       {/* 桌面端可收起侧边栏，移动端可隐藏 */}
       {!isMobile && (
         <Sidebar
@@ -527,7 +575,9 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
                   width: '100%',
                   maxWidth: '800px',
                   display: 'flex',
-                  justifyContent: 'center'
+                  justifyContent: 'flex-start', // 改为左对齐，避免被侧边栏遮挡
+                  paddingLeft: '16px',
+                  paddingRight: '16px'
                 }}>
                   {renderInputComponent()}
                 </Box>
@@ -575,7 +625,9 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
                     width: '100%',
                     maxWidth: '800px',
                     display: 'flex',
-                    justifyContent: 'center'
+                    justifyContent: 'flex-start', // 改为左对齐，避免被侧边栏遮挡
+                    paddingLeft: '16px',
+                    paddingRight: '16px'
                   }}>
                     <ChatToolbar
                       onClearTopic={handleClearTopic}
@@ -594,7 +646,9 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
                   width: '100%',
                   maxWidth: '800px',
                   display: 'flex',
-                  justifyContent: 'center'
+                  justifyContent: 'flex-start', // 改为左对齐，避免被侧边栏遮挡
+                  paddingLeft: '16px',
+                  paddingRight: '16px'
                 }}>
                   {renderInputComponent()}
                 </Box>
@@ -603,6 +657,25 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
           )}
         </Box>
       </Box>
+
+      {/* 滑动提示指示器 - 仅在移动端显示，且只在侧边栏关闭时显示 */}
+      {isMobile && !drawerOpen && (
+        <SwipeIndicator
+          show={true}
+          autoHide={true}
+          autoHideDelay={5000}
+          storageKey="sidebar-swipe-hint-seen"
+        />
+      )}
+
+      {/* 滑动进度指示器 - 仅在移动端显示 */}
+      {isMobile && (
+        <SwipeProgressIndicator
+          progress={swipeProgress}
+          show={swipeProgress > 0}
+          direction={swipeDirection}
+        />
+      )}
     </Box>
   );
 };

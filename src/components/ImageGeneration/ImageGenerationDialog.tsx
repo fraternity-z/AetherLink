@@ -207,6 +207,10 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
             onChange={(e) => setSelectedModelId(e.target.value)}
             label="选择模型"
             disabled={isGenerating}
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
           >
             {availableModels.length === 0 && (
               <MenuItem value="" disabled>

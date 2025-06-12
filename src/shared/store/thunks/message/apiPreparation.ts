@@ -169,18 +169,24 @@ export const prepareMessagesForApi = async (
   const assistantId = topic?.assistantId;
 
   // 获取系统提示词
-  //  修复：统一优先级逻辑 - 优先使用助手的系统提示词，与气泡组件和编辑对话框保持一致
-  // 优先级：助手提示词 > 话题提示词 > 默认提示词
+  // 修改：实现追加模式 - 如果设置了话题提示词，则追加到助手提示词之后
+  // 逻辑：助手提示词 + 话题提示词追加（如果有的话）
   let systemPrompt = '';
   if (assistantId) {
     const assistant = await dexieStorage.getAssistant(assistantId);
     if (assistant) {
-      // 优先使用助手的系统提示词
+      // 使用助手的系统提示词作为基础
       systemPrompt = assistant.systemPrompt || '';
 
-      // 如果助手没有系统提示词，才使用话题的提示词
-      if (!systemPrompt && topic && topic.prompt) {
-        systemPrompt = topic.prompt;
+      // 如果话题有追加提示词，则追加到助手提示词之后
+      if (topic && topic.prompt) {
+        if (systemPrompt) {
+          // 如果助手有提示词，则追加话题提示词
+          systemPrompt = systemPrompt + '\n\n' + topic.prompt;
+        } else {
+          // 如果助手没有提示词，则单独使用话题提示词
+          systemPrompt = topic.prompt;
+        }
       }
     }
   } else if (topic && topic.prompt) {

@@ -87,6 +87,10 @@ export default function SettingItem({ setting, onChange }: SettingItemProps) {
             value={value as string}
             onChange={handleSelectChange}
             variant="outlined"
+            MenuProps={{
+              disableAutoFocus: true,
+              disableRestoreFocus: true
+            }}
             sx={{
               fontSize: '0.875rem',
               '& .MuiSelect-select': {

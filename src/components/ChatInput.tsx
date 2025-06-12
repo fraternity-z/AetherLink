@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IconButton, CircularProgress, Badge, Tooltip } from '@mui/material';
-import { Send, Plus, Link, Square } from 'lucide-react';
+import { Send, Plus, Link, Square, ChevronDown, ChevronUp, Keyboard, Mic } from 'lucide-react';
 
 import { useChatInputLogic } from '../shared/hooks/useChatInputLogic';
 import { useFileUpload } from '../shared/hooks/useFileUpload';
@@ -21,8 +21,7 @@ import AIDebateButton from './AIDebateButton';
 import type { DebateConfig } from '../shared/services/AIDebateService';
 import QuickPhraseButton from './QuickPhraseButton';
 import { useVoiceRecognition } from '../shared/hooks/useVoiceRecognition';
-import { VoiceButton } from './VoiceRecognition';
-import EnhancedVoiceInput from './VoiceRecognition/EnhancedVoiceInput';
+import { EnhancedVoiceInput } from './VoiceRecognition';
 import { getThemeColors } from '../shared/utils/themeUtils';
 import { useTheme } from '@mui/material/styles';
 
@@ -66,7 +65,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [uploadMenuAnchorEl, setUploadMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [multiModelSelectorOpen, setMultiModelSelectorOpen] = useState(false);
   const [isIOS, setIsIOS] = useState(false); // 新增: 是否是iOS设备
-  const [isVoiceMode, setIsVoiceMode] = useState(false); // 语音输入模式状态
+  // 语音识别三状态管理
+  const [voiceState, setVoiceState] = useState<'normal' | 'voice-mode' | 'recording'>('normal');
+  const [expanded, setExpanded] = useState(false); // 新增: 扩展显示状态
+  const [expandedHeight, setExpandedHeight] = useState(Math.floor(window.innerHeight * 0.7)); // 展开时的高度
+  const [showExpandButton, setShowExpandButton] = useState(false); // 是否显示展开按钮
 
   // 拖拽状态
   const [isDragging, setIsDragging] = useState(false);
@@ -162,6 +165,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // 语音识别功能
   const {
     isListening,
+    startRecognition,
     stopRecognition,
   } = useVoiceRecognition();
 
@@ -202,10 +206,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
     setIsIOS(isIOSDevice);
   }, []);
 
+  // 监听窗口大小变化，更新展开高度
+  useEffect(() => {
+    const updateExpandedHeight = () => {
+      setExpandedHeight(Math.floor(window.innerHeight * 0.7));
+    };
+
+    window.addEventListener('resize', updateExpandedHeight);
+    return () => window.removeEventListener('resize', updateExpandedHeight);
+  }, []);
+
   // handleSubmit 现在由 useChatInputLogic hook 提供
 
   // 处理多模型发送
-  const handleMultiModelSend = (selectedModels: any[]) => {
+  const handleMultiModelSend = async (selectedModels: any[]) => {
     if (!message.trim() && images.length === 0 && files.length === 0) return;
     if (!onSendMultiModelMessage) return;
 
@@ -218,13 +232,55 @@ const ChatInput: React.FC<ChatInputProps> = ({
       resetUrlScraper();
     }
 
-    // 创建正确的图片格式
-    const formattedImages: SiliconFlowImageFormat[] = [...images, ...files.filter(f => f.mimeType.startsWith('image/'))].map(img => ({
-      type: 'image_url',
-      image_url: {
-        url: img.base64Data || img.url
-      }
-    }));
+    // 合并images数组和files中的图片文件
+    const allImages = [
+      ...images,
+      ...files.filter(f => f.mimeType.startsWith('image/')).map(file => ({
+        base64Data: file.base64Data,
+        url: file.url || '',
+        width: file.width,
+        height: file.height
+      } as ImageContent))
+    ];
+
+    // 创建正确的图片格式，避免重复处理
+    const formattedImages: SiliconFlowImageFormat[] = await Promise.all(
+      allImages.map(async (img) => {
+        let imageUrl = img.base64Data || img.url;
+
+        // 如果是图片引用格式，需要从数据库加载实际图片
+        if (img.url && img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/)) {
+          const refMatch = img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/);
+          if (refMatch && refMatch[1]) {
+            try {
+              const imageId = refMatch[1];
+              const blob = await dexieStorage.getImageBlob(imageId);
+              if (blob) {
+                // 将Blob转换为base64
+                const base64 = await new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+                });
+                imageUrl = base64;
+              }
+            } catch (error) {
+              console.error('加载图片引用失败:', error);
+            }
+          }
+        }
+
+        return {
+          type: 'image_url',
+          image_url: {
+            url: imageUrl
+          }
+        } as SiliconFlowImageFormat;
+      })
+    );
+
+    // 过滤掉图片文件，避免重复发送
+    const nonImageFiles = files.filter(f => !f.mimeType.startsWith('image/'));
 
     console.log('发送多模型消息:', {
       message: processedMessage,
@@ -239,7 +295,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
       selectedModels,
       formattedImages.length > 0 ? formattedImages : undefined,
       toolsEnabled,
-      files
+      nonImageFiles
     );
 
     // 重置状态 - 使用 hook 提供的函数
@@ -251,12 +307,52 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // 输入处理逻辑现在由 useChatInputLogic 和 useUrlScraper hooks 提供
 
-  // 增强的 handleChange 以支持 URL 检测
+  // 检测是否需要显示展开按钮
+  const checkShowExpandButton = useCallback(() => {
+    if (textareaRef.current && !expanded) {
+      const textarea = textareaRef.current;
+      // 检查是否出现滚动条
+      const hasScroll = textarea.scrollHeight > textarea.clientHeight + 2; // 添加2px容差
+      setShowExpandButton(hasScroll);
+    } else if (expanded) {
+      // 展开状态下始终显示按钮（用于收起）
+      setShowExpandButton(true);
+    } else {
+      setShowExpandButton(false);
+    }
+  }, [expanded]);
+
+  // 监听消息内容变化，检测是否显示展开按钮
+  useEffect(() => {
+    checkShowExpandButton();
+  }, [message, checkShowExpandButton]);
+
+  // 监听展开状态变化
+  useEffect(() => {
+    // 延迟检测，确保DOM更新完成
+    setTimeout(checkShowExpandButton, 100);
+  }, [expanded, checkShowExpandButton]);
+
+  // 增强的 handleChange 以支持 URL 检测和展开按钮检测
   const enhancedHandleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // 调用 hook 提供的 handleChange
     handleChange(e);
     // 检测 URL
     detectUrlInMessage(e.target.value);
+    // 延迟检测展开按钮显示（等待高度调整完成）
+    setTimeout(checkShowExpandButton, 50);
+  };
+
+  // 增强的 handleKeyDown 以支持展开功能
+  const enhancedHandleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // 调用原始的 handleKeyDown
+    handleKeyDown(e);
+
+    // Ctrl/Cmd + Enter 切换展开模式
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      setExpanded(!expanded);
+    }
   };
 
   // 增强的焦点处理，适应iOS设备
@@ -345,18 +441,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const handleImageUploadLocal = async (source: 'camera' | 'photos' = 'photos') => {
     try {
       const uploadedImages = await handleImageUpload(source);
-      setImages(prev => [...prev, ...uploadedImages]);
+      // 只有当实际上传了图片时才更新状态
+      if (uploadedImages && uploadedImages.length > 0) {
+        setImages(prev => [...prev, ...uploadedImages]);
+      }
     } catch (error) {
       console.error('图片上传失败:', error);
+      // 确保在错误情况下重置上传状态
+      setUploadingMedia(false);
     }
   };
 
   const handleFileUploadLocal = async () => {
     try {
       const uploadedFiles = await handleFileUpload();
-      setFiles(prev => [...prev, ...uploadedFiles]);
+      // 只有当实际上传了文件时才更新状态
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        setFiles(prev => [...prev, ...uploadedFiles]);
+      }
     } catch (error) {
       console.error('文件上传失败:', error);
+      // 确保在错误情况下重置上传状态
+      setUploadingMedia(false);
     }
   };
 
@@ -405,44 +511,87 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // 语音识别处理函数
   const handleToggleVoiceMode = () => {
-    // 如果当前在语音模式，退出前确保停止录音
-    if (isVoiceMode) {
+    if (voiceState === 'normal') {
+      // 直接进入录音模式
+      setVoiceState('recording');
+    } else if (voiceState === 'recording') {
+      // 停止录音并退出
       if (isListening) {
         stopRecognition().catch(err => console.error('停止语音识别出错:', err));
       }
-      setIsVoiceMode(false);
-    } else {
-      // 进入语音模式
-      setIsVoiceMode(true);
+      setVoiceState('normal');
     }
   };
 
-  const handleVoiceSendMessage = (voiceMessage: string) => {
+
+
+
+
+  const handleVoiceSendMessage = async (voiceMessage: string) => {
     // 确保有内容才发送
     if (voiceMessage && voiceMessage.trim()) {
-      // 创建正确的图片格式
-      const formattedImages: SiliconFlowImageFormat[] = [
+      // 合并images数组和files中的图片文件
+      const allImages = [
         ...images,
-        ...files.filter(f => f.mimeType.startsWith('image/'))
-      ].map(img => ({
-        type: 'image_url',
-        image_url: {
-          url: img.base64Data || img.url
-        }
-      }));
+        ...files.filter(f => f.mimeType.startsWith('image/')).map(file => ({
+          base64Data: file.base64Data,
+          url: file.url || '',
+          width: file.width,
+          height: file.height
+        } as ImageContent))
+      ];
+
+      // 创建正确的图片格式，避免重复处理
+      const formattedImages: SiliconFlowImageFormat[] = await Promise.all(
+        allImages.map(async (img) => {
+          let imageUrl = img.base64Data || img.url;
+
+          // 如果是图片引用格式，需要从数据库加载实际图片
+          if (img.url && img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/)) {
+            const refMatch = img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/);
+            if (refMatch && refMatch[1]) {
+              try {
+                const imageId = refMatch[1];
+                const blob = await dexieStorage.getImageBlob(imageId);
+                if (blob) {
+                  // 将Blob转换为base64
+                  const base64 = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                  });
+                  imageUrl = base64;
+                }
+              } catch (error) {
+                console.error('加载图片引用失败:', error);
+              }
+            }
+          }
+
+          return {
+            type: 'image_url',
+            image_url: {
+              url: imageUrl
+            }
+          } as SiliconFlowImageFormat;
+        })
+      );
+
+      // 过滤掉图片文件，避免重复发送
+      const nonImageFiles = files.filter(f => !f.mimeType.startsWith('image/'));
 
       onSendMessage(
         voiceMessage.trim(),
         formattedImages.length > 0 ? formattedImages : undefined,
         toolsEnabled,
-        files
+        nonImageFiles
       );
 
       // 重置状态
       setImages([]);
       setFiles([]);
       setUploadingMedia(false);
-      setIsVoiceMode(false); // 发送后退出语音模式
+      setVoiceState('normal'); // 发送后退出语音模式
 
       // 添加触觉反馈 (如果支持)
       if ('navigator' in window && 'vibrate' in navigator) {
@@ -673,8 +822,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         paddingBottom: isIOS ? '34px' : '4px', // 为iOS设备增加底部padding
         maxWidth: 'calc(100% - 24px)', // 确保有足够的左右边距
         marginTop: '0',
-        marginLeft: 'auto', // 水平居中
-        marginRight: 'auto' // 水平居中
+        marginLeft: 'auto', // 移动端保持居中
+        marginRight: 'auto' // 移动端保持居中
       };
     } else if (isTablet) {
       return {
@@ -682,8 +831,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         paddingBottom: isIOS ? '34px' : '4px', // 为iOS设备增加底部padding
         maxWidth: 'calc(100% - 40px)', // 确保有足够的左右边距
         marginTop: '0',
-        marginLeft: 'auto', // 水平居中
-        marginRight: 'auto' // 水平居中
+        marginLeft: '20px', // 平板端左对齐，避免被侧边栏遮挡
+        marginRight: '20px' // 平板端右边距
       };
     } else {
       return {
@@ -691,8 +840,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         paddingBottom: isIOS ? '34px' : '6px', // 为iOS设备增加底部padding
         maxWidth: 'calc(100% - 32px)', // 确保有足够的左右边距
         marginTop: '0',
-        marginLeft: 'auto', // 水平居中
-        marginRight: 'auto' // 水平居中
+        marginLeft: '16px', // 桌面端左对齐，避免被侧边栏遮挡
+        marginRight: '16px' // 桌面端右边距
       };
     }
   };
@@ -788,64 +937,90 @@ const ChatInput: React.FC<ChatInputProps> = ({
         maxWidth: '100%', // 使用100%宽度，与外部容器一致
         backdropFilter: inputBoxStyle === 'modern' ? 'blur(10px)' : 'none',
         WebkitBackdropFilter: inputBoxStyle === 'modern' ? 'blur(10px)' : 'none',
-        transition: 'all 0.3s ease'
+        transition: 'all 0.3s ease',
+        // 防止文本选择
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitTapHighlightColor: 'transparent'
       }}>
-        {/* 语音识别按钮 */}
-        <VoiceButton
-          isVoiceMode={isVoiceMode}
-          isDisabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-          onToggleVoiceMode={handleToggleVoiceMode}
+        {/* 语音识别按钮 - 根据状态显示不同图标 */}
+        <IconButton
+          onClick={handleToggleVoiceMode}
+          disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
           size={isTablet ? "large" : "medium"}
-          color="default"
-          tooltip={isVoiceMode ? "退出语音输入模式" : "切换到语音输入模式"}
-          className=""
-        />
+          style={{
+            color: voiceState !== 'normal' ? '#f44336' : iconColor,
+            padding: isTablet ? '10px' : '8px',
+            backgroundColor: voiceState !== 'normal' ? 'rgba(211, 47, 47, 0.15)' : 'transparent',
+            transition: 'all 0.25s ease-in-out'
+          }}
+        >
+          {voiceState === 'normal' ? (
+            <Tooltip title="切换到语音输入模式">
+              <Mic size={isTablet ? 28 : 24} />
+            </Tooltip>
+          ) : (
+            <Tooltip title="退出语音输入模式">
+              <Keyboard size={isTablet ? 28 : 24} />
+            </Tooltip>
+          )}
+        </IconButton>
 
-        {/* 输入区域 - 根据模式显示不同的输入方式 */}
+        {/* 输入区域 - 根据三状态显示不同的输入方式 */}
         <div style={{
           flexGrow: 1,
           margin: isTablet ? '0 12px' : '0 8px',
           position: 'relative'
         }}>
-          {isVoiceMode ? (
-            /* 替换为增强语音输入组件 */
+          {voiceState === 'recording' ? (
+            /* 录音状态 - 显示增强语音输入组件 */
             <EnhancedVoiceInput
               isDarkMode={isDarkMode}
-              onClose={() => setIsVoiceMode(false)}
+              onClose={() => setVoiceState('normal')}
               onSendMessage={handleVoiceSendMessage}
-              onInsertText={(text) => {
+              onInsertText={(text: string) => {
                 setMessage(prev => prev + text);
-                setIsVoiceMode(false);
+                setVoiceState('normal');
               }}
+              startRecognition={startRecognition}
             />
           ) : (
-            /* 文本输入区域 */
+            /* 状态1：正常输入框 */
             <>
               <textarea
                 ref={textareaRef}
                 style={{
                   fontSize: isTablet ? '17px' : '16px',
-                  padding: isTablet ? '10px 0' : '8px 0', // 减少padding以给placeholder更多空间
+                  padding: isTablet ? '10px 0' : '8px 0',
                   border: 'none',
                   outline: 'none',
                   width: '100%',
                   backgroundColor: 'transparent',
-                  lineHeight: '1.4', // 优化行高，减少垂直空间占用
+                  lineHeight: '1.4',
                   fontFamily: 'inherit',
                   resize: 'none',
-                  overflow: textareaHeight >= (isMobile ? 200 : 250) ? 'auto' : 'hidden',
-                  minHeight: `${isMobile ? 32 : isTablet ? 36 : 34}px`, // 与计算逻辑保持一致
-                  height: `${textareaHeight}px`,
-                  maxHeight: `${isMobile ? 200 : 250}px`,
+                  overflow: message.trim().length > 0 ? 'auto' : 'hidden',
+                  minHeight: expanded ? `${expandedHeight}px` : `${isMobile ? 32 : isTablet ? 36 : 34}px`,
+                  height: expanded ? `${expandedHeight}px` : `${textareaHeight}px`,
+                  maxHeight: expanded ? `${expandedHeight}px` : `${isMobile ? 200 : 250}px`,
                   color: textColor,
-                  transition: 'height 0.2s ease-out',
+                  transition: 'height 0.3s ease-out, min-height 0.3s ease-out, max-height 0.3s ease',
                   scrollbarWidth: 'thin',
                   scrollbarColor: `${isDarkMode ? '#555 transparent' : '#ccc transparent'}`
                 }}
-                placeholder={imageGenerationMode ? "输入图像生成提示词..." : webSearchActive ? "输入网络搜索内容..." : "和ai助手说点什么"}
+                placeholder={
+                  imageGenerationMode
+                    ? "输入图像生成提示词... (Ctrl+Enter 展开)"
+                    : webSearchActive
+                      ? "输入网络搜索内容... (Ctrl+Enter 展开)"
+                      : "和ai助手说点什么... (Ctrl+Enter 展开)"
+                }
                 value={message}
                 onChange={enhancedHandleChange}
-                onKeyDown={handleKeyDown}
+                onKeyDown={enhancedHandleKeyDown}
                 onCompositionStart={handleCompositionStart}
                 onCompositionEnd={handleCompositionEnd}
                 onPaste={handlePaste}
@@ -873,8 +1048,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
           )}
         </div>
 
-        {/* 在非语音模式下显示其他按钮 */}
-        {!isVoiceMode && (
+        {/* 在非录音状态下显示其他按钮 */}
+        {voiceState !== 'recording' && (
           <>
             {/* 添加按钮，打开上传菜单 */}
             <Tooltip title="添加图片或文件">
@@ -918,6 +1093,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
                 size={isTablet ? "large" : "medium"}
               />
+            )}
+
+            {/* 展开/收起按钮 - 只在需要时显示 */}
+            {showExpandButton && (
+              <Tooltip title={expanded ? "收起输入框" : "展开输入框"}>
+                <IconButton
+                  onClick={() => setExpanded(!expanded)}
+                  size={isTablet ? "large" : "medium"}
+                  style={{
+                    color: expanded ? '#2196F3' : iconColor,
+                    padding: isTablet ? '10px' : '8px',
+                    marginRight: isTablet ? '4px' : '2px'
+                  }}
+                >
+                  {expanded ? (
+                    <ChevronDown size={isTablet ? 20 : 18} />
+                  ) : (
+                    <ChevronUp size={isTablet ? 20 : 18} />
+                  )}
+                </IconButton>
+              </Tooltip>
             )}
 
             {/* 发送按钮或停止按钮 */}

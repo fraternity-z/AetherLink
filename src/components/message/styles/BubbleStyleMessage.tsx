@@ -36,6 +36,21 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
 }) => {
   const isUserMessage = message.role === 'user';
 
+  // 获取消息操作显示模式设置
+  const messageActionMode = (settings as any).messageActionMode || 'bubbles';
+
+  // 获取自定义气泡颜色设置
+  const customBubbleColors = (settings as any).customBubbleColors || {};
+
+  // 计算实际使用的颜色
+  const actualBubbleColor = isUserMessage
+    ? (customBubbleColors.userBubbleColor || themeColors.userBubbleColor)
+    : (customBubbleColors.aiBubbleColor || themeColors.aiBubbleColor);
+
+  const actualTextColor = isUserMessage
+    ? (customBubbleColors.userTextColor || themeColors.textPrimary)
+    : (customBubbleColors.aiTextColor || themeColors.textPrimary);
+
   return (
     <Box
       id={`message-${message.id}`}
@@ -219,10 +234,8 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
           data-theme-style={themeStyle}
           sx={{
             padding: 1.5,
-            backgroundColor: isUserMessage
-              ? themeColors.userBubbleColor
-              : themeColors.aiBubbleColor,
-            color: themeColors.textPrimary,
+            backgroundColor: actualBubbleColor,
+            color: actualTextColor,
             width: '100%',
             borderRadius: '12px',
             border: 'none',
@@ -254,56 +267,91 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                   {(message as any).content || ''}
                 </Box>
               )}
+
+              {/* 工具栏模式 - 在气泡内部底部显示工具栏 */}
+              {messageActionMode === 'toolbar' && (
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: isUserMessage ? 'flex-end' : 'flex-start', // 用户消息右对齐，AI消息左对齐
+                  alignItems: 'center',
+                  mt: 1,
+                  pt: 1,
+                  borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                  opacity: 0.8,
+                  '&:hover': {
+                    opacity: 1,
+                  }
+                }}>
+                  <MessageActions
+                    message={message as any}
+                    topicId={message.topicId}
+                    messageIndex={messageIndex}
+                    onRegenerate={onRegenerate}
+                    onDelete={onDelete}
+                    onSwitchVersion={onSwitchVersion}
+                    onResend={onResend}
+                    renderMode="toolbar"
+                    customTextColor={actualTextColor}
+                  />
+                </Box>
+              )}
             </Box>
           )}
         </Paper>
 
-        {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置 */}
-        {!isUserMessage && settings.showMicroBubbles !== false && (
-          <Box sx={{
-            position: 'absolute',
-            top: -22,
-            right: 0,
-            display: 'flex',
-            flexDirection: 'row',
-            gap: '5px',
-            zIndex: 10,
-            pointerEvents: 'auto',
-          }}>
-            <MessageActions
-              message={message as any}
-              topicId={message.topicId}
-              messageIndex={messageIndex}
-              onRegenerate={onRegenerate}
-              onDelete={onDelete}
-              onSwitchVersion={onSwitchVersion}
-              onResend={onResend}
-              renderMode="full"
-            />
-          </Box>
-        )}
+        {/* 根据设置显示不同的操作模式 */}
+        {messageActionMode === 'bubbles' && (
+          <>
+            {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置 */}
+            {!isUserMessage && settings.showMicroBubbles !== false && (
+              <Box sx={{
+                position: 'absolute',
+                top: -22,
+                right: 0,
+                display: 'flex',
+                flexDirection: 'row',
+                gap: '5px',
+                zIndex: 10,
+                pointerEvents: 'auto',
+              }}>
+                <MessageActions
+                  message={message as any}
+                  topicId={message.topicId}
+                  messageIndex={messageIndex}
+                  onRegenerate={onRegenerate}
+                  onDelete={onDelete}
+                  onSwitchVersion={onSwitchVersion}
+                  onResend={onResend}
+                  renderMode="full"
+                  customTextColor={actualTextColor}
+                />
+              </Box>
+            )}
 
-        {/* 三点菜单按钮 - 对所有消息显示，放置在气泡内的右上角 */}
-        <Box sx={{
-          position: 'absolute',
-          top: 5,
-          right: 5,
-          display: 'flex',
-          flexDirection: 'row',
-          zIndex: 10,
-          pointerEvents: 'auto',
-        }}>
-          <MessageActions
-            message={message as any}
-            topicId={message.topicId}
-            messageIndex={messageIndex}
-            onRegenerate={onRegenerate}
-            onDelete={onDelete}
-            onSwitchVersion={onSwitchVersion}
-            onResend={onResend}
-            renderMode="menuOnly"
-          />
-        </Box>
+            {/* 三点菜单按钮 - 对所有消息显示，放置在气泡内的右上角 */}
+            <Box sx={{
+              position: 'absolute',
+              top: 5,
+              right: 5,
+              display: 'flex',
+              flexDirection: 'row',
+              zIndex: 10,
+              pointerEvents: 'auto',
+            }}>
+              <MessageActions
+                message={message as any}
+                topicId={message.topicId}
+                messageIndex={messageIndex}
+                onRegenerate={onRegenerate}
+                onDelete={onDelete}
+                onSwitchVersion={onSwitchVersion}
+                onResend={onResend}
+                renderMode="menuOnly"
+                customTextColor={actualTextColor}
+              />
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

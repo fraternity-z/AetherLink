@@ -25,8 +25,9 @@ import {
 import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { setTheme, setFontSize } from '../../shared/store/settingsSlice';
+import { setTheme, setFontSize, setFontFamily } from '../../shared/store/settingsSlice';
 import ThemeStyleSelector from '../../components/settings/ThemeStyleSelector';
+import { fontOptions, fontCategoryLabels, getFontById } from '../../shared/config/fonts';
 
 const AppearanceSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -40,6 +41,11 @@ const AppearanceSettings: React.FC = () => {
   // 字体大小处理函数
   const handleFontSizeChange = (_: Event, newValue: number | number[]) => {
     dispatch(setFontSize(newValue as number));
+  };
+
+  // 字体家族处理函数
+  const handleFontFamilyChange = (event: any) => {
+    dispatch(setFontFamily(event.target.value));
   };
 
   // 字体大小预设值
@@ -56,6 +62,12 @@ const AppearanceSettings: React.FC = () => {
   const getCurrentFontSizeLabel = (fontSize: number) => {
     const preset = fontSizePresets.find(p => p.value === fontSize);
     return preset ? preset.label : '自定义';
+  };
+
+  // 获取当前字体的描述
+  const getCurrentFontLabel = (fontId: string) => {
+    const font = getFontById(fontId);
+    return font ? font.name : '系统默认';
   };
 
   const handleNavigateToChatInterface = () => {
@@ -167,6 +179,10 @@ const AppearanceSettings: React.FC = () => {
                 value={settings.theme}
                 onChange={(e) => dispatch(setTheme(e.target.value as 'light' | 'dark' | 'system'))}
                 label="主题"
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableRestoreFocus: true
+                }}
                 sx={{
                   '& .MuiSelect-select': {
                     fontSize: { xs: '0.9rem', sm: '1rem' },
@@ -270,6 +286,108 @@ const AppearanceSettings: React.FC = () => {
             <FormHelperText sx={{ mt: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               调整应用中所有文本的基础字体大小，影响聊天消息、界面文字等全局显示效果
             </FormHelperText>
+          </Box>
+
+          {/* 全局字体选择 */}
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 2
+            }}>
+              <Typography
+                variant="body1"
+                sx={{
+                  fontWeight: 500,
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                }}
+              >
+                全局字体
+              </Typography>
+              <Chip
+                label={getCurrentFontLabel(settings.fontFamily || 'system')}
+                size="small"
+                color="secondary"
+                variant="outlined"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
+
+            <FormControl fullWidth variant="outlined">
+              <InputLabel>字体</InputLabel>
+              <Select
+                value={settings.fontFamily || 'system'}
+                onChange={handleFontFamilyChange}
+                label="字体"
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableRestoreFocus: true,
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                    },
+                  },
+                }}
+                sx={{
+                  '& .MuiSelect-select': {
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderRadius: 2,
+                  },
+                }}
+              >
+                {Object.entries(fontCategoryLabels).map(([category, label]) => [
+                  <MenuItem key={`category-${category}`} disabled sx={{
+                    fontWeight: 600,
+                    color: 'primary.main',
+                    fontSize: '0.875rem',
+                    opacity: '1 !important'
+                  }}>
+                    {label}
+                  </MenuItem>,
+                  ...fontOptions
+                    .filter(font => font.category === category)
+                    .map(font => (
+                      <MenuItem
+                        key={font.id}
+                        value={font.id}
+                        sx={{
+                          fontFamily: font.fontFamily.join(', '),
+                          pl: 3,
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                          }
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {font.name}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              display: 'block',
+                              fontFamily: font.fontFamily.join(', '),
+                              mt: 0.5
+                            }}
+                          >
+                            {font.preview}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))
+                ]).flat()}
+              </Select>
+              <FormHelperText sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                选择应用的全局字体，将影响所有界面文字的显示效果
+              </FormHelperText>
+            </FormControl>
           </Box>
           </Box>
         </Paper>

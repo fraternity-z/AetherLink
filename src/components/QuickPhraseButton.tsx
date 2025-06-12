@@ -165,6 +165,8 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
+        disableAutoFocus={true}
+        disableRestoreFocus={true}
         PaperProps={{
           style: {
             maxHeight: 400,

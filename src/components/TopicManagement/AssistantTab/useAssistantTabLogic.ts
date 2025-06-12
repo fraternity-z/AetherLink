@@ -290,17 +290,26 @@ export function useAssistantTabLogic(
     try {
       await AssistantService.clearAssistantTopics(selectedMenuAssistant.id);
 
-      // 如果选中的助手是当前助手，刷新它
-      if (currentAssistant && currentAssistant.id === selectedMenuAssistant.id) {
-        const updatedAssistant = {
-          ...currentAssistant,
-          topicIds: [],
-          topics: []
-        };
-        if (onUpdateAssistant) {
-          onUpdateAssistant(updatedAssistant);
-        }
+      // 创建更新后的助手对象
+      const updatedAssistant = {
+        ...selectedMenuAssistant,
+        topicIds: [],
+        topics: []
+      };
+
+      // 总是更新Redux状态，不管是否是当前助手
+      if (onUpdateAssistant) {
+        onUpdateAssistant(updatedAssistant);
+        console.log(`[useAssistantTabLogic] 已更新助手 ${selectedMenuAssistant.name} 的Redux状态`);
       }
+
+      // 如果是当前助手，也要更新当前助手状态
+      if (currentAssistant && currentAssistant.id === selectedMenuAssistant.id) {
+        // 这里会通过onUpdateAssistant回调更新当前助手
+        console.log(`[useAssistantTabLogic] 清空的是当前助手，已同步更新`);
+      }
+
+      console.log(`[useAssistantTabLogic] 成功清空助手 ${selectedMenuAssistant.name} 的话题`);
     } catch (error) {
       console.error('清空话题失败:', error);
     }

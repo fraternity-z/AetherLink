@@ -293,11 +293,16 @@
   bottom: -0.25em;
 }
 
-/* 表格样式 */
+/* 表格样式 - 优化可读性和主题适配 */
 .markdown table {
   border-collapse: collapse;
   margin: 1em 0;
   width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  /* 确保表格有独立的背景，不受气泡背景影响 */
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .markdown th,
@@ -305,23 +310,76 @@
   border: 1px solid #e0e0e0;
   padding: 8px 12px;
   text-align: left;
+  vertical-align: top;
+  /* 确保文字颜色清晰可见 */
+  color: #333333;
 }
 
 .markdown th {
-  background-color: #f5f5f5;
+  background-color: #f8f9fa;
   font-weight: bold;
+  color: #2c3e50;
 }
 
-/* 深色模式表格样式 */
+/* 斑马纹效果提升可读性 */
+.markdown tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.markdown tbody tr:hover {
+  background-color: #e9ecef;
+}
+
+/* 深色模式表格样式 - 使用媒体查询 */
 @media (prefers-color-scheme: dark) {
+  .markdown table {
+    background-color: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
   .markdown th,
   .markdown td {
     border-color: #404040;
+    color: #e0e0e0;
   }
 
   .markdown th {
-    background-color: #2a2a2a;
+    background-color: #2d3748;
+    color: #f7fafc;
   }
+
+  .markdown tbody tr:nth-child(even) {
+    background-color: #2d3748;
+  }
+
+  .markdown tbody tr:hover {
+    background-color: #4a5568;
+  }
+}
+
+/* 主题类深色模式表格样式 - 支持手动主题切换 */
+[data-theme="dark"] .markdown table {
+  background-color: #1a1a1a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .markdown th,
+[data-theme="dark"] .markdown td {
+  border-color: #404040;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .markdown th {
+  background-color: #2d3748;
+  color: #f7fafc;
+}
+
+[data-theme="dark"] .markdown tbody tr:nth-child(even) {
+  background-color: #2d3748;
+}
+
+[data-theme="dark"] .markdown tbody tr:hover {
+  background-color: #4a5568;
 }
 
 /* 脚注引用样式 */

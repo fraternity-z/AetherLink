@@ -9,6 +9,7 @@ export const useTheme = () => {
   const themePreference = useSelector((state: any) => state.settings.theme);
   const themeStyle = useSelector((state: any) => state.settings.themeStyle);
   const fontSize = useSelector((state: any) => state.settings.fontSize);
+  const fontFamily = useSelector((state: any) => state.settings.fontFamily || 'system');
 
   // 监听系统主题变化
   useEffect(() => {
@@ -42,8 +43,8 @@ export const useTheme = () => {
 
   // 创建主题对象 - 使用稳定的依赖
   const theme = useMemo(() => {
-    return createCustomTheme(mode, themeStyle || 'default', fontSize);
-  }, [mode, themeStyle, fontSize]);
+    return createCustomTheme(mode, themeStyle || 'default', fontSize, fontFamily);
+  }, [mode, themeStyle, fontSize, fontFamily]);
 
-  return { theme, mode, fontSize };
+  return { theme, mode, fontSize, fontFamily };
 };

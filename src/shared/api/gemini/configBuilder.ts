@@ -16,7 +16,7 @@ import {
   isGenerateImageModel,
   isGemmaModel
 } from '../../config/models';
-import { getThinkingBudget } from '../../utils/settingsUtils';
+import { getThinkingBudget, getAppSettings } from '../../utils/settingsUtils';
 
 /**
  * Gemini 配置构建器类
@@ -46,7 +46,7 @@ export class GeminiConfigBuilder {
       systemInstruction: isGemmaModel(this.model) ? undefined : this.systemInstruction,
       temperature: this.getTemperature(),
       topP: this.getTopP(),
-      maxOutputTokens: this.maxTokens,
+      maxOutputTokens: this.getMaxTokens(),
       tools: this.tools,
       ...this.getBudgetToken(),
       ...this.getCustomParameters(),
@@ -87,16 +87,16 @@ export class GeminiConfigBuilder {
   }
 
   /**
-   * 获取安全设置
+   * 获取安全设置 - 全部开放，不阻止任何内容
    */
   private getSafetySettings(): SafetySetting[] {
-    const safetyThreshold = 'OFF' as HarmBlockThreshold;
+    const safetyThreshold = HarmBlockThreshold.BLOCK_NONE;
     return [
       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: safetyThreshold },
       { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: safetyThreshold },
       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: safetyThreshold },
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: safetyThreshold },
-      { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+      { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: safetyThreshold }
     ];
   }
 
@@ -112,6 +112,30 @@ export class GeminiConfigBuilder {
    */
   private getTopP(): number {
     return this.assistant?.settings?.topP || this.assistant?.topP || (this.model as any)?.topP || 0.95;
+  }
+
+  /**
+   * 获取最大输出 tokens
+   */
+  private getMaxTokens(): number {
+    // 从应用设置中获取maxOutputTokens
+    const appSettings = getAppSettings();
+    const appMaxOutputTokens = appSettings.maxOutputTokens;
+
+    // 优先级：助手设置 > 助手直接设置 > 应用设置 > 模型设置 > 构造函数传入值 > 默认值
+    const maxTokens = this.assistant?.settings?.maxTokens ??
+                     this.assistant?.maxTokens ??
+                     appMaxOutputTokens ??
+                     this.model.maxTokens ??
+                     this.maxTokens ??
+                     4096;
+
+    // 确保值在合理范围内（最小1）
+    const finalTokens = Math.max(maxTokens, 1);
+
+    console.log(`[GeminiConfigBuilder] maxTokens参数 - 助手设置: ${this.assistant?.settings?.maxTokens}, 助手直接设置: ${this.assistant?.maxTokens}, 应用设置: ${appMaxOutputTokens}, 模型设置: ${this.model.maxTokens}, 构造函数传入: ${this.maxTokens}, 最终值: ${finalTokens}`);
+
+    return finalTokens;
   }
 
   /**

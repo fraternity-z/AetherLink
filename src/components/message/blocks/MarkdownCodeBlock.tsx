@@ -4,6 +4,7 @@ import { useAppSelector } from '../../../shared/store';
 import CodeBlock from './CodeBlock';
 import EnhancedCodeBlock from './EnhancedCodeBlock';
 import MermaidBlock from './MermaidBlock';
+import Markdown from '../Markdown';
 import type { CodeMessageBlock } from '../../../shared/types/newMessage';
 
 // 需要接收并传递 messageRole
@@ -55,6 +56,61 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   // **检测 Mermaid 图表时传递角色**
   if (language === 'mermaid') {
     return <MermaidBlock code={children} id={id} messageRole={messageRole} />;
+  }
+
+  /**
+   * 🔧 表格检测和自动转换功能
+   *
+   * 问题背景：
+   * AI有时会错误地将Markdown表格包裹在代码块中，例如：
+   * ```
+   * | 列1 | 列2 | 列3 |
+   * |-----|-----|-----|
+   * | 数据1 | 数据2 | 数据3 |
+   * ```
+   *
+   * 这会导致表格被显示为代码块（带有"TEXT"标签），而不是正确的表格格式。
+   *
+   * 解决方案：
+   * 当检测到代码块语言为'text'且内容符合Markdown表格语法时，
+   * 自动将其转换为Markdown渲染，从而正确显示为表格。
+   *
+   * 检测条件：
+   * 1. 语言标识为'text'或空字符串
+   * 2. 包含表格分隔行（如 |---|---|---| 或 |:---:|:---:|---:|）
+   * 3. 至少有2行包含管道符分隔的内容
+   *
+   * 注意：此功能是为了修复AI输出格式问题，如果未来AI输出格式改善，可以考虑移除。
+   */
+  const isTableContent = useMemo(() => {
+    // 只处理text类型的代码块
+    if (language !== 'text' && language !== '') return false;
+
+    // 分割并过滤空行
+    const lines = children.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return false;
+
+    // 检查是否有表格分隔行（包含 --- 或 :---: 等对齐语法）
+    const hasSeparatorRow = lines.some(line =>
+      /^\s*\|?[\s\-:]+\|[\s\-:|]*\|?\s*$/.test(line)
+    );
+
+    // 检查是否有多行包含管道符分隔的内容（至少3列）
+    const tableRows = lines.filter(line =>
+      line.includes('|') && line.split('|').length >= 3
+    );
+
+    // 必须同时满足：有分隔行 + 至少2行表格数据
+    return hasSeparatorRow && tableRows.length >= 2;
+  }, [children, language]);
+
+  // 如果检测到表格内容，使用Markdown组件渲染而不是代码块
+  if (isTableContent) {
+    return (
+      <div style={{ margin: '16px 0' }}>
+        <Markdown content={children} allowHtml={false} />
+      </div>
+    );
   }
 
   // 注意：数学公式由 Markdown 层面的插件处理

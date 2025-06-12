@@ -262,6 +262,10 @@ const ChatInterfaceSettings: React.FC = () => {
                 value={thinkingDisplayStyle}
                 onChange={handleThinkingStyleChange}
                 label="显示样式"
+                MenuProps={{
+                  disableAutoFocus: true,
+                  disableRestoreFocus: true
+                }}
               >
                 <MenuItem value={ThinkingDisplayStyle.COMPACT}>紧凑模式（可折叠）</MenuItem>
                 <MenuItem value={ThinkingDisplayStyle.FULL}>完整模式（始终展开）</MenuItem>
@@ -337,6 +341,10 @@ const ChatInterfaceSettings: React.FC = () => {
               value={multiModelDisplayStyle}
               onChange={handleMultiModelDisplayStyleChange}
               label="布局方式"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="horizontal">水平布局（默认）</MenuItem>
               <MenuItem value="vertical">垂直布局（并排显示）</MenuItem>
@@ -361,6 +369,10 @@ const ChatInterfaceSettings: React.FC = () => {
               value={toolbarDisplayStyle}
               onChange={handleToolbarStyleChange}
               label="工具栏显示样式"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="both">图标+文字（默认）</MenuItem>
               <MenuItem value="icon">仅图标</MenuItem>
@@ -385,6 +397,10 @@ const ChatInterfaceSettings: React.FC = () => {
               value={inputBoxStyle}
               onChange={handleInputBoxStyleChange}
               label="输入框风格"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="default">默认风格</MenuItem>
               <MenuItem value="modern">现代风格</MenuItem>
@@ -409,6 +425,10 @@ const ChatInterfaceSettings: React.FC = () => {
               value={inputLayoutStyle}
               onChange={handleInputLayoutStyleChange}
               label="布局样式"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="default">默认样式（工具栏+输入框分离）</MenuItem>
               <MenuItem value="compact">聚合样式（输入框+功能图标集成）</MenuItem>
@@ -551,6 +571,10 @@ const ChatInterfaceSettings: React.FC = () => {
               value={showSystemPromptBubble ? 'show' : 'hide'}
               onChange={handleSystemPromptBubbleChange}
               label="系统提示词气泡显示"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               <MenuItem value="show">显示</MenuItem>
               <MenuItem value="hide">隐藏</MenuItem>

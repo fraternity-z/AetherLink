@@ -735,6 +735,14 @@ export default function TopicTab({
                 size="small"
                 startIcon={<Plus size={16} />}
                 onClick={onCreateTopic}
+                sx={{
+                  color: 'text.primary',
+                  borderColor: 'text.secondary',
+                  '&:hover': {
+                    borderColor: 'text.primary',
+                    backgroundColor: 'action.hover'
+                  }
+                }}
               >
                 新建话题
               </Button>
@@ -947,13 +955,14 @@ export default function TopicTab({
           />
           <TextField
             margin="dense"
-            label="系统提示词"
+            label="追加提示词"
             multiline
             rows={6}
             fullWidth
             variant="outlined"
             value={editTopicPrompt}
             onChange={(e) => setEditTopicPrompt(e.target.value)}
+            helperText="此提示词将追加到助手的系统提示词之后。如果助手没有系统提示词，则单独使用此提示词。"
           />
         </DialogContent>
         <DialogActions>

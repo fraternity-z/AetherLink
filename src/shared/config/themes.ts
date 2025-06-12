@@ -1,5 +1,6 @@
 import { createTheme, alpha } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
+import { getFontFamilyString } from './fonts';
 
 // 主题风格类型
 export type ThemeStyle = 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk';
@@ -332,10 +333,12 @@ export const themeConfigs: Record<ThemeStyle, ThemeConfig> = {
 export const createCustomTheme = (
   mode: 'light' | 'dark',
   themeStyle: ThemeStyle,
-  fontSize: number = 16
+  fontSize: number = 16,
+  fontFamily: string = 'system'
 ): Theme => {
   const config = themeConfigs[themeStyle];
   const fontScale = fontSize / 16;
+  const fontFamilyString = getFontFamilyString(fontFamily);
 
   return createTheme({
     palette: {
@@ -374,18 +377,7 @@ export const createCustomTheme = (
     },
     typography: {
       fontSize: fontSize,
-      fontFamily: [
-        '-apple-system',
-        'BlinkMacSystemFont',
-        '"Segoe UI"',
-        'Roboto',
-        '"Helvetica Neue"',
-        'Arial',
-        'sans-serif',
-        '"Apple Color Emoji"',
-        '"Segoe UI Emoji"',
-        '"Segoe UI Symbol"',
-      ].join(','),
+      fontFamily: fontFamilyString,
       h1: { fontSize: `${2.5 * fontScale}rem` },
       h2: { fontSize: `${2 * fontScale}rem` },
       h3: { fontSize: `${1.75 * fontScale}rem` },

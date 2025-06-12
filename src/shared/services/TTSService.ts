@@ -17,6 +17,8 @@ export class TTSService {
 
   // 硅基流动API Key，实际应用中应从环境变量或安全存储中获取
   private siliconFlowApiKey: string = '';
+  // 硅基流动流式输出设置
+  private useSiliconFlowStream: boolean = false;
 
   // OpenAI API 设置
   private openaiApiKey: string = '';
@@ -101,6 +103,14 @@ export class TTSService {
    */
   public setApiKey(apiKey: string): void {
     this.siliconFlowApiKey = apiKey;
+  }
+
+  /**
+   * 设置是否使用硅基流动流式输出
+   * @param useStream 是否使用流式输出
+   */
+  public setUseSiliconFlowStream(useStream: boolean): void {
+    this.useSiliconFlowStream = useStream;
   }
 
   /**
@@ -761,17 +771,44 @@ export class TTSService {
         voice = `${model}:${voice}`;
       }
 
-      console.log('硅基流动TTS请求参数:', { model, voice, textLength: text.length });
+      console.log('硅基流动TTS请求参数:', {
+        model,
+        voice,
+        textLength: text.length,
+        useStream: this.useSiliconFlowStream
+      });
       console.log('硅基流动TTS文本内容:', text.substring(0, 100) + (text.length > 100 ? '...' : ''));
 
       const requestBody = {
         model: model,
         input: text,
         voice: voice,
-        response_format: 'mp3'
+        response_format: 'mp3',
+        stream: this.useSiliconFlowStream // 添加流式输出参数
       };
 
       console.log('硅基流动TTS完整请求体:', JSON.stringify(requestBody, null, 2));
+
+      // 根据是否使用流式输出选择不同的处理方式
+      if (this.useSiliconFlowStream) {
+        return await this.speakWithSiliconFlowStream(url, requestBody);
+      } else {
+        return await this.speakWithSiliconFlowNormal(url, requestBody);
+      }
+    } catch (error) {
+      console.error('硅基流动API播放失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 使用硅基流动API播放文本 (标准模式)
+   * @param url API地址
+   * @param requestBody 请求体
+   * @returns 是否成功播放
+   */
+  private async speakWithSiliconFlowNormal(url: string, requestBody: any): Promise<boolean> {
+    try {
 
       // 发送API请求
       const response = await fetch(url, {
@@ -816,7 +853,108 @@ export class TTSService {
 
       return false;
     } catch (error) {
-      console.error('硅基流动API播放失败:', error);
+      console.error('硅基流动API标准模式播放失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 使用硅基流动API播放文本 (流式模式)
+   * @param url API地址
+   * @param requestBody 请求体
+   * @returns 是否成功播放
+   */
+  private async speakWithSiliconFlowStream(url: string, requestBody: any): Promise<boolean> {
+    try {
+      console.log('硅基流动TTS开始流式播放...');
+
+      // 检查AudioContext是否可用
+      if (!this.audioContext) {
+        console.warn('AudioContext不可用，回退到标准模式');
+        return await this.speakWithSiliconFlowNormal(url, { ...requestBody, stream: false });
+      }
+
+      // 发送流式API请求
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.siliconFlowApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      // 检查响应状态
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('硅基流动API流式请求失败:', response.status, errorData);
+        return false;
+      }
+
+      // 处理流式响应
+      if (response.body) {
+        this.isStreamPlaying = true;
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            if (value) {
+              chunks.push(value);
+              // 可以在这里实现实时播放逻辑
+              // 目前先收集所有数据块，然后一次性播放
+            }
+          }
+
+          // 合并所有音频数据块
+          const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+          const audioData = new Uint8Array(totalLength);
+          let offset = 0;
+          for (const chunk of chunks) {
+            audioData.set(chunk, offset);
+            offset += chunk.length;
+          }
+
+          // 创建音频Blob并播放
+          const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
+
+          // 释放之前的Blob URL
+          if (this.currentAudioBlob) {
+            URL.revokeObjectURL(this.currentAudioBlob);
+          }
+
+          // 创建新的Blob URL
+          this.currentAudioBlob = URL.createObjectURL(audioBlob);
+
+          // 播放音频
+          if (this.audio) {
+            this.audio.src = this.currentAudioBlob;
+            try {
+              await this.audio.play();
+              console.log('硅基流动TTS流式播放成功');
+              return true;
+            } catch (error) {
+              console.error('硅基流动API流式播放失败:', error);
+              this.isStreamPlaying = false;
+              return false;
+            }
+          }
+
+          return false;
+        } finally {
+          reader.releaseLock();
+          this.isStreamPlaying = false;
+        }
+      } else {
+        console.error('响应体为空');
+        return false;
+      }
+    } catch (error) {
+      console.error('硅基流动API流式模式播放失败:', error);
+      this.isStreamPlaying = false;
       return false;
     }
   }

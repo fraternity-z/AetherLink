@@ -9,6 +9,7 @@ import { findImageBlocks, findFileBlocks } from '../../utils/blockUtils';
 import { createGeminiFileService } from './fileService';
 import { log } from '../../services/LoggerService';
 import { FileProcessingUtils } from '../../utils/fileProcessingUtils';
+import { dexieStorage } from '../../services/DexieStorageService';
 
 // 文件大小常量
 const MB = 1024 * 1024;
@@ -95,6 +96,7 @@ export class GeminiMessageContentService {
     const imageBlocks = findImageBlocks(message);
 
     for (const imageBlock of imageBlocks) {
+      // 处理AI生成的图片（保留原有逻辑）
       if (imageBlock.metadata?.generateImageResponse?.images) {
         for (const imageUrl of imageBlock.metadata.generateImageResponse.images) {
           if (imageUrl?.startsWith('data:')) {
@@ -108,6 +110,67 @@ export class GeminiMessageContentService {
               });
             }
           }
+        }
+      }
+      // 处理用户上传的图片
+      else {
+        try {
+          let base64Data: string | null = null;
+          let mimeType: string = imageBlock.mimeType || 'image/jpeg';
+
+          // 情况1：直接的base64数据
+          if (imageBlock.base64Data) {
+            if (imageBlock.base64Data.startsWith('data:')) {
+              const matches = imageBlock.base64Data.match(/^data:(.+);base64,(.*)$/);
+              if (matches && matches.length === 3) {
+                base64Data = matches[2];
+                mimeType = matches[1];
+              }
+            } else {
+              base64Data = imageBlock.base64Data;
+            }
+          }
+          // 情况2：图片引用格式 [图片:ID]，需要从数据库加载
+          else if (imageBlock.url) {
+            const refMatch = imageBlock.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/);
+            if (refMatch && refMatch[1]) {
+              try {
+                // 从数据库加载图片
+                const imageId = refMatch[1];
+                const blob = await dexieStorage.getImageBlob(imageId);
+
+                if (blob) {
+                  // 将Blob转换为base64
+                  const arrayBuffer = await blob.arrayBuffer();
+                  const uint8Array = new Uint8Array(arrayBuffer);
+                  const binaryString = Array.from(uint8Array, byte => String.fromCharCode(byte)).join('');
+                  base64Data = btoa(binaryString);
+                  mimeType = blob.type || 'image/jpeg';
+                }
+              } catch (error) {
+                log('WARN', `加载图片引用失败: ${imageBlock.url}`, { error });
+              }
+            } else if (imageBlock.url.startsWith('data:')) {
+              // 直接的data URL
+              const matches = imageBlock.url.match(/^data:(.+);base64,(.*)$/);
+              if (matches && matches.length === 3) {
+                base64Data = matches[2];
+                mimeType = matches[1];
+              }
+            }
+          }
+
+          // 如果成功获取到base64数据，添加到parts中
+          if (base64Data) {
+            parts.push({
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType
+              } as Part['inlineData']
+            });
+          }
+        } catch (error) {
+          log('ERROR', `处理图片块失败: ${imageBlock.id}`, { error });
         }
       }
     }

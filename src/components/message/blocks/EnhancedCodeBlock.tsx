@@ -217,7 +217,20 @@ const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({ block, onSave }) 
 
   // 判断是否需要显示折叠按钮
   const shouldShowCollapseButton = useMemo(() => {
-    return codeCollapsible && block.content.split('\n').length > 10;
+    const lineCount = block.content.split('\n').length;
+    const shouldShow = codeCollapsible && lineCount > 5; // 降低阈值从10行到5行
+
+    // 调试信息（开发环境）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('折叠按钮显示条件:', {
+        codeCollapsible,
+        lineCount,
+        shouldShow,
+        content: block.content.substring(0, 50) + '...'
+      });
+    }
+
+    return shouldShow;
   }, [codeCollapsible, block.content]);
 
   // 获取语法高亮主题
@@ -304,8 +317,17 @@ const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({ block, onSave }) 
         overflow: 'hidden',
         // 移除背景色，让 SyntaxHighlighter 的主题背景色生效
         position: 'relative',
-        '&:hover .code-toolbar': {
-          opacity: 1
+        // 桌面端hover显示工具栏
+        '@media (hover: hover)': {
+          '&:hover .code-toolbar': {
+            opacity: 1
+          }
+        },
+        // 移动端始终显示工具栏
+        '@media (hover: none)': {
+          '& .code-toolbar': {
+            opacity: 1
+          }
         }
       }}
     >

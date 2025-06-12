@@ -1,663 +1,529 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  IconButton,
-  CircularProgress,
-  Slide
-} from '@mui/material';
-import { Mic, MicOff, Send, Edit, X, Plus, Volume2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Typography, Paper } from '@mui/material';
+import { VolumeX } from 'lucide-react';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition';
 
 interface EnhancedVoiceInputProps {
   isDarkMode?: boolean;
-  onClose: () => void;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (message: string) => void;
   onInsertText: (text: string) => void;
+  onClose: () => void; // 关闭录音面板
+  startRecognition: (options?: { language?: string; maxResults?: number; partialResults?: boolean; popup?: boolean }) => Promise<void>; // 启动语音识别函数
 }
 
 const EnhancedVoiceInput: React.FC<EnhancedVoiceInputProps> = ({
   isDarkMode = false,
+  onInsertText,
   onClose,
-  onSendMessage,
-  onInsertText
+  startRecognition
 }) => {
-  // 语音识别状态
+  // 语音识别Hook
   const {
     isListening,
     recognitionText,
-    permissionStatus,
-    startRecognition,
+    error,
     stopRecognition,
-    checkAndRequestPermissions
+    permissionStatus
   } = useVoiceRecognition();
 
   // 组件状态
-  const [mode, setMode] = useState<'initial' | 'recording' | 'preview'>('initial');
-  const [editingText, setEditingText] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [volumeLevel, setVolumeLevel] = useState(0);
-  const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showControls, setShowControls] = useState(true);
+  const [volumeLevel] = useState(50); // 固定音量级别用于动画
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [shouldCancel, setShouldCancel] = useState(false);
 
-  // 音频分析器相关引用
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const micStreamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  
-  // 处理识别文本更新
+  // 长按检测状态
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [hasStartedRecording, setHasStartedRecording] = useState(false);
+  const [longPressProgress, setLongPressProgress] = useState(0);
+
+
+
+  // 实时将识别文本添加到输入框
   useEffect(() => {
-    if (recognitionText) {
-      setEditingText(recognitionText);
+    if (recognitionText && isListening) {
+      // 实时更新输入框内容
+      onInsertText(recognitionText);
     }
-  }, [recognitionText]);
-  
-  // 处理录音状态变化
+  }, [recognitionText, isListening, onInsertText]);
+
+  // 清理资源
   useEffect(() => {
-    if (isListening) {
-      setMode('recording');
-      setupAudioAnalyser();
-    } else if (recognitionText && mode === 'recording') {
-      setMode('preview');
-      cleanupAudioAnalyser();
-    }
-    
     return () => {
-      cleanupAudioAnalyser();
-      if (silenceTimer) {
-        clearTimeout(silenceTimer);
+      // 清理长按定时器
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+      // 如果正在录音，停止录音
+      if (isListening) {
+        stopRecognition();
       }
     };
-  }, [isListening, recognitionText]);
-  
-  // 设置音频分析器
-  const setupAudioAnalyser = async () => {
+  }, [isListening, stopRecognition, longPressTimer]);
+
+
+
+
+
+
+
+
+
+  // 清理长按定时器
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    setLongPressProgress(0);
+  }, [longPressTimer]);
+
+  // 启动录音
+  const startRecordingInternal = useCallback(async () => {
+    if (hasStartedRecording) return;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStreamRef.current = stream;
-      
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      
-      const analyser = audioContext.createAnalyser();
-      analyserRef.current = analyser;
-      analyser.fftSize = 256;
-      
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphone.connect(analyser);
-      
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
-      const updateVolume = () => {
-        if (!analyser || mode !== 'recording') return;
-        
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
-        }
-        
-        // 计算平均音量级别 (0-100)
-        const average = sum / dataArray.length;
-        const normalizedVolume = Math.min(100, Math.max(0, average * 2));
-        setVolumeLevel(normalizedVolume);
-        
-        // 如果音量低于阈值，考虑为静音
-        if (average < 5) { // 静音阈值
-          if (!silenceTimer) {
-            const timer = setTimeout(() => {
-              // 静音超时，自动停止录音
-              handleStopRecording();
-            }, 3000); // 3秒静音自动停止
-            setSilenceTimer(timer);
-          }
-        } else if (silenceTimer) {
-          // 有声音了，清除静音定时器
-          clearTimeout(silenceTimer);
-          setSilenceTimer(null);
-        }
-        
-        animationFrameRef.current = requestAnimationFrame(updateVolume);
-      };
-      
-      updateVolume();
-      
-    } catch (error) {
-      setErrorMessage('无法访问麦克风，请检查权限设置');
-    }
-  };
-  
-  // 清理音频分析器
-  const cleanupAudioAnalyser = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close().catch(() => {});
-      audioContextRef.current = null;
-    }
-    
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach(track => track.stop());
-      micStreamRef.current = null;
-    }
-    
-    analyserRef.current = null;
-    
-    if (silenceTimer) {
-      clearTimeout(silenceTimer);
-      setSilenceTimer(null);
-    }
-  };
-  
-  // 处理开始录音
-  const handleStartRecording = async () => {
-    setErrorMessage(null);
-    try {
-      // 先检查权限
-      const hasPermission = await checkAndRequestPermissions();
-      if (!hasPermission) {
-        setErrorMessage('麦克风权限被拒绝');
-        return;
-      }
-      
+      setHasStartedRecording(true);
       await startRecognition({
         language: 'zh-CN',
-        maxResults: 1,
-        partialResults: true, 
-        popup: false
+        partialResults: true
       });
-      
     } catch (error) {
-      setErrorMessage('启动语音识别失败');
+      console.error('启动录音失败:', error);
+      setHasStartedRecording(false);
     }
-  };
-  
-  // 处理停止录音
-  const handleStopRecording = async () => {
-    try {
-      await stopRecognition();
-    } catch (error) {
-      // 静默处理错误
-    }
-  };
-  
-  // 处理文本编辑
-  const handleTextEdit = () => {
-    setIsEditing(true);
-  };
-  
-  // 处理文本变化
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditingText(e.target.value);
-  };
-  
-  // 处理编辑完成
-  const handleEditComplete = () => {
-    setIsEditing(false);
-  };
-  
-  // 处理插入文本
-  const handleInsertText = () => {
-    if (editingText.trim()) {
-      onInsertText(editingText.trim());
-      handleClose();
-    }
-  };
-  
-  // 处理发送消息
-  const handleSendMessage = () => {
-    if (editingText.trim()) {
-      onSendMessage(editingText.trim());
-      handleClose();
-      
-      // 添加触觉反馈 (如果支持)
-      if ('navigator' in window && 'vibrate' in navigator) {
-        try {
-          navigator.vibrate(50); // 短振动反馈
-        } catch (e) {
-          // 忽略振动API错误
+  }, [hasStartedRecording, startRecognition]);
+
+  // 长按开始
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStartY(touch.clientY);
+    setShouldCancel(false);
+
+    // 清理之前的定时器
+    clearLongPressTimer();
+
+    // 启动长按检测定时器（300ms后开始录音）
+    const timer = setTimeout(() => {
+      startRecordingInternal();
+    }, 300);
+
+    setLongPressTimer(timer);
+
+    // 启动进度动画
+    const progressTimer = setInterval(() => {
+      setLongPressProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressTimer);
+          return 100;
         }
+        return prev + (100 / 30); // 300ms内完成进度
+      });
+    }, 10);
+
+    // 300ms后清理进度定时器
+    setTimeout(() => {
+      clearInterval(progressTimer);
+    }, 300);
+  }, [clearLongPressTimer, startRecordingInternal]);
+
+  // 拖拽移动
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+
+    // 计算上滑距离
+    const deltaY = dragStartY - touch.clientY;
+    const cancelThreshold = 100; // 上滑100px取消
+
+    setShouldCancel(deltaY > cancelThreshold);
+  }, [isDragging, dragStartY]);
+
+  // 松开手指
+  const handleTouchEnd = useCallback(async (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!isDragging) return;
+
+    setIsDragging(false);
+
+    // 清理长按定时器
+    clearLongPressTimer();
+
+    // 如果还没开始录音（长按时间不够），直接关闭
+    if (!hasStartedRecording) {
+      onClose();
+      return;
+    }
+
+    if (shouldCancel) {
+      // 上滑取消 - 直接关闭，不发送
+      try {
+        await stopRecognition();
+        onClose();
+      } catch (error) {
+        console.error('取消录音失败:', error);
+        onClose();
+      }
+    } else {
+      // 松开发送 - 停止录音并等待结果
+      try {
+        await stopRecognition();
+        // 注意：这里不调用 onClose()，让语音识别结果通过 onInsertText 处理
+        // onClose() 会在 ChatInput 中的 onInsertText 回调中调用
+      } catch (error) {
+        console.error('发送录音失败:', error);
+        onClose();
       }
     }
-  };
-  
-  // 处理关闭
-  const handleClose = () => {
-    // 如果正在录音，先停止
-    if (isListening) {
-      stopRecognition().catch(() => {});
-    }
-    
-    // 动画效果：先隐藏控制按钮，再关闭组件
-    setShowControls(false);
+
+    // 重置状态
+    setShouldCancel(false);
+    setDragStartY(0);
+    setHasStartedRecording(false);
+    setLongPressProgress(0);
+  }, [isDragging, shouldCancel, stopRecognition, onClose, clearLongPressTimer, hasStartedRecording]);
+
+  // 鼠标事件（桌面端）
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStartY(e.clientY);
+    setShouldCancel(false);
+
+    // 清理之前的定时器
+    clearLongPressTimer();
+
+    // 启动长按检测定时器（300ms后开始录音）
+    const timer = setTimeout(() => {
+      startRecordingInternal();
+    }, 300);
+
+    setLongPressTimer(timer);
+
+    // 启动进度动画
+    const progressTimer = setInterval(() => {
+      setLongPressProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressTimer);
+          return 100;
+        }
+        return prev + (100 / 30); // 300ms内完成进度
+      });
+    }, 10);
+
+    // 300ms后清理进度定时器
     setTimeout(() => {
+      clearInterval(progressTimer);
+    }, 300);
+  }, [clearLongPressTimer, startRecordingInternal]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const deltaY = dragStartY - e.clientY;
+    const cancelThreshold = 100;
+
+    setShouldCancel(deltaY > cancelThreshold);
+  }, [isDragging, dragStartY]);
+
+  const handleMouseUp = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isDragging) return;
+
+    setIsDragging(false);
+
+    // 清理长按定时器
+    clearLongPressTimer();
+
+    // 如果还没开始录音（长按时间不够），直接关闭
+    if (!hasStartedRecording) {
       onClose();
-    }, 150);
-  };
-  
-  // 麦克风根据音量展示波动效果
-  const getMicAnimation = () => {
-    const baseScale = 1;
-    const scaleIncrement = volumeLevel / 100 * 0.5; // 最大增加0.5倍
-    const scale = baseScale + scaleIncrement;
-    
-    return {
-      transform: `scale(${scale})`,
-      transition: 'transform 0.1s ease',
-    };
-  };
-  
-  // 渲染初始状态
-  if (mode === 'initial') {
+      return;
+    }
+
+    if (shouldCancel) {
+      try {
+        await stopRecognition();
+        onClose();
+      } catch (error) {
+        console.error('取消录音失败:', error);
+        onClose();
+      }
+    } else {
+      try {
+        await stopRecognition();
+      } catch (error) {
+        console.error('发送录音失败:', error);
+        onClose();
+      }
+    }
+
+    setShouldCancel(false);
+    setDragStartY(0);
+    setHasStartedRecording(false);
+    setLongPressProgress(0);
+  }, [isDragging, shouldCancel, stopRecognition, onClose, clearLongPressTimer, hasStartedRecording]);
+
+
+
+  // 权限检查 - 只有明确被拒绝时才显示错误
+  if (permissionStatus === 'denied') {
     return (
-      <Slide direction="up" in={true}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 2.5,
-            borderRadius: '16px',
-            background: isDarkMode ? '#2A2A2A' : '#FFFFFF',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <IconButton
-            size="small"
-            onClick={handleClose}
-            sx={{
-              position: 'absolute',
-              right: '8px',
-              top: '8px',
-              color: isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-            }}
-          >
-            <X size={16} />
-          </IconButton>
-          
-          <Typography
-            variant="h6"
-            sx={{
-              mb: 3,
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              color: isDarkMode ? '#fff' : '#333',
-            }}
-          >
-            <Volume2 size={20} color="#2196f3" style={{ marginRight: 8 }} />
-            语音输入
-          </Typography>
-          
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            startIcon={<Mic size={16} />}
-            onClick={handleStartRecording}
-            sx={{
-              borderRadius: '30px',
-              py: 1.5,
-              px: 4,
-              mt: 1,
-              mb: 3,
-              backgroundColor: '#2196f3',
-              boxShadow: '0 4px 12px rgba(33,150,243,0.3)',
-              '&:hover': {
-                backgroundColor: '#1976d2',
-                boxShadow: '0 6px 16px rgba(33,150,243,0.4)',
-              },
-            }}
-          >
-            开始录音
-          </Button>
-          
-          {permissionStatus === 'denied' && (
-            <Typography
-              variant="body2"
-              color="error"
-              sx={{ mt: 1, textAlign: 'center' }}
-            >
-              麦克风权限被拒绝，请在浏览器设置中允许访问麦克风。
-            </Typography>
-          )}
-          
-          {errorMessage && (
-            <Typography
-              variant="body2"
-              color="error"
-              sx={{ mt: 1, textAlign: 'center' }}
-            >
-              {errorMessage}
-            </Typography>
-          )}
-        </Paper>
-      </Slide>
-    );
-  }
-  
-  // 渲染录音状态
-  if (mode === 'recording') {
-    return (
-      <Slide direction="up" in={true}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 2.5,
-            borderRadius: '16px',
-            background: isDarkMode ? 'rgba(42, 42, 42, 0.97)' : 'rgba(255, 255, 255, 0.97)',
-            border: '2px solid #f44336',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* 录音状态指示 */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(244, 67, 54, 0.15)',
-                position: 'relative',
-                mb: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  position: 'absolute',
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '50%',
-                  border: '2px solid #f44336',
-                  animation: 'ripple 1.5s infinite ease-out',
-                  '@keyframes ripple': {
-                    '0%': { transform: 'scale(0.8)', opacity: 1 },
-                    '100%': { transform: 'scale(1.5)', opacity: 0 },
-                  },
-                }}
-              />
-              <Mic
-                size={32}
-                color="#f44336"
-                style={getMicAnimation()}
-              />
-            </Box>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                color: '#f44336', 
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              正在录音
-              <Box
-                component="span"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  '&::after': {
-                    content: '""',
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: '#f44336',
-                    borderRadius: '50%',
-                    animation: 'blink 1s infinite',
-                    '@keyframes blink': {
-                      '0%': { opacity: 1 },
-                      '50%': { opacity: 0.3 },
-                      '100%': { opacity: 1 },
-                    },
-                  },
-                }}
-              />
-            </Typography>
-          </Box>
-
-          {/* 实时识别文本 */}
-          {recognitionText && (
-            <Paper
-              elevation={1}
-              sx={{
-                p: 2,
-                mb: 3,
-                width: '100%',
-                backgroundColor: isDarkMode ? 'rgba(60, 60, 60, 0.7)' : 'rgba(250, 250, 250, 0.9)',
-                borderRadius: '12px',
-                maxHeight: '120px',
-                overflowY: 'auto',
-                border: '1px solid',
-                borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-              }}
-            >
-              <Typography
-                variant="body1"
-                sx={{
-                  color: isDarkMode ? '#fff' : '#333',
-                  wordBreak: 'break-word',
-                  lineHeight: 1.6,
-                  fontWeight: 400,
-                }}
-              >
-                {recognitionText}
-              </Typography>
-            </Paper>
-          )}
-
-          {/* 操作按钮 */}
-          <Slide direction="up" in={showControls}>
-            <Box sx={{ display: 'flex', gap: 2, width: '100%', justifyContent: 'center' }}>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={handleStopRecording}
-                startIcon={<MicOff size={16} />}
-                sx={{
-                  borderRadius: '24px',
-                  px: 3,
-                  py: 1,
-                  boxShadow: '0 2px 8px rgba(244,67,54,0.3)',
-                  '&:hover': {
-                    backgroundColor: '#d32f2f',
-                    boxShadow: '0 4px 12px rgba(244,67,54,0.5)',
-                  },
-                }}
-              >
-                停止录音
-              </Button>
-              
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={handleClose}
-                startIcon={<X size={16} />}
-                sx={{
-                  borderRadius: '24px',
-                  px: 3,
-                  py: 1,
-                  borderColor: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                  color: isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
-                }}
-              >
-                取消
-              </Button>
-            </Box>
-          </Slide>
-
-          {/* 静音提示 */}
-          {silenceTimer && (
-            <Typography
-              variant="caption"
-              sx={{
-                color: isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-                mt: 2,
-                fontStyle: 'italic',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              <CircularProgress size={12} color="inherit" />
-              检测到静音，即将自动停止...
-            </Typography>
-          )}
-        </Paper>
-      </Slide>
-    );
-  }
-  
-  // 渲染预览状态
-  return (
-    <Slide direction="up" in={true}>
       <Paper
-        elevation={3}
+        elevation={1}
         sx={{
-          p: 2.5,
-          borderRadius: '16px',
-          background: isDarkMode ? '#2A2A2A' : '#FFFFFF',
-          width: '100%',
-          position: 'relative',
+          height: 80,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+          borderRadius: 2,
+          p: 2,
+          border: `1px solid ${isDarkMode ? '#444' : '#e0e0e0'}`
         }}
       >
-        {/* 标题 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Volume2 size={20} color={isDarkMode ? '#90caf9' : '#2196f3'} style={{ marginRight: 8 }} />
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              语音识别结果
+        <VolumeX size={24} color="#f44336" style={{ marginBottom: 8 }} />
+        <Typography variant="caption" color="text.secondary" textAlign="center">
+          需要麦克风权限
+        </Typography>
+      </Paper>
+    );
+  }
+
+
+
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        // 防止文本选择
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        // 防止拖拽
+        WebkitTouchCallout: 'none',
+        WebkitTapHighlightColor: 'transparent'
+      }}
+    >
+      {/* 错误提示 */}
+      {error && (
+        <Box sx={{ mb: 1 }}>
+          <Typography
+            variant="caption"
+            color="error"
+            sx={{
+              fontSize: '0.75rem',
+              userSelect: 'none'
+            }}
+          >
+            错误: {error.message}
+          </Typography>
+        </Box>
+      )}
+
+      {/* 录音状态提示文字 - 独立显示在上方 */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          mb: 1,
+          transform: shouldCancel ? 'translateY(-10px)' : 'translateY(0)',
+          transition: 'transform 0.2s ease'
+        }}
+      >
+        <Box
+          sx={{
+            backgroundColor: shouldCancel
+              ? '#f44336'
+              : hasStartedRecording
+              ? '#4caf50'
+              : isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            borderRadius: '20px',
+            px: 2,
+            py: 0.5,
+            transition: 'background-color 0.2s ease',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none'
+          }}
+        >
+          <Typography
+            variant="body2"
+            fontWeight={500}
+            color={shouldCancel || hasStartedRecording
+              ? '#ffffff'
+              : isDarkMode ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)'
+            }
+            sx={{
+              fontSize: '0.8rem',
+              textAlign: 'center',
+              transition: 'color 0.2s ease',
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              MozUserSelect: 'none',
+              msUserSelect: 'none'
+            }}
+          >
+            {shouldCancel
+              ? '松开取消录音'
+              : hasStartedRecording
+              ? '正在录音...'
+              : '长按开始录音'}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* 录音波形动画面板 */}
+      <Paper
+        elevation={3}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp} // 鼠标离开也视为松开
+        sx={{
+          height: 80,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+          borderRadius: 2,
+          border: shouldCancel
+            ? `2px solid #f44336`
+            : hasStartedRecording
+            ? `2px solid #4caf50`
+            : `2px solid #6366f1`,
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.2s ease',
+          px: 2,
+          cursor: 'pointer',
+          transform: shouldCancel ? 'scale(0.95)' : 'scale(1)',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          msUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent'
+        }}
+      >
+        {/* 长按进度指示器 */}
+        {!hasStartedRecording && longPressProgress > 0 && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              height: '100%',
+              width: `${longPressProgress}%`,
+              backgroundColor: 'rgba(99, 102, 241, 0.3)',
+              borderRadius: 2,
+              transition: 'width 0.1s ease',
+              zIndex: 1
+            }}
+          />
+        )}
+        {/* 录音波形动画背景 - 只在录音时显示 */}
+        {hasStartedRecording && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 50%, #81c784 100%)',
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              zIndex: 2
+            }}
+          >
+          {/* 音频波形动画 */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              height: '40%'
+            }}
+          >
+            {/* 生成多个波形条 */}
+            {Array.from({ length: 20 }, (_, i) => (
+              <Box
+                key={i}
+                sx={{
+                  width: '3px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  borderRadius: '2px',
+                  animation: `wave-${i % 4} 1.2s ease-in-out infinite`,
+                  animationDelay: `${i * 0.1}s`,
+                  height: `${20 + (volumeLevel / 100) * 60 + Math.sin(i * 0.5) * 20}%`,
+                  minHeight: '20%',
+                  maxHeight: '100%',
+                  transition: 'height 0.1s ease',
+                  '@keyframes wave-0': {
+                    '0%, 100%': { transform: 'scaleY(0.3)' },
+                    '50%': { transform: 'scaleY(1)' }
+                  },
+                  '@keyframes wave-1': {
+                    '0%, 100%': { transform: 'scaleY(0.5)' },
+                    '50%': { transform: 'scaleY(0.8)' }
+                  },
+                  '@keyframes wave-2': {
+                    '0%, 100%': { transform: 'scaleY(0.7)' },
+                    '50%': { transform: 'scaleY(1.2)' }
+                  },
+                  '@keyframes wave-3': {
+                    '0%, 100%': { transform: 'scaleY(0.4)' },
+                    '50%': { transform: 'scaleY(0.9)' }
+                  }
+                }}
+              />
+            ))}
+          </Box>
+        </Box>
+        )}
+
+        {/* 未录音时的提示 */}
+        {!hasStartedRecording && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              zIndex: 2
+            }}
+          >
+            <Typography
+              variant="body2"
+              color={isDarkMode ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)'}
+              sx={{
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                userSelect: 'none'
+              }}
+            >
+              长按开始录音
             </Typography>
           </Box>
-          <IconButton size="small" onClick={handleClose}>
-            <X size={16} />
-          </IconButton>
-        </Box>
-
-        {/* 识别文本显示/编辑 */}
-        <Box sx={{ mb: 3 }}>
-          {isEditing ? (
-            <textarea
-              value={editingText}
-              onChange={handleTextChange}
-              onBlur={handleEditComplete}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-                backgroundColor: isDarkMode ? '#333' : '#fff',
-                color: isDarkMode ? '#fff' : '#000',
-                resize: 'none',
-                minHeight: '100px',
-                fontSize: '1rem',
-                fontFamily: 'inherit',
-                outline: 'none',
-                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            />
-          ) : (
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2,
-                backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-                borderRadius: '8px',
-                minHeight: '80px',
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: isDarkMode ? '#3a3a3a' : '#f0f0f0',
-                },
-                borderColor: isDarkMode ? '#444' : '#e0e0e0',
-              }}
-              onClick={handleTextEdit}
-            >
-              <Typography
-                variant="body1"
-                sx={{
-                  wordBreak: 'break-word',
-                  fontSize: '1rem',
-                  lineHeight: 1.6,
-                }}
-              >
-                {editingText || recognitionText}
-              </Typography>
-            </Paper>
-          )}
-        </Box>
-
-        {/* 操作按钮 */}
-        <Slide direction="up" in={showControls}>
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="medium"
-              startIcon={<Plus size={16} />}
-              onClick={handleInsertText}
-              sx={{ 
-                borderRadius: '24px',
-                minWidth: '120px',
-                textTransform: 'none',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.08)',
-              }}
-            >
-              插入输入框
-            </Button>
-            
-            <Button
-              variant="contained"
-              color="success"
-              size="medium"
-              startIcon={<Send size={16} />}
-              onClick={handleSendMessage}
-              sx={{ 
-                borderRadius: '24px',
-                minWidth: '120px',
-                textTransform: 'none',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.08)',
-              }}
-            >
-              直接发送
-            </Button>
-
-            <Button
-              variant="outlined"
-              size="medium"
-              startIcon={<Edit size={16} />}
-              onClick={handleTextEdit}
-              sx={{ 
-                borderRadius: '24px',
-                ml: 'auto',
-                textTransform: 'none',
-              }}
-            >
-              编辑
-            </Button>
-          </Box>
-        </Slide>
+        )}
       </Paper>
-    </Slide>
+    </Box>
   );
 };
 
-export default EnhancedVoiceInput; 
+export default EnhancedVoiceInput;

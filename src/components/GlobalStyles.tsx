@@ -11,6 +11,7 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
     :root {
       --global-font-size: ${fontSize}px;
       --global-font-scale: ${fontSize / 16};
+      --global-font-family: ${theme.typography.fontFamily};
       --theme-primary: ${theme.palette.primary.main};
       --theme-secondary: ${theme.palette.secondary.main};
       --theme-background: ${theme.palette.background.default};
@@ -21,6 +22,7 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
 
     body {
       font-size: var(--global-font-size) !important;
+      font-family: var(--global-font-family) !important;
       background-color: var(--theme-background) !important;
     }
 
@@ -50,39 +52,51 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
       }
     ` : ''}
 
-    /* 聊天消息字体大小 */
+    /* 全局字体设置 */
+    * {
+      font-family: var(--global-font-family) !important;
+    }
+
+    /* 聊天消息字体 */
     .message-content {
       font-size: var(--global-font-size) !important;
+      font-family: var(--global-font-family) !important;
     }
 
-    /* 代码块字体大小 */
+    /* 代码块字体 */
     .code-block {
       font-size: calc(var(--global-font-size) * 0.875) !important;
+      /* 代码块保持等宽字体 */
     }
 
-    /* 输入框字体大小 */
+    /* 输入框字体 */
     .chat-input {
       font-size: var(--global-font-size) !important;
+      font-family: var(--global-font-family) !important;
     }
 
-    /* 按钮字体大小 */
+    /* 按钮字体 */
     .MuiButton-root {
       font-size: calc(var(--global-font-size) * 0.875) !important;
+      font-family: var(--global-font-family) !important;
     }
 
-    /* 表单控件字体大小 */
+    /* 表单控件字体 */
     .MuiFormControl-root .MuiInputBase-input {
       font-size: var(--global-font-size) !important;
+      font-family: var(--global-font-family) !important;
     }
 
-    /* 菜单项字体大小 */
+    /* 菜单项字体 */
     .MuiMenuItem-root {
       font-size: var(--global-font-size) !important;
+      font-family: var(--global-font-family) !important;
     }
 
-    /* 工具提示字体大小 */
+    /* 工具提示字体 */
     .MuiTooltip-tooltip {
       font-size: calc(var(--global-font-size) * 0.75) !important;
+      font-family: var(--global-font-family) !important;
     }
   `;
 

@@ -27,11 +27,14 @@ import type { MCPServer, MCPServerType } from '../../shared/types';
 import { mcpService } from '../../shared/services/MCPService';
 
 interface MCPToolsButtonProps {
-  onMCPToggle?: (enabled: boolean) => void;
-  mcpEnabled?: boolean;
+  toolsEnabled?: boolean;
+  onToolsEnabledChange?: (enabled: boolean) => void;
 }
 
-const MCPToolsButton: React.FC<MCPToolsButtonProps> = () => {
+const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
+  toolsEnabled = true,
+  onToolsEnabledChange
+}) => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -99,6 +102,21 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = () => {
     try {
       await mcpService.toggleServer(serverId, isActive);
       loadServers();
+
+      // 自动管理总开关逻辑
+      if (onToolsEnabledChange) {
+        const updatedActiveServers = mcpService.getActiveServers();
+
+        if (isActive && !toolsEnabled) {
+          // 开启任何服务器时，如果总开关是关闭的，自动开启
+          console.log('[MCP] 开启服务器，自动启用MCP工具总开关');
+          onToolsEnabledChange(true);
+        } else if (!isActive && updatedActiveServers.length === 0 && toolsEnabled) {
+          // 关闭所有服务器时，自动关闭总开关
+          console.log('[MCP] 所有服务器已关闭，自动禁用MCP工具总开关');
+          onToolsEnabledChange(false);
+        }
+      }
     } catch (error) {
       console.error('切换服务器状态失败:', error);
     }
@@ -195,22 +213,30 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = () => {
           }
         }}
       >
-        <DialogTitle sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          pb: 1
-        }}>
-          <Wrench size={20} color="#10b981" />
-          MCP 工具服务器
-          {hasActiveServers && (
-            <Chip
-              label={`${activeServers.length} 个运行中`}
-              size="small"
-              color="success"
-              variant="outlined"
-            />
-          )}
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Wrench size={20} color="#10b981" />
+              <Typography variant="h6" fontWeight={600}>
+                MCP 工具服务器
+              </Typography>
+              {hasActiveServers && (
+                <Chip
+                  label={`${activeServers.length} 个运行中`}
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                />
+              )}
+            </Box>
+            {onToolsEnabledChange && (
+              <Switch
+                checked={toolsEnabled}
+                onChange={(e) => onToolsEnabledChange(e.target.checked)}
+                color="primary"
+              />
+            )}
+          </Box>
         </DialogTitle>
 
         <DialogContent sx={{ p: 0 }}>

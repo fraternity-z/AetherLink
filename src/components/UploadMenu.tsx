@@ -26,6 +26,8 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
       anchorEl={anchorEl}
       open={open}
       onClose={onClose}
+      disableAutoFocus={true}
+      disableRestoreFocus={true}
       anchorOrigin={{
         vertical: 'top',
         horizontal: 'center',

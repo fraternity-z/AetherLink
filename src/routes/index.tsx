@@ -44,6 +44,9 @@ const QuickPhraseSettings = lazy(() => import('../components/QuickPhraseSettings
 // 导入助手设置页面
 const AssistantSettings = lazy(() => import('../components/TopicManagement/SettingsTab/AssistantSettings'));
 const AssistantModelSettings = lazy(() => import('../components/TopicManagement/SettingsTab/AssistantModelSettings'));
+// 导入工作区页面
+const WorkspaceSettings = lazy(() => import('../pages/Settings/WorkspaceSettings'));
+const WorkspaceDetail = lazy(() => import('../pages/Settings/WorkspaceDetail'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -136,6 +139,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/mcp-server/:serverId" element={<MCPServerDetail />} />
         <Route path="/settings/model-combo" element={<ModelComboSettings />} />
         <Route path="/settings/knowledge" element={<KnowledgeSettings />} />
+        <Route path="/settings/workspace" element={<WorkspaceSettings />} />
+        <Route path="/settings/workspace/:workspaceId" element={<WorkspaceDetail />} />
         <Route path="/settings/assistant-settings" element={<AssistantSettings />} />
         <Route path="/settings/assistant-model-settings" element={<AssistantModelSettings />} />
         <Route path="/devtools" element={<DevToolsPage />} />

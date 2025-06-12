@@ -214,6 +214,10 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
               value={formData.model || ''}
               onChange={handleModelChange}
               label="嵌入模型 *"
+              MenuProps={{
+                disableAutoFocus: true,
+                disableRestoreFocus: true
+              }}
             >
               {availableModels.length > 0 ? (
                 availableModels.map((model: Model) => (

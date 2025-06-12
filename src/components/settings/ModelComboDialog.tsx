@@ -299,6 +299,10 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
                           value={model.role}
                           onChange={(e) => handleModelChange(index, 'role', e.target.value)}
                           label="角色"
+                          MenuProps={{
+                            disableAutoFocus: true,
+                            disableRestoreFocus: true
+                          }}
                         >
                           <MenuItem value="primary">主要</MenuItem>
                           <MenuItem value="secondary">次要</MenuItem>
