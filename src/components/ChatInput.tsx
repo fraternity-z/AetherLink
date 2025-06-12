@@ -320,7 +320,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     } else {
       setShowExpandButton(false);
     }
-  }, [expanded]);
+  }, [expanded, textareaRef]);
 
   // 监听消息内容变化，检测是否显示展开按钮
   useEffect(() => {
