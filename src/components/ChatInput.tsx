@@ -17,7 +17,6 @@ import EnhancedToast, { toastManager } from './EnhancedToast';
 import { dexieStorage } from '../shared/services/DexieStorageService';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
-import AIDebateButton from './AIDebateButton';
 import type { DebateConfig } from '../shared/services/AIDebateService';
 import QuickPhraseButton from './QuickPhraseButton';
 import { useVoiceRecognition } from '../shared/hooks/useVoiceRecognition';
@@ -27,6 +26,9 @@ import { useTheme } from '@mui/material/styles';
 import { EventEmitter, EVENT_NAMES } from '../shared/services/EventService';
 import ToolsMenu from './ToolsMenu';
 import KnowledgeSelector from './chat/KnowledgeSelector';
+import { TopicService } from '../shared/services/TopicService';
+import { useDispatch } from 'react-redux';
+import { newMessagesActions } from '../shared/store/slices/newMessagesSlice';
 
 interface ChatInputProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
@@ -110,6 +112,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // 获取设置状态
   const settings = useSelector((state: RootState) => state.settings);
 
+  // 获取dispatch
+  const dispatch = useDispatch();
+
   // 使用共享的 hooks
   const { styles, isDarkMode, inputBoxStyle } = useInputStyles();
 
@@ -117,9 +122,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const theme = useTheme();
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
   const themeColors = getThemeColors(theme, themeStyle);
-
-  // 获取AI辩论按钮显示设置
-  const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
 
   // 获取快捷短语按钮显示设置
   const showQuickPhraseButton = useSelector((state: RootState) => state.settings.showQuickPhraseButton ?? true);
@@ -486,8 +488,32 @@ const ChatInput: React.FC<ChatInputProps> = ({
     handleCloseToolsMenu();
   };
 
-  const handleNewTopic = () => {
+  const handleNewTopic = async () => {
+    // 触发新建话题事件
     EventEmitter.emit(EVENT_NAMES.ADD_NEW_TOPIC);
+    console.log('[ChatInput] Emitted ADD_NEW_TOPIC event.');
+
+    // 创建新话题
+    const newTopic = await TopicService.createNewTopic();
+
+    // 如果成功创建话题，自动跳转到新话题
+    if (newTopic) {
+      console.log('[ChatInput] 成功创建新话题，自动跳转:', newTopic.id);
+
+      // 设置当前话题 - 立即选择新创建的话题
+      dispatch(newMessagesActions.setCurrentTopicId(newTopic.id));
+
+      // 确保话题侧边栏显示并选中新话题
+      setTimeout(() => {
+        EventEmitter.emit(EVENT_NAMES.SHOW_TOPIC_SIDEBAR);
+
+        // 再次确保新话题被选中，防止其他逻辑覆盖
+        setTimeout(() => {
+          dispatch(newMessagesActions.setCurrentTopicId(newTopic.id));
+        }, 50);
+      }, 100);
+    }
+    
     handleCloseToolsMenu();
   };
 
@@ -1175,16 +1201,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               </IconButton>
             </Tooltip>
 
-            {/* AI辩论按钮 */}
-            {showAIDebateButton && (
-              <AIDebateButton
-                onStartDebate={onStartDebate}
-                onStopDebate={onStopDebate}
-                isDebating={isDebating}
-                disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-                question={message}
-              />
-            )}
+            {/* AI辩论按钮已移至工具菜单 */}
 
             {/* 快捷短语按钮 */}
             {showQuickPhraseButton && (
@@ -1283,10 +1300,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
         onKnowledgeBase={handleKnowledgeBase}
         onImageGeneration={handleImageGeneration}
         onWebSearch={handleWebSearch}
+        onStartDebate={onStartDebate}
+        onStopDebate={onStopDebate}
         imageGenerationMode={imageGenerationMode}
         webSearchActive={webSearchActive}
+        isDebating={isDebating}
         toolsEnabled={toolsEnabled}
         onToolsEnabledChange={onToolsEnabledChange || (() => {})}
+        debateQuestion={message}
       />
 
       {/* 知识库选择器 */}

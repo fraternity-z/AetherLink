@@ -3,7 +3,6 @@ import { Box, IconButton, Typography, Collapse, Chip } from '@mui/material';
 import MCPToolsButton from './chat/MCPToolsButton';
 import WebSearchProviderSelector from './WebSearchProviderSelector';
 import KnowledgeSelector from './chat/KnowledgeSelector';
-import AIDebateButton from './AIDebateButton';
 import QuickPhraseButton from './QuickPhraseButton';
 import MultiModelSelector from './MultiModelSelector';
 import EnhancedToast, { toastManager } from './EnhancedToast';
@@ -50,8 +49,6 @@ interface CompactChatInputProps {
 const CompactChatInput: React.FC<CompactChatInputProps> = ({
   onSendMessage,
   onSendMultiModelMessage, // 启用多模型功能
-  onStartDebate, // 启用AI辩论功能
-  onStopDebate, // 启用AI辩论功能
   isLoading = false,
   allowConsecutiveMessages = true,
   imageGenerationMode = false,
@@ -60,7 +57,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   onDetectUrl,
   onStopResponse,
   isStreaming = false,
-  isDebating = false, // 启用辩论状态
   toolsEnabled = true,
   availableModels = [], // 启用多模型功能
   onClearTopic,
@@ -97,7 +93,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   const { hasKnowledgeContext, getKnowledgeContextSummary, clearStoredKnowledgeContext } = useKnowledgeContext();
 
   // 获取设置控制状态
-  const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
   const showQuickPhraseButton = useSelector((state: RootState) => state.settings.showQuickPhraseButton ?? true);
   const currentAssistant = useSelector((state: RootState) => state.assistants.currentAssistant);
 
@@ -975,17 +970,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
             </IconButton>
           );
         })}
-
-        {/* AI辩论按钮 */}
-        {showAIDebateButton && (
-          <AIDebateButton
-            onStartDebate={onStartDebate}
-            onStopDebate={onStopDebate}
-            isDebating={isDebating}
-            disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-            question={message}
-          />
-        )}
 
         {/* 快捷短语按钮 */}
         {showQuickPhraseButton && (

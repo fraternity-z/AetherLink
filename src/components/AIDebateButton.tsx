@@ -66,12 +66,16 @@ interface DebateConfigGroup {
   updatedAt: number;
 }
 
+// 在AIDebateButtonProps接口中完全移除dialogOpen和onDialogClose
 interface AIDebateButtonProps {
   onStartDebate?: (question: string, config: DebateConfig) => void;
   onStopDebate?: () => void;
   isDebating?: boolean;
   disabled?: boolean;
   question?: string;
+  // 添加外部触发对话框的prop
+  triggerOpen?: boolean;
+  onTriggerHandled?: () => void;
 }
 
 const AIDebateButton: React.FC<AIDebateButtonProps> = ({
@@ -79,7 +83,9 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
   onStopDebate,
   isDebating = false,
   disabled = false,
-  question = ''
+  question = '',
+  triggerOpen = false,
+  onTriggerHandled
 }) => {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -101,6 +107,14 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
 
   // 预设主题折叠状态
   const [topicsExpanded, setTopicsExpanded] = useState(false);
+
+  // 添加useEffect来处理外部触发 - 移动到组件内部
+  useEffect(() => {
+    if (triggerOpen && !dialogOpen) {
+      setDialogOpen(true);
+      onTriggerHandled?.();
+    }
+  }, [triggerOpen, dialogOpen, onTriggerHandled]);
 
   // 预设辩论主题
   const debateTopics = [
@@ -127,7 +141,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
     {
       category: '环境与可持续发展',
       topics: [
-        '个人行为改变是否足以应对气候变化？',
+        '个人行为改变是否足以应对气候变暖？',
         '核能是否是解决能源危机的最佳方案？',
         '电动汽车是否真的比燃油汽车更环保？',
         '是否应该禁止使用一次性塑料制品？',
@@ -139,7 +153,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
       topics: [
         '基本收入制度是否应该在全球推行？',
         '加密货币是否会取代传统货币？',
-        '共享经济模式是否可持续发展？',
+        '共享经济模式是否可持续？',
         '企业是否应该承担更多的社会责任？',
         '全球化是否对发展中国家有利？'
       ]
