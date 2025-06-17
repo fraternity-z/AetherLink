@@ -57,7 +57,6 @@ const MCPServerSettings: React.FC = () => {
     message: '',
     severity: 'success'
   });
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
 
 
@@ -215,9 +214,6 @@ const MCPServerSettings: React.FC = () => {
 
   // 处理删除服务器
   const handleDeleteServer = async (server: MCPServer) => {
-    if (deletingId) return; // 防止重复进入
-    setDeletingId(server.id); // 标记为忙碌
-    
     try {
       await mcpService.removeServer(server.id);
       loadServers();
@@ -232,8 +228,6 @@ const MCPServerSettings: React.FC = () => {
         message: '删除失败',
         severity: 'error'
       });
-    } finally {
-      setDeletingId(null); // 重置
     }
   };
 
@@ -660,9 +654,8 @@ const MCPServerSettings: React.FC = () => {
                           handleDeleteServer(server);
                         }}
                         size="small"
-                        disabled={deletingId === server.id}
                         sx={{
-                          color: deletingId === server.id ? 'text.disabled' : 'error.main',
+                          color: 'error.main',
                           '&:hover': {
                             bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
                           }
