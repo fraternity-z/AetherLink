@@ -17,7 +17,7 @@ interface BackupButtonsProps {
   isLoading: boolean;
   onBasicBackup: () => void;
   onFullBackup: () => void;
-  onCustomBackup: () => void;
+  onSelectiveBackup: () => void; // 新增选择性备份
   onRestore: () => void;
   onImportExternal: () => void;
   onClearAll: () => void;
@@ -34,7 +34,7 @@ const BackupButtons: React.FC<BackupButtonsProps> = ({
   isLoading,
   onBasicBackup,
   onFullBackup,
-  onCustomBackup,
+  onSelectiveBackup,
   onRestore,
   onImportExternal,
   onClearAll,
@@ -90,7 +90,7 @@ const BackupButtons: React.FC<BackupButtonsProps> = ({
           variant="outlined"
           startIcon={<SettingsIcon />}
           fullWidth
-          onClick={onCustomBackup}
+          onClick={onSelectiveBackup}
           disabled={isLoading}
           sx={{
             py: 1.5,
@@ -103,7 +103,7 @@ const BackupButtons: React.FC<BackupButtonsProps> = ({
             },
           }}
         >
-          自定义选择性备份
+          选择性备份
         </Button>
 
         <Button

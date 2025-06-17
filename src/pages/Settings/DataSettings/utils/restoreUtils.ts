@@ -43,8 +43,11 @@ export function validateBackupData(data: any): boolean {
   const hasAssistants = Array.isArray(data.assistants);
   const hasSettings = typeof data.settings === 'object' && data.settings !== null;
 
+  // 检查选择性备份数据结构
+  const hasModelConfig = typeof data.modelConfig === 'object' && data.modelConfig !== null;
+
   // 至少需要包含以下字段之一
-  const hasRequiredFields = hasTopics || hasAssistants || hasSettings;
+  const hasRequiredFields = hasTopics || hasAssistants || hasSettings || hasModelConfig;
 
   // 检查appInfo信息
   const hasAppInfo = typeof data.appInfo === 'object' && data.appInfo !== null;
@@ -52,6 +55,12 @@ export function validateBackupData(data: any): boolean {
   // 基本验证通过
   if (hasRequiredFields && hasAppInfo) {
     console.log('备份数据基本验证通过');
+
+    // 如果是选择性备份，记录备份类型
+    if (data.appInfo.backupType === 'selective') {
+      console.log('检测到选择性备份数据');
+    }
+
     return true;
   }
 
@@ -328,6 +337,48 @@ export async function restoreSettings(
 }
 
 /**
+ * 恢复模型配置（选择性备份专用）
+ */
+export async function restoreModelConfig(
+  modelConfigData: any,
+  currentSettings: any = {}
+): Promise<boolean> {
+  try {
+    if (!modelConfigData) {
+      console.warn('没有模型配置需要恢复');
+      return false;
+    }
+
+    console.log('开始恢复模型配置...');
+
+    // 合并当前设置和模型配置
+    const mergedSettings = {
+      ...currentSettings,
+      // 恢复模型相关配置
+      providers: modelConfigData.providers || currentSettings.providers || [],
+      models: modelConfigData.models || currentSettings.models || [],
+      defaultModelId: modelConfigData.defaultModelId || currentSettings.defaultModelId,
+      currentModelId: modelConfigData.currentModelId || currentSettings.currentModelId,
+      webSearch: modelConfigData.webSearch || currentSettings.webSearch,
+    };
+
+    // 如果有模型类型规则，也恢复
+    if (modelConfigData.modelTypeRules) {
+      mergedSettings.modelTypeRules = modelConfigData.modelTypeRules;
+    }
+
+    // 保存设置到数据库
+    await setStorageItem('settings', mergedSettings);
+
+    console.log('模型配置恢复完成');
+    return true;
+  } catch (error) {
+    console.error('恢复模型配置时出错:', error);
+    return false;
+  }
+}
+
+/**
  * 恢复备份设置
  */
 export async function restoreBackupSettings(backupSettings: { location?: string; storageType?: string }): Promise<boolean> {
@@ -405,7 +456,7 @@ export async function restoreLocalStorageItems(items: Record<string, any>): Prom
 }
 
 /**
- * 执行完整备份恢复
+ * 执行完整备份恢复（支持选择性备份）
  */
 export async function performFullRestore(
   backupData: any,
@@ -415,7 +466,9 @@ export async function performFullRestore(
   topicsCount: number;
   assistantsCount: number;
   settingsRestored: boolean;
+  modelConfigRestored: boolean;
   localStorageCount: number;
+  backupType: string;
   error?: string;
 }> {
   try {
@@ -426,29 +479,55 @@ export async function performFullRestore(
 
     onProgress?.('处理备份数据', 0.15);
 
+    // 检测备份类型
+    const backupType = backupData.appInfo?.backupType || 'full';
+    const isSelectiveBackup = backupType === 'selective';
+
     // 处理备份数据的版本兼容性
     const processedData = processBackupDataForVersion(backupData);
-
-    // 恢复进度
-    onProgress?.('恢复话题数据', 0.2);
-
-    // 恢复话题
-    const topicsCount = await restoreTopics(processedData.topics);
-
-    onProgress?.('恢复助手数据', 0.4);
-
-    // 恢复助手
-    const assistantsCount = await restoreAssistants(processedData.assistants);
-
-    onProgress?.('恢复设置数据', 0.6);
 
     // 获取当前设置
     const currentSettings = await getStorageItem('settings') || {};
 
-    // 恢复设置
-    const settingsRestored = processedData.settings ?
-      await restoreSettings(processedData.settings, currentSettings) :
-      false;
+    let topicsCount = 0;
+    let assistantsCount = 0;
+    let settingsRestored = false;
+    let modelConfigRestored = false;
+
+    if (isSelectiveBackup) {
+      // 选择性备份恢复逻辑
+      console.log('执行选择性备份恢复');
+
+      if (processedData.modelConfig) {
+        onProgress?.('恢复模型配置', 0.5);
+        modelConfigRestored = await restoreModelConfig(processedData.modelConfig, currentSettings);
+      }
+
+      // 选择性备份可能包含其他数据类型
+      if (processedData.topics) {
+        onProgress?.('恢复话题数据', 0.3);
+        topicsCount = await restoreTopics(processedData.topics);
+      }
+
+      if (processedData.assistants) {
+        onProgress?.('恢复助手数据', 0.4);
+        assistantsCount = await restoreAssistants(processedData.assistants);
+      }
+    } else {
+      // 完整备份恢复逻辑
+      console.log('执行完整备份恢复');
+
+      onProgress?.('恢复话题数据', 0.2);
+      topicsCount = await restoreTopics(processedData.topics);
+
+      onProgress?.('恢复助手数据', 0.4);
+      assistantsCount = await restoreAssistants(processedData.assistants);
+
+      onProgress?.('恢复设置数据', 0.6);
+      settingsRestored = processedData.settings ?
+        await restoreSettings(processedData.settings, currentSettings) :
+        false;
+    }
 
     onProgress?.('恢复备份设置', 0.7);
 
@@ -477,7 +556,9 @@ export async function performFullRestore(
       topicsCount,
       assistantsCount,
       settingsRestored,
-      localStorageCount
+      modelConfigRestored,
+      localStorageCount,
+      backupType
     };
   } catch (error) {
     console.error('执行完整恢复时出错:', error);
@@ -486,7 +567,9 @@ export async function performFullRestore(
       topicsCount: 0,
       assistantsCount: 0,
       settingsRestored: false,
+      modelConfigRestored: false,
       localStorageCount: 0,
+      backupType: 'unknown',
       error: error instanceof Error ? error.message : String(error)
     };
   }

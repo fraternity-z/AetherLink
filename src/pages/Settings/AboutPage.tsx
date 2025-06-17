@@ -220,7 +220,7 @@ const AboutPage: React.FC = () => {
             </Slide>
 
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontWeight: 600, fontSize: 15, letterSpacing: 1 }}>
-              版本: <span style={{ color: '#9333ea', fontWeight: 700 }}>0.4.6</span>
+              版本: <span style={{ color: '#9333ea', fontWeight: 700 }}>0.4.8</span>
             </Typography>
 
             {/* 底部按钮组 */}

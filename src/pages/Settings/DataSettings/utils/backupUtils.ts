@@ -1,6 +1,7 @@
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
+import { Capacitor } from '@capacitor/core';
 import type { ChatTopic } from '../../../../shared/types';
 import type { Assistant } from '../../../../shared/types/Assistant';
 import { dexieStorage } from '../../../../shared/services/DexieStorageService';
@@ -382,6 +383,50 @@ export async function prepareFullBackupData(): Promise<{
 }
 
 /**
+ * Web端直接下载备份文件
+ */
+async function downloadBackupFileForWeb(
+  fileName: string,
+  jsonData: any,
+  onSuccess: (message: string) => void,
+  onError: (error: Error) => void,
+  onBackupComplete?: () => void
+): Promise<void> {
+  try {
+    const jsonString = JSON.stringify(jsonData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    // 创建下载链接
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+
+    // 添加到DOM并触发下载
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // 通知成功
+    onSuccess(`备份文件 ${fileName} 已下载到浏览器默认下载目录`);
+
+    // 备份完成回调
+    if (onBackupComplete) {
+      setTimeout(() => {
+        onBackupComplete();
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Web端下载失败:', error);
+    onError(error instanceof Error ? error : new Error('下载失败'));
+  }
+}
+
+/**
  * 创建备份文件并共享
  */
 export async function createAndShareBackupFile(
@@ -391,6 +436,12 @@ export async function createAndShareBackupFile(
   onError: (error: Error) => void,
   onBackupComplete?: () => void
 ): Promise<void> {
+  // 检查是否为Web端，如果是则使用直接下载
+  if (Capacitor.getPlatform() === 'web') {
+    return downloadBackupFileForWeb(fileName, jsonData, onSuccess, onError, onBackupComplete);
+  }
+
+  // 移动端使用原有的分享逻辑
   try {
     console.log(`开始创建备份文件: ${fileName}`);
     const jsonString = JSON.stringify(jsonData, null, 2); // 使用格式化的JSON便于调试
