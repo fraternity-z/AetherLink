@@ -20,6 +20,11 @@ export function cleanText(text: string): string {
  */
 export function normalizeUrl(url: string, baseUrl: string = 'https://cn.bing.com'): string {
   try {
+    // 添加安全检查
+    if (!url || typeof url !== 'string') {
+      return url || '';
+    }
+
     // 如果是相对URL，转换为绝对URL
     if (url.startsWith('/')) {
       return `${baseUrl}${url}`;

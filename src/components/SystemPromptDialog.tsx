@@ -182,9 +182,13 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
     setPrompt(text);
 
     // 简单估算token数量
-    const estimatedTokens = Math.ceil(text.split(/\s+/).length +
-      text.replace(/[\u4e00-\u9fa5]/g, '').length / 4);
-    setTokensCount(estimatedTokens);
+    if (text && typeof text === 'string') {
+      const estimatedTokens = Math.ceil(text.split(/\s+/).length +
+        text.replace(/[\u4e00-\u9fa5]/g, '').length / 4);
+      setTokensCount(estimatedTokens);
+    } else {
+      setTokensCount(0);
+    }
   };
 
   return (

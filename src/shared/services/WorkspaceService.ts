@@ -188,7 +188,7 @@ class WorkspaceService {
         isDirectory: file.type === 'directory',
         type: file.type,
         modifiedTime: file.mtime,
-        extension: file.name.includes('.') ? file.name.split('.').pop() : undefined
+        extension: (file.name && file.name.includes('.')) ? file.name.split('.').pop() : undefined
       }));
 
       // 排序：目录在前，然后按名称排序
@@ -201,7 +201,7 @@ class WorkspaceService {
       return {
         files,
         currentPath: fullPath,
-        parentPath: subPath ? (subPath.includes('/') ? subPath.split('/').slice(0, -1).join('/') : '') : undefined
+        parentPath: (subPath && subPath.includes('/')) ? subPath.split('/').slice(0, -1).join('/') : undefined
       };
     } catch (error) {
       console.error('获取工作区文件失败:', error);
@@ -248,7 +248,7 @@ class WorkspaceService {
         isDirectory: file.type === 'directory',
         type: file.type || 'file',
         modifiedTime: file.mtime || Date.now(),
-        extension: file.name.includes('.') ? file.name.split('.').pop() : undefined
+        extension: (file.name && file.name.includes('.')) ? file.name.split('.').pop() : undefined
       }));
 
       // 排序：目录在前，然后按名称排序
@@ -261,7 +261,7 @@ class WorkspaceService {
       return {
         files,
         currentPath: fullPath,
-        parentPath: subPath ? (subPath.includes('/') ? subPath.split('/').slice(0, -1).join('/') : '') : undefined
+        parentPath: (subPath && subPath.includes('/')) ? subPath.split('/').slice(0, -1).join('/') : undefined
       };
     } catch (error) {
       console.error('获取工作区文件失败:', error);

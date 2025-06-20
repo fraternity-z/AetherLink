@@ -79,7 +79,7 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
 
   const handleChange = (event: SelectChangeEvent<string>) => {
     const compositeValue = event.target.value;
-    if (!compositeValue) return;
+    if (!compositeValue || typeof compositeValue !== 'string') return;
 
     try {
       // 从复合值中提取模型ID和提供商

@@ -40,7 +40,7 @@ export class FileProcessingUtils {
       }
 
       // 移除 data URL 前缀（如果存在）
-      const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+      const cleanBase64 = (base64Data && typeof base64Data === 'string' && base64Data.includes(',')) ? base64Data.split(',')[1] : base64Data;
 
       return {
         data: cleanBase64,
@@ -72,7 +72,7 @@ export class FileProcessingUtils {
 
       // 回退到文件内置数据
       const base64Data = file.base64Data || '';
-      const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+      const cleanBase64 = (base64Data && typeof base64Data === 'string' && base64Data.includes(',')) ? base64Data.split(',')[1] : base64Data;
       const mimeType = file.mimeType || `image/${file.ext?.slice(1) || 'png'}`;
 
       return {
@@ -99,7 +99,7 @@ export class FileProcessingUtils {
 
       // 回退到文件内置数据
       const base64Data = file.base64Data || '';
-      const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+      const cleanBase64 = (base64Data && typeof base64Data === 'string' && base64Data.includes(',')) ? base64Data.split(',')[1] : base64Data;
       const mimeType = file.mimeType || `video/${file.ext?.slice(1) || 'mp4'}`;
 
       return {
@@ -245,7 +245,7 @@ export class FileProcessingUtils {
    * @returns 清理后的 Base64 数据
    */
   static cleanBase64Data(base64Data: string): string {
-    return base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+    return (base64Data && typeof base64Data === 'string' && base64Data.includes(',')) ? base64Data.split(',')[1] : base64Data;
   }
 
   /**

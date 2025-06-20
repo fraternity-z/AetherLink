@@ -32,6 +32,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 interface ComponentPosition {
   id: string;
@@ -53,6 +54,15 @@ const TopToolbarDIYSettings: React.FC = () => {
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-top-toolbar', {
+    autoRestore: true,
+    restoreDelay: 100
+  });
 
   // 获取当前工具栏设置，如果没有positions则初始化
   const topToolbar = settings.topToolbar || {
@@ -304,7 +314,11 @@ const TopToolbarDIYSettings: React.FC = () => {
         </Button>
       </Box>
 
-      <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
+      <Box
+        ref={containerRef}
+        onScroll={handleScroll}
+        sx={{ p: 2, flex: 1, overflow: 'auto' }}
+      >
         {/* DIY 预览区域 */}
         <Paper elevation={2} sx={{ mb: 3, overflow: 'hidden' }}>
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>

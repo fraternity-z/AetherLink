@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  List,
   ListItem,
   ListItemText,
   IconButton,
@@ -14,16 +13,13 @@ import {
   Box,
   Divider,
   CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
   Skeleton,
   Fade,
   useTheme,
   useMediaQuery
 } from '@mui/material';
-import { Plus as AddIcon, Minus as RemoveIcon, ChevronDown as ExpandMoreIcon, Search as SearchIcon, Database } from 'lucide-react';
+import { Plus as AddIcon, Minus as RemoveIcon, Search as SearchIcon, Database } from 'lucide-react';
 import { alpha } from '@mui/material/styles';
 import { FixedSizeList } from 'react-window';
 import type { ListChildComponentProps } from 'react-window';
@@ -32,6 +28,9 @@ import type { Model } from '../shared/types';
 import { debounce } from 'lodash';
 
 // STEP 1: Define necessary types and a shell for the Row component
+
+// 定义分组模型的类型
+type GroupedModels = Record<string, Model[]>;
 
 // Virtual list item data type
 type ListItemData = { type: 'group'; name: string; modelCount: number } | { type: 'model'; data: Model };
@@ -42,22 +41,30 @@ interface RowData {
   isModelInProvider: (modelId: string) => boolean;
   handleAddSingleModel: (model: Model) => void;
   handleRemoveSingleModel: (modelId: string) => void;
+  handleAddGroup: (group: string) => void;
+  handleRemoveGroup: (group: string) => void;
+  groupedModels: GroupedModels;
 }
 
 // Row component, memoized for performance.
 const Row = React.memo(({ index, style, data }: ListChildComponentProps<RowData>) => {
   const theme = useTheme();
-  const { items, isModelInProvider, handleAddSingleModel, handleRemoveSingleModel } = data;
+  const { items, isModelInProvider, handleAddSingleModel, handleRemoveSingleModel, handleAddGroup, handleRemoveGroup, groupedModels } = data;
   const item = items[index];
 
   // Render Group Header
   if (item.type === 'group') {
+    const groupModels = groupedModels[item.name] || [];
+    const addableModels = groupModels.filter(model => !isModelInProvider(model.id));
+    const removableModels = groupModels.filter(model => isModelInProvider(model.id));
+
     return (
       <Box
         style={style}
         sx={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           pl: 2,
           pr: 2,
           backgroundColor: (theme) => alpha(theme.palette.background.default, 0.95),
@@ -65,10 +72,44 @@ const Row = React.memo(({ index, style, data }: ListChildComponentProps<RowData>
           borderColor: 'divider',
         }}
       >
-        <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          {item.name}
-        </Typography>
-        <Chip label={item.modelCount} size="small" sx={{ ml: 1.5, height: 20, fontSize: '0.7rem' }} />
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {item.name}
+          </Typography>
+          <Chip label={item.modelCount} size="small" sx={{ ml: 1.5, height: 20, fontSize: '0.7rem' }} />
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {addableModels.length > 0 && (
+            <IconButton
+              size="small"
+              onClick={() => handleAddGroup(item.name)}
+              sx={{
+                border: '1px solid',
+                borderColor: 'primary.light',
+                color: 'primary.main',
+                '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1) }
+              }}
+              title={`添加 ${addableModels.length} 个模型`}
+            >
+              <AddIcon size={14} />
+            </IconButton>
+          )}
+          {removableModels.length > 0 && (
+            <IconButton
+              size="small"
+              onClick={() => handleRemoveGroup(item.name)}
+              sx={{
+                border: '1px solid',
+                borderColor: 'error.light',
+                color: 'error.main',
+                '&:hover': { bgcolor: (theme) => alpha(theme.palette.error.main, 0.1) }
+              }}
+              title={`移除 ${removableModels.length} 个模型`}
+            >
+              <RemoveIcon size={14} />
+            </IconButton>
+          )}
+        </Box>
       </Box>
     );
   }
@@ -119,7 +160,7 @@ const Row = React.memo(({ index, style, data }: ListChildComponentProps<RowData>
         <ListItemText
           primary={
             <Typography variant="body1" fontWeight={500} sx={{ lineHeight: 1.4 }}>
-              {model.name}
+              {model.name || model.id}
             </Typography>
           }
           secondary={
@@ -160,12 +201,10 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
   const [models, setModels] = useState<Model[]>([]);
   const [searchInputValue, setSearchInputValue] = useState<string>(''); // 输入框显示值
   const [actualSearchTerm, setActualSearchTerm] = useState<string>(''); // 实际搜索值
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [pendingModels, setPendingModels] = useState<Map<string, boolean>>(new Map());
 
   // 恢复 useTransition 进行性能优化
   const [isSearchPending, startSearchTransition] = useTransition();
-  const [isGroupTogglePending, startGroupToggleTransition] = useTransition();
 
   // 使用ref存储初始provider，避免重新加载
   const initialProviderRef = useRef<any>(null);
@@ -208,8 +247,11 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
 
     for (const model of models) {
       // 如果搜索词为空，或模型名称/ID匹配，则处理该模型
-      if (!searchLower || model.name.toLowerCase().includes(searchLower) || model.id.toLowerCase().includes(searchLower)) {
+      const modelName = model.name || model.id;
+      if (!searchLower || modelName.toLowerCase().includes(searchLower) || model.id.toLowerCase().includes(searchLower)) {
+        // 使用模型的分组信息，如果没有则使用默认分组
         const group = model.group || '其他模型';
+
         if (!result[group]) {
           result[group] = [];
         }
@@ -228,7 +270,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     for (const groupName of sortedGroupNames) {
       const modelsInGroup = groupedModels[groupName];
       data.push({ type: 'group', name: groupName, modelCount: modelsInGroup.length });
-      modelsInGroup.forEach(model => {
+      modelsInGroup.forEach((model: Model) => {
         data.push({ type: 'model', data: model });
       });
     }
@@ -251,12 +293,73 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     onRemoveModel(modelId);
   }, [onRemoveModel]);
 
+  // 添加整个组 - 使用 useCallback 优化性能
+  const handleAddGroup = useCallback((group: string) => {
+    // 创建新模型集合，一次性添加整个组
+    const modelsToAdd = groupedModels[group]?.filter((model: Model) => !isModelInProvider(model.id)) || [];
+
+    if (modelsToAdd.length > 0) {
+      // 批量更新pendingModels状态
+      setPendingModels(prev => {
+        const newPendingModels = new Map(prev);
+        modelsToAdd.forEach((model: Model) => {
+          newPendingModels.set(model.id, true);
+        });
+        return newPendingModels;
+      });
+
+      // 使用批量添加API（如果可用）
+      if (onAddModels) {
+        // 为每个模型创建副本
+        const modelsCopy = modelsToAdd.map((model: Model) => ({...model}));
+        // 批量添加
+        onAddModels(modelsCopy);
+      } else {
+        // 为每个要添加的模型创建一个副本，添加到provider中
+        modelsToAdd.forEach((model: Model) => {
+          onAddModel({...model});
+        });
+      }
+    }
+  }, [groupedModels, isModelInProvider, onAddModels, onAddModel]);
+
+  // 移除整个组 - 使用 useCallback 优化性能
+  const handleRemoveGroup = useCallback((group: string) => {
+    const modelsToRemove = groupedModels[group]?.filter((model: Model) => isModelInProvider(model.id)) || [];
+
+    if (modelsToRemove.length > 0) {
+      // 批量更新pendingModels状态
+      setPendingModels(prev => {
+        const newPendingModels = new Map(prev);
+        modelsToRemove.forEach((model: Model) => {
+          newPendingModels.delete(model.id);
+        });
+        return newPendingModels;
+      });
+
+      // 使用批量移除API（如果可用）
+      if (onRemoveModels) {
+        // 批量移除
+        const modelIdsToRemove = modelsToRemove.map((model: Model) => model.id);
+        onRemoveModels(modelIdsToRemove);
+      } else {
+        // 逐个移除
+        modelsToRemove.forEach((model: Model) => {
+          onRemoveModel(model.id);
+        });
+      }
+    }
+  }, [groupedModels, isModelInProvider, onRemoveModels, onRemoveModel]);
+
   const itemData = useMemo((): RowData => ({
     items: flattenedData,
     isModelInProvider,
     handleAddSingleModel,
     handleRemoveSingleModel,
-  }), [flattenedData, isModelInProvider, handleAddSingleModel, handleRemoveSingleModel]);
+    handleAddGroup,
+    handleRemoveGroup,
+    groupedModels,
+  }), [flattenedData, isModelInProvider, handleAddSingleModel, handleRemoveSingleModel, handleAddGroup, handleRemoveGroup, groupedModels]);
 
   // 加载模型列表
   const loadModels = async () => {
@@ -268,15 +371,6 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
       // 合并现有模型和从API获取的模型
       const allModels = [...fetchedModels];
       setModels(allModels);
-
-      // 默认展开所有组
-      const groups = new Set<string>();
-      allModels.forEach(model => {
-        if (model.group) {
-          groups.add(model.group);
-        }
-      });
-      setExpandedGroups(groups);
     } catch (error) {
       console.error('加载模型失败:', error);
     } finally {
@@ -284,78 +378,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     }
   };
 
-  // 处理组展开/折叠 - 使用 useTransition 优化性能
-  const handleGroupToggle = useCallback((group: string) => {
-    startGroupToggleTransition(() => {
-      setExpandedGroups(prev => {
-        const newExpandedGroups = new Set(prev);
-        if (newExpandedGroups.has(group)) {
-          newExpandedGroups.delete(group);
-        } else {
-          newExpandedGroups.add(group);
-        }
-        return newExpandedGroups;
-      });
-    });
-  }, []);
 
-  // 添加整个组 - 使用 useCallback 优化性能
-  const handleAddGroup = useCallback((group: string) => {
-    // 创建新模型集合，一次性添加整个组
-    const modelsToAdd = groupedModels[group]?.filter(model => !isModelInProvider(model.id)) || [];
-
-    if (modelsToAdd.length > 0) {
-      // 批量更新pendingModels状态
-      setPendingModels(prev => {
-        const newPendingModels = new Map(prev);
-        modelsToAdd.forEach(model => {
-          newPendingModels.set(model.id, true);
-        });
-        return newPendingModels;
-      });
-
-      // 使用批量添加API（如果可用）
-      if (onAddModels) {
-        // 为每个模型创建副本
-        const modelsCopy = modelsToAdd.map(model => ({...model}));
-        // 批量添加
-        onAddModels(modelsCopy);
-      } else {
-        // 为每个要添加的模型创建一个副本，添加到provider中
-        modelsToAdd.forEach(model => {
-          onAddModel({...model});
-        });
-      }
-    }
-  }, [groupedModels, isModelInProvider, onAddModels, onAddModel]);
-
-  // 移除整个组 - 使用 useCallback 优化性能
-  const handleRemoveGroup = useCallback((group: string) => {
-    const modelsToRemove = groupedModels[group]?.filter(model => isModelInProvider(model.id)) || [];
-
-    if (modelsToRemove.length > 0) {
-      // 批量更新pendingModels状态
-      setPendingModels(prev => {
-        const newPendingModels = new Map(prev);
-        modelsToRemove.forEach(model => {
-          newPendingModels.delete(model.id);
-        });
-        return newPendingModels;
-      });
-
-      // 使用批量移除API（如果可用）
-      if (onRemoveModels) {
-        // 批量移除
-        const modelIdsToRemove = modelsToRemove.map(model => model.id);
-        onRemoveModels(modelIdsToRemove);
-      } else {
-        // 逐个移除
-        modelsToRemove.forEach(model => {
-          onRemoveModel(model.id);
-        });
-      }
-    }
-  }, [groupedModels, isModelInProvider, onRemoveModels, onRemoveModel]);
 
   // 当对话框打开时加载模型（避免每次provider变化都重新加载）
   useEffect(() => {

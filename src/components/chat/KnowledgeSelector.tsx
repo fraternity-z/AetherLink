@@ -97,10 +97,15 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
 
     try {
       setSearchLoading(true);
+
+      // 获取选中知识库的配置
+      const selectedKnowledgeBase = knowledgeBases.find(kb => kb.id === selectedKB);
+      const limit = selectedKnowledgeBase?.documentCount || 5; // 使用知识库配置的文档数量
+
       const results = await MobileKnowledgeService.getInstance().searchKnowledge(
         selectedKB,
         localSearchQuery.trim(),
-        5 // 限制返回5个结果
+        limit
       );
       setSearchResults(results);
     } catch (error) {

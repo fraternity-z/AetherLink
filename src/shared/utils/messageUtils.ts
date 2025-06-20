@@ -996,6 +996,10 @@ export function splitContentIntoBlocks(messageId: string, content: string): Mess
  * 尝试推测图片的MIME类型
  */
 function guessImageMimeType(url: string): string {
+  if (!url || typeof url !== 'string') {
+    return 'image/jpeg';
+  }
+
   if (url.startsWith('data:')) {
     const mimeMatch = url.match(/^data:([^;]+);/);
     return mimeMatch ? mimeMatch[1] : 'image/jpeg';

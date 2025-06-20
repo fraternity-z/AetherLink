@@ -107,6 +107,11 @@ export class TavilyMobileClient {
   suggestQueryBreakdown(query: string): string[] {
     const suggestions: string[] = [];
 
+    // 添加安全检查
+    if (!query || typeof query !== 'string') {
+      return suggestions;
+    }
+
     // 检测复杂查询的常见模式
     if (query.includes(' and ') || query.includes(' & ')) {
       const parts = query.split(/\s+(?:and|&)\s+/i);

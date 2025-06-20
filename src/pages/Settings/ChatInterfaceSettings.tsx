@@ -34,12 +34,22 @@ import {
   getBackgroundPositions,
   getBackgroundRepeats
 } from '../../shared/utils/backgroundUtils';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 
 const ChatInterfaceSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-chat-interface', {
+    autoRestore: true,
+    restoreDelay: 100
+  });
 
   // 本地状态
   const [uploadError, setUploadError] = useState<string>('');
@@ -259,6 +269,8 @@ const ChatInterfaceSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',

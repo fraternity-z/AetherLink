@@ -429,7 +429,7 @@ export class MobileKnowledgeService {
 
       // 计算余弦相似度并排序
       const threshold = params.threshold || knowledgeBase.threshold || DEFAULT_KNOWLEDGE_THRESHOLD;
-      const limit = params.limit || 5;
+      const limit = params.limit || knowledgeBase.documentCount || 5; // 使用知识库配置的文档数量
 
       // 使用简单的相似度计算
       const results = this.localVectorSearch(queryVector, documents, threshold, limit);

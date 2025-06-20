@@ -601,7 +601,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
               url: base64Data,
               base64Data: base64Data,
               mimeType: file.type,
-              name: `粘贴的图片_${Date.now()}.${file.type.split('/')[1]}`,
+              name: `粘贴的图片_${Date.now()}.${file.type && typeof file.type === 'string' && file.type.includes('/') ? file.type.split('/')[1] : 'png'}`,
               size: file.size
             };
             setImages(prev => [...prev, newImage]);

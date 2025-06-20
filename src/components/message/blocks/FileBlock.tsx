@@ -32,7 +32,7 @@ const convertToWorkspaceFile = (fileBlock: FileMessageBlock): WorkspaceFile | nu
     isDirectory: false,
     type: file.type || 'unknown',
     modifiedTime: Date.now(),
-    extension: fileName.includes('.') ? fileName.split('.').pop() : undefined
+    extension: (fileName && typeof fileName === 'string' && fileName.includes('.')) ? fileName.split('.').pop() : undefined
   };
 };
 
@@ -47,7 +47,7 @@ const createFileReaderService = (fileBlock: FileMessageBlock) => {
       try {
         // 从 base64 数据解码文件内容
         let base64Data = fileBlock.file.base64Data;
-        if (base64Data.includes(',')) {
+        if (base64Data && typeof base64Data === 'string' && base64Data.includes(',')) {
           base64Data = base64Data.split(',')[1];
         }
 

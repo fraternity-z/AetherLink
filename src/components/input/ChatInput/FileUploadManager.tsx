@@ -318,7 +318,7 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
               url: base64Data,
               base64Data: base64Data,
               mimeType: file.type,
-              name: `粘贴的图片_${timestamp}.${file.type.split('/')[1]}`,
+              name: `粘贴的图片_${timestamp}.${file.type && typeof file.type === 'string' && file.type.includes('/') ? (file.type.split('/')[1] || 'png') : 'png'}`,
               size: file.size
             };
             setImages(prev => [...prev, newImage]);

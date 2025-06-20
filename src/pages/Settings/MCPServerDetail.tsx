@@ -422,7 +422,8 @@ const MCPServerDetail: React.FC = () => {
               label="参数（每行一个）"
               value={(server.args || []).join('\n')}
               onChange={(e) => {
-                const args = e.target.value.split('\n').filter(arg => arg.trim());
+                const value = e.target.value || '';
+                const args = value.split('\n').filter(arg => arg.trim());
                 setServer({ ...server, args });
               }}
               multiline

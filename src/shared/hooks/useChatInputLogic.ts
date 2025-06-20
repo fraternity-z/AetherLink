@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback, startTransition } from 'react';
 import { useTheme, useMediaQuery } from '@mui/material';
+import { useSelector } from 'react-redux';
 import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../types';
+import type { RootState } from '../store';
 
 interface UseChatInputLogicProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
@@ -40,6 +42,9 @@ export const useChatInputLogic = ({
 }: UseChatInputLogicProps) => {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 获取设置中的 sendWithEnter 配置
+  const sendWithEnter = useSelector((state: RootState) => state.settings.sendWithEnter);
 
   // 主题和响应式
   const theme = useTheme();
@@ -231,12 +236,16 @@ export const useChatInputLogic = ({
       }
     }
 
-    // Enter键发送消息（非输入法组合状态且非Shift+Enter）
+    // Enter键发送消息 - 检查设置中的 sendWithEnter 配置
     if (e.key === 'Enter' && !e.shiftKey && (!enableCompositionHandling || !isComposing)) {
-      e.preventDefault();
-      handleSubmit();
+      if (sendWithEnter) {
+        // 启用Enter发送时，Enter键发送消息
+        e.preventDefault();
+        handleSubmit();
+      }
+      // 如果禁用Enter发送，则不阻止默认行为，允许换行
     }
-  }, [enableCompositionHandling, isComposing, handleSubmit]);
+  }, [enableCompositionHandling, isComposing, handleSubmit, sendWithEnter]);
 
   // 输入法组合开始（ChatInput 特有）- 使用useCallback优化性能
   const handleCompositionStart = useCallback(() => {

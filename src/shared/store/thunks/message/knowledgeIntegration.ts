@@ -74,7 +74,7 @@ export const processKnowledgeSearch = async (
       knowledgeBaseId: contextData.knowledgeBase.id,
       query: userContent.trim(),
       threshold: 0.6,
-      limit: 5,
+      limit: contextData.knowledgeBase.documentCount || 5, // 使用知识库配置的文档数量
       useEnhancedRAG: true // 启用增强RAG搜索
     });
 

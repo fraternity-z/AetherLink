@@ -25,9 +25,20 @@ import {
 import { ChevronRight as ChevronRightIcon, Palette as FormatColorFillIcon } from 'lucide-react';
 import { Settings as SettingsApplicationsIcon, Sliders as TuneIcon, Wand2 as AutoFixHighIcon, GitBranch } from 'lucide-react';
 import { Code as CodeIcon, MessageSquare as ForumIcon, BookOpen as MenuBookIcon, Folder as WorkspaceIcon, Database as DatabaseIcon } from 'lucide-react';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll,
+    restoreScrollPosition
+  } = useScrollPosition('settings-main', {
+    autoRestore: true,
+    restoreDelay: 100
+  });
 
   const handleBack = () => {
     navigate('/chat');
@@ -142,6 +153,8 @@ const SettingsPage: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflow: 'auto',

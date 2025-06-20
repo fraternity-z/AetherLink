@@ -331,7 +331,7 @@ async function handleClaudeMultimodal(
       if (block.file.ext === '.pdf' && block.file.size < 32 * 1024 * 1024) {
         try {
           const result = await mobileFileStorage.getFileBase64(block.file.id);
-          const cleanBase64 = result.data.includes(',') ? result.data.split(',')[1] : result.data;
+          const cleanBase64 = (result.data && typeof result.data === 'string' && result.data.includes(',')) ? result.data.split(',')[1] : result.data;
           parts.push({
             type: 'document',
             source: {
@@ -387,7 +387,7 @@ async function handleGeminiMultimodal(
   for (const block of imageBlocks) {
     if (block.url || block.base64Data) {
       const base64Data = block.base64Data
-        ? (block.base64Data.includes(',') ? block.base64Data.split(',')[1] : block.base64Data)
+        ? (block.base64Data && typeof block.base64Data === 'string' && block.base64Data.includes(',') ? block.base64Data.split(',')[1] : block.base64Data)
         : '[URL_IMAGE]';
 
       parts.push({

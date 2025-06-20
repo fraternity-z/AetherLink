@@ -284,7 +284,7 @@ export class MobileFileStorageService {
           try {
             // 检查base64数据是否包含data:前缀
             let base64Content = file.base64Data;
-            if (base64Content.includes(',')) {
+            if (base64Content && typeof base64Content === 'string' && base64Content.includes(',')) {
               base64Content = base64Content.split(',')[1];
             }
 

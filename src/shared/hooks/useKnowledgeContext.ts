@@ -74,7 +74,7 @@ export const useKnowledgeContext = () => {
         knowledgeBaseId: contextData.knowledgeBase.id,
         query: originalMessage.trim(),
         threshold: 0.6,
-        limit: 5
+        limit: contextData.knowledgeBase.documentCount || 5 // 使用知识库配置的文档数量
       });
 
       console.log(`[useKnowledgeContext] 搜索到 ${searchResults.length} 个相关内容`);

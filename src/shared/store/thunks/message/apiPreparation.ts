@@ -79,7 +79,7 @@ export const performKnowledgeSearchIfNeeded = async (topicId: string, assistantM
       knowledgeBaseId: contextData.knowledgeBase.id,
       query: userContent.trim(),
       threshold: 0.6,
-      limit: 5,
+      limit: contextData.knowledgeBase.documentCount || 5, // 使用知识库配置的文档数量
       useEnhancedRAG: true // 启用增强RAG搜索
     });
 
@@ -260,7 +260,7 @@ export const prepareMessagesForApi = async (
                 knowledgeBaseId: contextData.knowledgeBase.id,
                 query: content.trim(),
                 threshold: 0.6,
-                limit: 5
+                limit: contextData.knowledgeBase.documentCount || 5 // 使用知识库配置的文档数量
               });
 
               if (searchResults.length > 0) {
@@ -320,7 +320,7 @@ export const prepareMessagesForApi = async (
           });
         } else if (imageBlock.file && imageBlock.file.base64Data) {
           let base64Data = imageBlock.file.base64Data;
-          if (base64Data.includes(',')) {
+          if (base64Data && typeof base64Data === 'string' && base64Data.includes(',')) {
             base64Data = base64Data.split(',')[1];
           }
           parts.push({

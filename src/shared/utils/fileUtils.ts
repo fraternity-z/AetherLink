@@ -118,10 +118,11 @@ export function getFileTypeByExtension(filename: string): string {
  * @returns 文件类型
  */
 export function getFileTypeByMimeType(mimeType: string): string {
-  if (!mimeType) return FileTypes.UNKNOWN;
+  if (!mimeType || typeof mimeType !== 'string') return FileTypes.UNKNOWN;
 
-  const type = mimeType.split('/')[0];
-  const subtype = mimeType.split('/')[1];
+  const parts = mimeType.split('/');
+  const type = parts[0] || '';
+  const subtype = parts[1] || '';
 
   switch (type) {
     case 'image':

@@ -116,7 +116,7 @@ export class EnhancedRAGService {
       const processedResults = this.postProcessResults(
         finalResults,
         params.threshold || knowledgeBase.threshold || 0.3, // 降低默认阈值
-        params.limit || 5
+        params.limit || knowledgeBase.documentCount || 5 // 使用知识库配置的文档数量
       );
 
       const duration = Date.now() - startTime;
@@ -130,7 +130,7 @@ export class EnhancedRAGService {
         console.log(`- 融合结果数量: ${fusedResults.length}`);
         console.log(`- 重排序结果数量: ${finalResults.length}`);
         console.log(`- 阈值: ${params.threshold || 0.7}`);
-        console.log(`- 限制数量: ${params.limit || 5}`);
+        console.log(`- 限制数量: ${params.limit || knowledgeBase.documentCount || 5}`);
       }
 
       return processedResults;
@@ -630,7 +630,7 @@ export class EnhancedRAGService {
 
       if (keywordResults.length > 0) {
         // 如果有关键词匹配，直接返回
-        return keywordResults.slice(0, params.limit || 5).map(doc => ({
+        return keywordResults.slice(0, params.limit || knowledgeBase.documentCount || 5).map(doc => ({
           documentId: doc.id,
           content: doc.content,
           similarity: 1.0, // 关键词完全匹配给高分
@@ -641,7 +641,7 @@ export class EnhancedRAGService {
       // 如果关键词匹配失败，尝试向量搜索
       const queryVector = await this.embeddingService.getEmbedding(params.query, knowledgeBase.model);
       const threshold = params.threshold || 0.3; // 降低阈值
-      const limit = params.limit || 5;
+      const limit = params.limit || knowledgeBase.documentCount || 5; // 使用知识库配置的文档数量
 
       const vectorResults = documents
         .map(doc => ({
@@ -667,19 +667,24 @@ export class EnhancedRAGService {
   // 辅助方法
   private decomposeQuery(query: string): string[] {
     const decomposed: string[] = [];
-    
+
+    // 添加安全检查
+    if (!query || typeof query !== 'string') {
+      return decomposed;
+    }
+
     // 按连接词分解
     if (query.includes(' and ') || query.includes(' 和 ')) {
       const parts = query.split(/\s+(?:and|和)\s+/i);
       decomposed.push(...parts.map(p => p.trim()));
     }
-    
+
     // 按逗号分解
     if (query.includes(',') || query.includes('，')) {
       const parts = query.split(/[,，]/);
       decomposed.push(...parts.map(p => p.trim()));
     }
-    
+
     return decomposed.filter(q => q.length > 0);
   }
 

@@ -20,11 +20,21 @@ import { ArrowLeft, Send, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setSendWithEnter, setEnableNotifications } from '../../shared/store/settingsSlice';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 const BehaviorSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-behavior', {
+    autoRestore: true,
+    restoreDelay: 100
+  });
 
   const handleBack = () => {
     navigate('/settings');
@@ -81,6 +91,8 @@ const BehaviorSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',

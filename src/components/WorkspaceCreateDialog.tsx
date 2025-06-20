@@ -194,7 +194,7 @@ export const WorkspaceCreateDialog: React.FC<WorkspaceCreateDialogProps> = ({
               setSelectedPath(newPath);
               setDisplayPath(newPath);
               // 自动生成工作区名称
-              if (!workspaceName && newPath) {
+              if (!workspaceName && newPath && typeof newPath === 'string') {
                 const folderName = newPath.split('/').pop() || '新工作区';
                 setWorkspaceName(folderName);
               }

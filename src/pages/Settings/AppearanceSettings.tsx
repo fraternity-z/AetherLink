@@ -30,11 +30,21 @@ import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor } from '../../shared/store/settingsSlice';
 import ThemeStyleSelector from '../../components/settings/ThemeStyleSelector';
 import { fontOptions, fontCategoryLabels, getFontById } from '../../shared/config/fonts';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 const AppearanceSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-appearance', {
+    autoRestore: true,
+    restoreDelay: 100
+  });
 
   const handleBack = () => {
     navigate('/settings');
@@ -152,6 +162,8 @@ const AppearanceSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
