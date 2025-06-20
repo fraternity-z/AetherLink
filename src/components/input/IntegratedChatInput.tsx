@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { IconButton, CircularProgress, Badge, Tooltip } from '@mui/material';
-import { Send, Plus, Square, Keyboard, Mic, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Plus, Square, Keyboard, Mic, ChevronDown, ChevronUp, Trash2, Camera, Video, BookOpen, Wrench, Image, FileText, MessageSquare, Zap, ArrowLeftRight } from 'lucide-react';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 
@@ -8,7 +8,6 @@ import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import MultiModelSelector from './MultiModelSelector';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
-import { Image } from 'lucide-react';
 import { CustomIcon } from '../icons';
 
 import type { FileStatus } from '../FilePreview';
@@ -130,6 +129,11 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 获取快捷短语按钮显示设置
   const showQuickPhraseButton = useSelector((state: RootState) => state.settings.showQuickPhraseButton ?? true);
 
+  // 获取自定义按钮配置
+  const customButtons = useSelector((state: RootState) =>
+    (state.settings as any).integratedInputButtons || ['tools', 'search']
+  );
+
   // 监听Web搜索设置变化，当设置完成后触发搜索
   useEffect(() => {
     if (pendingWebSearchToggle && webSearchSettings?.enabled && webSearchSettings?.provider && webSearchSettings.provider !== 'custom') {
@@ -214,8 +218,15 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   // 处理多模型发送
   const handleMultiModelSend = async (selectedModels: any[]) => {
-    if (!message.trim() && images.length === 0 && files.length === 0) return;
-    if (!onSendMultiModelMessage) return;
+    if (!message.trim() && images.length === 0 && files.length === 0) {
+      console.log('没有内容可发送');
+      return;
+    }
+
+    if (!selectedModels || selectedModels.length === 0) {
+      console.log('没有选择模型');
+      return;
+    }
 
     let processedMessage = message.trim();
 
@@ -277,19 +288,35 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
       toolsEnabled: toolsEnabled
     });
 
-    onSendMultiModelMessage(
-      processedMessage,
-      selectedModels,
-      formattedImages.length > 0 ? formattedImages : undefined,
-      toolsEnabled,
-      nonImageFiles
-    );
+    // 如果有多模型发送回调，使用它；否则逐个发送到每个模型
+    if (onSendMultiModelMessage) {
+      onSendMultiModelMessage(
+        processedMessage,
+        selectedModels,
+        formattedImages.length > 0 ? formattedImages : undefined,
+        toolsEnabled,
+        nonImageFiles
+      );
+    } else {
+      // 备用方案：逐个发送到每个选中的模型
+      console.log('使用备用方案：逐个发送到选中的模型');
+      for (const model of selectedModels) {
+        console.log(`发送到模型: ${model.name || model.id}`);
+        onSendMessage(
+          processedMessage,
+          formattedImages.length > 0 ? formattedImages : undefined,
+          toolsEnabled,
+          nonImageFiles
+        );
+      }
+    }
 
     // 重置状态 - 使用 hook 提供的函数
     setMessage('');
     setImages([]);
     setFiles([]);
     setUploadingMedia(false);
+    setMultiModelSelectorOpen(false); // 关闭选择器
   };
 
   // 输入处理逻辑现在由 useChatInputLogic 和 useUrlScraper hooks 提供
@@ -464,16 +491,188 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     }
   }, [isDebating, onStopDebate]);
 
-  // 处理快捷短语按钮点击 - 模拟点击按钮
-  const handleQuickPhraseClick = useCallback(() => {
-    // 模拟点击快捷短语按钮来打开菜单
+  // 处理快捷短语按钮点击 - 动态定位并触发菜单
+  const handleQuickPhraseClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     if (quickPhraseButtonRef.current) {
-      const buttonElement = quickPhraseButtonRef.current.querySelector('button');
+      const clickedButton = event.currentTarget;
+      const rect = clickedButton.getBoundingClientRect();
+
+      // 动态移动隐藏按钮到点击位置
+      const hiddenButtonContainer = quickPhraseButtonRef.current;
+      hiddenButtonContainer.style.position = 'fixed';
+      hiddenButtonContainer.style.left = `${rect.left}px`;
+      hiddenButtonContainer.style.top = `${rect.top}px`;
+      hiddenButtonContainer.style.zIndex = '-1';
+      hiddenButtonContainer.style.opacity = '0';
+      hiddenButtonContainer.style.pointerEvents = 'none';
+
+      // 触发隐藏按钮的点击
+      const buttonElement = hiddenButtonContainer.querySelector('button');
       if (buttonElement) {
         buttonElement.click();
       }
     }
   }, []);
+
+  // UploadMenu需要的快捷短语处理函数（无参数版本）
+  const handleQuickPhraseClickForUploadMenu = useCallback(() => {
+    // 对于UploadMenu，我们使用屏幕中央作为默认位置
+    if (quickPhraseButtonRef.current) {
+      const hiddenButtonContainer = quickPhraseButtonRef.current;
+      hiddenButtonContainer.style.position = 'fixed';
+      hiddenButtonContainer.style.left = '50%';
+      hiddenButtonContainer.style.top = '50%';
+      hiddenButtonContainer.style.transform = 'translate(-50%, -50%)';
+      hiddenButtonContainer.style.zIndex = '-1';
+      hiddenButtonContainer.style.opacity = '0';
+      hiddenButtonContainer.style.pointerEvents = 'none';
+
+      const buttonElement = hiddenButtonContainer.querySelector('button');
+      if (buttonElement) {
+        buttonElement.click();
+      }
+    }
+  }, []);
+
+  // 处理知识库按钮点击
+  const handleKnowledgeClick = useCallback(() => {
+    // TODO: 实现知识库功能
+    console.log('知识库功能待实现');
+  }, []);
+
+  // 自定义按钮配置映射
+  const buttonConfigs = {
+    tools: {
+      id: 'tools',
+      icon: <CustomIcon name="settingsPanel" size={20} />,
+      tooltip: '扩展',
+      onClick: handleOpenToolsMenu,
+      color: iconColor,
+      disabled: false,
+      isActive: false
+    },
+    'mcp-tools': {
+      id: 'mcp-tools',
+      icon: <Wrench size={20} />,
+      tooltip: toolsEnabled ? '禁用MCP工具' : '启用MCP工具',
+      onClick: () => onToolsEnabledChange?.(!toolsEnabled),
+      color: toolsEnabled ? '#4CAF50' : iconColor,
+      disabled: false,
+      isActive: toolsEnabled
+    },
+    clear: {
+      id: 'clear',
+      icon: <Trash2 size={20} />,
+      tooltip: '清空内容',
+      onClick: () => onClearTopic?.(),
+      color: '#2196F3',
+      disabled: false,
+      isActive: false
+    },
+    image: {
+      id: 'image',
+      icon: <Camera size={20} />,
+      tooltip: imageGenerationMode ? '取消生成图片' : '生成图片',
+      onClick: () => toggleImageGenerationMode?.(),
+      color: imageGenerationMode ? '#9C27B0' : iconColor,
+      disabled: false,
+      isActive: imageGenerationMode
+    },
+    video: {
+      id: 'video',
+      icon: <Video size={20} />,
+      tooltip: videoGenerationMode ? '取消生成视频' : '生成视频',
+      onClick: () => toggleVideoGenerationMode?.(),
+      color: videoGenerationMode ? '#E91E63' : iconColor,
+      disabled: false,
+      isActive: videoGenerationMode
+    },
+    knowledge: {
+      id: 'knowledge',
+      icon: <BookOpen size={20} />,
+      tooltip: '知识库',
+      onClick: handleKnowledgeClick,
+      color: '#059669',
+      disabled: false,
+      isActive: false
+    },
+    search: {
+      id: 'search',
+      icon: <CustomIcon name="search" size={20} />,
+      tooltip: webSearchActive ? '关闭网络搜索' : '开启网络搜索',
+      onClick: handleQuickWebSearchToggle,
+      color: webSearchActive ? '#3b82f6' : iconColor,
+      disabled: false,
+      isActive: webSearchActive
+    },
+    upload: {
+      id: 'upload',
+      icon: uploadingMedia ? <CircularProgress size={20} /> : (
+        <Badge badgeContent={images.length + files.length} color="primary" max={9} invisible={images.length + files.length === 0}>
+          <Plus size={20} />
+        </Badge>
+      ),
+      tooltip: '添加内容',
+      onClick: handleOpenUploadMenu,
+      color: uploadingMedia ? disabledColor : iconColor,
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    camera: {
+      id: 'camera',
+      icon: <Camera size={20} />,
+      tooltip: '拍摄照片',
+      onClick: () => handleImageUploadLocal('camera'),
+      color: '#9C27B0',
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    'photo-select': {
+      id: 'photo-select',
+      icon: <Image size={20} />,
+      tooltip: '选择图片',
+      onClick: () => handleImageUploadLocal('photos'),
+      color: '#1976D2',
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    'file-upload': {
+      id: 'file-upload',
+      icon: <FileText size={20} />,
+      tooltip: '上传文件',
+      onClick: handleFileUploadLocal,
+      color: '#4CAF50',
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    'ai-debate': {
+      id: 'ai-debate',
+      icon: <MessageSquare size={20} />,
+      tooltip: isDebating ? '停止AI辩论' : '开始AI辩论',
+      onClick: handleAIDebateClick,
+      color: isDebating ? '#f44336' : '#2196F3',
+      disabled: false,
+      isActive: isDebating
+    },
+    'quick-phrase': {
+      id: 'quick-phrase',
+      icon: <Zap size={20} />,
+      tooltip: '快捷短语',
+      onClick: handleQuickPhraseClick,
+      color: '#9C27B0',
+      disabled: false,
+      isActive: false
+    },
+    'multi-model': {
+      id: 'multi-model',
+      icon: <ArrowLeftRight size={20} />,
+      tooltip: '多模型发送',
+      onClick: () => setMultiModelSelectorOpen(true),
+      color: '#FF9800',
+      disabled: false, // 简化：总是可用
+      isActive: false
+    }
+  };
 
   // 语音识别处理函数
   const handleToggleVoiceMode = () => {
@@ -784,69 +983,42 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
             height: '36px', // 确保高度一致
             flex: '0 0 auto' // 不允许伸缩，固定高度
           }}>
-            {/* 左侧：添加按钮 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <Tooltip title="添加图片或文件">
-                <IconButton
-                  size="medium"
-                  onClick={handleOpenUploadMenu}
-                  disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-                  style={{
-                    color: uploadingMedia ? disabledColor : iconColor,
-                    padding: '6px'
-                  }}
-                >
-                  {uploadingMedia ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <Badge badgeContent={images.length + files.length} color="primary" max={9} invisible={images.length + files.length === 0}>
-                      <Plus size={20} />
-                    </Badge>
-                  )}
-                </IconButton>
-              </Tooltip>
-
-              {/* 工具按钮 */}
-              <Tooltip title="工具">
-                <IconButton
-                  size="medium"
-                  onClick={handleOpenToolsMenu}
-                  disabled={isLoading && !allowConsecutiveMessages}
-                  style={{
-                    color: iconColor,
-                    padding: '6px'
-                  }}
-                >
-                  <CustomIcon name="settingsPanel" size={20} />
-                </IconButton>
-              </Tooltip>
-            </div>
-
-            {/* 右侧：搜索、语音、发送按钮 */}
+            {/* 左侧：自定义按钮 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px'
             }}>
-              {/* 搜索按钮 */}
-              <Tooltip title={webSearchActive ? "关闭网络搜索" : "开启网络搜索"}>
-                <IconButton
-                  size="medium"
-                  onClick={handleQuickWebSearchToggle}
-                  style={{
-                    color: webSearchActive ? '#3b82f6' : iconColor,
-                    backgroundColor: webSearchActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                    padding: '6px',
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                >
-                  <CustomIcon name="search" size={20} />
-                </IconButton>
-              </Tooltip>
+              {customButtons.map((buttonId: string) => {
+                const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
+                if (!config) return null;
 
+                return (
+                  <Tooltip key={buttonId} title={config.tooltip}>
+                    <IconButton
+                      size="medium"
+                      onClick={config.onClick}
+                      disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
+                      style={{
+                        color: config.color,
+                        padding: '6px',
+                        backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                    >
+                      {config.icon}
+                    </IconButton>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* 右侧：语音、发送按钮 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
               {/* 语音识别按钮 */}
               {!shouldHideVoiceButton && (
                 <IconButton
@@ -924,7 +1096,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
         showAIDebate={showAIDebateButton}
         isDebating={isDebating}
         // 快捷短语相关
-        onQuickPhrase={handleQuickPhraseClick}
+        onQuickPhrase={handleQuickPhraseClickForUploadMenu}
         showQuickPhrase={showQuickPhraseButton}
       />
 
@@ -932,7 +1104,12 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
       <MultiModelSelector
         open={multiModelSelectorOpen}
         onClose={() => setMultiModelSelectorOpen(false)}
-        availableModels={availableModels}
+        availableModels={availableModels.length > 0 ? availableModels : [
+          // 如果没有传入模型，使用默认的测试模型
+          { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI', enabled: true },
+          { id: 'claude-3', name: 'Claude 3', provider: 'Anthropic', enabled: true },
+          { id: 'deepseek', name: 'DeepSeek', provider: 'DeepSeek', enabled: true }
+        ]}
         onConfirm={handleMultiModelSend}
         maxSelection={5}
       />
@@ -971,14 +1148,13 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
         />
       </div>
 
-      {/* 快捷短语按钮 - 放在屏幕中央但透明，这样菜单会在正确位置显示 */}
+      {/* 快捷短语按钮 - 隐藏按钮，位置会动态调整 */}
       <div
         ref={quickPhraseButtonRef}
         style={{
           position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          left: '-9999px',
+          top: '-9999px',
           zIndex: -1,
           opacity: 0,
           pointerEvents: 'none'

@@ -35,6 +35,15 @@ export const useMessageBlocks = (
                 }
                 console.log(`[MessageItem] 成功加载对比分析块: ${blockId}`);
               }
+
+              // 🔧 修复：验证多模型块的数据完整性
+              if (block.type === 'multi_model' && 'responses' in block) {
+                const multiModelBlock = block as any;
+                if (!multiModelBlock.responses || !Array.isArray(multiModelBlock.responses)) {
+                  console.error(`[MessageItem] 多模型块数据不完整: ${blockId}`);
+                  continue; // 跳过损坏的块
+                }
+              }
               messageBlocks.push(block);
             } else {
               console.warn(`[MessageItem] 数据库中找不到块: ID=${blockId}`);

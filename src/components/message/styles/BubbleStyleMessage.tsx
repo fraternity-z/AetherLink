@@ -61,7 +61,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
         flexDirection: 'column',
         marginBottom: isCompact ? 2 : 4,
         marginTop: isCompact ? 1 : 2,
-        paddingX: 2,
+        paddingX: 1, // 减少左右间距，让气泡更好地利用空间
         alignItems: isUserMessage ? 'flex-end' : 'flex-start',
         // 🚀 使用统一的消息项优化配置
         ...messageItemStyles,
@@ -226,7 +226,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
         position: 'relative',
         maxWidth: isUserMessage
           ? `${settings.userMessageMaxWidth || 80}%`
-          : `${settings.messageBubbleMaxWidth || 99}%`,
+          : `${settings.messageBubbleMaxWidth || 100}%`, // 更新默认值为100%
         minWidth: `${settings.messageBubbleMinWidth || 50}%`,
         width: 'auto',
         alignSelf: isUserMessage ? 'flex-end' : 'flex-start',

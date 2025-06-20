@@ -10,12 +10,218 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  alpha
+  alpha,
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Chip
 } from '@mui/material';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, MessageSquare, Zap, ArrowLeftRight } from 'lucide-react';
+import { CustomIcon } from '../../components/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
+import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../components/input';
+
+// 可用的自定义按钮配置
+const AVAILABLE_BUTTONS = [
+  {
+    id: 'tools',
+    label: '扩展',
+    icon: () => <CustomIcon name="settingsPanel" size={20} />,
+    description: '启用/禁用扩展功能',
+    color: '#4CAF50'
+  },
+  {
+    id: 'mcp-tools',
+    label: '工具',
+    icon: Wrench,
+    description: '启用/禁用MCP工具功能',
+    color: '#4CAF50'
+  },
+  {
+    id: 'clear',
+    label: '清空内容',
+    icon: Trash2,
+    description: '清空当前话题内容',
+    color: '#2196F3'
+  },
+  {
+    id: 'image',
+    label: '生成图片',
+    icon: Camera,
+    description: '切换图片生成模式',
+    color: '#9C27B0'
+  },
+  {
+    id: 'video',
+    label: '生成视频',
+    icon: Video,
+    description: '切换视频生成模式',
+    color: '#E91E63'
+  },
+  {
+    id: 'knowledge',
+    label: '知识库',
+    icon: BookOpen,
+    description: '访问知识库功能',
+    color: '#059669'
+  },
+  {
+    id: 'search',
+    label: '网络搜索',
+    icon: Search,
+    description: '启用网络搜索功能',
+    color: '#3B82F6'
+  },
+  {
+    id: 'upload',
+    label: '添加内容',
+    icon: Plus,
+    description: '添加图片、文件或使用其他功能',
+    color: '#F59E0B'
+  },
+  {
+    id: 'camera',
+    label: '拍摄照片',
+    icon: Camera,
+    description: '使用相机拍摄照片',
+    color: '#9C27B0'
+  },
+  {
+    id: 'photo-select',
+    label: '选择图片',
+    icon: Image,
+    description: '从相册选择图片',
+    color: '#1976D2'
+  },
+  {
+    id: 'file-upload',
+    label: '上传文件',
+    icon: FileText,
+    description: '上传文档或其他文件',
+    color: '#4CAF50'
+  },
+  {
+    id: 'ai-debate',
+    label: 'AI辩论',
+    icon: MessageSquare,
+    description: '开始多AI角色辩论',
+    color: '#2196F3'
+  },
+  {
+    id: 'quick-phrase',
+    label: '快捷短语',
+    icon: Zap,
+    description: '插入预设的文本短语',
+    color: '#9C27B0'
+  },
+  {
+    id: 'multi-model',
+    label: '多模型发送',
+    icon: ArrowLeftRight,
+    description: '同时向多个AI模型发送消息',
+    color: '#FF9800'
+  }
+];
+
+// 输入框预览组件
+const InputBoxPreview: React.FC<{
+  inputBoxStyle: string;
+  inputLayoutStyle: string;
+}> = ({ inputLayoutStyle }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // 预览用的空函数
+  const previewProps = {
+    onSendMessage: () => {},
+    onSendImagePrompt: () => {},
+    isLoading: false,
+    allowConsecutiveMessages: true,
+    imageGenerationMode: false,
+    videoGenerationMode: false,
+    webSearchActive: false,
+    onStopResponse: () => {},
+    isStreaming: false,
+    isDebating: false,
+    toolsEnabled: true,
+    availableModels: [],
+    onClearTopic: () => {},
+    onNewTopic: () => {},
+    toggleImageGenerationMode: () => {},
+    toggleVideoGenerationMode: () => {},
+    toggleWebSearch: () => {},
+    toggleToolsEnabled: () => {},
+    onToolsEnabledChange: () => {},
+  };
+
+  // 根据布局样式选择对应的输入框组件
+  const renderInputComponent = () => {
+    switch (inputLayoutStyle) {
+      case 'compact':
+        return (
+          <CompactChatInput
+            {...previewProps}
+          />
+        );
+      case 'integrated':
+        return (
+          <IntegratedChatInput
+            {...previewProps}
+          />
+        );
+      default:
+        return (
+          <Box>
+            <ChatInput {...previewProps} />
+            <Box sx={{ mt: 1 }}>
+              <ChatToolbar
+                onClearTopic={previewProps.onClearTopic}
+                toggleImageGenerationMode={previewProps.toggleImageGenerationMode}
+                toggleWebSearch={previewProps.toggleWebSearch}
+                onToolsEnabledChange={previewProps.onToolsEnabledChange}
+                imageGenerationMode={false}
+                webSearchActive={false}
+                toolsEnabled={true}
+              />
+            </Box>
+          </Box>
+        );
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        p: 3,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
+        borderRadius: 2,
+        minHeight: '120px',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        实时预览效果
+      </Typography>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: isMobile ? '100%' : '600px',
+          transform: isMobile ? 'scale(1)' : 'scale(1)',
+          transformOrigin: 'center',
+        }}
+      >
+        {renderInputComponent()}
+      </Box>
+    </Box>
+  );
+};
 
 const InputBoxSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +231,7 @@ const InputBoxSettings: React.FC = () => {
   // 获取输入框相关设置
   const inputBoxStyle = settings.inputBoxStyle || 'default';
   const inputLayoutStyle = (settings as any).inputLayoutStyle || 'default';
+  const customButtons = (settings as any).integratedInputButtons || ['tools', 'search'];
 
   const handleBack = () => {
     navigate('/settings/appearance');
@@ -41,6 +248,17 @@ const InputBoxSettings: React.FC = () => {
     dispatch(updateSettings({
       inputLayoutStyle: event.target.value
     }));
+  };
+
+  // 处理自定义按钮切换
+  const handleButtonToggle = (buttonId: string) => {
+    const newButtons = customButtons.includes(buttonId)
+      ? customButtons.filter((id: string) => id !== buttonId)
+      : [...customButtons, buttonId];
+
+    dispatch(updateSettings({
+      integratedInputButtons: newButtons
+    } as any));
   };
 
   return (
@@ -108,6 +326,95 @@ const InputBoxSettings: React.FC = () => {
           },
         }}
       >
+        {/* 实时预览区域 */}
+        <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
+          <Typography variant="subtitle1" sx={{ mb: 2 }}>
+            实时预览
+          </Typography>
+          <InputBoxPreview
+            inputBoxStyle={inputBoxStyle}
+            inputLayoutStyle={inputLayoutStyle}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+            当前配置：{inputBoxStyle === 'default' ? '默认风格' : inputBoxStyle === 'modern' ? '现代风格' : '简约风格'} + {inputLayoutStyle === 'default' ? '默认样式' : inputLayoutStyle === 'compact' ? '聚合样式' : '集成样式'}
+          </Typography>
+
+          {/* 集成样式自定义按钮配置 - 与预览放在一起 */}
+          {inputLayoutStyle === 'integrated' && (
+            <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #eee' }}>
+              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+                自定义输入框按钮
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                选择在集成样式输入框底部显示的功能按钮，配置后可在上方预览中查看效果：
+              </Typography>
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2 }}>
+                {AVAILABLE_BUTTONS.map((button) => {
+                  const IconComponent = button.icon;
+                  const isSelected = customButtons.includes(button.id);
+
+                  return (
+                    <Box
+                      key={button.id}
+                      onClick={() => handleButtonToggle(button.id)}
+                      sx={{
+                        p: 2,
+                        border: isSelected ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                        borderRadius: 2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.05)' : 'transparent',
+                        '&:hover': {
+                          borderColor: '#1976d2',
+                          backgroundColor: 'rgba(25, 118, 210, 0.05)',
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <IconComponent
+                          size={20}
+                          style={{
+                            color: isSelected ? button.color : '#666',
+                            marginRight: '8px'
+                          }}
+                        />
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: isSelected ? 600 : 400,
+                            color: isSelected ? 'primary.main' : 'text.primary'
+                          }}
+                        >
+                          {button.label}
+                        </Typography>
+                        {isSelected && (
+                          <Chip
+                            label="已选择"
+                            size="small"
+                            color="primary"
+                            sx={{ ml: 'auto', fontSize: '0.7rem' }}
+                          />
+                        )}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {button.description}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                已选择 {customButtons.length} 个按钮。按钮将按左右布局显示在输入框底部。
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+
+        <Divider sx={{ mb: 3 }} />
+
         {/* 输入框风格设置 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
@@ -132,7 +439,10 @@ const InputBoxSettings: React.FC = () => {
           </FormControl>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            选择聊天输入框和工具栏的视觉风格。默认风格保持原有设计，现代风格采用更时尚的外观，简约风格则更加简洁。
+            选择聊天输入框和工具栏的视觉风格：
+            <br />• <strong>默认风格</strong>：标准圆角，适中阴影，经典外观
+            <br />• <strong>现代风格</strong>：更圆润的边角，立体阴影，毛玻璃背景效果
+            <br />• <strong>简约风格</strong>：尖锐边角，无阴影，清爽简洁
           </Typography>
         </Paper>
 
@@ -166,6 +476,8 @@ const InputBoxSettings: React.FC = () => {
             <br />• 集成样式：工具菜单集成到输入框，采用垂直布局和现代化设计
           </Typography>
         </Paper>
+
+
 
         {/* 底部间距 */}
         <Box sx={{ height: '20px' }} />

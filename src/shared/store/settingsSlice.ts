@@ -226,7 +226,7 @@ const getInitialState = (): SettingsState => {
 
     // 消息气泡宽度默认设置
     messageBubbleMinWidth: 50, // 默认最小宽度50%
-    messageBubbleMaxWidth: 99, // 默认AI消息最大宽度99%
+    messageBubbleMaxWidth: 100, // 默认AI消息最大宽度100%（铺满可用空间）
     userMessageMaxWidth: 80,   // 默认用户消息最大宽度80%
 
     // 工具栏默认设置
@@ -365,7 +365,7 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
         savedSettings.messageBubbleMinWidth = 50;
       }
       if (savedSettings.messageBubbleMaxWidth === undefined) {
-        savedSettings.messageBubbleMaxWidth = 99;
+        savedSettings.messageBubbleMaxWidth = 100;
       }
       if (savedSettings.userMessageMaxWidth === undefined) {
         savedSettings.userMessageMaxWidth = 80;

@@ -39,6 +39,9 @@ export interface SettingsState {
     customLocation?: string;
   };
 
+  // 集成样式输入框自定义按钮
+  integratedInputButtons?: string[];
+
   // 其他设置...
   [key: string]: any;
 }
@@ -80,6 +83,7 @@ const loadFromStorage = async (): Promise<SettingsState> => {
       enableLocationVariable: false,
       customLocation: ''
     },
+    integratedInputButtons: ['tools', 'search'],
     isLoading: false
   };
 };
@@ -110,6 +114,7 @@ const initialState: SettingsState = {
     enableLocationVariable: false,
     customLocation: ''
   },
+  integratedInputButtons: ['tools', 'search'],
   isLoading: false
 };
 

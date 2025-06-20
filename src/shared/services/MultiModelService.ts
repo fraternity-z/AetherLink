@@ -2,10 +2,21 @@ import { v4 as uuid } from 'uuid';
 import store from '../store';
 import { dexieStorage } from './DexieStorageService';
 import { MessageBlockStatus, MessageBlockType } from '../types/newMessage';
-import { addOneBlock, updateOneBlock } from '../store/slices/messageBlocksSlice';
+import type { MultiModelMessageBlock } from '../types/newMessage';
+import { addOneBlock, updateOneBlock, removeOneBlock } from '../store/slices/messageBlocksSlice';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
 import { EventEmitter, EVENT_NAMES } from './EventEmitter';
 import type { Model } from '../types';
+
+/**
+ * 多模型响应接口
+ */
+interface ModelResponse {
+  modelId: string;
+  modelName: string;
+  content: string;
+  status: MessageBlockStatus;
+}
 
 /**
  * 多模型响应服务
@@ -24,6 +35,21 @@ export class MultiModelService {
     models: Model[],
     displayStyle: 'horizontal' | 'vertical' | 'grid' = 'horizontal'
   ): Promise<string> {
+    // 输入验证
+    if (!messageId || typeof messageId !== 'string') {
+      throw new Error('messageId 不能为空且必须是字符串');
+    }
+
+    if (!models || !Array.isArray(models) || models.length === 0) {
+      throw new Error('模型列表不能为空');
+    }
+
+    // 验证消息是否存在
+    const message = await dexieStorage.getMessage(messageId);
+    if (!message) {
+      throw new Error(`消息 ${messageId} 不存在`);
+    }
+
     // 创建块ID
     const blockId = `multi-model-${uuid()}`;
 
@@ -47,31 +73,44 @@ export class MultiModelService {
       status: MessageBlockStatus.PENDING
     };
 
-    // 保存到数据库
-    await dexieStorage.saveMessageBlock(multiModelBlock);
+    try {
+      // 保存到数据库
+      await dexieStorage.saveMessageBlock(multiModelBlock);
 
-    // 添加到Redux状态
-    store.dispatch(addOneBlock(multiModelBlock));
+      // 添加到Redux状态
+      store.dispatch(addOneBlock(multiModelBlock));
 
-    // 获取消息
-    const message = await dexieStorage.getMessage(messageId);
-
-    if (message) {
+      // 使用已验证的消息对象
       // 更新消息的块列表
       const updatedBlocks = [...(message.blocks || []), blockId];
 
-      // 更新消息
+      // 🔧 按照文档修复：必须同时执行数据库和Redux更新
       await dexieStorage.updateMessage(messageId, {
         blocks: updatedBlocks
       });
-
-      // 更新Redux状态
       store.dispatch(newMessagesActions.updateMessage({
         id: messageId,
         changes: {
           blocks: updatedBlocks
         }
       }));
+
+      // 验证数据一致性（按照文档调试技巧）
+      const dbMessage = await dexieStorage.getMessage(messageId);
+      const reduxMessage = store.getState().messages.entities[messageId];
+      console.log(`[MultiModelService] 数据一致性验证 - 数据库blocks: [${dbMessage?.blocks?.join(', ')}], Redux blocks: [${reduxMessage?.blocks?.join(', ')}]`);
+    } catch (error) {
+      console.error(`[MultiModelService] 创建多模型块失败: ${blockId}`, error);
+
+      // 清理可能的部分数据
+      try {
+        await dexieStorage.deleteMessageBlock(blockId);
+        store.dispatch(removeOneBlock(blockId));
+      } catch (cleanupError) {
+        console.error(`[MultiModelService] 清理失败的块时出错:`, cleanupError);
+      }
+
+      throw error;
     }
 
     // 发送事件
@@ -111,8 +150,15 @@ export class MultiModelService {
       throw new Error(`块 ${blockId} 没有 responses 属性`);
     }
 
+    // 验证modelId是否存在
+    const responses = (block as MultiModelMessageBlock).responses;
+    const modelExists = responses.some((r: ModelResponse) => r.modelId === modelId);
+    if (!modelExists) {
+      throw new Error(`模型 ${modelId} 不存在于块 ${blockId} 中`);
+    }
+
     // 更新响应
-    const updatedResponses = (block as any).responses.map((response: any) => {
+    const updatedResponses: ModelResponse[] = responses.map((response: ModelResponse) => {
       if (response.modelId === modelId) {
         return {
           ...response,
@@ -123,22 +169,17 @@ export class MultiModelService {
       return response;
     });
 
-    // 计算块的整体状态
-    let blockStatus: MessageBlockStatus = MessageBlockStatus.SUCCESS;
+    // 计算块的整体状态 - 修复优先级逻辑：ERROR > STREAMING > PENDING > SUCCESS
+    let blockStatus: MessageBlockStatus;
 
-    // 如果有任何一个响应正在流式传输，则块状态为流式传输
-    if (updatedResponses.some((r: any) => r.status === MessageBlockStatus.STREAMING)) {
-      blockStatus = MessageBlockStatus.STREAMING;
-    }
-
-    // 如果有任何一个响应处于待处理状态，则块状态为待处理
-    if (updatedResponses.some((r: any) => r.status === MessageBlockStatus.PENDING)) {
-      blockStatus = MessageBlockStatus.PENDING;
-    }
-
-    // 如果有任何一个响应出错，则块状态为错误
-    if (updatedResponses.some((r: any) => r.status === MessageBlockStatus.ERROR)) {
+    if (updatedResponses.some((r: ModelResponse) => r.status === MessageBlockStatus.ERROR)) {
       blockStatus = MessageBlockStatus.ERROR;
+    } else if (updatedResponses.some((r: ModelResponse) => r.status === MessageBlockStatus.STREAMING)) {
+      blockStatus = MessageBlockStatus.STREAMING;
+    } else if (updatedResponses.some((r: ModelResponse) => r.status === MessageBlockStatus.PENDING)) {
+      blockStatus = MessageBlockStatus.PENDING;
+    } else {
+      blockStatus = MessageBlockStatus.SUCCESS;
     }
 
     // 更新块
@@ -149,18 +190,21 @@ export class MultiModelService {
       updatedAt: new Date().toISOString()
     };
 
-    // 保存到数据库
-    await dexieStorage.updateMessageBlock(blockId, updatedBlock);
-
-    // 更新Redux状态
-    store.dispatch(updateOneBlock({
-      id: blockId,
-      changes: {
-        responses: updatedResponses,
-        status: blockStatus,
-        updatedAt: new Date().toISOString()
-      }
-    }));
+    try {
+      // 🔧 按照文档修复：必须同时执行数据库和Redux更新
+      await dexieStorage.updateMessageBlock(blockId, updatedBlock);
+      store.dispatch(updateOneBlock({
+        id: blockId,
+        changes: {
+          responses: updatedResponses,
+          status: blockStatus,
+          updatedAt: new Date().toISOString()
+        }
+      }));
+    } catch (error) {
+      console.error(`[MultiModelService] 更新多模型响应失败: ${blockId}`, error);
+      throw error;
+    }
 
     // 发送事件
     EventEmitter.emit(EVENT_NAMES.BLOCK_UPDATED, {

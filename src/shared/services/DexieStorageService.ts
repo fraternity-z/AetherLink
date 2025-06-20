@@ -394,12 +394,45 @@ export class DexieStorageService extends Dexie {
       }
     }
 
+    // 🔧 修复：多模型块的特殊处理
+    if (block.type === 'multi_model' && 'responses' in block) {
+      const multiModelBlock = block as any;
+      if (multiModelBlock.responses && Array.isArray(multiModelBlock.responses)) {
+        // 深拷贝确保 responses 数组被正确序列化
+        const blockToSave = {
+          ...block,
+          responses: JSON.parse(JSON.stringify(multiModelBlock.responses)),
+          displayStyle: multiModelBlock.displayStyle || 'horizontal'
+        };
+        await this.message_blocks.put(blockToSave);
+        return;
+      }
+    }
+
     await this.message_blocks.put(block);
   }
 
   async getMessageBlock(id: string): Promise<MessageBlock | null> {
     const block = await this.message_blocks.get(id);
     if (!block) return null;
+
+    // 🔧 修复：多模型块的特殊处理
+    if (block.type === 'multi_model' && 'responses' in block) {
+      const multiModelBlock = block as any;
+
+      // 确保 responses 数组存在且格式正确
+      if (!multiModelBlock.responses || !Array.isArray(multiModelBlock.responses)) {
+        multiModelBlock.responses = [];
+      }
+
+      // 确保每个 response 都有必要的字段
+      multiModelBlock.responses = multiModelBlock.responses.map((response: any) => ({
+        modelId: response.modelId || '',
+        modelName: response.modelName || response.modelId || '',
+        content: response.content || '',
+        status: response.status || 'pending'
+      }));
+    }
 
     // 🔧 修复：对比分析块的特殊处理
     if ('subType' in block && (block as any).subType === 'comparison') {

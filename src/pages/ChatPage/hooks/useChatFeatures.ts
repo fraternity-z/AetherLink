@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { v4 as uuid } from 'uuid';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { updateOneBlock, upsertOneBlock } from '../../../shared/store/slices/messageBlocksSlice';
 import { multiModelService } from '../../../shared/services/MultiModelService';
@@ -725,7 +726,7 @@ export const useChatFeatures = (
     localStorage.setItem('mcp-mode', mode);
   };
 
-  // 处理多模型发送
+  // 处理多模型发送 - 完全重写
   const handleMultiModelSend = async (content: string, models: any[], images?: any[], _toolsEnabled?: boolean, files?: any[]) => {
     if (!currentTopic || !selectedModel) return;
 
@@ -733,9 +734,7 @@ export const useChatFeatures = (
       console.log(`[useChatFeatures] 开始多模型发送，模型数量: ${models.length}`);
       console.log(`[useChatFeatures] 选中的模型:`, models.map(m => `${m.provider || m.providerType}:${m.id}`));
 
-      // 使用静态导入的服务
-
-      // 创建用户消息
+      // 1. 创建用户消息
       const { message: userMessage, blocks: userBlocks } = createUserMessage({
         content,
         assistantId: currentTopic.assistantId,
@@ -746,49 +745,67 @@ export const useChatFeatures = (
         files: files?.map(file => file.fileRecord).filter(Boolean)
       });
 
-      // 创建助手消息
-      const { message: assistantMessage, blocks: assistantBlocks } = createAssistantMessage({
+      // 2. 创建助手消息 - 只包含多模型块
+      const assistantMessageId = uuid();
+      const multiModelBlockId = `multi-model-${uuid()}`;
+
+      const assistantMessage = {
+        id: assistantMessageId,
+        role: 'assistant' as const,
+        content: '',
         assistantId: currentTopic.assistantId,
         topicId: currentTopic.id,
         askId: userMessage.id,
         modelId: selectedModel.id,
-        model: selectedModel
-      });
+        model: selectedModel,
+        createdAt: new Date().toISOString(),
+        status: 'streaming' as const,
+        blocks: [multiModelBlockId] // 直接包含多模型块ID
+      };
 
-      // 保存消息到数据库
+      // 3. 直接创建多模型块
+      const responses = models.map(model => ({
+        modelId: model.id,
+        modelName: model.name || model.id,
+        content: '',
+        status: MessageBlockStatus.PENDING
+      }));
+
+      const multiModelBlock = {
+        id: multiModelBlockId,
+        messageId: assistantMessageId,
+        type: MessageBlockType.MULTI_MODEL,
+        responses,
+        displayStyle: 'horizontal' as const,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: MessageBlockStatus.PENDING
+      };
+
+      // 5. 保存所有数据
       await dexieStorage.saveMessage(userMessage);
       await dexieStorage.saveMessage(assistantMessage);
+      await dexieStorage.saveMessageBlock(multiModelBlock);
 
-      // 保存消息块
-      for (const block of [...userBlocks, ...assistantBlocks]) {
+      // 保存用户消息块
+      for (const block of userBlocks) {
         await dexieStorage.saveMessageBlock(block);
       }
 
-      // 更新Redux状态
+      // 6. 更新Redux状态
       dispatch(newMessagesActions.addMessage({ topicId: currentTopic.id, message: userMessage }));
       dispatch(newMessagesActions.addMessage({ topicId: currentTopic.id, message: assistantMessage }));
+      dispatch(upsertOneBlock(multiModelBlock));
 
-      // 创建多模型响应块
-      const blockId = await multiModelService.createMultiModelBlock(
-        assistantMessage.id,
-        models,
-        'vertical' // 默认垂直布局
-      );
-
-      console.log(`[useChatFeatures] 创建多模型块: ${blockId}`);
-
-      // 并行调用所有模型
+      // 7. 并行调用所有模型
       models.map(async (model) => {
         try {
-          const modelKey = `${model.provider || model.providerType}:${model.id}`;
-          console.log(`[useChatFeatures] 调用模型: ${modelKey}`);
-
           // 实际调用模型API
-          await callSingleModelForMultiModel(model, content, blockId);
+          await callSingleModelForMultiModel(model, content, multiModelBlockId);
 
         } catch (error) {
           console.error(`[useChatFeatures] 模型 ${model.id} 调用失败:`, error);
-          await multiModelService.updateModelResponse(blockId, model.id, `模型调用失败: ${error}`, 'error');
+          await multiModelService.updateModelResponse(multiModelBlockId, model.id, `模型调用失败: ${error}`, 'error');
         }
       });
 
@@ -804,7 +821,6 @@ export const useChatFeatures = (
     blockId: string
   ) => {
     try {
-      console.log(`[useChatFeatures] 开始调用单个模型: ${model.id}`);
 
       // 使用静态导入的API和服务
 
@@ -857,7 +873,7 @@ export const useChatFeatures = (
         blocks: []
       });
 
-      console.log(`[useChatFeatures] 为模型 ${model.id} 准备消息历史，消息数量: ${chatMessages.length}`);
+
 
       // 获取API提供商
       const provider = ApiProviderRegistry.get(model);
@@ -868,11 +884,14 @@ export const useChatFeatures = (
       // 初始化响应状态
       await multiModelService.updateModelResponse(blockId, model.id, '', 'streaming');
 
-      // 调用模型API，使用流式更新
+      // 调用模型API，使用流式更新（高级模式）
       const response = await provider.sendChatMessage(chatMessages, {
         onUpdate: async (content: string) => {
           // 实时更新响应内容
           await multiModelService.updateModelResponse(blockId, model.id, content, 'streaming');
+        },
+        onChunk: async () => {
+          // 启用高级流式模式
         },
         enableTools: true,
         // 其他选项...
@@ -888,8 +907,6 @@ export const useChatFeatures = (
 
       // 完成响应
       await multiModelService.completeModelResponse(blockId, model.id, finalContent);
-
-      console.log(`[useChatFeatures] 模型 ${model.id} 调用完成`);
 
     } catch (error) {
       console.error(`[useChatFeatures] 模型 ${model.id} 调用失败:`, error);
