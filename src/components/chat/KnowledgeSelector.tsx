@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Alert,
   Divider,
+  IconButton,
 } from '@mui/material';
 import {
   BookOpen as MenuBookIcon,
@@ -183,11 +184,14 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
         }
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box display="flex" alignItems="center" gap={1}>
           <MenuBookIcon color="primary" />
           <Typography variant="h6">选择知识库</Typography>
         </Box>
+        <IconButton onClick={handleClose} edge="end">
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ px: 3, py: 2 }}>

@@ -76,6 +76,7 @@ export interface ResponsesAPIReasoningParameters {
     effort?: string;
     summary?: 'auto' | 'concise' | 'detailed';
   };
+  reasoning_effort?: string;
   enable_thinking?: boolean;
   thinking_budget?: number;
   thinking?: {
