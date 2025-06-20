@@ -3052,6 +3052,35 @@ chart.js@^4.1.1, chart.js@^4.4.9:
   dependencies:
     "@kurkle/color" "^0.3.0"
 
+cheerio-select@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/cheerio-select/-/cheerio-select-2.1.0.tgz"
+  integrity sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g==
+  dependencies:
+    boolbase "^1.0.0"
+    css-select "^5.1.0"
+    css-what "^6.1.0"
+    domelementtype "^2.3.0"
+    domhandler "^5.0.3"
+    domutils "^3.0.1"
+
+cheerio@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/cheerio/-/cheerio-1.1.0.tgz"
+  integrity sha512-+0hMx9eYhJvWbgpKV9hN7jg0JcwydpopZE4hgi+KvQtByZXPp04NiCWU0LzcAbP63abZckIHkTQaXVF52mX3xQ==
+  dependencies:
+    cheerio-select "^2.1.0"
+    dom-serializer "^2.0.0"
+    domhandler "^5.0.3"
+    domutils "^3.2.2"
+    encoding-sniffer "^0.2.0"
+    htmlparser2 "^10.0.0"
+    parse5 "^7.3.0"
+    parse5-htmlparser2-tree-adapter "^7.1.0"
+    parse5-parser-stream "^7.1.2"
+    undici "^7.10.0"
+    whatwg-mimetype "^4.0.0"
+
 chevrotain-allstar@~0.3.0:
   version "0.3.1"
   resolved "https://registry.npmmirror.com/chevrotain-allstar/-/chevrotain-allstar-0.3.1.tgz"
@@ -3780,7 +3809,7 @@ dompurify@^3.2.4, dompurify@^3.2.6:
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
-domutils@^3.0.1:
+domutils@^3.0.1, domutils@^3.2.1, domutils@^3.2.2:
   version "3.2.2"
   resolved "https://registry.npmmirror.com/domutils/-/domutils-3.2.2.tgz"
   integrity sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==
@@ -3841,6 +3870,14 @@ encodeurl@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/encodeurl/-/encodeurl-2.0.0.tgz"
   integrity sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==
+
+encoding-sniffer@^0.2.0:
+  version "0.2.1"
+  resolved "https://registry.npmjs.org/encoding-sniffer/-/encoding-sniffer-0.2.1.tgz"
+  integrity sha512-5gvq20T6vfpekVtqrYQsSCFZ1wEg5+wW0/QaZMWkFr6BqD3NfKs0rLCx4rrVlSWJeZb5NBJgVLswK/w2MWU+Gw==
+  dependencies:
+    iconv-lite "^0.6.3"
+    whatwg-encoding "^3.1.1"
 
 entities@^4.2.0:
   version "4.5.0"
@@ -4768,6 +4805,16 @@ html2canvas@^1.4.1:
   dependencies:
     css-line-break "^2.1.0"
     text-segmentation "^1.0.3"
+
+htmlparser2@^10.0.0:
+  version "10.0.0"
+  resolved "https://registry.npmjs.org/htmlparser2/-/htmlparser2-10.0.0.tgz"
+  integrity sha512-TwAZM+zE5Tq3lrEHvOlvwgj1XLWQCtaaibSN11Q+gGBAS7Y1uZSWwXXRe4iF6OXnaq1riyQAPFOBtYc77Mxq0g==
+  dependencies:
+    domelementtype "^2.3.0"
+    domhandler "^5.0.3"
+    domutils "^3.2.1"
+    entities "^6.0.0"
 
 http-errors@^2.0.0, http-errors@2.0.0:
   version "2.0.0"
@@ -6302,7 +6349,22 @@ parse-json@^5.0.0:
     json-parse-even-better-errors "^2.3.0"
     lines-and-columns "^1.1.6"
 
-parse5@^7.0.0:
+parse5-htmlparser2-tree-adapter@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.npmjs.org/parse5-htmlparser2-tree-adapter/-/parse5-htmlparser2-tree-adapter-7.1.0.tgz"
+  integrity sha512-ruw5xyKs6lrpo9x9rCZqZZnIUntICjQAd0Wsmp396Ul9lN/h+ifgVV1x1gZHi8euej6wTfpqX8j+BFQxF0NS/g==
+  dependencies:
+    domhandler "^5.0.3"
+    parse5 "^7.0.0"
+
+parse5-parser-stream@^7.1.2:
+  version "7.1.2"
+  resolved "https://registry.npmjs.org/parse5-parser-stream/-/parse5-parser-stream-7.1.2.tgz"
+  integrity sha512-JyeQc9iwFLn5TbvvqACIF/VXG6abODeB3Fwmv/TGdLk2LfbWkaySGY72at4+Ty7EkPZj854u4CrICqNk2qIbow==
+  dependencies:
+    parse5 "^7.0.0"
+
+parse5@^7.0.0, parse5@^7.3.0:
   version "7.3.0"
   resolved "https://registry.npmjs.org/parse5/-/parse5-7.3.0.tgz"
   integrity sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==
@@ -7588,6 +7650,11 @@ undici-types@~6.21.0:
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz"
   integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
+undici@^7.10.0:
+  version "7.10.0"
+  resolved "https://registry.npmjs.org/undici/-/undici-7.10.0.tgz"
+  integrity sha512-u5otvFBOBZvmdjWLVW+5DAc9Nkq8f24g0O9oY7qw2JVIF1VocIFoyz9JFkuVOS2j41AufeO0xnlweJ2RLT8nGw==
+
 unified@^11.0.0, unified@^11.0.5:
   version "11.0.5"
   resolved "https://registry.npmjs.org/unified/-/unified-11.0.5.tgz"
@@ -7834,6 +7901,18 @@ webidl-conversions@^3.0.0:
   version "3.0.1"
   resolved "https://registry.npmmirror.com/webidl-conversions/-/webidl-conversions-3.0.1.tgz"
   integrity sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
+
+whatwg-encoding@^3.1.1:
+  version "3.1.1"
+  resolved "https://registry.npmjs.org/whatwg-encoding/-/whatwg-encoding-3.1.1.tgz"
+  integrity sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==
+  dependencies:
+    iconv-lite "0.6.3"
+
+whatwg-mimetype@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.npmjs.org/whatwg-mimetype/-/whatwg-mimetype-4.0.0.tgz"
+  integrity sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==
 
 whatwg-url@^5.0.0:
   version "5.0.0"

@@ -24,7 +24,7 @@ import FileBlock from './blocks/FileBlock';
 import PlaceholderBlock from './blocks/PlaceholderBlock';
 import SearchResultsBlock from './blocks/SearchResultsBlock';
 import KnowledgeReferenceBlock from './blocks/KnowledgeReferenceBlock';
-import ToolBlock from './blocks/ToolBlock';
+// import ToolBlock from './blocks/ToolBlock'; // 已移除：工具块在 MainTextBlock 中原位渲染
 
 // 简单的动画块包装器组件（使用 MUI Fade）
 interface AnimatedBlockWrapperProps {
@@ -220,8 +220,10 @@ const MessageBlockRenderer: React.FC<Props> = ({
                 blockComponent = <FileBlock key={block.id} block={block} />;
                 break;
               case MessageBlockType.TOOL:
-                // 支持 OpenAI Responses API 的工具块渲染
-                blockComponent = <ToolBlock key={block.id} block={block as any} />;
+                // 🔧 修复工具块重复渲染问题：
+                // 工具块已经在 MainTextBlock 中原位渲染，这里跳过避免重复显示
+                console.log(`[MessageBlockRenderer] 跳过工具块 ${block.id}，已在 MainTextBlock 中原位渲染`);
+                blockComponent = null;
                 break;
               case MessageBlockType.SEARCH_RESULTS:
                 blockComponent = <SearchResultsBlock key={block.id} block={block as any} />;

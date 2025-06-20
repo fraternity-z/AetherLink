@@ -31,7 +31,6 @@ def capacitor_pods
   pod 'CapawesomeCapacitorFilePicker', :path => '../../node_modules/@capawesome/capacitor-file-picker'
   pod 'CapacitorAdvancedFileManager', :path => '../../node_modules/capacitor-advanced-file-manager'
   pod 'CapacitorCorsBypassEnhanced', :path => '../../node_modules/capacitor-cors-bypass-enhanced'
-  pod 'CapacitorNativeInputDialog', :path => '../../node_modules/capacitor-native-input-dialog'
 end
 
 target 'App' do

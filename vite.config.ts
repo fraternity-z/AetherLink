@@ -106,7 +106,18 @@ export default defineConfig({
         headers: {
           'Origin': 'https://dav.jianguoyun.com'
         }
-      }
+      },
+      // DuckDuckGo 搜索代理 - 用于 WebScout MCP 服务器
+      '/api/duckduckgo': {
+        target: 'https://html.duckduckgo.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/duckduckgo/, ''),
+        headers: {
+          'Origin': 'https://html.duckduckgo.com',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      },
+
     }
   },
 

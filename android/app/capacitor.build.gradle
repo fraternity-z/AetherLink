@@ -30,7 +30,6 @@ dependencies {
     implementation project(':capawesome-capacitor-file-picker')
     implementation project(':capacitor-advanced-file-manager')
     implementation project(':capacitor-cors-bypass-enhanced')
-    implementation project(':capacitor-native-input-dialog')
 
 }
 

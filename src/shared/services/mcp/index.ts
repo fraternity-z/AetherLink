@@ -24,6 +24,7 @@ export { FileSystemServer } from './servers/FileSystemServer';
 export { LocalGoogleSearchServer } from './servers/LocalGoogleSearchServer';
 export { MemoryServer } from './servers/MemoryServer';
 export { ThinkingServer } from './servers/ThinkingServer';
+export { WebScoutServer } from './servers/WebScoutServer';
 
 // 类型定义 (从共享类型中重新导出)
 export type {

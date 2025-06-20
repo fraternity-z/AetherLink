@@ -109,6 +109,7 @@
     "capacitor-advanced-file-manager": "^0.1.5",
     "capacitor-cors-bypass-enhanced": "^1.0.4",
     "chart.js": "^4.4.9",
+    "cheerio": "^1.1.0",
     "codemirror": "^6.0.1",
     "core-js": "^3.43.0",
     "date-fns": "^4.1.0",

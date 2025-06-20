@@ -64,6 +64,3 @@ project(':capacitor-advanced-file-manager').projectDir = new File('../node_modul
 
 include ':capacitor-cors-bypass-enhanced'
 project(':capacitor-cors-bypass-enhanced').projectDir = new File('../node_modules/capacitor-cors-bypass-enhanced/android')
-
-include ':capacitor-native-input-dialog'
-project(':capacitor-native-input-dialog').projectDir = new File('../node_modules/capacitor-native-input-dialog/android')

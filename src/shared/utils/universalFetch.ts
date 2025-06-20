@@ -170,6 +170,9 @@ export function getPlatformUrl(originalUrl: string): string {
       return originalUrl.replace('https://mcp.api-inference.modelscope.net', '/api/mcp-modelscope');
     } else if (originalUrl.includes('router.mcp.so')) {
       return originalUrl.replace('https://router.mcp.so', '/api/mcp-router');
+    } else if (originalUrl.includes('html.duckduckgo.com')) {
+      // DuckDuckGo 搜索代理
+      return originalUrl.replace('https://html.duckduckgo.com', '/api/duckduckgo');
     }
     // 其他URL暂时直接返回（可以根据需要添加更多代理）
     return originalUrl;
@@ -195,9 +198,12 @@ export function getFullProxyUrl(originalUrl: string): string {
       return originalUrl.replace('https://mcp.api-inference.modelscope.net', `${currentOrigin}/api/mcp-modelscope`);
     } else if (originalUrl.includes('router.mcp.so')) {
       return originalUrl.replace('https://router.mcp.so', `${currentOrigin}/api/mcp-router`);
+    } else if (originalUrl.includes('html.duckduckgo.com')) {
+      // DuckDuckGo 搜索代理
+      return originalUrl.replace('https://html.duckduckgo.com', `${currentOrigin}/api/duckduckgo`);
     }
-    // 其他URL暂时直接返回
-    return originalUrl;
+    // 其他URL使用通用代理
+    return `${currentOrigin}/api/proxy?url=${encodeURIComponent(originalUrl)}`;
   } else {
     // 不需要代理：返回原始 URL
     return originalUrl;

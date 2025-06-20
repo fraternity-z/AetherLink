@@ -7,6 +7,7 @@ import { FileSystemServer } from '../servers/FileSystemServer';
 import { DifyKnowledgeServer } from '../servers/DifyKnowledgeServer';
 import { LocalGoogleSearchServer } from '../servers/LocalGoogleSearchServer';
 import { CalculatorServer } from '../servers/CalculatorServer';
+import { WebScoutServer } from '../servers/WebScoutServer';
 import { getBuiltinMCPServers, isBuiltinServer, getBuiltinServerConfig } from '../../../config/builtinMCPServers';
 
 /**
@@ -49,6 +50,10 @@ export function createInMemoryMCPServer(name: string, args: string[] = [], envs:
 
     case '@aether/calculator': {
       return new CalculatorServer().server;
+    }
+
+    case '@aether/web-scout': {
+      return new WebScoutServer().server;
     }
 
     default:

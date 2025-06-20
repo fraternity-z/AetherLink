@@ -83,7 +83,7 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     id: 'builtin-local-google-search',
     name: '@aether/local-google-search',
     type: 'inMemory',
-    description: '本地 Google 和 Bing 搜索服务器，提供免费的网络搜索功能，无需 API 密钥',
+    description: '本地 Google 和 Bing 搜索服务器，提供免费的网络搜索功能，无需 API 密钥暂不可用',
     isActive: false,
     provider: 'AetherAI',
     logoUrl: '',
@@ -98,6 +98,16 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     provider: 'AetherAI',
     logoUrl: '',
     tags: ['计算', '数学', '工具', '函数']
+  },
+  {
+    id: 'builtin-web-scout',
+    name: '@aether/web-scout',
+    type: 'inMemory',
+    description: '基于 DuckDuckGo 的免费网页搜索和内容提取服务器，无需 API 密钥。支持网页搜索和批量内容提取',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['搜索', 'DuckDuckGo', '免费', '内容提取', '网页抓取']
   }
 ];
 
