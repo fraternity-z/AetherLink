@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography, useTheme, Menu, MenuItem, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, ListItemSecondaryAction, Chip, Avatar, Button, alpha, useMediaQuery } from '@mui/material';
+import { Box, Typography, useTheme, Menu, MenuItem, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, ListItemSecondaryAction, Chip, Avatar, Button, alpha, useMediaQuery, IconButton } from '@mui/material';
 // Lucide Icons - 按需导入，高端简约设计
-import { Plus, Trash2, AlertTriangle, BookOpen, Video, Settings, Wrench, Database, Globe } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, BookOpen, Video, Settings, Wrench, Database, Globe, ArrowLeft, X } from 'lucide-react';
 import { CustomIcon } from '../icons';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
@@ -507,10 +507,15 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
         <DialogTitle sx={{ pb: 1, px: { xs: 2, sm: 3 }, pt: { xs: 2, sm: 3 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+              <IconButton onClick={handleCloseMCPDialog} sx={{ mr: 1, p: 0.5, display: { xs: 'inline-flex', sm: 'none' } }} >
+                <ArrowLeft size={22} />
+              </IconButton>
               <Box sx={{ 
                 '& svg': { 
                   width: { xs: '18px', sm: '20px' }, 
-                  height: { xs: '18px', sm: '20px' } 
+                  height: { xs: '18px', sm: '20px' },
+                  color: theme.palette.success.main,
+                  display: { xs: 'none', sm: 'inline-flex'}
                 } 
               }}>
                 <Wrench size={20} color={theme.palette.success.main} />
@@ -528,12 +533,17 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
                 />
               )}
             </Box>
-            {onToolsEnabledChange && (
-              <CustomSwitch
-                checked={toolsEnabled}
-                onChange={(e) => handleMCPToolsEnabledChange(e.target.checked)}
-              />
-            )}
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              {onToolsEnabledChange && (
+                <CustomSwitch
+                  checked={toolsEnabled}
+                  onChange={(e) => handleMCPToolsEnabledChange(e.target.checked)}
+                />
+              )}
+               <IconButton onClick={handleCloseMCPDialog} sx={{ ml: 1, display: { xs: 'none', sm: 'inline-flex' } }}>
+                <X size={22} />
+              </IconButton>
+            </Box>
           </Box>
         </DialogTitle>
 
