@@ -54,7 +54,7 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
 
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down('sm'));
-  const { isDarkMode } = useInputStyles();
+  useInputStyles();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -518,7 +518,6 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
                   display: { xs: 'none', sm: 'inline-flex'}
                 } 
               }}>
-                <Wrench size={20} color={theme.palette.success.main} />
               </Box>
               <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 MCP 工具服务器
