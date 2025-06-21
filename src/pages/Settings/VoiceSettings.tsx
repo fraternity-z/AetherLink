@@ -66,6 +66,7 @@ const VoiceSettings: React.FC = () => {
   // 🚀 性能优化：使用 useRef 管理定时器，避免内存泄漏
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 🚀 性能优化：合并相关状态，减少重新渲染次数
   const [siliconFlowSettings, setSiliconFlowSettings] = useState<SiliconFlowTTSSettings>({
@@ -428,6 +429,18 @@ const VoiceSettings: React.FC = () => {
     }
   }, [siliconFlowSettings, openaiSettings, azureSettings, enableTTS, useOpenai, useAzure, selectedTTSService, ttsService, speechRecognitionSettings, whisperSettings]);
 
+  // 🚀 防抖自动保存功能
+  const debouncedAutoSave = useCallback(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      console.log('🔄 自动保存设置...');
+      handleSave();
+    }, 2000); // 2秒防抖
+  }, [handleSave]);
+
   // 🚀 性能优化：使用 useCallback 缓存测试TTS函数
   const handleTestTTS = useCallback(async () => {
     if (uiState.isTestPlaying) {
@@ -485,15 +498,22 @@ const VoiceSettings: React.FC = () => {
       clearInterval(playCheckIntervalRef.current);
     }
 
-    // 监听播放结束
-    playCheckIntervalRef.current = setInterval(() => {
+    // 监听播放结束 - 优化：减少轮询频率，使用递归检查
+    const checkPlaybackStatus = () => {
       if (!ttsService.getIsPlaying()) {
         setUIState(prev => ({ ...prev, isTestPlaying: false }));
         if (playCheckIntervalRef.current) {
           clearInterval(playCheckIntervalRef.current);
+          playCheckIntervalRef.current = null;
         }
+      } else {
+        // 递归检查，但增加间隔时间到1秒
+        playCheckIntervalRef.current = setTimeout(checkPlaybackStatus, 1000);
       }
-    }, 500);
+    };
+
+    // 延迟开始检查，给播放一些时间
+    setTimeout(checkPlaybackStatus, 1000);
   }, [uiState.isTestPlaying, selectedTTSService, azureSettings, openaiSettings, siliconFlowSettings, testText, ttsService]);
 
   // 🚀 性能优化：使用 useCallback 缓存主Tab变化处理函数
@@ -545,7 +565,7 @@ const VoiceSettings: React.FC = () => {
     setUIState(prev => ({ ...prev, ttsSubTabValue: ttsTabIndex }));
   }, []);
 
-  // 🚀 性能优化：组件卸载时清理定时器
+  // 🚀 性能优化：组件卸载时清理定时器和资源
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -554,8 +574,15 @@ const VoiceSettings: React.FC = () => {
       if (playCheckIntervalRef.current) {
         clearInterval(playCheckIntervalRef.current);
       }
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      // 停止正在播放的测试音频
+      if (uiState.isTestPlaying) {
+        ttsService.stop();
+      }
     };
-  }, []);
+  }, [uiState.isTestPlaying, ttsService]);
 
   // 检查并请求麦克风权限函数
   const checkAndRequestPermissions = async () => {

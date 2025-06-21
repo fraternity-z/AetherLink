@@ -189,11 +189,28 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         const success = await ttsService.initializeConfig();
 
         if (success) {
-          // 标记本地配置已加载
-          ttsConfigRef.current.loaded = true;
+          // 从存储加载实际的用户配置
+          const [apiKey, model, voice, enabled] = await Promise.all([
+            getStorageItem<string>('siliconflow_api_key'),
+            getStorageItem<string>('tts_model'),
+            getStorageItem<string>('tts_voice'),
+            getStorageItem<string>('enable_tts')
+          ]);
 
-          // 从存储获取启用状态
-          const enabled = await getStorageItem<string>('enable_tts');
+          // 更新本地配置缓存为实际的用户设置
+          ttsConfigRef.current = {
+            apiKey: apiKey || '',
+            model: model || 'FunAudioLLM/CosyVoice2-0.5B',
+            voice: voice ? (voice.includes(':') ? voice : `${model || 'FunAudioLLM/CosyVoice2-0.5B'}:${voice}`) : 'FunAudioLLM/CosyVoice2-0.5B:alex',
+            loaded: true
+          };
+
+          console.log('🔧 MessageActions TTS配置加载完成:', {
+            hasApiKey: !!ttsConfigRef.current.apiKey,
+            model: ttsConfigRef.current.model,
+            voice: ttsConfigRef.current.voice
+          });
+
           const isEnabled = enabled !== 'false'; // 默认启用
           setEnableTTS(isEnabled);
         } else {
@@ -212,29 +229,27 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     }
   }, []);
 
-  // 监听TTS播放状态变化 - 优化：减少轮询频率，使用更高效的检查机制
+  // 播放状态管理 - 重写：简化轮询，避免依赖循环
   useEffect(() => {
     const ttsService = TTSService.getInstance();
 
-    // 检测初始状态
-    const currentMessageId = ttsService.getCurrentMessageId();
-    const initialPlaying = currentMessageId === message.id && ttsService.getIsPlaying();
-    setIsPlaying(initialPlaying);
-
-    // 优化：减少轮询频率到1秒，并添加条件检查
-    const intervalId = setInterval(() => {
+    // 检查当前播放状态
+    const checkPlayingStatus = () => {
       const currentId = ttsService.getCurrentMessageId();
       const isServicePlaying = ttsService.getIsPlaying();
       const shouldBePlaying = isServicePlaying && currentId === message.id;
 
-      // 只在状态真正改变时更新
-      if (isPlaying !== shouldBePlaying) {
-        setIsPlaying(shouldBePlaying);
-      }
-    }, 1000); // 从500ms改为1000ms
+      setIsPlaying(shouldBePlaying);
+    };
+
+    // 初始检查
+    checkPlayingStatus();
+
+    // 定期检查播放状态
+    const intervalId = setInterval(checkPlayingStatus, 500);
 
     return () => clearInterval(intervalId);
-  }, [message.id, isPlaying]);
+  }, [message.id]); // 只依赖message.id
 
   // 打开菜单 - 优化：使用useCallback
   const handleMenuClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -413,51 +428,74 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [handleMenuClose, messageIndex]);
 
-  // 文本转语音 - 优化：使用缓存的配置，避免重复存储调用
+  // 文本转语音 - 重写：简化状态管理
   const handleTextToSpeech = useCallback(async () => {
     try {
       const ttsService = TTSService.getInstance();
       const content = getMainTextContent(message);
 
-      if (isPlaying) {
-        // 如果正在播放，停止
+      // 检查当前是否正在播放这条消息
+      const currentPlayingId = ttsService.getCurrentMessageId();
+      const isCurrentlyPlaying = currentPlayingId === message.id && ttsService.getIsPlaying();
+
+      if (isCurrentlyPlaying) {
+        // 停止播放
         ttsService.stop();
         setIsPlaying(false);
-      } else {
-        // 使用缓存的配置，避免重复的存储调用
-        const config = ttsConfigRef.current;
-
-        // 如果配置未加载，则等待加载
-        if (!config.loaded) {
-          console.warn('TTS配置尚未加载完成，请稍后再试');
-          return;
-        }
-
-        console.log('🔧 聊天界面TTS配置:', {
-          hasApiKey: !!config.apiKey,
-          model: config.model,
-          voice: config.voice
-        });
-
-        // 设置TTS配置
-        if (config.apiKey) {
-          ttsService.setApiKey(config.apiKey);
-        }
-        if (config.model && config.voice) {
-          ttsService.setDefaultVoice(config.model, config.voice);
-        }
-
-        // 开始播放 - 不传递语音参数，使用默认语音
-        await ttsService.speak(content);
-        setIsPlaying(true);
+        return;
       }
+
+      // 停止其他消息的播放
+      if (ttsService.getIsPlaying()) {
+        ttsService.stop();
+      }
+
+      // 检查配置
+      const config = ttsConfigRef.current;
+      if (!config.loaded) {
+        console.warn('TTS配置尚未加载完成，请稍后再试');
+        return;
+      }
+
+      // 立即设置播放状态
+      setIsPlaying(true);
+
+      // 配置TTS
+      if (config.apiKey) {
+        ttsService.setApiKey(config.apiKey);
+      }
+      if (config.model && config.voice) {
+        ttsService.setDefaultVoice(config.model, config.voice);
+      }
+
+      // 开始播放
+      const success = await ttsService.speak(content, config.voice);
+
+      if (!success) {
+        // 播放失败，重置状态
+        setIsPlaying(false);
+        alert('文本转语音失败');
+      }
+
+      // 启动播放结束检测
+      const checkPlaybackEnd = () => {
+        if (!ttsService.getIsPlaying() || ttsService.getCurrentMessageId() !== message.id) {
+          setIsPlaying(false);
+        } else {
+          setTimeout(checkPlaybackEnd, 500);
+        }
+      };
+
+      setTimeout(checkPlaybackEnd, 1000);
+
     } catch (error) {
       console.error('TTS错误:', error);
+      setIsPlaying(false);
       alert('文本转语音失败');
     }
 
     handleMenuClose();
-  }, [isPlaying, message, handleMenuClose]);
+  }, [message, handleMenuClose]);
 
   // 检查是否有多个版本 - 放宽条件，对象存在且长度至少为1也显示历史按钮，方便调试
   // 旧逻辑: const hasMultipleVersions = Array.isArray(message.versions) && message.versions.length > 1;
@@ -894,7 +932,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                   transition: 'all 0.2s ease-in-out'
                 }}
               >
-                {isPlaying ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                {isPlaying ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </IconButton>
             </Tooltip>
           )}

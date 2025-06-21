@@ -26,7 +26,7 @@ export interface SiliconFlowTTSSettings {
 // 组件Props接口
 interface SiliconFlowTTSTabProps {
   settings: SiliconFlowTTSSettings;
-  onSettingsChange: (settings: SiliconFlowTTSSettings) => void;
+  onSettingsChange: (settings: SiliconFlowTTSSettings | ((prev: SiliconFlowTTSSettings) => SiliconFlowTTSSettings)) => void;
 }
 
 // 硅基流动TTS模型选项
@@ -57,32 +57,32 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
   settings,
   onSettingsChange,
 }) => {
-  // 🚀 性能优化：使用useCallback缓存事件处理函数
+  // 🚀 性能优化：使用函数式更新避免依赖整个settings对象
   const handleApiKeyChange = useCallback((value: string) => {
-    onSettingsChange({ ...settings, apiKey: value });
-  }, [settings, onSettingsChange]);
+    onSettingsChange(prev => ({ ...prev, apiKey: value }));
+  }, [onSettingsChange]);
 
   const handleShowApiKeyToggle = useCallback(() => {
-    onSettingsChange({ ...settings, showApiKey: !settings.showApiKey });
-  }, [settings, onSettingsChange]);
+    onSettingsChange(prev => ({ ...prev, showApiKey: !prev.showApiKey }));
+  }, [onSettingsChange]);
 
   const handleModelChange = useCallback((value: string) => {
     // 切换模型时重置语音选择
     const firstVoice = SILICONFLOW_VOICES[value as keyof typeof SILICONFLOW_VOICES]?.[0]?.value || '';
-    onSettingsChange({
-      ...settings,
+    onSettingsChange(prev => ({
+      ...prev,
       selectedModel: value,
       selectedVoice: firstVoice
-    });
-  }, [settings, onSettingsChange]);
+    }));
+  }, [onSettingsChange]);
 
   const handleVoiceChange = useCallback((value: string) => {
-    onSettingsChange({ ...settings, selectedVoice: value });
-  }, [settings, onSettingsChange]);
+    onSettingsChange(prev => ({ ...prev, selectedVoice: value }));
+  }, [onSettingsChange]);
 
   const handleStreamToggle = useCallback((checked: boolean) => {
-    onSettingsChange({ ...settings, useStream: checked });
-  }, [settings, onSettingsChange]);
+    onSettingsChange(prev => ({ ...prev, useStream: checked }));
+  }, [onSettingsChange]);
 
   // 获取当前模型的语音选项
   const currentVoices = SILICONFLOW_VOICES[settings.selectedModel as keyof typeof SILICONFLOW_VOICES] || [];

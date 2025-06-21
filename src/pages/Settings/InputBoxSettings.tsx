@@ -13,10 +13,9 @@ import {
   alpha,
   Divider,
   useTheme,
-  useMediaQuery,
-  Chip
+  useMediaQuery
 } from '@mui/material';
-import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, ArrowLeftRight, Send, Mic, Eye, EyeOff, GripVertical } from 'lucide-react';
+import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, ArrowLeftRight, Send, Mic } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
@@ -246,7 +245,6 @@ const InputBoxSettings: React.FC = () => {
   // 获取输入框相关设置
   const inputBoxStyle = settings.inputBoxStyle || 'default';
   const inputLayoutStyle = (settings as any).inputLayoutStyle || 'default';
-  const customButtons = (settings as any).integratedInputButtons || ['tools', 'search'];
 
   // 新的左右布局配置
   const leftButtons = (settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search'];
@@ -269,16 +267,7 @@ const InputBoxSettings: React.FC = () => {
     }));
   };
 
-  // 处理自定义按钮切换
-  const handleButtonToggle = (buttonId: string) => {
-    const newButtons = customButtons.includes(buttonId)
-      ? customButtons.filter((id: string) => id !== buttonId)
-      : [...customButtons, buttonId];
 
-    dispatch(updateSettings({
-      integratedInputButtons: newButtons
-    } as any));
-  };
 
   // 处理左右布局更新
   const handleLayoutUpdate = (newLeftButtons: string[], newRightButtons: string[]) => {

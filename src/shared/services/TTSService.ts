@@ -392,9 +392,31 @@ export class TTSService {
     this.currentMessageId = null;
 
     // 释放Blob URL
+    this.releaseBlobUrl();
+  }
+
+  /**
+   * 释放Blob URL资源
+   */
+  private releaseBlobUrl(): void {
     if (this.currentAudioBlob) {
       URL.revokeObjectURL(this.currentAudioBlob);
       this.currentAudioBlob = null;
+    }
+  }
+
+  /**
+   * 清理所有资源
+   */
+  public dispose(): void {
+    this.stop();
+    if (this.audio) {
+      this.audio.src = '';
+      this.audio = null;
+    }
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      this.audioContext.close();
+      this.audioContext = null;
     }
   }
 
@@ -569,9 +591,7 @@ export class TTSService {
       const audioBlob = await response.blob();
 
       // 释放之前的Blob URL
-      if (this.currentAudioBlob) {
-        URL.revokeObjectURL(this.currentAudioBlob);
-      }
+      this.releaseBlobUrl();
 
       // 创建新的Blob URL
       this.currentAudioBlob = URL.createObjectURL(audioBlob);
@@ -831,9 +851,7 @@ export class TTSService {
       const audioBlob = await response.blob();
 
       // 释放之前的Blob URL
-      if (this.currentAudioBlob) {
-        URL.revokeObjectURL(this.currentAudioBlob);
-      }
+      this.releaseBlobUrl();
 
       // 创建新的Blob URL
       this.currentAudioBlob = URL.createObjectURL(audioBlob);
@@ -922,9 +940,7 @@ export class TTSService {
           const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
 
           // 释放之前的Blob URL
-          if (this.currentAudioBlob) {
-            URL.revokeObjectURL(this.currentAudioBlob);
-          }
+          this.releaseBlobUrl();
 
           // 创建新的Blob URL
           this.currentAudioBlob = URL.createObjectURL(audioBlob);

@@ -2,7 +2,7 @@
 import type { ChatTopic } from '../../../../shared/types';
 import type { Assistant } from '../../../../shared/types/Assistant';
 import { CURRENT_BACKUP_VERSION } from './backupUtils';
-import { importExternalBackup } from './externalBackupUtils';
+import { importExternalBackup, ImportMode } from './externalBackupUtils';
 import { dexieStorage } from '../../../../shared/services/DexieStorageService';
 import { getStorageItem, setStorageItem, setStorageItems } from '../../../../shared/utils/storage';
 import { getMainTextContent } from '../../../../shared/utils/messageUtils';
@@ -29,6 +29,30 @@ export function readJSONFromFile(file: File): Promise<any> {
     };
 
     reader.readAsText(file);
+  });
+}
+
+/**
+ * 从文件中读取文本内容
+ */
+export function readTextFromFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        resolve(content);
+      } catch (error) {
+        reject(new Error('无法读取文本文件'));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error('读取文件失败，请检查文件是否损坏'));
+    };
+
+    reader.readAsText(file, 'utf-8');
   });
 }
 
@@ -576,9 +600,12 @@ export async function performFullRestore(
 }
 
 /**
- * 从文件中读取外部AI软件的JSON内容并导入
+ * 从文件中读取外部AI软件的内容并导入
  */
-export async function importExternalBackupFromFile(file: File): Promise<{
+export async function importExternalBackupFromFile(
+  file: File,
+  importMode: ImportMode = 'separate'
+): Promise<{
   success: boolean;
   topicsCount: number;
   assistantsCount: number;
@@ -586,11 +613,19 @@ export async function importExternalBackupFromFile(file: File): Promise<{
   error?: string;
 }> {
   try {
-    // 读取JSON数据
-    const jsonData = await readJSONFromFile(file);
+    let data: any;
+
+    // 根据文件类型读取数据
+    if (file.name.toLowerCase().endsWith('.txt')) {
+      // 读取 TXT 文件
+      data = await readTextFromFile(file);
+    } else {
+      // 读取 JSON 文件
+      data = await readJSONFromFile(file);
+    }
 
     // 尝试识别并导入外部备份
-    const { topics, assistants, source, messageBlocks } = await importExternalBackup(jsonData);
+    const { topics, assistants, source, messageBlocks } = await importExternalBackup(data, importMode);
 
     // 恢复消息块（必须在话题之前）
     if (messageBlocks && messageBlocks.length > 0) {
