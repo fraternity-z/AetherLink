@@ -37,6 +37,9 @@ const AssistantItem = memo(function AssistantItem({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
+  // 添加本地状态来强制更新话题数显示
+  const [forceUpdateKey, setForceUpdateKey] = useState(0);
+
   // 删除确认状态
   const [pendingDelete, setPendingDelete] = useState(false);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,7 +50,8 @@ const AssistantItem = memo(function AssistantItem({
       const { assistantId } = event.detail;
       if (assistantId === assistant.id) {
         console.log(`[AssistantItem] 收到话题清空事件，助手: ${assistant.name}`);
-        // 话题清空事件已收到，组件会自动重新渲染
+        // 强制更新组件以刷新话题数显示
+        setForceUpdateKey(prev => prev + 1);
       }
     };
 
@@ -56,7 +60,8 @@ const AssistantItem = memo(function AssistantItem({
       const { assistant: updatedAssistant } = event.detail;
       if (updatedAssistant.id === assistant.id) {
         console.log(`[AssistantItem] 收到助手更新事件，助手: ${assistant.name}`);
-        // 助手更新事件已收到，组件会自动重新渲染
+        // 强制更新组件
+        setForceUpdateKey(prev => prev + 1);
       }
     };
 
@@ -112,7 +117,7 @@ const AssistantItem = memo(function AssistantItem({
   const topicCount = useMemo(() => {
     const count = assistant.topics?.length || assistant.topicIds?.length || 0;
     return count;
-  }, [assistant.topics?.length, assistant.topicIds?.length]);
+  }, [assistant.id, assistant.topics?.length, assistant.topicIds?.length, forceUpdateKey, assistant.name]);
 
   // 缓存头像显示内容 - 支持自定义头像、Lucide图标和emoji
   const avatarContent = useMemo(() => {
@@ -147,7 +152,7 @@ const AssistantItem = memo(function AssistantItem({
 
     // 否则显示emoji或首字母
     return iconOrEmoji;
-  }, [assistant.avatar, assistant.emoji, assistant.name, isSelected, isDarkMode]);
+  }, [assistant.avatar, assistant.emoji, assistant.name, isSelected, isDarkMode, forceUpdateKey]);
 
   // 缓存样式对象，避免每次渲染都创建新对象
   const avatarSx = useMemo(() => {
@@ -172,7 +177,7 @@ const AssistantItem = memo(function AssistantItem({
       alignItems: 'center',
       borderRadius: '25%', // 方圆形头像
     };
-  }, [isSelected, isDarkMode]);
+  }, [isSelected, isDarkMode, forceUpdateKey]);
 
   const primaryTextSx = useMemo(() => ({
     fontWeight: isSelected ? 600 : 400,
@@ -280,7 +285,6 @@ const AssistantItem = memo(function AssistantItem({
     if (prevProps.isSelected !== nextProps.isSelected) changes.push('isSelected');
     if ((prevProps.assistant.topics?.length || 0) !== (nextProps.assistant.topics?.length || 0)) changes.push('topics.length');
     if ((prevProps.assistant.topicIds?.length || 0) !== (nextProps.assistant.topicIds?.length || 0)) changes.push('topicIds.length');
-
 
     console.log(`[AssistantItem] 重新渲染 ${nextProps.assistant.name}，变化: ${changes.join(', ')}`);
   }

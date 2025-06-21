@@ -21,7 +21,8 @@ import {
   Tabs,
   Tab,
   Paper,
-
+  useTheme,
+  type Theme,
 } from '@mui/material';
 import {
   Plus,
@@ -44,7 +45,7 @@ import type { Assistant } from '../../../shared/types/Assistant';
 import VirtualizedAssistantGroups from './VirtualizedAssistantGroups';
 import VirtualizedAssistantList from './VirtualizedAssistantList';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import PresetAssistantItem from './PresetAssistantItem';
 import GroupDialog from '../GroupDialog';
 import AssistantIconPicker from './AssistantIconPicker';
@@ -52,6 +53,115 @@ import { useAssistantTabLogic } from './useAssistantTabLogic';
 import type { Group } from '../../../shared/types';
 import AgentPromptSelector from '../../AgentPromptSelector';
 import AvatarUploader from '../../settings/AvatarUploader';
+
+// 样式常量
+const styles = {
+  glassomorphism: (theme: Theme) => ({
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.08)'
+      : 'rgba(0, 0, 0, 0.04)',
+    backdropFilter: 'blur(10px)',
+    border: `1px solid ${theme.palette.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.2)'
+      : 'rgba(0, 0, 0, 0.2)'}`
+  }),
+
+  dialogPaper: (theme: Theme) => ({
+    height: '80vh',
+    borderRadius: '16px',
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(18, 18, 18, 0.85)'
+      : 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(20px)',
+    border: theme.palette.mode === 'dark'
+      ? '1px solid rgba(255, 255, 255, 0.1)'
+      : '1px solid rgba(0, 0, 0, 0.1)',
+    color: theme.palette.text.primary,
+    boxShadow: theme.palette.mode === 'dark'
+      ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+      : '0 8px 32px rgba(0, 0, 0, 0.15)'
+  }),
+
+  dialogBackdrop: {
+    backdropFilter: 'blur(8px)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)'
+  },
+
+  inputField: (theme: Theme) => ({
+    '& .MuiOutlinedInput-root': {
+      ...styles.glassomorphism(theme),
+      borderRadius: '8px',
+      color: theme.palette.text.primary,
+      '& fieldset': {
+        borderColor: theme.palette.mode === 'dark'
+          ? 'rgba(255, 255, 255, 0.2)'
+          : 'rgba(0, 0, 0, 0.2)',
+      },
+      '&:hover fieldset': {
+        borderColor: theme.palette.mode === 'dark'
+          ? 'rgba(255, 255, 255, 0.3)'
+          : 'rgba(0, 0, 0, 0.3)',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: theme.palette.primary.main,
+      }
+    },
+    '& .MuiInputBase-input': {
+      color: theme.palette.text.primary,
+      fontSize: '0.875rem'
+    }
+  }),
+
+  avatarContainer: (theme: Theme) => ({
+    position: 'relative' as const,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 120,
+    height: 120,
+    borderRadius: '50%',
+    background: theme.palette.mode === 'dark'
+      ? 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)'
+      : 'linear-gradient(135deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 100%)',
+    boxShadow: theme.palette.mode === 'dark'
+      ? `0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)`
+      : `0 8px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)`,
+  }),
+
+  primaryButton: (theme: Theme) => ({
+    borderColor: theme.palette.primary.main,
+    color: theme.palette.primary.main,
+    fontSize: '0.75rem',
+    textTransform: 'none' as const,
+    backdropFilter: 'blur(10px)',
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.05)'
+      : 'rgba(0, 0, 0, 0.02)',
+    '&:hover': {
+      borderColor: theme.palette.primary.light,
+      backgroundColor: theme.palette.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.1)'
+        : 'rgba(0, 0, 0, 0.05)'
+    }
+  }),
+
+  secondaryButton: (theme: Theme) => ({
+    borderColor: theme.palette.text.secondary,
+    color: theme.palette.text.secondary,
+    fontSize: '0.75rem',
+    textTransform: 'none' as const,
+    backdropFilter: 'blur(10px)',
+    backgroundColor: theme.palette.mode === 'dark'
+      ? 'rgba(255, 255, 255, 0.05)'
+      : 'rgba(0, 0, 0, 0.02)',
+    '&:hover': {
+      borderColor: theme.palette.text.primary,
+      backgroundColor: theme.palette.mode === 'dark'
+        ? 'rgba(255, 255, 255, 0.1)'
+        : 'rgba(0, 0, 0, 0.05)'
+    }
+  })
+};
 
 // 组件属性定义
 interface AssistantTabProps {
@@ -66,7 +176,7 @@ interface AssistantTabProps {
 /**
  * 助手选项卡组件 - 只负责渲染UI
  */
-export default function AssistantTab({
+const AssistantTab = React.memo(function AssistantTab({
   userAssistants,
   currentAssistant,
   onSelectAssistant,
@@ -74,6 +184,8 @@ export default function AssistantTab({
   onUpdateAssistant,
   onDeleteAssistant
 }: AssistantTabProps) {
+  const theme = useTheme();
+
   // 使用自定义hook获取所有逻辑和状态
   const {
     // 状态
@@ -150,7 +262,7 @@ export default function AssistantTab({
     onDeleteAssistant
   );
 
-  // 编辑弹窗标签页状态
+  // 编辑弹窗标签页状态 - 只显示提示词标签页
   const [editTabValue, setEditTabValue] = useState(0);
 
   const handleEditTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -371,30 +483,10 @@ export default function AssistantTab({
         maxWidth="md" 
         fullWidth
         PaperProps={{
-          sx: {
-            height: '80vh',
-            borderRadius: '16px',
-            backgroundColor: (theme) => 
-              theme.palette.mode === 'dark' 
-                ? 'rgba(18, 18, 18, 0.85)' 
-                : 'rgba(255, 255, 255, 0.85)',
-            backdropFilter: 'blur(20px)',
-            border: (theme) => 
-              theme.palette.mode === 'dark' 
-                ? '1px solid rgba(255, 255, 255, 0.1)' 
-                : '1px solid rgba(0, 0, 0, 0.1)',
-            color: (theme) => theme.palette.text.primary,
-            boxShadow: (theme) => 
-              theme.palette.mode === 'dark' 
-                ? '0 8px 32px rgba(0, 0, 0, 0.4)' 
-                : '0 8px 32px rgba(0, 0, 0, 0.15)'
-          }
+          sx: styles.dialogPaper(theme)
         }}
         BackdropProps={{
-          sx: {
-            backdropFilter: 'blur(8px)',
-            backgroundColor: 'rgba(0, 0, 0, 0.2)'
-          }
+          sx: styles.dialogBackdrop
         }}
       >
         {/* 自定义标题栏 */}
@@ -437,25 +529,7 @@ export default function AssistantTab({
           py: 4,
           backgroundColor: 'transparent'
         }}>
-          <Box sx={{ 
-            position: 'relative',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: 120,
-            height: 120,
-            borderRadius: '50%',
-            background: (theme) => 
-              theme.palette.mode === 'dark' 
-                ? 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)'
-                : 'linear-gradient(135deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.02) 100%)',
-
-            boxShadow: (theme) => 
-              theme.palette.mode === 'dark'
-                ? `0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)`
-                : `0 8px 32px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)`,
-
-          }}>
+          <Box sx={styles.avatarContainer(theme)}>
             <Avatar
               src={editAssistantAvatar}
               sx={{
@@ -512,9 +586,9 @@ export default function AssistantTab({
           </Box>
         </Box>
 
-        {/* 标签页导航 */}
-        <Box sx={{ 
-          display: 'flex', 
+        {/* 标签页导航 - 只显示提示词标签页 */}
+        <Box sx={{
+          display: 'flex',
           justifyContent: 'center',
           backgroundColor: 'transparent',
           px: 2
@@ -542,223 +616,115 @@ export default function AssistantTab({
             }}
           >
             <Tab label="提示词" />
-            <Tab label="模型" />
-            <Tab label="预设" />
-            <Tab label="知识库" />
           </Tabs>
         </Box>
 
         {/* 内容区域 */}
-        <DialogContent sx={{ 
-          flex: 1, 
+        <DialogContent sx={{
+          flex: 1,
           backgroundColor: 'transparent',
           p: 3,
           color: (theme) => theme.palette.text.primary
         }}>
           {editTabValue === 0 && (
             <Box>
-              {/* Name 字段 */}
-              <Typography variant="subtitle2" sx={{ 
-                mb: 1, 
-                color: (theme) => theme.palette.text.secondary, 
-                fontSize: '0.875rem' 
-              }}>
-                名称
-              </Typography>
+            {/* Name 字段 */}
+            <Typography variant="subtitle2" sx={{
+              mb: 1,
+              color: (theme) => theme.palette.text.secondary,
+              fontSize: '0.875rem'
+            }}>
+              名称
+            </Typography>
+            <TextField
+              fullWidth
+              variant="outlined"
+              value={editAssistantName}
+              onChange={handleEditNameChange}
+              placeholder="请输入助手名称，例如：法律咨询助手"
+              sx={{
+                mb: 3,
+                ...styles.inputField(theme)
+              }}
+            />
+
+            {/* Prompt 字段 */}
+            <Typography variant="subtitle2" sx={{
+              mb: 1,
+              color: (theme) => theme.palette.text.secondary,
+              fontSize: '0.875rem'
+            }}>
+              提示词
+            </Typography>
+            <Paper sx={{
+              ...styles.glassomorphism(theme),
+              borderRadius: '8px',
+              p: 2
+            }}>
               <TextField
+                multiline
+                rows={8}
                 fullWidth
-                variant="outlined"
-                value={editAssistantName}
-                onChange={handleEditNameChange}
-                                  placeholder="请输入助手名称，例如：法律咨询助手"
+                variant="standard"
+                value={editAssistantPrompt}
+                onChange={handleEditPromptChange}
+                placeholder="请输入系统提示词，定义助手的角色和行为特征...
+
+示例：
+你是一个友好、专业、乐于助人的AI助手。你会以客观、准确的态度回答用户的问题，并在不确定的情况下坦诚表明。你可以协助用户完成各种任务，提供信息，或进行有意义的对话。"
                 sx={{
-                  mb: 3,
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: (theme) => 
-                      theme.palette.mode === 'dark' 
-                        ? 'rgba(255, 255, 255, 0.08)' 
-                        : 'rgba(0, 0, 0, 0.04)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: '8px',
+                  '& .MuiInput-root': {
                     color: (theme) => theme.palette.text.primary,
-                    '& fieldset': {
-                      borderColor: (theme) => 
-                        theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 255, 255, 0.2)' 
-                          : 'rgba(0, 0, 0, 0.2)',
+                    fontSize: '0.875rem',
+                    '&:before': {
+                      display: 'none'
                     },
-                    '&:hover fieldset': {
-                      borderColor: (theme) => 
-                        theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 255, 255, 0.3)' 
-                          : 'rgba(0, 0, 0, 0.3)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: (theme) => theme.palette.primary.main,
+                    '&:after': {
+                      display: 'none'
                     }
                   },
                   '& .MuiInputBase-input': {
                     color: (theme) => theme.palette.text.primary,
-                    fontSize: '0.875rem'
+                    '&::placeholder': {
+                      color: (theme) => theme.palette.text.secondary,
+                      opacity: 1
+                    }
                   }
                 }}
               />
 
-              {/* Prompt 字段 */}
-              <Typography variant="subtitle2" sx={{ 
-                mb: 1, 
-                color: (theme) => theme.palette.text.secondary, 
-                fontSize: '0.875rem' 
+              {/* 功能按钮 */}
+              <Box sx={{
+                display: 'flex',
+                gap: 1,
+                mt: 2,
+                pt: 2,
+                borderTop: (theme) =>
+                  `1px solid ${theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(0, 0, 0, 0.1)'}`
               }}>
-                提示词
-              </Typography>
-              <Paper sx={{ 
-                backgroundColor: (theme) => 
-                  theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.08)' 
-                    : 'rgba(0, 0, 0, 0.04)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '8px',
-                border: (theme) => 
-                  `1px solid ${theme.palette.mode === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.2)' 
-                    : 'rgba(0, 0, 0, 0.2)'}`,
-                p: 2
-              }}>
-                <TextField
-                  multiline
-                  rows={8}
-                  fullWidth
-                  variant="standard"
-                  value={editAssistantPrompt}
-                  onChange={handleEditPromptChange}
-                  placeholder="请输入系统提示词，定义助手的角色和行为特征...
-
-示例：
-你是一个友好、专业、乐于助人的AI助手。你会以客观、准确的态度回答用户的问题，并在不确定的情况下坦诚表明。你可以协助用户完成各种任务，提供信息，或进行有意义的对话。"
-                  sx={{
-                    '& .MuiInput-root': {
-                      color: (theme) => theme.palette.text.primary,
-                      fontSize: '0.875rem',
-                      '&:before': {
-                        display: 'none'
-                      },
-                      '&:after': {
-                        display: 'none'
-                      }
-                    },
-                    '& .MuiInputBase-input': {
-                      color: (theme) => theme.palette.text.primary,
-                      '&::placeholder': {
-                        color: (theme) => theme.palette.text.secondary,
-                        opacity: 1
-                      }
-                    }
-                  }}
-                />
-                
-                {/* 功能按钮 */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1, 
-                  mt: 2, 
-                  pt: 2, 
-                  borderTop: (theme) => 
-                    `1px solid ${theme.palette.mode === 'dark' 
-                      ? 'rgba(255, 255, 255, 0.1)' 
-                      : 'rgba(0, 0, 0, 0.1)'}`
-                }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<Sparkles size={16} />}
-                    onClick={handleOpenPromptSelector}
-                    sx={{
-                      borderColor: (theme) => theme.palette.primary.main,
-                      color: (theme) => theme.palette.primary.main,
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      backdropFilter: 'blur(10px)',
-                      backgroundColor: (theme) => 
-                        theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 255, 255, 0.05)' 
-                          : 'rgba(0, 0, 0, 0.02)',
-                      '&:hover': {
-                        borderColor: (theme) => theme.palette.primary.light,
-                        backgroundColor: (theme) => 
-                          theme.palette.mode === 'dark' 
-                            ? 'rgba(255, 255, 255, 0.1)' 
-                            : 'rgba(0, 0, 0, 0.05)'
-                      }
-                    }}
-                  >
-                    选择预设提示词
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<User size={16} />}
-                    onClick={handleOpenAvatarUploader}
-                    sx={{
-                      borderColor: (theme) => theme.palette.text.secondary,
-                      color: (theme) => theme.palette.text.secondary,
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      backdropFilter: 'blur(10px)',
-                      backgroundColor: (theme) => 
-                        theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 255, 255, 0.05)' 
-                          : 'rgba(0, 0, 0, 0.02)',
-                      '&:hover': {
-                        borderColor: (theme) => theme.palette.text.primary,
-                        backgroundColor: (theme) => 
-                          theme.palette.mode === 'dark' 
-                            ? 'rgba(255, 255, 255, 0.1)' 
-                            : 'rgba(0, 0, 0, 0.05)'
-                      }
-                    }}
-                  >
-                    设置头像
-                  </Button>
-                </Box>
-              </Paper>
-            </Box>
-          )}
-
-          {editTabValue === 1 && (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '100%',
-              color: (theme) => theme.palette.text.secondary
-            }}>
-              <Typography>模型配置功能开发中...</Typography>
-            </Box>
-          )}
-
-          {editTabValue === 2 && (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '100%',
-              color: (theme) => theme.palette.text.secondary
-            }}>
-              <Typography>预设配置功能开发中...</Typography>
-            </Box>
-          )}
-
-          {editTabValue === 3 && (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '100%',
-              color: (theme) => theme.palette.text.secondary
-            }}>
-              <Typography>知识库配置功能开发中...</Typography>
-            </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Sparkles size={16} />}
+                  onClick={handleOpenPromptSelector}
+                  sx={styles.primaryButton(theme)}
+                >
+                  选择预设提示词
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<User size={16} />}
+                  onClick={handleOpenAvatarUploader}
+                  sx={styles.secondaryButton(theme)}
+                >
+                  设置头像
+                </Button>
+              </Box>
+            </Paper>
+          </Box>
           )}
         </DialogContent>
 
@@ -845,4 +811,56 @@ export default function AssistantTab({
       </Snackbar>
     </Box>
   );
+});
+
+export default AssistantTab;
+
+// 错误边界组件
+export class AssistantTabErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('AssistantTab error:', error, errorInfo);
+    // 这里可以添加错误上报逻辑
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          p: 3
+        }}>
+          <Typography variant="h6" color="error" gutterBottom>
+            助手页面出现错误
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {this.state.error?.message || '未知错误'}
+          </Typography>
+          <Button
+            variant="outlined"
+            onClick={() => this.setState({ hasError: false, error: undefined })}
+          >
+            重试
+          </Button>
+        </Box>
+      );
+    }
+
+    return this.props.children;
+  }
 }
