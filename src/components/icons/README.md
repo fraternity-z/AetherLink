@@ -75,12 +75,32 @@ const iconName: IconName = 'search'; // 类型安全
 - 工具栏设置
 - 系统配置
 
+### quickPhrase
+对话气泡内包含多行文本的快捷短语图标。
+
+**使用场景**：
+- 快捷短语按钮
+- 文本模板功能
+- 预设文本输入
+- 快速回复功能
+
+### aiDebate
+多层对话框表示多AI角色辩论功能。
+
+**使用场景**：
+- AI辩论按钮
+- 多AI角色对话功能
+- 辩论设置界面
+- 智能讨论功能
+
 **示例**：
 ```tsx
 <CustomIcon name="search" size={16} color="rgba(59, 130, 246, 0.8)" />
 <CustomIcon name="imageGenerate" size={16} color="rgba(156, 39, 176, 0.8)" />
 <CustomIcon name="documentPanel" size={16} color="rgba(76, 175, 80, 0.8)" />
 <CustomIcon name="settingsPanel" size={16} color="rgba(255, 152, 0, 0.8)" />
+<CustomIcon name="quickPhrase" size={16} color="rgba(156, 39, 176, 0.8)" />
+<CustomIcon name="aiDebate" size={16} color="rgba(33, 150, 243, 0.8)" />
 ```
 
 ## 添加新图标

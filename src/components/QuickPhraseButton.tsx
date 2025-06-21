@@ -21,7 +21,8 @@ import {
   Typography,
   Divider
 } from '@mui/material';
-import { Zap, Plus, BotMessageSquare } from 'lucide-react';
+import { Plus, BotMessageSquare } from 'lucide-react';
+import { CustomIcon } from './icons';
 import { useTheme } from '@mui/material/styles';
 import QuickPhraseService from '../shared/services/QuickPhraseService';
 import type { QuickPhrase } from '../shared/types';
@@ -157,7 +158,7 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
             padding: size === 'large' ? '10px' : size === 'small' ? '6px' : '8px'
           }}
         >
-          <Zap size={iconSize} />
+          <CustomIcon name="quickPhrase" size={iconSize} color="currentColor" />
         </IconButton>
       </Tooltip>
 
@@ -209,7 +210,7 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
               style={{ paddingRight: 16 }}
             >
               <ListItemIcon>
-                <Zap size={18} />
+                <CustomIcon name="quickPhrase" size={18} color="currentColor" />
               </ListItemIcon>
               <ListItemText
                 primary={phrase.title}
@@ -274,7 +275,7 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
                   control={<Radio size="small" />}
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Zap size={16} />
+                      <CustomIcon name="quickPhrase" size={16} color="currentColor" />
                       <Typography variant="body2">全局快捷短语</Typography>
                     </Box>
                   }

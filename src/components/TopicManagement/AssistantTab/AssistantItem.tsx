@@ -1,4 +1,4 @@
-import React, { startTransition, useCallback, useMemo, memo, useEffect, useState } from 'react';
+import React, { startTransition, useCallback, useMemo, memo, useEffect, useState, useRef } from 'react';
 import {
   ListItemButton,
   ListItemText,
@@ -9,7 +9,7 @@ import {
   Box,
   useTheme,
 } from '@mui/material';
-import { MoreVertical, Trash } from 'lucide-react';
+import { MoreVertical, Trash, AlertTriangle } from 'lucide-react';
 import type { Assistant } from '../../../shared/types/Assistant';
 import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
 import LucideIconRenderer, { isLucideIcon } from './LucideIconRenderer';
@@ -39,6 +39,10 @@ const AssistantItem = memo(function AssistantItem({
   // 添加本地状态来强制更新话题数显示
   const [forceUpdateKey, setForceUpdateKey] = useState(0);
 
+  // 删除确认状态
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // 监听话题清空事件
   useEffect(() => {
     const handleTopicsCleared = (event: CustomEvent) => {
@@ -66,6 +70,10 @@ const AssistantItem = memo(function AssistantItem({
     return () => {
       window.removeEventListener('topicsCleared', handleTopicsCleared as EventListener);
       window.removeEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
+      // 清理删除确认定时器
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
     };
   }, [assistant.id, assistant.name]);
 
@@ -84,8 +92,25 @@ const AssistantItem = memo(function AssistantItem({
 
   const handleDeleteClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
-    onDeleteAssistant(assistant.id, event);
-  }, [assistant.id, onDeleteAssistant]);
+
+    if (pendingDelete) {
+      // 第二次点击，执行删除
+      onDeleteAssistant(assistant.id, event);
+      setPendingDelete(false);
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+        deleteTimeoutRef.current = null;
+      }
+    } else {
+      // 第一次点击，进入确认状态
+      setPendingDelete(true);
+      // 3秒后自动重置
+      deleteTimeoutRef.current = setTimeout(() => {
+        setPendingDelete(false);
+        deleteTimeoutRef.current = null;
+      }, 3000);
+    }
+  }, [assistant.id, onDeleteAssistant, pendingDelete]);
 
   // 使用 useMemo 缓存计算结果，避免每次渲染都重新计算
   const topicCount = useMemo(() => {
@@ -223,9 +248,15 @@ const AssistantItem = memo(function AssistantItem({
         <IconButton
           size="small"
           onClick={handleDeleteClick}
-          sx={{ opacity: 0.6, '&:hover': { color: 'error.main' } }}
+          sx={{
+            opacity: pendingDelete ? 1 : 0.6,
+            color: pendingDelete ? 'error.main' : 'inherit',
+            '&:hover': { color: 'error.main' },
+            transition: 'all 0.2s ease-in-out'
+          }}
+          title={pendingDelete ? '再次点击确认删除' : '删除助手'}
         >
-          <Trash size={16} />
+          {pendingDelete ? <AlertTriangle size={16} /> : <Trash size={16} />}
         </IconButton>
       </Box>
     </ListItemButton>

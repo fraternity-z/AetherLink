@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { Image, Camera, FileText, ArrowLeftRight, MessageSquare, Zap } from 'lucide-react';
+import { Image, Camera, FileText, ArrowLeftRight } from 'lucide-react';
+import { CustomIcon } from '../icons';
 
 interface UploadMenuProps {
   anchorEl: HTMLElement | null;
@@ -109,7 +110,7 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
           sx={{ py: 1.5 }}
         >
           <ListItemIcon>
-            <MessageSquare size={20} color={isDebating ? "#f44336" : "#2196F3"} />
+            <CustomIcon name="aiDebate" size={20} color="currentColor" />
           </ListItemIcon>
           <ListItemText
             primary={isDebating ? "停止AI辩论" : "开始AI辩论"}
@@ -136,7 +137,7 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
           sx={{ py: 1.5 }}
         >
           <ListItemIcon>
-            <Zap size={20} color="#9C27B0" />
+            <CustomIcon name="quickPhrase" size={20} color="currentColor" />
           </ListItemIcon>
           <ListItemText
             primary="快捷短语"
@@ -163,7 +164,7 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
           sx={{ py: 1.5 }}
         >
           <ListItemIcon>
-            <ArrowLeftRight size={20} color="#FF9800" />
+            <ArrowLeftRight size={20} />
           </ListItemIcon>
           <ListItemText
             primary="发送到多个模型"

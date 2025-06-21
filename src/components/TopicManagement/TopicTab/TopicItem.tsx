@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import {
   ListItemButton,
   ListItemText,
@@ -6,7 +6,7 @@ import {
   Typography,
   Box
 } from '@mui/material';
-import { MoreVertical, Trash, Pin } from 'lucide-react';
+import { MoreVertical, Trash, Pin, AlertTriangle } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
 import { getMainTextContent } from '../../../shared/utils/blockUtils';
@@ -32,6 +32,10 @@ const TopicItem = React.memo(function TopicItem({
   onOpenMenu,
   onDeleteTopic
 }: TopicItemProps) {
+  // 删除确认状态
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleTopicClick = () => {
     onSelectTopic(topic);
   };
@@ -41,10 +45,36 @@ const TopicItem = React.memo(function TopicItem({
     onOpenMenu(event, topic);
   };
 
-  const handleDeleteClick = (event: React.MouseEvent) => {
+  const handleDeleteClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
-    onDeleteTopic(topic.id, event);
-  };
+
+    if (pendingDelete) {
+      // 第二次点击，执行删除
+      onDeleteTopic(topic.id, event);
+      setPendingDelete(false);
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+        deleteTimeoutRef.current = null;
+      }
+    } else {
+      // 第一次点击，进入确认状态
+      setPendingDelete(true);
+      // 3秒后自动重置
+      deleteTimeoutRef.current = setTimeout(() => {
+        setPendingDelete(false);
+        deleteTimeoutRef.current = null;
+      }, 3000);
+    }
+  }, [topic.id, onDeleteTopic, pendingDelete]);
+
+  // 清理定时器的 useEffect
+  React.useEffect(() => {
+    return () => {
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 创建记忆化的 selector 来避免不必要的重新渲染
   const selectTopicMessages = useMemo(
@@ -211,9 +241,16 @@ const TopicItem = React.memo(function TopicItem({
           <IconButton
             size="small"
             onClick={handleDeleteClick}
-            sx={{ opacity: 0.6, padding: '2px', '&:hover': { color: 'error.main' } }}
+            sx={{
+              opacity: pendingDelete ? 1 : 0.6,
+              padding: '2px',
+              color: pendingDelete ? 'error.main' : 'inherit',
+              '&:hover': { color: 'error.main' },
+              transition: 'all 0.2s ease-in-out'
+            }}
+            title={pendingDelete ? '再次点击确认删除' : '删除话题'}
           >
-            <Trash size={16} />
+            {pendingDelete ? <AlertTriangle size={16} /> : <Trash size={16} />}
           </IconButton>
         </div>
       </div>

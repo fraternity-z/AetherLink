@@ -30,9 +30,9 @@ import {
   Plus as AddIcon,
   Edit as EditIcon,
   Trash2 as DeleteIcon,
-  Zap,
   ArrowLeft
 } from 'lucide-react';
+import { CustomIcon } from './icons';
 import { useTheme } from '@mui/material/styles';
 import QuickPhraseService from '../shared/services/QuickPhraseService';
 import type { QuickPhrase } from '../shared/types';
@@ -233,7 +233,9 @@ const QuickPhraseSettings: React.FC = () => {
 
         {phrases.length === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
-            <Zap size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
+            <Box sx={{ opacity: 0.3, mb: 2 }}>
+              <CustomIcon name="quickPhrase" size={48} color="currentColor" />
+            </Box>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               还没有快捷短语
             </Typography>

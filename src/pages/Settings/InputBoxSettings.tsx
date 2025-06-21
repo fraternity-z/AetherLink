@@ -16,11 +16,12 @@ import {
   useMediaQuery,
   Chip
 } from '@mui/material';
-import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, MessageSquare, Zap, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, ArrowLeftRight, Send, Mic, Eye, EyeOff, GripVertical } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
+import DraggableButtonConfig from '../../components/DraggableButtonConfig';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../components/input';
 
 // 可用的自定义按钮配置
@@ -44,7 +45,7 @@ const AVAILABLE_BUTTONS = [
     label: '清空内容',
     icon: Trash2,
     description: '清空当前话题内容',
-    color: '#2196F3'
+    color: 'currentColor' // 使用主题适配的颜色
   },
   {
     id: 'image',
@@ -105,14 +106,14 @@ const AVAILABLE_BUTTONS = [
   {
     id: 'ai-debate',
     label: 'AI辩论',
-    icon: MessageSquare,
+    icon: () => <CustomIcon name="aiDebate" size={20} />,
     description: '开始多AI角色辩论',
     color: '#2196F3'
   },
   {
     id: 'quick-phrase',
     label: '快捷短语',
-    icon: Zap,
+    icon: () => <CustomIcon name="quickPhrase" size={20} />,
     description: '插入预设的文本短语',
     color: '#9C27B0'
   },
@@ -121,7 +122,21 @@ const AVAILABLE_BUTTONS = [
     label: '多模型发送',
     icon: ArrowLeftRight,
     description: '同时向多个AI模型发送消息',
-    color: '#FF9800'
+    color: 'currentColor' // 使用主题适配的颜色
+  },
+  {
+    id: 'send',
+    label: '发送按钮',
+    icon: Send,
+    description: '发送消息按钮',
+    color: 'currentColor'
+  },
+  {
+    id: 'voice',
+    label: '语音按钮',
+    icon: Mic,
+    description: '语音输入按钮',
+    color: 'currentColor'
   }
 ];
 
@@ -233,6 +248,10 @@ const InputBoxSettings: React.FC = () => {
   const inputLayoutStyle = (settings as any).inputLayoutStyle || 'default';
   const customButtons = (settings as any).integratedInputButtons || ['tools', 'search'];
 
+  // 新的左右布局配置
+  const leftButtons = (settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search'];
+  const rightButtons = (settings as any).integratedInputRightButtons || ['voice', 'send'];
+
   const handleBack = () => {
     navigate('/settings/appearance');
   };
@@ -258,6 +277,16 @@ const InputBoxSettings: React.FC = () => {
 
     dispatch(updateSettings({
       integratedInputButtons: newButtons
+    } as any));
+  };
+
+  // 处理左右布局更新
+  const handleLayoutUpdate = (newLeftButtons: string[], newRightButtons: string[]) => {
+    dispatch(updateSettings({
+      integratedInputLeftButtons: newLeftButtons,
+      integratedInputRightButtons: newRightButtons,
+      // 同时更新旧的配置以保持兼容性
+      integratedInputButtons: [...newLeftButtons, ...newRightButtons]
     } as any));
   };
 
@@ -339,75 +368,27 @@ const InputBoxSettings: React.FC = () => {
             当前配置：{inputBoxStyle === 'default' ? '默认风格' : inputBoxStyle === 'modern' ? '现代风格' : '简约风格'} + {inputLayoutStyle === 'default' ? '默认样式' : inputLayoutStyle === 'compact' ? '聚合样式' : '集成样式'}
           </Typography>
 
-          {/* 集成样式自定义按钮配置 - 与预览放在一起 */}
+          {/* 集成样式自定义按钮配置 - 新的拖拽式配置 */}
           {inputLayoutStyle === 'integrated' && (
             <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #eee' }}>
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                自定义输入框按钮
+                自定义输入框按钮布局
               </Typography>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                选择在集成样式输入框底部显示的功能按钮，配置后可在上方预览中查看效果：
+                拖拽按钮来自定义左右布局，点击眼睛图标来显示/隐藏按钮。配置后可在上方预览中查看效果：
               </Typography>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 2 }}>
-                {AVAILABLE_BUTTONS.map((button) => {
-                  const IconComponent = button.icon;
-                  const isSelected = customButtons.includes(button.id);
-
-                  return (
-                    <Box
-                      key={button.id}
-                      onClick={() => handleButtonToggle(button.id)}
-                      sx={{
-                        p: 2,
-                        border: isSelected ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                        borderRadius: 2,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.05)' : 'transparent',
-                        '&:hover': {
-                          borderColor: '#1976d2',
-                          backgroundColor: 'rgba(25, 118, 210, 0.05)',
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <IconComponent
-                          size={20}
-                          style={{
-                            color: isSelected ? button.color : '#666',
-                            marginRight: '8px'
-                          }}
-                        />
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: isSelected ? 600 : 400,
-                            color: isSelected ? 'primary.main' : 'text.primary'
-                          }}
-                        >
-                          {button.label}
-                        </Typography>
-                        {isSelected && (
-                          <Chip
-                            label="已选择"
-                            size="small"
-                            color="primary"
-                            sx={{ ml: 'auto', fontSize: '0.7rem' }}
-                          />
-                        )}
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {button.description}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
+              <DraggableButtonConfig
+                availableButtons={AVAILABLE_BUTTONS}
+                leftButtons={leftButtons}
+                rightButtons={rightButtons}
+                onUpdateLayout={handleLayoutUpdate}
+              />
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                已选择 {customButtons.length} 个按钮。按钮将按左右布局显示在输入框底部。
+                左侧 {leftButtons.length} 个按钮，右侧 {rightButtons.length} 个按钮。
+                按钮将按配置的左右布局显示在输入框底部。
               </Typography>
             </Box>
           )}

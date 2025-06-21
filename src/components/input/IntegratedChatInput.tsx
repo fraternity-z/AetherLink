@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { IconButton, CircularProgress, Badge, Tooltip } from '@mui/material';
-import { Send, Plus, Square, Keyboard, Mic, ChevronDown, ChevronUp, Trash2, Camera, Video, BookOpen, Wrench, Image, FileText, MessageSquare, Zap, ArrowLeftRight } from 'lucide-react';
+import { Send, Plus, Square, Keyboard, Mic, ChevronDown, ChevronUp, Trash2, Camera, Video, BookOpen, Wrench, Image, FileText, ArrowLeftRight, AlertTriangle } from 'lucide-react';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 
@@ -129,9 +129,15 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 获取快捷短语按钮显示设置
   const showQuickPhraseButton = useSelector((state: RootState) => state.settings.showQuickPhraseButton ?? true);
 
-  // 获取自定义按钮配置
-  const customButtons = useSelector((state: RootState) =>
-    (state.settings as any).integratedInputButtons || ['tools', 'search']
+  // 清空内容二次确认状态
+  const [clearConfirmMode, setClearConfirmMode] = useState(false);
+
+  // 获取左右布局配置
+  const leftButtons = useSelector((state: RootState) =>
+    (state.settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search']
+  );
+  const rightButtons = useSelector((state: RootState) =>
+    (state.settings as any).integratedInputRightButtons || ['voice', 'send']
   );
 
   // 监听Web搜索设置变化，当设置完成后触发搜索
@@ -540,139 +546,29 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     console.log('知识库功能待实现');
   }, []);
 
-  // 自定义按钮配置映射
-  const buttonConfigs = {
-    tools: {
-      id: 'tools',
-      icon: <CustomIcon name="settingsPanel" size={20} />,
-      tooltip: '扩展',
-      onClick: handleOpenToolsMenu,
-      color: iconColor,
-      disabled: false,
-      isActive: false
-    },
-    'mcp-tools': {
-      id: 'mcp-tools',
-      icon: <Wrench size={20} />,
-      tooltip: toolsEnabled ? '禁用MCP工具' : '启用MCP工具',
-      onClick: () => onToolsEnabledChange?.(!toolsEnabled),
-      color: toolsEnabled ? '#4CAF50' : iconColor,
-      disabled: false,
-      isActive: toolsEnabled
-    },
-    clear: {
-      id: 'clear',
-      icon: <Trash2 size={20} />,
-      tooltip: '清空内容',
-      onClick: () => onClearTopic?.(),
-      color: '#2196F3',
-      disabled: false,
-      isActive: false
-    },
-    image: {
-      id: 'image',
-      icon: <Camera size={20} />,
-      tooltip: imageGenerationMode ? '取消生成图片' : '生成图片',
-      onClick: () => toggleImageGenerationMode?.(),
-      color: imageGenerationMode ? '#9C27B0' : iconColor,
-      disabled: false,
-      isActive: imageGenerationMode
-    },
-    video: {
-      id: 'video',
-      icon: <Video size={20} />,
-      tooltip: videoGenerationMode ? '取消生成视频' : '生成视频',
-      onClick: () => toggleVideoGenerationMode?.(),
-      color: videoGenerationMode ? '#E91E63' : iconColor,
-      disabled: false,
-      isActive: videoGenerationMode
-    },
-    knowledge: {
-      id: 'knowledge',
-      icon: <BookOpen size={20} />,
-      tooltip: '知识库',
-      onClick: handleKnowledgeClick,
-      color: '#059669',
-      disabled: false,
-      isActive: false
-    },
-    search: {
-      id: 'search',
-      icon: <CustomIcon name="search" size={20} />,
-      tooltip: webSearchActive ? '关闭网络搜索' : '开启网络搜索',
-      onClick: handleQuickWebSearchToggle,
-      color: webSearchActive ? '#3b82f6' : iconColor,
-      disabled: false,
-      isActive: webSearchActive
-    },
-    upload: {
-      id: 'upload',
-      icon: uploadingMedia ? <CircularProgress size={20} /> : (
-        <Badge badgeContent={images.length + files.length} color="primary" max={9} invisible={images.length + files.length === 0}>
-          <Plus size={20} />
-        </Badge>
-      ),
-      tooltip: '添加内容',
-      onClick: handleOpenUploadMenu,
-      color: uploadingMedia ? disabledColor : iconColor,
-      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
-      isActive: false
-    },
-    camera: {
-      id: 'camera',
-      icon: <Camera size={20} />,
-      tooltip: '拍摄照片',
-      onClick: () => handleImageUploadLocal('camera'),
-      color: '#9C27B0',
-      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
-      isActive: false
-    },
-    'photo-select': {
-      id: 'photo-select',
-      icon: <Image size={20} />,
-      tooltip: '选择图片',
-      onClick: () => handleImageUploadLocal('photos'),
-      color: '#1976D2',
-      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
-      isActive: false
-    },
-    'file-upload': {
-      id: 'file-upload',
-      icon: <FileText size={20} />,
-      tooltip: '上传文件',
-      onClick: handleFileUploadLocal,
-      color: '#4CAF50',
-      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
-      isActive: false
-    },
-    'ai-debate': {
-      id: 'ai-debate',
-      icon: <MessageSquare size={20} />,
-      tooltip: isDebating ? '停止AI辩论' : '开始AI辩论',
-      onClick: handleAIDebateClick,
-      color: isDebating ? '#f44336' : '#2196F3',
-      disabled: false,
-      isActive: isDebating
-    },
-    'quick-phrase': {
-      id: 'quick-phrase',
-      icon: <Zap size={20} />,
-      tooltip: '快捷短语',
-      onClick: handleQuickPhraseClick,
-      color: '#9C27B0',
-      disabled: false,
-      isActive: false
-    },
-    'multi-model': {
-      id: 'multi-model',
-      icon: <ArrowLeftRight size={20} />,
-      tooltip: '多模型发送',
-      onClick: () => setMultiModelSelectorOpen(true),
-      color: '#FF9800',
-      disabled: false, // 简化：总是可用
-      isActive: false
+  // 处理清空内容的二次确认
+  const handleClearTopic = useCallback(() => {
+    if (clearConfirmMode) {
+      // 第二次点击，执行清空
+      onClearTopic?.();
+      setClearConfirmMode(false);
+    } else {
+      // 第一次点击，进入确认模式
+      setClearConfirmMode(true);
     }
-  };
+  }, [clearConfirmMode, onClearTopic]);
+
+  // 自动重置确认模式（3秒后）
+  useEffect(() => {
+    if (clearConfirmMode) {
+      const timer = setTimeout(() => {
+        setClearConfirmMode(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [clearConfirmMode]);
+
+
 
   // 语音识别处理函数
   const handleToggleVoiceMode = () => {
@@ -773,6 +669,158 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   // 显示正在加载的指示器，但不禁用输入框
   const showLoadingIndicator = isLoading && !allowConsecutiveMessages;
+
+  // 自定义按钮配置映射
+  const buttonConfigs = {
+    tools: {
+      id: 'tools',
+      icon: <CustomIcon name="settingsPanel" size={20} />,
+      tooltip: '扩展',
+      onClick: handleOpenToolsMenu,
+      color: iconColor,
+      disabled: false,
+      isActive: false
+    },
+    'mcp-tools': {
+      id: 'mcp-tools',
+      icon: <Wrench size={20} />,
+      tooltip: toolsEnabled ? '禁用MCP工具' : '启用MCP工具',
+      onClick: () => onToolsEnabledChange?.(!toolsEnabled),
+      color: toolsEnabled ? '#4CAF50' : iconColor,
+      disabled: false,
+      isActive: toolsEnabled
+    },
+    clear: {
+      id: 'clear',
+      icon: clearConfirmMode ? <AlertTriangle size={20} /> : <Trash2 size={20} />,
+      tooltip: clearConfirmMode ? '确认清空' : '清空内容',
+      onClick: handleClearTopic,
+      color: clearConfirmMode ? '#f44336' : iconColor,
+      disabled: false,
+      isActive: clearConfirmMode
+    },
+    image: {
+      id: 'image',
+      icon: <Camera size={20} />,
+      tooltip: imageGenerationMode ? '取消生成图片' : '生成图片',
+      onClick: () => toggleImageGenerationMode?.(),
+      color: imageGenerationMode ? '#9C27B0' : iconColor,
+      disabled: false,
+      isActive: imageGenerationMode
+    },
+    video: {
+      id: 'video',
+      icon: <Video size={20} />,
+      tooltip: videoGenerationMode ? '取消生成视频' : '生成视频',
+      onClick: () => toggleVideoGenerationMode?.(),
+      color: videoGenerationMode ? '#E91E63' : iconColor,
+      disabled: false,
+      isActive: videoGenerationMode
+    },
+    knowledge: {
+      id: 'knowledge',
+      icon: <BookOpen size={20} />,
+      tooltip: '知识库',
+      onClick: handleKnowledgeClick,
+      color: '#059669',
+      disabled: false,
+      isActive: false
+    },
+    search: {
+      id: 'search',
+      icon: <CustomIcon name="search" size={20} />,
+      tooltip: webSearchActive ? '关闭网络搜索' : '开启网络搜索',
+      onClick: handleQuickWebSearchToggle,
+      color: webSearchActive ? '#3b82f6' : iconColor,
+      disabled: false,
+      isActive: webSearchActive
+    },
+    upload: {
+      id: 'upload',
+      icon: uploadingMedia ? <CircularProgress size={20} /> : (
+        <Badge badgeContent={images.length + files.length} color="primary" max={9} invisible={images.length + files.length === 0}>
+          <Plus size={20} />
+        </Badge>
+      ),
+      tooltip: '添加内容',
+      onClick: handleOpenUploadMenu,
+      color: uploadingMedia ? disabledColor : iconColor,
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    camera: {
+      id: 'camera',
+      icon: <Camera size={20} />,
+      tooltip: '拍摄照片',
+      onClick: () => handleImageUploadLocal('camera'),
+      color: '#9C27B0',
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    'photo-select': {
+      id: 'photo-select',
+      icon: <Image size={20} />,
+      tooltip: '选择图片',
+      onClick: () => handleImageUploadLocal('photos'),
+      color: '#1976D2',
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    'file-upload': {
+      id: 'file-upload',
+      icon: <FileText size={20} />,
+      tooltip: '上传文件',
+      onClick: handleFileUploadLocal,
+      color: '#4CAF50',
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: false
+    },
+    'ai-debate': {
+      id: 'ai-debate',
+      icon: <CustomIcon name="aiDebate" size={20} color={isDebating ? '#f44336' : iconColor} />,
+      tooltip: isDebating ? '停止AI辩论' : '开始AI辩论',
+      onClick: handleAIDebateClick,
+      color: isDebating ? '#f44336' : iconColor,
+      disabled: false,
+      isActive: isDebating
+    },
+    'quick-phrase': {
+      id: 'quick-phrase',
+      icon: <CustomIcon name="quickPhrase" size={20} color={iconColor} />,
+      tooltip: '快捷短语',
+      onClick: handleQuickPhraseClick,
+      color: iconColor,
+      disabled: false,
+      isActive: false
+    },
+    'multi-model': {
+      id: 'multi-model',
+      icon: <ArrowLeftRight size={20} />,
+      tooltip: '多模型发送',
+      onClick: () => setMultiModelSelectorOpen(true),
+      color: iconColor,
+      disabled: false,
+      isActive: false
+    },
+    send: {
+      id: 'send',
+      icon: isStreaming ? <Square size={18} /> : showLoadingIndicator ? <CircularProgress size={20} color="inherit" /> : imageGenerationMode ? <Image size={18} /> : <Send size={18} />,
+      tooltip: isStreaming ? '停止生成' : imageGenerationMode ? '生成图像' : '发送消息',
+      onClick: isStreaming && onStopResponse ? onStopResponse : handleSubmit,
+      color: isStreaming ? '#ff4d4f' : !canSendMessage() || (isLoading && !allowConsecutiveMessages) ? disabledColor : imageGenerationMode ? '#9C27B0' : isDarkMode ? '#4CAF50' : '#09bb07',
+      disabled: !isStreaming && (!canSendMessage() || (isLoading && !allowConsecutiveMessages)),
+      isActive: false
+    },
+    voice: {
+      id: 'voice',
+      icon: voiceState !== 'normal' ? <Keyboard size={20} /> : <Mic size={20} />,
+      tooltip: voiceState !== 'normal' ? '退出语音输入模式' : '切换到语音输入模式',
+      onClick: handleToggleVoiceMode,
+      color: voiceState !== 'normal' ? '#f44336' : iconColor,
+      disabled: uploadingMedia || (isLoading && !allowConsecutiveMessages),
+      isActive: voiceState !== 'normal'
+    }
+  };
 
   // 根据屏幕尺寸调整样式
   const getResponsiveStyles = () => {
@@ -989,7 +1037,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
               alignItems: 'center',
               gap: '4px'
             }}>
-              {customButtons.map((buttonId: string) => {
+              {leftButtons.map((buttonId: string) => {
                 const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
                 if (!config) return null;
 
@@ -1013,70 +1061,34 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
               })}
             </div>
 
-            {/* 右侧：语音、发送按钮 */}
+            {/* 右侧：自定义按钮 */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px'
             }}>
-              {/* 语音识别按钮 */}
-              {!shouldHideVoiceButton && (
-                <IconButton
-                  onClick={handleToggleVoiceMode}
-                  disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-                  size="medium"
-                  style={{
-                    color: voiceState !== 'normal' ? '#f44336' : iconColor,
-                    padding: '6px',
-                    backgroundColor: voiceState !== 'normal' ? 'rgba(211, 47, 47, 0.15)' : 'transparent',
-                    transition: 'all 0.25s ease-in-out'
-                  }}
-                >
-                {voiceState === 'normal' ? (
-                  <Tooltip title="切换到语音输入模式">
-                    <Mic size={20} />
-                  </Tooltip>
-                ) : (
-                  <Tooltip title="退出语音输入模式">
-                    <Keyboard size={20} />
-                  </Tooltip>
-                )}
-                </IconButton>
-              )}
+              {rightButtons.map((buttonId: string) => {
+                const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
+                if (!config) return null;
 
-              {/* 发送按钮 */}
-              <IconButton
-                  aria-label={
-                    isStreaming
-                      ? '停止生成'
-                      : imageGenerationMode
-                        ? '生成图像'
-                        : '发送消息'
-                  }
-                  onClick={isStreaming && onStopResponse ? onStopResponse : handleSubmit}
-                  disabled={!isStreaming && (!canSendMessage() || (isLoading && !allowConsecutiveMessages))}
-                  size="medium"
-                  style={{
-                    color: isStreaming ? '#ff4d4f' : !canSendMessage() || (isLoading && !allowConsecutiveMessages) ? disabledColor : imageGenerationMode ? '#9C27B0' : isDarkMode ? '#4CAF50' : '#09bb07',
-                    padding: '6px'
-                  }}
-                >
-                  {isStreaming ? (
-                    <Tooltip title="停止生成">
-                      <Square size={18} />
-                    </Tooltip>
-                  ) : showLoadingIndicator ? (
-                    <CircularProgress size={20} color="inherit" />
-                  ) : imageGenerationMode ? (
-                    <Tooltip title="生成图像">
-                      <Image size={18} />
-                    </Tooltip>
-                  ) : (
-                    <Tooltip title="发送消息">
-                      <Send size={18} />
-                    </Tooltip>
-                  )}
-              </IconButton>
+                return (
+                  <Tooltip key={buttonId} title={config.tooltip}>
+                    <IconButton
+                      size="medium"
+                      onClick={config.onClick}
+                      disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
+                      style={{
+                        color: config.color,
+                        padding: '6px',
+                        backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                    >
+                      {config.icon}
+                    </IconButton>
+                  </Tooltip>
+                );
+              })}
             </div>
           </div>
         )}

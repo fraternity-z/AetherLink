@@ -51,7 +51,7 @@ export const themeConfigs: Record<ThemeStyle, ThemeConfig> = {
       primary: '#64748B',
       secondary: '#10B981',
       background: {
-        light: '#F8FAFC',
+        light: '#FFFFFF',
         dark: '#1A1A1A', // 统一使用稍微柔和的深灰色
       },
       paper: {

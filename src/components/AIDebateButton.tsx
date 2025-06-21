@@ -21,7 +21,8 @@ import {
   MenuItem,
   Collapse
 } from '@mui/material';
-import { MessageSquare, Play, Square, FolderOpen, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { Play, Square, FolderOpen, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { CustomIcon } from './icons';
 import { useNavigate } from 'react-router-dom';
 
 // AI辩论配置默认值常量
@@ -282,7 +283,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
     } else {
       return {
         color: isConfigValid ? 'primary' as const : 'default' as const,
-        icon: <MessageSquare size={20} />,
+        icon: <CustomIcon name="aiDebate" size={20} color="currentColor" />,
         tooltip: isConfigValid ? '开始AI辩论' : 'AI辩论功能未配置'
       };
     }
@@ -308,7 +309,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
       {/* 辩论配置对话框 */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-          <MessageSquare size={20} style={{ marginRight: 8 }} />
+          <CustomIcon name="aiDebate" size={20} color="currentColor" style={{ marginRight: 8 }} />
           AI辩论设置
         </DialogTitle>
 
