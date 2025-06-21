@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { MoreVertical, Trash, AlertTriangle } from 'lucide-react';
 import type { Assistant } from '../../../shared/types/Assistant';
-import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
+
 import LucideIconRenderer, { isLucideIcon } from './LucideIconRenderer';
 
 interface AssistantItemProps {
@@ -36,9 +36,6 @@ const AssistantItem = memo(function AssistantItem({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // 添加本地状态来强制更新话题数显示
-  const [forceUpdateKey, setForceUpdateKey] = useState(0);
-
   // 删除确认状态
   const [pendingDelete, setPendingDelete] = useState(false);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,8 +46,7 @@ const AssistantItem = memo(function AssistantItem({
       const { assistantId } = event.detail;
       if (assistantId === assistant.id) {
         console.log(`[AssistantItem] 收到话题清空事件，助手: ${assistant.name}`);
-        // 强制更新组件以刷新话题数显示
-        setForceUpdateKey(prev => prev + 1);
+        // 话题清空事件已收到，组件会自动重新渲染
       }
     };
 
@@ -59,8 +55,7 @@ const AssistantItem = memo(function AssistantItem({
       const { assistant: updatedAssistant } = event.detail;
       if (updatedAssistant.id === assistant.id) {
         console.log(`[AssistantItem] 收到助手更新事件，助手: ${assistant.name}`);
-        // 强制更新组件
-        setForceUpdateKey(prev => prev + 1);
+        // 助手更新事件已收到，组件会自动重新渲染
       }
     };
 
@@ -116,7 +111,7 @@ const AssistantItem = memo(function AssistantItem({
   const topicCount = useMemo(() => {
     const count = assistant.topics?.length || assistant.topicIds?.length || 0;
     return count;
-  }, [assistant.id, assistant.topics?.length, assistant.topicIds?.length, forceUpdateKey, assistant.name]);
+  }, [assistant.topics?.length, assistant.topicIds?.length]);
 
   // 缓存头像显示内容 - 支持自定义头像、Lucide图标和emoji
   const avatarContent = useMemo(() => {
@@ -271,8 +266,7 @@ const AssistantItem = memo(function AssistantItem({
     prevProps.assistant.avatar === nextProps.assistant.avatar &&
     prevProps.isSelected === nextProps.isSelected &&
     (prevProps.assistant.topics?.length || 0) === (nextProps.assistant.topics?.length || 0) &&
-    (prevProps.assistant.topicIds?.length || 0) === (nextProps.assistant.topicIds?.length || 0) &&
-    prevProps.forceUpdateKey === nextProps.forceUpdateKey
+    (prevProps.assistant.topicIds?.length || 0) === (nextProps.assistant.topicIds?.length || 0)
   );
 
   // 只在开发环境记录变化日志
@@ -285,7 +279,7 @@ const AssistantItem = memo(function AssistantItem({
     if (prevProps.isSelected !== nextProps.isSelected) changes.push('isSelected');
     if ((prevProps.assistant.topics?.length || 0) !== (nextProps.assistant.topics?.length || 0)) changes.push('topics.length');
     if ((prevProps.assistant.topicIds?.length || 0) !== (nextProps.assistant.topicIds?.length || 0)) changes.push('topicIds.length');
-    if (prevProps.forceUpdateKey !== nextProps.forceUpdateKey) changes.push('forceUpdateKey');
+
 
     console.log(`[AssistantItem] 重新渲染 ${nextProps.assistant.name}，变化: ${changes.join(', ')}`);
   }
