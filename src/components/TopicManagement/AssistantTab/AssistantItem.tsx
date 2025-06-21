@@ -12,7 +12,8 @@ import {
 import { MoreVertical, Trash, AlertTriangle } from 'lucide-react';
 import type { Assistant } from '../../../shared/types/Assistant';
 
-import LucideIconRenderer, { isLucideIcon } from './LucideIconRenderer';
+import LucideIconRenderer from './LucideIconRenderer';
+import { isLucideIcon } from './iconUtils';
 
 interface AssistantItemProps {
   assistant: Assistant;
