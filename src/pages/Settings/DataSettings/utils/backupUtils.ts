@@ -6,7 +6,7 @@ import type { ChatTopic } from '../../../../shared/types';
 import type { Assistant } from '../../../../shared/types/Assistant';
 import { dexieStorage } from '../../../../shared/services/storage/DexieStorageService';
 import { getStorageItem, getAllStorageKeys } from '../../../../shared/utils/storage';
-import { TopicStatsService } from '../../../../shared/services/TopicStatsService';
+import { TopicStatsService } from '../../../../shared/services/topics/TopicStatsService';
 // 使用统一的话题验证服务，不再重复实现验证逻辑
 
 // 默认备份目录

@@ -1,6 +1,6 @@
 import type { Model } from '../types';
 import { log } from './LoggerService';
-import { TopicService } from './TopicService';
+import { TopicService } from './topics/TopicService';
 import { MessageBlockStatus } from '../types/newMessage';
 import store from '../store';
 import { updateOneBlock } from '../store/slices/messageBlocksSlice';

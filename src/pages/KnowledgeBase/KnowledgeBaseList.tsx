@@ -28,7 +28,7 @@ import {
   Eye,
   ArrowLeft
 } from 'lucide-react';
-import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
 import { useNavigate } from 'react-router-dom';
 import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProvider';

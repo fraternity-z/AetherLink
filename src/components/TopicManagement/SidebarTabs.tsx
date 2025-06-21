@@ -7,7 +7,7 @@ import { useSidebarState } from './hooks/useSidebarState';
 import { useAssistantManagement } from './hooks/useAssistantManagement';
 import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import { useSettingsManagement } from './hooks/useSettingsManagement';
-import { TopicService } from '../../shared/services/TopicService';
+import { TopicService } from '../../shared/services/topics/TopicService';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { removeTopic } from '../../shared/store/slices/assistantsSlice';
 import type { ChatTopic } from '../../shared/types/Assistant';

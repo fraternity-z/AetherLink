@@ -175,6 +175,8 @@ export const DataManager = {
 // 导出所有服务模块
 export * from './messages';
 export * from './network';
+export * from './knowledge';
+export * from './topics';
 
 /**
  * 初始化所有服务

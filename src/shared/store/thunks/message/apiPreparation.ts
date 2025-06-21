@@ -3,7 +3,7 @@ import { getMainTextContent, findImageBlocks, findFileBlocks } from '../../../ut
 import { getFileTypeByExtension, readFileContent, FileTypes } from '../../../utils/fileUtils';
 import type { MCPTool, Message } from '../../../types'; // 补充Message类型
 import { REFERENCE_PROMPT } from '../../../config/prompts';
-import { MobileKnowledgeService } from '../../../services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../../services/knowledge/MobileKnowledgeService';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { AssistantMessageStatus } from '../../../types/newMessage';
 import store, { type RootState } from '../../index';

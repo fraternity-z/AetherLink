@@ -22,7 +22,7 @@ import {
   Trash2 as CleaningServicesIcon,
   RefreshCw as RefreshIcon
 } from 'lucide-react';
-import { TopicStatsService } from '../../shared/services/TopicStatsService';
+import { TopicStatsService } from '../../shared/services/topics/TopicStatsService';
 import { useSelector } from 'react-redux';
 
 // 定义助手类型，根据实际情况调整

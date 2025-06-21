@@ -1,5 +1,5 @@
 import { AssistantService } from '../services';
-import { TopicService } from '../services/TopicService';
+import { TopicService } from '../services/topics/TopicService';
 import type { Assistant } from '../types/Assistant';
 import type { ChatTopic } from '../types';
 

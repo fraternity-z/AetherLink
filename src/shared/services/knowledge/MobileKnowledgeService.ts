@@ -3,8 +3,8 @@
  * 基于DexieStorageService版本6实现，使用云端API进行嵌入计算
  */
 import { v4 as uuid } from 'uuid';
-import { dexieStorage } from './storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from './EventService';
+import { dexieStorage } from '../storage/DexieStorageService';
+import { EventEmitter, EVENT_NAMES } from '../EventService';
 import { MobileEmbeddingService } from './MobileEmbeddingService';
 import { EnhancedRAGService } from './EnhancedRAGService';
 import {
@@ -12,8 +12,8 @@ import {
   DEFAULT_KNOWLEDGE_THRESHOLD,
   DEFAULT_CHUNK_SIZE,
   DEFAULT_CHUNK_OVERLAP
-} from '../constants/knowledge';
-import type { KnowledgeBase, KnowledgeDocument, KnowledgeSearchResult } from '../types/KnowledgeBase';
+} from '../../constants/knowledge';
+import type { KnowledgeBase, KnowledgeDocument, KnowledgeSearchResult } from '../../types/KnowledgeBase';
 
 /**
  * 移动端知识库服务类

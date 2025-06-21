@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { addAssistant, setCurrentAssistant as setReduxCurrentAssistant, updateAssistant, removeAssistant } from '../../../shared/store/slices/assistantsSlice';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
-import { TopicService } from '../../../shared/services/TopicService';
+import { TopicService } from '../../../shared/services/topics/TopicService';
 import { setStorageItem } from '../../../shared/utils/storage';
 import type { Assistant, ChatTopic } from '../../../shared/types/Assistant';
 import type { RootState } from '../../../shared/store';

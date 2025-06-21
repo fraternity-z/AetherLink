@@ -1,6 +1,6 @@
-import type { ChatTopic } from '../types';
+import type { ChatTopic } from '../../types';
 import { TopicService } from './TopicService';
-import { dexieStorage } from './storage/DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 
 /**
  * 话题统计服务

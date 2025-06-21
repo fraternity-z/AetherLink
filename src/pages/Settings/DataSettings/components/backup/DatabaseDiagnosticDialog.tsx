@@ -31,7 +31,7 @@ import {
   AlertTriangle as ReportProblemIcon
 } from 'lucide-react';
 import { cleanupOldDatabases, getDatabaseStatus, type DatabaseStatus } from '../../../../../shared/services/storage/storageService';
-import { TopicStatsService } from '../../../../../shared/services/TopicStatsService';
+import { TopicStatsService } from '../../../../../shared/services/topics/TopicStatsService';
 import { AssistantService } from '../../../../../shared/services';
 import Dexie from 'dexie';
 import { toastManager } from '../../../../../components/EnhancedToast';

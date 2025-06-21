@@ -66,7 +66,7 @@ export const useKnowledgeContext = () => {
       console.log('[useKnowledgeContext] 开始搜索知识库内容...');
 
       // 动态导入MobileKnowledgeService（避免循环依赖）
-      const { MobileKnowledgeService } = await import('../services/MobileKnowledgeService');
+      const { MobileKnowledgeService } = await import('../services/knowledge/MobileKnowledgeService');
       const knowledgeService = MobileKnowledgeService.getInstance();
 
       // 基于用户问题搜索知识库

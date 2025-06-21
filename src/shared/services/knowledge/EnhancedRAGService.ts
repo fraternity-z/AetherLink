@@ -2,9 +2,9 @@
  * 增强的RAG搜索服务
  * 实现复杂的检索增强生成架构，替代简单的向量搜索
  */
-import { dexieStorage } from './storage/DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 import { MobileEmbeddingService } from './MobileEmbeddingService';
-import type { KnowledgeBase, KnowledgeDocument, KnowledgeSearchResult } from '../types/KnowledgeBase';
+import type { KnowledgeBase, KnowledgeDocument, KnowledgeSearchResult } from '../../types/KnowledgeBase';
 
 // RAG搜索配置
 interface RAGSearchConfig {

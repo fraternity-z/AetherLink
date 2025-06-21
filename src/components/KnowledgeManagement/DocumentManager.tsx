@@ -28,7 +28,7 @@ import { styled } from '@mui/material/styles';
 import { Upload as CloudUploadIcon, File as InsertDriveFileIcon, Search as SearchIcon, Trash2 as DeleteIcon } from 'lucide-react';
 
 import { X as CloseIcon, Trash2 as ClearAllIcon } from 'lucide-react';
-import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import type { KnowledgeDocument } from '../../shared/types/KnowledgeBase';
 
 const VisuallyHiddenInput = styled('input')({

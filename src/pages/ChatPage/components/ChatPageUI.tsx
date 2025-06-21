@@ -72,6 +72,7 @@ interface ChatPageUIProps {
   handleStartDebate?: (question: string, config: any) => void;
   handleStopDebate?: () => void;
   // 搜索相关
+  showSearch?: boolean;
   onSearchToggle?: () => void;
 }
 
@@ -111,6 +112,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   isDebating,
   handleStartDebate,
   handleStopDebate,
+  showSearch,
   onSearchToggle
 }) => {
   // ==================== Hooks 和基础状态 ====================
@@ -288,7 +290,17 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
 
       case 'searchButton':
         return mergedTopToolbarSettings.showSearchButton ? (
-          <IconButton key={componentId} color="inherit" onClick={handleSearchClick}>
+          <IconButton
+            key={componentId}
+            color={showSearch ? "primary" : "inherit"}
+            onClick={handleSearchClick}
+            sx={{
+              backgroundColor: showSearch ? 'action.selected' : 'transparent',
+              '&:hover': {
+                backgroundColor: showSearch ? 'action.hover' : 'action.hover'
+              }
+            }}
+          >
             <CustomIcon name="search" size={20} />
           </IconButton>
         ) : null;
@@ -317,7 +329,8 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     handleModelMenuClose,
     menuOpen,
     navigate,
-    handleSearchClick
+    handleSearchClick,
+    showSearch
   ]);
 
   // ==================== 消息处理函数 ====================

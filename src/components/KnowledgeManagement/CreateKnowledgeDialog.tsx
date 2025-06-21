@@ -20,8 +20,8 @@ import {
   Divider,
 } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
-import { getAvailableEmbeddingModels, getModelDimensions } from '../../shared/services/MobileEmbeddingService';
-import { MobileEmbeddingService } from '../../shared/services/MobileEmbeddingService';
+import { getAvailableEmbeddingModels, getModelDimensions } from '../../shared/services/knowledge/MobileEmbeddingService';
+import { MobileEmbeddingService } from '../../shared/services/knowledge/MobileEmbeddingService';
 import {
   DEFAULT_KNOWLEDGE_DOCUMENT_COUNT,
   DEFAULT_DIMENSIONS,

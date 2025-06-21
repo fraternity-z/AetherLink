@@ -8,7 +8,7 @@ import { updateOneBlock, addOneBlock } from '../../../store/slices/messageBlocks
 import { v4 as uuid } from 'uuid';
 import { globalToolTracker } from '../../../utils/toolExecutionSync';
 import { hasToolUseTags } from '../../../utils/mcpToolParser';
-import { TopicNamingService } from '../../TopicNamingService';
+import { TopicNamingService } from '../../topics/TopicNamingService';
 
 /**
  * 响应完成处理器 - 处理响应完成和中断的逻辑

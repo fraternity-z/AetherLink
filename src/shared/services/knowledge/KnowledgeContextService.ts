@@ -4,7 +4,7 @@
  */
 
 import { MobileKnowledgeService } from './MobileKnowledgeService';
-import { REFERENCE_PROMPT } from '../config/prompts';
+import { REFERENCE_PROMPT } from '../../config/prompts';
 
 
 export interface KnowledgeReference {

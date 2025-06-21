@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
 import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
 

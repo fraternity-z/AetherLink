@@ -4,7 +4,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../../shared/store';
 import { useChatPageLayout } from './hooks/useChatPageLayout.ts';
 import { useModelSelection } from './hooks/useModelSelection.ts';
-import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
+// import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import { useMessageHandling } from './hooks/useMessageHandling.ts';
 import { useChatFeatures } from './hooks/useChatFeatures.ts';
 import { useAIDebate } from './hooks/useAIDebate.ts';
@@ -16,7 +16,7 @@ import {
 } from '../../shared/store/selectors/messageSelectors';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
-import { TopicService } from '../../shared/services/TopicService';
+import { TopicService } from '../../shared/services/topics/TopicService';
 import { VideoTaskManager } from '../../shared/services/VideoTaskManager';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { addTopic } from '../../shared/store/slices/assistantsSlice';
@@ -31,7 +31,7 @@ const ChatPage: React.FC = () => {
   const currentAssistant = useSelector((state: RootState) => state.assistants.currentAssistant);
 
   // 改造为：使用useActiveTopic Hook自动处理话题加载
-  const { activeTopic: currentTopic, isLoading: topicLoading } = useActiveTopic(
+  const { activeTopic: currentTopic } = useActiveTopic(
     currentAssistant || {} as any,
     undefined
   );
@@ -125,8 +125,8 @@ const ChatPage: React.FC = () => {
   const isStreaming = useSelector(selectCurrentTopicStreaming);
   const reduxLoading = useSelector(selectCurrentTopicLoading);
 
-  // ：结合Hook的loading和Redux的loading
-  const isLoading = topicLoading || reduxLoading;
+  // ：使用Redux的loading状态
+  const isLoading = reduxLoading;
 
   // 布局相关钩子
   const {
@@ -146,8 +146,8 @@ const ChatPage: React.FC = () => {
     menuOpen
   } = useModelSelection();
 
-  // 话题管理钩子 - 只使用创建功能
-  const { handleCreateTopic } = useTopicManagement();
+  // 话题管理钩子 - 移除未使用的 handleCreateTopic
+  // const { handleCreateTopic } = useTopicManagement();
 
   // 本地清空话题功能
   const handleClearTopic = () => {
@@ -172,7 +172,8 @@ const ChatPage: React.FC = () => {
   const handleMessageSelect = (topicId: string, messageId: string) => {
     // 切换到对应话题并滚动到对应消息
     dispatch(newMessagesActions.setCurrentTopicId(topicId));
-    // 这里可以添加滚动到特定消息的逻辑
+    // TODO: 添加滚动到特定消息的逻辑，使用 messageId
+    console.log(`[ChatPage] 切换到话题 ${topicId}，消息 ${messageId}`);
   };
 
   // 消息处理钩子
@@ -181,8 +182,8 @@ const ChatPage: React.FC = () => {
     handleDeleteMessage,
     handleRegenerateMessage,
     handleSwitchMessageVersion,
-    handleResendMessage,
-    loadTopicMessages
+    handleResendMessage
+    // loadTopicMessages - 暂时不使用，由 useActiveTopic 自动处理
   } = useMessageHandling(selectedModel, currentTopic);
 
   // 特殊功能钩子 (网络搜索、图像生成、视频生成、URL抓取等)

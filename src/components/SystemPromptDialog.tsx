@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { X as CloseIcon } from 'lucide-react';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
-import { TopicService } from '../shared/services/TopicService';
+import { TopicService } from '../shared/services/topics/TopicService';
 import { updateTopic } from '../shared/store/slices/assistantsSlice';
 import { useAppDispatch } from '../shared/store';
 // 移除旧的系统提示词选择器，使用默认提示词

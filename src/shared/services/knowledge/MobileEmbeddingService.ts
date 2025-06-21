@@ -2,13 +2,13 @@
  * 移动端嵌入服务
  * 使用现有模型配置系统进行向量嵌入计算
  */
-import type { KnowledgeDocument, KnowledgeSearchResult } from '../types/KnowledgeBase';
-import type { Model } from '../types';
-import { isEmbeddingModel } from '../config/models';
-import { getEmbeddingDimensions } from '../config/embeddingModels';
-import { universalFetch } from '../utils/universalFetch';
-import store from '../store';
-import { createGeminiEmbeddingService } from '../api/gemini/embeddingService';
+import type { KnowledgeDocument, KnowledgeSearchResult } from '../../types/KnowledgeBase';
+import type { Model } from '../../types';
+import { isEmbeddingModel } from '../../config/models';
+import { getEmbeddingDimensions } from '../../config/embeddingModels';
+import { universalFetch } from '../../utils/universalFetch';
+import store from '../../store';
+import { createGeminiEmbeddingService } from '../../api/gemini/embeddingService';
 
 /**
  * 获取模型的维度

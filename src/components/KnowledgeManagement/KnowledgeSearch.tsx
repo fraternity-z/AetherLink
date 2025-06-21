@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { Search, X, Copy, Sparkles, Zap } from 'lucide-react';
 import CustomSwitch from '../CustomSwitch';
-import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import type { KnowledgeSearchResult } from '../../shared/types/KnowledgeBase';
 import { BlockManager } from '../../shared/services/messages/BlockManager';
 import { useSelector } from 'react-redux';

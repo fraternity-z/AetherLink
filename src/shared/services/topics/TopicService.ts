@@ -1,20 +1,20 @@
 import { v4 as uuid } from 'uuid';
-import type { ChatTopic } from '../types';
-import type { Message, MessageBlock } from '../types/newMessage.ts';
+import type { ChatTopic } from '../../types';
+import type { Message, MessageBlock } from '../../types/newMessage.ts';
 import { throttle } from 'lodash';
-import { AssistantService } from './index';
-import store from '../store';
-import { addTopic, updateTopic } from '../store/slices/assistantsSlice';
-import { updateOneBlock, upsertManyBlocks } from '../store/slices/messageBlocksSlice';
-import { formatDateForTopicTitle } from '../utils';
-import { DEFAULT_TOPIC_PROMPT } from '../config/prompts';
-import { dexieStorage } from './storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from './EventService';
-import { createUserMessage } from '../utils/messageUtils';
-import { newMessagesActions } from '../store/slices/newMessagesSlice';
+import { AssistantService } from '../index';
+import store from '../../store';
+import { addTopic, updateTopic } from '../../store/slices/assistantsSlice';
+import { updateOneBlock, upsertManyBlocks } from '../../store/slices/messageBlocksSlice';
+import { formatDateForTopicTitle } from '../../utils';
+import { DEFAULT_TOPIC_PROMPT } from '../../config/prompts';
+import { dexieStorage } from '../storage/DexieStorageService';
+import { EventEmitter, EVENT_NAMES } from '../EventService';
+import { createUserMessage } from '../../utils/messageUtils';
+import { newMessagesActions } from '../../store/slices/newMessagesSlice';
 // 导入助手类型模块，避免动态导入
-import { getDefaultTopic } from './assistant/types';
-import { handleError } from '../utils/error';
+import { getDefaultTopic } from '../assistant/types';
+import { handleError } from '../../utils/error';
 
 /**
  * 话题服务 - 集中处理话题的创建、关联和管理

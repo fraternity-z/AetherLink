@@ -84,7 +84,7 @@ results
 ### 1. 基本搜索（自动使用增强RAG）
 
 ```typescript
-import { MobileKnowledgeService } from '../services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../services/knowledge/MobileKnowledgeService';
 
 const knowledgeService = MobileKnowledgeService.getInstance();
 
@@ -118,7 +118,7 @@ const simpleResults = await knowledgeService.search({
 ### 3. 直接使用增强RAG服务
 
 ```typescript
-import { EnhancedRAGService } from '../services/EnhancedRAGService';
+import { EnhancedRAGService } from '../services/knowledge/EnhancedRAGService';
 
 const ragService = EnhancedRAGService.getInstance();
 

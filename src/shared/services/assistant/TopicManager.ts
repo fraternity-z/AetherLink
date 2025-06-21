@@ -1,5 +1,5 @@
-import { TopicService } from '../TopicService';
-import { TopicStatsService } from '../TopicStatsService';
+import { TopicService } from '../topics/TopicService';
+import { TopicStatsService } from '../topics/TopicStatsService';
 import type { ChatTopic } from '../../types/Assistant';
 import type { Assistant } from '../../types/Assistant';
 // 当需要创建消息时再导入

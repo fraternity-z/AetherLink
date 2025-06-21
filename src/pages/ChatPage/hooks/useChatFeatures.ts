@@ -20,7 +20,7 @@ import {
 import { EnhancedWebSearchService } from '../../../shared/services/webSearch';
 import { abortCompletion } from '../../../shared/utils/abortController';
 import store from '../../../shared/store';
-import { TopicService } from '../../../shared/services/TopicService';
+import { TopicService } from '../../../shared/services/topics/TopicService';
 import { VideoTaskManager } from '../../../shared/services/VideoTaskManager';
 import type { SiliconFlowImageFormat, GoogleVeoParams } from '../../../shared/types';
 

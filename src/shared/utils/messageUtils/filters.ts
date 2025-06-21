@@ -3,7 +3,7 @@
  * 统一处理消息去重、分组、过滤等逻辑
  */
 import type { Message } from '../../types';
-import { TopicStatsService } from '../../services/TopicStatsService';
+import { TopicStatsService } from '../../services/topics/TopicStatsService';
 import { getMainTextContent } from '../messageUtils';
 
 /**

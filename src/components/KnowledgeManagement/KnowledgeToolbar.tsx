@@ -21,7 +21,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { KnowledgeSearch } from './KnowledgeSearch';
 import CreateKnowledgeDialog from './CreateKnowledgeDialog';
-import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 
 interface KnowledgeToolbarProps {
   currentKnowledgeBaseId?: string;

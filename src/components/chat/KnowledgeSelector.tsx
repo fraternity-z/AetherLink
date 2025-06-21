@@ -26,7 +26,7 @@ import {
   FileText as DocumentIcon,
   X as CloseIcon,
 } from 'lucide-react';
-import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
+import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 
 interface KnowledgeBase {
