@@ -21,6 +21,7 @@ import { VideoTaskManager } from '../../shared/services/VideoTaskManager';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { addTopic } from '../../shared/store/slices/assistantsSlice';
 import { useActiveTopic } from '../../hooks/useActiveTopic';
+import ChatSearchInterface from '../../components/search/ChatSearchInterface';
 
 
 const ChatPage: React.FC = () => {
@@ -37,6 +38,9 @@ const ChatPage: React.FC = () => {
 
   // 消息引用，用于分支功能
   const messagesRef = useRef<any[]>([]);
+
+  // 搜索状态
+  const [showSearch, setShowSearch] = useState(false);
 
   // 应用启动时恢复未完成的视频生成任务
   useEffect(() => {
@@ -150,6 +154,25 @@ const ChatPage: React.FC = () => {
     if (currentTopic) {
       TopicService.clearTopicContent(currentTopic.id);
     }
+  };
+
+  // 搜索相关处理函数
+  const handleSearchToggle = () => {
+    setShowSearch(!showSearch);
+  };
+
+  const handleSearchClose = () => {
+    setShowSearch(false);
+  };
+
+  const handleTopicSelect = (topicId: string) => {
+    dispatch(newMessagesActions.setCurrentTopicId(topicId));
+  };
+
+  const handleMessageSelect = (topicId: string, messageId: string) => {
+    // 切换到对应话题并滚动到对应消息
+    dispatch(newMessagesActions.setCurrentTopicId(topicId));
+    // 这里可以添加滚动到特定消息的逻辑
   };
 
   // 消息处理钩子
@@ -285,43 +308,55 @@ const ChatPage: React.FC = () => {
   }, [currentTopic, currentAssistant, dispatch]);
 
   return (
-    <ChatPageUI
-      currentTopic={currentTopic}
-      currentMessages={currentMessages}
-      isStreaming={isStreaming}
-      isLoading={isLoading}
-      isMobile={isMobile}
-      drawerOpen={drawerOpen}
-      setDrawerOpen={setDrawerOpen}
-      navigate={navigate}
-      selectedModel={selectedModel}
-      availableModels={availableModels}
-      handleModelSelect={handleModelSelect}
-      handleModelMenuClick={handleModelMenuClick}
-      handleModelMenuClose={handleModelMenuClose}
-      menuOpen={menuOpen}
-      handleClearTopic={handleClearTopic}
-      handleDeleteMessage={handleDeleteMessage}
-      handleRegenerateMessage={handleRegenerateMessage}
-      handleSwitchMessageVersion={handleSwitchMessageVersion}
-      handleResendMessage={handleResendMessage}
-      webSearchActive={webSearchActive}
-      imageGenerationMode={imageGenerationMode}
-      videoGenerationMode={videoGenerationMode}
-      toolsEnabled={toolsEnabled}
-      mcpMode={mcpMode}
-      toggleWebSearch={toggleWebSearch}
-      toggleImageGenerationMode={toggleImageGenerationMode}
-      toggleVideoGenerationMode={toggleVideoGenerationMode}
-      toggleToolsEnabled={toggleToolsEnabled}
-      handleMCPModeChange={handleMCPModeChange}
-      handleMessageSend={handleMessageSend}
-      handleMultiModelSend={handleMultiModelSend}
-      handleStopResponseClick={handleStopResponseClick}
-      isDebating={isDebating}
-      handleStartDebate={handleStartDebate}
-      handleStopDebate={handleStopDebate}
-    />
+    <>
+      <ChatPageUI
+        currentTopic={currentTopic}
+        currentMessages={currentMessages}
+        isStreaming={isStreaming}
+        isLoading={isLoading}
+        isMobile={isMobile}
+        drawerOpen={drawerOpen}
+        setDrawerOpen={setDrawerOpen}
+        navigate={navigate}
+        selectedModel={selectedModel}
+        availableModels={availableModels}
+        handleModelSelect={handleModelSelect}
+        handleModelMenuClick={handleModelMenuClick}
+        handleModelMenuClose={handleModelMenuClose}
+        menuOpen={menuOpen}
+        handleClearTopic={handleClearTopic}
+        handleDeleteMessage={handleDeleteMessage}
+        handleRegenerateMessage={handleRegenerateMessage}
+        handleSwitchMessageVersion={handleSwitchMessageVersion}
+        handleResendMessage={handleResendMessage}
+        webSearchActive={webSearchActive}
+        imageGenerationMode={imageGenerationMode}
+        videoGenerationMode={videoGenerationMode}
+        toolsEnabled={toolsEnabled}
+        mcpMode={mcpMode}
+        toggleWebSearch={toggleWebSearch}
+        toggleImageGenerationMode={toggleImageGenerationMode}
+        toggleVideoGenerationMode={toggleVideoGenerationMode}
+        toggleToolsEnabled={toggleToolsEnabled}
+        handleMCPModeChange={handleMCPModeChange}
+        handleMessageSend={handleMessageSend}
+        handleMultiModelSend={handleMultiModelSend}
+        handleStopResponseClick={handleStopResponseClick}
+        isDebating={isDebating}
+        handleStartDebate={handleStartDebate}
+        handleStopDebate={handleStopDebate}
+        showSearch={showSearch}
+        onSearchToggle={handleSearchToggle}
+      />
+
+      {/* 搜索界面 */}
+      <ChatSearchInterface
+        open={showSearch}
+        onClose={handleSearchClose}
+        onTopicSelect={handleTopicSelect}
+        onMessageSelect={handleMessageSelect}
+      />
+    </>
   );
 };
 

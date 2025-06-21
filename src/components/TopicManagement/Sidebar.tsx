@@ -1,14 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Box, IconButton, Drawer, useMediaQuery, useTheme } from '@mui/material';
+import { Box, IconButton, Drawer, SwipeableDrawer, useMediaQuery, useTheme } from '@mui/material';
 import { X as CloseIcon } from 'lucide-react';
 import SidebarTabs from './SidebarTabs';
 import {
-  getMobileDrawerStyles,
   getDesktopDrawerStyles,
   getDrawerContentStyles,
   getCloseButtonStyles,
   getCloseButtonInteractionStyles,
-  MODAL_OPTIMIZATION,
 } from './sidebarOptimization';
 import { useSidebarToggle, useSidebarKeyboardShortcuts } from './hooks/useSidebarToggle';
 
@@ -86,24 +84,31 @@ export default function Sidebar({
     </Box>
   ), [isMobile, onDesktopToggle, handleDrawerToggle, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle]);
 
-  // 优化的移动端样式
-  const mobileDrawerSx = useMemo(() => getMobileDrawerStyles(drawerWidth), [drawerWidth]);
-
   // 优化的桌面端样式
   const desktopDrawerSx = useMemo(() => getDesktopDrawerStyles(drawerWidth, isOpen), [drawerWidth, isOpen]);
 
   return (
     <>
       {isMobile ? (
-        <Drawer
+        <SwipeableDrawer
+          anchor="left"
           variant="temporary"
           open={isOpen}
           onClose={handleDrawerToggle}
-          ModalProps={MODAL_OPTIMIZATION}
-          sx={mobileDrawerSx}
+          onOpen={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true, // Better open performance on mobile.
+          }}
+          sx={{
+            display: { xs: 'block', sm: 'none' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+            },
+          }}
         >
           {drawer}
-        </Drawer>
+        </SwipeableDrawer>
       ) : (
         <Drawer
           variant="persistent"

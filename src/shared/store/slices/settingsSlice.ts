@@ -42,6 +42,9 @@ export interface SettingsState {
   // 集成样式输入框自定义按钮
   integratedInputButtons?: string[];
 
+  // 对话导航功能
+  messageNavigation?: 'none' | 'buttons';
+
   // 其他设置...
   [key: string]: any;
 }
@@ -84,6 +87,7 @@ const loadFromStorage = async (): Promise<SettingsState> => {
       customLocation: ''
     },
     integratedInputButtons: ['tools', 'search'],
+    messageNavigation: 'none',
     isLoading: false
   };
 };
@@ -115,6 +119,7 @@ const initialState: SettingsState = {
     customLocation: ''
   },
   integratedInputButtons: ['tools', 'search'],
+  messageNavigation: 'none',
   isLoading: false
 };
 

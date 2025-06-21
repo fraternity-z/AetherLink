@@ -46,23 +46,14 @@ export const PERFORMANCE_CSS = {
   },
 } as const;
 
-// 移动端优化的抽屉样式
+// 移动端抽屉样式（简化版，不干扰SwipeableDrawer）
 export const getMobileDrawerStyles = (drawerWidth: number) => ({
   display: { xs: 'block', sm: 'none' },
   '& .MuiDrawer-paper': {
     boxSizing: 'border-box',
     width: drawerWidth,
     borderRadius: '0 16px 16px 0',
-    // 性能优化
-    ...PERFORMANCE_CSS.HARDWARE_ACCELERATION,
-    // 优化动画
-    transition: `transform ${ANIMATION_DURATION.NORMAL}ms ${EASING.STANDARD} !important`,
   },
-  // 优化背景遮罩
-  '& .MuiBackdrop-root': {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    transition: `opacity ${ANIMATION_DURATION.NORMAL}ms ${EASING.STANDARD} !important`,
-  }
 });
 
 // 桌面端优化的抽屉样式
@@ -191,14 +182,28 @@ export const createOptimizedToggleHandler = (
   };
 };
 
-// 模态框优化配置
+// 模态框优化配置（SwipeableDrawer专用）
 export const MODAL_OPTIMIZATION = {
-  keepMounted: true,
+  keepMounted: true, // 保持DOM挂载，提升性能
   disablePortal: false,
-  disableScrollLock: true,
-  // 减少重绘
+  disableScrollLock: true, // 避免滚动锁定
+  // 减少重绘和焦点管理开销
   disableEnforceFocus: true,
   disableAutoFocus: true,
+  // SwipeableDrawer专用优化
+  disableRestoreFocus: true, // 避免焦点恢复开销
+} as const;
+
+// SwipeableDrawer专用配置
+export const SWIPEABLE_DRAWER_CONFIG = {
+  // 滑动手势配置
+  hysteresis: 0.52, // 滑动阻力，推荐值
+  minFlingVelocity: 450, // 最小滑动速度 (px/s)
+  // 性能优化
+  disableBackdropTransition: false, // 保持背景过渡
+  disableDiscovery: false, // 保持边缘发现
+  // 边缘滑动区域
+  swipeAreaWidth: 20, // 边缘滑动区域宽度
 } as const;
 
 // 预加载优化
