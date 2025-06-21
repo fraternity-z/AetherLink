@@ -38,8 +38,7 @@ import {
   Search,
   X,
   User,
-  ChevronLeft,
-  MessageSquare
+  ChevronLeft
 } from 'lucide-react';
 import type { Assistant } from '../../../shared/types/Assistant';
 import VirtualizedAssistantGroups from './VirtualizedAssistantGroups';
@@ -550,39 +549,37 @@ const AssistantTab = React.memo(function AssistantTab({
                     : `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`
               }}
             >
-              {!editAssistantAvatar && (editAssistantName.charAt(0) || '👨‍💻')}
+              {!editAssistantAvatar && (editAssistantName.charAt(0) || '助')}
             </Avatar>
-            <Box sx={{
-              position: 'absolute',
-              bottom: 5,
-              right: 5,
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              background: (theme) => 
-                `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: (theme) => 
-                `2px solid ${theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.85)' : 'rgba(255, 255, 255, 0.9)'}`,
-              boxShadow: (theme) => 
-                theme.palette.mode === 'dark'
-                  ? '0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'
-                  : '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)',
-                             '&::before': {
-                 content: '""',
-                 position: 'absolute',
-                 inset: -1,
-                 borderRadius: '50%',
-                 background: (theme) => theme.palette.primary.main,
-                 opacity: 0.2,
-                 zIndex: -1,
-                 filter: 'blur(2px)'
-               }
-            }}>
-              <MessageSquare size={16} color="white" />
-            </Box>
+            <IconButton
+              onClick={handleOpenAvatarUploader}
+              sx={{
+                position: 'absolute',
+                bottom: 5,
+                right: 5,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: (theme) =>
+                  `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                border: (theme) =>
+                  `2px solid ${theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.85)' : 'rgba(255, 255, 255, 0.9)'}`,
+                boxShadow: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? '0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)'
+                    : '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)',
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                  boxShadow: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? '0 6px 16px rgba(0,0,0,0.4), 0 3px 6px rgba(0,0,0,0.3)'
+                      : '0 6px 16px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.15)',
+                },
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <User size={16} color="white" />
+            </IconButton>
           </Box>
         </Box>
 
@@ -713,15 +710,7 @@ const AssistantTab = React.memo(function AssistantTab({
                 >
                   选择预设提示词
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<User size={16} />}
-                  onClick={handleOpenAvatarUploader}
-                  sx={styles.secondaryButton(theme)}
-                >
-                  设置头像
-                </Button>
+
               </Box>
             </Paper>
           </Box>
