@@ -73,6 +73,7 @@ const TopToolbarDIYSettings: React.FC = () => {
     showTopicName: false,
     showNewTopicButton: false,
     showClearButton: false,
+    showSearchButton: false,
     showMenuButton: true,
     // 新增：组件位置信息
     componentPositions: [] as ComponentPosition[]
@@ -92,6 +93,7 @@ const TopToolbarDIYSettings: React.FC = () => {
     topicName: { name: '话题名称', icon: <MessageSquare size={20} />, key: 'showTopicName' },
     newTopicButton: { name: '新建话题', icon: <Plus size={20} />, key: 'showNewTopicButton' },
     clearButton: { name: '清空按钮', icon: <Trash2 size={20} />, key: 'showClearButton' },
+    searchButton: { name: '搜索按钮', icon: <CustomIcon name="search" size={20} />, key: 'showSearchButton' },
     modelSelector: { name: '模型选择器', icon: <Bot size={20} />, key: 'showModelSelector' },
     settingsButton: { name: '设置按钮', icon: <Settings size={20} />, key: 'showSettingsButton' },
   };
@@ -236,6 +238,12 @@ const TopToolbarDIYSettings: React.FC = () => {
         return (
           <IconButton key={componentId} color="inherit" size="small" sx={style}>
             <Trash2 size={20} />
+          </IconButton>
+        );
+      case 'searchButton':
+        return (
+          <IconButton key={componentId} color="inherit" size="small" sx={style}>
+            <CustomIcon name="search" size={20} />
           </IconButton>
         );
       case 'modelSelector':

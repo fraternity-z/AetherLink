@@ -7,14 +7,14 @@ import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
 import { ModelSelector } from './ModelSelector';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat } from '../../../shared/types';
 import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
 import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { generateBackgroundStyle } from '../../../shared/utils/backgroundUtils';
 import { useTheme } from '@mui/material/styles';
-import { useSidebarSwipeGesture } from '../../../hooks/useSwipeGesture';
+import ChatNavigation from '../../../components/chat/ChatNavigation';
 
 
 
@@ -27,9 +27,10 @@ const DEFAULT_TOP_TOOLBAR_SETTINGS = {
   showTopicName: false,
   showNewTopicButton: false,
   showClearButton: false,
+  showSearchButton: false,
   showMenuButton: true,
   leftComponents: ['menuButton', 'chatTitle', 'topicName', 'newTopicButton', 'clearButton'],
-  rightComponents: ['modelSelector', 'settingsButton'],
+  rightComponents: ['searchButton', 'modelSelector', 'settingsButton'],
   componentPositions: [],
 } as const;
 
@@ -70,6 +71,8 @@ interface ChatPageUIProps {
   isDebating?: boolean;
   handleStartDebate?: (question: string, config: any) => void;
   handleStopDebate?: () => void;
+  // 搜索相关
+  onSearchToggle?: () => void;
 }
 
 export const ChatPageUI: React.FC<ChatPageUIProps> = ({
@@ -107,10 +110,10 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   handleStopResponseClick,
   isDebating,
   handleStartDebate,
-  handleStopDebate
+  handleStopDebate,
+  onSearchToggle
 }) => {
   // ==================== Hooks 和基础状态 ====================
-  const dispatch = useDispatch();
   const theme = useTheme();
 
   // 使用统一的话题管理Hook
@@ -205,34 +208,12 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
 
   // ==================== 事件处理函数 ====================
 
-  // 滑动手势处理
-  const handleOpenSidebar = useCallback(() => {
-    if (!drawerOpen) {
-      setDrawerOpen(true);
-      try {
-        localStorage.setItem('sidebar-swipe-hint-seen', 'true');
-      } catch (error) {
-        console.warn('无法保存滑动提示状态:', error);
-      }
-    }
-  }, [drawerOpen, setDrawerOpen]);
+  // 搜索按钮点击处理
+  const handleSearchClick = useCallback(() => {
+    onSearchToggle?.();
+  }, [onSearchToggle]);
 
-  const handleCloseSidebar = useCallback(() => {
-    if (drawerOpen) {
-      setDrawerOpen(false);
-      try {
-        localStorage.setItem('sidebar-swipe-hint-seen', 'true');
-      } catch (error) {
-        console.warn('无法保存滑动提示状态:', error);
-      }
-    }
-  }, [drawerOpen, setDrawerOpen]);
 
-  const { swipeHandlers } = useSidebarSwipeGesture(
-    handleOpenSidebar,
-    drawerOpen ? handleCloseSidebar : undefined,
-    true
-  );
 
 
 
@@ -305,6 +286,13 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
           />
         ) : null;
 
+      case 'searchButton':
+        return mergedTopToolbarSettings.showSearchButton ? (
+          <IconButton key={componentId} color="inherit" onClick={handleSearchClick}>
+            <CustomIcon name="search" size={20} />
+          </IconButton>
+        ) : null;
+
       case 'settingsButton':
         return mergedTopToolbarSettings.showSettingsButton ? (
           <IconButton key={componentId} color="inherit" onClick={() => navigate('/settings')}>
@@ -328,7 +316,8 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     handleModelMenuClick,
     handleModelMenuClose,
     menuOpen,
-    navigate
+    navigate,
+    handleSearchClick
   ]);
 
   // ==================== 消息处理函数 ====================
@@ -504,7 +493,6 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   return (
     <Box
       sx={dynamicStyles.mainContainer}
-      {...swipeHandlers} // 添加滑动手势处理
     >
       {/* 桌面端可收起侧边栏，移动端可隐藏 */}
       {!isMobile && (
@@ -607,6 +595,9 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
                   onResend={handleResendMessage}
                 />
               </Box>
+
+              {/* 对话导航组件 */}
+              <ChatNavigation containerId="messageList" />
 
               {/* 输入框容器，固定在底部 */}
               {InputContainer}

@@ -5,7 +5,7 @@ import {
   setHighPerformanceStreamingSetting
 } from '../../../shared/utils/performanceSettings';
 import { useAppSelector, useAppDispatch } from '../../../shared/store';
-import { setMessageStyle, setRenderUserInputAsMarkdown, setAutoScrollToBottom } from '../../../shared/store/settingsSlice';
+import { setMessageStyle, setRenderUserInputAsMarkdown, setAutoScrollToBottom, updateSettings } from '../../../shared/store/settingsSlice';
 
 /**
  * 设置管理钩子
@@ -16,6 +16,8 @@ export function useSettingsManagement() {
   const renderUserInputAsMarkdown = useAppSelector(state => state.settings.renderUserInputAsMarkdown);
   // 获取自动滚动设置
   const autoScrollToBottom = useAppSelector(state => state.settings.autoScrollToBottom);
+  // 获取对话导航设置
+  const messageNavigation = useAppSelector(state => (state.settings as any).messageNavigation || 'none');
 
   // 应用设置
   const [settings, setSettings] = useState({
@@ -27,6 +29,8 @@ export function useSettingsManagement() {
     renderUserInputAsMarkdown: renderUserInputAsMarkdown !== undefined ? renderUserInputAsMarkdown : true, // 从Redux获取用户输入渲染设置
     // 自动滚动设置
     autoScrollToBottom: autoScrollToBottom !== undefined ? autoScrollToBottom : true, // 从Redux获取自动滚动设置
+    // 对话导航设置
+    messageNavigation: messageNavigation, // 从Redux获取对话导航设置
     contextLength: 16000, // 设置为16K，适合大多数模型
     contextCount: 5,      // 与最佳实例保持一致，DEFAULT_CONTEXTCOUNT = 5
     mathRenderer: 'KaTeX' as const,
@@ -40,6 +44,11 @@ export function useSettingsManagement() {
     { value: 'bubble', label: '气泡' }
   ];
 
+  const messageNavigationOptions = [
+    { value: 'none', label: '不显示' },
+    { value: 'buttons', label: '上下按钮' }
+  ];
+
   const settingsArray = [
     { id: 'streamOutput', name: '流式输出', defaultValue: settings.streamOutput, description: '实时显示AI回答，打字机效果' },
     { id: 'highPerformanceStreaming', name: '高性能流式输出', defaultValue: settings.highPerformanceStreaming, description: '启用超高性能渲染模式：虚拟化、Canvas或最小化渲染，大幅提升流式输出性能' },
@@ -48,6 +57,7 @@ export function useSettingsManagement() {
     { id: 'renderUserInputAsMarkdown', name: '渲染用户输入', defaultValue: settings.renderUserInputAsMarkdown, description: '是否渲染用户输入的Markdown格式（关闭后用户消息将显示为纯文本）' },
     { id: 'autoScrollToBottom', name: '自动下滑', defaultValue: settings.autoScrollToBottom, description: '新消息时自动滚动到聊天底部' },
     { id: 'messageStyle', name: '消息样式', defaultValue: settings.messageStyle, description: '选择聊天消息的显示样式', type: 'select' as const, options: messageStyleOptions},
+    { id: 'messageNavigation', name: '对话导航', defaultValue: settings.messageNavigation, description: '显示上下按钮快速跳转到上一条/下一条消息', type: 'select' as const, options: messageNavigationOptions},
   ];
 
   // 设置相关函数
@@ -73,6 +83,14 @@ export function useSettingsManagement() {
       const newValue = value as boolean;
       dispatch(setAutoScrollToBottom(newValue));
       setSettings(prev => ({ ...prev, autoScrollToBottom: newValue }));
+      return;
+    }
+
+    // 特殊处理对话导航设置
+    if (settingId === 'messageNavigation') {
+      const newValue = value as 'none' | 'buttons';
+      dispatch(updateSettings({ messageNavigation: newValue } as any));
+      setSettings(prev => ({ ...prev, messageNavigation: newValue }));
       return;
     }
 

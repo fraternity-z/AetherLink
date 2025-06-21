@@ -1,0 +1,47 @@
+{
+  "android": {
+    "icon": {
+      "sources": [
+        {
+          "src": "resources/icon.png",
+          "foreground": "resources/icon.png",
+          "background": "#ffffff"
+        }
+      ]
+    },
+    "splash": {
+      "sources": [
+        {
+          "src": "resources/icon.png",
+          "background": "#ffffff"
+        }
+      ]
+    }
+  },
+  "ios": {
+    "icon": {
+      "sources": [
+        {
+          "src": "resources/icon.png"
+        }
+      ]
+    },
+    "splash": {
+      "sources": [
+        {
+          "src": "resources/icon.png",
+          "background": "#ffffff"
+        }
+      ]
+    }
+  },
+  "pwa": {
+    "icon": {
+      "sources": [
+        {
+          "src": "resources/icon.png"
+        }
+      ]
+    }
+  }
+}
