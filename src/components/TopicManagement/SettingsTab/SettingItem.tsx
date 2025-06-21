@@ -120,14 +120,47 @@ export default function SettingItem({ setting, onChange }: SettingItemProps) {
 
   return (
     <>
-      <ListItem sx={{ px: 2, py: 0.5 }}>
+      <ListItem 
+        sx={{ 
+          px: 2, 
+          py: 0.5,
+          // 确保列表项能够正确处理右侧控件
+          alignItems: 'flex-start'
+        }}
+      >
         <ListItemText
           primary={setting.name}
           secondary={setting.description}
-          primaryTypographyProps={{ fontSize: '0.9rem', lineHeight: 1.2 }}
-          secondaryTypographyProps={{ fontSize: '0.75rem', lineHeight: 1.2, mt: 0.2 }}
+          primaryTypographyProps={{ 
+            fontSize: '0.9rem', 
+            lineHeight: 1.2 
+          }}
+          secondaryTypographyProps={{ 
+            fontSize: '0.75rem', 
+            lineHeight: 1.2, 
+            mt: 0.2,
+            // 重要：确保长文本能够正确换行且不与右侧按钮重叠
+            wordBreak: 'break-word',
+            whiteSpace: 'normal'
+          }}
+          sx={{
+            // 关键修复：为右侧控件预留足够空间
+            pr: setting.type === 'select' ? 12 : 8, // 为选择框预留更多空间，为开关预留适中空间
+            // 确保文本区域不会延伸到右侧控件
+            overflow: 'hidden'
+          }}
         />
-        <ListItemSecondaryAction>
+        <ListItemSecondaryAction
+          sx={{
+            // 确保右侧控件有足够的空间
+            right: 16,
+            // 垂直居中对齐
+            top: '50%',
+            transform: 'translateY(-50%)',
+            // 确保控件不会被文本覆盖
+            zIndex: 1
+          }}
+        >
           {renderControl()}
         </ListItemSecondaryAction>
       </ListItem>

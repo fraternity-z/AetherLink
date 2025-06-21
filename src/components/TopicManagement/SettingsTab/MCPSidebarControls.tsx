@@ -169,7 +169,19 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
               : `模式: ${mcpMode === 'function' ? '函数调用' : '提示词注入'}`
           }
           primaryTypographyProps={{ fontWeight: 'medium', fontSize: '0.95rem', lineHeight: 1.2 }}
-          secondaryTypographyProps={{ fontSize: '0.75rem', lineHeight: 1.2 }}
+          secondaryTypographyProps={{ 
+            fontSize: '0.75rem', 
+            lineHeight: 1.2,
+            // 确保长文本能够正确换行且不与右侧按钮重叠
+            wordBreak: 'break-word',
+            whiteSpace: 'normal'
+          }}
+          sx={{
+            // 为右侧按钮预留足够空间
+            pr: 6,
+            // 确保文本区域不会延伸到右侧控件
+            overflow: 'hidden'
+          }}
         />
         <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {hasActiveServers && (
@@ -197,6 +209,18 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
           {/* MCP 工具总开关 */}
           <Box sx={{ mb: 2 }}>
             <FormControlLabel
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: '100%',
+                m: 0,
+                // 确保开关不会与文本重叠
+                '& .MuiFormControlLabel-label': {
+                  flex: 1,
+                  pr: 2 // 为右侧开关预留空间
+                }
+              }}
+              labelPlacement="start"
               control={
                 <CustomSwitch
                   checked={toolsEnabled}
@@ -239,13 +263,23 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
                     value="function"
                     control={<Radio size="small" />}
                     label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                         <Code size={16} />
-                        <Box>
+                        <Box sx={{ flex: 1 }}>
                           <Typography variant="body2" fontWeight={500}>
                             函数调用
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary"
+                            sx={{
+                              // 确保长文本能够正确换行
+                              wordBreak: 'break-word',
+                              whiteSpace: 'normal',
+                              display: 'block',
+                              lineHeight: 1.2
+                            }}
+                          >
                             模型自动调用工具（推荐）
                           </Typography>
                         </Box>
@@ -257,20 +291,37 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
                       borderRadius: 1,
                       border: '1px solid',
                       borderColor: mcpMode === 'function' ? 'primary.main' : 'divider',
-                      bgcolor: mcpMode === 'function' ? alpha('#1976d2', 0.05) : 'transparent'
+                      bgcolor: mcpMode === 'function' ? alpha('#1976d2', 0.05) : 'transparent',
+                      // 确保单选按钮项占据全部宽度
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      '& .MuiFormControlLabel-label': {
+                        flex: 1
+                      }
                     }}
                   />
                   <FormControlLabel
                     value="prompt"
                     control={<Radio size="small" />}
                     label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                         <Brain size={16} />
-                        <Box>
+                        <Box sx={{ flex: 1 }}>
                           <Typography variant="body2" fontWeight={500}>
                             提示词注入
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary"
+                            sx={{
+                              // 确保长文本能够正确换行
+                              wordBreak: 'break-word',
+                              whiteSpace: 'normal',
+                              display: 'block',
+                              lineHeight: 1.2
+                            }}
+                          >
                             通过提示词指导 AI 使用工具
                           </Typography>
                         </Box>
@@ -282,7 +333,14 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
                       borderRadius: 1,
                       border: '1px solid',
                       borderColor: mcpMode === 'prompt' ? 'primary.main' : 'divider',
-                      bgcolor: mcpMode === 'prompt' ? alpha('#1976d2', 0.05) : 'transparent'
+                      bgcolor: mcpMode === 'prompt' ? alpha('#1976d2', 0.05) : 'transparent',
+                      // 确保单选按钮项占据全部宽度
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      '& .MuiFormControlLabel-label': {
+                        flex: 1
+                      }
                     }}
                   />
                 </RadioGroup>
@@ -347,6 +405,8 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
                             px: 1,
                             py: 0.5,
                             ...listItemOptimization,
+                            // 确保列表项能够正确处理右侧控件
+                            alignItems: 'flex-start'
                           }}
                         >
                           <ListItemIcon sx={{ minWidth: 32 }}>
@@ -369,13 +429,39 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
                             }
                             secondary={
                               server.description && (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography 
+                                  variant="caption" 
+                                  color="text.secondary"
+                                  sx={{
+                                    // 重要：确保长描述文本能够正确换行且不与右侧按钮重叠
+                                    wordBreak: 'break-word',
+                                    whiteSpace: 'normal',
+                                    display: 'block',
+                                    lineHeight: 1.2
+                                  }}
+                                >
                                   {server.description}
                                 </Typography>
                               )
                             }
+                            sx={{
+                              // 关键修复：为右侧开关预留足够空间
+                              pr: 6, // 为开关预留空间
+                              // 确保文本区域不会延伸到右侧控件
+                              overflow: 'hidden'
+                            }}
                           />
-                          <ListItemSecondaryAction>
+                          <ListItemSecondaryAction
+                            sx={{
+                              // 确保右侧控件有足够的空间
+                              right: 8,
+                              // 垂直居中对齐
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              // 确保控件不会被文本覆盖
+                              zIndex: 1
+                            }}
+                          >
                             <CustomSwitch
                               checked={server.isActive}
                               onChange={createOptimizedSwitchHandler((checked) =>
