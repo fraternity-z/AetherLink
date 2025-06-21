@@ -6,7 +6,7 @@ import type { RootState } from '../../../shared/store';
 import type { Message, MessageBlock } from '../../../shared/types/newMessage';
 import { getMessageDividerSetting } from '../../../shared/utils/settingsUtils';
 import { getThemeColors } from '../../../shared/utils/themeUtils';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 
 export const useMessageData = (message: Message) => {
   const theme = useTheme();

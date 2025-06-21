@@ -1,13 +1,13 @@
-import type { Model } from '../types';
-import { logApiRequest, logApiResponse } from './LoggerService';
-import { handleError } from '../utils/error';
-import type { ImageGenerationParams, GeneratedImage } from '../types';
-import { ModelType } from '../types';
-import { log } from './LoggerService';
-import { generateImage as openaiGenerateImage, generateVideo as openaiGenerateVideo } from '../api/openai';
-import { generateVideoWithVeo } from '../api/google/veo';
-import type { VideoGenerationParams } from '../api/openai/video';
-import type { GoogleVeoParams } from '../api/google/veo';
+import type { Model } from '../../types';
+import { logApiRequest, logApiResponse } from '../LoggerService';
+import { handleError } from '../../utils/error';
+import type { ImageGenerationParams, GeneratedImage } from '../../types';
+import { ModelType } from '../../types';
+import { log } from '../LoggerService';
+import { generateImage as openaiGenerateImage, generateVideo as openaiGenerateVideo } from '../../api/openai';
+import { generateVideoWithVeo } from '../../api/google/veo';
+import type { VideoGenerationParams } from '../../api/openai/video';
+import type { GoogleVeoParams } from '../../api/google/veo';
 
 // 重新导出类型
 export type { VideoGenerationParams, GoogleVeoParams };
@@ -176,7 +176,7 @@ export async function fetchModels(provider: any): Promise<Model[]> {
     logApiRequest('获取模型列表', 'INFO', { provider: provider.id });
 
     // 直接使用供应商工厂获取已格式化的模型，参考最佳实例架构
-    const { fetchModels: factoryFetchModels } = await import('./ProviderFactory');
+    const { fetchModels: factoryFetchModels } = await import('../ProviderFactory');
     const models = await factoryFetchModels(provider);
 
     logApiResponse('获取模型列表', 200, {

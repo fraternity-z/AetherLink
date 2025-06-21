@@ -9,7 +9,7 @@ import type { RootState } from '../../shared/store';
 import { throttle } from 'lodash';
 import InfiniteScroll from 'react-infinite-scroll-component';
 
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import useScrollPosition from '../../hooks/useScrollPosition';

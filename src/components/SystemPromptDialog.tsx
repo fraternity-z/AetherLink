@@ -19,7 +19,7 @@ import { updateTopic } from '../shared/store/slices/assistantsSlice';
 import { useAppDispatch } from '../shared/store';
 // 移除旧的系统提示词选择器，使用默认提示词
 // import { selectActiveSystemPrompt } from '../shared/store/slices/systemPromptsSlice';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 
 interface SystemPromptDialogProps {
   open: boolean;

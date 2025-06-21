@@ -1,4 +1,4 @@
-import { dexieStorage } from '../../../services/DexieStorageService';
+import { dexieStorage } from '../../../services/storage/DexieStorageService';
 import { throttle } from 'lodash';
 import type { Message, MessageBlock } from '../../../types/newMessage';
 

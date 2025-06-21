@@ -1,6 +1,6 @@
 import { ImageUploadService } from '../services/ImageUploadService';
 import { FileUploadService } from '../services/FileUploadService';
-import { dexieStorage } from '../services/DexieStorageService';
+import { dexieStorage } from '../services/storage/DexieStorageService';
 import type { ImageContent, FileContent } from '../types';
 
 interface UseFileUploadProps {

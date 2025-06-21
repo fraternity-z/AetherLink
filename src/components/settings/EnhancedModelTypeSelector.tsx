@@ -17,7 +17,7 @@ import { ModelType } from '../../shared/types';
 import type { ModelTypeRule } from '../../shared/types';
 import { getModelTypeDisplayName, defaultModelTypeRules } from '../../shared/data/modelTypeRules';
 import ModelTypeManagement from './ModelTypeManagement';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 
 // 模型类型分组
 const MODEL_TYPE_GROUPS = {

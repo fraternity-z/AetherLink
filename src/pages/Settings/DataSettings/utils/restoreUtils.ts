@@ -3,7 +3,7 @@ import type { ChatTopic } from '../../../../shared/types';
 import type { Assistant } from '../../../../shared/types/Assistant';
 import { CURRENT_BACKUP_VERSION } from './backupUtils';
 import { importExternalBackup, type ImportMode } from './externalBackupUtils';
-import { dexieStorage } from '../../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../../shared/services/storage/DexieStorageService';
 import { getStorageItem, setStorageItem, setStorageItems } from '../../../../shared/utils/storage';
 import { getMainTextContent } from '../../../../shared/utils/messageUtils';
 

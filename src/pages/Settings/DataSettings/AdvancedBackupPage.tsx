@@ -32,7 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
-import { getAllTopicsFromDB, getAllAssistantsFromDB } from '../../../shared/services/storageService';
+import { getAllTopicsFromDB, getAllAssistantsFromDB } from '../../../shared/services/storage/storageService';
 import { alpha } from '@mui/material/styles';
 
 const DEFAULT_BACKUP_DIRECTORY = 'AetherLink/backups';

@@ -5,7 +5,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
-import LoggerService from './LoggerService';
+import LoggerService from '../LoggerService';
 
 // 请求配置接口
 export interface CORSBypassRequestOptions {

@@ -6,7 +6,7 @@ import type {
   RoutingCondition
 } from '../types/ModelCombo';
 import type { Model } from '../types';
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from './EventEmitter';
 import { sendChatRequest } from '../api';
 import store from '../store';

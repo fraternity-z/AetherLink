@@ -2,7 +2,7 @@
  * Dexie.js 存储工具类
  * 提供对应用存储的统一封装，完全替代 localStorage 和直接的 IndexedDB 操作
  */
-import { dexieStorage } from '../services/DexieStorageService';
+import { dexieStorage } from '../services/storage/DexieStorageService';
 
 // 🚀 性能优化：减少开发模式下的冗余日志
 const isDevelopment = import.meta.env.DEV;

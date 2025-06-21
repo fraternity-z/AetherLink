@@ -1,6 +1,6 @@
-import type { WebDavConfig, WebDavSyncState, WebDavUploadResult, WebDavDownloadResult } from '../types';
+import type { WebDavConfig, WebDavSyncState, WebDavUploadResult, WebDavDownloadResult } from '../../types';
 import { WebDavManagerService } from './WebDavManagerService';
-import { getStorageItem, setStorageItem } from '../utils/storage';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
 
 /**
  * WebDAV 备份管理服务

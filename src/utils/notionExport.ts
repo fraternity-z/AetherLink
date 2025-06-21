@@ -1,5 +1,5 @@
 import type { ChatTopic } from '../shared/types';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import dayjs from 'dayjs';
 import { notionApiRequest, showSuccessMessage, showErrorMessage } from './notionApiUtils';
 

@@ -23,7 +23,7 @@ import { Plus as AddIcon, Minus as RemoveIcon, Search as SearchIcon, Database } 
 import { alpha } from '@mui/material/styles';
 import { FixedSizeList } from 'react-window';
 import type { ListChildComponentProps } from 'react-window';
-import { fetchModels } from '../shared/services/APIService';
+import { fetchModels } from '../shared/services/network/APIService';
 import type { Model } from '../shared/types';
 import { debounce } from 'lodash';
 

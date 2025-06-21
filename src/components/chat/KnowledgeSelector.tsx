@@ -27,7 +27,7 @@ import {
   X as CloseIcon,
 } from 'lucide-react';
 import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 
 interface KnowledgeBase {
   id: string;

@@ -15,7 +15,7 @@ import UploadMenu from './UploadMenu';
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import AIDebateButton from '../AIDebateButton';

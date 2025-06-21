@@ -1,4 +1,4 @@
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import { v4 as uuid } from 'uuid';
 import store from '../store';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';

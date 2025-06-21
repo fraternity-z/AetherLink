@@ -4,7 +4,7 @@ import { FileOpener } from '@capacitor-community/file-opener';
 import { Capacitor } from '@capacitor/core';
 import type { ChatTopic } from '../../../../shared/types';
 import type { Assistant } from '../../../../shared/types/Assistant';
-import { dexieStorage } from '../../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../../shared/services/storage/DexieStorageService';
 import { getStorageItem, getAllStorageKeys } from '../../../../shared/utils/storage';
 import { TopicStatsService } from '../../../../shared/services/TopicStatsService';
 // 使用统一的话题验证服务，不再重复实现验证逻辑

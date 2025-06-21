@@ -33,7 +33,7 @@ import { ArrowLeft as ArrowBackIcon, Save as SaveIcon, RotateCcw as RestoreIcon,
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { updateAssistant } from '../../../shared/store/slices/assistantsSlice';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import type { Assistant } from '../../../shared/types/Assistant';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
 import { getAppSettings, saveAppSettings } from '../../../shared/utils/settingsUtils';

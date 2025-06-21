@@ -1,4 +1,4 @@
-import { DataRepository } from '../../../services/DataRepository';
+import { DataRepository } from '../../../services/storage/DataRepository';
 import { createUserMessage, createAssistantMessage } from '../../../utils/messageUtils';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { upsertManyBlocks } from '../../slices/messageBlocksSlice';

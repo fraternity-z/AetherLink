@@ -1,5 +1,5 @@
 import type { Model } from '../types';
-import { getSettingFromDB } from '../services/storageService';
+import { getSettingFromDB } from '../services/storage/storageService';
 import { getProviderApi, getActualProviderType } from '../services/ProviderFactory';
 import store from '../store';
 
@@ -18,8 +18,8 @@ export * as geminiApi from './gemini';
 export * as anthropicApi from './anthropic';
 
 // 导出视频生成功能
-export { generateVideo, type GeneratedVideo } from '../services/APIService';
-export type { VideoGenerationParams, GoogleVeoParams } from '../services/APIService';
+export { generateVideo, type GeneratedVideo } from '../services/network/APIService';
+export type { VideoGenerationParams, GoogleVeoParams } from '../services/network/APIService';
 
 // 通用聊天请求接口
 export interface ChatRequest {

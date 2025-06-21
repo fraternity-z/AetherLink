@@ -26,7 +26,7 @@ import { CustomIcon } from './icons';
 import { useTheme } from '@mui/material/styles';
 import QuickPhraseService from '../shared/services/QuickPhraseService';
 import type { QuickPhrase } from '../shared/types';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 
 interface QuickPhraseButtonProps {
   onInsertPhrase: (content: string) => void;

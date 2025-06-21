@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import type { Message, MessageBlock } from '../../../shared/types/newMessage';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import { upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlice';
 
 export const useMessageBlocks = (

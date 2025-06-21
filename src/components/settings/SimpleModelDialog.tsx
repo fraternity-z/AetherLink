@@ -22,7 +22,7 @@ import type { Model } from '../../shared/types';
 import { ModelType } from '../../shared/types';
 import { matchModelTypes } from '../../shared/data/modelTypeRules';
 import AvatarUploader from './AvatarUploader';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import EnhancedModelTypeSelector from './EnhancedModelTypeSelector';
 
 interface SimpleModelDialogProps {

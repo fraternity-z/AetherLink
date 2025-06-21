@@ -8,7 +8,7 @@ import { addTopic, updateTopic } from '../store/slices/assistantsSlice';
 import { updateOneBlock, upsertManyBlocks } from '../store/slices/messageBlocksSlice';
 import { formatDateForTopicTitle } from '../utils';
 import { DEFAULT_TOPIC_PROMPT } from '../config/prompts';
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from './EventService';
 import { createUserMessage } from '../utils/messageUtils';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';

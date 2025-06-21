@@ -1,5 +1,5 @@
 import store from '../../../store';
-import { dexieStorage } from '../../DexieStorageService';
+import { dexieStorage } from '../../storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from '../../EventService';
 import { createStreamProcessor } from '../../StreamProcessingService';
 import { MessageBlockStatus, AssistantMessageStatus, MessageBlockType } from '../../../types/newMessage';

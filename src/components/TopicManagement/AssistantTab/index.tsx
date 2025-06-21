@@ -44,7 +44,7 @@ import type { Assistant } from '../../../shared/types/Assistant';
 import VirtualizedAssistantGroups from './VirtualizedAssistantGroups';
 import VirtualizedAssistantList from './VirtualizedAssistantList';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import PresetAssistantItem from './PresetAssistantItem';
 import GroupDialog from '../GroupDialog';
 import AssistantIconPicker from './AssistantIconPicker';

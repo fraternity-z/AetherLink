@@ -21,7 +21,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../shared/types';
 import type { DebateConfig } from '../../shared/services/AIDebateService';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { VoiceButton, EnhancedVoiceInput } from '../VoiceRecognition';
 
 

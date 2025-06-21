@@ -4,7 +4,7 @@ import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'luci
 import FilePreview from './FilePreview';
 import type { FileStatus } from './FilePreview';
 import type { FileContent, ImageContent } from '../shared/types';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 
 interface IntegratedFilePreviewProps {
   files: FileContent[];

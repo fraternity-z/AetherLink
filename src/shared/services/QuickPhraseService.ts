@@ -1,4 +1,4 @@
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import type { QuickPhrase } from '../types';
 
 /**

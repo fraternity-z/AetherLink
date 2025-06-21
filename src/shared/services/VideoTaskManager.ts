@@ -288,7 +288,7 @@ export class VideoTaskManager {
 
       // 创建视频块
       const { upsertOneBlock } = await import('../store/slices/messageBlocksSlice');
-      const { dexieStorage } = await import('./DexieStorageService');
+      const { dexieStorage } = await import('./storage/DexieStorageService');
 
       const videoBlock = {
         id: `video-${Date.now()}`,

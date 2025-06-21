@@ -9,7 +9,7 @@ import { createAbortController } from '../../../utils/abortController';
 import { mcpService } from '../../../services/mcp';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { upsertOneBlock, addOneBlock } from '../../slices/messageBlocksSlice';
-import { dexieStorage } from '../../../services/DexieStorageService';
+import { dexieStorage } from '../../../services/storage/DexieStorageService';
 import type { Message, MessageBlock } from '../../../types/newMessage';
 import type { Model, MCPTool } from '../../../types';
 import type { RootState, AppDispatch } from '../../index';

@@ -5,7 +5,7 @@ import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlic
 import { updateOneBlock, upsertOneBlock } from '../../../shared/store/slices/messageBlocksSlice';
 import { multiModelService } from '../../../shared/services/MultiModelService';
 import { ApiProviderRegistry } from '../../../shared/services/messages/ApiProvider';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import {
   createUserMessage,
   createAssistantMessage

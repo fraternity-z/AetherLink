@@ -25,9 +25,9 @@ import {
   readJSONFromFile,
   performFullRestore,
 } from '../../utils/restoreUtils';
-import { dexieStorage } from '../../../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../../../shared/services/storage/DexieStorageService';
 import type { WebDavConfig } from '../../../../../shared/types';
-import { WebDavBackupService } from '../../../../../shared/services/WebDavBackupService';
+import { WebDavBackupService } from '../../../../../shared/services/storage/WebDavBackupService';
 import { getWebDavConfig, saveWebDavConfig } from '../../../../../shared/utils/webdavUtils';
 
 /**

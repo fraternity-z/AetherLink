@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, IconButton, Dialog, DialogContent, CircularProgress, Typography } from '@mui/material';
 import { Maximize2 as ZoomOutMapIcon, AlertCircle as ErrorOutlineIcon } from 'lucide-react';
 import type { VideoMessageBlock } from '../../../shared/types/newMessage';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 
 interface Props {
   block: VideoMessageBlock;

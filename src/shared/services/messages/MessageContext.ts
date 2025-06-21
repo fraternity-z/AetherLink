@@ -1,5 +1,5 @@
 import { applyContextLimits, getContextSettings } from './messageService';
-import { dexieStorage } from '../DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 
 /**
  * 消息上下文管理模块

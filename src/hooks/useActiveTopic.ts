@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
 import { loadTopicMessagesThunk } from '../shared/store/slices/newMessagesSlice';
 import { EventEmitter, EVENT_NAMES } from '../shared/services/EventService';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
 
 /**

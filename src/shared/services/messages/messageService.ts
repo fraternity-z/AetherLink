@@ -1,6 +1,6 @@
 import type { Message, ChatTopic, Model } from '../../types';
 import { getStorageItem } from '../../utils/storage';
-import { saveTopicToDB, getAllTopicsFromDB } from '../storageService';
+import { saveTopicToDB, getAllTopicsFromDB } from '../storage/storageService';
 import { getMainTextContent } from '../../utils/messageUtils';
 import store from '../../store';
 import { newMessagesActions } from '../../store/slices/newMessagesSlice';

@@ -1,5 +1,5 @@
 import type { Assistant, ChatTopic } from '../../types/Assistant';
-import { dexieStorage } from '../DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 
 /**
  * 核心助手管理服务 - 负责助手的基本CRUD操作

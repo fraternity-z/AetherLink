@@ -3,9 +3,9 @@
  * 提供统一的数据访问接口，减少重复的数据库操作代码
  */
 import { dexieStorage } from './DexieStorageService';
-import type { ChatTopic, Message, MessageBlock } from '../types';
-import type { Assistant } from '../types/Assistant';
-import { handleError } from '../utils/error';
+import type { ChatTopic, Message, MessageBlock } from '../../types';
+import type { Assistant } from '../../types/Assistant';
+import { handleError } from '../../utils/error';
 
 /**
  * 数据仓库服务 - 统一数据访问层

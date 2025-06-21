@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import LoggerService from './LoggerService';
+import LoggerService from '../LoggerService';
 
 // 请求记录类型
 export interface RequestRecord {
@@ -273,6 +273,9 @@ const clearAllRequests = (): void => {
   RequestStore.getInstance().clearAll();
   LoggerService.log('INFO', '[网络] 已清除所有请求记录');
 };
+
+// 导出 RequestStore 类
+export { RequestStore };
 
 export default {
   setupRequestInterceptors,

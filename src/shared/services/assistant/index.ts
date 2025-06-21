@@ -8,7 +8,7 @@ import { AssistantManager } from './AssistantManager';
 import { TopicManager } from './TopicManager';
 import { AssistantFactory } from './Factory';
 import type { Assistant, ChatTopic } from '../../types/Assistant';
-import { dexieStorage } from '../DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 import { uuid } from '../../utils';
 import { getDefaultTopic } from './types';
 import { DEFAULT_TOPIC_PROMPT } from '../../config/prompts';

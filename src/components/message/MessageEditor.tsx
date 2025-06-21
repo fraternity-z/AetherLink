@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import type { Message } from '../../shared/types/newMessage.ts';
 import { UserMessageStatus, AssistantMessageStatus } from '../../shared/types/newMessage.ts';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { clearGetMainTextContentCache } from '../../shared/utils/messageUtils';
 // 开发环境日志工具 - 只保留错误日志
 const isDev = process.env.NODE_ENV === 'development';

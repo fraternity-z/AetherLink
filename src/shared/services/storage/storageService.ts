@@ -1,8 +1,8 @@
 import { Preferences } from '@capacitor/preferences';
-import type { Assistant } from '../types/Assistant';
-import type { ChatTopic, Message } from '../types';
+import type { Assistant } from '../../types/Assistant';
+import type { ChatTopic, Message } from '../../types';
 import { dexieStorage } from './DexieStorageService';
-import { DB_CONFIG } from '../database/config';
+import { DB_CONFIG } from '../../database/config';
 import Dexie from 'dexie';
 
 // 定义 DatabaseStatus 类型

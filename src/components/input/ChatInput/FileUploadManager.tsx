@@ -6,7 +6,7 @@ import type { ImageContent, FileContent } from '../../../shared/types';
 import type { FileStatus } from '../../FilePreview';
 import IntegratedFilePreview from '../../IntegratedFilePreview';
 import { toastManager } from '../../EnhancedToast';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 
 interface FileUploadManagerProps {
   images: ImageContent[];

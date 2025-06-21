@@ -157,7 +157,7 @@ export function useSettingsStorage() {
  */
 export async function syncAssistantMaxTokens(maxTokens: number): Promise<boolean> {
   try {
-    const { dexieStorage } = await import('../../../../shared/services/DexieStorageService');
+    const { dexieStorage } = await import('../../../../shared/services/storage/DexieStorageService');
     const assistants = await dexieStorage.getAllAssistants();
 
     for (const assistant of assistants) {

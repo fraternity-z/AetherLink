@@ -3,15 +3,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
 import { useAssistant } from '../../../shared/hooks';
 import { AssistantService } from '../../../shared/services';
-import { getStorageItem } from '../../../shared/utils/storage';
 import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
 import type { Assistant } from '../../../shared/types/Assistant';
 import type { RootState } from '../../../shared/store';
 import { setAssistants, setCurrentAssistant as setReduxCurrentAssistant } from '../../../shared/store/slices/assistantsSlice';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
-
-// 常量
-const CURRENT_ASSISTANT_ID_KEY = 'currentAssistantId';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 
 /**
  * 侧边栏状态管理钩子

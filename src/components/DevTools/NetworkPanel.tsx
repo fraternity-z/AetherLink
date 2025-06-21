@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
-import EnhancedNetworkService from '../../shared/services/EnhancedNetworkService';
-import type { NetworkEntry, NetworkFilter } from '../../shared/services/EnhancedNetworkService';
+import EnhancedNetworkService from '../../shared/services/network/EnhancedNetworkService';
+import type { NetworkEntry, NetworkFilter } from '../../shared/services/network/EnhancedNetworkService';
 
 const NetworkPanel: React.FC = () => {
   const theme = useTheme();

@@ -164,7 +164,7 @@ export const useChatInputLogic = ({
           if (refMatch && refMatch[1]) {
             try {
               const imageId = refMatch[1];
-              const { dexieStorage } = await import('../services/DexieStorageService');
+              const { dexieStorage } = await import('../services/storage/DexieStorageService');
               const blob = await dexieStorage.getImageBlob(imageId);
               if (blob) {
                 // 将Blob转换为base64

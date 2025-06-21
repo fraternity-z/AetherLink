@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { ChevronDown, Cloud, HelpCircle } from 'lucide-react';
 import type { WebDavConfig } from '../../../../../shared/types';
-import { WebDavBackupService } from '../../../../../shared/services/WebDavBackupService';
+import { WebDavBackupService } from '../../../../../shared/services/storage/WebDavBackupService';
 import { validateWebDavConfig } from '../../../../../shared/utils/webdavUtils';
 
 interface WebDavConfigDialogProps {

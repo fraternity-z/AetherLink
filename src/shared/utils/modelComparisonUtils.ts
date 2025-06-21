@@ -5,7 +5,7 @@ import { MessageBlockType, MessageBlockStatus, AssistantMessageStatus } from '..
 import store from '../store';
 import { updateOneBlock, addOneBlock, messageBlocksSelectors } from '../store/slices/messageBlocksSlice';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
-import { dexieStorage } from '../services/DexieStorageService';
+import { dexieStorage } from '../services/storage/DexieStorageService';
 
 /**
  * 创建模型对比消息块

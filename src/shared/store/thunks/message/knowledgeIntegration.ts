@@ -1,5 +1,5 @@
 import { newMessagesActions } from '../../slices/newMessagesSlice';
-import { DataRepository } from '../../../services/DataRepository';
+import { DataRepository } from '../../../services/storage/DataRepository';
 import { MobileKnowledgeService } from '../../../services/MobileKnowledgeService';
 import { getMainTextContent } from '../../../utils/blockUtils';
 import { AssistantMessageStatus } from '../../../types/newMessage';

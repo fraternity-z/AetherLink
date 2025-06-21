@@ -1,6 +1,6 @@
 import { throttle } from 'lodash';
 import store from '../../../store';
-import { dexieStorage } from '../../DexieStorageService';
+import { dexieStorage } from '../../storage/DexieStorageService';
 import { MessageBlockStatus, MessageBlockType } from '../../../types/newMessage';
 import type { MessageBlock } from '../../../types/newMessage';
 import { newMessagesActions } from '../../../store/slices/newMessagesSlice';

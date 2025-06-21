@@ -2,9 +2,9 @@ import { sendChatRequest } from '../api';
 import store from '../store';
 import type { ChatTopic } from '../types';
 import { getStorageItem, setStorageItem } from '../utils/storage';
-import { saveTopicToDB } from './storageService';
+import { saveTopicToDB } from './storage/storageService';
 import { getMainTextContent } from '../utils/messageUtils';
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 
 /**
  * 话题命名服务

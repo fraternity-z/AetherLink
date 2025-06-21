@@ -14,7 +14,7 @@ import { toastManager } from '../components/EnhancedToast';
 
 // 添加话题导出相关的导入
 import type { ChatTopic } from '../shared/types';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 
 /**
  * 获取消息标题

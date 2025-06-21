@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { dexieStorage } from '../services/DexieStorageService';
+import { dexieStorage } from '../services/storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from '../services/EventService';
 import { addTopic, removeTopic, updateTopic } from '../store/slices/assistantsSlice';
 import type { RootState } from '../store';

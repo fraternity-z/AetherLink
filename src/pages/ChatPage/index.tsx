@@ -14,7 +14,7 @@ import {
   selectTopicLoading,
   selectTopicStreaming
 } from '../../shared/store/selectors/messageSelectors';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
 import { TopicService } from '../../shared/services/TopicService';
 import { VideoTaskManager } from '../../shared/services/VideoTaskManager';

@@ -1,5 +1,5 @@
 import store from '../../../store';
-import { dexieStorage } from '../../DexieStorageService';
+import { dexieStorage } from '../../storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from '../../EventService';
 import { MessageBlockStatus, AssistantMessageStatus, MessageBlockType } from '../../../types/newMessage';
 import type { MessageBlock } from '../../../types/newMessage';

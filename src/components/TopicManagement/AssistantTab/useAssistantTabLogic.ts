@@ -6,7 +6,7 @@ import { debounce } from 'lodash';
 import type { Assistant } from '../../../shared/types/Assistant';
 
 import { AssistantService } from '../../../shared/services';
-import { dexieStorage } from '../../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import { addItemToGroup } from '../../../shared/store/slices/groupsSlice';
 import { useAssistantGroups } from './hooks/useAssistantGroups';
 import { getAllAgentSources } from '../../../shared/services/assistant/PredefinedAssistants';

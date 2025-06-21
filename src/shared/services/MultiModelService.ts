@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import store from '../store';
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import { MessageBlockStatus, MessageBlockType } from '../types/newMessage';
 import type { MultiModelMessageBlock } from '../types/newMessage';
 import { addOneBlock, updateOneBlock, removeOneBlock } from '../store/slices/messageBlocksSlice';

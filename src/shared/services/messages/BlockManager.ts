@@ -1,6 +1,6 @@
 import { generateBlockId } from '../../utils';
 import store from '../../store';
-import { DataRepository } from '../DataRepository';
+import { DataRepository } from '../storage/DataRepository';
 import { upsertOneBlock } from '../../store/slices/messageBlocksSlice';
 import { MessageBlockType, MessageBlockStatus } from '../../types/newMessage';
 import type { MessageBlock } from '../../types/newMessage';

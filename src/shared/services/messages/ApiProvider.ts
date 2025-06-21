@@ -6,7 +6,7 @@ import { OpenAIAISDKProvider } from '../../api/openai-aisdk';
 import { AnthropicProvider } from '../../api/anthropic';
 import GeminiProvider from '../../api/gemini/provider';
 import { ModelComboProvider } from './ModelComboProvider';
-import EnhancedApiProvider from '../EnhancedApiProvider';
+import { EnhancedApiProvider } from '../network/EnhancedApiProvider';
 import { OpenAIResponseProvider } from '../../providers/OpenAIResponseProvider';
 import store from '../../store';
 

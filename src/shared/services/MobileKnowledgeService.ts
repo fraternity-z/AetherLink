@@ -3,7 +3,7 @@
  * 基于DexieStorageService版本6实现，使用云端API进行嵌入计算
  */
 import { v4 as uuid } from 'uuid';
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from './EventService';
 import { MobileEmbeddingService } from './MobileEmbeddingService';
 import { EnhancedRAGService } from './EnhancedRAGService';

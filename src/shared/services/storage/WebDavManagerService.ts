@@ -1,5 +1,5 @@
-import type { WebDavConfig, WebDavConnectionResult, WebDavUploadResult, WebDavDownloadResult, WebDavBackupFile } from '../types';
-import { corsService } from './CORSBypassService';
+import type { WebDavConfig, WebDavConnectionResult, WebDavUploadResult, WebDavDownloadResult, WebDavBackupFile } from '../../types';
+import { corsService } from '../network/CORSBypassService';
 import { Capacitor } from '@capacitor/core';
 
 /**

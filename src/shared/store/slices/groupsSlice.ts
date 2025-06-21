@@ -3,7 +3,7 @@ import type { Group } from '../../types';
 import { nanoid } from '../../utils';
 import { getStorageItem, setStorageItem } from '../../utils/storage';
 import { makeSerializable, diagnoseSerializationIssues } from '../../utils/serialization';
-import { dexieStorage } from '../../services/DexieStorageService';
+import { dexieStorage } from '../../services/storage/DexieStorageService';
 
 interface GroupsState {
   groups: Group[];

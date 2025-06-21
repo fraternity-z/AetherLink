@@ -1,7 +1,7 @@
-import { storageService } from './storageService';
+import { storageService } from './storage/storageService';
 import { AssistantService } from './assistant';
 import { DB_CONFIG } from '../types/DatabaseSchema';
-import { dexieStorage } from './DexieStorageService';
+import { dexieStorage } from './storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from './EventService';
 import Dexie from 'dexie';
 
@@ -174,6 +174,7 @@ export const DataManager = {
 
 // 导出所有服务模块
 export * from './messages';
+export * from './network';
 
 /**
  * 初始化所有服务
@@ -184,7 +185,7 @@ export async function initializeServices(): Promise<void> {
     // 初始化开发者工具服务
     try {
       const { default: EnhancedConsoleService } = await import('./EnhancedConsoleService');
-      const { default: EnhancedNetworkService } = await import('./EnhancedNetworkService');
+      const { default: EnhancedNetworkService } = await import('./network/EnhancedNetworkService');
       
       // 初始化控制台拦截
       EnhancedConsoleService.getInstance();

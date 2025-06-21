@@ -7,7 +7,7 @@ import { AssistantManager } from './AssistantManager';
 import { DEFAULT_SYSTEM_PROMPT, WEB_ANALYSIS_PROMPT } from '../../config/prompts';
 // 移除旧的SystemPromptService引用
 // import { SystemPromptService } from '../SystemPromptService';
-import { dexieStorage } from '../DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 
 // 移除DataService引用
 // import { DataService } from '../DataService';

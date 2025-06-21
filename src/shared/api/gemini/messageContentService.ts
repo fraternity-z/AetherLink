@@ -9,7 +9,7 @@ import { findImageBlocks, findFileBlocks } from '../../utils/blockUtils';
 import { createGeminiFileService } from './fileService';
 import { log } from '../../services/LoggerService';
 import { FileProcessingUtils } from '../../utils/fileProcessingUtils';
-import { dexieStorage } from '../../services/DexieStorageService';
+import { dexieStorage } from '../../services/storage/DexieStorageService';
 
 // 文件大小常量
 const MB = 1024 * 1024;

@@ -1,14 +1,14 @@
 import Dexie from 'dexie';
 import { v4 as uuid } from 'uuid';
-import type { Assistant } from '../types/Assistant';
-import type { ChatTopic, QuickPhrase } from '../types';
-import type { MessageBlock } from '../types';
-import type { Message } from '../types/newMessage.ts';
-import { DB_CONFIG, VERSION_CONFIGS, type Memory } from '../database/config';
-import { databaseMigrationManager } from '../database/migrations';
+import type { Assistant } from '../../types/Assistant';
+import type { ChatTopic, QuickPhrase } from '../../types';
+import type { MessageBlock } from '../../types';
+import type { Message } from '../../types/newMessage.ts';
+import { DB_CONFIG, VERSION_CONFIGS, type Memory } from '../../database/config';
+import { databaseMigrationManager } from '../../database/migrations';
 import { throttle } from 'lodash';
-import { makeSerializable, diagnoseSerializationIssues } from '../utils/serialization';
-import { DataRepairService } from './DataRepairService';
+import { makeSerializable, diagnoseSerializationIssues } from '../../utils/serialization';
+import { DataRepairService } from '../DataRepairService';
 
 
 /**

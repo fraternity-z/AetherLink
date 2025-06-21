@@ -30,7 +30,7 @@ import CustomSwitch from '../components/CustomSwitch';
 import ConsolePanel from '../components/DevTools/ConsolePanel';
 import NetworkPanel from '../components/DevTools/NetworkPanel';
 import EnhancedConsoleService from '../shared/services/EnhancedConsoleService';
-import EnhancedNetworkService from '../shared/services/EnhancedNetworkService';
+import EnhancedNetworkService from '../shared/services/network/EnhancedNetworkService';
 
 const DevToolsPage: React.FC = () => {
   const navigate = useNavigate();

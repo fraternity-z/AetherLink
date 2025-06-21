@@ -7,7 +7,7 @@ import {
   saveAssistantToDB,
   getAssistantFromDB,
   deleteAssistantFromDB
-} from '../services/storageService';
+} from '../services/storage/storageService';
 import type { ChatTopic } from '../types';
 // Message类型已移至DataRepairService中使用
 import type { Assistant } from '../types/Assistant';

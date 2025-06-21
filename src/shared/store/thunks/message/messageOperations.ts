@@ -1,7 +1,7 @@
-import { dexieStorage } from '../../../services/DexieStorageService';
+import { dexieStorage } from '../../../services/storage/DexieStorageService';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { removeManyBlocks } from '../../slices/messageBlocksSlice';
-import { DataRepository } from '../../../services/DataRepository';
+import { DataRepository } from '../../../services/storage/DataRepository';
 import { createAssistantMessage } from '../../../utils/messageUtils';
 import { saveMessageAndBlocksToDB } from './utils';
 import { processAssistantResponse } from './assistantResponse';

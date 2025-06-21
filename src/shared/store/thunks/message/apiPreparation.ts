@@ -1,4 +1,4 @@
-import { dexieStorage } from '../../../services/DexieStorageService';
+import { dexieStorage } from '../../../services/storage/DexieStorageService';
 import { getMainTextContent, findImageBlocks, findFileBlocks } from '../../../utils/blockUtils';
 import { getFileTypeByExtension, readFileContent, FileTypes } from '../../../utils/fileUtils';
 import type { MCPTool, Message } from '../../../types'; // 补充Message类型

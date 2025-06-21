@@ -1,4 +1,4 @@
-import { DataRepository } from './DataRepository';
+import { DataRepository } from './storage/DataRepository';
 import type { ChatTopic, Message } from '../types';
 import { generateMessageId } from '../utils';
 import { handleError } from '../utils/error';

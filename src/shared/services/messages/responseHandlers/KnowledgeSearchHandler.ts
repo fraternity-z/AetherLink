@@ -1,5 +1,5 @@
 import store from '../../../store';
-import { dexieStorage } from '../../DexieStorageService';
+import { dexieStorage } from '../../storage/DexieStorageService';
 import { newMessagesActions } from '../../../store/slices/newMessagesSlice';
 import { addOneBlock } from '../../../store/slices/messageBlocksSlice';
 import { createKnowledgeReferenceBlock } from '../../../utils/messageUtils';

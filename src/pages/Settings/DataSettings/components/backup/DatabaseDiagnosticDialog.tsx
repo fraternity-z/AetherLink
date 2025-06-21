@@ -30,7 +30,7 @@ import {
   Construction as ConstructionIcon,
   AlertTriangle as ReportProblemIcon
 } from 'lucide-react';
-import { cleanupOldDatabases, getDatabaseStatus, type DatabaseStatus } from '../../../../../shared/services/storageService';
+import { cleanupOldDatabases, getDatabaseStatus, type DatabaseStatus } from '../../../../../shared/services/storage/storageService';
 import { TopicStatsService } from '../../../../../shared/services/TopicStatsService';
 import { AssistantService } from '../../../../../shared/services';
 import Dexie from 'dexie';

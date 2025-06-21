@@ -21,7 +21,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft as ArrowBackIcon, Trash2 as DeleteIcon, Download as DownloadIcon, Database as StorageIcon, Plus as AddIcon, ExternalLink as LaunchIcon } from 'lucide-react';
 import { MobileKnowledgeService } from '../../shared/services/MobileKnowledgeService';
-import { dexieStorage } from '../../shared/services/DexieStorageService';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
 import { toastManager } from '../../components/EnhancedToast';

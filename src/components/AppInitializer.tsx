@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
 import { useAppDispatch } from '../shared/store';
-import { dexieStorage } from '../shared/services/DexieStorageService';
+import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import { AssistantService } from '../shared/services/assistant';
 import { AssistantManager } from '../shared/services/assistant/AssistantManager';
 import { newMessagesActions } from '../shared/store/slices/newMessagesSlice';

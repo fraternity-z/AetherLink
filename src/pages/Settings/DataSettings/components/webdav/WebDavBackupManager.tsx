@@ -27,7 +27,7 @@ import {
   CloudDownload as CloudDownloadIcon
 } from 'lucide-react';
 import type { WebDavConfig, WebDavBackupFile } from '../../../../../shared/types';
-import { WebDavBackupService } from '../../../../../shared/services/WebDavBackupService';
+import { WebDavBackupService } from '../../../../../shared/services/storage/WebDavBackupService';
 import { formatFileSize, formatDateTime, parseBackupFileName } from '../../../../../shared/utils/webdavUtils';
 
 interface WebDavBackupManagerProps {

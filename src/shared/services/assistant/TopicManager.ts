@@ -6,7 +6,7 @@ import type { Assistant } from '../../types/Assistant';
 // import type { Message } from '../../types';
 import { AssistantManager } from './AssistantManager';
 import { DEFAULT_TOPIC_PROMPT } from '../../config/prompts';
-import { dexieStorage } from '../DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 // 当需要生成UUID时再导入
 // import { uuid } from '../../utils';
 import { EventEmitter, EVENT_NAMES } from '../EventService';

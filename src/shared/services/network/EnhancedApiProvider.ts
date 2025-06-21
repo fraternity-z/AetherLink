@@ -3,9 +3,9 @@
  * 支持多 Key 负载均衡、故障转移和智能重试
  */
 
-import type { Model } from '../types';
-import type { ApiKeyConfig, ModelProvider } from '../config/defaultModels';
-import ApiKeyManager from './ApiKeyManager';
+import type { Model } from '../../types';
+import type { ApiKeyConfig, ModelProvider } from '../../config/defaultModels';
+import ApiKeyManager from '../ApiKeyManager';
 // import { ApiProviderRegistry } from './messages/ApiProvider'; // 暂时注释掉未使用的导入
 
 export interface EnhancedApiCallOptions {
@@ -210,8 +210,8 @@ export class EnhancedApiProvider {
     try {
       // 动态导入 store 和 action 以避免循环依赖
       Promise.all([
-        import('../store'),
-        import('../store/settingsSlice')
+        import('../../store'),
+        import('../../store/settingsSlice')
       ]).then(([storeModule, settingsModule]) => {
         const store = storeModule.default; // store 是默认导出
         const { updateProvider } = settingsModule;
