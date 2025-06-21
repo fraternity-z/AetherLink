@@ -484,24 +484,29 @@ export class TopicManager {
         assistantNeedsUpdate = true;
       }
 
+      // 创建话题的可修改副本
+      let updatedTopic = { ...topic };
+
       // 获取助手的系统提示词并存储在话题的prompt字段中
       // 简化：只在创建话题时设置提示词，不在后续同步
-      if (!topic.prompt) {
-        topic.prompt = assistant.systemPrompt || DEFAULT_TOPIC_PROMPT;
+      if (!updatedTopic.prompt) {
+        updatedTopic.prompt = assistant.systemPrompt || DEFAULT_TOPIC_PROMPT;
       }
 
-      // 如果话题已经有消息，则不添加新消息，但仍然确保关联关系正确
-      if (topic.messages && topic.messages.length > 0) {
-        console.log(`[TopicManager] 话题 ${topic.id} 已有消息，不添加初始消息，但确保关联关系正确`);
+      // 检查话题是否已有消息（通过messageIds检查）
+      if (updatedTopic.messageIds && updatedTopic.messageIds.length > 0) {
+        console.log(`[TopicManager] 话题 ${updatedTopic.id} 已有消息，不添加初始消息，但确保关联关系正确`);
       } else {
-        console.log(`[TopicManager] 话题 ${topic.id} 没有消息，不添加初始欢迎消息，由用户首次发送消息触发助手响应`);
-        // 创建空的消息数组，不添加欢迎消息
-        topic.messages = [];
+        console.log(`[TopicManager] 话题 ${updatedTopic.id} 没有消息，不添加初始欢迎消息，由用户首次发送消息触发助手响应`);
+        // 确保messageIds数组存在
+        if (!updatedTopic.messageIds) {
+          updatedTopic.messageIds = [];
+        }
       }
 
       // 保存话题到数据库
-      await dexieStorage.saveTopic(topic);
-      console.log(`[TopicManager] 已保存话题 ${topic.id} 到数据库`);
+      await dexieStorage.saveTopic(updatedTopic);
+      console.log(`[TopicManager] 已保存话题 ${updatedTopic.id} 到数据库`);
 
       // 如果需要更新助手，保存助手到数据库
       if (assistantNeedsUpdate) {
@@ -520,11 +525,11 @@ export class TopicManager {
 
       // 派发事件通知UI更新
       EventEmitter.emit(EVENT_NAMES.TOPIC_CREATED, {
-        topic,
+        topic: updatedTopic,
         assistantId: assistant.id
       });
 
-      console.log(`[TopicManager] 成功向话题 ${topic.id} 添加助手初始消息并确保关联关系正确`);
+      console.log(`[TopicManager] 成功向话题 ${updatedTopic.id} 添加助手初始消息并确保关联关系正确`);
 
     } catch (error) {
       console.error(`[TopicManager] 添加助手消息到话题失败:`, error);

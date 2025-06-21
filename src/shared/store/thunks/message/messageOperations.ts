@@ -46,23 +46,20 @@ export const deleteMessage = (messageId: string, topicId: string) => async (disp
       // 删除messages表中的消息（保持兼容性）
       await dexieStorage.messages.delete(messageId);
 
-      // 更新topics表中的messages数组（电脑端方式）
+      // 更新topics表中的messageIds数组
       const topic = await dexieStorage.topics.get(topicId);
       if (topic) {
-        // 更新messageIds数组（保持兼容性）
+        // 更新messageIds数组
         if (topic.messageIds) {
           topic.messageIds = topic.messageIds.filter(id => id !== messageId);
         }
 
-        // 更新messages数组
-        if (topic.messages) {
-          topic.messages = topic.messages.filter((m: Message) => m.id !== messageId);
-        }
-
-        // 更新lastMessageTime
-        if (topic.messages && topic.messages.length > 0) {
-          const lastMessage = topic.messages[topic.messages.length - 1];
-          topic.lastMessageTime = lastMessage.createdAt || lastMessage.updatedAt || new Date().toISOString();
+        // 更新lastMessageTime - 从剩余消息中获取最新时间
+        if (topic.messageIds && topic.messageIds.length > 0) {
+          // 获取最后一条消息的时间
+          const lastMessageId = topic.messageIds[topic.messageIds.length - 1];
+          const lastMessage = await dexieStorage.messages.get(lastMessageId);
+          topic.lastMessageTime = lastMessage?.createdAt || lastMessage?.updatedAt || new Date().toISOString();
         } else {
           topic.lastMessageTime = new Date().toISOString();
         }
@@ -340,28 +337,17 @@ export const regenerateMessage = (messageId: string, topicId: string, model: Mod
       // 更新消息
       await dexieStorage.updateMessage(messageId, resetMessage);
 
-      // 更新topics表中的messages数组
+      // 更新topics表中的messageIds数组
       const topic = await dexieStorage.topics.get(topicId);
-      if (topic && topic.messages) {
-        // 查找消息在数组中的位置
-        const messageIndex = topic.messages.findIndex((m: Message) => m.id === messageId);
+      if (topic) {
+        // 确保messageIds数组存在
+        if (!topic.messageIds) {
+          topic.messageIds = [];
+        }
 
-        // 更新或添加消息
-        if (messageIndex >= 0) {
-          topic.messages[messageIndex] = resetMessage;
-        } else if (topic.messages.some((m: Message) => m.askId === resetMessage.askId)) {
-          // 如果找不到当前消息但存在相同askId的消息，添加到这些消息之后
-          const lastRelatedMsgIndex = topic.messages.reduce((maxIdx, msg, idx) =>
-            msg.askId === resetMessage.askId ? idx : maxIdx, -1);
-
-          if (lastRelatedMsgIndex >= 0) {
-            topic.messages.splice(lastRelatedMsgIndex + 1, 0, resetMessage);
-          } else {
-            topic.messages.push(resetMessage);
-          }
-        } else {
-          // 如果都找不到，添加到末尾
-          topic.messages.push(resetMessage);
+        // 如果消息不存在，添加到messageIds数组
+        if (!topic.messageIds.includes(resetMessage.id)) {
+          topic.messageIds.push(resetMessage.id);
         }
 
         // 保存更新后的话题

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
-import { newMessagesActions, loadTopicMessagesThunk } from '../shared/store/slices/newMessagesSlice';
+import { loadTopicMessagesThunk } from '../shared/store/slices/newMessagesSlice';
 import { EventEmitter, EVENT_NAMES } from '../shared/services/EventService';
 import { dexieStorage } from '../shared/services/DexieStorageService';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
@@ -15,6 +15,10 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
   const [activeTopic, setActiveTopic] = useState<ChatTopic | null>(initialTopic || null);
   // 从Redux获取当前话题ID
   const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
+  // 🚀 从Redux获取助手数据，优先使用Redux中的话题
+  const reduxAssistant = useSelector((state: RootState) =>
+    state.assistants.assistants.find(a => a.id === assistant?.id)
+  );
 
   // ：话题变化时立即响应，无加载状态
   useEffect(() => {
@@ -22,21 +26,12 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
     console.log(`[useActiveTopic] 即时切换话题: ${activeTopic.name} (${activeTopic.id})`);
 
-    // 1. 立即设置当前话题ID到Redux
-    dispatch(newMessagesActions.setCurrentTopicId(activeTopic.id));
-
-    // 2. 立即发送话题变更事件
+    // 1. 立即发送话题变更事件
     EventEmitter.emit(EVENT_NAMES.CHANGE_TOPIC, activeTopic);
 
-    // 3. 后台异步加载话题消息（不阻塞UI）
-    Promise.resolve().then(async () => {
-      try {
-        await dispatch(loadTopicMessagesThunk(activeTopic.id) as any);
-        console.log(`[useActiveTopic] 后台消息加载完成: ${activeTopic.id}`);
-      } catch (error) {
-        console.error(`[useActiveTopic] 后台加载话题消息失败:`, error);
-      }
-    });
+    // 2. 🚀 立即加载话题消息（Cherry Studio模式）
+    dispatch(loadTopicMessagesThunk(activeTopic.id) as any);
+    console.log(`[useActiveTopic] 立即触发消息加载: ${activeTopic.id}`);
   }, [activeTopic, dispatch]);
 
   // ：助手变化时立即选择第一个话题
@@ -45,10 +40,20 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
     // 如果当前没有激活话题，或者激活话题不属于当前助手，则立即选择
     if (!activeTopic || activeTopic.assistantId !== assistant.id) {
-      // 优先使用助手对象中的topics数组（：预加载数据）
-      if (Array.isArray(assistant.topics) && assistant.topics.length > 0) {
-        console.log(`[useActiveTopic] 即时选择第一个话题: ${assistant.topics[0].name}`);
-        setActiveTopic(assistant.topics[0]);
+      // 从助手的topicIds加载话题（使用新消息系统）
+      if (Array.isArray(assistant.topicIds) && assistant.topicIds.length > 0) {
+        // 后台异步加载第一个话题
+        Promise.resolve().then(async () => {
+          try {
+            const firstTopic = await dexieStorage.getTopic(assistant.topicIds[0]);
+            if (firstTopic) {
+              console.log(`[useActiveTopic] 即时选择第一个话题: ${firstTopic.name}`);
+              setActiveTopic(firstTopic);
+            }
+          } catch (error) {
+            console.error(`[useActiveTopic] 加载第一个话题失败:`, error);
+          }
+        });
         return;
       }
 
@@ -89,23 +94,24 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
     console.log(`[useActiveTopic] 外部话题ID变化，即时切换: ${currentTopicId}`);
 
-    // 优先从助手的topics数组中查找（：预加载数据）
-    if (Array.isArray(assistant.topics)) {
-      const targetTopic = assistant.topics.find(topic => topic.id === currentTopicId);
-      if (targetTopic) {
-        console.log(`[useActiveTopic] 从预加载数据找到话题: ${targetTopic.name}`);
-        setActiveTopic(targetTopic);
+    // 🌟 优先从Redux中查找话题（立即响应新创建的话题）
+    const assistantToUse = reduxAssistant || assistant;
+    if (assistantToUse?.topics) {
+      const topicFromRedux = assistantToUse.topics.find(t => t.id === currentTopicId);
+      if (topicFromRedux) {
+        console.log(`[useActiveTopic] 从Redux立即获取话题: ${topicFromRedux.name}`);
+        setActiveTopic(topicFromRedux);
         return;
       }
     }
 
-    // 兜底：后台异步加载（不阻塞UI）
-    Promise.resolve().then(async () => {
+    // 🔄 兜底：从数据库加载话题
+    (async () => {
       try {
         const topic = await dexieStorage.getTopic(currentTopicId);
 
         if (topic && topic.assistantId === assistant.id) {
-          console.log(`[useActiveTopic] 后台加载话题成功: ${topic.name}`);
+          console.log(`[useActiveTopic] 从数据库加载话题成功: ${topic.name}`);
           setActiveTopic(topic);
         } else if (topic) {
           console.warn(`[useActiveTopic] 话题 ${currentTopicId} 不属于当前助手 ${assistant.id}`);
@@ -113,10 +119,10 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
           console.warn(`[useActiveTopic] 找不到话题 ${currentTopicId}`);
         }
       } catch (error) {
-        console.error(`[useActiveTopic] 后台加载外部话题失败:`, error);
+        console.error(`[useActiveTopic] 从数据库加载话题失败:`, error);
       }
-    });
-  }, [currentTopicId, assistant, activeTopic]);
+    })();
+  }, [currentTopicId, assistant, activeTopic, reduxAssistant?.topics]);
 
   // ：提供即时切换话题的方法
   const switchToTopic = (topic: ChatTopic) => {

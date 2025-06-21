@@ -441,14 +441,32 @@ export const selectOrderedMessagesByTopicId = createSelector(
   }
 );
 
-// 异步Thunk - 改造为的简单加载
+// 异步Thunk - Cherry Studio优化版本：避免重复加载
 export const loadTopicMessagesThunk = createAsyncThunk(
   'normalizedMessages/loadTopicMessages',
-  async (topicId: string, { dispatch }) => {
+  async (topicId: string, { dispatch, getState }) => {
     try {
-      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
+      const state = getState() as any;
 
-      console.log(`[loadTopicMessagesThunk] 开始加载话题 ${topicId} 的消息（）`);
+      // 🚀 Cherry Studio的关键优化：检查消息是否已存在且有实际数据
+      const existingMessageIds = state.messages.messageIdsByTopic[topicId] || [];
+      const existingMessages = existingMessageIds.map((id: string) => state.messages.entities[id]).filter(Boolean);
+
+      // 只有当真正有消息数据时才跳过加载
+      if (existingMessageIds.length > 0 && existingMessages.length > 0) {
+        console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 已有 ${existingMessages.length} 条缓存消息，跳过数据库加载`);
+        return existingMessages; // 返回已存在的消息
+      }
+
+      // 如果messageIdsByTopic存在但没有实际消息数据，说明状态不一致，需要重新加载
+      if (existingMessageIds.length > 0 && existingMessages.length === 0) {
+        console.log(`[loadTopicMessagesThunk] 检测到话题 ${topicId} 状态不一致，清理并重新加载`);
+        // 清理不一致的状态
+        dispatch(newMessagesActions.clearTopicMessages(topicId));
+      }
+
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
+      console.log(`[loadTopicMessagesThunk] 开始加载话题 ${topicId} 的消息（首次加载）`);
 
       // 像电脑端一样，直接从topic获取消息
       const topic = await dexieStorage.getTopic(topicId);
@@ -476,13 +494,8 @@ export const loadTopicMessagesThunk = createAsyncThunk(
         console.log(`[loadTopicMessagesThunk] 检测到数据不一致，从messages表恢复 ${topic.messageIds.length} 条消息`);
 
         try {
-          const recoveredMessages = [];
-          for (const messageId of topic.messageIds) {
-            const message = await dexieStorage.getMessage(messageId);
-            if (message) {
-              recoveredMessages.push(message);
-            }
-          }
+          // 🚀 性能优化：使用批量查询而不是循环查询
+          const recoveredMessages = await dexieStorage.getMessagesByIds(topic.messageIds);
 
           if (recoveredMessages.length > 0) {
             console.log(`[loadTopicMessagesThunk] 成功恢复 ${recoveredMessages.length} 条消息，更新话题数据`);

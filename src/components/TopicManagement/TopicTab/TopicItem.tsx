@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback, startTransition } from 'react';
 import {
   ListItemButton,
   ListItemText,
@@ -36,9 +36,12 @@ const TopicItem = React.memo(function TopicItem({
   const [pendingDelete, setPendingDelete] = useState(false);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleTopicClick = () => {
-    onSelectTopic(topic);
-  };
+  const handleTopicClick = useCallback(() => {
+    // 🚀 使用startTransition优化话题切换性能
+    startTransition(() => {
+      onSelectTopic(topic);
+    });
+  }, [topic, onSelectTopic]);
 
   const handleOpenMenu = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -49,23 +52,32 @@ const TopicItem = React.memo(function TopicItem({
     event.stopPropagation();
 
     if (pendingDelete) {
-      // 第二次点击，执行删除
-      onDeleteTopic(topic.id, event);
+      // 第二次点击，立即重置UI状态，然后执行删除
       setPendingDelete(false);
       if (deleteTimeoutRef.current) {
         clearTimeout(deleteTimeoutRef.current);
         deleteTimeoutRef.current = null;
       }
+
+      console.log(`[TopicItem] 确认删除话题: ${topic.name} (${topic.id})`);
+
+      // 🚀 Cherry Studio模式：立即执行删除，UI会立即响应（乐观更新）
+      startTransition(() => {
+        onDeleteTopic(topic.id, event);
+      });
     } else {
       // 第一次点击，进入确认状态
       setPendingDelete(true);
-      // 3秒后自动重置
+      console.log(`[TopicItem] 进入删除确认状态: ${topic.name}`);
+
+      // 1.5秒后自动重置（缩短等待时间，提升用户体验）
       deleteTimeoutRef.current = setTimeout(() => {
         setPendingDelete(false);
         deleteTimeoutRef.current = null;
-      }, 3000);
+        console.log(`[TopicItem] 删除确认状态超时重置: ${topic.name}`);
+      }, 1500); // 从2秒缩短到1.5秒
     }
-  }, [topic.id, onDeleteTopic, pendingDelete]);
+  }, [topic.id, topic.name, onDeleteTopic, pendingDelete]);
 
   // 清理定时器的 useEffect
   React.useEffect(() => {

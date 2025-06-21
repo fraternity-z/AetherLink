@@ -1,5 +1,6 @@
 import React, { memo, useMemo, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
+import { useSelector } from 'react-redux';
 import VirtualScroller from '../../common/VirtualScroller';
 import TopicItem from './TopicItem';
 import {
@@ -9,10 +10,11 @@ import {
   VIRTUALIZATION_CONFIG
 } from '../AssistantTab/virtualizationConfig';
 import type { ChatTopic } from '../../../shared/types';
+import type { RootState } from '../../../shared/store';
 
 interface VirtualizedTopicListProps {
   topics: ChatTopic[];
-  currentTopic: ChatTopic | null;
+  currentTopic: ChatTopic | null; // 保留兼容性，但不再使用
   onSelectTopic: (topic: ChatTopic) => void;
   onOpenMenu: (event: React.MouseEvent, topic: ChatTopic) => void;
   onDeleteTopic: (topicId: string, event: React.MouseEvent) => void;
@@ -30,7 +32,7 @@ interface VirtualizedTopicListProps {
  */
 const VirtualizedTopicList = memo(function VirtualizedTopicList({
   topics,
-  currentTopic,
+  currentTopic, // 保留兼容性，但不再使用
   onSelectTopic,
   onOpenMenu,
   onDeleteTopic,
@@ -41,6 +43,9 @@ const VirtualizedTopicList = memo(function VirtualizedTopicList({
   searchQuery = '',
   getMainTextContent
 }: VirtualizedTopicListProps) {
+
+  // 🚀 Cherry Studio模式：直接从Redux获取当前话题ID，立即响应状态变化
+  const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
 
   // 过滤话题（搜索功能）
   const filteredTopics = useMemo(() => {
@@ -65,18 +70,18 @@ const VirtualizedTopicList = memo(function VirtualizedTopicList({
     });
   }, [topics, searchQuery, getMainTextContent]);
 
-  // 缓存渲染函数，避免每次重新创建
+  // 缓存渲染函数，避免每次重新创建 - 🚀 使用Redux状态立即响应
   const renderTopicItem = useCallback((topic: ChatTopic, _index: number) => {
     return (
       <TopicItem
         topic={topic}
-        isSelected={currentTopic?.id === topic.id}
+        isSelected={currentTopicId === topic.id} // 🌟 直接使用Redux状态，立即响应
         onSelectTopic={onSelectTopic}
         onOpenMenu={onOpenMenu}
         onDeleteTopic={onDeleteTopic}
       />
     );
-  }, [currentTopic?.id, onSelectTopic, onOpenMenu, onDeleteTopic]);
+  }, [currentTopicId, onSelectTopic, onOpenMenu, onDeleteTopic]); // 🔧 依赖currentTopicId而不是currentTopic
 
   // 缓存话题键值函数
   const getTopicKey = useCallback((topic: ChatTopic, _index: number) => {

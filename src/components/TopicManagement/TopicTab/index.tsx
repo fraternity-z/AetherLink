@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import {
   Box,
   Button,
@@ -30,7 +30,8 @@ import {
   Download,
   FileText,
   Copy,
-  Database
+  Database,
+  Loader2
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItemToGroup } from '../../../shared/store/slices/groupsSlice';
@@ -81,223 +82,84 @@ export default function TopicTab({
 }: TopicTabProps) {
   const dispatch = useDispatch();
 
-  // 话题状态管理 - ：无加载状态，即时响应
-  const [topics, setTopics] = useState<ChatTopic[]>([]);
-
-  // 搜索相关状态
+  // 简化的状态管理
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  // 话题菜单相关状态
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [contextTopic, setContextTopic] = useState<ChatTopic | null>(null);
+  // 加载状态
+  const [loading, setLoading] = useState(false);
 
-  // 添加话题到分组对话框状态
-  const [addToGroupMenuAnchorEl, setAddToGroupMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [topicToGroup, setTopicToGroup] = useState<ChatTopic | null>(null);
+  // 菜单状态 - 合并相关状态
+  const [menuState, setMenuState] = useState<{
+    main: { anchorEl: HTMLElement | null; topic: ChatTopic | null };
+    addToGroup: { anchorEl: HTMLElement | null; topic: ChatTopic | null };
+    moveTo: { anchorEl: HTMLElement | null };
+  }>({
+    main: { anchorEl: null, topic: null },
+    addToGroup: { anchorEl: null, topic: null },
+    moveTo: { anchorEl: null }
+  });
 
-  // 分组对话框状态
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  // 对话框状态 - 合并相关状态
+  const [dialogState, setDialogState] = useState<{
+    group: { isOpen: boolean };
+    edit: { isOpen: boolean; topic: ChatTopic | null; name: string; prompt: string };
+    confirm: { isOpen: boolean; title: string; content: string; onConfirm: () => void };
+  }>({
+    group: { isOpen: false },
+    edit: { isOpen: false, topic: null, name: '', prompt: '' },
+    confirm: { isOpen: false, title: '', content: '', onConfirm: () => {} }
+  });
 
-  // 编辑对话框状态
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editTopicName, setEditTopicName] = useState('');
-  const [editTopicPrompt, setEditTopicPrompt] = useState('');
-  const [editingTopic, setEditingTopic] = useState<ChatTopic | null>(null);
-
-  // 确认对话框状态
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [confirmDialogConfig, setConfirmDialogConfig] = useState<{
-    title: string;
-    content: string;
-    onConfirm: () => void;
-  }>({ title: '', content: '', onConfirm: () => {} });
-
-  // 移动到助手菜单状态
-  const [moveToMenuAnchorEl, setMoveToMenuAnchorEl] = useState<null | HTMLElement>(null);
-
-  // 使用话题分组钩子
-  const { topicGroups, topicGroupMap, ungroupedTopics } = useTopicGroups(topics, currentAssistant?.id);
-
-  // 创建防抖搜索函数
+  // 创建防抖搜索函数 - 优化响应速度
   const debouncedSearch = useMemo(
     () => debounce((query: string) => {
       setDebouncedSearchQuery(query);
-    }, 300), // 300ms 防抖延迟
+    }, 150), // 从300ms优化到150ms，提升搜索响应速度
     []
   );
 
   // 获取所有助手列表（用于移动功能）
   const allAssistants = useSelector((state: RootState) => state.assistants.assistants);
 
-  // 🔥 使用 ref 缓存上次的计算结果，避免重复计算
-  const lastComputedRef = useRef<{
-    assistantId: string;
-    topicIds: string;
-    result: ChatTopic[];
-  } | null>(null);
+  // 🚀 直接从Redux获取当前助手数据，确保立即响应删除操作
+  const reduxCurrentAssistant = useSelector((state: RootState) =>
+    state.assistants.assistants.find(a => a.id === currentAssistant?.id)
+  );
 
-  // 🔥 进一步优化：创建稳定的话题ID列表作为依赖
-  const topicIds = useMemo(() => {
-    return currentAssistant?.topics?.map(t => t.id).join(',') || '';
-  }, [currentAssistant?.topics]);
-
-  // 🔥 优化：减少重复计算，使用缓存机制
+  // 简化的话题排序逻辑 - 🌟 使用Redux数据而不是props数据
   const sortedTopics = useMemo(() => {
-    if (!currentAssistant || !Array.isArray(currentAssistant.topics)) {
-      return [];
-    }
+    const assistantToUse = reduxCurrentAssistant || currentAssistant;
+    if (!assistantToUse?.topics) return [];
 
-    // 检查是否可以使用缓存的结果
-    if (lastComputedRef.current &&
-        lastComputedRef.current.assistantId === currentAssistant.id &&
-        lastComputedRef.current.topicIds === topicIds) {
-      // 使用缓存的结果，避免重复计算
-      return lastComputedRef.current.result;
-    }
+    return [...assistantToUse.topics].sort((a, b) => {
+      // 固定话题优先
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
 
-    // 🔥 只在真正需要重新计算时才输出日志
-    console.log('[TopicTab] 重新计算排序话题，助手:', currentAssistant.name, '话题数量:', currentAssistant.topics.length);
-
-    // 按固定状态和最后消息时间排序话题（固定的在前面，然后按时间降序）
-    const sorted = [...currentAssistant.topics].sort((a, b) => {
-      // 首先按固定状态排序，固定的话题在前面
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-
-      // 如果固定状态相同，按最后消息时间降序排序（最新的在前面）
+      // 按最后消息时间降序排序
       const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
       const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
-      return timeB - timeA; // 降序排序
+      return timeB - timeA;
     });
+  }, [reduxCurrentAssistant?.topics, currentAssistant?.topics]); // 🔧 依赖Redux数据
 
-    // 缓存计算结果
-    lastComputedRef.current = {
-      assistantId: currentAssistant.id,
-      topicIds,
-      result: sorted
-    };
-
-    return sorted;
-  }, [currentAssistant?.id, topicIds]); // 🔥 使用话题ID字符串作为依赖
-
-  // 使用useEffect更新本地状态，但只在必要时更新
+  // 简化的自动选择逻辑 - 只处理初始化场景，避免创建话题时的循环
   useEffect(() => {
-    setTopics(sortedTopics);
-  }, [sortedTopics]);
-
-  // 添加订阅话题变更事件
-  useEffect(() => {
-    if (!currentAssistant) return;
-
-    const handleTopicChange = (eventData: any) => {
-      if (eventData && (eventData.assistantId === currentAssistant.id || !eventData.assistantId)) {
-        // 如果是话题创建或移动事件且有topic数据，将话题添加到顶部
-        if (eventData.topic && (eventData.type === 'create' || eventData.type === 'move')) {
-          setTopics(prevTopics => {
-            // 检查话题是否已存在，避免重复添加
-            const exists = prevTopics.some(topic => topic.id === eventData.topic.id);
-            if (exists) {
-              return prevTopics;
-            }
-
-            // 添加新话题并重新排序
-            const newTopics = [eventData.topic, ...prevTopics];
-            return newTopics.sort((a, b) => {
-              // 首先按固定状态排序，固定的话题在前面
-              if (a.pinned && !b.pinned) return -1;
-              if (!a.pinned && b.pinned) return 1;
-
-              // 如果固定状态相同，按最后消息时间降序排序（最新的在前面）
-              const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
-              const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
-              return timeB - timeA; // 降序排序
-            });
-          });
-        }
-        // 如果currentAssistant.topics已更新，则使用它并排序（改造：支持空数组）
-        else if (Array.isArray(currentAssistant.topics)) {
-          // 🔥 减少重复日志输出
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[TopicTab] 事件处理：更新话题数组，话题数量:', currentAssistant.topics.length);
-          }
-
-          // 按固定状态和最后消息时间排序话题（固定的在前面，然后按时间降序）
-          const sortedTopics = [...currentAssistant.topics].sort((a, b) => {
-            // 首先按固定状态排序，固定的话题在前面
-            if (a.pinned && !b.pinned) return -1;
-            if (!a.pinned && b.pinned) return 1;
-
-            // 如果固定状态相同，按最后消息时间降序排序（最新的在前面）
-            const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
-            const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
-            return timeB - timeA; // 降序排序
-          });
-
-          setTopics(sortedTopics);
-        }
-      }
-    };
-
-    // 订阅话题变更事件
-    const unsubCreate = EventEmitter.on(EVENT_NAMES.TOPIC_CREATED, handleTopicChange);
-    const unsubDelete = EventEmitter.on(EVENT_NAMES.TOPIC_DELETED, handleTopicChange);
-    const unsubMoved = EventEmitter.on(EVENT_NAMES.TOPIC_MOVED, handleTopicChange);
-
-    return () => {
-      unsubCreate();
-      unsubDelete();
-      unsubMoved();
-    };
-  }, [currentAssistant]);
-
-  // 自动选择第一个话题（优化：只在真正需要时自动选择）
-  useEffect(() => {
-    // 优化条件检查：
-    // 1. 非加载状态
-    // 2. 有话题列表
-    // 3. 没有当前选中的话题ID
-    if (topics.length > 0) {
-      // 从Redux获取当前话题ID
-      const currentTopicId = store.getState().messages?.currentTopicId;
-
-      // 只有在完全没有选中话题时才自动选择第一个话题
-      if (!currentTopicId) {
-        console.log('[TopicTab] 即时选择第一个话题:', topics[0].name || topics[0].title);
-        onSelectTopic(topics[0]);
-      }
+    // 只在没有选中话题且有话题可选时自动选择第一个
+    // 添加防护：如果当前话题存在于话题列表中，不要重新选择
+    if (sortedTopics.length > 0 && !currentTopic) {
+      console.log('[TopicTab] 初始化自动选择话题:', sortedTopics[0].name || sortedTopics[0].id);
+      startTransition(() => {
+        onSelectTopic(sortedTopics[0]);
+      });
     }
-  }, [topics, onSelectTopic]);
-
-  // 监听SHOW_TOPIC_SIDEBAR事件，确保在切换到话题标签页时自动选择话题（优化：与主逻辑保持一致）
-  useEffect(() => {
-    const handleShowTopicSidebar = () => {
-      // 如果有话题但没有选中的话题，自动选择第一个话题
-      if (topics.length > 0) {
-        // 使用Redux状态检查，与主自动选择逻辑保持一致
-        const currentTopicId = store.getState().messages?.currentTopicId;
-
-        // 只有在完全没有选中话题时才自动选择第一个话题
-        // 移除"话题不在当前助手列表中"的检查，避免用户选择被覆盖
-        if (!currentTopicId) {
-          console.log('[TopicTab] SHOW_TOPIC_SIDEBAR事件触发，即时选择第一个话题:', topics[0].name);
-          onSelectTopic(topics[0]);
-        }
-      }
-    };
-
-    const unsubscribe = EventEmitter.on(EVENT_NAMES.SHOW_TOPIC_SIDEBAR, handleShowTopicSidebar);
-
-    return () => {
-      unsubscribe();
-    };
-  }, [topics, onSelectTopic]);
+  }, [sortedTopics.length, currentTopic?.id, onSelectTopic]); // 使用更稳定的依赖
 
   // 筛选话题 - 使用防抖搜索查询
   const filteredTopics = useMemo(() => {
-    if (!debouncedSearchQuery) return topics;
-    return topics.filter(topic => {
+    if (!debouncedSearchQuery) return sortedTopics;
+    return sortedTopics.filter(topic => {
       // 检查名称或标题
       if ((topic.name && topic.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
           (topic.title && topic.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))) {
@@ -314,252 +176,191 @@ export default function TopicTab({
         return false;
       });
     });
-  }, [debouncedSearchQuery, topics]);
+  }, [debouncedSearchQuery, sortedTopics]);
+
+  // 使用话题分组钩子
+  const { topicGroups, topicGroupMap, ungroupedTopics } = useTopicGroups(filteredTopics, currentAssistant?.id);
+
+  // 优化的话题选择函数 - 使用React 18的startTransition
+  const handleSelectTopic = useCallback((topic: ChatTopic) => {
+    startTransition(() => {
+      onSelectTopic(topic);
+    });
+  }, [onSelectTopic]);
 
   // 搜索相关处理函数
-  const handleSearchClick = () => {
-    setShowSearch(true);
-  };
-
   const handleCloseSearch = useCallback(() => {
     setShowSearch(false);
     setSearchQuery('');
     setDebouncedSearchQuery('');
-    // 取消待执行的防抖函数
     debouncedSearch.cancel();
   }, [debouncedSearch]);
 
   const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setSearchQuery(value);
-    // 触发防抖搜索
     debouncedSearch(value);
   }, [debouncedSearch]);
 
-  // 打开话题菜单
+  // 菜单处理函数
   const handleOpenMenu = (event: React.MouseEvent, topic: ChatTopic) => {
     event.stopPropagation();
-    setMenuAnchorEl(event.currentTarget as HTMLElement);
-    setContextTopic(topic);
+    setMenuState(prev => ({
+      ...prev,
+      main: { anchorEl: event.currentTarget as HTMLElement, topic }
+    }));
   };
 
-  // 关闭话题菜单
   const handleCloseMenu = () => {
-    setMenuAnchorEl(null);
-    setContextTopic(null);
+    setMenuState(prev => ({
+      ...prev,
+      main: { anchorEl: null, topic: null }
+    }));
   };
 
-  // 打开分组对话框
-  const handleOpenGroupDialog = () => {
-    setGroupDialogOpen(true);
-  };
-
-  // 关闭分组对话框
-  const handleCloseGroupDialog = () => {
-    setGroupDialogOpen(false);
-  };
-
-  // 打开添加到分组菜单
   const handleAddToGroupMenu = (event: React.MouseEvent, topic: ChatTopic) => {
     event.stopPropagation();
-    setTopicToGroup(topic);
-    setAddToGroupMenuAnchorEl(event.currentTarget as HTMLElement);
+    setMenuState(prev => ({
+      ...prev,
+      addToGroup: { anchorEl: event.currentTarget as HTMLElement, topic }
+    }));
   };
 
-  // 关闭添加到分组菜单
   const handleCloseAddToGroupMenu = () => {
-    setAddToGroupMenuAnchorEl(null);
-    setTopicToGroup(null);
+    setMenuState(prev => ({
+      ...prev,
+      addToGroup: { anchorEl: null, topic: null }
+    }));
   };
 
-  // 添加到指定分组
   const handleAddToGroup = (groupId: string) => {
-    if (!topicToGroup) return;
+    if (!menuState.addToGroup.topic) return;
 
     dispatch(addItemToGroup({
       groupId,
-      itemId: topicToGroup.id
+      itemId: menuState.addToGroup.topic.id
     }));
 
     handleCloseAddToGroupMenu();
   };
 
-  // 添加到新分组
   const handleAddToNewGroup = () => {
     handleCloseAddToGroupMenu();
-    handleOpenGroupDialog();
+    setDialogState(prev => ({
+      ...prev,
+      group: { isOpen: true }
+    }));
   };
 
-  // 打开编辑话题对话框
-  const handleEditTopic = () => {
-    if (!contextTopic) return;
+  // 话题删除处理函数 - 简化版本，避免重复逻辑
+  const handleTopicDelete = useCallback((topicId: string, e: React.MouseEvent) => {
+    console.log('[TopicTab] 话题删除图标被点击:', topicId);
 
-    setEditingTopic(contextTopic);
-    setEditTopicName(contextTopic.name || contextTopic.title || '');
-    setEditTopicPrompt(contextTopic.prompt || '');
-    setEditDialogOpen(true);
+    // 🚀 直接调用父组件的删除函数，让SidebarTabs处理所有逻辑
+    startTransition(() => {
+      onDeleteTopic(topicId, e);
+    });
+  }, [onDeleteTopic]);
+
+
+
+  // 编辑话题对话框处理
+  const handleEditTopic = () => {
+    const topic = menuState.main.topic;
+    if (!topic) return;
+
+    setDialogState(prev => ({
+      ...prev,
+      edit: {
+        isOpen: true,
+        topic,
+        name: topic.name || topic.title || '',
+        prompt: topic.prompt || ''
+      }
+    }));
     handleCloseMenu();
   };
 
-  // 关闭编辑话题对话框
   const handleCloseEditDialog = () => {
-    setEditDialogOpen(false);
-    setEditingTopic(null);
+    setDialogState(prev => ({
+      ...prev,
+      edit: { isOpen: false, topic: null, name: '', prompt: '' }
+    }));
+  };
+
+  // 简化的话题更新逻辑 - 添加加载状态
+  const updateTopic = async (updatedTopic: ChatTopic) => {
+    setLoading(true);
+    try {
+      await dexieStorage.saveTopic(updatedTopic);
+
+      if (onUpdateTopic) {
+        onUpdateTopic(updatedTopic);
+      }
+
+      EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, updatedTopic);
+      return true;
+    } catch (error) {
+      console.error('更新话题失败:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 保存编辑后的话题
   const handleSaveEdit = async () => {
-    if (!editingTopic) return;
+    const editState = dialogState.edit;
+    if (!editState.topic) return;
 
-    try {
-      const updatedTopic = {
-        ...editingTopic,
-        name: editTopicName,
-        prompt: editTopicPrompt,
-        isNameManuallyEdited: true, // 标记为手动编辑
-        updatedAt: new Date().toISOString()
-      };
+    const updatedTopic = {
+      ...editState.topic,
+      name: editState.name,
+      prompt: editState.prompt,
+      isNameManuallyEdited: true,
+      updatedAt: new Date().toISOString()
+    };
 
-      // 直接保存到数据库，确保数据持久化
-      await dexieStorage.saveTopic(updatedTopic);
-      console.log('[TopicTab] 已保存话题到数据库');
-
-      // 更新本地状态并重新排序
-      setTopics(prevTopics => {
-        const updatedTopics = prevTopics.map(topic =>
-          topic.id === updatedTopic.id ? updatedTopic : topic
-        );
-
-        // 重新排序：固定的话题在前面，然后按时间降序
-        return updatedTopics.sort((a, b) => {
-          // 首先按固定状态排序，固定的话题在前面
-          if (a.pinned && !b.pinned) return -1;
-          if (!a.pinned && b.pinned) return 1;
-
-          // 如果固定状态相同，按最后消息时间降序排序（最新的在前面）
-          const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
-          const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
-          return timeB - timeA; // 降序排序
-        });
-      });
-      console.log('[TopicTab] 已更新本地话题状态');
-
-      // 如果有更新回调，调用它
-      if (onUpdateTopic) {
-        onUpdateTopic(updatedTopic);
-        console.log('[TopicTab] 已通过回调更新话题');
-      }
-
-      // 发送更新事件
-      EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, updatedTopic);
-      console.log('[TopicTab] 已发送话题更新事件');
-
+    const success = await updateTopic(updatedTopic);
+    if (success) {
       handleCloseEditDialog();
-      console.log('[TopicTab] 话题编辑完成');
-    } catch (error) {
-      console.error('[TopicTab] 保存话题编辑失败:', error);
     }
   };
 
   // 固定/取消固定话题
   const handleTogglePin = async () => {
-    if (!contextTopic) return;
+    const topic = menuState.main.topic;
+    if (!topic) return;
 
-    try {
-      const updatedTopic = {
-        ...contextTopic,
-        pinned: !contextTopic.pinned,
-        updatedAt: new Date().toISOString()
-      };
+    const updatedTopic = {
+      ...topic,
+      pinned: !topic.pinned,
+      updatedAt: new Date().toISOString()
+    };
 
-      // 保存到数据库
-      await dexieStorage.saveTopic(updatedTopic);
-
-      // 更新本地状态并重新排序
-      setTopics(prevTopics => {
-        const updatedTopics = prevTopics.map(topic =>
-          topic.id === updatedTopic.id ? updatedTopic : topic
-        );
-
-        // 重新排序：固定的话题在前面，然后按时间降序
-        return updatedTopics.sort((a, b) => {
-          // 首先按固定状态排序，固定的话题在前面
-          if (a.pinned && !b.pinned) return -1;
-          if (!a.pinned && b.pinned) return 1;
-
-          // 如果固定状态相同，按最后消息时间降序排序（最新的在前面）
-          const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
-          const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
-          return timeB - timeA; // 降序排序
-        });
-      });
-
-      // 如果有更新回调，调用它
-      if (onUpdateTopic) {
-        onUpdateTopic(updatedTopic);
-      }
-
-      // 发送更新事件
-      EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, updatedTopic);
-
+    const success = await updateTopic(updatedTopic);
+    if (success) {
       handleCloseMenu();
-    } catch (error) {
-      console.error('切换话题固定状态失败:', error);
     }
   };
 
-  // 自动命名话题 - 与最佳实例保持一致
+  // 自动命名话题
   const handleAutoRenameTopic = async () => {
-    if (!contextTopic) return;
+    const topic = menuState.main.topic;
+    if (!topic) return;
 
     try {
-      console.log(`[TopicTab] 手动触发话题自动命名: ${contextTopic.id}`);
+      const newName = await TopicNamingService.generateTopicName(topic, undefined, true);
 
-      // 强制生成话题名称，不检查shouldNameTopic条件
-      const newName = await TopicNamingService.generateTopicName(contextTopic, undefined, true);
-
-      if (newName && newName !== contextTopic.name) {
-        // 更新话题名称
+      if (newName && newName !== topic.name) {
         const updatedTopic = {
-          ...contextTopic,
+          ...topic,
           name: newName,
-          isNameManuallyEdited: false, // 标记为自动生成
+          isNameManuallyEdited: false,
           updatedAt: new Date().toISOString()
         };
 
-        // 保存到数据库
-        await dexieStorage.saveTopic(updatedTopic);
-
-        // 更新本地状态并重新排序
-        setTopics(prevTopics => {
-          const updatedTopics = prevTopics.map(topic =>
-            topic.id === updatedTopic.id ? updatedTopic : topic
-          );
-
-          // 重新排序：固定的话题在前面，然后按时间降序
-          return updatedTopics.sort((a, b) => {
-            // 首先按固定状态排序，固定的话题在前面
-            if (a.pinned && !b.pinned) return -1;
-            if (!a.pinned && b.pinned) return 1;
-
-            // 如果固定状态相同，按最后消息时间降序排序（最新的在前面）
-            const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
-            const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
-            return timeB - timeA; // 降序排序
-          });
-        });
-
-        // 如果有更新回调，调用它
-        if (onUpdateTopic) {
-          onUpdateTopic(updatedTopic);
-        }
-
-        // 发送更新事件
-        EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, updatedTopic);
-
-        console.log(`话题已自动命名: ${newName}`);
-      } else {
-        console.log('话题命名未发生变化或生成失败');
+        await updateTopic(updatedTopic);
       }
     } catch (error) {
       console.error('自动命名话题失败:', error);
@@ -568,32 +369,24 @@ export default function TopicTab({
     handleCloseMenu();
   };
 
-  // 清空消息 - 使用聊天界面的清空方法
+  // 清空消息
   const handleClearMessages = () => {
-    if (!contextTopic) return;
+    const topic = menuState.main.topic;
+    if (!topic) return;
 
-    setConfirmDialogConfig({
-      title: '清空消息',
-      content: '确定要清空此话题的所有消息吗？此操作不可撤销。',
-      onConfirm: async () => {
-        try {
-          // 使用 TopicService 的清空方法，与聊天界面保持一致
-          const success = await TopicService.clearTopicContent(contextTopic.id);
+    setDialogState(prev => ({
+      ...prev,
+      confirm: {
+        isOpen: true,
+        title: '清空消息',
+        content: '确定要清空此话题的所有消息吗？此操作不可撤销。',
+        onConfirm: async () => {
+          try {
+            const success = await TopicService.clearTopicContent(topic.id);
 
-          if (success) {
-            // 更新本地状态 - 清空消息但保留话题
-            setTopics(prevTopics =>
-              prevTopics.map(topic =>
-                topic.id === contextTopic.id
-                  ? { ...topic, messageIds: [], messages: [], updatedAt: new Date().toISOString() }
-                  : topic
-              )
-            );
-
-            // 如果有更新回调，调用它
-            if (onUpdateTopic) {
+            if (success && onUpdateTopic) {
               const updatedTopic = {
-                ...contextTopic,
+                ...topic,
                 messageIds: [],
                 messages: [],
                 updatedAt: new Date().toISOString()
@@ -601,78 +394,74 @@ export default function TopicTab({
               onUpdateTopic(updatedTopic);
             }
 
-            console.log('话题消息已清空');
-          } else {
-            console.error('清空话题消息失败');
+            setDialogState(prev => ({
+              ...prev,
+              confirm: { isOpen: false, title: '', content: '', onConfirm: () => {} }
+            }));
+          } catch (error) {
+            console.error('清空话题消息失败:', error);
+            setDialogState(prev => ({
+              ...prev,
+              confirm: { isOpen: false, title: '', content: '', onConfirm: () => {} }
+            }));
           }
-
-          setConfirmDialogOpen(false);
-        } catch (error) {
-          console.error('清空话题消息失败:', error);
-          setConfirmDialogOpen(false);
         }
       }
-    });
+    }));
 
-    setConfirmDialogOpen(true);
     handleCloseMenu();
   };
 
-  // 打开移动到助手菜单
+  // 移动到助手菜单处理
   const handleOpenMoveToMenu = (event: React.MouseEvent) => {
     event.stopPropagation();
-    setMoveToMenuAnchorEl(event.currentTarget as HTMLElement);
+    setMenuState(prev => ({
+      ...prev,
+      moveTo: { anchorEl: event.currentTarget as HTMLElement }
+    }));
   };
 
-  // 关闭移动到助手菜单
   const handleCloseMoveToMenu = () => {
-    setMoveToMenuAnchorEl(null);
+    setMenuState(prev => ({
+      ...prev,
+      moveTo: { anchorEl: null }
+    }));
   };
 
   // 移动话题到其他助手
   const handleMoveTo = async (targetAssistant: Assistant) => {
-    if (!contextTopic || !currentAssistant) return;
+    const topic = menuState.main.topic;
+    if (!topic || !currentAssistant) return;
 
     try {
-      // 更新话题的助手ID
       const updatedTopic = {
-        ...contextTopic,
+        ...topic,
         assistantId: targetAssistant.id,
         updatedAt: new Date().toISOString()
       };
 
-      // 保存到数据库
       await dexieStorage.saveTopic(updatedTopic);
 
-      // 更新助手的topicIds - 从源助手移除，添加到目标助手
       await Promise.all([
-        TopicManager.removeTopicFromAssistant(currentAssistant.id, contextTopic.id),
-        TopicManager.addTopicToAssistant(targetAssistant.id, contextTopic.id)
+        TopicManager.removeTopicFromAssistant(currentAssistant.id, topic.id),
+        TopicManager.addTopicToAssistant(targetAssistant.id, topic.id)
       ]);
 
-      // 更新Redux状态 - 按照新建话题的方式
       dispatch(removeTopic({
         assistantId: currentAssistant.id,
-        topicId: contextTopic.id
+        topicId: topic.id
       }));
       dispatch(addTopic({
         assistantId: targetAssistant.id,
         topic: updatedTopic
       }));
 
-      // 从当前助手的话题列表中移除
-      setTopics(prevTopics =>
-        prevTopics.filter(topic => topic.id !== contextTopic.id)
-      );
-
-      // 发送话题移动事件 - 按照新建话题的格式
       EventEmitter.emit(EVENT_NAMES.TOPIC_MOVED, {
         topic: updatedTopic,
         assistantId: targetAssistant.id,
         type: 'move'
       });
 
-      console.log(`话题 ${contextTopic.name} 已移动到助手 ${targetAssistant.name}`);
       handleCloseMoveToMenu();
       handleCloseMenu();
     } catch (error) {
@@ -680,45 +469,46 @@ export default function TopicTab({
     }
   };
 
-  // 导出话题为Markdown格式
+  // 简化的导出函数
   const handleExportTopicAsMarkdown = async (includeReasoning = false) => {
-    if (!contextTopic) return;
-    
+    const topic = menuState.main.topic;
+    if (!topic) return;
+
     try {
-      await exportTopicAsMarkdown(contextTopic, includeReasoning);
+      await exportTopicAsMarkdown(topic, includeReasoning);
     } catch (error) {
       console.error('导出话题Markdown失败:', error);
     }
     handleCloseMenu();
   };
 
-  // 导出话题为DOCX格式
   const handleExportTopicAsDocx = async (includeReasoning = false) => {
-    if (!contextTopic) return;
-    
+    const topic = menuState.main.topic;
+    if (!topic) return;
+
     try {
-      await exportTopicAsDocx(contextTopic, includeReasoning);
+      await exportTopicAsDocx(topic, includeReasoning);
     } catch (error) {
       console.error('导出话题DOCX失败:', error);
     }
     handleCloseMenu();
   };
 
-  // 复制话题为Markdown格式
   const handleCopyTopicAsMarkdown = async (includeReasoning = false) => {
-    if (!contextTopic) return;
-    
+    const topic = menuState.main.topic;
+    if (!topic) return;
+
     try {
-      await copyTopicAsMarkdown(contextTopic, includeReasoning);
+      await copyTopicAsMarkdown(topic, includeReasoning);
     } catch (error) {
       console.error('复制话题Markdown失败:', error);
     }
     handleCloseMenu();
   };
 
-  // 导出话题到Notion
   const handleExportTopicToNotion = async (includeReasoning = false) => {
-    if (!contextTopic) return;
+    const topic = menuState.main.topic;
+    if (!topic) return;
 
     const notionSettings = store.getState().settings.notion;
 
@@ -733,7 +523,7 @@ export default function TopicTab({
     }
 
     try {
-      await exportTopicToNotion(contextTopic, {
+      await exportTopicToNotion(topic, {
         apiKey: notionSettings.apiKey,
         databaseId: notionSettings.databaseId,
         pageTitleField: notionSettings.pageTitleField || 'Name',
@@ -741,7 +531,6 @@ export default function TopicTab({
       }, includeReasoning);
     } catch (error) {
       console.error('导出话题到Notion失败:', error);
-      // 错误处理已经在exportTopicToNotion函数内部处理了，这里不需要额外提示
     }
     handleCloseMenu();
   };
@@ -784,17 +573,22 @@ export default function TopicTab({
           />
         ) : (
           <>
-            <Typography variant="subtitle1" fontWeight="medium">
-              {currentAssistant?.name || '所有话题'}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="subtitle1" fontWeight="medium">
+                {currentAssistant?.name || '所有话题'}
+              </Typography>
+              {loading && (
+                <Loader2 size={16} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+              )}
+            </Box>
             <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-              <IconButton size="small" onClick={handleSearchClick} sx={{ mr: 0.5 }}>
+              <IconButton size="small" onClick={() => setShowSearch(true)} sx={{ mr: 0.5 }}>
                 <Search size={18} />
               </IconButton>
               <Tooltip title="创建话题分组">
                 <IconButton
                   size="small"
-                  onClick={handleOpenGroupDialog}
+                  onClick={() => setDialogState(prev => ({ ...prev, group: { isOpen: true } }))}
                   sx={{
                     color: 'text.primary',
                     border: '1px solid',
@@ -835,8 +629,8 @@ export default function TopicTab({
         )}
       </Box>
 
-      {/* 没有话题时的提示 - ：无加载状态，即时显示 */}
-      {topics.length === 0 && (
+      {/* 没有话题时的提示 */}
+      {sortedTopics.length === 0 && (
         <Box sx={{ py: 2, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
             此助手没有话题，点击上方的"+"按钮创建一个新话题。
@@ -850,18 +644,18 @@ export default function TopicTab({
         topics={filteredTopics}
         topicGroupMap={topicGroupMap}
         currentTopic={currentTopic}
-        onSelectTopic={onSelectTopic}
+        onSelectTopic={handleSelectTopic}
         onOpenMenu={handleOpenMenu}
-        onDeleteTopic={onDeleteTopic}
+        onDeleteTopic={handleTopicDelete}
       />
 
       {/* 未分组话题列表 - 使用虚拟化组件 */}
       <VirtualizedTopicList
         topics={ungroupedTopics}
         currentTopic={currentTopic}
-        onSelectTopic={onSelectTopic}
+        onSelectTopic={handleSelectTopic}
         onOpenMenu={handleOpenMenu}
-        onDeleteTopic={onDeleteTopic}
+        onDeleteTopic={handleTopicDelete}
         title="未分组话题"
         height="calc(100vh - 400px)" // 动态计算高度
         emptyMessage="暂无未分组话题"
@@ -872,21 +666,21 @@ export default function TopicTab({
 
       {/* 分组对话框 */}
       <GroupDialog
-        open={groupDialogOpen}
-        onClose={handleCloseGroupDialog}
+        open={dialogState.group.isOpen}
+        onClose={() => setDialogState(prev => ({ ...prev, group: { isOpen: false } }))}
         type="topic"
         assistantId={currentAssistant?.id}
       />
 
       {/* 话题菜单 */}
       <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
+        anchorEl={menuState.main.anchorEl}
+        open={Boolean(menuState.main.anchorEl)}
         onClose={handleCloseMenu}
       >
         {[
           <MenuItem key="add-to-group" onClick={(e) => {
-            if (contextTopic) handleAddToGroupMenu(e, contextTopic);
+            if (menuState.main.topic) handleAddToGroupMenu(e, menuState.main.topic);
             handleCloseMenu();
           }}>
             <FolderPlus size={18} style={{ marginRight: 8 }} />
@@ -902,7 +696,7 @@ export default function TopicTab({
           </MenuItem>,
           <MenuItem key="toggle-pin" onClick={handleTogglePin}>
             <Pin size={18} style={{ marginRight: 8 }} />
-            {contextTopic?.pinned ? '取消固定' : '固定话题'}
+            {menuState.main.topic?.pinned ? '取消固定' : '固定话题'}
           </MenuItem>,
           <MenuItem key="clear-messages" onClick={handleClearMessages}>
             <Trash2 size={18} style={{ marginRight: 8 }} />
@@ -933,35 +727,37 @@ export default function TopicTab({
           </MenuItem>,
           <Divider key="divider-1" />,
           <MenuItem key="delete-topic" onClick={() => {
-            if (contextTopic) {
-              // 使用确认对话框来删除话题
-              setConfirmDialogConfig({
-                title: '删除话题',
-                content: '确定要删除此话题吗？此操作不可撤销。',
-                onConfirm: async () => {
-                  try {
-                    // 直接调用删除逻辑，不需要传递事件对象
-                    await TopicService.deleteTopic(contextTopic.id);
+            const topic = menuState.main.topic;
+            if (topic) {
+              setDialogState(prev => ({
+                ...prev,
+                confirm: {
+                  isOpen: true,
+                  title: '删除话题',
+                  content: '确定要删除此话题吗？此操作不可撤销。',
+                  onConfirm: async () => {
+                    // 立即关闭对话框，提升用户体验
+                    setDialogState(prev => ({
+                      ...prev,
+                      confirm: { isOpen: false, title: '', content: '', onConfirm: () => {} }
+                    }));
 
-                    // 从本地状态中移除话题
-                    setTopics(prevTopics =>
-                      prevTopics.filter(topic => topic.id !== contextTopic.id)
-                    );
+                    console.log('[TopicTab] 菜单删除话题:', topic.id, topic.name);
 
-                    // 发送删除事件
-                    EventEmitter.emit(EVENT_NAMES.TOPIC_DELETED, {
-                      topicId: contextTopic.id,
-                      assistantId: currentAssistant?.id
+                    // 🚀 简化：直接调用父组件的删除函数，避免重复逻辑
+                    const mockEvent = {
+                      stopPropagation: () => {},
+                      preventDefault: () => {},
+                      currentTarget: null,
+                      target: null
+                    } as unknown as React.MouseEvent;
+
+                    startTransition(() => {
+                      onDeleteTopic(topic.id, mockEvent);
                     });
-
-                    console.log('话题已删除');
-                  } catch (error) {
-                    console.error('删除话题失败:', error);
                   }
-                  setConfirmDialogOpen(false);
                 }
-              });
-              setConfirmDialogOpen(true);
+              }));
             }
             handleCloseMenu();
           }}>
@@ -973,8 +769,8 @@ export default function TopicTab({
 
       {/* 添加到分组菜单 */}
       <Menu
-        anchorEl={addToGroupMenuAnchorEl}
-        open={Boolean(addToGroupMenuAnchorEl)}
+        anchorEl={menuState.addToGroup.anchorEl}
+        open={Boolean(menuState.addToGroup.anchorEl)}
         onClose={handleCloseAddToGroupMenu}
       >
         {[
@@ -992,8 +788,8 @@ export default function TopicTab({
 
       {/* 移动到助手菜单 */}
       <Menu
-        anchorEl={moveToMenuAnchorEl}
-        open={Boolean(moveToMenuAnchorEl)}
+        anchorEl={menuState.moveTo.anchorEl}
+        open={Boolean(menuState.moveTo.anchorEl)}
         onClose={handleCloseMoveToMenu}
       >
         {allAssistants
@@ -1010,7 +806,7 @@ export default function TopicTab({
       </Menu>
 
       {/* 编辑话题对话框 */}
-      <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+      <Dialog open={dialogState.edit.isOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
         <DialogTitle>编辑话题</DialogTitle>
         <DialogContent>
           <TextField
@@ -1020,8 +816,11 @@ export default function TopicTab({
             type="text"
             fullWidth
             variant="outlined"
-            value={editTopicName}
-            onChange={(e) => setEditTopicName(e.target.value)}
+            value={dialogState.edit.name}
+            onChange={(e) => setDialogState(prev => ({
+              ...prev,
+              edit: { ...prev.edit, name: e.target.value }
+            }))}
             sx={{ mb: 2 }}
           />
           <TextField
@@ -1031,8 +830,11 @@ export default function TopicTab({
             rows={6}
             fullWidth
             variant="outlined"
-            value={editTopicPrompt}
-            onChange={(e) => setEditTopicPrompt(e.target.value)}
+            value={dialogState.edit.prompt}
+            onChange={(e) => setDialogState(prev => ({
+              ...prev,
+              edit: { ...prev.edit, prompt: e.target.value }
+            }))}
             helperText="此提示词将追加到助手的系统提示词之后。如果助手没有系统提示词，则单独使用此提示词。"
           />
         </DialogContent>
@@ -1044,18 +846,24 @@ export default function TopicTab({
 
       {/* 确认对话框 */}
       <Dialog
-        open={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
+        open={dialogState.confirm.isOpen}
+        onClose={() => setDialogState(prev => ({
+          ...prev,
+          confirm: { isOpen: false, title: '', content: '', onConfirm: () => {} }
+        }))}
       >
-        <DialogTitle>{confirmDialogConfig.title}</DialogTitle>
+        <DialogTitle>{dialogState.confirm.title}</DialogTitle>
         <DialogContent>
-          <Typography>{confirmDialogConfig.content}</Typography>
+          <Typography>{dialogState.confirm.content}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialogOpen(false)}>
+          <Button onClick={() => setDialogState(prev => ({
+            ...prev,
+            confirm: { isOpen: false, title: '', content: '', onConfirm: () => {} }
+          }))}>
             取消
           </Button>
-          <Button onClick={confirmDialogConfig.onConfirm} variant="contained" color="error">
+          <Button onClick={dialogState.confirm.onConfirm} variant="contained" color="error">
             确认
           </Button>
         </DialogActions>

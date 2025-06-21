@@ -3,11 +3,9 @@ import { Box, Typography, useTheme, Menu, MenuItem, Dialog, DialogTitle, DialogC
 // Lucide Icons - 按需导入，高端简约设计
 import { Plus, Trash2, AlertTriangle, BookOpen, Video, Settings, Wrench, Database, Globe, ArrowLeft, X } from 'lucide-react';
 import { CustomIcon } from '../icons';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
-import { TopicService } from '../../shared/services/TopicService';
-import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
-import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
+import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import WebSearchProviderSelector from '../WebSearchProviderSelector';
 import KnowledgeSelector from '../chat/KnowledgeSelector';
 import { useNavigate } from 'react-router-dom';
@@ -55,8 +53,10 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down('sm'));
   useInputStyles();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // 使用统一的话题管理Hook
+  const { handleCreateTopic } = useTopicManagement();
 
   // 使用共享的MCP状态管理Hook
   // 注释掉未使用的mcpStateManager
@@ -93,34 +93,9 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
     };
   }, []);
 
-  // 创建新话题
-  const handleCreateTopic = async () => {
-    // 触发新建话题事件
-    EventEmitter.emit(EVENT_NAMES.ADD_NEW_TOPIC);
-    console.log('[ToolsMenu] Emitted ADD_NEW_TOPIC event.');
-
-    // 创建新话题
-    const newTopic = await TopicService.createNewTopic();
-
-    // 如果成功创建话题，自动跳转到新话题
-    if (newTopic) {
-      console.log('[ToolsMenu] 成功创建新话题，自动跳转:', newTopic.id);
-
-      // 设置当前话题 - 立即选择新创建的话题
-      dispatch(newMessagesActions.setCurrentTopicId(newTopic.id));
-
-      // 确保话题侧边栏显示并选中新话题
-      setTimeout(() => {
-        EventEmitter.emit(EVENT_NAMES.SHOW_TOPIC_SIDEBAR);
-
-        // 再次确保新话题被选中，防止其他逻辑覆盖
-        setTimeout(() => {
-          dispatch(newMessagesActions.setCurrentTopicId(newTopic.id));
-        }, 50);
-      }, 100);
-    }
-    
-    // 关闭菜单
+  // 创建新话题的包装函数
+  const handleCreateTopicAndClose = async () => {
+    await handleCreateTopic();
     onClose();
   };
 
@@ -286,7 +261,7 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
         color={theme.palette.success.main}
       />,
       label: '新建话题',
-      onClick: handleCreateTopic,
+      onClick: handleCreateTopicAndClose,
       isActive: false
     },
     'clear-topic': {

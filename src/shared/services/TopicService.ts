@@ -1,10 +1,10 @@
 import { v4 as uuid } from 'uuid';
-import type { ChatTopic, Message as OldMessage } from '../types';
+import type { ChatTopic } from '../types';
 import type { Message, MessageBlock } from '../types/newMessage.ts';
 import { throttle } from 'lodash';
 import { AssistantService } from './index';
 import store from '../store';
-import { addTopic, removeTopic, updateTopic } from '../store/slices/assistantsSlice';
+import { addTopic, updateTopic } from '../store/slices/assistantsSlice';
 import { updateOneBlock, upsertManyBlocks } from '../store/slices/messageBlocksSlice';
 import { formatDateForTopicTitle } from '../utils';
 import { DEFAULT_TOPIC_PROMPT } from '../config/prompts';
@@ -61,39 +61,45 @@ export class TopicService {
 
       const currentAssistantId = await this.getCurrentAssistantId();
       if (!currentAssistantId) {
-        console.error('[TopicService] 无法创建话题，未找到当前助手ID');
         return null;
       }
 
       // 获取当前助手
       const assistant = await AssistantService.getCurrentAssistant();
       if (!assistant) {
-        console.error('[TopicService] 无法创建话题，未找到当前助手');
         return null;
       }
 
       // 创建话题对象
       const topic = getDefaultTopic(currentAssistantId);
 
-      // 保存到数据库
-      await dexieStorage.saveTopic(topic);
-      console.log('[TopicService] 已保存话题到数据库');
-
-      // 添加助手消息到话题
-      await AssistantService.addAssistantMessagesToTopic({ assistant, topic });
-      console.log('[TopicService] 已添加助手消息到话题');
-
-      // 添加话题到Redux store
+      // 立即添加话题到Redux store
       store.dispatch(addTopic({ assistantId: currentAssistantId, topic }));
-      console.log('[TopicService] 已添加话题到Redux store');
 
-      // 发送事件通知其他组件，添加type字段标识这是创建事件
+      // 立即发送事件通知其他组件
       EventEmitter.emit(EVENT_NAMES.TOPIC_CREATED, {
         topic,
         assistantId: currentAssistantId,
-        type: 'create' // 添加类型标识，用于在TopicTab中识别
+        type: 'create'
       });
-      console.log('[TopicService] 已发送话题创建事件，类型: create');
+
+      // 后台异步保存到数据库
+      Promise.resolve().then(async () => {
+        try {
+          await dexieStorage.saveTopic(topic);
+          await AssistantService.addAssistantMessagesToTopic({ assistant, topic });
+        } catch (error) {
+          console.error('[TopicService] 后台保存话题失败:', error);
+          // 发送错误事件，让UI知道保存失败
+          EventEmitter.emit(EVENT_NAMES.SERVICE_ERROR, {
+            serviceName: 'TopicService',
+            error,
+            message: `后台保存话题 ${topic.id} 失败`,
+            topicId: topic.id
+          });
+          // 可以考虑回滚Redux状态或重试
+        }
+      });
 
       return topic;
     } catch (error) {
@@ -164,16 +170,17 @@ export class TopicService {
         // 2. 从数据库中删除主题的所有消息
         await dexieStorage.messages.where('topicId').equals(topicId).delete();
 
-        // 3. 清空话题的messages数组和messageIds数组
-        topic.messages = [];
-        topic.messageIds = [];
-        await dexieStorage.topics.put(topic);
+        // 3. 清空话题的messageIds数组
+        const updatedTopic = {
+          ...topic,
+          messageIds: []
+        };
+        await dexieStorage.topics.put(updatedTopic);
       });
 
       console.log(`[TopicService] 已清空话题 ${topicId} 的所有消息`);
 
-      // 更新 Redux 状态
-      store.dispatch({ type: 'messages/setTopicMessages', payload: { topicId, messages: [] } });
+      // 统一使用新的Redux状态管理
       store.dispatch(newMessagesActions.clearTopicMessages(topicId));
 
       // 发送事件通知
@@ -192,30 +199,21 @@ export class TopicService {
    */
   static async createTopic(title: string, initialMessage?: string): Promise<ChatTopic> {
     try {
-      const currentTime = new Date().toISOString();
-      const messages: OldMessage[] = [];
+      const now = new Date().toISOString();
+      const messages: Message[] = [];
+      const blocks: MessageBlock[] = [];
+
       if (initialMessage) {
-        // 创建符合新格式的Message对象
-        const messageId = uuid();
-        messages.push({
-          id: messageId,
-          role: 'user',
-          status: 'success',
-          timestamp: currentTime,
-          topicId: uuid(), // 临时ID，后面会被正确设置
-          assistantId: '',
-          blocks: [{
-            id: uuid(),
-            messageId: messageId,
-            type: 'main_text',
-            content: initialMessage,
-            createdAt: currentTime,
-            status: 'success'
-          }]
-        } as any);
+        // 使用新的消息创建工具
+        const { message, blocks: messageBlocks } = createUserMessage({
+          content: initialMessage,
+          assistantId: '', // 临时值，后面会被正确设置
+          topicId: '', // 临时值，后面会被正确设置
+        });
+        messages.push(message);
+        blocks.push(...messageBlocks);
       }
       const topicId = uuid();
-      const now = new Date().toISOString();
       // 修复Date类型错误，传入Date对象而非字符串
       const formattedDate = formatDateForTopicTitle(new Date(now));
 
@@ -226,31 +224,49 @@ export class TopicService {
         currentAssistantId = 'unassociated_topic_assistant'; // 占位符
       }
 
-      // 创建新的主题对象
-      const newTopic: ChatTopic = {
-        id: topicId,
-        assistantId: currentAssistantId,
-        name: title || `新的对话 ${formattedDate}`,
-        title: title || `新的对话 ${formattedDate}`,
-        createdAt: now,
-        updatedAt: now,
-        lastMessageTime: now,
-        prompt: DEFAULT_TOPIC_PROMPT,
-        isNameManuallyEdited: false,
-        messageIds: [], // 初始化为空数组
-        messages: [] // 兼容字段
-      };
-      await dexieStorage.saveTopic(newTopic);
-      const verifyTopic = await dexieStorage.getTopic(topicId);
-      if (!verifyTopic) {
-        await dexieStorage.saveTopic(newTopic);
-        const secondVerify = await dexieStorage.getTopic(topicId);
-        if (!secondVerify) {
-          console.error(`[TopicService] 话题 ${topicId} 第二次保存仍然失败`);
-          throw new Error(`话题创建失败: 无法保存到数据库`);
+      // 使用事务确保数据一致性
+      let newTopic: ChatTopic;
+      await dexieStorage.transaction('rw', [
+        dexieStorage.topics,
+        dexieStorage.messages,
+        dexieStorage.message_blocks
+      ], async () => {
+        // 创建新的主题对象
+        newTopic = {
+          id: topicId,
+          assistantId: currentAssistantId,
+          name: title || `新的对话 ${formattedDate}`,
+          title: title || `新的对话 ${formattedDate}`,
+          createdAt: now,
+          updatedAt: now,
+          lastMessageTime: now,
+          prompt: DEFAULT_TOPIC_PROMPT,
+          isNameManuallyEdited: false,
+          messageIds: [] // 初始化为空数组
+        };
+
+        // 保存话题
+        await dexieStorage.topics.put(newTopic);
+
+        // 如果有初始消息，保存消息和块
+        if (messages.length > 0) {
+          for (const msg of messages) {
+            msg.topicId = topicId;
+            msg.assistantId = currentAssistantId;
+            await dexieStorage.messages.put(msg);
+          }
+
+          // 保存消息块
+          for (const block of blocks) {
+            await dexieStorage.message_blocks.put(block);
+          }
+
+          // 更新话题的消息引用
+          newTopic.messageIds = messages.map(m => m.id);
         }
-      }
-      return newTopic;
+      });
+
+      return newTopic!;
     } catch (error) {
       console.error('[TopicService] 创建独立话题失败:', error);
       throw error;
@@ -280,91 +296,55 @@ export class TopicService {
   }
 
   /**
-   * 删除话题
+   * 删除话题 - Cherry Studio优化版本
    */
   static async deleteTopic(id: string): Promise<void> {
     try {
-      // 在删除话题之前，获取话题信息以确定其关联的助手
+      console.log(`[TopicService] 开始删除话题数据: ${id}`);
+
+      // 🚀 优化：不再立即更新Redux store，由调用方处理乐观更新
+      // 获取话题信息用于事件发送
       const topic = await this.getTopicById(id);
       const assistantId = topic?.assistantId;
 
-      // 删除话题
-      await dexieStorage.deleteTopic(id);
-
-      // 如果找到关联的助手ID，更新 Redux store 中的助手状态
-      if (assistantId) {
-        // 更新助手的 topicIds 数组（通过 AssistantService）
-        await AssistantService.removeTopicFromAssistant(assistantId, id);
-
-        // 更新 Redux store 中的助手话题数组
-        store.dispatch(removeTopic({ assistantId, topicId: id }));
-      }
-
       // 发送删除话题事件
       EventEmitter.emit(EVENT_NAMES.TOPIC_DELETED, { topicId: id, assistantId });
+
+      // 🔥 优化：简化数据库操作，使用DexieStorageService的deleteTopic方法
+      await dexieStorage.deleteTopic(id);
+
+      // 🔄 异步更新助手的topicIds，不阻塞主流程
+      if (assistantId) {
+        Promise.resolve().then(async () => {
+          try {
+            const assistant = await dexieStorage.assistants.get(assistantId);
+            if (assistant && assistant.topicIds) {
+              assistant.topicIds = assistant.topicIds.filter(topicId => topicId !== id);
+              await dexieStorage.assistants.put(assistant);
+              console.log(`[TopicService] 助手 ${assistantId} 的topicIds已更新`);
+            }
+          } catch (error) {
+            console.error(`[TopicService] 更新助手topicIds失败:`, error);
+          }
+        });
+      }
+
+      console.log(`[TopicService] 话题删除完成: ${id}`);
     } catch (error) {
-      console.error(`[TopicService] 删除话题 ${id} 失败:`, error);
+      console.error(`[TopicService] 删除话题失败: ${id}`, error);
       EventEmitter.emit(EVENT_NAMES.SERVICE_ERROR, { serviceName: 'TopicService', error, message: `Failed to delete topic ${id}` });
       throw error;
     }
   }
 
   /**
-   * 将消息添加到话题
+   * 将新消息添加到话题
+   * @deprecated 建议使用 saveMessageAndBlocks 方法
    */
-  static async addMessageToTopic(topicId: string, message: OldMessage): Promise<void> {
+  static async addMessageToTopic(topicId: string, message: Message): Promise<void> {
     try {
-      // 获取话题
-      const topic = await this.getTopicById(topicId);
-      if (!topic) throw new Error(`找不到话题: ${topicId}`);
-
-      // 更新话题的最后消息时间
-      topic.lastMessageTime = (message as any).timestamp || new Date().toISOString();
-      topic.updatedAt = new Date().toISOString();
-
-      // 如果消息没有assistantId, 添加话题所属助手ID
-      if (!message.assistantId && topic.assistantId) {
-        message.assistantId = topic.assistantId;
-      }
-
-      // 如果消息没有topicId, 添加话题ID
-      if (!message.topicId) {
-        message.topicId = topicId;
-      }
-
-      // 将消息添加到话题
-      if (!topic.messages) {
-        topic.messages = [];
-      }
-
-      // 必须使用as any来处理类型不匹配问题
-      // 这里旧消息类型(OldMessage)和新消息类型(Message)之间存在不兼容
-      topic.messages.push(message as any);
-
-      // 保存话题到数据库
-      await this.saveTopic(topic);
-
-      // 如果支持新消息格式，也转换并保存为新格式
-      if (this.isBlockSystemEnabled()) {
-        // 获取消息文本内容 (从OldMessage类型)
-        let content = '';
-        if (typeof (message as any).content === 'string') {
-          content = (message as any).content;
-        } else if ((message as any).content && typeof (message as any).content.text === 'string') {
-          content = (message as any).content.text;
-        }
-
-        // 使用createUserMessage创建新格式消息
-        const { message: newMessage, blocks } = createUserMessage({
-          content,
-          assistantId: topic.assistantId || '',
-          topicId: topic.id,
-          modelId: (message as any).modelId
-        });
-
-        // 保存新格式的消息和块
-        await this.saveMessageAndBlocks(newMessage, blocks);
-      }
+      // 直接使用新的消息保存方法
+      await this.saveMessageAndBlocks(message, []);
 
       // 通知消息添加
       EventEmitter.emit(EVENT_NAMES.SEND_MESSAGE, {
@@ -405,22 +385,7 @@ export class TopicService {
           throw new Error(`Topic ${message.topicId} not found`);
         }
 
-        // 确保messages数组存在
-        if (!topic.messages) {
-          topic.messages = [];
-        }
-
-        // 查找消息在数组中的位置
-        const messageIndex = topic.messages.findIndex(m => m.id === message.id);
-
-        // 更新或添加消息
-        if (messageIndex >= 0) {
-          topic.messages[messageIndex] = message;
-        } else {
-          topic.messages.push(message);
-        }
-
-        // 同时更新messageIds数组（保持兼容性）
+        // 更新messageIds数组
         if (!topic.messageIds) {
           topic.messageIds = [];
         }
@@ -474,33 +439,18 @@ export class TopicService {
         return [];
       }
 
-      // 使用最佳实例原版方式：直接从topics表中获取消息
+      // 直接从messages表中获取消息
       let messages: Message[] = [];
 
-      // 优先使用messages数组
-      if (topic.messages && Array.isArray(topic.messages) && topic.messages.length > 0) {
-        messages = topic.messages;
-      }
-      // 如果没有messages数组，但有messageIds，则从messages表加载
-      else if (topic.messageIds && Array.isArray(topic.messageIds) && topic.messageIds.length > 0) {
+      // 从messageIds加载消息
+      if (topic.messageIds && Array.isArray(topic.messageIds) && topic.messageIds.length > 0) {
         console.log(`[TopicService] 从messageIds加载 ${topic.messageIds.length} 条消息`);
 
-        // 使用事务加载所有消息和块
-        await dexieStorage.transaction('rw', [
-          dexieStorage.topics,
-          dexieStorage.messages,
-          dexieStorage.message_blocks
-        ], async () => {
-          // 从messages表加载消息
-          for (const messageId of topic.messageIds) {
-            const message = await dexieStorage.messages.get(messageId);
-            if (message) messages.push(message);
-          }
-
-          // 更新topic.messages数组
-          topic.messages = messages;
-          await dexieStorage.topics.put(topic);
-        });
+        // 从messages表加载消息
+        for (const messageId of topic.messageIds) {
+          const message = await dexieStorage.messages.get(messageId);
+          if (message) messages.push(message);
+        }
       } else {
         console.warn(`[TopicService] 话题 ${topicId} 没有消息`);
         return [];
@@ -542,43 +492,48 @@ export class TopicService {
 
       console.log(`[TopicService] 需要加载 ${blocksToLoad.length} 个块:`, blocksToLoad);
 
-      // 加载所有消息块
-      const blocks: MessageBlock[] = [];
+      // 批量加载所有消息块 - 性能优化：并行加载
+      let blocks: MessageBlock[] = [];
+      if (blocksToLoad.length > 0) {
+        // 并行加载所有块，而不是串行
+        const blockPromises = blocksToLoad.map(blockId => dexieStorage.getMessageBlock(blockId));
+        const blockResults = await Promise.all(blockPromises);
+        blocks = blockResults.filter(block => block !== null) as MessageBlock[];
+      }
 
-      for (const blockId of blocksToLoad) {
-        const block = await dexieStorage.getMessageBlock(blockId);
-        if (block) {
-          console.log(`[TopicService] 加载块:`, {
-            id: block.id,
-            messageId: block.messageId,
-            type: block.type,
-            hasContent: !!(block as any).content,
-            contentLength: (block as any).content ? (block as any).content.length : 0,
-            status: block.status
-          });
+        // 批量修复块状态
+        const blocksToUpdate: { id: string; updates: Partial<MessageBlock> }[] = [];
+
+        for (const block of blocks) {
+          let needsUpdate = false;
+          const updates: Partial<MessageBlock> = {};
 
           //  修复：处理工具块状态恢复，考虑多个工具的情况
           if (!block.status || (typeof block.status !== 'string')) {
             // 状态无效，修复为 success
-            console.log(`[TopicService] 修复无效块状态: ${block.id} - 从 ${block.status} 改为 success`);
-            block.status = 'success';
-            await dexieStorage.updateMessageBlock(block.id, { status: 'success' });
+            updates.status = 'success';
+            needsUpdate = true;
           } else if (block.type === 'tool' && (block.status === 'processing' || block.status === 'streaming' || block.status === 'pending')) {
             //  关键修复：工具块在重启后如果还是未完成状态，应该设为已完成
-            // 因为重启意味着之前的工具执行已经中断，应该被视为已完成
-            console.log(`[TopicService] 修复工具块未完成状态: ${block.id} - 从 ${block.status} 改为 success`);
-            block.status = 'success';
-            await dexieStorage.updateMessageBlock(block.id, { status: 'success' });
-          } else {
-            // 保持原有状态（success、error 等已完成状态）
-            console.log(`[TopicService] 保持块状态: ${block.id} - ${block.status} (类型: ${block.type})`);
+            updates.status = 'success';
+            needsUpdate = true;
           }
 
-          blocks.push(block);
-        } else {
-          console.warn(`[TopicService] 找不到块: ${blockId}`);
+          if (needsUpdate) {
+            blocksToUpdate.push({ id: block.id, updates });
+            // 立即更新本地对象
+            Object.assign(block, updates);
+          }
         }
-      }
+
+        // 批量更新需要修复的块
+        if (blocksToUpdate.length > 0) {
+          await Promise.all(
+            blocksToUpdate.map(({ id, updates }) =>
+              dexieStorage.updateMessageBlock(id, updates)
+            )
+          );
+        }
 
       console.log(`[TopicService] 从数据库加载了 ${blocks.length} 个块`);
 
@@ -588,11 +543,7 @@ export class TopicService {
         messages
       }));
 
-      // 同时也更新旧的messages状态，确保兼容性
-      store.dispatch({
-        type: 'messages/setTopicMessages',
-        payload: { topicId, messages }
-      });
+      // 统一使用新的Redux状态管理，移除旧的状态更新
 
       if (blocks.length > 0) {
         store.dispatch(upsertManyBlocks(blocks));
@@ -607,11 +558,18 @@ export class TopicService {
     }
   }
 
-  // 节流更新块内容
+  // 节流更新块内容 - 添加清理机制
   private static throttledBlockUpdate = throttle(async (id: string, blockUpdate: Partial<MessageBlock>) => {
     store.dispatch(updateOneBlock({ id, changes: blockUpdate }));
     await dexieStorage.message_blocks.update(id, blockUpdate);
   }, 150);
+
+  // 清理节流函数，防止内存泄漏
+  static cleanup(): void {
+    if (this.throttledBlockUpdate && typeof this.throttledBlockUpdate.cancel === 'function') {
+      this.throttledBlockUpdate.cancel();
+    }
+  }
 
   /**
    * 更新消息块内容（优化版本）
@@ -721,10 +679,6 @@ export class TopicService {
       // 删除消息块
       await dexieStorage.deleteMessageBlocksByMessageId(messageId);
 
-      // 删除旧格式消息
-      const messages = topic.messages || [];
-      topic.messages = messages.filter(m => m.id !== messageId);
-
       // 删除消息ID
       if (topic.messageIds) {
         topic.messageIds = topic.messageIds.filter(id => id !== messageId);
@@ -749,14 +703,15 @@ export class TopicService {
   /**
    * 获取所有消息
    */
-  static async getAllMessages(): Promise<{[topicId: string]: OldMessage[]}> {
-    const result: {[topicId: string]: OldMessage[]} = {};
+  static async getAllMessages(): Promise<{[topicId: string]: Message[]}> {
+    const result: {[topicId: string]: Message[]} = {};
     try {
       const topics = await this.getAllTopics();
-      topics.forEach(topic => {
-        // 确保不会出现undefined
-        result[topic.id] = topic.messages || [];
-      });
+      for (const topic of topics) {
+        // 使用新的消息加载方法
+        const messages = await this.loadTopicMessages(topic.id);
+        result[topic.id] = messages;
+      }
       return result;
     } catch (error) {
       console.error('[TopicService] 获取所有消息失败:', error);
@@ -772,11 +727,7 @@ export class TopicService {
     return message;
   }
 
-  // 检查是否启用块系统
-  private static isBlockSystemEnabled(): boolean {
-    // 可以从配置或设置中读取是否启用块系统
-    return true; // 默认启用
-  }
+
 
   /**
    * 创建主题分支
@@ -883,7 +834,6 @@ export class TopicService {
 
         // 更新主题
         newTopic.messageIds = clonedMessages.map(m => m.id);
-        newTopic.messages = clonedMessages;
 
         // 更新lastMessageTime
         if (clonedMessages.length > 0) {

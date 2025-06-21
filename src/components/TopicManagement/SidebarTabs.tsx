@@ -1,9 +1,16 @@
 
+import React, { useCallback, startTransition } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../../shared/store';
 import { SidebarProvider } from './SidebarContext';
 import { useSidebarState } from './hooks/useSidebarState';
 import { useAssistantManagement } from './hooks/useAssistantManagement';
-import { useTopicManagement } from './hooks/useTopicManagement';
+import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import { useSettingsManagement } from './hooks/useSettingsManagement';
+import { TopicService } from '../../shared/services/TopicService';
+import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
+import { removeTopic } from '../../shared/store/slices/assistantsSlice';
+import type { ChatTopic } from '../../shared/types/Assistant';
 import SidebarTabsContent from './SidebarTabsContent';
 
 interface SidebarTabsProps {
@@ -24,6 +31,9 @@ export default function SidebarTabs({
   onMCPModeChange,
   onToolsToggle
 }: SidebarTabsProps) {
+  const dispatch = useDispatch();
+  const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
+
   // 使用各种钩子获取状态和方法
   const {
     value,
@@ -44,8 +54,7 @@ export default function SidebarTabs({
     handleSelectAssistant,
     handleAddAssistant,
     handleUpdateAssistant,
-    handleDeleteAssistant,
-    isPending // 获取isPending状态
+    handleDeleteAssistant
   } = useAssistantManagement({
     currentAssistant,
     setCurrentAssistant,
@@ -54,20 +63,74 @@ export default function SidebarTabs({
     switchToTopicTab: () => setValue(1) // 🔥 传递切换到话题标签页的函数
   });
 
-  // 话题管理
-  const {
-    handleCreateTopic,
-    handleSelectTopic,
-    handleDeleteTopic,
-    handleUpdateTopic
-  } = useTopicManagement({
-    currentAssistant,
-    setCurrentAssistant,
-    assistantWithTopics,
-    currentTopic,
-    refreshTopics,
-    updateAssistantTopic
-  });
+  // 话题管理 - 使用统一的创建Hook + 本地其他功能
+  const { handleCreateTopic } = useTopicManagement();
+
+  // 本地话题管理功能 - Cherry Studio极简模式
+  const handleSelectTopic = useCallback((topic: ChatTopic) => {
+    console.log('[SidebarTabs] handleSelectTopic被调用:', topic.id, topic.name);
+
+    // 🚀 Cherry Studio模式：只设置Redux状态，让useActiveTopic处理其余逻辑
+    startTransition(() => {
+      dispatch(newMessagesActions.setCurrentTopicId(topic.id));
+    });
+
+    console.log('[SidebarTabs] 话题切换完成');
+  }, [dispatch]);
+
+  const handleDeleteTopic = useCallback(async (topicId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    console.log('[SidebarTabs] 开始删除话题:', topicId);
+
+    // 🚀 Cherry Studio模式：乐观更新，立即从UI中移除话题
+    const topicToDelete = assistantWithTopics?.topics?.find(t => t.id === topicId);
+    if (!topicToDelete || !currentAssistant) {
+      console.warn('[SidebarTabs] 找不到要删除的话题或当前助手');
+      return;
+    }
+
+    // 🎯 如果删除的是当前话题，先切换到其他话题
+    if (currentTopicId === topicId && assistantWithTopics?.topics && assistantWithTopics.topics.length > 1) {
+      const remainingTopics = assistantWithTopics.topics.filter(t => t.id !== topicId);
+      if (remainingTopics.length > 0) {
+        // 🌟 智能选择下一个话题：优先选择后面的，如果是最后一个则选择前面的
+        const currentIndex = assistantWithTopics.topics.findIndex(t => t.id === topicId);
+        const nextTopic = currentIndex < assistantWithTopics.topics.length - 1
+          ? assistantWithTopics.topics[currentIndex + 1]
+          : assistantWithTopics.topics[currentIndex - 1];
+
+        console.log('[SidebarTabs] 删除当前话题，立即切换到:', nextTopic.name);
+        startTransition(() => {
+          dispatch(newMessagesActions.setCurrentTopicId(nextTopic.id));
+        });
+      }
+    }
+
+    // 立即从Redux中移除话题，UI立即响应
+    startTransition(() => {
+      dispatch(removeTopic({
+        assistantId: currentAssistant.id,
+        topicId: topicId
+      }));
+    });
+
+    // 🔄 异步删除数据库数据，不阻塞UI
+    Promise.resolve().then(async () => {
+      try {
+        await TopicService.deleteTopic(topicId);
+        console.log('[SidebarTabs] 话题数据库删除完成:', topicId);
+      } catch (error) {
+        console.error('[SidebarTabs] 删除话题失败，需要回滚UI状态:', error);
+        // TODO: 实现错误回滚逻辑
+        refreshTopics(); // 重新加载数据以恢复状态
+      }
+    });
+  }, [dispatch, assistantWithTopics, currentAssistant, currentTopicId, refreshTopics]);
+
+  const handleUpdateTopic = (topic: ChatTopic) => {
+    updateAssistantTopic(topic);
+  };
 
   // 设置管理
   const {
@@ -101,7 +164,6 @@ export default function SidebarTabs({
     handleAddAssistant,
     handleUpdateAssistant,
     handleDeleteAssistant,
-    isPending, // 添加isPending状态到上下文
 
     // 话题管理函数
     handleCreateTopic,

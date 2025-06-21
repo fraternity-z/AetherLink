@@ -4,7 +4,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../../shared/store';
 import { useChatPageLayout } from './hooks/useChatPageLayout.ts';
 import { useModelSelection } from './hooks/useModelSelection.ts';
-import { useTopicManagement } from './hooks/useTopicManagement.ts';
+import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import { useMessageHandling } from './hooks/useMessageHandling.ts';
 import { useChatFeatures } from './hooks/useChatFeatures.ts';
 import { useAIDebate } from './hooks/useAIDebate.ts';
@@ -142,8 +142,15 @@ const ChatPage: React.FC = () => {
     menuOpen
   } = useModelSelection();
 
-  // 主题管理钩子
-  const { handleClearTopic } = useTopicManagement(currentTopic);
+  // 话题管理钩子 - 只使用创建功能
+  const { handleCreateTopic } = useTopicManagement();
+
+  // 本地清空话题功能
+  const handleClearTopic = () => {
+    if (currentTopic) {
+      TopicService.clearTopicContent(currentTopic.id);
+    }
+  };
 
   // 消息处理钩子
   const {

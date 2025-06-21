@@ -40,11 +40,10 @@ export interface SidebarContextType {
   setCurrentAssistant: (assistant: Assistant | null) => void;
 
   // 助手管理函数
-  handleSelectAssistant: (assistant: Assistant) => Promise<void>;
+  handleSelectAssistant: (assistant: Assistant) => void;
   handleAddAssistant: (assistant: Assistant) => Promise<void>;
   handleUpdateAssistant: (assistant: Assistant) => Promise<void>;
   handleDeleteAssistant: (assistantId: string) => Promise<void>;
-  isPending?: boolean; // 添加isPending状态，用于显示加载状态
 
   // 话题管理函数
   handleCreateTopic: () => Promise<ChatTopic | null>;

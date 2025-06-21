@@ -90,7 +90,7 @@ export function createTopic(title: string): any {
     id: uuid(),
     title: topicTitle,
     lastMessageTime: formatDate(now),
-    messages: [],
+    messageIds: [], // 使用新消息系统
   };
 }
 

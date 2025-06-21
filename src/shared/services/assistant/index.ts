@@ -68,8 +68,7 @@ export class AssistantService {
         id: assistantId,
         name: assistantData.name || '新助手',
         emoji: assistantData.emoji || '😀',
-        topics: [topic], // 直接包含话题对象
-        topicIds: [topic.id], // 保留兼容性
+        topicIds: [topic.id], // 只使用新的消息系统
         type: 'assistant',
         isSystem: false,
         systemPrompt: assistantData.systemPrompt || DEFAULT_TOPIC_PROMPT

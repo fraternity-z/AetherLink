@@ -423,6 +423,16 @@ export async function importExternalBackup(data: any, importMode: ImportMode = '
         throw new Error(`Cherry Studio备份数据验证失败: ${validation.errors.join(', ')}`);
       }
 
+      // 记录备份信息
+      if (validation.detectedVersion) {
+        console.log(`Cherry Studio备份版本: ${validation.detectedVersion}`);
+      }
+
+      if (validation.backupInfo) {
+        const { topicsCount, assistantsCount, messageBlocksCount, hasSettings } = validation.backupInfo;
+        console.log(`备份内容: ${topicsCount}个话题, ${assistantsCount}个助手, ${messageBlocksCount}个消息块, ${hasSettings ? '包含' : '不包含'}设置`);
+      }
+
       if (validation.warnings.length > 0) {
         console.warn('Cherry Studio备份数据警告:', validation.warnings);
       }
@@ -433,7 +443,7 @@ export async function importExternalBackup(data: any, importMode: ImportMode = '
         topics: converted.topics,
         assistants: converted.assistants,
         messageBlocks: converted.messageBlocks,
-        source: 'desktop'
+        source: `cherry-studio-v${validation.detectedVersion || 'unknown'}`
       };
     }
 

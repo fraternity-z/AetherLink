@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { dexieStorage } from '../services/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from '../services/EventService';
-import { addTopic, removeTopic, updateTopic, updateAssistantTopics } from '../store/slices/assistantsSlice';
+import { addTopic, removeTopic, updateTopic } from '../store/slices/assistantsSlice';
 import type { RootState } from '../store';
 import type { Assistant, ChatTopic } from '../types/Assistant';
 // 导入getDefaultTopic函数，避免动态导入
@@ -28,10 +28,10 @@ export function useAssistant(assistantId: string | null) {
       return;
     }
 
-    // 优化：助手对象已经预包含话题数据，除非强制刷新，否则无需异步加载
-    // 检查助手是否已经有话题数据
-    if (!forceRefresh && assistant.topics && assistant.topics.length > 0) {
-      console.log(`[useAssistant] 助手 ${assistant.name} 已有预加载的话题数据，数量: ${assistant.topics.length}，跳过加载`);
+    // 优化：检查助手是否已经有话题ID数据，除非强制刷新，否则无需异步加载
+    // 使用新消息系统：检查topicIds而不是topics
+    if (!forceRefresh && assistant.topicIds && assistant.topicIds.length > 0) {
+      console.log(`[useAssistant] 助手 ${assistant.name} 已有话题ID数据，数量: ${assistant.topicIds.length}，跳过加载`);
       return;
     }
 
@@ -49,7 +49,8 @@ export function useAssistant(assistantId: string | null) {
       try {
         const newTopic = getDefaultTopic(assistantId);
         await dexieStorage.saveTopic(newTopic);
-        dispatch(updateAssistantTopics({ assistantId, topics: [newTopic] }));
+        // 使用新消息系统：添加话题到助手
+        dispatch(addTopic({ assistantId, topic: newTopic }));
         console.log(`[useAssistant] 后台创建默认话题完成: ${newTopic.name}`);
       } catch (error) {
         console.error('[useAssistant] 后台创建默认话题失败:', error);

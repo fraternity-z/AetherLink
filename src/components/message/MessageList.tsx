@@ -418,13 +418,20 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     return messages;
   }, [messages]);
 
-  // 计算显示的消息
-  useEffect(() => {
-    const newDisplayMessages = computeDisplayMessages(filteredMessages, 0, displayCount);
-    setDisplayMessages(newDisplayMessages);
-    setHasMore(filteredMessages.length > displayCount);
-    console.log(`[MessageList] 显示 ${newDisplayMessages.length} 条消息，还有更多: ${filteredMessages.length > displayCount}`);
+  // 计算显示的消息 - 使用记忆化避免重复计算
+  const memoizedDisplayMessages = useMemo(() => {
+    return computeDisplayMessages(filteredMessages, 0, displayCount);
   }, [filteredMessages, displayCount]);
+
+  const memoizedHasMore = useMemo(() => {
+    return filteredMessages.length > displayCount;
+  }, [filteredMessages.length, displayCount]);
+
+  // 只在记忆化结果变化时更新状态
+  useEffect(() => {
+    setDisplayMessages(memoizedDisplayMessages);
+    setHasMore(memoizedHasMore);
+  }, [memoizedDisplayMessages, memoizedHasMore]);
 
   // 加载更多消息的函数
   const loadMoreMessages = useCallback(() => {

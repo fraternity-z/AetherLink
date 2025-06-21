@@ -15,12 +15,13 @@ import {
   TextField
 } from '@mui/material';
 import { ChevronDown, MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { updateGroup, deleteGroup } from '../../../shared/store/slices/groupsSlice';
 import VirtualScroller from '../../common/VirtualScroller';
 import TopicItem from './TopicItem';
 import type { ChatTopic } from '../../../shared/types';
 import type { Group } from '../../../shared/types';
+import type { RootState } from '../../../shared/store';
 
 interface VirtualizedTopicGroupsProps {
   topicGroups: Group[];
@@ -41,12 +42,15 @@ const VirtualizedTopicGroups = memo(function VirtualizedTopicGroups({
   topicGroups,
   topics,
   topicGroupMap,
-  currentTopic,
+  currentTopic, // 保留兼容性，但不再使用
   onSelectTopic,
   onOpenMenu,
   onDeleteTopic
 }: VirtualizedTopicGroupsProps) {
-  
+
+  // 🚀 Cherry Studio模式：直接从Redux获取当前话题ID，立即响应状态变化
+  const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
+
   // 使用 useMemo 缓存分组话题的计算结果
   const groupedTopics = useMemo(() => {
     return topicGroups.map((group) => {
@@ -61,18 +65,18 @@ const VirtualizedTopicGroups = memo(function VirtualizedTopicGroups({
     });
   }, [topicGroups, topics, topicGroupMap]);
 
-  // 缓存话题项渲染函数
+  // 缓存话题项渲染函数 - 🚀 使用Redux状态立即响应
   const renderTopicItem = useCallback((topic: ChatTopic, _index: number) => {
     return (
       <TopicItem
         topic={topic}
-        isSelected={currentTopic?.id === topic.id}
+        isSelected={currentTopicId === topic.id} // 🌟 直接使用Redux状态，立即响应
         onSelectTopic={onSelectTopic}
         onOpenMenu={onOpenMenu}
         onDeleteTopic={onDeleteTopic}
       />
     );
-  }, [currentTopic?.id, onSelectTopic, onOpenMenu, onDeleteTopic]);
+  }, [currentTopicId, onSelectTopic, onOpenMenu, onDeleteTopic]); // 🔧 依赖currentTopicId而不是currentTopic
 
   // 缓存话题键值函数
   const getTopicKey = useCallback((topic: ChatTopic, _index: number) => {

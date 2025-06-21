@@ -30,7 +30,7 @@ import {
   Bot as SmartToyIcon
 } from 'lucide-react';
 import { importExternalBackupFromFile } from '../../utils/restoreUtils';
-import { ImportMode } from '../../utils/externalBackupUtils';
+import type { ImportMode } from '../../utils/externalBackupUtils';
 
 interface ImportExternalBackupDialogProps {
   open: boolean;

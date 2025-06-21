@@ -10,9 +10,7 @@ import { ModelSelector } from './ModelSelector';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat } from '../../../shared/types';
-import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
-import { TopicService } from '../../../shared/services/TopicService';
-import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
+import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
 import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { generateBackgroundStyle } from '../../../shared/utils/backgroundUtils';
 import { useTheme } from '@mui/material/styles';
@@ -114,6 +112,9 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   // ==================== Hooks 和基础状态 ====================
   const dispatch = useDispatch();
   const theme = useTheme();
+
+  // 使用统一的话题管理Hook
+  const { handleCreateTopic } = useTopicManagement();
 
   // 本地状态
 
@@ -233,24 +234,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     true
   );
 
-  // 话题管理
-  const handleCreateTopic = useCallback(async () => {
-    EventEmitter.emit(EVENT_NAMES.ADD_NEW_TOPIC);
-    console.log('[ChatPageUI] Emitted ADD_NEW_TOPIC event.');
 
-    const newTopic = await TopicService.createNewTopic();
-    if (newTopic) {
-      console.log('[ChatPageUI] 成功创建新话题，自动跳转:', newTopic.id);
-      dispatch(newMessagesActions.setCurrentTopicId(newTopic.id));
-
-      setTimeout(() => {
-        EventEmitter.emit(EVENT_NAMES.SHOW_TOPIC_SIDEBAR);
-        setTimeout(() => {
-          dispatch(newMessagesActions.setCurrentTopicId(newTopic.id));
-        }, 50);
-      }, 100);
-    }
-  }, [dispatch]);
 
   // 工具栏组件渲染
   const renderToolbarComponent = useCallback((componentId: string) => {

@@ -765,7 +765,7 @@ export class DexieStorageService extends Dexie {
 
   /**
    * 获取话题的所有消息
-   * 最佳实例原版方式：直接从topics表中获取消息
+   * 使用新消息系统：从messageIds加载消息
    */
   async getTopicMessages(topicId: string): Promise<Message[]> {
     try {
@@ -773,38 +773,10 @@ export class DexieStorageService extends Dexie {
       const topic = await this.topics.get(topicId);
       if (!topic) return [];
 
-      // 始终优先使用messages数组（电脑端方式）
-      if (topic.messages && Array.isArray(topic.messages)) {
-        console.log(`[DexieStorageService] 从话题对象直接获取 ${topic.messages.length} 条消息`);
-
-        // 如果messages数组为空但有messageIds，则从messages表加载
-        if (topic.messages.length === 0 && topic.messageIds && Array.isArray(topic.messageIds) && topic.messageIds.length > 0) {
-          console.log(`[DexieStorageService] messages数组为空，从messageIds加载 ${topic.messageIds.length} 条消息`);
-
-          // 使用事务加载所有消息
-          const messages: Message[] = [];
-
-          // 从messages表加载消息
-          for (const messageId of topic.messageIds) {
-            const message = await this.messages.get(messageId);
-            if (message) messages.push(message);
-          }
-
-          // 更新topic.messages数组
-          topic.messages = messages;
-          await this.topics.put(topic);
-
-          return messages;
-        }
-
-        return topic.messages;
-      }
-
-      // 如果没有messages数组，但有messageIds，则从messages表加载并创建messages数组
+      // 从messageIds加载消息
       if (topic.messageIds && Array.isArray(topic.messageIds) && topic.messageIds.length > 0) {
-        console.log(`[DexieStorageService] 创建messages数组，从messageIds加载 ${topic.messageIds.length} 条消息`);
+        console.log(`[DexieStorageService] 从messageIds加载 ${topic.messageIds.length} 条消息`);
 
-        // 使用事务加载所有消息
         const messages: Message[] = [];
 
         // 从messages表加载消息
@@ -813,17 +785,10 @@ export class DexieStorageService extends Dexie {
           if (message) messages.push(message);
         }
 
-        // 创建并更新topic.messages数组
-        topic.messages = messages;
-        await this.topics.put(topic);
-
         return messages;
       }
 
-      // 如果都没有，创建空的messages数组并返回空数组
-      console.log(`[DexieStorageService] 话题 ${topicId} 没有消息，创建空的messages数组`);
-      topic.messages = [];
-      await this.topics.put(topic);
+      console.log(`[DexieStorageService] 话题 ${topicId} 没有消息`);
       return [];
     } catch (error) {
       console.error(`[DexieStorageService] 获取话题消息失败: ${error instanceof Error ? error.message : String(error)}`);
@@ -885,6 +850,15 @@ export class DexieStorageService extends Dexie {
 
   async getMessage(id: string): Promise<Message | null> {
     return await this.messages.get(id) || null;
+  }
+
+  // 🚀 批量获取消息，优化性能
+  async getMessagesByIds(messageIds: string[]): Promise<Message[]> {
+    if (messageIds.length === 0) return [];
+
+    // 使用 bulkGet 进行批量查询，比多次单独查询更高效
+    const messages = await this.messages.bulkGet(messageIds);
+    return messages.filter(message => message !== undefined) as Message[];
   }
 
   async getMessagesByTopicId(topicId: string): Promise<Message[]> {
