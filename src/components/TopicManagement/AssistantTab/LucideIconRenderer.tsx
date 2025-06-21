@@ -1,26 +1,6 @@
 import React from 'react';
-import {
-  User, Bot, Brain, Rocket, Search, BookOpen, Lightbulb,
-  Target, Palette, Gamepad2, Globe, Laptop, FileText, BarChart,
-  Puzzle, Settings, Wrench, TestTube, Microscope, Trophy, GraduationCap,
-  Briefcase, TrendingUp, DollarSign, ShoppingCart, Handshake, Smartphone,
-  MessageCircle, Mail, Calendar, Lock, Key, Shield, Folder, Clipboard,
-  Pin, Magnet, Heart, Star, Zap, Coffee, Music, Camera, Video, Headphones,
-  Code, Database, Server, Cloud, Wifi, Download, Upload, Share, Link,
-  Edit, Trash2, Plus, Minus, Check, X, ArrowRight, ArrowLeft, Home, Menu
-} from 'lucide-react';
-
-// 图标映射表
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  User, Bot, Brain, Rocket, Search, BookOpen, Lightbulb,
-  Target, Palette, Gamepad2, Globe, Laptop, FileText, BarChart,
-  Puzzle, Settings, Wrench, TestTube, Microscope, Trophy, GraduationCap,
-  Briefcase, TrendingUp, DollarSign, ShoppingCart, Handshake, Smartphone,
-  MessageCircle, Mail, Calendar, Lock, Key, Shield, Folder, Clipboard,
-  Pin, Magnet, Heart, Star, Zap, Coffee, Music, Camera, Video, Headphones,
-  Code, Database, Server, Cloud, Wifi, Download, Upload, Share, Link,
-  Edit, Trash2, Plus, Minus, Check, X, ArrowRight, ArrowLeft, Home, Menu
-};
+import { Bot } from 'lucide-react';
+import { ICON_MAP } from './iconUtils';
 
 interface LucideIconRendererProps {
   iconName: string;
@@ -48,18 +28,4 @@ export default function LucideIconRenderer({
   }
   
   return <IconComponent size={size} color={color} className={className} style={style} />;
-}
-
-/**
- * 检查是否为Lucide图标名称
- */
-export function isLucideIcon(iconName: string): boolean {
-  return iconName in ICON_MAP;
-}
-
-/**
- * 获取所有可用的Lucide图标名称
- */
-export function getAllLucideIconNames(): string[] {
-  return Object.keys(ICON_MAP);
 }

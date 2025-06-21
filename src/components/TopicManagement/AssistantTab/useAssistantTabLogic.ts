@@ -235,7 +235,9 @@ export function useAssistantTabLogic(
         ...editingAssistant,
         name: editAssistantName,
         systemPrompt: editAssistantPrompt,
-        avatar: editAssistantAvatar
+        avatar: editAssistantAvatar,
+        // 如果设置了头像，清空emoji字段，避免冲突
+        emoji: editAssistantAvatar ? undefined : editingAssistant.emoji
       };
 
       // 直接保存到数据库，确保数据持久化

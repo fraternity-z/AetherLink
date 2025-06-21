@@ -11,8 +11,9 @@ import {
 } from '@mui/material';
 import { MoreVertical, Trash, AlertTriangle } from 'lucide-react';
 import type { Assistant } from '../../../shared/types/Assistant';
-import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
-import LucideIconRenderer, { isLucideIcon } from './LucideIconRenderer';
+
+import LucideIconRenderer from './LucideIconRenderer';
+import { isLucideIcon } from './iconUtils';
 
 interface AssistantItemProps {
   assistant: Assistant;
@@ -151,7 +152,7 @@ const AssistantItem = memo(function AssistantItem({
 
     // 否则显示emoji或首字母
     return iconOrEmoji;
-  }, [assistant.avatar, assistant.emoji, assistant.name, isSelected, isDarkMode]);
+  }, [assistant.avatar, assistant.emoji, assistant.name, isSelected, isDarkMode, forceUpdateKey]);
 
   // 缓存样式对象，避免每次渲染都创建新对象
   const avatarSx = useMemo(() => {
@@ -176,7 +177,7 @@ const AssistantItem = memo(function AssistantItem({
       alignItems: 'center',
       borderRadius: '25%', // 方圆形头像
     };
-  }, [isSelected, isDarkMode]);
+  }, [isSelected, isDarkMode, forceUpdateKey]);
 
   const primaryTextSx = useMemo(() => ({
     fontWeight: isSelected ? 600 : 400,
@@ -271,8 +272,7 @@ const AssistantItem = memo(function AssistantItem({
     prevProps.assistant.avatar === nextProps.assistant.avatar &&
     prevProps.isSelected === nextProps.isSelected &&
     (prevProps.assistant.topics?.length || 0) === (nextProps.assistant.topics?.length || 0) &&
-    (prevProps.assistant.topicIds?.length || 0) === (nextProps.assistant.topicIds?.length || 0) &&
-    prevProps.forceUpdateKey === nextProps.forceUpdateKey
+    (prevProps.assistant.topicIds?.length || 0) === (nextProps.assistant.topicIds?.length || 0)
   );
 
   // 只在开发环境记录变化日志
@@ -285,7 +285,6 @@ const AssistantItem = memo(function AssistantItem({
     if (prevProps.isSelected !== nextProps.isSelected) changes.push('isSelected');
     if ((prevProps.assistant.topics?.length || 0) !== (nextProps.assistant.topics?.length || 0)) changes.push('topics.length');
     if ((prevProps.assistant.topicIds?.length || 0) !== (nextProps.assistant.topicIds?.length || 0)) changes.push('topicIds.length');
-    if (prevProps.forceUpdateKey !== nextProps.forceUpdateKey) changes.push('forceUpdateKey');
 
     console.log(`[AssistantItem] 重新渲染 ${nextProps.assistant.name}，变化: ${changes.join(', ')}`);
   }
