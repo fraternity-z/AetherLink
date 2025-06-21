@@ -169,12 +169,14 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
               : `模式: ${mcpMode === 'function' ? '函数调用' : '提示词注入'}`
           }
           primaryTypographyProps={{ fontWeight: 'medium', fontSize: '0.95rem', lineHeight: 1.2 }}
-          secondaryTypographyProps={{ 
-            fontSize: '0.75rem', 
+          secondaryTypographyProps={{
+            fontSize: '0.75rem',
             lineHeight: 1.2,
             // 确保长文本能够正确换行且不与右侧按钮重叠
-            wordBreak: 'break-word',
-            whiteSpace: 'normal'
+            sx: {
+              wordBreak: 'break-word',
+              whiteSpace: 'normal'
+            }
           }}
           sx={{
             // 为右侧按钮预留足够空间
