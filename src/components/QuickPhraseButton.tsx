@@ -149,17 +149,19 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
   return (
     <>
       <Tooltip title="快捷短语">
-        <IconButton
-          onClick={handleClick}
-          disabled={disabled}
-          size={size}
-          style={{
-            color: theme.palette.mode === 'dark' ? '#fff' : '#666',
-            padding: size === 'large' ? '10px' : size === 'small' ? '6px' : '8px'
-          }}
-        >
-          <CustomIcon name="quickPhrase" size={iconSize} color="currentColor" />
-        </IconButton>
+        <span>
+          <IconButton
+            onClick={handleClick}
+            disabled={disabled}
+            size={size}
+            style={{
+              color: theme.palette.mode === 'dark' ? '#fff' : '#666',
+              padding: size === 'large' ? '10px' : size === 'small' ? '6px' : '8px'
+            }}
+          >
+            <CustomIcon name="quickPhrase" size={iconSize} color="currentColor" />
+          </IconButton>
+        </span>
       </Tooltip>
 
       <Menu

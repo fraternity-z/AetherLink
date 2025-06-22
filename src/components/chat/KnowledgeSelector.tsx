@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -37,10 +37,17 @@ interface KnowledgeBase {
   createdAt: Date;
 }
 
+interface SearchResult {
+  title?: string;
+  content: string;
+  similarity: number;
+  documentId: string;
+}
+
 interface KnowledgeSelectorProps {
   open: boolean;
   onClose: () => void;
-  onSelect: (knowledgeBase: KnowledgeBase, searchResults: any[]) => void;
+  onSelect: (knowledgeBase: KnowledgeBase, searchResults: SearchResult[]) => void;
   searchQuery?: string;
 }
 
@@ -55,12 +62,28 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedKB, setSelectedKB] = useState<string>('');
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [error, setError] = useState<string>('');
+
+  // 组件卸载标记
+  const isMountedRef = useRef(true);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 加载知识库列表
-  const loadKnowledgeBases = async () => {
+  const loadKnowledgeBases = useCallback(async () => {
     try {
       setLoading(true);
+      setError('');
       const kbs = await dexieStorage.knowledge_bases.toArray();
 
       // 获取每个知识库的文档数量
@@ -81,95 +104,149 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
         })
       );
 
-      setKnowledgeBases(kbsWithCount);
+      // 检查组件是否仍然挂载
+      if (isMountedRef.current) {
+        setKnowledgeBases(kbsWithCount);
+      }
     } catch (error) {
       console.error('加载知识库失败:', error);
+      if (isMountedRef.current) {
+        setError('加载知识库失败，请重试');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   // 搜索知识库内容
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!selectedKB || !localSearchQuery.trim()) {
+      setSearchResults([]);
       return;
     }
 
     try {
       setSearchLoading(true);
+      setError('');
 
       // 获取选中知识库的配置
       const selectedKnowledgeBase = knowledgeBases.find(kb => kb.id === selectedKB);
-      const limit = selectedKnowledgeBase?.documentCount || 5; // 使用知识库配置的文档数量
+      const limit = Math.min(selectedKnowledgeBase?.documentCount || 5, 10); // 限制最大搜索数量
 
       const results = await MobileKnowledgeService.getInstance().searchKnowledge(
         selectedKB,
         localSearchQuery.trim(),
         limit
       );
-      setSearchResults(results);
+
+      // 检查组件是否仍然挂载
+      if (isMountedRef.current) {
+        setSearchResults(results || []);
+      }
     } catch (error) {
       console.error('搜索知识库失败:', error);
-      setSearchResults([]);
+      if (isMountedRef.current) {
+        setSearchResults([]);
+        setError('搜索失败，请重试');
+      }
     } finally {
-      setSearchLoading(false);
+      if (isMountedRef.current) {
+        setSearchLoading(false);
+      }
     }
-  };
+  }, [selectedKB, localSearchQuery, knowledgeBases]);
+
+  // 防抖搜索
+  const debouncedSearch = useCallback(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      handleSearch();
+    }, 300); // 减少防抖时间到300ms
+  }, [handleSearch]);
 
   // 确认选择
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     const selectedKnowledgeBase = knowledgeBases.find(kb => kb.id === selectedKB);
     if (selectedKnowledgeBase) {
-      // 如果有搜索结果，传递搜索结果；否则传递空数组表示使用整个知识库
       onSelect(selectedKnowledgeBase, searchResults);
       handleClose();
     }
-  };
+  }, [selectedKB, knowledgeBases, searchResults, onSelect]);
 
   // 关闭对话框
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSelectedKB('');
     setLocalSearchQuery('');
     setSearchResults([]);
+    setError('');
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
     onClose();
-  };
+  }, [onClose]);
 
   // 选择知识库
-  const handleSelectKB = (kbId: string) => {
+  const handleSelectKB = useCallback((kbId: string) => {
     setSelectedKB(kbId);
     setSearchResults([]);
+    setError('');
 
-    // 如果有搜索词，自动搜索
+    // 如果有搜索词，触发防抖搜索
     if (localSearchQuery.trim()) {
-      setTimeout(() => {
-        handleSearch();
-      }, 100);
+      debouncedSearch();
     }
-  };
+  }, [localSearchQuery, debouncedSearch]);
 
   // 直接使用知识库（双击或长按）
-  const handleDirectUse = (kb: any) => {
+  const handleDirectUse = useCallback((kb: KnowledgeBase) => {
     onSelect(kb, []);
     handleClose();
-  };
+  }, [onSelect, handleClose]);
 
+  // 当对话框打开时加载知识库
   useEffect(() => {
     if (open) {
+      isMountedRef.current = true;
       loadKnowledgeBases();
       setLocalSearchQuery(searchQuery);
     }
-  }, [open, searchQuery]);
+  }, [open, searchQuery, loadKnowledgeBases]);
 
+  // 当搜索词或选中知识库变化时，触发防抖搜索
   useEffect(() => {
-    // 当搜索词变化时，如果已选择知识库，自动搜索
     if (selectedKB && localSearchQuery.trim()) {
-      const timer = setTimeout(() => {
-        handleSearch();
-      }, 500); // 防抖
-
-      return () => clearTimeout(timer);
+      debouncedSearch();
+    } else {
+      setSearchResults([]);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     }
-  }, [localSearchQuery, selectedKB]);
+  }, [localSearchQuery, selectedKB, debouncedSearch]);
+
+  // 搜索输入变化处理
+  const handleSearchInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSearchQuery(event.target.value);
+    setError('');
+  }, []);
+
+  // 计算是否显示搜索结果区域
+  const showSearchResults = useMemo(() => {
+    return selectedKB && localSearchQuery.trim();
+  }, [selectedKB, localSearchQuery]);
+
+  // 计算知识库列表的显示状态
+  const knowledgeBaseListStatus = useMemo(() => {
+    if (loading) return 'loading';
+    if (error) return 'error';
+    if (knowledgeBases.length === 0) return 'empty';
+    return 'loaded';
+  }, [loading, error, knowledgeBases.length]);
 
   return (
     <Dialog
@@ -177,10 +254,12 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          maxHeight: '80vh'
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 2,
+            maxHeight: '80vh'
+          }
         }
       }}
     >
@@ -195,23 +274,32 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
       </DialogTitle>
 
       <DialogContent sx={{ px: 3, py: 2 }}>
+        {/* 错误提示 */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
         {/* 搜索输入框 */}
         <TextField
           fullWidth
           placeholder="输入搜索内容..."
           value={localSearchQuery}
-          onChange={(e) => setLocalSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: searchLoading && (
-              <InputAdornment position="end">
-                <CircularProgress size={20} />
-              </InputAdornment>
-            )
+          onChange={handleSearchInputChange}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+              endAdornment: searchLoading && (
+                <InputAdornment position="end">
+                  <CircularProgress size={20} />
+                </InputAdornment>
+              )
+            }
           }}
           sx={{ mb: 2 }}
         />
@@ -224,11 +312,11 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
           单击选择，双击直接使用知识库
         </Typography>
 
-        {loading ? (
+        {knowledgeBaseListStatus === 'loading' ? (
           <Box display="flex" justifyContent="center" py={3}>
             <CircularProgress />
           </Box>
-        ) : knowledgeBases.length === 0 ? (
+        ) : knowledgeBaseListStatus === 'empty' ? (
           <Alert severity="info" sx={{ mb: 2 }}>
             暂无知识库，请先创建知识库
           </Alert>
@@ -281,21 +369,25 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({
         )}
 
         {/* 搜索结果 */}
-        {selectedKB && localSearchQuery.trim() && (
+        {showSearchResults && (
           <>
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" gutterBottom>
               搜索结果 ({searchResults.length})
             </Typography>
 
-            {searchResults.length === 0 ? (
+            {searchLoading ? (
+              <Box display="flex" justifyContent="center" py={2}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : searchResults.length === 0 ? (
               <Alert severity="warning">
                 未找到相关内容，请尝试其他关键词
               </Alert>
             ) : (
               <List sx={{ maxHeight: 150, overflow: 'auto' }}>
                 {searchResults.map((result, index) => (
-                  <ListItem key={index} sx={{ py: 1 }}>
+                  <ListItem key={`${result.documentId}-${index}`} sx={{ py: 1 }}>
                     <ListItemIcon>
                       <DocumentIcon size={16} />
                     </ListItemIcon>

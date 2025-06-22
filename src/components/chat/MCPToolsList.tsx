@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -13,8 +13,11 @@ import {
 } from 'lucide-react';
 import type { MCPToolResponse, MCPCallToolResponse } from '../../shared/types';
 import { parseAndCallTools } from '../../shared/utils/mcpToolParser';
-// MCPToolBlock 已被移除，使用统一的 ToolBlock 组件
 
+/**
+ * MCP 工具列表组件
+ * 用于显示和管理 MCP 工具的执行状态
+ */
 interface MCPToolsListProps {
   toolResponses: MCPToolResponse[];
   onUpdate?: (toolResponses: MCPToolResponse[]) => void;
@@ -32,17 +35,13 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
   const [executing, setExecuting] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // 同步外部传入的工具响应数据
   useEffect(() => {
     setTools(toolResponses);
   }, [toolResponses]);
 
-  useEffect(() => {
-    if (autoExecute && tools.some(tool => tool.status === 'pending')) {
-      handleExecuteAll();
-    }
-  }, [autoExecute, tools]);
-
-  const handleToolUpdate = (updatedTool: MCPToolResponse, _result: MCPCallToolResponse) => {
+  // 处理单个工具状态更新
+  const handleToolUpdate = useCallback((updatedTool: MCPToolResponse, _result: MCPCallToolResponse) => {
     const updatedTools = tools.map(tool =>
       tool.id === updatedTool.id ? updatedTool : tool
     );
@@ -52,9 +51,10 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
     if (onUpdate) {
       onUpdate(updatedTools);
     }
-  };
+  }, [tools, onUpdate]);
 
-  const handleExecuteAll = async () => {
+  // 批量执行所有待执行的工具
+  const handleExecuteAll = useCallback(async () => {
     if (executing) return;
 
     const pendingTools = tools.filter(tool => tool.status === 'pending');
@@ -66,17 +66,17 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
     try {
       let completedCount = 0;
 
-      // 并行执行所有待执行的工具
+      // 并行执行所有待执行工具
       const promises = pendingTools.map(async (tool) => {
         try {
-          tool.status = 'invoking';
+          // 创建执行中状态的工具副本
+          const invokingTool = { ...tool, status: 'invoking' as const };
 
-          // 更新工具状态
-          const updatedTools = tools.map(t => t.id === tool.id ? tool : t);
-          setTools([...updatedTools]);
+          setTools(prevTools =>
+            prevTools.map(t => t.id === tool.id ? invokingTool : t)
+          );
 
-          // 调用工具
-          const result = await parseAndCallTools([tool], [], (toolResponse, callResult) => {
+          const result = await parseAndCallTools([invokingTool], [], (toolResponse, callResult) => {
             handleToolUpdate(toolResponse, callResult);
           });
 
@@ -97,10 +97,14 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
             ]
           };
 
-          tool.status = 'error';
-          tool.response = errorResult;
+          // 创建错误状态的工具副本
+          const errorTool = {
+            ...tool,
+            status: 'error' as const,
+            response: errorResult
+          };
 
-          handleToolUpdate(tool, errorResult);
+          handleToolUpdate(errorTool, errorResult);
 
           completedCount++;
           setProgress((completedCount / pendingTools.length) * 100);
@@ -114,9 +118,10 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
       setExecuting(false);
       setProgress(0);
     }
-  };
+  }, [executing, tools, handleToolUpdate]);
 
-  const handleRetryFailed = () => {
+  // 重试所有失败的工具
+  const handleRetryFailed = useCallback(() => {
     const updatedTools = tools.map(tool =>
       tool.status === 'error' ? { ...tool, status: 'pending' as const, response: undefined } : tool
     );
@@ -126,9 +131,17 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
     if (onUpdate) {
       onUpdate(updatedTools);
     }
-  };
+  }, [tools, onUpdate]);
 
-  const getStatusCounts = () => {
+  // 自动执行待执行的工具
+  useEffect(() => {
+    if (autoExecute && tools.some(tool => tool.status === 'pending')) {
+      handleExecuteAll();
+    }
+  }, [autoExecute, tools, handleExecuteAll]);
+
+  // 计算各状态工具数量
+  const statusCounts = useMemo(() => {
     const counts = {
       pending: 0,
       invoking: 0,
@@ -141,12 +154,15 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
     });
 
     return counts;
-  };
+  }, [tools]);
 
-  const statusCounts = getStatusCounts();
-  const hasFailedTools = statusCounts.error > 0;
-  const hasPendingTools = statusCounts.pending > 0;
-  const allCompleted = statusCounts.pending === 0 && statusCounts.invoking === 0;
+  // 计算状态标识
+  const hasFailedTools = useMemo(() => statusCounts.error > 0, [statusCounts.error]);
+  const hasPendingTools = useMemo(() => statusCounts.pending > 0, [statusCounts.pending]);
+  const allCompleted = useMemo(() =>
+    statusCounts.pending === 0 && statusCounts.invoking === 0,
+    [statusCounts.pending, statusCounts.invoking]
+  );
 
   if (tools.length === 0) {
     return null;
@@ -156,6 +172,7 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
     <Box sx={{ mb: 2 }}>
       {/* 工具列表头部 */}
       <Box sx={{ mb: 2 }}>
+        {/* 标题和控制按钮 */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             MCP 工具调用
@@ -211,7 +228,7 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
           )}
         </Box>
 
-        {/* 进度条 */}
+        {/* 执行进度条 */}
         {executing && (
           <LinearProgress
             variant="determinate"
@@ -234,7 +251,7 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
         )}
       </Box>
 
-      {/* 工具块列表 */}
+      {/* 工具列表 */}
       <Box>
         {tools.map((toolResponse) => (
           <Box key={toolResponse.id} sx={{ mb: 2 }}>

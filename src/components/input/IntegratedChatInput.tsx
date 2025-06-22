@@ -1043,19 +1043,21 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
                 return (
                   <Tooltip key={buttonId} title={config.tooltip}>
-                    <IconButton
-                      size="medium"
-                      onClick={config.onClick}
-                      disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
-                      style={{
-                        color: config.color,
-                        padding: '6px',
-                        backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                        transition: 'all 0.2s ease-in-out'
-                      }}
-                    >
-                      {config.icon}
-                    </IconButton>
+                    <span>
+                      <IconButton
+                        size="medium"
+                        onClick={config.onClick}
+                        disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
+                        style={{
+                          color: config.color,
+                          padding: '6px',
+                          backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                      >
+                        {config.icon}
+                      </IconButton>
+                    </span>
                   </Tooltip>
                 );
               })}
@@ -1073,19 +1075,21 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
                 return (
                   <Tooltip key={buttonId} title={config.tooltip}>
-                    <IconButton
-                      size="medium"
-                      onClick={config.onClick}
-                      disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
-                      style={{
-                        color: config.color,
-                        padding: '6px',
-                        backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                        transition: 'all 0.2s ease-in-out'
-                      }}
-                    >
-                      {config.icon}
-                    </IconButton>
+                    <span>
+                      <IconButton
+                        size="medium"
+                        onClick={config.onClick}
+                        disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
+                        style={{
+                          color: config.color,
+                          padding: '6px',
+                          backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                      >
+                        {config.icon}
+                      </IconButton>
+                    </span>
                   </Tooltip>
                 );
               })}

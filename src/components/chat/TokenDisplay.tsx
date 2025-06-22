@@ -43,10 +43,10 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
     const checkMobile = () => {
       const userAgent = navigator.userAgent;
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       const isSmallScreen = window.innerWidth <= 768;
 
-      setIsMobile(isMobileDevice || (isTouchDevice && isSmallScreen));
+      // 更精确的判断：移动设备 或 小屏幕
+      setIsMobile(isMobileDevice || isSmallScreen);
     };
 
     checkMobile();
@@ -107,8 +107,10 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
   const formatTokenCount = (count: number): string => {
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
+    } else if (count >= 10000) {
       return `${(count / 1000).toFixed(1)}K`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(0)}K`; // 1K, 2K, 9K
     }
     return count.toString();
   };
@@ -119,9 +121,14 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
     ? `${formatTokenCount(totalTokens)}/${formatTokenCount(currentMessageTokens)}`
     : formatTokenCount(totalTokens);
 
-  const tooltipText = showCurrentMessage && currentMessage
-    ? `总Token: ${totalTokens.toLocaleString()}\n当前消息: ${currentMessageTokens.toLocaleString()}`
-    : `总Token: ${totalTokens.toLocaleString()}`;
+  const tooltipContent = showCurrentMessage && currentMessage ? (
+    <>
+      总Token: {totalTokens.toLocaleString()}<br />
+      当前消息: {currentMessageTokens.toLocaleString()}
+    </>
+  ) : (
+    `总Token: ${totalTokens.toLocaleString()}`
+  );
 
   // 处理点击事件（仅移动端）
   const handleClick = () => {
@@ -139,7 +146,7 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
 
   return (
     <Tooltip
-      title={tooltipText}
+      title={tooltipContent}
       placement="top"
       arrow
       open={isMobile ? tooltipOpen : undefined}
@@ -147,6 +154,11 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
       disableHoverListener={isMobile}
       disableFocusListener={isMobile}
       disableTouchListener={!isMobile}
+      slotProps={{
+        popper: {
+          disablePortal: isMobile, // 移动端可能需要这个
+        }
+      }}
     >
       <Box
         onClick={handleClick}

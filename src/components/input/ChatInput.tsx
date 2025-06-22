@@ -645,27 +645,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         {/* 语音识别按钮 - 根据状态显示不同图标，当文本超过3行时隐藏 */}
         {!shouldHideVoiceButton && (
-          <IconButton
-            onClick={handleToggleVoiceMode}
-            disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-            size={isTablet ? "large" : "medium"}
-            style={{
-              color: voiceState !== 'normal' ? '#f44336' : (isDarkMode ? '#ffffff' : '#000000'),
-              padding: isTablet ? '10px' : '8px',
-              backgroundColor: voiceState !== 'normal' ? 'rgba(211, 47, 47, 0.15)' : 'transparent',
-              transition: 'all 0.25s ease-in-out'
-            }}
-          >
-          {voiceState === 'normal' ? (
-            <Tooltip title="切换到语音输入模式">
-              <Mic size={isTablet ? 28 : 24} />
-            </Tooltip>
-          ) : (
-            <Tooltip title="退出语音输入模式">
-              <Keyboard size={isTablet ? 28 : 24} />
-            </Tooltip>
-          )}
-          </IconButton>
+          <Tooltip title={voiceState === 'normal' ? "切换到语音输入模式" : "退出语音输入模式"}>
+            <span>
+              <IconButton
+                onClick={handleToggleVoiceMode}
+                disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
+                size={isTablet ? "large" : "medium"}
+                style={{
+                  color: voiceState !== 'normal' ? '#f44336' : (isDarkMode ? '#ffffff' : '#000000'),
+                  padding: isTablet ? '10px' : '8px',
+                  backgroundColor: voiceState !== 'normal' ? 'rgba(211, 47, 47, 0.15)' : 'transparent',
+                  transition: 'all 0.25s ease-in-out'
+                }}
+              >
+                {voiceState === 'normal' ? (
+                  <Mic size={isTablet ? 28 : 24} />
+                ) : (
+                  <Keyboard size={isTablet ? 28 : 24} />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
         )}
 
         {/* 输入区域 - 根据三状态显示不同的输入方式 */}
@@ -728,25 +728,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <>
             {/* 添加按钮，打开上传菜单 */}
             <Tooltip title="添加图片或文件">
-              <IconButton
-                size={isTablet ? "large" : "medium"}
-                onClick={handleOpenUploadMenu}
-                disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
-                style={{
-                  color: uploadingMedia ? disabledColor : (isDarkMode ? '#ffffff' : '#000000'),
-                  padding: isTablet ? '10px' : '8px',
-                  position: 'relative',
-                  marginRight: isTablet ? '4px' : '0'
-                }}
-              >
-                {uploadingMedia ? (
-                  <CircularProgress size={isTablet ? 28 : 24} />
-                ) : (
-                  <Badge badgeContent={images.length + files.length} color="primary" max={9} invisible={images.length + files.length === 0}>
-                    <Plus size={isTablet ? 28 : 24} />
-                  </Badge>
-                )}
-              </IconButton>
+              <span>
+                <IconButton
+                  size={isTablet ? "large" : "medium"}
+                  onClick={handleOpenUploadMenu}
+                  disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
+                  style={{
+                    color: uploadingMedia ? disabledColor : (isDarkMode ? '#ffffff' : '#000000'),
+                    padding: isTablet ? '10px' : '8px',
+                    position: 'relative',
+                    marginRight: isTablet ? '4px' : '0'
+                  }}
+                >
+                  {uploadingMedia ? (
+                    <CircularProgress size={isTablet ? 28 : 24} />
+                  ) : (
+                    <Badge badgeContent={images.length + files.length} color="primary" max={9} invisible={images.length + files.length === 0}>
+                      <Plus size={isTablet ? 28 : 24} />
+                    </Badge>
+                  )}
+                </IconButton>
+              </span>
             </Tooltip>
 
 
@@ -754,33 +756,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
 
             {/* 发送按钮或停止按钮 */}
-            <IconButton
-                onClick={isStreaming && onStopResponse ? onStopResponse : handleSubmit}
-                disabled={!isStreaming && (!canSendMessage() || (isLoading && !allowConsecutiveMessages))}
-                size={isTablet ? "large" : "medium"}
-                style={{
-                  color: isStreaming ? '#ff4d4f' : !canSendMessage() || (isLoading && !allowConsecutiveMessages) ? disabledColor : imageGenerationMode ? '#9C27B0' : webSearchActive ? '#3b82f6' : isDarkMode ? '#4CAF50' : '#09bb07',
-                  padding: isTablet ? '10px' : '8px'
-                }}
-              >
-                {isStreaming ? (
-                  <Tooltip title="停止生成">
+            <Tooltip
+              title={
+                isStreaming ? "停止生成" :
+                imageGenerationMode ? "生成图像" :
+                webSearchActive ? "搜索网络" :
+                "发送消息"
+              }
+            >
+              <span>
+                <IconButton
+                  onClick={isStreaming && onStopResponse ? onStopResponse : handleSubmit}
+                  disabled={!isStreaming && (!canSendMessage() || (isLoading && !allowConsecutiveMessages))}
+                  size={isTablet ? "large" : "medium"}
+                  style={{
+                    color: isStreaming ? '#ff4d4f' : !canSendMessage() || (isLoading && !allowConsecutiveMessages) ? disabledColor : imageGenerationMode ? '#9C27B0' : webSearchActive ? '#3b82f6' : isDarkMode ? '#4CAF50' : '#09bb07',
+                    padding: isTablet ? '10px' : '8px'
+                  }}
+                >
+                  {isStreaming ? (
                     <Square size={isTablet ? 20 : 18} />
-                  </Tooltip>
-                ) : showLoadingIndicator ? (
-                  <CircularProgress size={isTablet ? 28 : 24} color="inherit" />
-                ) : imageGenerationMode ? (
-                  <Tooltip title="生成图像">
+                  ) : showLoadingIndicator ? (
+                    <CircularProgress size={isTablet ? 28 : 24} color="inherit" />
+                  ) : imageGenerationMode ? (
                     <Image size={isTablet ? 20 : 18} />
-                  </Tooltip>
-                ) : webSearchActive ? (
-                  <Tooltip title="搜索网络">
+                  ) : webSearchActive ? (
                     <Search size={isTablet ? 20 : 18} />
-                  </Tooltip>
-                ) : (
-                  <Send size={isTablet ? 20 : 18} />
-                )}
-            </IconButton>
+                  ) : (
+                    <Send size={isTablet ? 20 : 18} />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
           </>
         )}
       </div>

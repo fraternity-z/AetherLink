@@ -118,12 +118,14 @@ const ThinkingButton: React.FC<ThinkingButtonProps> = ({
   return (
     <>
       <Tooltip title="思考过程设置">
-        <IconButton
-          onClick={handleClick}
-          color={currentEffort && currentEffort !== 'off' ? 'primary' : 'default'}
-        >
-          {currentIcon}
-        </IconButton>
+        <span>
+          <IconButton
+            onClick={handleClick}
+            color={currentEffort && currentEffort !== 'off' ? 'primary' : 'default'}
+          >
+            {currentIcon}
+          </IconButton>
+        </span>
       </Tooltip>
 
       <Menu
