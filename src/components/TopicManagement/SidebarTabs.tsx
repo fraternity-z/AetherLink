@@ -109,6 +109,13 @@ export default function SidebarTabs({
 
     // 立即从Redux中移除话题，UI立即响应
     startTransition(() => {
+      // 🔥 关键修复：如果删除的是最后一个话题，先清空currentTopicId
+      // 这样TopicTab的自动选择逻辑就会生效
+      if (assistantWithTopics?.topics && assistantWithTopics.topics.length === 1) {
+        console.log('[SidebarTabs] 删除最后一个话题，先清空currentTopicId');
+        dispatch(newMessagesActions.setCurrentTopicId(''));
+      }
+
       dispatch(removeTopic({
         assistantId: currentAssistant.id,
         topicId: topicId

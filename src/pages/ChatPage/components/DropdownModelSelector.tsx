@@ -270,23 +270,36 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
         MenuProps={{
           disableAutoFocus: true,
           disableRestoreFocus: true,
-          PaperProps: {
-            sx: {
-              maxHeight: '70vh', // 增加最大高度到视口高度的70%
-              minHeight: 300, // 设置最小高度
-              mt: 0.5,
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-              bgcolor: theme.palette.mode === 'dark' ? '#2A2A2A' : theme.palette.background.paper, // 不透明背景
-              '& .MuiList-root': {
-                py: 0,
-                bgcolor: 'transparent'
+          disableEnforceFocus: true,
+          slotProps: {
+            paper: {
+              sx: {
+                maxHeight: '70vh', // 增加最大高度到视口高度的70%
+                minHeight: 300, // 设置最小高度
+                width: 'auto', // 自动宽度
+                maxWidth: 400, // 限制最大宽度
+                minWidth: 280, // 设置最小宽度
+                mt: 0.5,
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                bgcolor: theme.palette.mode === 'dark' ? '#2A2A2A' : theme.palette.background.paper, // 不透明背景
+                '& .MuiList-root': {
+                  py: 0,
+                  bgcolor: 'transparent',
+                  '&:focus': {
+                    outline: 'none'
+                  }
+                }
               }
-            }
-          },
-          MenuListProps: {
-            sx: {
-              py: 0,
-              bgcolor: 'transparent'
+            },
+            root: {
+              slotProps: {
+                backdrop: {
+                  invisible: false,
+                  sx: {
+                    backgroundColor: 'transparent'
+                  }
+                }
+              }
             }
           }
         }}
@@ -356,15 +369,20 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
                     }
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                    <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: '100%' }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"
                         sx={{
                           fontWeight: 500,
                           fontSize: '0.875rem', // 稍微减小字体
-                          lineHeight: 1.3 // 减少行高
+                          lineHeight: 1.3, // 减少行高
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%'
                         }}
+                        title={model.name} // 悬停显示完整名称
                       >
                         {model.name}
                       </Typography>
@@ -376,8 +394,13 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
                             display: 'block',
                             fontSize: '0.75rem', // 减小描述字体
                             lineHeight: 1.2,
-                            mt: 0.25 // 减少上边距
+                            mt: 0.25, // 减少上边距
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '100%'
                           }}
+                          title={model.description} // 悬停显示完整描述
                         >
                           {model.description}
                         </Typography>

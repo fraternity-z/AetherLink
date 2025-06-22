@@ -99,11 +99,14 @@ export async function* openAIChunkToTextDelta(stream: AsyncIterable<any>): Async
   let processedReasoning = '';
   let chunkCount = 0;
 
-  console.log('[openAIChunkToTextDelta] 开始处理流式响应');
+  // 只在开发环境输出开始日志
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[openAIChunkToTextDelta] 开始处理流式响应');
+  }
 
   for await (const chunk of stream) {
     chunkCount++;
-    console.log(`[openAIChunkToTextDelta] 收到第${chunkCount}个chunk:`, JSON.stringify(chunk).substring(0, 200));
+    // 移除频繁的 chunk 日志，只在出错时输出
     if (chunk.choices && chunk.choices.length > 0) {
       const delta = chunk.choices[0].delta;
 
@@ -141,7 +144,7 @@ export async function* openAIChunkToTextDelta(stream: AsyncIterable<any>): Async
 
       // 处理完成原因 - 确保在流结束时正确处理
       const finishReason = chunk.choices[0]?.finish_reason;
-      if (finishReason) {
+      if (finishReason && process.env.NODE_ENV === 'development') {
         console.log(`[openAIChunkToTextDelta] 检测到完成原因: ${finishReason}`);
         // 注意：这里不需要yield finish事件，因为上层会处理
         // 但我们需要确保这个chunk被正确处理
@@ -149,5 +152,8 @@ export async function* openAIChunkToTextDelta(stream: AsyncIterable<any>): Async
     }
   }
 
-  console.log(`[openAIChunkToTextDelta] 流式响应处理完成，总共处理了 ${chunkCount} 个chunk`);
+  // 只在开发环境输出完成日志
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[openAIChunkToTextDelta] 流式响应处理完成，总共处理了 ${chunkCount} 个chunk`);
+  }
 }

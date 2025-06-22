@@ -43,6 +43,7 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
       onClose={onClose}
       disableAutoFocus={true}
       disableRestoreFocus={true}
+      disableEnforceFocus={true}
       anchorOrigin={{
         vertical: 'top',
         horizontal: 'center',
@@ -51,12 +52,31 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
         vertical: 'bottom',
         horizontal: 'center',
       }}
-      sx={{
-        '& .MuiPaper-root': {
-          minWidth: '200px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+      slotProps={{
+        paper: {
+          sx: {
+            minWidth: '200px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          }
         },
+        root: {
+          slotProps: {
+            backdrop: {
+              invisible: false,
+              sx: {
+                backgroundColor: 'transparent'
+              }
+            }
+          }
+        }
+      }}
+      sx={{
+        '& .MuiList-root': {
+          '&:focus': {
+            outline: 'none'
+          }
+        }
       }}
     >
       <MenuItem

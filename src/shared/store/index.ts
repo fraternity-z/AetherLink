@@ -4,7 +4,7 @@ import storage from 'redux-persist/lib/storage';
 // 移除旧的 messagesReducer 导入
 import messagesReducer from './slices/newMessagesSlice'; // 使用 normalizedMessagesReducer 作为唯一的消息状态管理
 import settingsReducer, { settingsMiddleware, loadSettings } from './settingsSlice';
-import groupsReducer from './slices/groupsSlice';
+import groupsReducer, { saveGroups } from './slices/groupsSlice';
 import webSearchReducer, { initializeWebSearchSettings } from './slices/webSearchSlice';
 
 import assistantsReducer from './slices/assistantsSlice';
@@ -14,6 +14,7 @@ import runtimeReducer from './slices/runtimeSlice';
 import { eventMiddleware } from './middleware/eventMiddleware';
 import { useDispatch, useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
+import { debounce } from 'lodash';
 
 // 合并所有reducer
 const rootReducer = combineReducers({
@@ -42,6 +43,27 @@ const persistConfig = {
 // 创建持久化reducer
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
+// 创建防抖的保存函数
+const debouncedSaveGroups = debounce((store: any) => {
+  store.dispatch(saveGroups());
+}, 500);
+
+// 简单的分组自动保存中间件
+const groupsAutoSaveMiddleware = (store: any) => (next: any) => (action: any) => {
+  const result = next(action);
+
+  // 监听分组相关的操作
+  if (action.type?.startsWith('groups/') &&
+      !action.type.includes('loadGroupsSuccess') &&
+      !action.type.includes('setError') &&
+      !action.type.includes('clearError') &&
+      !action.type.includes('setLoading')) {
+    debouncedSaveGroups(store);
+  }
+
+  return result;
+};
+
 // 配置Redux存储
 const store = configureStore({
   reducer: persistedReducer,
@@ -49,7 +71,7 @@ const store = configureStore({
     getDefaultMiddleware({
       // 完全禁用序列化检查，避免非序列化值警告
       serializableCheck: false
-    }).concat(settingsMiddleware, eventMiddleware)
+    }).concat(settingsMiddleware, eventMiddleware, groupsAutoSaveMiddleware)
 });
 
 // 创建persistor

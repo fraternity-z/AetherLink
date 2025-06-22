@@ -8,6 +8,10 @@ import { upsertManyBlocks } from './messageBlocksSlice';
 // 1. 创建实体适配器
 const messagesAdapter = createEntityAdapter<Message>();
 
+// 常量定义
+const MAX_GLOBAL_ERRORS = 10;
+const MAX_TOPIC_ERRORS = 5;
+
 // 错误信息接口
 export interface ErrorInfo {
   message: string;
@@ -25,6 +29,12 @@ export interface ApiKeyErrorInfo {
   timestamp: string;
   canRetry: boolean;
 }
+
+// 消息排序工具函数
+const sortMessagesByTime = (messages: Message[]): Message[] =>
+  [...messages].sort((a, b) =>
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
 
 // 2. 定义状态接口
 export interface NormalizedMessagesState extends EntityState<Message, string> {
@@ -148,8 +158,8 @@ const newMessagesSlice = createSlice({
       // 添加到全局错误列表
       state.errors.push(error);
 
-      // 如果超过10个错误，移除最旧的
-      if (state.errors.length > 10) {
+      // 如果超过最大错误数，移除最旧的
+      if (state.errors.length > MAX_GLOBAL_ERRORS) {
         state.errors.shift();
       }
 
@@ -161,8 +171,8 @@ const newMessagesSlice = createSlice({
 
         state.errorsByTopic[topicId].push(error);
 
-        // 如果超过5个错误，移除最旧的
-        if (state.errorsByTopic[topicId].length > 5) {
+        // 如果超过最大错误数，移除最旧的
+        if (state.errorsByTopic[topicId].length > MAX_TOPIC_ERRORS) {
           state.errorsByTopic[topicId].shift();
         }
       }
@@ -194,24 +204,16 @@ const newMessagesSlice = createSlice({
       state.displayCount = action.payload;
     },
 
-    // 接收消息 - 改造为：确保按时间顺序存储
+    // 接收消息 - 优化版本：确保按时间顺序存储
     messagesReceived(state, action: PayloadAction<MessagesReceivedPayload>) {
       const { topicId, messages } = action.payload;
 
-      console.log(`[messagesReceived] 接收 ${messages.length} 条消息，话题: ${topicId}`);
-
       // 添加或更新消息
-      messagesAdapter.upsertMany(state as any, messages);
+      messagesAdapter.upsertMany(state, messages);
 
-      // ：确保消息按时间顺序存储
-      const sortedMessages = [...messages].sort((a, b) => {
-        const aTime = new Date(a.createdAt).getTime();
-        const bTime = new Date(b.createdAt).getTime();
-        return aTime - bTime; // 升序排列，最早的在前面
-      });
-
+      // 使用优化的排序函数
+      const sortedMessages = sortMessagesByTime(messages);
       const sortedMessageIds = sortedMessages.map(msg => msg.id);
-      console.log(`[messagesReceived] 按时间排序后的消息ID: [${sortedMessageIds.join(', ')}]`);
 
       // 确保不会覆盖现有消息，但保持时间顺序
       if (!state.messageIdsByTopic[topicId]) {
@@ -220,60 +222,53 @@ const newMessagesSlice = createSlice({
         // 合并现有消息ID和新消息ID，然后重新排序以保持时间顺序
         const existingIds = state.messageIdsByTopic[topicId];
         const newIds = sortedMessageIds.filter(id => !existingIds.includes(id));
-        const allIds = [...existingIds, ...newIds];
 
-        // 获取所有消息并按时间排序
-        const allMessages = allIds.map(id => state.entities[id]).filter(Boolean);
-        const sortedAllMessages = allMessages.sort((a, b) => {
-          const aTime = new Date(a.createdAt).getTime();
-          const bTime = new Date(b.createdAt).getTime();
-          return aTime - bTime;
-        });
+        if (newIds.length > 0) {
+          const allIds = [...existingIds, ...newIds];
 
-        state.messageIdsByTopic[topicId] = sortedAllMessages.map(msg => msg.id);
-        console.log(`[messagesReceived] 合并排序后的消息ID: [${state.messageIdsByTopic[topicId].join(', ')}]`);
+          // 获取所有消息并按时间排序
+          const allMessages = allIds
+            .map(id => state.entities[id])
+            .filter((msg): msg is Message => msg !== undefined);
+
+          const sortedAllMessages = sortMessagesByTime(allMessages);
+          state.messageIdsByTopic[topicId] = sortedAllMessages.map(msg => msg.id);
+        }
       }
     },
 
-    // 添加消息 - 改造为：按时间顺序插入
+    // 添加消息 - 优化版本：简化插入逻辑
     addMessage(state, action: PayloadAction<AddMessagePayload>) {
       const { topicId, message } = action.payload;
 
-      console.log(`[addMessage] 添加消息 ${message.id} 到话题 ${topicId}，时间: ${message.createdAt}`);
-
       // 添加消息
-      messagesAdapter.addOne(state as any, message);
+      messagesAdapter.addOne(state, message);
 
-      // ：按时间顺序插入消息ID
+      // 确保主题存在
       if (!state.messageIdsByTopic[topicId]) {
         state.messageIdsByTopic[topicId] = [];
       }
 
+      // 简化的插入逻辑：直接添加到末尾，然后重新排序
       const messageIds = state.messageIdsByTopic[topicId];
-      const newMessageTime = new Date(message.createdAt).getTime();
 
-      // 找到正确的插入位置（保持时间升序）
-      let insertIndex = messageIds.length;
-      for (let i = messageIds.length - 1; i >= 0; i--) {
-        const existingMessage = state.entities[messageIds[i]];
-        if (existingMessage) {
-          const existingTime = new Date(existingMessage.createdAt).getTime();
-          if (newMessageTime >= existingTime) {
-            insertIndex = i + 1;
-            break;
-          }
-          insertIndex = i;
-        }
+      // 如果消息不存在，添加它
+      if (!messageIds.includes(message.id)) {
+        messageIds.push(message.id);
+
+        // 获取所有消息并重新排序
+        const allMessages = messageIds
+          .map(id => state.entities[id])
+          .filter((msg): msg is Message => msg !== undefined);
+
+        const sortedMessages = sortMessagesByTime(allMessages);
+        state.messageIdsByTopic[topicId] = sortedMessages.map(msg => msg.id);
       }
-
-      // 在正确位置插入消息ID
-      messageIds.splice(insertIndex, 0, message.id);
-      console.log(`[addMessage] 消息插入到位置 ${insertIndex}，当前消息顺序: [${messageIds.join(', ')}]`);
     },
 
     // 更新消息
     updateMessage(state, action: PayloadAction<UpdateMessagePayload>) {
-      messagesAdapter.updateOne(state as any, {
+      messagesAdapter.updateOne(state, {
         id: action.payload.id,
         changes: action.payload.changes
       });
@@ -284,7 +279,7 @@ const newMessagesSlice = createSlice({
       const { topicId, messageId } = action.payload;
 
       // 从实体中删除消息
-      messagesAdapter.removeOne(state as any, messageId);
+      messagesAdapter.removeOne(state, messageId);
 
       // 从主题的消息ID数组中删除
       if (state.messageIdsByTopic[topicId]) {
@@ -300,7 +295,7 @@ const newMessagesSlice = createSlice({
       const messageIds = state.messageIdsByTopic[topicId] || [];
 
       // 删除消息
-      messagesAdapter.removeMany(state as any, messageIds);
+      messagesAdapter.removeMany(state, messageIds);
 
       // 清空主题的消息ID数组
       state.messageIdsByTopic[topicId] = [];
@@ -312,7 +307,6 @@ const newMessagesSlice = createSlice({
 
       const messageToUpdate = state.entities[messageId];
       if (!messageToUpdate) {
-        console.error(`[upsertBlockReference] 消息 ${messageId} 不存在.`);
         return;
       }
 
@@ -322,7 +316,7 @@ const newMessagesSlice = createSlice({
       // 如果块ID不在列表中，添加它
       if (!currentBlocks.includes(blockId)) {
         // 更新消息的blocks数组
-        messagesAdapter.updateOne(state as any, {
+        messagesAdapter.updateOne(state, {
           id: messageId,
           changes: {
             blocks: [...currentBlocks, blockId]
@@ -430,49 +424,49 @@ export const selectHasApiKeyError = createSelector(
   }
 );
 
-// 改造为：直接返回有序消息，无需运行时排序
+// 优化版本：直接返回有序消息，无需运行时排序
 export const selectOrderedMessagesByTopicId = createSelector(
   [selectMessagesByTopicId],
   (messages) => {
-    // ：假设消息已经按时间顺序存储，直接返回
+    // 消息已经按时间顺序存储，直接返回
     // 这样避免了每次渲染时的排序开销，提升性能
-    console.log(`[selectOrderedMessagesByTopicId] 返回 ${messages.length} 条有序消息（）`);
     return messages;
   }
 );
 
-// 异步Thunk - Cherry Studio优化版本：避免重复加载
+// 异步Thunk - 优化版本：避免重复加载和竞争条件
 export const loadTopicMessagesThunk = createAsyncThunk(
   'normalizedMessages/loadTopicMessages',
   async (topicId: string, { dispatch, getState }) => {
     try {
       const state = getState() as any;
 
-      // 🚀 Cherry Studio的关键优化：检查消息是否已存在且有实际数据
+      // 防止竞争条件：检查是否正在加载
+      if (state.messages.loadingByTopic[topicId]) {
+        return [];
+      }
+
+      // 检查消息是否已存在且有实际数据
       const existingMessageIds = state.messages.messageIdsByTopic[topicId] || [];
       const existingMessages = existingMessageIds.map((id: string) => state.messages.entities[id]).filter(Boolean);
 
       // 只有当真正有消息数据时才跳过加载
       if (existingMessageIds.length > 0 && existingMessages.length > 0) {
-        console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 已有 ${existingMessages.length} 条缓存消息，跳过数据库加载`);
         return existingMessages; // 返回已存在的消息
       }
 
       // 如果messageIdsByTopic存在但没有实际消息数据，说明状态不一致，需要重新加载
       if (existingMessageIds.length > 0 && existingMessages.length === 0) {
-        console.log(`[loadTopicMessagesThunk] 检测到话题 ${topicId} 状态不一致，清理并重新加载`);
         // 清理不一致的状态
         dispatch(newMessagesActions.clearTopicMessages(topicId));
       }
 
       dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
-      console.log(`[loadTopicMessagesThunk] 开始加载话题 ${topicId} 的消息（首次加载）`);
 
-      // 像电脑端一样，直接从topic获取消息
+      // 直接从topic获取消息
       const topic = await dexieStorage.getTopic(topicId);
       if (!topic) {
-        console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 不存在，创建空话题`);
-        // 像电脑端一样，如果topic不存在就创建一个空的
+        // 如果topic不存在就创建一个空的
         await dexieStorage.saveTopic({
           id: topicId,
           messages: [],
@@ -487,19 +481,14 @@ export const loadTopicMessagesThunk = createAsyncThunk(
 
       // 直接从topic.messages获取消息
       let messagesFromTopic = topic.messages || [];
-      console.log(`[loadTopicMessagesThunk] 从话题对象获取到 ${messagesFromTopic.length} 条消息`);
 
       // 数据修复：如果messages数组为空但messageIds数组有数据，从messages表恢复
       if (messagesFromTopic.length === 0 && topic.messageIds && topic.messageIds.length > 0) {
-        console.log(`[loadTopicMessagesThunk] 检测到数据不一致，从messages表恢复 ${topic.messageIds.length} 条消息`);
-
         try {
-          // 🚀 性能优化：使用批量查询而不是循环查询
+          // 性能优化：使用批量查询而不是循环查询
           const recoveredMessages = await dexieStorage.getMessagesByIds(topic.messageIds);
 
           if (recoveredMessages.length > 0) {
-            console.log(`[loadTopicMessagesThunk] 成功恢复 ${recoveredMessages.length} 条消息，更新话题数据`);
-
             // 更新话题的messages数组
             topic.messages = recoveredMessages;
             await dexieStorage.saveTopic(topic);
@@ -513,14 +502,11 @@ export const loadTopicMessagesThunk = createAsyncThunk(
       }
 
       if (messagesFromTopic.length > 0) {
-        // 像电脑端一样，简单的块查询
+        // 简单的块查询
         const messageIds = messagesFromTopic.map(m => m.id);
-        console.log(`[loadTopicMessagesThunk] 查询消息块，消息ID: [${messageIds.join(', ')}]`);
-
         const blocks = await dexieStorage.getMessageBlocksByMessageIds(messageIds);
-        console.log(`[loadTopicMessagesThunk] 加载到 ${blocks.length} 个消息块`);
 
-        // 像电脑端一样，确保消息有正确的blocks字段
+        // 确保消息有正确的blocks字段
         const messagesWithBlockIds = messagesFromTopic.map(m => ({
           ...m,
           blocks: m.blocks?.map(String) || []
@@ -531,11 +517,9 @@ export const loadTopicMessagesThunk = createAsyncThunk(
         }
         dispatch(newMessagesActions.messagesReceived({ topicId, messages: messagesWithBlockIds }));
       } else {
-        console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 没有消息`);
         dispatch(newMessagesActions.messagesReceived({ topicId, messages: [] }));
       }
 
-      console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 消息加载完成`);
       return messagesFromTopic;
     } catch (error) {
       console.error(`[loadTopicMessagesThunk] 加载话题 ${topicId} 消息失败:`, error);

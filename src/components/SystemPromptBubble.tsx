@@ -32,12 +32,12 @@ const SystemPromptBubble: React.FC<SystemPromptBubbleProps> = React.memo(({ topi
     if (assistant?.systemPrompt) {
       displayPrompt = assistant.systemPrompt;
 
-      // 如果话题有追加提示词，则追加显示
-      if (topic?.prompt) {
+      // 只有当话题提示词不为空时才追加显示
+      if (topic?.prompt && topic.prompt.trim()) {
         displayPrompt = displayPrompt + '\n\n[追加] ' + topic.prompt;
       }
-    } else if (topic?.prompt) {
-      // 如果助手没有提示词，则单独显示话题提示词
+    } else if (topic?.prompt && topic.prompt.trim()) {
+      // 如果助手没有提示词，则单独显示话题提示词（仅当不为空时）
       displayPrompt = topic.prompt;
     } else {
       displayPrompt = activeSystemPrompt || '点击此处编辑系统提示词';

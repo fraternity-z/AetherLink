@@ -24,8 +24,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { generateImage } from '../../shared/services/network/APIService';
 import { addGeneratedImage } from '../../shared/store/settingsSlice';
-import type { ImageGenerationParams } from '../../shared/types';
+import type { ImageGenerationParams, Model } from '../../shared/types';
 import { ModelType } from '../../shared/types';
+import type { ModelProvider } from '../../shared/config/defaultModels';
 
 interface ImageGenerationDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
 
   // 从Redux获取支持图像生成的模型
   const models = useSelector((state: RootState) =>
-    state.settings.models?.filter(model =>
+    state.settings.models?.filter((model: Model) =>
       model.enabled && (model.modelTypes?.includes(ModelType.ImageGen) || model.imageGeneration || model.capabilities?.imageGeneration)
     ) || []
   );
@@ -50,9 +51,9 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
   // 从providers获取支持图像生成的模型
   const providersModels = useSelector((state: RootState) =>
     state.settings.providers
-      .filter(provider => provider.isEnabled)
-      .flatMap(provider =>
-        provider.models.filter(model =>
+      .filter((provider: ModelProvider) => provider.isEnabled)
+      .flatMap((provider: ModelProvider) =>
+        provider.models.filter((model: Model) =>
           model.enabled && (model.modelTypes?.includes(ModelType.ImageGen) || model.imageGeneration || model.capabilities?.imageGeneration)
         )
       )
@@ -168,10 +169,12 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
       onClose={handleClose}
       fullWidth
       maxWidth="sm"
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          overflow: 'hidden'
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
         }
       }}
     >

@@ -11,7 +11,7 @@ import type { Assistant, ChatTopic } from '../../types/Assistant';
 import { dexieStorage } from '../storage/DexieStorageService';
 import { uuid } from '../../utils';
 import { getDefaultTopic } from './types';
-import { DEFAULT_TOPIC_PROMPT } from '../../config/prompts';
+import { DEFAULT_SYSTEM_PROMPT } from '../../config/prompts';
 
 // 移除DataService引用
 // import { DataService } from '../DataService';
@@ -71,7 +71,7 @@ export class AssistantService {
         topicIds: [topic.id], // 只使用新的消息系统
         type: 'assistant',
         isSystem: false,
-        systemPrompt: assistantData.systemPrompt || DEFAULT_TOPIC_PROMPT
+        systemPrompt: assistantData.systemPrompt || DEFAULT_SYSTEM_PROMPT
       };
 
       // 保存话题到数据库

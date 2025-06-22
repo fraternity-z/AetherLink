@@ -63,7 +63,10 @@ export class ResponseChunkProcessor {
       this.accumulatedContent += text;
     }
 
-    console.log(`[ResponseChunkProcessor] 文本块处理: 增量=${isIncrementalText}, 输入长度=${text.length}, 累积长度=${this.accumulatedContent.length}`);
+    // 移除频繁的文本块处理日志，只在开发环境且出现问题时输出
+    if (process.env.NODE_ENV === 'development' && text.length === 0) {
+      console.warn(`[ResponseChunkProcessor] 收到空文本块: 增量=${isIncrementalText}`);
+    }
 
     if (this.lastBlockType === MessageBlockType.UNKNOWN) {
       // 第一次收到文本，转换占位符块为主文本块

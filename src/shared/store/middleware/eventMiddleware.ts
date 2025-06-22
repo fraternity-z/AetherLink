@@ -1,5 +1,6 @@
 import type { Middleware } from '@reduxjs/toolkit';
 import { EventEmitter, EVENT_NAMES } from '../../services/EventEmitter';
+import { dexieStorage } from '../../services/storage/DexieStorageService';
 
 /**
  * Redux中间件，用于在特定操作发生时触发事件
@@ -43,6 +44,29 @@ export const eventMiddleware: Middleware = _store => next => action => {
   } else if (type === 'messages/updateTopic') {
     EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, payload);
   } else if (type === 'messages/removeTopic') {
+    EventEmitter.emit(EVENT_NAMES.TOPIC_DELETED, payload);
+  }
+
+  // 助手相关事件 - Cherry Studio模式
+  if (type === 'assistants/removeTopic') {
+    const state = _store.getState() as any;
+    const { assistantId } = payload;
+    const assistant = state.assistants.assistants.find((a: any) => a.id === assistantId);
+
+    // 如果助手有话题且只有一个话题，说明是自动创建的默认话题，需要保存到数据库
+    if (assistant && assistant.topics && assistant.topics.length === 1) {
+      const defaultTopic = assistant.topics[0];
+      // 异步保存到数据库，不阻塞Redux操作
+      Promise.resolve().then(async () => {
+        try {
+          await dexieStorage.saveTopic(defaultTopic);
+          console.log(`[EventMiddleware] 自动创建的默认话题已保存到数据库: ${defaultTopic.id}`);
+        } catch (error) {
+          console.error('[EventMiddleware] 保存自动创建的默认话题失败:', error);
+        }
+      });
+    }
+
     EventEmitter.emit(EVENT_NAMES.TOPIC_DELETED, payload);
   }
 

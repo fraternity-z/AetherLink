@@ -1188,6 +1188,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         onClose={handleMenuClose}
         disableAutoFocus={true}
         disableRestoreFocus={true}
+        disableEnforceFocus={true}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'left', // 改为left，避免菜单覆盖主聊天内容
@@ -1196,13 +1197,30 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
           vertical: 'top',
           horizontal: 'left', // 改为left，确保菜单从左侧展开
         }}
-        MenuListProps={{
-          sx: { zIndex: Z_INDEX.MENU.DROPDOWN } // 确保菜单在最高层级
+        slotProps={{
+          paper: {
+            sx: {
+              zIndex: Z_INDEX.MENU.DROPDOWN,
+              pointerEvents: 'auto' // 确保菜单可以接收点击事件
+            }
+          },
+          root: {
+            slotProps: {
+              backdrop: {
+                invisible: false,
+                sx: {
+                  backgroundColor: 'transparent'
+                }
+              }
+            }
+          }
         }}
-        PaperProps={{
-          sx: {
+        sx={{
+          '& .MuiList-root': {
             zIndex: Z_INDEX.MENU.DROPDOWN,
-            pointerEvents: 'auto' // 确保菜单可以接收点击事件
+            '&:focus': {
+              outline: 'none'
+            }
           }
         }}
       >

@@ -130,6 +130,7 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
         onClose={onClose}
         disableAutoFocus={true}
         disableRestoreFocus={true}
+        disableEnforceFocus={true}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'right',
@@ -137,6 +138,25 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
         transformOrigin={{
           vertical: 'top',
           horizontal: 'right',
+        }}
+        slotProps={{
+          root: {
+            slotProps: {
+              backdrop: {
+                invisible: false,
+                sx: {
+                  backgroundColor: 'transparent'
+                }
+              }
+            }
+          }
+        }}
+        sx={{
+          '& .MuiList-root': {
+            '&:focus': {
+              outline: 'none'
+            }
+          }
         }}
       >
         {/* 复制选项 */}

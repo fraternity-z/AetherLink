@@ -180,8 +180,8 @@ export const prepareMessagesForApi = async (
       // 使用助手的系统提示词作为基础
       systemPrompt = assistant.systemPrompt || '';
 
-      // 如果话题有追加提示词，则追加到助手提示词之后
-      if (topic && topic.prompt) {
+      // 只有当话题提示词不为空时才追加
+      if (topic && topic.prompt && topic.prompt.trim()) {
         if (systemPrompt) {
           // 如果助手有提示词，则追加话题提示词
           systemPrompt = systemPrompt + '\n\n' + topic.prompt;
@@ -191,8 +191,8 @@ export const prepareMessagesForApi = async (
         }
       }
     }
-  } else if (topic && topic.prompt) {
-    // 如果没有助手，使用话题的提示词
+  } else if (topic && topic.prompt && topic.prompt.trim()) {
+    // 如果没有助手，使用话题的提示词（仅当不为空时）
     systemPrompt = topic.prompt;
   }
 

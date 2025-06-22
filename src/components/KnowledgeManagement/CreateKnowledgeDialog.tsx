@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -18,7 +18,9 @@ import {
   Collapse,
   IconButton,
   Divider,
+  Alert,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import { getAvailableEmbeddingModels, getModelDimensions } from '../../shared/services/knowledge/MobileEmbeddingService';
 import { MobileEmbeddingService } from '../../shared/services/knowledge/MobileEmbeddingService';
@@ -61,21 +63,27 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // 用于取消异步操作的引用
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 加载可用的嵌入模型
   useEffect(() => {
     const models = getAvailableEmbeddingModels();
     setAvailableModels(models);
 
-    // 只在编辑模式下设置初始模型，新建时让用户手动选择（类似）
+    // 只在编辑模式下设置初始模型，新建时让用户手动选择
     if (isEditing && !formData.model && models.length > 0) {
+      const firstModel = models[0];
+      const dimensions = getModelDimensions(firstModel.id);
       setFormData(prev => ({
         ...prev,
-        model: models[0].id,
-        dimensions: 1536
+        model: firstModel.id,
+        dimensions: dimensions
       }));
     }
-  }, [isEditing]);
+  }, [isEditing, formData.model]);
 
   // 当initialData变化时更新formData
   useEffect(() => {
@@ -107,8 +115,18 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
   useEffect(() => {
     if (!open) {
       setErrors({});
+      setSubmitError(null);
     }
   }, [open]);
+
+  // 组件卸载时清理异步操作
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -129,30 +147,46 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
     }
   };
 
-  const handleModelChange = async (event: any) => {
-    const modelId = event.target.value as string;
+  // 处理Slider变化的防抖函数
+  const handleSliderChange = useCallback((field: string) => {
+    return (_: Event, value: number | number[]) => {
+      if (typeof value === 'number') {
+        setFormData(prev => ({ ...prev, [field]: value }));
+      }
+    };
+  }, []);
+
+  const handleModelChange = useCallback(async (event: SelectChangeEvent<string>) => {
+    const modelId = event.target.value;
+
+    // 取消之前的异步操作
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 创建新的 AbortController
+    abortControllerRef.current = new AbortController();
 
     // 获取模型的真实维度
+    let dimensions;
     try {
       const embeddingService = MobileEmbeddingService.getInstance();
-      const dimensions = await embeddingService.getEmbeddingDimensions(modelId);
-
-      setFormData((prev) => ({
-        ...prev,
-        model: modelId,
-        dimensions: dimensions, // 使用真实的维度
-      }));
+      dimensions = await embeddingService.getEmbeddingDimensions(modelId);
     } catch (error) {
       console.error('获取模型维度失败:', error);
       // 回退到配置文件中的维度
-      const dimensions = getModelDimensions(modelId);
+      dimensions = getModelDimensions(modelId);
+    }
+
+    // 检查操作是否被取消
+    if (!abortControllerRef.current?.signal.aborted) {
       setFormData((prev) => ({
         ...prev,
         model: modelId,
-        dimensions: dimensions,
+        dimensions,
       }));
     }
-  };
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -178,11 +212,12 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
 
     try {
       setIsSubmitting(true);
+      setSubmitError(null);
       await onSave(formData);
       onClose();
     } catch (error) {
       console.error('保存知识库失败:', error);
-      // 可以在这里添加错误处理，例如显示错误提示
+      setSubmitError(error instanceof Error ? error.message : '保存知识库失败，请稍后再试');
     } finally {
       setIsSubmitting(false);
     }
@@ -193,6 +228,12 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
       <DialogTitle>{isEditing ? '编辑知识库' : '创建知识库'}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3}>
+          {/* 错误提示 */}
+          {submitError && (
+            <Alert severity="error" onClose={() => setSubmitError(null)}>
+              {submitError}
+            </Alert>
+          )}
           {/* 知识库名称 */}
           <TextField
             autoFocus
@@ -244,7 +285,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
             <Slider
               name="documentCount"
               value={formData.documentCount || 6}
-              onChange={(_, value) => setFormData(prev => ({ ...prev, documentCount: value as number }))}
+              onChange={handleSliderChange('documentCount')}
               min={1}
               max={30}
               step={1}
@@ -272,7 +313,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
               onClick={() => setShowAdvanced(!showAdvanced)}
               size="small"
             >
-              {showAdvanced ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              {showAdvanced ? <ExpandLessIcon size={20} /> : <ExpandMoreIcon size={20} />}
             </IconButton>
           </Box>
 
@@ -287,7 +328,9 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
                 value={formData.chunkSize}
                 onChange={handleInputChange}
                 helperText="将文档分割成的块的大小（字符数）"
-                slotProps={{ htmlInput: { min: 100, max: 5000, step: 100 } }}
+                slotProps={{
+                  htmlInput: { min: 100, max: 5000, step: 100 }
+                }}
               />
 
               {/* 重叠大小 */}
@@ -299,7 +342,9 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
                 value={formData.chunkOverlap}
                 onChange={handleInputChange}
                 helperText="每个块之间重叠的字符数"
-                slotProps={{ htmlInput: { min: 0, max: 1000, step: 50 } }}
+                slotProps={{
+                  htmlInput: { min: 0, max: 1000, step: 50 }
+                }}
               />
 
               {/* 相似度阈值 */}
@@ -310,7 +355,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
                 <Slider
                   name="threshold"
                   value={formData.threshold || 0.7}
-                  onChange={(_, value) => setFormData(prev => ({ ...prev, threshold: value as number }))}
+                  onChange={handleSliderChange('threshold')}
                   min={0}
                   max={1}
                   step={0.05}

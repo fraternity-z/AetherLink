@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -7,7 +7,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Paper,
   Divider,
@@ -25,9 +24,14 @@ import {
   Alert,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Upload as CloudUploadIcon, File as InsertDriveFileIcon, Search as SearchIcon, Trash2 as DeleteIcon } from 'lucide-react';
+import {
+  Upload as CloudUploadIcon,
+  File as InsertDriveFileIcon,
+  Search as SearchIcon,
+  Trash2 as DeleteIcon,
+  X as CloseIcon
+} from 'lucide-react';
 
-import { X as CloseIcon, Trash2 as ClearAllIcon } from 'lucide-react';
 import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import type { KnowledgeDocument } from '../../shared/types/KnowledgeBase';
 
@@ -72,6 +76,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const knowledgeService = MobileKnowledgeService.getInstance();
 
   // 加载文档列表
@@ -94,6 +99,13 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
     if (knowledgeBaseId) {
       loadDocuments();
     }
+
+    // 清理函数：组件卸载时取消正在进行的操作
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [knowledgeBaseId]);
 
   // 处理文件上传
@@ -120,7 +132,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
           // 更新进度
           setProgress(prev => ({
             ...prev,
-            current: i,
+            current: i + 1,
           }));
 
           // 添加到知识库
@@ -194,14 +206,12 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
 
 
-  // 一键清理所有文档
-  const handleClearAllDocuments = async () => {
+  // 一键清理所有文档 - 使用并行删除提高效率
+  const handleClearAllDocuments = useCallback(async () => {
     try {
       setLoading(true);
-      // 删除所有文档
-      for (const doc of documents) {
-        await knowledgeService.deleteDocument(doc.id);
-      }
+      // 并行删除所有文档以提高效率
+      await Promise.all(documents.map(doc => knowledgeService.deleteDocument(doc.id)));
       loadDocuments();
     } catch (err) {
       console.error('清理文档失败:', err);
@@ -210,7 +220,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       setClearAllDialogOpen(false);
       setLoading(false);
     }
-  };
+  }, [documents, knowledgeService]);
 
   // 过滤文档
   const filteredDocuments = documents.filter(doc => {
@@ -235,23 +245,26 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
           fullWidth
           value={searchTerm}
           onChange={handleSearch}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm ? (
-              <InputAdornment position="end">
-                <IconButton
-                  onClick={() => setSearchTerm('')}
-                  size="small"
-                  aria-label="清除搜索"
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
+          disabled={loading}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon size={20} />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setSearchTerm('')}
+                    size="small"
+                    aria-label="清除搜索"
+                  >
+                    <CloseIcon size={20} />
+                  </IconButton>
+                </InputAdornment>
+              ) : null,
+            }
           }}
         />
 
@@ -275,7 +288,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
           <Button
             variant="outlined"
             color="error"
-            startIcon={<ClearAllIcon />}
+            startIcon={<DeleteIcon />}
             onClick={() => setClearAllDialogOpen(true)}
             disabled={uploading || loading}
           >
@@ -316,7 +329,18 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
             {filteredDocuments.map((doc, index) => (
               <React.Fragment key={doc.id}>
                 {index > 0 && <Divider />}
-                <ListItem>
+                <ListItem
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      onClick={() => handleDeleteDocument(doc.id)}
+                      aria-label="删除"
+                      size="small"
+                    >
+                      <DeleteIcon size={20} />
+                    </IconButton>
+                  }
+                >
                   <ListItemIcon>
                     <InsertDriveFileIcon />
                   </ListItemIcon>
@@ -349,16 +373,6 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                       </Box>
                     }
                   />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      onClick={() => handleDeleteDocument(doc.id)}
-                      aria-label="删除"
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </ListItemSecondaryAction>
                 </ListItem>
               </React.Fragment>
             ))}

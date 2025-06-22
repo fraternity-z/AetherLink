@@ -214,14 +214,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
 
         // 检查是否启用自动滚动（除非强制滚动）
         if (!autoScrollToBottom && !force) {
-          console.log(`[ScrollManager] 自动滚动已禁用，跳过滚动请求 (来源: ${source})`);
+          // 移除频繁的滚动日志，只在开发环境输出
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[ScrollManager] 自动滚动已禁用，跳过滚动请求 (来源: ${source})`);
+          }
           return;
         }
 
         // 防止重复滚动
         const now = Date.now();
         if (manager.isScrolling && now - manager.lastScrollTime < 50) {
-          console.log(`[ScrollManager] 滚动过于频繁，跳过请求 (来源: ${source})`);
+          // 移除频繁的滚动日志
           return;
         }
 
@@ -235,10 +238,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
             // 优先使用 messagesEndRef
             if (messagesEndRef.current) {
               messagesEndRef.current.scrollIntoView({ behavior });
-              console.log(`[ScrollManager] 使用 messagesEndRef 滚动到底部 (来源: ${source})`);
+              // 移除频繁的滚动成功日志
             } else if (scrollToBottom) {
               scrollToBottom();
-              console.log(`[ScrollManager] 使用 useScrollPosition 滚动到底部 (来源: ${source})`);
+              // 移除频繁的滚动成功日志
             }
           } catch (error) {
             handleError(error, `滚动管理器滚动失败 (来源: ${source})`, { showToUser: false });

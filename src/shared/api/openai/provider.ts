@@ -18,8 +18,6 @@ import {
   isReasoningModel
 } from '../../utils/modelDetection';
 
-// 注释掉工具相关导入，保留结构以便将来添加
-// import { parseAndCallTools } from '../tools/parseAndCallTools';
 import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
@@ -30,6 +28,8 @@ import {
   mcpToolCallResponseToOpenAIMessage,
   convertToolCallsToMcpResponses
 } from './tools';
+
+
 
 /**
  * 基础OpenAI Provider
@@ -253,6 +253,8 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
 
 
+
+
   /**
    * 处理工具调用
    */
@@ -312,12 +314,22 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
     console.log(`[OpenAI] 工具调用结果数量: ${results.length}`);
 
-    return results.map((result, index) => {
-      if (index < toolResponses.length) {
-        return this.mcpToolCallResponseToMessage(toolResponses[index], result, this.model);
+    // 安全地处理工具调用结果，避免索引越界
+    const toolMessages = [];
+    const maxIndex = Math.min(results.length, toolResponses.length);
+
+    for (let i = 0; i < maxIndex; i++) {
+      try {
+        const toolMessage = this.mcpToolCallResponseToMessage(toolResponses[i], results[i], this.model);
+        if (toolMessage) {
+          toolMessages.push(toolMessage);
+        }
+      } catch (error) {
+        console.warn(`[OpenAI] 处理工具调用结果 ${i} 失败:`, error);
       }
-      return null;
-    }).filter(Boolean);
+    }
+
+    return toolMessages;
   }
 
   /**
@@ -492,24 +504,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     }
   }
 
-  /**
-   * 获取消息内容
-   * 极简版本：直接从消息对象中获取content属性
-   * @param message 消息对象
-   * @returns 消息内容
-   */
-  protected getMessageContent(message: Message): string {
-    // 直接从消息对象中获取content属性
-    const content = (message as any).content;
 
-    // 如果content是字符串，直接返回
-    if (content && typeof content === 'string') {
-      return content;
-    }
-
-    // 否则返回空字符串
-    return '';
-  }
 
   /**
    * 处理流式响应
@@ -546,11 +541,11 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           accumulatedContent = content;
           onUpdate(content, reasoning);
         } else {
-          // 后续迭代，只传递新增的内容（增量）
+          // 后续迭代，添加分隔符并传递新增的内容
           const separator = accumulatedContent.trim() ? '\n\n' : '';
-          const deltaContent = separator + content;
-          accumulatedContent = accumulatedContent + deltaContent;
-          onUpdate(deltaContent, reasoning); // 只传递增量内容
+          const newContent = separator + content;
+          accumulatedContent += newContent;
+          onUpdate(newContent, reasoning); // 传递包含分隔符的新增内容
         }
       };
 
@@ -591,22 +586,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         onChunk
       );
 
-      // 注释：保留原有逻辑结构以备将来使用
-      // 如果需要使用 streamCompletion 保持推理内容（组合模型兼容），可以取消注释以下代码：
-      /*
-      console.log('[OpenAIProvider] 未检测到 onChunk 回调，使用 streamCompletion 保持推理内容（组合模型兼容）');
 
-      // 调用流式完成函数（保持原有逻辑，用于组合模型）
-      result = await streamCompletion(
-        this.client,
-        this.model.id,
-        currentMessages,
-        params.temperature,
-        params.max_tokens || params.max_completion_tokens,
-        enhancedCallback,
-        iterationParams
-      );
-      */
 
       console.log(`[OpenAIProvider] 流式响应结果类型: ${typeof result}, hasToolCalls: ${typeof result === 'object' && (result as any)?.hasToolCalls}`);
 
@@ -692,9 +672,10 @@ export class OpenAIProvider extends BaseOpenAIProvider {
               accumulatedContent = content;
               fullResponse = content;
             } else {
-              // 后续迭代，追加内容
+              // 后续迭代，添加分隔符并追加内容
               const separator = accumulatedContent.trim() ? '\n\n' : '';
-              accumulatedContent = accumulatedContent + separator + content;
+              const newContent = separator + content;
+              accumulatedContent += newContent;
               fullResponse = accumulatedContent;
             }
 

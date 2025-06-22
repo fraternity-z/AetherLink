@@ -21,13 +21,12 @@ import {
   CardContent,
   Chip,
   IconButton,
-  Alert,
-  Autocomplete,
-  Avatar
+  Alert
 } from '@mui/material';
 import { Plus as AddIcon, Trash2 as DeleteIcon } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
+import DropdownModelSelector from '../../pages/ChatPage/components/DropdownModelSelector';
 
 import type { ModelComboConfig, ModelComboTemplate, ModelComboStrategy, ModelComboFormData } from '../../shared/types/ModelCombo';
 
@@ -61,12 +60,6 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
     .flatMap(provider =>
       provider.models
         .filter(model => model.enabled)
-        .map(model => ({
-          ...model,
-          providerName: provider.name,
-          providerColor: provider.color,
-          providerAvatar: provider.avatar
-        }))
     );
 
   const steps = ['基本信息', '选择策略', '配置模型', '完成设置'];
@@ -255,43 +248,18 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
                     </Box>
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <Autocomplete
-                        fullWidth
-                        options={availableModels}
-                        getOptionLabel={(option) => option.name}
-                        value={availableModels.find(m => m.id === model.modelId) || null}
-                        onChange={(_, newValue) => {
-                          handleModelChange(index, 'modelId', newValue?.id || '');
-                        }}
-                        renderOption={(props, option) => (
-                          <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                bgcolor: option.providerColor || '#666',
-                                fontSize: '0.75rem'
-                              }}
-                            >
-                              {option.providerAvatar || option.providerName?.[0] || 'M'}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2">{option.name}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {option.providerName}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        )}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="选择模型"
-                            placeholder="从已配置的模型中选择"
-                            required
-                          />
-                        )}
-                      />
+                      <Box>
+                        <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                          选择模型 *
+                        </Typography>
+                        <DropdownModelSelector
+                          selectedModel={availableModels.find(m => m.id === model.modelId) || null}
+                          availableModels={availableModels}
+                          handleModelSelect={(selectedModel) => {
+                            handleModelChange(index, 'modelId', selectedModel?.id || '');
+                          }}
+                        />
+                      </Box>
 
                       <FormControl fullWidth>
                         <InputLabel>角色</InputLabel>
@@ -319,7 +287,9 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
                           type="number"
                           value={model.weight || 1}
                           onChange={(e) => handleModelChange(index, 'weight', Number(e.target.value))}
-                          inputProps={{ min: 0, max: 1, step: 0.1 }}
+                          slotProps={{
+                            htmlInput: { min: 0, max: 1, step: 0.1 }
+                          }}
                         />
                       )}
 
@@ -330,7 +300,9 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
                           type="number"
                           value={model.priority || 1}
                           onChange={(e) => handleModelChange(index, 'priority', Number(e.target.value))}
-                          inputProps={{ min: 1 }}
+                          slotProps={{
+                            htmlInput: { min: 1 }
+                          }}
                         />
                       )}
                     </Box>
@@ -395,8 +367,10 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        sx: { minHeight: '500px' }
+      slotProps={{
+        paper: {
+          sx: { minHeight: '500px' }
+        }
       }}
     >
       <DialogTitle>

@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Assistant, ChatTopic } from '../../types/Assistant';
+import { getDefaultTopic } from '../../services/assistant/types';
 
 interface AssistantsState {
   assistants: Assistant[];
@@ -73,6 +74,14 @@ const assistantsSlice = createSlice({
 
         if (assistant.topics) {
           assistant.topics = assistant.topics.filter(t => t.id !== topicId);
+        }
+
+        // 🔥 Cherry Studio模式：如果删除后没有话题了，自动创建默认话题
+        if (assistant.topicIds.length === 0) {
+          const defaultTopic = getDefaultTopic(assistantId);
+          assistant.topicIds = [defaultTopic.id];
+          assistant.topics = [defaultTopic];
+          console.log(`[assistantsSlice] 助手 ${assistantId} 没有话题了，自动创建默认话题: ${defaultTopic.id}`);
         }
 
         // 使用辅助函数同步更新 currentAssistant

@@ -487,10 +487,10 @@ export class TopicManager {
       // 创建话题的可修改副本
       let updatedTopic = { ...topic };
 
-      // 获取助手的系统提示词并存储在话题的prompt字段中
-      // 简化：只在创建话题时设置提示词，不在后续同步
-      if (!updatedTopic.prompt) {
-        updatedTopic.prompt = assistant.systemPrompt || DEFAULT_TOPIC_PROMPT;
+      // 确保话题提示词默认为空
+      // 话题提示词应该由用户主动设置，不自动继承助手提示词
+      if (updatedTopic.prompt === undefined) {
+        updatedTopic.prompt = DEFAULT_TOPIC_PROMPT; // 空字符串
       }
 
       // 检查话题是否已有消息（通过messageIds检查）

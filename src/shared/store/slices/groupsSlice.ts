@@ -5,16 +5,24 @@ import { getStorageItem, setStorageItem } from '../../utils/storage';
 import { makeSerializable, diagnoseSerializationIssues } from '../../utils/serialization';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
 
+// 类型定义
+type AppDispatch = any;
+type RootState = { groups: GroupsState };
+
 interface GroupsState {
   groups: Group[];
   assistantGroupMap: Record<string, string>; // assistantId -> groupId
   topicGroupMap: Record<string, Record<string, string>>; // assistantId -> (topicId -> groupId)
+  error: string | null;
+  loading: boolean;
 }
 
 const initialState: GroupsState = {
   groups: [],
   assistantGroupMap: {},
-  topicGroupMap: {} // 现在是嵌套结构：assistantId -> (topicId -> groupId)
+  topicGroupMap: {}, // 现在是嵌套结构：assistantId -> (topicId -> groupId)
+  error: null,
+  loading: false
 };
 
 /**
@@ -59,9 +67,11 @@ const saveGroupsToStorage = async (groups: Group[]): Promise<void> => {
 /**
  * 安全地保存映射数据到存储
  */
-const saveMapToStorage = async (key: string, map: Record<string, string>): Promise<void> => {
+const saveMapToStorage = async (key: string, map: Record<string, any>): Promise<void> => {
   try {
-
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`开始保存${key}数据...`);
+    }
 
     // 先诊断数据是否存在序列化问题
     const { hasCircularRefs, nonSerializableProps } = diagnoseSerializationIssues(map);
@@ -82,7 +92,9 @@ const saveMapToStorage = async (key: string, map: Record<string, string>): Promi
     // 同时使用setStorageItem作为备份方式
     await setStorageItem(key, serializableMap);
 
-    console.log(`${key}数据保存成功`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`${key}数据保存成功`);
+    }
   } catch (error) {
     console.error(`保存${key}失败:`, error);
     // 记录更详细的错误信息
@@ -195,6 +207,24 @@ const groupsSlice = createSlice({
       state.groups = action.payload.groups;
       state.assistantGroupMap = action.payload.assistantGroupMap;
       state.topicGroupMap = action.payload.topicGroupMap;
+      state.error = null;
+      state.loading = false;
+    },
+
+    // 设置错误状态
+    setError: (state, action: PayloadAction<string>) => {
+      state.error = action.payload;
+      state.loading = false;
+    },
+
+    // 清除错误状态
+    clearError: (state) => {
+      state.error = null;
+    },
+
+    // 设置加载状态
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
     },
 
     // 创建新分组
@@ -203,10 +233,11 @@ const groupsSlice = createSlice({
 
       // 对于话题分组，assistantId是必需的
       if (type === 'topic' && !assistantId) {
-        console.error('创建话题分组时必须提供assistantId');
+        state.error = '创建话题分组时必须提供assistantId';
         return;
       }
 
+      state.error = null; // 清除错误
       const newGroup: Group = {
         id: nanoid(),
         name,
@@ -217,9 +248,6 @@ const groupsSlice = createSlice({
         expanded: true
       };
       state.groups.push(newGroup);
-
-      // 保存更改
-      saveGroupsToStorage(state.groups);
     },
 
     // 更新分组
@@ -228,9 +256,7 @@ const groupsSlice = createSlice({
       const group = state.groups.find(g => g.id === id);
       if (group) {
         Object.assign(group, changes);
-
-        // 保存更改
-        saveGroupsToStorage(state.groups);
+        state.error = null;
       }
     },
 
@@ -265,10 +291,7 @@ const groupsSlice = createSlice({
             g.order = index;
           });
 
-        // 保存更改
-        saveGroupsToStorage(state.groups);
-        saveMapToStorage('assistantGroupMap', state.assistantGroupMap);
-        saveMapToStorage('topicGroupMap', state.topicGroupMap);
+        state.error = null;
       }
     },
 
@@ -293,13 +316,7 @@ const groupsSlice = createSlice({
             state.topicGroupMap[group.assistantId][itemId] = groupId;
           }
 
-          // 保存更改
-          saveGroupsToStorage(state.groups);
-
-          const mapKey = group.type === 'assistant' ? 'assistantGroupMap' : 'topicGroupMap';
-          const mapValue = group.type === 'assistant' ? state.assistantGroupMap : state.topicGroupMap;
-
-          saveMapToStorage(mapKey, mapValue);
+          state.error = null;
         }
       }
     },
@@ -329,12 +346,7 @@ const groupsSlice = createSlice({
             delete state.topicGroupMap[assistantId][itemId];
           }
 
-          // 保存更改
-          saveGroupsToStorage(state.groups);
-
-          const mapKey = type === 'assistant' ? 'assistantGroupMap' : 'topicGroupMap';
-          const mapValue = type === 'assistant' ? state.assistantGroupMap : state.topicGroupMap;
-          saveMapToStorage(mapKey, mapValue);
+          state.error = null;
         }
       }
     },
@@ -353,8 +365,7 @@ const groupsSlice = createSlice({
           }
         });
 
-      // 保存更改
-      saveGroupsToStorage(state.groups);
+      state.error = null;
     },
 
     // 重新排序分组内的项目
@@ -364,7 +375,7 @@ const groupsSlice = createSlice({
 
       if (group) {
         group.items = newOrder;
-        saveGroupsToStorage(state.groups);
+        state.error = null;
       }
     },
 
@@ -375,7 +386,7 @@ const groupsSlice = createSlice({
 
       if (group) {
         group.expanded = !group.expanded;
-        saveGroupsToStorage(state.groups);
+        state.error = null;
       }
     }
   }
@@ -383,6 +394,9 @@ const groupsSlice = createSlice({
 
 export const {
   loadGroupsSuccess,
+  setError,
+  clearError,
+  setLoading,
   createGroup,
   updateGroup,
   deleteGroup,
@@ -411,10 +425,30 @@ export const selectAssistantGroups = (state: { groups: GroupsState }) => {
 };
 
 // 异步初始化action
-export const initGroups = () => async (dispatch: any) => {
-  await initializeGroups(dispatch);
-  // 返回一个符合UnknownAction类型的对象
-  return { type: 'groups/initGroups' };
+export const initGroups = () => async (dispatch: AppDispatch) => {
+  dispatch(setLoading(true));
+  try {
+    await initializeGroups(dispatch);
+    // 返回一个符合UnknownAction类型的对象
+    return { type: 'groups/initGroups' };
+  } catch (error) {
+    dispatch(setError(error instanceof Error ? error.message : '初始化分组失败'));
+    throw error;
+  }
+};
+
+// 异步保存操作
+export const saveGroups = () => async (_dispatch: AppDispatch, getState: () => RootState) => {
+  try {
+    const { groups, assistantGroupMap, topicGroupMap } = getState().groups;
+    await saveGroupsToStorage(groups);
+    await saveMapToStorage('assistantGroupMap', assistantGroupMap);
+    await saveMapToStorage('topicGroupMap', topicGroupMap);
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('保存分组数据失败:', error);
+    }
+  }
 };
 
 export default groupsSlice.reducer;

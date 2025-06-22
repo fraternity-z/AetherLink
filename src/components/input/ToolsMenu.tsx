@@ -359,6 +359,9 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
         anchorEl={anchorEl}
         open={open}
         onClose={onClose}
+        disableAutoFocus={true}
+        disableRestoreFocus={true}
+        disableEnforceFocus={true}
         anchorOrigin={{
           vertical: 'top',
           horizontal: 'left',
@@ -367,16 +370,35 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
           vertical: 'bottom',
           horizontal: 'left',
         }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 3,
+              minWidth: { xs: '90vw', sm: 280 },
+              maxWidth: { xs: '95vw', sm: 320 },
+              width: { xs: '90vw', sm: 'auto' },
+              maxHeight: { xs: '70vh', sm: '80vh' },
+              overflow: 'auto',
+              boxShadow: theme.shadows[8],
+              backgroundColor: theme.palette.background.paper,
+            }
+          },
+          root: {
+            slotProps: {
+              backdrop: {
+                invisible: false,
+                sx: {
+                  backgroundColor: 'transparent'
+                }
+              }
+            }
+          }
+        }}
         sx={{
-          '& .MuiPaper-root': {
-            borderRadius: 3,
-            minWidth: { xs: '90vw', sm: 280 },
-            maxWidth: { xs: '95vw', sm: 320 },
-            width: { xs: '90vw', sm: 'auto' },
-            maxHeight: { xs: '70vh', sm: '80vh' },
-            overflow: 'auto',
-            boxShadow: theme.shadows[8],
-            backgroundColor: theme.palette.background.paper,
+          '& .MuiList-root': {
+            '&:focus': {
+              outline: 'none'
+            }
           }
         }}
       >
