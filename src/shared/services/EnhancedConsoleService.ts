@@ -60,7 +60,9 @@ class EnhancedConsoleService {
               (message.includes('Received `%s` for a non-boolean attribute `%s`') &&
                args.length > 1 && String(args[1]).includes('true') && String(args[2]).includes('button')) ||
               message.includes("The Menu component doesn't accept a Fragment as a child") ||
-              message.includes('[@use-gesture]: The drag target has its `touch-action` style property set to `auto`')) {
+              message.includes('[@use-gesture]: The drag target has its `touch-action` style property set to `auto`') ||
+              message.includes('Selector unknown returned the root state') ||
+              message.includes('This can lead to unnecessary rerenders')) {
             return; // 不调用原始方法，也不记录到系统
           }
         }

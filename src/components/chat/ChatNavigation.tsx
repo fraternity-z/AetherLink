@@ -160,16 +160,6 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const handleScroll = () => {
-      const now = Date.now();
-      lastMoveTime.current = now;
-
-      if (!isNearButtons) {
-        setIsVisible(true);
-        resetHideTimer();
-      }
-    };
-
     const handleMouseMove = (e: MouseEvent) => {
       // 桌面端鼠标移动逻辑
       if (isMobile) return;
@@ -210,8 +200,6 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
       }
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-
     if (isMobile) {
       window.addEventListener('touchstart', handleTouchStart, { passive: true });
     } else {
@@ -219,7 +207,6 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     }
 
     return () => {
-      container.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchstart', handleTouchStart);
       if (hideTimer.current) {
@@ -287,23 +274,29 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            borderRadius: isMobile ? 3 : 2,
+            borderRadius: isMobile ? 2 : 2,
             overflow: 'hidden',
-            bgcolor: 'background.paper',
+            // 移动端使用半透明背景
+            bgcolor: isMobile ? 'rgba(255, 255, 255, 0.85)' : 'background.paper',
             backdropFilter: 'blur(8px)',
             border: '1px solid',
             borderColor: 'divider',
-            minWidth: isMobile ? 48 : 'auto'
+            minWidth: isMobile ? 36 : 'auto', // 减小移动端宽度
+            // 深色模式下的背景
+            ...(theme.palette.mode === 'dark' && isMobile && {
+              bgcolor: 'rgba(18, 18, 18, 0.85)'
+            })
           }}
         >
           <Tooltip title="回到顶部" placement="left" disableHoverListener={isMobile}>
             <IconButton
               onClick={handleScrollToTop}
-              size={isMobile ? "medium" : "small"}
+              size="small"
               sx={{
                 borderRadius: 0,
-                minHeight: isMobile ? 48 : 'auto',
-                minWidth: isMobile ? 48 : 'auto',
+                minHeight: isMobile ? 36 : 'auto', // 减小移动端高度
+                minWidth: isMobile ? 36 : 'auto',  // 减小移动端宽度
+                padding: isMobile ? '6px' : '8px', // 调整内边距
                 '&:hover': {
                   bgcolor: 'action.hover'
                 },
@@ -312,18 +305,19 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
                 }
               }}
             >
-              <ArrowUp size={isMobile ? 24 : 20} />
+              <ArrowUp size={isMobile ? 18 : 20} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="上一条消息" placement="left" disableHoverListener={isMobile}>
             <IconButton
               onClick={handlePrevMessage}
-              size={isMobile ? "medium" : "small"}
+              size="small"
               sx={{
                 borderRadius: 0,
-                minHeight: isMobile ? 48 : 'auto',
-                minWidth: isMobile ? 48 : 'auto',
+                minHeight: isMobile ? 36 : 'auto',
+                minWidth: isMobile ? 36 : 'auto',
+                padding: isMobile ? '6px' : '8px',
                 '&:hover': {
                   bgcolor: 'action.hover'
                 },
@@ -332,18 +326,19 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
                 }
               }}
             >
-              <ChevronUp size={isMobile ? 24 : 20} />
+              <ChevronUp size={isMobile ? 18 : 20} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="下一条消息" placement="left" disableHoverListener={isMobile}>
             <IconButton
               onClick={handleNextMessage}
-              size={isMobile ? "medium" : "small"}
+              size="small"
               sx={{
                 borderRadius: 0,
-                minHeight: isMobile ? 48 : 'auto',
-                minWidth: isMobile ? 48 : 'auto',
+                minHeight: isMobile ? 36 : 'auto',
+                minWidth: isMobile ? 36 : 'auto',
+                padding: isMobile ? '6px' : '8px',
                 '&:hover': {
                   bgcolor: 'action.hover'
                 },
@@ -352,18 +347,19 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
                 }
               }}
             >
-              <ChevronDown size={isMobile ? 24 : 20} />
+              <ChevronDown size={isMobile ? 18 : 20} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="回到底部" placement="left" disableHoverListener={isMobile}>
             <IconButton
               onClick={handleScrollToBottom}
-              size={isMobile ? "medium" : "small"}
+              size="small"
               sx={{
                 borderRadius: 0,
-                minHeight: isMobile ? 48 : 'auto',
-                minWidth: isMobile ? 48 : 'auto',
+                minHeight: isMobile ? 36 : 'auto',
+                minWidth: isMobile ? 36 : 'auto',
+                padding: isMobile ? '6px' : '8px',
                 '&:hover': {
                   bgcolor: 'action.hover'
                 },
@@ -372,7 +368,7 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
                 }
               }}
             >
-              <ArrowDown size={isMobile ? 24 : 20} />
+              <ArrowDown size={isMobile ? 18 : 20} />
             </IconButton>
           </Tooltip>
         </Paper>

@@ -105,6 +105,29 @@ const getDeleteButtonStyle = (isClicked: boolean, errorColor: string, customColo
   transition: 'all 0.2s ease-in-out'
 });
 
+// 常用样式对象，避免重复创建
+const microBubbleContainerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '2px',
+  position: 'relative',
+  top: '-1px'
+} as const;
+
+const toolbarContainerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 0.5,
+  width: '100%'
+} as const;
+
+const toolbarButtonGroupStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 0.5,
+  flex: 1
+} as const;
+
 const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   message,
   topicId,
@@ -150,91 +173,57 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
   const exportMenuOpen = Boolean(exportAnchorEl);
 
-  // 内存泄漏防护：组件卸载时清理DOM引用
+  // 内存泄漏防护：组件卸载时清理DOM引用和定时器
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       setAnchorEl(null);
       setVersionAnchorEl(null);
       setExportAnchorEl(null);
+      // 清理删除按钮定时器
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
     };
   }, []);
 
   // 删除按钮状态（两次点击确认）
   const [deleteButtonClicked, setDeleteButtonClicked] = useState(false);
+  // 删除按钮定时器引用，防止多个定时器
+  const deleteTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // TTS播放状态
   const [isPlaying, setIsPlaying] = useState(false);
   // TTS功能启用状态
   const [enableTTS, setEnableTTS] = useState(true);
-  // TTS配置缓存
-  const ttsConfigRef = useRef<{
-    apiKey: string;
-    model: string;
-    voice: string;
-    loaded: boolean;
-  }>({
-    apiKey: '',
-    model: 'FunAudioLLM/CosyVoice2-0.5B',
-    voice: 'alex',
-    loaded: false
-  });
 
-  // 初始化TTS服务 - 使用全局配置初始化，避免重复加载
+  // 组件挂载状态，防止内存泄漏
+  const mountedRef = useRef(true);
+
+  // 简化TTS初始化 - 只获取启用状态，不重复加载配置
   useEffect(() => {
-    const initializeTTS = async () => {
+    const loadTTSEnabled = async () => {
       try {
-        const ttsService = TTSService.getInstance();
-
-        // 使用TTSService的全局配置初始化
-        const success = await ttsService.initializeConfig();
-
-        if (success) {
-          // 从存储加载实际的用户配置
-          const [apiKey, model, voice, enabled] = await Promise.all([
-            getStorageItem<string>('siliconflow_api_key'),
-            getStorageItem<string>('tts_model'),
-            getStorageItem<string>('tts_voice'),
-            getStorageItem<string>('enable_tts')
-          ]);
-
-          // 更新本地配置缓存为实际的用户设置
-          ttsConfigRef.current = {
-            apiKey: apiKey || '',
-            model: model || 'FunAudioLLM/CosyVoice2-0.5B',
-            voice: voice ? (voice.includes(':') ? voice : `${model || 'FunAudioLLM/CosyVoice2-0.5B'}:${voice}`) : 'FunAudioLLM/CosyVoice2-0.5B:alex',
-            loaded: true
-          };
-
-          console.log('🔧 MessageActions TTS配置加载完成:', {
-            hasApiKey: !!ttsConfigRef.current.apiKey,
-            model: ttsConfigRef.current.model,
-            voice: ttsConfigRef.current.voice
-          });
-
-          const isEnabled = enabled !== 'false'; // 默认启用
-          setEnableTTS(isEnabled);
-        } else {
-          console.warn('TTS配置初始化失败，使用默认设置');
-          setEnableTTS(true); // 默认启用
-        }
+        const enabled = await getStorageItem<string>('enable_tts');
+        const isEnabled = enabled !== 'false'; // 默认启用
+        setEnableTTS(isEnabled);
       } catch (error) {
-        console.error('TTS初始化失败:', error);
+        console.error('获取TTS启用状态失败:', error);
         setEnableTTS(true); // 默认启用
       }
     };
 
-    // 如果本地配置未加载，则初始化
-    if (!ttsConfigRef.current.loaded) {
-      initializeTTS();
-    }
+    loadTTSEnabled();
   }, []);
 
-  // 播放状态管理 - 重写：简化轮询，避免依赖循环
+  // 播放状态管理 - 使用事件驱动，避免轮询
   useEffect(() => {
     const ttsService = TTSService.getInstance();
 
     // 检查当前播放状态
     const checkPlayingStatus = () => {
+      if (!mountedRef.current) return;
+
       const currentId = ttsService.getCurrentMessageId();
       const isServicePlaying = ttsService.getIsPlaying();
       const shouldBePlaying = isServicePlaying && currentId === message.id;
@@ -245,10 +234,22 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     // 初始检查
     checkPlayingStatus();
 
-    // 定期检查播放状态
-    const intervalId = setInterval(checkPlayingStatus, 500);
+    // 监听 TTS 状态变化事件
+    const handleTTSStateChange = () => {
+      checkPlayingStatus();
+    };
 
-    return () => clearInterval(intervalId);
+    // 订阅事件
+    EventEmitter.on('tts:playStateChanged', handleTTSStateChange);
+    EventEmitter.on('tts:playbackEnded', handleTTSStateChange);
+    EventEmitter.on('tts:playbackStarted', handleTTSStateChange);
+
+    return () => {
+      // 取消订阅
+      EventEmitter.off('tts:playStateChanged', handleTTSStateChange);
+      EventEmitter.off('tts:playbackEnded', handleTTSStateChange);
+      EventEmitter.off('tts:playbackStarted', handleTTSStateChange);
+    };
   }, [message.id]); // 只依赖message.id
 
   // 打开菜单 - 优化：使用useCallback
@@ -264,7 +265,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     setAnchorEl(null);
   }, []);
 
-  // 复制消息内容到剪贴板 - 优化：使用useCallback
+  // 复制消息内容到剪贴板 - 优化：使用useCallback，修复依赖项
   const handleCopyContent = useCallback(async () => {
     if (!message) return;
 
@@ -309,7 +310,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       // 确保菜单在操作完成后关闭
       handleMenuClose();
     }
-  }, [message, handleMenuClose]);
+  }, [message, handleMenuClose, renderMode]); // 添加缺失的依赖项
 
   // 打开编辑对话框 - 优化：使用useCallback
   const handleEditClick = useCallback(() => {
@@ -339,14 +340,21 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     }
   }, [onDelete, message.id, handleMenuClose]);
 
-  // 工具栏模式的删除 - 保留两次点击确认逻辑
+  // 工具栏模式的删除 - 保留两次点击确认逻辑，修复多定时器问题
   const handleToolbarDeleteClick = useCallback(() => {
+    // 清理之前的定时器
+    if (deleteTimerRef.current) {
+      clearTimeout(deleteTimerRef.current);
+    }
+
     if (!deleteButtonClicked) {
       // 第一次点击：变红，准备删除
       setDeleteButtonClicked(true);
       // 3秒后自动重置状态
-      setTimeout(() => {
-        setDeleteButtonClicked(false);
+      deleteTimerRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          setDeleteButtonClicked(false);
+        }
       }, 3000);
     } else {
       // 第二次点击：执行删除
@@ -373,7 +381,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [onResend, message.id, handleMenuClose]);
 
-  // 保存消息内容 - 优化：使用useCallback
+  // 保存消息内容 - 优化：使用useCallback，修复依赖项
   const handleSaveContent = useCallback(async () => {
     try {
       const textContent = getMainTextContent(message);
@@ -413,7 +421,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       alert('保存失败');
     }
     handleMenuClose();
-  }, [message, handleMenuClose]);
+  }, [message, handleMenuClose]); // 依赖项已正确
 
   // 创建分支 - 使用最佳实例的事件机制
   const handleCreateBranch = useCallback(() => {
@@ -428,7 +436,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [handleMenuClose, messageIndex]);
 
-  // 文本转语音 - 重写：简化状态管理
+  // 文本转语音 - 简化：使用TTSService的全局配置
   const handleTextToSpeech = useCallback(async () => {
     try {
       const ttsService = TTSService.getInstance();
@@ -450,26 +458,14 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         ttsService.stop();
       }
 
-      // 检查配置
-      const config = ttsConfigRef.current;
-      if (!config.loaded) {
-        console.warn('TTS配置尚未加载完成，请稍后再试');
-        return;
-      }
-
       // 立即设置播放状态
       setIsPlaying(true);
 
-      // 配置TTS
-      if (config.apiKey) {
-        ttsService.setApiKey(config.apiKey);
-      }
-      if (config.model && config.voice) {
-        ttsService.setDefaultVoice(config.model, config.voice);
-      }
+      // 使用TTSService的全局配置，无需重复初始化
+      const success = await ttsService.speak(content);
 
-      // 开始播放
-      const success = await ttsService.speak(content, config.voice);
+      // 检查组件是否已卸载
+      if (!mountedRef.current) return;
 
       if (!success) {
         // 播放失败，重置状态
@@ -479,6 +475,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 
       // 启动播放结束检测
       const checkPlaybackEnd = () => {
+        if (!mountedRef.current) return;
+
         if (!ttsService.getIsPlaying() || ttsService.getCurrentMessageId() !== message.id) {
           setIsPlaying(false);
         } else {
@@ -667,7 +665,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       {/* 根据renderMode决定渲染哪些部分 */}
       {renderMode === 'full' && showMicroBubbles && (
         /* 只显示版本指示器和播放按钮，不显示三点菜单 */
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px', position: 'relative', top: '-1px' }}>
+        <Box sx={microBubbleContainerStyle}>
           {/* 只有助手消息且有多个版本时显示版本指示器 */}
           {!isUser && hasMultipleVersions && (
             <>
@@ -835,7 +833,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 
       {/* 工具栏模式 - 显示操作按钮 */}
       {renderMode === 'toolbar' && (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%' }}>
+        <Box sx={toolbarContainerStyle}>
           {/* 用户消息：Token显示在左侧 */}
           {isUser && (
             <TokenDisplay
@@ -844,7 +842,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             />
           )}
           {/* 工具栏按钮组 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+          <Box sx={{ ...toolbarButtonGroupStyle, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
             {/* 复制按钮 */}
             <Tooltip title="复制内容">
               <IconButton

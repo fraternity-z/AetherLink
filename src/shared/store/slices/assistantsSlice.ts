@@ -12,6 +12,13 @@ const initialState: AssistantsState = {
   currentAssistant: null
 };
 
+// 辅助函数：同步更新 currentAssistant
+const syncCurrentAssistant = (state: AssistantsState, assistantId: string, updatedAssistant: Assistant) => {
+  if (state.currentAssistant && state.currentAssistant.id === assistantId) {
+    state.currentAssistant = updatedAssistant;
+  }
+};
+
 const assistantsSlice = createSlice({
   name: 'assistants',
   initialState,
@@ -19,11 +26,11 @@ const assistantsSlice = createSlice({
     setAssistants: (state, action: PayloadAction<Assistant[]>) => {
       console.log(`[assistantsSlice] 设置助手列表，数量: ${action.payload.length}`);
 
-      // 检查是否有emoji字段丢失的情况
-      const assistantsWithoutEmoji = action.payload.filter(a => !a.emoji);
-      if (assistantsWithoutEmoji.length > 0) {
-        console.warn(`[assistantsSlice] 发现 ${assistantsWithoutEmoji.length} 个助手没有emoji字段:`,
-          assistantsWithoutEmoji.map(a => ({ id: a.id, name: a.name }))
+      // 检查是否有头像（支持emoji、avatar、icon任意一种）
+      const assistantsWithoutAvatar = action.payload.filter(a => !a.emoji && !a.avatar && !a.icon);
+      if (assistantsWithoutAvatar.length > 0) {
+        console.warn(`[assistantsSlice] 发现 ${assistantsWithoutAvatar.length} 个助手没有设置头像（emoji、avatar或icon）:`,
+          assistantsWithoutAvatar.map(a => ({ id: a.id, name: a.name }))
         );
       }
 
@@ -34,7 +41,7 @@ const assistantsSlice = createSlice({
     },
     addTopic: (state, action: PayloadAction<{ assistantId: string; topic: ChatTopic }>) => {
       const { assistantId, topic } = action.payload;
-      const assistant = state.assistants.find((a: Assistant) => a.id === assistantId);
+      const assistant = state.assistants.find(a => a.id === assistantId);
       if (assistant) {
         if (!assistant.topicIds) {
           assistant.topicIds = [];
@@ -48,59 +55,41 @@ const assistantsSlice = createSlice({
           assistant.topicIds.push(topic.id);
         }
 
-        if (!assistant.topics.some((t: ChatTopic) => t.id === topic.id)) {
+        if (!assistant.topics.some(t => t.id === topic.id)) {
           assistant.topics.push(topic);
         }
 
-        // 如果更新的是当前选中的助手，也更新currentAssistant
-        if (state.currentAssistant && state.currentAssistant.id === assistantId) {
-          if (!state.currentAssistant.topicIds) {
-            state.currentAssistant.topicIds = [];
-          }
-          if (!state.currentAssistant.topics) {
-            state.currentAssistant.topics = [];
-          }
-          if (!state.currentAssistant.topicIds.includes(topic.id)) {
-            state.currentAssistant.topicIds.push(topic.id);
-          }
-          if (!state.currentAssistant.topics.some((t: ChatTopic) => t.id === topic.id)) {
-            state.currentAssistant.topics.push(topic);
-          }
-        }
+        // 使用辅助函数同步更新 currentAssistant
+        syncCurrentAssistant(state, assistantId, assistant);
 
         console.log(`[assistantsSlice] 添加话题 ${topic.id} 到助手 ${assistantId}，当前话题数量: ${assistant.topics.length}`);
       }
     },
     removeTopic: (state, action: PayloadAction<{ assistantId: string; topicId: string }>) => {
       const { assistantId, topicId } = action.payload;
-      const assistant = state.assistants.find((a: Assistant) => a.id === assistantId);
+      const assistant = state.assistants.find(a => a.id === assistantId);
       if (assistant) {
-        assistant.topicIds = assistant.topicIds.filter((id: string) => id !== topicId);
+        assistant.topicIds = assistant.topicIds.filter(id => id !== topicId);
 
         if (assistant.topics) {
-          assistant.topics = assistant.topics.filter((t: ChatTopic) => t.id !== topicId);
+          assistant.topics = assistant.topics.filter(t => t.id !== topicId);
         }
 
-        // 如果更新的是当前选中的助手，也更新currentAssistant
-        if (state.currentAssistant && state.currentAssistant.id === assistantId) {
-          state.currentAssistant.topicIds = state.currentAssistant.topicIds.filter((id: string) => id !== topicId);
-          if (state.currentAssistant.topics) {
-            state.currentAssistant.topics = state.currentAssistant.topics.filter((t: ChatTopic) => t.id !== topicId);
-          }
-        }
+        // 使用辅助函数同步更新 currentAssistant
+        syncCurrentAssistant(state, assistantId, assistant);
 
         console.log(`[assistantsSlice] 从助手 ${assistantId} 移除话题 ${topicId}，剩余话题数量: ${assistant.topics?.length || 0}`);
       }
     },
     updateTopic: (state, action: PayloadAction<{ assistantId: string; topic: ChatTopic }>) => {
       const { assistantId, topic } = action.payload;
-      const assistant = state.assistants.find((a: Assistant) => a.id === assistantId);
+      const assistant = state.assistants.find(a => a.id === assistantId);
       if (assistant) {
         if (!assistant.topics) {
           assistant.topics = [];
         }
 
-        const index = assistant.topics.findIndex((t: ChatTopic) => t.id === topic.id);
+        const index = assistant.topics.findIndex(t => t.id === topic.id);
         if (index !== -1) {
           assistant.topics[index] = topic;
           console.log(`[assistantsSlice] 更新助手 ${assistantId} 的话题 ${topic.id}`);
@@ -111,40 +100,33 @@ const assistantsSlice = createSlice({
           }
         }
 
-        // 如果更新的是当前选中的助手，也更新currentAssistant
-        if (state.currentAssistant && state.currentAssistant.id === assistantId) {
-          if (!state.currentAssistant.topics) {
-            state.currentAssistant.topics = [];
-          }
-          const currentIndex = state.currentAssistant.topics.findIndex((t: ChatTopic) => t.id === topic.id);
-          if (currentIndex !== -1) {
-            state.currentAssistant.topics[currentIndex] = topic;
-          } else {
-            if (state.currentAssistant.topicIds.includes(topic.id)) {
-              state.currentAssistant.topics.push(topic);
-            }
-          }
-        }
+        // 使用辅助函数同步更新 currentAssistant
+        syncCurrentAssistant(state, assistantId, assistant);
       }
     },
     updateAssistantTopics: (state, action: PayloadAction<{ assistantId: string; topics: ChatTopic[] }>) => {
       const { assistantId, topics } = action.payload;
-      const assistant = state.assistants.find((a: Assistant) => a.id === assistantId);
+      const assistant = state.assistants.find(a => a.id === assistantId);
       if (assistant) {
         assistant.topics = topics;
-
         assistant.topicIds = topics.map(topic => topic.id);
+
+        // 同步更新 currentAssistant
+        syncCurrentAssistant(state, assistantId, assistant);
 
         console.log(`[assistantsSlice] 更新助手 ${assistantId} 的话题，数量: ${topics.length}，topicIds: ${assistant.topicIds.join(', ')}`);
       }
     },
     // 添加新的reducers，类似最佳实例
     addAssistant: (state, action: PayloadAction<Assistant>) => {
-      // 检查是否已存在相同ID的助手
+      // 优化：直接查找索引，避免重复查找
       const existingIndex = state.assistants.findIndex(a => a.id === action.payload.id);
+
       if (existingIndex !== -1) {
         // 如果存在，更新它
         state.assistants[existingIndex] = action.payload;
+        // 同步更新 currentAssistant
+        syncCurrentAssistant(state, action.payload.id, action.payload);
       } else {
         // 如果不存在，添加新助手
         state.assistants.push(action.payload);
@@ -157,16 +139,16 @@ const assistantsSlice = createSlice({
         const oldAssistant = state.assistants[index];
         state.assistants[index] = action.payload;
 
-        // 如果更新的是当前选中的助手，也更新currentAssistant
-        if (state.currentAssistant && state.currentAssistant.id === action.payload.id) {
-          state.currentAssistant = action.payload;
-        }
+        // 使用辅助函数同步更新 currentAssistant
+        syncCurrentAssistant(state, action.payload.id, action.payload);
 
-        // 详细日志记录emoji变化
-        if (oldAssistant.emoji !== action.payload.emoji) {
-          console.log(`[assistantsSlice] 助手emoji更新: ${action.payload.id} (${action.payload.name})`, {
-            oldEmoji: oldAssistant.emoji,
-            newEmoji: action.payload.emoji
+        // 详细日志记录头像变化
+        if (oldAssistant.emoji !== action.payload.emoji ||
+            oldAssistant.avatar !== action.payload.avatar ||
+            oldAssistant.icon !== action.payload.icon) {
+          console.log(`[assistantsSlice] 助手头像更新: ${action.payload.id} (${action.payload.name})`, {
+            old: { emoji: oldAssistant.emoji, avatar: oldAssistant.avatar, icon: !!oldAssistant.icon },
+            new: { emoji: action.payload.emoji, avatar: action.payload.avatar, icon: !!action.payload.icon }
           });
         }
 

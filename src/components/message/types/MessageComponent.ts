@@ -13,6 +13,27 @@ export interface MessageItemProps {
   forceUpdate?: () => void;
 }
 
+export interface MessageSettings {
+  messageActionMode?: 'bubbles' | 'toolbar';
+  customBubbleColors?: {
+    userBubbleColor?: string;
+    aiBubbleColor?: string;
+    userTextColor?: string;
+    aiTextColor?: string;
+  };
+  userMessageMaxWidth?: number;
+  messageBubbleMaxWidth?: number;
+  messageBubbleMinWidth?: number;
+  showMicroBubbles?: boolean;
+}
+
+export interface ThemeColors {
+  userBubbleColor: string;
+  aiBubbleColor: string;
+  textPrimary: string;
+  buttonSecondary: string;
+}
+
 export interface BaseMessageStyleProps {
   message: Message;
   showAvatar?: boolean;
@@ -26,8 +47,8 @@ export interface BaseMessageStyleProps {
   showModelAvatar: boolean;
   showModelName: boolean;
   showMessageDivider?: boolean;
-  settings?: any;
-  themeColors?: any;
+  settings?: MessageSettings;
+  themeColors?: ThemeColors;
   themeStyle?: string;
   theme: Theme;
   getProviderName: (providerId: string) => string;

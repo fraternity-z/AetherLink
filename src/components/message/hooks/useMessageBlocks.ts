@@ -64,17 +64,15 @@ export const useMessageBlocks = (
     loadBlocks();
   }, [message.blocks, blocks.length, dispatch]);
 
-  // 在块状态变化时，可以使用forceUpdate触发重新渲染
+  // 🚀 优化流式更新逻辑，避免定时器导致的抖动
   useEffect(() => {
     if (message.status === 'streaming') {
-      // 减少强制更新频率，避免过度渲染
-      const interval = setInterval(() => {
-        if (forceUpdateRef.current) {
-          forceUpdateRef.current();
-        }
-      }, 500); // 每500ms更新一次
+      // 🚀 移除定时器，改为仅在必要时更新
+      // 依赖Redux状态变化和事件系统来触发更新
+      // 这样可以避免不必要的定时器导致的抖动
 
-      return () => clearInterval(interval);
+      // 如果确实需要强制更新，可以监听特定事件
+      // 但通常Redux状态变化已经足够触发重新渲染
     }
   }, [message.status]);
 

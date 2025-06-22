@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles';
 import { ChevronDown as ExpandMoreIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { throttle } from 'lodash';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import MessageItem from './MessageItem';
@@ -108,9 +109,14 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     const hasStreamingMessage = messages.some(message => message.status === 'streaming');
 
     if (hasStreamingMessage) {
+      // 🚀 使用节流的事件处理器，避免过度更新
+      const throttledForceUpdate = throttle(() => {
+        forceUpdate();
+      }, 200); // 200ms节流，减少更新频率
+
       // 监听流式输出事件
       const textDeltaHandler = () => {
-        forceUpdate();
+        throttledForceUpdate();
       };
 
       // 订阅事件
@@ -118,18 +124,14 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
       const unsubscribeTextComplete = EventEmitter.on(EVENT_NAMES.STREAM_TEXT_COMPLETE, textDeltaHandler);
       const unsubscribeThinkingDelta = EventEmitter.on(EVENT_NAMES.STREAM_THINKING_DELTA, textDeltaHandler);
 
-      // 定期强制更新UI，确保流式输出显示
-      const updateInterval = setInterval(() => {
-        if (messages.some(message => message.status === 'streaming')) {
-          forceUpdate();
-        }
-      }, 100); // 每100ms更新一次
+      // 🚀 移除定期强制更新，改为仅在事件触发时更新
+      // 这样可以避免不必要的重渲染，减少抖动
 
       return () => {
         unsubscribeTextDelta();
         unsubscribeTextComplete();
         unsubscribeThinkingDelta();
-        clearInterval(updateInterval);
+        throttledForceUpdate.cancel(); // 清理节流函数
       };
     }
   }, [messages, forceUpdate]);

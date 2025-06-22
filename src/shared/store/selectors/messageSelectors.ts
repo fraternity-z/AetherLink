@@ -72,10 +72,12 @@ export const selectTopics = () => EMPTY_TOPICS_ARRAY;
 export const selectMessagesForCurrentTopic = createSelector(
   [
     selectCurrentTopicId,
-    (state: RootState) => state
+    selectMessagesState
   ],
-  (currentTopicId, state) => {
+  (currentTopicId, messagesState) => {
     if (!currentTopicId) return EMPTY_TOPICS_ARRAY;
+    // 构造完整的state对象来调用selectMessagesForTopic
+    const state = { messages: messagesState } as RootState;
     return selectMessagesForTopic(state, currentTopicId);
   }
 );
@@ -87,10 +89,12 @@ export const selectIsTopicLoading = selectTopicLoading;
 export const selectIsCurrentTopicLoading = createSelector(
   [
     selectCurrentTopicId,
-    (state: RootState) => state
+    selectMessagesState
   ],
-  (currentTopicId, state) => {
+  (currentTopicId, messagesState) => {
     if (!currentTopicId) return false;
+    // 构造完整的state对象来调用selectTopicLoading
+    const state = { messages: messagesState } as RootState;
     return selectTopicLoading(state, currentTopicId);
   }
 );
@@ -102,10 +106,12 @@ export const selectIsTopicStreaming = selectTopicStreaming;
 export const selectIsCurrentTopicStreaming = createSelector(
   [
     selectCurrentTopicId,
-    (state: RootState) => state
+    selectMessagesState
   ],
-  (currentTopicId, state) => {
+  (currentTopicId, messagesState) => {
     if (!currentTopicId) return false;
+    // 构造完整的state对象来调用selectTopicStreaming
+    const state = { messages: messagesState } as RootState;
     return selectTopicStreaming(state, currentTopicId);
   }
 );

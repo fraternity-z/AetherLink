@@ -22,7 +22,7 @@ import {
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
-import { generateImage } from '../../shared/services/APIService';
+import { generateImage } from '../../shared/services/network/APIService';
 import { addGeneratedImage } from '../../shared/store/settingsSlice';
 import type { ImageGenerationParams } from '../../shared/types';
 import { ModelType } from '../../shared/types';

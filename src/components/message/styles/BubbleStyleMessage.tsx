@@ -38,20 +38,28 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
 }) => {
   const isUserMessage = message.role === 'user';
 
+  // 格式化时间 - 避免重复代码
+  const formattedTime = new Date(message.createdAt).toLocaleString('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   // 获取消息操作显示模式设置
-  const messageActionMode = (settings as any).messageActionMode || 'bubbles';
+  const messageActionMode = settings?.messageActionMode || 'bubbles';
 
   // 获取自定义气泡颜色设置
-  const customBubbleColors = (settings as any).customBubbleColors || {};
+  const customBubbleColors = settings?.customBubbleColors || {};
 
   // 计算实际使用的颜色
   const actualBubbleColor = isUserMessage
-    ? (customBubbleColors.userBubbleColor || themeColors.userBubbleColor)
-    : (customBubbleColors.aiBubbleColor || themeColors.aiBubbleColor);
+    ? (customBubbleColors.userBubbleColor || themeColors?.userBubbleColor)
+    : (customBubbleColors.aiBubbleColor || themeColors?.aiBubbleColor);
 
   const actualTextColor = isUserMessage
-    ? (customBubbleColors.userTextColor || themeColors.textPrimary)
-    : (customBubbleColors.aiTextColor || themeColors.textPrimary);
+    ? (customBubbleColors.userTextColor || themeColors?.textPrimary)
+    : (customBubbleColors.aiTextColor || themeColors?.textPrimary);
 
   return (
     <Box
@@ -96,7 +104,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                 ) : (
                   <Avatar
                     sx={{
-                      bgcolor: themeColors.buttonSecondary,
+                      bgcolor: themeColors?.buttonSecondary,
                       width: 24,
                       height: 24,
                       borderRadius: '25%',
@@ -134,12 +142,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                       marginTop: showUserName ? '2px' : '0'
                     }}
                   >
-                    {new Date(message.createdAt).toLocaleString('zh-CN', {
-                      month: 'numeric',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {formattedTime}
                   </Typography>
                 </Box>
               )}
@@ -208,12 +211,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                       marginTop: showModelName ? '2px' : '0'
                     }}
                   >
-                    {new Date(message.createdAt).toLocaleString('zh-CN', {
-                      month: 'numeric',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {formattedTime}
                   </Typography>
                 </Box>
               )}
@@ -225,9 +223,9 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
       <Box sx={{
         position: 'relative',
         maxWidth: isUserMessage
-          ? `${settings.userMessageMaxWidth || 80}%`
-          : `${settings.messageBubbleMaxWidth || 100}%`, // 更新默认值为100%
-        minWidth: `${settings.messageBubbleMinWidth || 50}%`,
+          ? `${settings?.userMessageMaxWidth || 80}%`
+          : `${settings?.messageBubbleMaxWidth || 100}%`, // 更新默认值为100%
+        minWidth: `${settings?.messageBubbleMinWidth || 50}%`,
         width: 'auto',
         alignSelf: isUserMessage ? 'flex-end' : 'flex-start',
         flex: 'none',
@@ -237,7 +235,11 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
           elevation={0}
           data-theme-style={themeStyle}
           sx={{
-            padding: 1.5,
+            // 优化内边距：为三点菜单留出合适空间
+            paddingTop: 1.5,
+            paddingBottom: 1.5,
+            paddingLeft: 1.5,
+            paddingRight: messageActionMode === 'bubbles' ? 3 : 1.5, // 气泡模式下为三点菜单留出空间
             backgroundColor: actualBubbleColor,
             color: actualTextColor,
             width: '100%',
@@ -245,6 +247,10 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
             maxWidth: '100%',
             // 🚀 使用统一的气泡优化配置（包含position: 'relative'）
             ...bubbleStyles,
+            // 🚀 添加性能优化CSS，减少重排重绘
+            contain: 'layout style paint',
+            willChange: message.status === 'streaming' ? 'contents' : 'auto',
+            transform: 'translateZ(0)', // 启用硬件加速
           }}
         >
           {loading ? (
@@ -259,13 +265,13 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                   blocks={message.blocks}
                   message={message}
                   extraPaddingLeft={0}
-                  extraPaddingRight={2}
+                  extraPaddingRight={0}
                 />
               ) : (
                 <Box sx={{
-                  p: 1,
-                  pl: 1,
-                  pr: 3
+                  // 移除额外的 padding，因为已在父级设置
+                  lineHeight: 1.6,
+                  wordBreak: 'break-word'
                 }}>
                   {(message as any).content || ''}
                 </Box>
@@ -306,7 +312,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
         {messageActionMode === 'bubbles' && (
           <>
             {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置 */}
-            {!isUserMessage && settings.showMicroBubbles !== false && (
+            {!isUserMessage && settings?.showMicroBubbles !== false && (
               <Box sx={{
                 position: 'absolute',
                 top: -22,
@@ -362,20 +368,36 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
 
 // 🚀 使用React.memo优化重新渲染
 export default React.memo(BubbleStyleMessage, (prevProps, nextProps) => {
-  return (
-    prevProps.message.id === nextProps.message.id &&
-    prevProps.message.updatedAt === nextProps.message.updatedAt &&
-    prevProps.message.status === nextProps.message.status && // 🔥 关键！流式输出状态变化
-    JSON.stringify(prevProps.message.blocks) === JSON.stringify(nextProps.message.blocks) && // 🔥 消息块变化
-    prevProps.loading === nextProps.loading &&
-    prevProps.showAvatar === nextProps.showAvatar &&
-    prevProps.isCompact === nextProps.isCompact &&
-    prevProps.showUserAvatar === nextProps.showUserAvatar &&
-    prevProps.showUserName === nextProps.showUserName &&
-    prevProps.showModelAvatar === nextProps.showModelAvatar &&
-    prevProps.showModelName === nextProps.showModelName &&
-    JSON.stringify(prevProps.settings) === JSON.stringify(nextProps.settings) &&
-    JSON.stringify(prevProps.themeColors) === JSON.stringify(nextProps.themeColors) &&
-    prevProps.themeStyle === nextProps.themeStyle
-  );
+  // 基础属性比较
+  if (
+    prevProps.message.id !== nextProps.message.id ||
+    prevProps.message.updatedAt !== nextProps.message.updatedAt ||
+    prevProps.message.status !== nextProps.message.status ||
+    prevProps.loading !== nextProps.loading ||
+    prevProps.showAvatar !== nextProps.showAvatar ||
+    prevProps.isCompact !== nextProps.isCompact ||
+    prevProps.showUserAvatar !== nextProps.showUserAvatar ||
+    prevProps.showUserName !== nextProps.showUserName ||
+    prevProps.showModelAvatar !== nextProps.showModelAvatar ||
+    prevProps.showModelName !== nextProps.showModelName ||
+    prevProps.themeStyle !== nextProps.themeStyle
+  ) {
+    return false;
+  }
+
+  // 消息块比较 - blocks 是字符串数组（block IDs）
+  const prevBlocks = prevProps.message.blocks;
+  const nextBlocks = nextProps.message.blocks;
+  if (prevBlocks?.length !== nextBlocks?.length) {
+    return false;
+  }
+  if (prevBlocks && nextBlocks) {
+    for (let i = 0; i < prevBlocks.length; i++) {
+      if (prevBlocks[i] !== nextBlocks[i]) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 });

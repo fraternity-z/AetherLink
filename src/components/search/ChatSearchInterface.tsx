@@ -60,8 +60,8 @@ const ChatSearchInterface: React.FC<ChatSearchInterfaceProps> = ({
     return assistants.flatMap(assistant => assistant.topics || []);
   }, [assistants]);
 
-  // 获取Redux state用于消息查询
-  const reduxState = useSelector((state: RootState) => state);
+  // 获取Redux state用于消息查询 - 只选择需要的状态部分
+  const messagesState = useSelector((state: RootState) => state.messages);
 
   // 解析搜索查询，支持引号、特殊字符等
   const parseSearchQuery = useCallback((query: string) => {
@@ -315,7 +315,9 @@ const ChatSearchInterface: React.FC<ChatSearchInterfaceProps> = ({
 
         // 搜索消息内容 - 使用新的消息系统
         try {
-          const topicMessages = selectMessagesForTopic(reduxState, topic.id);
+          // 构造完整的state对象来调用selectMessagesForTopic
+          const state = { messages: messagesState } as RootState;
+          const topicMessages = selectMessagesForTopic(state, topic.id);
           if (topicMessages && Array.isArray(topicMessages) && topicMessages.length > 0) {
             for (const message of topicMessages) {
               // 如果已达到最大结果数，停止搜索
@@ -372,7 +374,7 @@ const ChatSearchInterface: React.FC<ChatSearchInterfaceProps> = ({
     } finally {
       setIsSearching(false);
     }
-  }, [allTopics, highlightText, parseSearchQuery, isTextMatch, getMessageText, extractRelevantSnippet, reduxState]);
+  }, [allTopics, highlightText, parseSearchQuery, isTextMatch, getMessageText, extractRelevantSnippet, messagesState]);
 
   // 防抖搜索
   const debouncedSearch = useMemo(

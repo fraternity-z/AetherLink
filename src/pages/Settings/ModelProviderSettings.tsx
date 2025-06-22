@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -53,58 +53,75 @@ import ModelManagementDialog from '../../components/ModelManagementDialog';
 import SimpleModelDialog from '../../components/settings/SimpleModelDialog';
 import { testApiConnection } from '../../shared/api';
 import { sendChatRequest } from '../../shared/api';
-import { getProviderDisplayName } from '../../shared/api/providerFactory';
 
-// API调用注意: 配置中保存原始URL，实际请求时使用formatApiHost处理URL并添加正确路径
+// 常量定义
+const CONSTANTS = {
+  MESSAGE_LENGTH_THRESHOLD: 80,
+  DEBOUNCE_DELAY: 300,
+  SPECIAL_ENDPOINTS: {
+    VOLCES: 'volces.com/api/v3',
+    OPENAI_RESPONSE: 'openai-response'
+  }
+} as const;
+
+// 样式常量
+const STYLES = {
+  primaryButton: {
+    bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.1),
+    color: 'primary.main',
+    '&:hover': {
+      bgcolor: (theme: any) => alpha(theme.palette.primary.main, 0.2),
+    },
+    borderRadius: 2,
+  },
+  errorButton: {
+    bgcolor: (theme: any) => alpha(theme.palette.error.main, 0.1),
+    color: 'error.main',
+    '&:hover': {
+      bgcolor: (theme: any) => alpha(theme.palette.error.main, 0.2),
+    },
+    borderRadius: 2,
+  }
+} as const;
 
 /**
- * 格式化API主机地址
+ * 格式化API主机地址 - 简化逻辑，更明确的处理方式
  * @param host 输入的基础URL
+ * @param providerType 提供商类型
  * @returns 格式化后的URL
  */
-const formatApiHost = (host: string) => {
-  const forceUseOriginalHost = () => {
-    if (host.endsWith('/')) {
-      return true;
-    }
+const formatApiHost = (host: string, providerType?: string): string => {
+  if (!host.trim()) return '';
 
-    // 特定URL保持原样
-    return host.endsWith('volces.com/api/v3');
-  };
+  const normalizedUrl = host.trim().replace(/\/$/, '');
 
-  // 如果强制使用原始主机地址，直接返回
-  if (forceUseOriginalHost()) {
-    return host;
+  // 特殊处理：如果URL以特定路径结尾，保持原样
+  if (normalizedUrl.endsWith(CONSTANTS.SPECIAL_ENDPOINTS.VOLCES)) {
+    return normalizedUrl;
   }
 
-  // 正确处理URL格式
-  // 1. 确保URL不以/结尾
-  let normalizedUrl = host.trim();
-  if (normalizedUrl.endsWith('/')) {
-    normalizedUrl = normalizedUrl.slice(0, -1);
+  // OpenAI Response API 特殊处理
+  if (providerType === CONSTANTS.SPECIAL_ENDPOINTS.OPENAI_RESPONSE) {
+    return normalizedUrl;
   }
 
-  // 2. 添加/v1/
-  return `${normalizedUrl}/v1/`;
+  // 默认添加 /v1
+  return `${normalizedUrl}/v1`;
 };
 
 /**
  * 生成预览URL
  */
-const hostPreview = (baseUrl: string, providerType?: string) => {
-  if (baseUrl.endsWith('#')) {
-    return baseUrl.replace('#', '');
+const getPreviewUrl = (baseUrl: string, providerType?: string): string => {
+  if (!baseUrl.trim()) return '';
+
+  const formattedHost = formatApiHost(baseUrl, providerType);
+
+  if (providerType === CONSTANTS.SPECIAL_ENDPOINTS.OPENAI_RESPONSE) {
+    return `${formattedHost}/responses`;
   }
 
-  // 检查是否为 OpenAI Responses API 提供商
-  if (providerType === 'openai-response') {
-    // OpenAI Responses API 不自动添加 /v1，因为自动获取模型功能需要用户手动填写完整路径
-    const normalizedUrl = baseUrl.trim().replace(/\/$/, '');
-    return normalizedUrl + '/responses';
-  }
-
-  // 默认使用 chat/completions 端点
-  return formatApiHost(baseUrl) + 'chat/completions';
+  return `${formattedHost}/chat/completions`;
 };
 
 
@@ -126,13 +143,35 @@ const isOpenAIProvider = (providerType?: string): boolean => {
  */
 const getCompleteApiUrl = (baseUrl: string, providerType?: string): string => {
   if (!baseUrl.trim()) return '';
-  return hostPreview(baseUrl, providerType);
+  return getPreviewUrl(baseUrl, providerType);
+};
+
+/**
+ * 防抖Hook
+ */
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 };
 
 const ModelProviderSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { providerId } = useParams<{ providerId: string }>();
+
+  // 异步操作取消引用
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const provider = useAppSelector(state =>
     state.settings.providers.find(p => p.id === providerId)
@@ -175,6 +214,15 @@ const ModelProviderSettings: React.FC = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const keyManager = ApiKeyManager.getInstance();
 
+  // 防抖处理的URL输入
+  const debouncedBaseUrl = useDebounce(baseUrl, CONSTANTS.DEBOUNCE_DELAY);
+
+  // 优化的样式对象
+  const buttonStyles = useMemo(() => ({
+    primary: STYLES.primaryButton,
+    error: STYLES.errorButton
+  }), []);
+
   // 当provider加载完成后初始化状态
   useEffect(() => {
     if (provider) {
@@ -187,6 +235,24 @@ const ModelProviderSettings: React.FC = () => {
       setMultiKeyEnabled(!!(provider.apiKeys && provider.apiKeys.length > 0));
     }
   }, [provider]);
+
+  // 组件卸载时取消正在进行的异步操作
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // 防抖URL验证
+  useEffect(() => {
+    if (debouncedBaseUrl && !isValidUrl(debouncedBaseUrl)) {
+      setBaseUrlError('请输入有效的URL');
+    } else {
+      setBaseUrlError('');
+    }
+  }, [debouncedBaseUrl]);
 
   // 多 Key 管理函数
   const handleApiKeysChange = (keys: ApiKeyConfig[]) => {
@@ -258,20 +324,21 @@ const ModelProviderSettings: React.FC = () => {
     setShowApiKey(!showApiKey);
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     navigate('/settings/default-model', { replace: true });
-  };
+  }, [navigate]);
 
   // 保存API配置
-  const saveApiConfig = () => {
-    if (provider) {
-      // 验证baseUrl是否有效（如果已输入）
-      if (baseUrl && !isValidUrl(baseUrl)) {
-        setBaseUrlError('请输入有效的URL');
-        return false;
-      }
+  const saveApiConfig = useCallback((): boolean => {
+    if (!provider) return false;
 
-      // 直接保存原始URL，不进行预处理（与新行为一致）
+    // 验证baseUrl是否有效（如果已输入）
+    if (baseUrl && !isValidUrl(baseUrl)) {
+      setBaseUrlError('请输入有效的URL');
+      return false;
+    }
+
+    try {
       dispatch(updateProvider({
         id: provider.id,
         updates: {
@@ -282,15 +349,21 @@ const ModelProviderSettings: React.FC = () => {
         }
       }));
       return true;
+    } catch (error) {
+      console.error('保存配置失败:', error);
+      setBaseUrlError('保存配置失败，请重试');
+      return false;
     }
-    return false;
-  };
+  }, [provider, baseUrl, apiKey, isEnabled, extraHeaders, dispatch]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (saveApiConfig()) {
-      navigate('/settings/default-model', { replace: true });
+      // 使用 setTimeout 确保状态更新完成后再导航
+      setTimeout(() => {
+        navigate('/settings/default-model', { replace: true });
+      }, 0);
     }
-  };
+  }, [saveApiConfig, navigate]);
 
   const handleDelete = () => {
     if (provider) {
@@ -550,53 +623,72 @@ const ModelProviderSettings: React.FC = () => {
   };
 
   // API测试功能
-  const handleTestConnection = async () => {
-    if (provider) {
-      // 先保存当前配置
-      const configSaved = saveApiConfig();
-      if (!configSaved) {
-        // 如果保存失败（例如URL无效），提示用户
-        if (baseUrlError) {
-          setTestResult({ success: false, message: '请输入有效的基础URL' });
-          return;
-        }
-      }
+  const handleTestConnection = useCallback(async () => {
+    if (!provider) return;
 
-      // 开始测试
-      setIsTesting(true);
-      setTestResult(null);
-
-      try {
-        // 创建一个模拟模型对象，包含当前输入的API配置
-        const testModel = {
-          id: provider.models.length > 0 ? provider.models[0].id : 'gpt-3.5-turbo',
-          name: provider.name,
-          provider: provider.id,
-          providerType: provider.providerType,
-          apiKey: apiKey,
-          baseUrl: baseUrl,
-          enabled: true
-        };
-
-        // 调用测试连接API
-        const success = await testApiConnection(testModel);
-
-        if (success) {
-          setTestResult({ success: true, message: '连接成功！API配置有效。' });
-        } else {
-          setTestResult({ success: false, message: '连接失败，请检查API密钥和基础URL是否正确。' });
-        }
-      } catch (error) {
-        console.error('测试API连接时出错:', error);
-        setTestResult({
-          success: false,
-          message: `连接错误: ${error instanceof Error ? error.message : String(error)}`
-        });
-      } finally {
-        setIsTesting(false);
+    // 先保存当前配置
+    const configSaved = saveApiConfig();
+    if (!configSaved) {
+      // 如果保存失败（例如URL无效），提示用户
+      if (baseUrlError) {
+        setTestResult({ success: false, message: '请输入有效的基础URL' });
+        return;
       }
     }
-  };
+
+    // 取消之前的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 创建新的 AbortController
+    abortControllerRef.current = new AbortController();
+
+    // 开始测试
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      // 创建一个模拟模型对象，包含当前输入的API配置
+      const testModel = {
+        id: provider.models.length > 0 ? provider.models[0].id : 'gpt-3.5-turbo',
+        name: provider.name,
+        provider: provider.id,
+        providerType: provider.providerType,
+        apiKey: apiKey,
+        baseUrl: baseUrl,
+        enabled: true
+      };
+
+      // 调用测试连接API
+      const success = await testApiConnection(testModel);
+
+      // 检查是否被取消
+      if (abortControllerRef.current?.signal.aborted) {
+        return;
+      }
+
+      if (success) {
+        setTestResult({ success: true, message: '连接成功！API配置有效。' });
+      } else {
+        setTestResult({ success: false, message: '连接失败，请检查API密钥和基础URL是否正确。' });
+      }
+    } catch (error) {
+      // 检查是否是取消操作
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
+
+      console.error('测试API连接时出错:', error);
+      setTestResult({
+        success: false,
+        message: `连接错误: ${error instanceof Error ? error.message : String(error)}`
+      });
+    } finally {
+      setIsTesting(false);
+      abortControllerRef.current = null;
+    }
+  }, [provider, saveApiConfig, baseUrlError, apiKey, baseUrl]);
 
   // 增强的测试单个模型的函数
   const handleTestModelConnection = async (model: Model) => {
@@ -621,7 +713,12 @@ const ModelProviderSettings: React.FC = () => {
       if (provider.providerType === 'openai-response') {
         // 对于 OpenAI Responses API，使用专用的测试方法
         try {
-          const { OpenAIResponseProvider } = await import('../../shared/providers/OpenAIResponseProvider');
+          // 动态导入时添加错误边界
+          const module = await import('../../shared/providers/OpenAIResponseProvider').catch(error => {
+            throw new Error(`无法加载 OpenAI Response Provider: ${error.message}`);
+          });
+
+          const { OpenAIResponseProvider } = module;
           const responseProvider = new OpenAIResponseProvider(testModel);
 
           // 使用 sendChatMessage 方法测试
@@ -677,13 +774,17 @@ const ModelProviderSettings: React.FC = () => {
     }
   };
 
-  // 更新原有的Snackbar处理
+  // 测试结果显示逻辑 - 使用常量替换硬编码值
+  const shouldShowDetailDialog = useMemo(() => {
+    return testResult && testResult.message && testResult.message.length > CONSTANTS.MESSAGE_LENGTH_THRESHOLD;
+  }, [testResult]);
+
   useEffect(() => {
     // 当有测试结果时，如果内容较长则自动打开详细对话框
-    if (testResult && testResult.message && testResult.message.length > 80) {
+    if (shouldShowDetailDialog) {
       setTestResultDialogOpen(true);
     }
-  }, [testResult]);
+  }, [shouldShowDetailDialog]);
 
   // 如果没有找到对应的提供商，显示错误信息
   if (!provider) {
@@ -743,14 +844,7 @@ const ModelProviderSettings: React.FC = () => {
           </Typography>
           <Button
             onClick={handleSave}
-            sx={{
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              color: 'primary.main',
-              '&:hover': {
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
-              },
-              borderRadius: 2,
-            }}
+            sx={buttonStyles.primary}
           >
             保存
           </Button>
@@ -812,7 +906,7 @@ const ModelProviderSettings: React.FC = () => {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {provider.isSystem ? '系统供应商' :
-                 `${getProviderDisplayName({ providerType: provider.providerType } as any)} API`}
+                 `${provider.providerType || 'Custom'} API`}
               </Typography>
             </Box>
             <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
@@ -832,12 +926,7 @@ const ModelProviderSettings: React.FC = () => {
                   <IconButton
                     color="error"
                     onClick={() => setOpenDeleteDialog(true)}
-                    sx={{
-                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-                      '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
-                      }
-                    }}
+                    sx={buttonStyles.error}
                   >
                     <Trash2 size={20} />
                   </IconButton>
@@ -1229,13 +1318,8 @@ const ModelProviderSettings: React.FC = () => {
                       <Box>
                         <IconButton
                           aria-label="edit-combo"
-                          onClick={() => window.location.href = '/settings/model-combo'}
-                          sx={{
-                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                            '&:hover': {
-                              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
-                            }
-                          }}
+                          onClick={() => navigate('/settings/model-combo')}
+                          sx={buttonStyles.primary}
                         >
                           <Settings size={20} color="#1976d2" />
                         </IconButton>

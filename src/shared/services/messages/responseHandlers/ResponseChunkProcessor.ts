@@ -29,14 +29,17 @@ export class ResponseChunkProcessor {
     this.blockId = blockId;
     this.lastBlockId = blockId;
 
+    // 🚀 统一节流频率，避免不同步更新导致的抖动
+    const UNIFIED_THROTTLE_INTERVAL = 100; // 统一使用100ms
+
     // 创建节流函数
     this.throttledUpdateBlock = throttle((blockId: string, changes: any) => {
       dexieStorage.updateMessageBlock(blockId, changes);
-    }, 500);
+    }, UNIFIED_THROTTLE_INTERVAL);
 
     this.throttledReduxUpdate = throttle((blockId: string, changes: any) => {
       store.dispatch(updateOneBlock({ id: blockId, changes }));
-    }, 200);
+    }, UNIFIED_THROTTLE_INTERVAL);
   }
 
   /**
