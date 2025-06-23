@@ -17,7 +17,6 @@ import {
   FormHelperText,
   Tabs,
   Tab,
-
   Chip
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';

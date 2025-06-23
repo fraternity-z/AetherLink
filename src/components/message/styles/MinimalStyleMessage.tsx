@@ -170,6 +170,10 @@ export default React.memo(MinimalStyleMessage, (prevProps, nextProps) => {
     prevProps.showUserName === nextProps.showUserName &&
     prevProps.showModelAvatar === nextProps.showModelAvatar &&
     prevProps.showModelName === nextProps.showModelName &&
-    prevProps.showMessageDivider === nextProps.showMessageDivider
+    prevProps.showMessageDivider === nextProps.showMessageDivider &&
+    // 🔥 关键修复：添加头像变化的比较
+    prevProps.userAvatar === nextProps.userAvatar &&
+    prevProps.assistantAvatar === nextProps.assistantAvatar &&
+    prevProps.modelAvatar === nextProps.modelAvatar
   );
 });

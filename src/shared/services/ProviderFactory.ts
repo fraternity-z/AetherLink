@@ -8,6 +8,7 @@ import * as anthropicApi from '../api/anthropic';
 import * as geminiApi from '../api/gemini';
 import { modelComboService } from './ModelComboService';
 import { OpenAIAISDKProvider } from '../api/openai-aisdk';
+import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 
 
 /**
@@ -377,7 +378,7 @@ async function fetchModelsFromEndpoint(provider: any, providerType: string): Pro
       console.log(`[fetchModelsFromEndpoint] OpenAI Responses API使用专门的模型获取`);
       try {
         // 创建 OpenAIResponseProvider 实例来获取模型
-        const { OpenAIResponseProvider } = await import('../providers/OpenAIResponseProvider');
+        // 使用静态导入的 OpenAIResponseProvider
         const responseProvider = new OpenAIResponseProvider({
           id: provider.id,
           name: provider.name || 'OpenAI Responses',

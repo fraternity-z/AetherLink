@@ -83,7 +83,7 @@ const SettingsPage: React.FC = () => {
       title: '模型服务',
       items: [
         { id: 'default-model', title: '配置模型', description: '管理AI模型和API密钥', icon: <SmartToyIcon size={18} />, path: '/settings/default-model', color: '#ec4899' },
-        { id: 'default-model-settings', title: '默认模型', description: '选择默认模型和自动化选项', icon: <TuneIcon size={18} />, path: '/settings/default-model-settings', color: '#4f46e5' },
+        { id: 'topic-naming-settings', title: '话题命名设置', description: '配置话题自动命名功能', icon: <TuneIcon size={18} />, path: '/settings/topic-naming-settings', color: '#4f46e5' },
         { id: 'agent-prompts', title: '智能体提示词集合', description: '浏览和使用内置的丰富提示词模板', icon: <AutoFixHighIcon size={18} />, path: '/settings/agent-prompts', color: '#0ea5e9' },
         { id: 'ai-debate', title: 'AI辩论设置', description: '配置AI互相辩论讨论功能', icon: <ForumIcon size={18} />, path: '/settings/ai-debate', color: '#e11d48' },
         { id: 'model-combo', title: '模型组合', description: '创建和管理多模型组合', icon: <GitBranch size={18} />, path: '/settings/model-combo', color: '#f43f5e' },

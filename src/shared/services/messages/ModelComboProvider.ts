@@ -244,6 +244,14 @@ export class ModelComboProvider {
             // 当收到普通内容时，表示推理阶段结束
             if (content && !reasoning) {
               console.log(`[ModelComboProvider] 推理阶段结束，收到内容: ${content.length} 字符`);
+
+              // 检查是否是推理完成信号
+              if (content === '[REASONING_COMPLETE]') {
+                console.log(`[ModelComboProvider] 收到推理完成信号`);
+              } else {
+                console.log(`[ModelComboProvider] 收到实际内容: ${content.substring(0, 50)}...`);
+              }
+
               // 返回完整的推理内容
               const fullReasoning = reasoningContent.join('');
               console.log(`[ModelComboProvider] 推理完成，总长度: ${fullReasoning.length}`);

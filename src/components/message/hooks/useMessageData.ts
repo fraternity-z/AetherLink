@@ -6,7 +6,7 @@ import type { RootState } from '../../../shared/store';
 import type { Message, MessageBlock } from '../../../shared/types/newMessage';
 import { getMessageDividerSetting } from '../../../shared/utils/settingsUtils';
 import { getThemeColors } from '../../../shared/utils/themeUtils';
-import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
+import { getUserAvatar, getAssistantAvatar, getModelAvatar } from '../../../shared/utils/avatarUtils';
 
 export const useMessageData = (message: Message) => {
   const theme = useTheme();
@@ -100,100 +100,25 @@ export const useMessageData = (message: Message) => {
     };
   }, []);
 
-  // 获取用户头像
+  // 初始化头像 - 使用统一的头像工具函数
   useEffect(() => {
-    const fetchUserAvatar = () => {
-      try {
-        const savedUserAvatar = localStorage.getItem('user_avatar');
-        if (savedUserAvatar) {
-          setUserAvatar(savedUserAvatar);
-        } else {
-          setUserAvatar(null);
-        }
-      } catch (error) {
-        console.error('获取用户头像失败:', error);
-      }
-    };
+    // 立即设置用户头像
+    setUserAvatar(getUserAvatar());
 
-    fetchUserAvatar();
+    // 异步获取助手头像
+    if (message.role === 'assistant' && message.assistantId) {
+      getAssistantAvatar(message.assistantId).then(setAssistantAvatar);
+    } else {
+      setAssistantAvatar(null);
+    }
 
-    // 监听 localStorage 变化，实时更新头像
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user_avatar') {
-        setUserAvatar(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  // 获取助手头像
-  useEffect(() => {
-    const fetchAssistantAvatar = async () => {
-      if (message.role === 'assistant' && message.assistantId) {
-        try {
-          // 从数据库获取助手信息
-          const assistant = await dexieStorage.getAssistant(message.assistantId);
-
-          if (assistant?.avatar) {
-            // 如果助手有自定义头像，使用它
-            setAssistantAvatar(assistant.avatar);
-          } else {
-            // 如果没有自定义头像，清空状态
-            setAssistantAvatar(null);
-          }
-        } catch (error) {
-          console.error('获取助手头像失败:', error);
-          setAssistantAvatar(null);
-        }
-      } else {
-        setAssistantAvatar(null);
-      }
-    };
-
-    fetchAssistantAvatar();
-  }, [message.role, message.assistantId]);
-
-  // 尝试获取模型头像
-  useEffect(() => {
-    const fetchModelAvatar = async () => {
-      if (message.role === 'assistant' && message.model?.id) {
-        try {
-          // 从数据库获取模型配置
-          const modelConfig = await dexieStorage.getModel(message.model.id);
-
-          if (modelConfig?.avatar) {
-            // 如果数据库中有头像，使用它
-            setModelAvatar(modelConfig.avatar);
-          } else if (message.model.iconUrl) {
-            // 如果模型有iconUrl，使用它
-            setModelAvatar(message.model.iconUrl);
-
-            // 同时保存到数据库以便将来使用
-            await dexieStorage.saveModel(message.model.id, {
-              id: message.model.id,
-              avatar: message.model.iconUrl,
-              updatedAt: new Date().toISOString()
-            });
-          }
-          // 如果没有头像，将使用默认的字母头像
-        } catch (error) {
-          console.error('获取模型头像失败:', error);
-
-          // 如果数据库访问失败但模型有iconUrl，仍然使用它
-          if (message.model.iconUrl) {
-            setModelAvatar(message.model.iconUrl);
-          }
-        }
-      }
-    };
-
-    fetchModelAvatar();
-  }, [message.role, message.model?.id]);
+    // 异步获取模型头像
+    if (message.role === 'assistant' && message.model?.id) {
+      getModelAvatar(message.model.id, message.model.iconUrl).then(setModelAvatar);
+    } else {
+      setModelAvatar(null);
+    }
+  }, [message.id, message.assistantId, message.model?.id]); // 当关键信息变化时重新获取
 
   return {
     blocks,

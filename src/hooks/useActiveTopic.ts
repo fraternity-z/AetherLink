@@ -51,7 +51,7 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     console.log(`[useActiveTopic] 立即触发消息加载: ${activeTopic.id}`);
   }, [activeTopic?.id, dispatch]); // 只依赖ID，避免对象引用变化
 
-  // Effect 2: 助手变化时选择第一个话题
+  // Effect 2: 助手变化时选择第一个话题 - 优化版本
   useEffect(() => {
     if (!assistant?.id) return;
 
@@ -60,30 +60,38 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
     const loadFirstTopic = async () => {
       try {
-        // 优先使用助手的topicIds
+        // 优先从Redux中的助手数据获取话题
+        if (reduxAssistant?.topics && reduxAssistant.topics.length > 0) {
+          console.log(`[useActiveTopic] 从Redux立即获取第一个话题: ${reduxAssistant.topics[0].name}`);
+          safeSetActiveTopic(reduxAssistant.topics[0]);
+          return;
+        }
+
+        // 其次使用助手的topicIds
         if (Array.isArray(assistant.topicIds) && assistant.topicIds.length > 0) {
           const firstTopic = await dexieStorage.getTopic(assistant.topicIds[0]);
           if (firstTopic && isMountedRef.current) {
-            console.log(`[useActiveTopic] 即时选择第一个话题: ${firstTopic.name}`);
+            console.log(`[useActiveTopic] 从数据库获取第一个话题: ${firstTopic.name}`);
             safeSetActiveTopic(firstTopic);
             return;
           }
         }
 
-        // 兜底：从所有话题中查找
-        console.log(`[useActiveTopic] 助手对象没有topics，后台加载`);
+        // 兜底：从数据库查找助手话题
+        console.log(`[useActiveTopic] 从数据库查找助手话题`);
         const allTopics = await dexieStorage.getAllTopics();
         const assistantTopics = allTopics.filter(topic => topic.assistantId === assistant.id);
 
         if (assistantTopics.length > 0 && isMountedRef.current) {
-          const sortedTopics = assistantTopics.sort((a, b) => {
+          // 选择最新的话题
+          const latestTopic = assistantTopics.sort((a, b) => {
             const timeA = new Date(a.lastMessageTime || a.updatedAt || a.createdAt || 0).getTime();
             const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
             return timeB - timeA;
-          });
+          })[0];
 
-          console.log(`[useActiveTopic] 后台加载完成，选择话题: ${sortedTopics[0].name}`);
-          safeSetActiveTopic(sortedTopics[0]);
+          console.log(`[useActiveTopic] 选择话题: ${latestTopic.name}`);
+          safeSetActiveTopic(latestTopic);
         } else if (isMountedRef.current) {
           console.log(`[useActiveTopic] 助手 ${assistant.name} 没有话题`);
           safeSetActiveTopic(null);
@@ -97,7 +105,7 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     };
 
     loadFirstTopic();
-  }, [assistant?.id, safeSetActiveTopic]); // 只依赖助手ID
+  }, [assistant?.id, reduxAssistant?.topics?.length, safeSetActiveTopic]); // 添加Redux话题依赖
 
   // Effect 3: 监听外部话题ID变化
   useEffect(() => {

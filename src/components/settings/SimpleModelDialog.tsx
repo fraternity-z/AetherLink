@@ -133,22 +133,11 @@ const SimpleModelDialog: React.FC<SimpleModelDialogProps> = ({
     setModelAvatar(avatarDataUrl);
     if (modelData.id) {
       try {
-        // 获取当前模型配置（如果存在）
-        const existingConfig = await dexieStorage.getModel(modelData.id);
-
-        // 创建或更新模型配置
-        const modelConfig = {
-          ...existingConfig,
-          id: modelData.id,
-          avatar: avatarDataUrl,
-          updatedAt: new Date().toISOString()
-        };
-
-        // 保存到数据库
-        await dexieStorage.saveModel(modelData.id, modelConfig);
-        console.log(`[SimpleModelDialog] 模型头像已保存到数据库: ${modelData.id}`);
+        const { saveModelAvatar } = await import('../../shared/utils/avatarUtils');
+        await saveModelAvatar(modelData.id, avatarDataUrl);
+        console.log(`[SimpleModelDialog] 模型头像已保存: ${modelData.id}`);
       } catch (error) {
-        console.error(`[SimpleModelDialog] 保存模型头像到数据库失败:`, error);
+        console.error(`[SimpleModelDialog] 保存模型头像失败:`, error);
       }
     }
   };

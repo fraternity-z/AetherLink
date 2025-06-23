@@ -380,7 +380,11 @@ export default React.memo(BubbleStyleMessage, (prevProps, nextProps) => {
     prevProps.showUserName !== nextProps.showUserName ||
     prevProps.showModelAvatar !== nextProps.showModelAvatar ||
     prevProps.showModelName !== nextProps.showModelName ||
-    prevProps.themeStyle !== nextProps.themeStyle
+    prevProps.themeStyle !== nextProps.themeStyle ||
+    // 🔥 关键修复：添加头像变化的比较
+    prevProps.userAvatar !== nextProps.userAvatar ||
+    prevProps.assistantAvatar !== nextProps.assistantAvatar ||
+    prevProps.modelAvatar !== nextProps.modelAvatar
   ) {
     return false;
   }

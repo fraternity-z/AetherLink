@@ -178,6 +178,9 @@ export * from './network';
 export * from './knowledge';
 export * from './topics';
 
+// 导入需要在初始化中使用的服务
+import { EnhancedNetworkService } from './network';
+
 /**
  * 初始化所有服务
  * 应在应用启动时调用
@@ -186,14 +189,14 @@ export async function initializeServices(): Promise<void> {
   try {
     // 初始化开发者工具服务
     try {
+      // 使用静态导入以避免动态导入警告
       const { default: EnhancedConsoleService } = await import('./EnhancedConsoleService');
-      const { default: EnhancedNetworkService } = await import('./network/EnhancedNetworkService');
-      
+
       // 初始化控制台拦截
       EnhancedConsoleService.getInstance();
       console.log('控制台拦截服务初始化完成');
-      
-      // 初始化网络拦截
+
+      // 初始化网络拦截 - 使用静态导入的服务
       EnhancedNetworkService.getInstance();
       console.log('网络拦截服务初始化完成');
     } catch (devToolsError) {

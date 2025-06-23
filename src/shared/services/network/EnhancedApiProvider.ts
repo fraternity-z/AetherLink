@@ -205,29 +205,30 @@ export class EnhancedApiProvider {
 
   /**
    * 更新 Redux store 中的供应商配置
+   * 注意：这里不直接导入 store 以避免循环依赖，而是通过回调方式处理
    */
   private updateProviderInStore(provider: ModelProvider): void {
     try {
-      // 动态导入 store 和 action 以避免循环依赖
-      Promise.all([
-        import('../../store'),
-        import('../../store/settingsSlice')
-      ]).then(([storeModule, settingsModule]) => {
-        const store = storeModule.default; // store 是默认导出
-        const { updateProvider } = settingsModule;
-
-        store.dispatch(updateProvider({
-          id: provider.id,
+      // 通过事件系统或回调方式通知外部更新 store，避免直接导入
+      // 这里可以发出一个自定义事件，由外部监听并处理 store 更新
+      const updateEvent = new CustomEvent('provider-config-update', {
+        detail: {
+          providerId: provider.id,
           updates: {
             apiKeys: provider.apiKeys,
             keyManagement: provider.keyManagement
           }
-        }));
-      }).catch(error => {
-        console.error('[EnhancedApiProvider] 动态导入失败:', error);
+        }
       });
+
+      // 如果在浏览器环境中，发出事件
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(updateEvent);
+      }
+
+      console.log('[EnhancedApiProvider] 已发出供应商配置更新事件:', provider.id);
     } catch (error) {
-      console.error('[EnhancedApiProvider] 更新 Redux store 失败:', error);
+      console.error('[EnhancedApiProvider] 更新供应商配置失败:', error);
     }
   }
 

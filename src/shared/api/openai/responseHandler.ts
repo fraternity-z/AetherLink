@@ -5,13 +5,52 @@
 import type { Model } from '../../types';
 
 /**
+ * 流式响应块类型
+ */
+interface StreamChunk {
+  type?: string;
+  delta?: string;
+  text?: string;
+  reasoning?: string;
+  choices?: Array<{
+    delta: {
+      content?: string;
+      reasoning?: string;
+    };
+  }>;
+}
+
+/**
+ * 流式响应类型
+ */
+interface StreamResponse extends AsyncIterable<StreamChunk> {}
+
+/**
+ * 非流式响应类型
+ */
+interface NonStreamResponse {
+  output_text?: string;
+  output?: Array<{
+    type: string;
+    content?: Array<{
+      type: string;
+      text?: string;
+    }>;
+  }>;
+  reasoning?: string;
+  choices?: Array<{
+    message: {
+      content?: string;
+      reasoning?: string;
+    };
+  }>;
+}
+
+/**
  * 响应处理配置
  */
 interface ResponseHandlerConfig {
   enableSpecialHandling?: boolean;
-  enableErrorRetry?: boolean;
-  maxRetries?: number;
-  retryDelay?: number;
 }
 
 /**
@@ -23,9 +62,6 @@ export class ResponseHandler {
   constructor(config: ResponseHandlerConfig = {}) {
     this.config = {
       enableSpecialHandling: true,
-      enableErrorRetry: true,
-      maxRetries: 3,
-      retryDelay: 1000,
       ...config
     };
   }
@@ -38,10 +74,14 @@ export class ResponseHandler {
    * @returns 处理后的响应
    */
   async handleStreamResponse(
-    response: any,
+    response: StreamResponse,
     model: Model,
     onUpdate?: (content: string, reasoning?: string) => void
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
+    // 基本输入验证
+    if (!response || !model) {
+      throw new Error('response 和 model 参数不能为空');
+    }
     try {
       let content = '';
       let reasoning = '';
@@ -128,12 +168,6 @@ export class ResponseHandler {
 
     } catch (error) {
       console.error('[ResponseHandler] 流式响应处理失败:', error);
-      
-      // 错误重试机制
-      if (this.config.enableErrorRetry) {
-        return this.handleErrorWithRetry(error, model);
-      }
-      
       throw error;
     }
   }
@@ -144,7 +178,11 @@ export class ResponseHandler {
    * @param model 模型配置
    * @returns 处理后的响应
    */
-  handleNonStreamResponse(response: any, model: Model): string | { content: string; reasoning?: string } {
+  handleNonStreamResponse(response: NonStreamResponse, model: Model): string | { content: string; reasoning?: string } {
+    // 基本输入验证
+    if (!response || !model) {
+      throw new Error('response 和 model 参数不能为空');
+    }
     try {
       let content = '';
       let reasoning = '';
@@ -236,7 +274,7 @@ export class ResponseHandler {
    * @param model 模型配置
    * @returns 特殊内容
    */
-  private extractSpecialContent(delta: any, model: Model): string | null {
+  private extractSpecialContent(delta: Record<string, any>, model: Model): string | null {
     // Azure OpenAI特殊格式处理
     if (model.provider === 'azure-openai') {
       if (delta.azure_content) {
@@ -254,19 +292,7 @@ export class ResponseHandler {
     return null;
   }
 
-  /**
-   * 错误重试处理
-   * @param error 错误对象
-   * @param model 模型配置
-   * @returns 重试结果
-   */
-  private async handleErrorWithRetry(error: any, model: Model): Promise<string> {
-    console.log(`[ResponseHandler] 开始错误重试 - 模型: ${model.id}`);
-    
-    // 这里可以实现重试逻辑
-    // 目前简单返回错误信息
-    return `响应处理出现错误: ${error.message}`;
-  }
+
 }
 
 /**
@@ -276,10 +302,7 @@ export class ResponseHandler {
  */
 export function createResponseHandler(model: Model): ResponseHandler {
   const config: ResponseHandlerConfig = {
-    enableSpecialHandling: true,
-    enableErrorRetry: true,
-    maxRetries: 3,
-    retryDelay: 1000
+    enableSpecialHandling: true
   };
 
   // 根据模型类型调整配置

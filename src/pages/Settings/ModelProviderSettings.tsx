@@ -53,6 +53,7 @@ import ModelManagementDialog from '../../components/ModelManagementDialog';
 import SimpleModelDialog from '../../components/settings/SimpleModelDialog';
 import { testApiConnection } from '../../shared/api';
 import { sendChatRequest } from '../../shared/api';
+import { OpenAIResponseProvider } from '../../shared/providers/OpenAIResponseProvider';
 
 // 常量定义
 const CONSTANTS = {
@@ -713,12 +714,7 @@ const ModelProviderSettings: React.FC = () => {
       if (provider.providerType === 'openai-response') {
         // 对于 OpenAI Responses API，使用专用的测试方法
         try {
-          // 动态导入时添加错误边界
-          const module = await import('../../shared/providers/OpenAIResponseProvider').catch(error => {
-            throw new Error(`无法加载 OpenAI Response Provider: ${error.message}`);
-          });
-
-          const { OpenAIResponseProvider } = module;
+          // 使用静态导入的 OpenAIResponseProvider
           const responseProvider = new OpenAIResponseProvider(testModel);
 
           // 使用 sendChatMessage 方法测试

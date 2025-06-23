@@ -2,6 +2,7 @@ import type { Model } from '../types';
 import { getSettingFromDB } from '../services/storage/storageService';
 import { getProviderApi } from '../services/ProviderFactory';
 import store from '../store';
+import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 
 /**
  * API模块索引文件
@@ -52,8 +53,7 @@ export const testApiConnection = async (model: Model): Promise<boolean> => {
     if (model.providerType === 'openai-response') {
       console.log('[testApiConnection] 使用 OpenAI Responses API 测试连接');
 
-      // 动态导入 OpenAIResponseProvider
-      const { OpenAIResponseProvider } = await import('../providers/OpenAIResponseProvider');
+      // 使用静态导入的 OpenAIResponseProvider
       const provider = new OpenAIResponseProvider(model);
 
       // 使用 Responses API 专用的测试方法

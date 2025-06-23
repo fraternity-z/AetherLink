@@ -8,6 +8,7 @@ import { generateImage as openaiGenerateImage, generateVideo as openaiGenerateVi
 import { generateVideoWithVeo } from '../../api/google/veo';
 import type { VideoGenerationParams } from '../../api/openai/video';
 import type { GoogleVeoParams } from '../../api/google/veo';
+import { fetchModels as factoryFetchModels } from '../ProviderFactory';
 
 // 重新导出类型
 export type { VideoGenerationParams, GoogleVeoParams };
@@ -176,7 +177,7 @@ export async function fetchModels(provider: any): Promise<Model[]> {
     logApiRequest('获取模型列表', 'INFO', { provider: provider.id });
 
     // 直接使用供应商工厂获取已格式化的模型，参考最佳实例架构
-    const { fetchModels: factoryFetchModels } = await import('../ProviderFactory');
+    // 改为静态导入以避免动态导入警告
     const models = await factoryFetchModels(provider);
 
     logApiResponse('获取模型列表', 200, {

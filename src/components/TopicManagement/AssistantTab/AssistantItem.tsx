@@ -1,4 +1,4 @@
-import React, { startTransition, useCallback, useMemo, memo, useEffect, useState, useRef } from 'react';
+import React, { startTransition, useCallback, useMemo, useEffect, useState, useRef } from 'react';
 import {
   ListItemButton,
   ListItemText,
@@ -10,7 +10,9 @@ import {
   useTheme,
 } from '@mui/material';
 import { MoreVertical, Trash, AlertTriangle } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import type { Assistant } from '../../../shared/types/Assistant';
+import type { RootState } from '../../../shared/store';
 
 import LucideIconRenderer from './LucideIconRenderer';
 import { isLucideIcon } from './iconUtils';
@@ -24,9 +26,9 @@ interface AssistantItemProps {
 }
 
 /**
- * 单个助手项组件 - 使用 memo 优化重复渲染
+ * 单个助手项组件 - 直接从Redux读取最新话题数
  */
-const AssistantItem = memo(function AssistantItem({
+function AssistantItem({
   assistant,
   isSelected,
   onSelectAssistant,
@@ -37,46 +39,23 @@ const AssistantItem = memo(function AssistantItem({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  // 添加本地状态来强制更新话题数显示
-  const [forceUpdateKey, setForceUpdateKey] = useState(0);
+  // 直接从Redux读取最新的助手数据，获取实时话题数
+  const reduxAssistant = useSelector((state: RootState) =>
+    state.assistants.assistants.find(a => a.id === assistant.id)
+  );
 
   // 删除确认状态
   const [pendingDelete, setPendingDelete] = useState(false);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 监听话题清空事件
+  // 清理删除确认定时器
   useEffect(() => {
-    const handleTopicsCleared = (event: CustomEvent) => {
-      const { assistantId } = event.detail;
-      if (assistantId === assistant.id) {
-        console.log(`[AssistantItem] 收到话题清空事件，助手: ${assistant.name}`);
-        // 强制更新组件以刷新话题数显示
-        setForceUpdateKey(prev => prev + 1);
-      }
-    };
-
-    // 监听助手更新事件
-    const handleAssistantUpdated = (event: CustomEvent) => {
-      const { assistant: updatedAssistant } = event.detail;
-      if (updatedAssistant.id === assistant.id) {
-        console.log(`[AssistantItem] 收到助手更新事件，助手: ${assistant.name}`);
-        // 强制更新组件
-        setForceUpdateKey(prev => prev + 1);
-      }
-    };
-
-    window.addEventListener('topicsCleared', handleTopicsCleared as EventListener);
-    window.addEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
-
     return () => {
-      window.removeEventListener('topicsCleared', handleTopicsCleared as EventListener);
-      window.removeEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
-      // 清理删除确认定时器
       if (deleteTimeoutRef.current) {
         clearTimeout(deleteTimeoutRef.current);
       }
     };
-  }, [assistant.id, assistant.name]);
+  }, []);
 
   // 简化助手点击处理函数，移除复杂的事件链
   const handleAssistantClick = useCallback(() => {
@@ -113,11 +92,13 @@ const AssistantItem = memo(function AssistantItem({
     }
   }, [assistant.id, onDeleteAssistant, pendingDelete]);
 
-  // 使用 useMemo 缓存计算结果，避免每次渲染都重新计算
+  // 直接从Redux读取最新话题数，实时更新
   const topicCount = useMemo(() => {
-    const count = assistant.topics?.length || assistant.topicIds?.length || 0;
+    // 优先使用Redux中的最新数据
+    const currentAssistant = reduxAssistant || assistant;
+    const count = currentAssistant.topics?.length || currentAssistant.topicIds?.length || 0;
     return count;
-  }, [assistant.id, assistant.topics?.length, assistant.topicIds?.length, forceUpdateKey, assistant.name]);
+  }, [reduxAssistant, assistant]);
 
   // 缓存头像显示内容 - 支持自定义头像、Lucide图标和emoji
   const avatarContent = useMemo(() => {
@@ -152,7 +133,7 @@ const AssistantItem = memo(function AssistantItem({
 
     // 否则显示emoji或首字母
     return iconOrEmoji;
-  }, [assistant.avatar, assistant.emoji, assistant.name, isSelected, isDarkMode, forceUpdateKey]);
+  }, [assistant.avatar, assistant.emoji, assistant.name, isSelected, isDarkMode]);
 
   // 缓存样式对象，避免每次渲染都创建新对象
   const avatarSx = useMemo(() => {
@@ -177,7 +158,7 @@ const AssistantItem = memo(function AssistantItem({
       alignItems: 'center',
       borderRadius: '25%', // 方圆形头像
     };
-  }, [isSelected, isDarkMode, forceUpdateKey]);
+  }, [isSelected, isDarkMode]);
 
   const primaryTextSx = useMemo(() => ({
     fontWeight: isSelected ? 600 : 400,
@@ -262,34 +243,6 @@ const AssistantItem = memo(function AssistantItem({
       </Box>
     </ListItemButton>
   );
-}, (prevProps, nextProps) => {
-  // 自定义比较函数，避免不必要的重新渲染
-  // 优化：更严格的比较，减少不必要的重新渲染
-  const shouldSkipRender = (
-    prevProps.assistant.id === nextProps.assistant.id &&
-    prevProps.assistant.name === nextProps.assistant.name &&
-    prevProps.assistant.emoji === nextProps.assistant.emoji &&
-    prevProps.assistant.avatar === nextProps.assistant.avatar &&
-    prevProps.isSelected === nextProps.isSelected &&
-    (prevProps.assistant.topics?.length || 0) === (nextProps.assistant.topics?.length || 0) &&
-    (prevProps.assistant.topicIds?.length || 0) === (nextProps.assistant.topicIds?.length || 0)
-  );
-
-  // 只在开发环境记录变化日志
-  if (process.env.NODE_ENV === 'development' && !shouldSkipRender) {
-    const changes = [];
-    if (prevProps.assistant.id !== nextProps.assistant.id) changes.push('id');
-    if (prevProps.assistant.name !== nextProps.assistant.name) changes.push('name');
-    if (prevProps.assistant.emoji !== nextProps.assistant.emoji) changes.push('emoji');
-    if (prevProps.assistant.avatar !== nextProps.assistant.avatar) changes.push('avatar');
-    if (prevProps.isSelected !== nextProps.isSelected) changes.push('isSelected');
-    if ((prevProps.assistant.topics?.length || 0) !== (nextProps.assistant.topics?.length || 0)) changes.push('topics.length');
-    if ((prevProps.assistant.topicIds?.length || 0) !== (nextProps.assistant.topicIds?.length || 0)) changes.push('topicIds.length');
-
-    console.log(`[AssistantItem] 重新渲染 ${nextProps.assistant.name}，变化: ${changes.join(', ')}`);
-  }
-
-  return shouldSkipRender;
-});
+}
 
 export default AssistantItem;

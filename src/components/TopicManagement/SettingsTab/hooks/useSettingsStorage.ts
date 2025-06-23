@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { MathRendererType } from '../../../../shared/types';
 import type { ThinkingOption } from '../../../../shared/config/reasoningConfig';
+import { getUserAvatar, saveUserAvatar } from '../../../../shared/utils/avatarUtils';
 
 // 设置项的类型定义
 export interface AppSettings {
@@ -57,7 +58,7 @@ export function useSettingsStorage() {
       setSettings(mergedSettings);
 
       // 加载用户头像
-      const savedUserAvatar = localStorage.getItem('user_avatar');
+      const savedUserAvatar = getUserAvatar();
       if (savedUserAvatar) {
         setUserAvatar(savedUserAvatar);
       }
@@ -122,11 +123,10 @@ export function useSettingsStorage() {
   // 保存用户头像
   const updateUserAvatar = useCallback((avatarDataUrl: string) => {
     try {
-      localStorage.setItem('user_avatar', avatarDataUrl);
+      saveUserAvatar(avatarDataUrl);
       setUserAvatar(avatarDataUrl);
       return true;
-    } catch (error) {
-      console.error('保存用户头像失败:', error);
+    } catch {
       return false;
     }
   }, []);

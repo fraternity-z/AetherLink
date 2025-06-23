@@ -380,7 +380,7 @@ const DefaultModelSettings: React.FC = () => {
           >
             <ListItem disablePadding>
               <ListItemButton
-                onClick={() => navigate('/settings/default-model-settings')}
+                onClick={() => navigate('/settings/topic-naming-settings')}
                 sx={{
                   transition: 'all 0.2s',
                   '&:hover': {
@@ -398,8 +398,8 @@ const DefaultModelSettings: React.FC = () => {
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>默认模型设置</Typography>}
-                  secondary="设置默认使用的模型和自动化选项"
+                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>话题命名设置</Typography>}
+                  secondary="设置话题自动命名的模型和选项"
                 />
                 <ChevronRightIcon size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>

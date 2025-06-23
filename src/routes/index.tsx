@@ -17,7 +17,7 @@ const DefaultModelSettings = lazy(() => import('../pages/Settings/DefaultModelSe
 const KnowledgeBasePage = lazy(() => import('../pages/KnowledgeBase'));
 const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings'));
 
-const DefaultModelSettingsPage = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
+const TopicNamingSettings = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
 const ModelProviderSettings = lazy(() => import('../pages/Settings/ModelProviderSettings'));
 const AddProviderPage = lazy(() => import('../pages/Settings/AddProviderPage'));
 const AboutPage = lazy(() => import('../pages/Settings/AboutPage'));
@@ -133,7 +133,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/appearance/top-toolbar" element={<TopToolbarDIYSettings />} />
         <Route path="/settings/behavior" element={<BehaviorSettings />} />
         <Route path="/settings/default-model" element={<DefaultModelSettings />} />
-        <Route path="/settings/default-model-settings" element={<DefaultModelSettingsPage />} />
+        <Route path="/settings/topic-naming-settings" element={<TopicNamingSettings />} />
         <Route path="/settings/agent-prompts" element={<AgentPromptsSettings />} />
         <Route path="/settings/ai-debate" element={<AIDebateSettings />} />
         <Route path="/settings/quick-phrases" element={<QuickPhraseSettings />} />

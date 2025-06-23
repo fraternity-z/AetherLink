@@ -441,24 +441,21 @@ export const loadTopicMessagesThunk = createAsyncThunk(
     try {
       const state = getState() as any;
 
+      // 优化缓存检查 - 确保有实际消息数据才跳过加载
+      const existingMessageIds = state.messages.messageIdsByTopic[topicId] || [];
+      const hasActualMessages = existingMessageIds.length > 0 &&
+        existingMessageIds.some((id: string) => state.messages.entities[id]);
+
+      dispatch(newMessagesActions.setCurrentTopicId(topicId));
+
+      if (hasActualMessages) {
+        console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 消息已缓存，跳过加载`);
+        return []; // 直接返回，不重新加载
+      }
+
       // 防止竞争条件：检查是否正在加载
       if (state.messages.loadingByTopic[topicId]) {
         return [];
-      }
-
-      // 检查消息是否已存在且有实际数据
-      const existingMessageIds = state.messages.messageIdsByTopic[topicId] || [];
-      const existingMessages = existingMessageIds.map((id: string) => state.messages.entities[id]).filter(Boolean);
-
-      // 只有当真正有消息数据时才跳过加载
-      if (existingMessageIds.length > 0 && existingMessages.length > 0) {
-        return existingMessages; // 返回已存在的消息
-      }
-
-      // 如果messageIdsByTopic存在但没有实际消息数据，说明状态不一致，需要重新加载
-      if (existingMessageIds.length > 0 && existingMessages.length === 0) {
-        // 清理不一致的状态
-        dispatch(newMessagesActions.clearTopicMessages(topicId));
       }
 
       dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
@@ -479,26 +476,12 @@ export const loadTopicMessagesThunk = createAsyncThunk(
         return [];
       }
 
-      // 直接从topic.messages获取消息
-      let messagesFromTopic = topic.messages || [];
+      // 从messageIds加载消息
+      let messagesFromTopic: Message[] = [];
 
-      // 数据修复：如果messages数组为空但messageIds数组有数据，从messages表恢复
-      if (messagesFromTopic.length === 0 && topic.messageIds && topic.messageIds.length > 0) {
-        try {
-          // 性能优化：使用批量查询而不是循环查询
-          const recoveredMessages = await dexieStorage.getMessagesByIds(topic.messageIds);
-
-          if (recoveredMessages.length > 0) {
-            // 更新话题的messages数组
-            topic.messages = recoveredMessages;
-            await dexieStorage.saveTopic(topic);
-
-            // 使用恢复的消息
-            messagesFromTopic = recoveredMessages;
-          }
-        } catch (error) {
-          console.error(`[loadTopicMessagesThunk] 数据恢复失败:`, error);
-        }
+      if (topic.messageIds && topic.messageIds.length > 0) {
+        // 使用批量查询从messages表获取消息
+        messagesFromTopic = await dexieStorage.getMessagesByIds(topic.messageIds);
       }
 
       if (messagesFromTopic.length > 0) {

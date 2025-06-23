@@ -24,8 +24,9 @@ interface SidebarTabsProps {
  * 侧边栏标签页组件
  *
  * 这是一个容器组件，负责管理状态和提供上下文
+ * 🔥 使用React.memo优化性能，避免不必要的重新渲染
  */
-export default function SidebarTabs({
+const SidebarTabs = React.memo(function SidebarTabs({
   mcpMode,
   toolsEnabled,
   onMCPModeChange,
@@ -202,4 +203,6 @@ export default function SidebarTabs({
       <SidebarTabsContent />
     </SidebarProvider>
   );
-}
+});
+
+export default SidebarTabs;
