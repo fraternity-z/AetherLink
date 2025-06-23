@@ -54,6 +54,11 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dragRef = useRef<HTMLDivElement>(null);
 
+  // 🚀 优化：使用 ref 存储实时位置，避免频繁重渲染
+  const currentPositionRef = useRef(position);
+  const savePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const rafRef = useRef<number | null>(null);
+
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
     scrollEvents: 0,
@@ -76,6 +81,7 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     });
   }, [position]);
 
+  // 🚀 优化：使用 requestAnimationFrame 节流拖动更新
   const updateDragPosition = useCallback((clientX: number, clientY: number) => {
     if (!isDragging) return;
 
@@ -86,14 +92,51 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     const maxX = window.innerWidth - 200; // 减去组件宽度
     const maxY = window.innerHeight - 300; // 减去组件高度
 
-    setPosition({
+    const newPosition = {
       x: Math.max(0, Math.min(newX, maxX)),
       y: Math.max(0, Math.min(newY, maxY))
+    };
+
+    // 🚀 使用 ref 存储实时位置，避免频繁状态更新
+    currentPositionRef.current = newPosition;
+
+    // 🚀 使用 RAF 节流 DOM 更新
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+
+    rafRef.current = requestAnimationFrame(() => {
+      if (dragRef.current) {
+        dragRef.current.style.left = `${newPosition.x}px`;
+        dragRef.current.style.top = `${newPosition.y}px`;
+      }
     });
   }, [isDragging, dragStart]);
 
   const endDrag = useCallback(() => {
     setIsDragging(false);
+
+    // 🚀 拖动结束时同步状态并保存位置
+    const finalPosition = currentPositionRef.current;
+    setPosition(finalPosition);
+
+    // 🚀 防抖保存到 localStorage
+    if (savePositionTimeoutRef.current) {
+      clearTimeout(savePositionTimeoutRef.current);
+    }
+    savePositionTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem('performanceMonitorPosition', JSON.stringify(finalPosition));
+      } catch (error) {
+        console.warn('无法保存性能监控位置:', error);
+      }
+    }, 500); // 500ms 防抖
+
+    // 清理 RAF
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
   }, []);
 
   // 鼠标事件处理
@@ -127,13 +170,11 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     endDrag();
   }, [endDrag]);
 
-  // 保存位置到localStorage
+  // 🚀 优化：移除频繁的 localStorage 保存，改为在拖动结束时保存
+
+  // 🚀 同步 position 状态到 ref
   useEffect(() => {
-    try {
-      localStorage.setItem('performanceMonitorPosition', JSON.stringify(position));
-    } catch (error) {
-      console.warn('无法保存性能监控位置:', error);
-    }
+    currentPositionRef.current = position;
   }, [position]);
 
   // 添加全局鼠标和触摸事件监听
@@ -160,6 +201,18 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+
+  // 🚀 组件卸载时清理资源
+  useEffect(() => {
+    return () => {
+      if (savePositionTimeoutRef.current) {
+        clearTimeout(savePositionTimeoutRef.current);
+      }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!shouldShow) return;
