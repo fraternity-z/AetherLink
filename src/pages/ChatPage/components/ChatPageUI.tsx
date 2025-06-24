@@ -161,6 +161,9 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
   const topToolbarSettings = useSelector((state: RootState) =>
     state.settings.topToolbar
   );
+  const modelSelectorStyle = useSelector((state: RootState) =>
+    state.settings.modelSelectorStyle
+  );
   const chatBackground = useSelector((state: RootState) =>
     state.settings.chatBackground || {
       enabled: false,
@@ -318,29 +321,32 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
       case 'modelSelector':
         return shouldShow('showModelSelector') ? (
           <Box key={componentId} sx={{ display: 'flex', alignItems: 'center' }}>
-            <UnifiedModelDisplay
-              selectedModel={selectedModel}
-              onClick={handleModelMenuClick}
-              displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
-            />
-            <Box sx={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
-              {mergedTopToolbarSettings.modelSelectorStyle === 'dropdown' ? (
-                <DropdownModelSelector
+            {modelSelectorStyle === 'dropdown' ? (
+              <DropdownModelSelector
+                selectedModel={selectedModel}
+                availableModels={availableModels}
+                handleModelSelect={handleModelSelect}
+                displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
+              />
+            ) : (
+              <>
+                <UnifiedModelDisplay
                   selectedModel={selectedModel}
-                  availableModels={availableModels}
-                  handleModelSelect={handleModelSelect}
+                  onClick={handleModelMenuClick}
+                  displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
                 />
-              ) : (
-                <DialogModelSelector
-                  selectedModel={selectedModel}
-                  availableModels={availableModels}
-                  handleModelSelect={handleModelSelect}
-                  handleMenuClick={handleModelMenuClick}
-                  handleMenuClose={handleModelMenuClose}
-                  menuOpen={menuOpen}
-                />
-              )}
-            </Box>
+                <Box sx={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
+                  <DialogModelSelector
+                    selectedModel={selectedModel}
+                    availableModels={availableModels}
+                    handleModelSelect={handleModelSelect}
+                    handleMenuClick={handleModelMenuClick}
+                    handleMenuClose={handleModelMenuClose}
+                    menuOpen={menuOpen}
+                  />
+                </Box>
+              </>
+            )}
           </Box>
         ) : null;
 

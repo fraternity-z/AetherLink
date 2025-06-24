@@ -1,0 +1,6 @@
+[build]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# 使用 sccache 进行编译缓存
+[env]
+RUSTC_WRAPPER = "sccache"

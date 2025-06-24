@@ -9,7 +9,10 @@
     "core:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://dav.jianguoyun.com/**" }]
+      "allow": [
+        { "url": "https://**" },
+        { "url": "http://**" }
+      ]
     }
   ]
 }
