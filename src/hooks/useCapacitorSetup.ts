@@ -3,24 +3,8 @@ import { App as CapApp } from '@capacitor/app';
 
 export const useCapacitorSetup = () => {
   useEffect(() => {
-    let backButtonListener: any = null;
-
-    const setupCapacitor = async () => {
-      try {
-        backButtonListener = await CapApp.addListener('backButton', () => {
-          console.log('[App] 返回键被按下，由BackButtonHandler处理');
-        });
-      } catch (error) {
-        console.error('[App] Capacitor设置失败:', error);
-      }
-    };
-
-    setupCapacitor();
-
-    return () => {
-      if (backButtonListener) {
-        backButtonListener.remove();
-      }
-    };
+    // 移除返回按键监听器，避免与BackButtonHandler冲突
+    // 返回按键处理完全由BackButtonHandler组件负责
+    console.log('[App] Capacitor设置完成，返回按键由BackButtonHandler处理');
   }, []);
 };

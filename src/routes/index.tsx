@@ -25,7 +25,6 @@ const VoiceSettings = lazy(() => import('../pages/Settings/VoiceSettings'));
 const WebSearchSettings = lazy(() => import('../pages/Settings/WebSearchSettings'));
 const AgentPromptsSettings = lazy(() => import('../pages/Settings/AgentPrompts'));
 const DevToolsPage = lazy(() => import('../pages/DevToolsPage'));
-const VueDemoPage = lazy(() => import('../pages/VueDemo'));
 import DataSettingsPage from '../pages/Settings/DataSettings';
 // 导入高级备份页面
 const AdvancedBackupPage = lazy(() => import('../pages/Settings/DataSettings/AdvancedBackupPage'));
@@ -155,7 +154,6 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/assistant-settings" element={<AssistantSettings />} />
         <Route path="/settings/assistant-model-settings" element={<AssistantModelSettings />} />
         <Route path="/devtools" element={<DevToolsPage />} />
-        <Route path="/vue-demo" element={<VueDemoPage />} />
         <Route path="/knowledge/*" element={<KnowledgeBasePage />} />
       </Routes>
     </Suspense>

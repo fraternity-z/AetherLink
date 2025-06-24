@@ -33,6 +33,9 @@
     "buildandroid": "npm run build && npx cap sync android",
     "open:android": "npx cap open android",
     "build:apk": "npm run build:android && npm run open:android",
+    "mobile:capacitor": "npm run build:android",
+    "mobile:tauri": "npm run build:tauri-android",
+    "mobile:both": "npm run mobile:capacitor && npm run mobile:tauri",
     "buildapk": "npm run buildandroid && npm run open:android",
     "dev:android": "npm run dev -- --host && npx cap run android",
     "devandroid": "npm run dev -- --host && npx cap run android",
@@ -54,7 +57,15 @@
     "install:npm": "npm install",
     "install:yarn": "yarn install",
     "devyarn": "yarn dev",
-    "buildyarn": "yarn build"
+    "buildyarn": "yarn build",
+    "tauri": "tauri",
+    "dev:tauri": "tauri dev",
+    "build:tauri": "tauri build",
+    "dev:tauri-ios": "tauri ios dev",
+    "build:tauri-ios": "tauri ios build",
+    "dev:tauri-android": "tauri android dev",
+    "build:tauri-android": "tauri android build",
+    "build:tauri-debug": "tauri build --debug"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@latest"
@@ -99,6 +110,8 @@
     "@mui/material": "^7.1.2",
     "@mui/system": "^7.1.1",
     "@reduxjs/toolkit": "^2.8.1",
+    "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-shell": "^2.2.2",
     "@types/lodash": "^4.17.16",
     "@types/qrcode": "^1.5.5",
     "@types/react-syntax-highlighter": "^15.5.13",
@@ -172,6 +185,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.25.0",
+    "@tauri-apps/cli": "^2.5.0",
     "@types/dompurify": "^3.0.5",
     "@types/file-saver": "^2.0.7",
     "@types/react": "^19.1.2",

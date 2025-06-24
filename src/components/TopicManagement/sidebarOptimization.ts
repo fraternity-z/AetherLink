@@ -197,11 +197,11 @@ export const MODAL_OPTIMIZATION = {
 // SwipeableDrawer专用配置
 export const SWIPEABLE_DRAWER_CONFIG = {
   // 滑动手势配置
-  hysteresis: 0.52, // 滑动阻力，推荐值
+  hysteresis: 0.6, // 滑动阻力，提高阈值避免误触
   minFlingVelocity: 450, // 最小滑动速度 (px/s)
   // 性能优化
-  disableBackdropTransition: false, // 保持背景过渡
-  disableDiscovery: false, // 保持边缘发现
+  disableBackdropTransition: true, // 提升低端设备FPS
+  disableDiscovery: true, // 禁用边缘发现，避免点击误触
   // 边缘滑动区域
   swipeAreaWidth: 20, // 边缘滑动区域宽度
 } as const;

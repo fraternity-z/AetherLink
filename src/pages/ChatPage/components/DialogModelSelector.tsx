@@ -1,6 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
 import {
-  Button,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -17,28 +16,13 @@ import {
   Avatar,
   useMediaQuery
 } from '@mui/material';
-import { ChevronDown as KeyboardArrowDownIcon, X as CloseIcon, Check as CheckIcon } from 'lucide-react';
+import { X as CloseIcon, Check as CheckIcon } from 'lucide-react';
 import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 
 // 样式常量 - 提取重复的样式对象以提升性能
 const DIALOG_STYLES = {
-  button: (isDark: boolean) => ({
-    textTransform: 'none',
-    color: isDark ? 'text.primary' : 'black',
-    mr: 1,
-    fontWeight: 'normal',
-    fontSize: '0.9rem',
-    border: `1px solid ${isDark ? 'divider' : '#eeeeee'}`,
-    borderRadius: '16px',
-    px: 2,
-    py: 0.5,
-    '&:hover': {
-      bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f5f5f5',
-      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.2)' : '#e0e0e0'}`,
-    }
-  }),
   dialogPaper: (fullScreen: boolean) => ({
     borderRadius: fullScreen ? 0 : 2,
     height: fullScreen ? '100%' : 'auto',
@@ -110,6 +94,7 @@ interface DialogModelSelectorProps {
   handleMenuClick: () => void;
   handleMenuClose: () => void;
   menuOpen: boolean;
+  hideButton?: boolean; // 是否隐藏触发按钮（用于工具栏环境）
 }
 
 // 创建稳定的空数组引用
@@ -119,7 +104,7 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
   selectedModel,
   availableModels,
   handleModelSelect,
-  handleMenuClick,
+  handleMenuClick: _handleMenuClick, // 重命名为下划线前缀表示未使用但必需的参数
   handleMenuClose,
   menuOpen
 }) => {
@@ -127,9 +112,6 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = React.useState<string>('all');
   const providers = useSelector((state: RootState) => state.settings.providers || EMPTY_PROVIDERS_ARRAY);
-
-  // 优化主题相关计算 - 使用 useMemo 缓存
-  const isDark = useMemo(() => theme.palette.mode === 'dark', [theme.palette.mode]);
 
   // 优化提供商名称映射 - 使用 useMemo 预计算
   const providerNameMap = useMemo(() => {
@@ -183,62 +165,19 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
     handleModelSelect(model);
   }, [handleModelSelect]);
 
-  // 计算动态字体大小函数
-  const getDynamicFontSize = useCallback((text: string): string => {
-    const baseSize = 0.9; // 基础字体大小 (rem)
-    const minSize = 0.65; // 最小字体大小 (rem)
-    const maxLength = 16; // 理想最大长度
 
-    if (text.length <= maxLength) {
-      return `${baseSize}rem`;
-    }
-
-    // 使用更平滑的缩放算法
-    const lengthRatio = text.length / maxLength;
-    const scaleFactor = Math.max(1 / Math.sqrt(lengthRatio), minSize / baseSize);
-    const scaledSize = baseSize * scaleFactor;
-
-    return `${Math.max(scaledSize, minSize)}rem`;
-  }, []);
 
   return (
-    <>
-      {/* 显示带文字的按钮 */}
-      <Button
-        onClick={handleMenuClick}
-        endIcon={<KeyboardArrowDownIcon />}
-        sx={{
-          ...DIALOG_STYLES.button(isDark),
-          maxWidth: '200px', // 限制按钮最大宽度
-          '& .MuiButton-startIcon, & .MuiButton-endIcon': {
-            flexShrink: 0 // 防止图标被压缩
-          }
-        }}
-        title={selectedModel?.name || '选择模型'} // 悬停时显示完整名称
-      >
-        <Box
-          sx={{
-            fontSize: selectedModel ? getDynamicFontSize(selectedModel.name) : '0.9rem',
-            fontWeight: 'normal',
-            transition: 'font-size 0.2s ease', // 平滑过渡效果
-            width: '100%',
-            textAlign: 'left',
-            wordBreak: 'keep-all', // 保持单词完整
-            lineHeight: 1.2 // 调整行高
-          }}
-        >
-          {selectedModel?.name || '选择模型'}
-        </Box>
-      </Button>
-
-      <Dialog
+    <Dialog
         open={menuOpen}
         onClose={handleMenuClose}
         fullScreen={fullScreen}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: DIALOG_STYLES.dialogPaper(fullScreen)
+        slotProps={{
+          paper: {
+            sx: DIALOG_STYLES.dialogPaper(fullScreen)
+          }
         }}
       >
         <DialogTitle sx={DIALOG_STYLES.dialogTitle}>
@@ -295,7 +234,6 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
           </List>
         </DialogContent>
       </Dialog>
-    </>
   );
 };
 

@@ -1,5 +1,5 @@
 
-import React, { useCallback, startTransition } from 'react';
+import React, { useCallback, startTransition, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { SidebarProvider } from './SidebarContext';
@@ -153,8 +153,8 @@ const SidebarTabs = React.memo(function SidebarTabs({
 
 
 
-  // 将所有状态和方法传递给上下文提供者
-  const contextValue = {
+  // 优化：使用 useMemo 避免每次都创建新的 contextValue 对象
+  const contextValue = useMemo(() => ({
     // 状态
     loading,
     value,
@@ -196,7 +196,36 @@ const SidebarTabs = React.memo(function SidebarTabs({
 
     // 刷新函数
     refreshTopics
-  };
+  }), [
+    loading,
+    value,
+    userAssistants,
+    currentAssistant,
+    assistantWithTopics,
+    currentTopic,
+    setValue,
+    setCurrentAssistant,
+    handleSelectAssistant,
+    handleAddAssistant,
+    handleUpdateAssistant,
+    handleDeleteAssistant,
+    handleCreateTopic,
+    handleSelectTopic,
+    handleDeleteTopic,
+    handleUpdateTopic,
+    settings,
+    settingsArray,
+    handleSettingChange,
+    handleContextLengthChange,
+    handleContextCountChange,
+    handleMathRendererChange,
+    handleThinkingEffortChange,
+    mcpMode,
+    toolsEnabled,
+    onMCPModeChange,
+    onToolsToggle,
+    refreshTopics
+  ]);
 
   return (
     <SidebarProvider value={contextValue}>

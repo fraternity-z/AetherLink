@@ -6,15 +6,44 @@ import { CustomIcon } from '../../../components/icons';
 import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
-import { ModelSelector } from './ModelSelector';
+import DialogModelSelector from './DialogModelSelector';
+import DropdownModelSelector from './DropdownModelSelector';
+import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
-import type { SiliconFlowImageFormat } from '../../../shared/types';
+import type { SiliconFlowImageFormat, ChatTopic, Message, Model } from '../../../shared/types';
 import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
 import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { generateBackgroundStyle } from '../../../shared/utils/backgroundUtils';
 import { useTheme } from '@mui/material/styles';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
+
+// 辩论配置类型
+interface DebateConfig {
+  participants?: number;
+  rounds?: number;
+  timeLimit?: number;
+}
+
+// 简单的错误边界组件
+const ErrorBoundary: React.FC<{ children: React.ReactNode; fallback?: React.ReactNode }> = ({
+  children,
+  fallback = <Typography color="error">组件加载出错，请刷新页面重试</Typography>
+}) => {
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleError = () => setHasError(true);
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
+};
 
 
 
@@ -36,17 +65,17 @@ const DEFAULT_TOP_TOOLBAR_SETTINGS = {
 
 // 所有从父组件传入的props类型
 interface ChatPageUIProps {
-  currentTopic: any;
-  currentMessages: any[];
+  currentTopic: ChatTopic | null;
+  currentMessages: Message[];
   isStreaming: boolean;
   isLoading: boolean;
   isMobile: boolean;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
   navigate: (path: string) => void;
-  selectedModel: any;
-  availableModels: any[];
-  handleModelSelect: (model: any) => void;
+  selectedModel: Model | null;
+  availableModels: Model[];
+  handleModelSelect: (model: Model) => void;
   handleModelMenuClick: () => void;
   handleModelMenuClose: () => void;
   menuOpen: boolean;
@@ -65,18 +94,19 @@ interface ChatPageUIProps {
   toggleVideoGenerationMode: () => void;
   toggleToolsEnabled: () => void;
   handleMCPModeChange: (mode: 'prompt' | 'function') => void;
-  handleMessageSend: (content: string, images?: any[], toolsEnabled?: boolean, files?: any[]) => void;
-  handleMultiModelSend?: (content: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
+  handleMessageSend: (content: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
+  handleMultiModelSend?: (content: string, models: Model[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
   handleStopResponseClick: () => void;
   isDebating?: boolean;
-  handleStartDebate?: (question: string, config: any) => void;
+  handleStartDebate?: (question: string, config: DebateConfig) => void;
   handleStopDebate?: () => void;
   // 搜索相关
   showSearch?: boolean;
   onSearchToggle?: () => void;
 }
 
-export const ChatPageUI: React.FC<ChatPageUIProps> = ({
+// 使用 React.memo 优化组件，避免不必要的重新渲染
+export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
   currentTopic,
   currentMessages,
   isStreaming,
@@ -126,10 +156,10 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   // Redux 状态选择器
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
   const inputLayoutStyle = useSelector((state: RootState) =>
-    (state.settings as any).inputLayoutStyle
-  ) || 'default';
+    state.settings.inputLayoutStyle || 'default'
+  );
   const topToolbarSettings = useSelector((state: RootState) =>
-    (state.settings as any).topToolbar
+    state.settings.topToolbar
   );
   const chatBackground = useSelector((state: RootState) =>
     state.settings.chatBackground || {
@@ -145,15 +175,12 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   // ==================== 计算属性和样式 ====================
   const themeColors = getThemeColors(theme, themeStyle);
 
-  const mergedTopToolbarSettings = useMemo(() => ({
+  const mergedTopToolbarSettings = {
     ...DEFAULT_TOP_TOOLBAR_SETTINGS,
     ...topToolbarSettings
-  }), [topToolbarSettings]);
+  };
 
-  const shouldShowToolbar = useMemo(() =>
-    inputLayoutStyle === 'default',
-    [inputLayoutStyle]
-  );
+  const shouldShowToolbar = inputLayoutStyle === 'default';
 
   // 生成背景样式
   const backgroundStyle = useMemo(() =>
@@ -161,19 +188,12 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     [chatBackground]
   );
 
-  const dynamicStyles = useMemo(() => ({
+  // 优化：将样式分离，减少重新计算
+  const baseStyles = useMemo(() => ({
     mainContainer: {
       display: 'flex',
       flexDirection: { xs: 'column', sm: 'row' },
       height: '100vh',
-      bgcolor: themeColors.background
-    },
-    contentContainer: {
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      overflow: 'hidden',
       bgcolor: themeColors.background
     },
     appBar: {
@@ -208,6 +228,21 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     }
   }), [themeColors]);
 
+  // 优化：单独计算内容容器样式，只在必要时重新计算
+  const contentContainerStyle = useMemo(() => ({
+    flexGrow: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    overflow: 'hidden',
+    bgcolor: themeColors.background,
+    // 为桌面端侧边栏让出空间，实现推开模式而非覆盖模式
+    ...(drawerOpen && !isMobile ? {
+      paddingLeft: '320px', // 与侧边栏宽度保持一致
+      transition: 'padding-left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms' // 平滑过渡动画
+    } : {})
+  }), [themeColors.background, drawerOpen, isMobile]);
+
   // ==================== 事件处理函数 ====================
 
   // 搜索按钮点击处理
@@ -219,77 +254,98 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
 
 
 
-  // 工具栏组件渲染
+  // 简化的工具栏组件渲染函数
   const renderToolbarComponent = useCallback((componentId: string) => {
+    const isDIYMode = mergedTopToolbarSettings.componentPositions?.length > 0;
+
+    const shouldShow = (settingKey: keyof typeof mergedTopToolbarSettings) =>
+      isDIYMode || mergedTopToolbarSettings[settingKey];
+
     switch (componentId) {
       case 'menuButton':
-        return mergedTopToolbarSettings.showMenuButton ? (
+        return shouldShow('showMenuButton') ? (
           <IconButton
             key={componentId}
             edge="start"
             color="inherit"
             onClick={() => setDrawerOpen(!drawerOpen)}
-            sx={{ mr: 1 }}
+            sx={{ mr: isDIYMode ? 0 : 1 }}
           >
             <CustomIcon name="documentPanel" size={20} />
           </IconButton>
         ) : null;
 
       case 'chatTitle':
-        return mergedTopToolbarSettings.showChatTitle ? (
+        return shouldShow('showChatTitle') ? (
           <Typography key={componentId} variant="h6" noWrap component="div">
-            对话
+            {currentTopic?.name || '对话'}
           </Typography>
         ) : null;
 
       case 'topicName':
-        return mergedTopToolbarSettings.showTopicName && currentTopic ? (
-          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: 1 }}>
+        return shouldShow('showTopicName') && currentTopic ? (
+          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: isDIYMode ? 0 : 1 }}>
             {currentTopic.name}
           </Typography>
         ) : null;
 
       case 'newTopicButton':
-        return mergedTopToolbarSettings.showNewTopicButton ? (
+        return shouldShow('showNewTopicButton') ? (
           <IconButton
             key={componentId}
             color="inherit"
             onClick={handleCreateTopic}
             size="small"
-            sx={{ ml: 1 }}
+            sx={{ ml: isDIYMode ? 0 : 1 }}
           >
             <Plus size={20} />
           </IconButton>
         ) : null;
 
       case 'clearButton':
-        return mergedTopToolbarSettings.showClearButton && currentTopic ? (
+        return shouldShow('showClearButton') && currentTopic ? (
           <IconButton
             key={componentId}
             color="inherit"
             onClick={handleClearTopic}
             size="small"
-            sx={{ ml: 1 }}
+            sx={{ ml: isDIYMode ? 0 : 1 }}
           >
             <Trash2 size={20} />
           </IconButton>
         ) : null;
 
       case 'modelSelector':
-        return mergedTopToolbarSettings.showModelSelector ? (
-          <ModelSelector
-            key={componentId}
-            selectedModel={selectedModel}
-            availableModels={availableModels}
-            handleModelSelect={handleModelSelect}
-            handleMenuClick={handleModelMenuClick}
-            handleMenuClose={handleModelMenuClose}
-            menuOpen={menuOpen}
-          />
+        return shouldShow('showModelSelector') ? (
+          <Box key={componentId} sx={{ display: 'flex', alignItems: 'center' }}>
+            <UnifiedModelDisplay
+              selectedModel={selectedModel}
+              onClick={handleModelMenuClick}
+              displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
+            />
+            <Box sx={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
+              {mergedTopToolbarSettings.modelSelectorStyle === 'dropdown' ? (
+                <DropdownModelSelector
+                  selectedModel={selectedModel}
+                  availableModels={availableModels}
+                  handleModelSelect={handleModelSelect}
+                />
+              ) : (
+                <DialogModelSelector
+                  selectedModel={selectedModel}
+                  availableModels={availableModels}
+                  handleModelSelect={handleModelSelect}
+                  handleMenuClick={handleModelMenuClick}
+                  handleMenuClose={handleModelMenuClose}
+                  menuOpen={menuOpen}
+                />
+              )}
+            </Box>
+          </Box>
         ) : null;
 
       case 'searchButton':
-        return mergedTopToolbarSettings.showSearchButton ? (
+        return shouldShow('showSearchButton') ? (
           <IconButton
             key={componentId}
             color={showSearch ? "primary" : "inherit"}
@@ -306,7 +362,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
         ) : null;
 
       case 'settingsButton':
-        return mergedTopToolbarSettings.showSettingsButton ? (
+        return shouldShow('showSettingsButton') ? (
           <IconButton key={componentId} color="inherit" onClick={() => navigate('/settings')}>
             <Settings size={20} />
           </IconButton>
@@ -317,88 +373,67 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     }
   }, [
     mergedTopToolbarSettings,
-    setDrawerOpen,
     drawerOpen,
     currentTopic,
-    handleCreateTopic,
-    handleClearTopic,
     selectedModel,
     availableModels,
+    menuOpen,
+    showSearch,
+    // 稳定的函数引用
+    setDrawerOpen,
+    handleCreateTopic,
+    handleClearTopic,
     handleModelSelect,
     handleModelMenuClick,
     handleModelMenuClose,
-    menuOpen,
     navigate,
-    handleSearchClick,
-    showSearch
+    handleSearchClick
   ]);
 
   // ==================== 消息处理函数 ====================
-  const handleSendMessage = useCallback((content: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => {
+  const handleSendMessage = (content: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => {
     if (currentTopic) {
       handleMessageSend(content, images, toolsEnabled, files);
     } else {
       console.log('没有当前话题，无法发送消息');
     }
-  }, [currentTopic, handleMessageSend]);
+  };
 
-  const handleSendMultiModelMessage = useCallback((content: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => {
+  const handleSendMultiModelMessage = (content: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => {
     if (currentTopic) {
       handleMultiModelSend?.(content, models, images, toolsEnabled, files);
     } else {
       console.log('没有当前话题，无法发送多模型消息');
     }
-  }, [currentTopic, handleMultiModelSend]);
+  };
 
-  const handleSendImagePrompt = useCallback((prompt: string) => {
+  const handleSendImagePrompt = (prompt: string) => {
     handleMessageSend(prompt);
-  }, [handleMessageSend]);
+  };
 
   // ==================== 组件配置和渲染 ====================
 
-  const commonProps = useMemo(() => {
-    const props = {
-      onSendMessage: handleSendMessage,
-      availableModels,
-      isLoading,
-      allowConsecutiveMessages: true,
-      imageGenerationMode,
-      videoGenerationMode,
-      onSendImagePrompt: handleSendImagePrompt,
-      webSearchActive,
-      onStopResponse: handleStopResponseClick,
-      isStreaming,
-      isDebating,
-      toolsEnabled
-    };
-
-    if (handleMultiModelSend && handleSendMultiModelMessage) {
-      (props as any).onSendMultiModelMessage = handleSendMultiModelMessage;
-    }
-
-    if (handleStartDebate && handleStopDebate) {
-      (props as any).onStartDebate = handleStartDebate;
-      (props as any).onStopDebate = handleStopDebate;
-    }
-
-    return props;
-  }, [
-    handleSendMessage,
+  const commonProps: any = {
+    onSendMessage: handleSendMessage,
     availableModels,
     isLoading,
+    allowConsecutiveMessages: true,
     imageGenerationMode,
     videoGenerationMode,
-    handleSendImagePrompt,
+    onSendImagePrompt: handleSendImagePrompt,
     webSearchActive,
-    handleStopResponseClick,
+    onStopResponse: handleStopResponseClick,
     isStreaming,
     isDebating,
     toolsEnabled,
-    handleMultiModelSend,
-    handleSendMultiModelMessage,
-    handleStartDebate,
-    handleStopDebate
-  ]);
+    ...(handleMultiModelSend && handleSendMultiModelMessage && {
+      onSendMultiModelMessage: handleSendMultiModelMessage
+    }),
+    ...(handleStartDebate && handleStopDebate && {
+      onStartDebate: handleStartDebate,
+      onStopDebate: handleStopDebate
+    })
+  };
 
   const inputComponent = useMemo(() => {
     if (inputLayoutStyle === 'compact') {
@@ -438,95 +473,84 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     toggleToolsEnabled
   ]);
 
-  const InputContainer = useMemo(() => {
-    return (
-      <Box sx={{
-        width: '100%',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 2,
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0,
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}>
-        {shouldShowToolbar && (
-          <Box sx={{
-            width: '100%',
-            maxWidth: '800px',
-            display: 'flex',
-            justifyContent: 'center'
-          }}>
-            <ChatToolbar
-              onClearTopic={handleClearTopic}
-              imageGenerationMode={imageGenerationMode}
-              toggleImageGenerationMode={toggleImageGenerationMode}
-              videoGenerationMode={videoGenerationMode}
-              toggleVideoGenerationMode={toggleVideoGenerationMode}
-              webSearchActive={webSearchActive}
-              toggleWebSearch={toggleWebSearch}
-              toolsEnabled={toolsEnabled}
-              onToolsEnabledChange={toggleToolsEnabled}
-            />
-          </Box>
-        )}
-
+  const InputContainer = (
+    <Box sx={{
+      width: '100%',
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      zIndex: 2,
+      backgroundColor: 'transparent',
+      boxShadow: 'none',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 0,
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      {shouldShowToolbar && (
         <Box sx={{
           width: '100%',
           maxWidth: '800px',
           display: 'flex',
           justifyContent: 'center'
         }}>
-          {inputComponent}
+          <ChatToolbar
+            onClearTopic={handleClearTopic}
+            imageGenerationMode={imageGenerationMode}
+            toggleImageGenerationMode={toggleImageGenerationMode}
+            videoGenerationMode={videoGenerationMode}
+            toggleVideoGenerationMode={toggleVideoGenerationMode}
+            webSearchActive={webSearchActive}
+            toggleWebSearch={toggleWebSearch}
+            toolsEnabled={toolsEnabled}
+            onToolsEnabledChange={toggleToolsEnabled}
+          />
         </Box>
+      )}
+
+      <Box sx={{
+        width: '100%',
+        maxWidth: '800px',
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
+        {inputComponent}
       </Box>
-    );
-  }, [
-    shouldShowToolbar,
-    handleClearTopic,
-    imageGenerationMode,
-    toggleImageGenerationMode,
-    videoGenerationMode,
-    toggleVideoGenerationMode,
-    webSearchActive,
-    toggleWebSearch,
-    toolsEnabled,
-    toggleToolsEnabled,
-    inputComponent
-  ]);
+    </Box>
+  );
 
   // ==================== 组件渲染 ====================
 
   return (
     <Box
-      sx={dynamicStyles.mainContainer}
+      sx={baseStyles.mainContainer}
     >
-      {/* 桌面端可收起侧边栏，移动端可隐藏 */}
-      {!isMobile && (
-        <Sidebar
-          mcpMode={mcpMode}
-          toolsEnabled={toolsEnabled}
-          onMCPModeChange={handleMCPModeChange}
-          onToolsToggle={toggleToolsEnabled}
-          desktopOpen={drawerOpen}
-          onDesktopToggle={() => setDrawerOpen(!drawerOpen)}
-        />
-      )}
+      {/* 统一的侧边栏组件 */}
+      <Sidebar
+        mcpMode={mcpMode}
+        toolsEnabled={toolsEnabled}
+        onMCPModeChange={handleMCPModeChange}
+        onToolsToggle={toggleToolsEnabled}
+        {...(isMobile ? {
+          mobileOpen: drawerOpen,
+          onMobileToggle: () => setDrawerOpen(!drawerOpen)
+        } : {
+          desktopOpen: drawerOpen,
+          onDesktopToggle: () => setDrawerOpen(!drawerOpen)
+        })}
+      />
 
       {/* 主内容区域 */}
-      <Box sx={dynamicStyles.contentContainer}>
+      <Box sx={contentContainerStyle}>
         {/* 顶部应用栏 */}
         <AppBar
           position="static"
           elevation={0}
           className="status-bar-safe-area"
-          sx={dynamicStyles.appBar}
+          sx={baseStyles.appBar}
         >
           <Toolbar sx={{
             position: 'relative',
@@ -572,17 +596,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
           </Toolbar>
         </AppBar>
 
-        {/* 移动端侧边栏 */}
-        {isMobile && (
-          <Sidebar
-            mobileOpen={drawerOpen}
-            onMobileToggle={() => setDrawerOpen(!drawerOpen)}
-            mcpMode={mcpMode}
-            toolsEnabled={toolsEnabled}
-            onMCPModeChange={handleMCPModeChange}
-            onToolsToggle={toggleToolsEnabled}
-          />
-        )}
+
 
         {/* 聊天内容区域 */}
         <Box sx={{
@@ -597,38 +611,42 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
             <>
               {/* 消息列表应该有固定的可滚动区域，不会被输入框覆盖 */}
               <Box sx={{
-                ...dynamicStyles.messageContainer,
+                ...baseStyles.messageContainer,
                 ...backgroundStyle
               }}>
-                <MessageList
-                  messages={currentMessages}
-                  onRegenerate={handleRegenerateMessage}
-                  onDelete={handleDeleteMessage}
-                  onSwitchVersion={handleSwitchMessageVersion}
-                  onResend={handleResendMessage}
-                />
+                <ErrorBoundary fallback={<Typography color="error">消息列表加载失败</Typography>}>
+                  <MessageList
+                    messages={currentMessages}
+                    onRegenerate={handleRegenerateMessage}
+                    onDelete={handleDeleteMessage}
+                    onSwitchVersion={handleSwitchMessageVersion}
+                    onResend={handleResendMessage}
+                  />
+                </ErrorBoundary>
               </Box>
 
               {/* 对话导航组件 */}
               <ChatNavigation containerId="messageList" />
 
               {/* 输入框容器，固定在底部 */}
-              {InputContainer}
+              <ErrorBoundary fallback={<Typography color="error">输入组件加载失败</Typography>}>
+                {InputContainer}
+              </ErrorBoundary>
             </>
           ) : (
             <>
               <Box
                 sx={{
-                  ...dynamicStyles.messageContainer,
+                  ...baseStyles.messageContainer,
                   ...backgroundStyle,
                   marginBottom: '100px', // 为输入框留出足够空间
                 }}
               >
-                <Box sx={dynamicStyles.welcomeContainer}>
+                <Box sx={baseStyles.welcomeContainer}>
                   <Typography
                     variant="h6"
                     gutterBottom
-                    sx={dynamicStyles.welcomeText}
+                    sx={baseStyles.welcomeText}
                   >
                     对话开始了，请输入您的问题
                   </Typography>
@@ -645,4 +663,4 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
 
     </Box>
   );
-};
+});

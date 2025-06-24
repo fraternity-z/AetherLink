@@ -54,7 +54,7 @@ export function getFileTypeByExtension(filename: string): string {
 
   // 代码文件 - 扩展支持更多编程语言
   if ([
-    'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'h', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'sh', 'bat', 'ps1', 'sql', 'r', 'matlab', 'm', 'pl', 'lua', 'dart', 'vue', 'svelte',
+    'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'h', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'scala', 'sh', 'bat', 'ps1', 'sql', 'r', 'matlab', 'm', 'pl', 'lua', 'dart', 'svelte',
     // 添加更多编程语言支持
     'hpp', 'cc', 'cxx', 'cppm', 'ipp', 'ixx', 'f90', 'f', 'f03', 'ahk', 'tcl', 'do', 'v', 'sv', 'vhd', 'vhdl',
     'asm', 'groovy', 'hs', 'clj', 'cljs', 'elm', 'erl', 'ex', 'exs', 'coffee', 'ino', 'gradle', 'kts',

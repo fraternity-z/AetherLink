@@ -28,3 +28,16 @@ dist-ssr
 *.jks
 keystore.txt
 scripts/keystore/
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/WixTools/
+
+# Rust
+*.rs.bk
+Cargo.lock
+
+# Platform specific
+.DS_Store
+Thumbs.db

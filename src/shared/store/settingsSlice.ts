@@ -51,6 +51,7 @@ interface SettingsState {
     showSettingsButton: boolean; // 是否显示设置按钮
     showModelSelector: boolean; // 是否显示模型选择器
     modelSelectorStyle: 'dialog' | 'dropdown'; // 模型选择器样式：弹窗式或下拉式
+    modelSelectorDisplayStyle?: 'icon' | 'text'; // 模型选择器在DIY布局中的显示样式：图标或文字
     showChatTitle: boolean; // 是否显示"对话"标题
     showTopicName: boolean; // 是否显示话题名称
     showNewTopicButton: boolean; // 是否显示新建话题按钮
@@ -205,6 +206,7 @@ const getInitialState = (): SettingsState => {
       showSettingsButton: true, // 默认显示设置按钮
       showModelSelector: true, // 默认显示模型选择器
       modelSelectorStyle: 'dialog', // 默认弹窗式模型选择器
+      modelSelectorDisplayStyle: 'icon', // 默认在DIY布局中显示图标
       showChatTitle: true, // 默认显示"对话"标题
       showTopicName: false, // 默认不显示话题名称
       showNewTopicButton: false, // 默认不显示新建话题按钮

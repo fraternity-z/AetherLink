@@ -107,7 +107,6 @@ const SettingsPage: React.FC = () => {
         { id: 'notion-settings', title: 'Notion 集成', description: '配置Notion数据库导出设置', icon: <DatabaseIcon size={18} />, path: '/settings/notion', color: '#6366f1' },
         { id: 'voice-settings', title: '语音功能', description: '语音识别和文本转语音设置', icon: <RecordVoiceOverIcon size={18} />, path: '/settings/voice', color: '#8b5cf6' },
         { id: 'features', title: '功能模块', description: '启用或禁用应用功能', icon: <ExtensionIcon size={18} />, path: '/settings/features', color: '#22c55e' },
-        { id: 'vue-demo', title: 'Vue 组件演示', description: 'Vue与Capacitor功能演示', icon: <CodeIcon size={18} />, path: '/vue-demo', color: '#42b983' },
         { id: 'about', title: '关于我们', description: '应用信息和技术支持', icon: <InfoIcon size={18} />, path: '/settings/about', color: '#64748b' },
       ]
     }

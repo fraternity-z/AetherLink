@@ -1,21 +1,30 @@
 import React from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogContentText, 
-  DialogActions, 
-  Button 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button
 } from '@mui/material';
 import { App } from '@capacitor/app';
+import { useLocation } from 'react-router-dom';
 import { useAppState } from '../shared/hooks/useAppState';
 
 /**
  * 退出确认对话框组件
  * 当用户点击返回键时显示，询问用户是否要退出应用
+ * 只在聊天页面和欢迎页面显示
  */
 const ExitConfirmDialog: React.FC = () => {
+  const location = useLocation();
   const { showExitConfirm, setShowExitConfirm } = useAppState();
+
+  // 只在聊天页面和欢迎页面显示退出确认对话框
+  const shouldShowDialog = showExitConfirm && (
+    location.pathname === '/chat' ||
+    location.pathname === '/welcome'
+  );
 
   // 处理取消按钮点击
   const handleCancel = () => {
@@ -31,7 +40,7 @@ const ExitConfirmDialog: React.FC = () => {
 
   return (
     <Dialog
-      open={showExitConfirm}
+      open={shouldShowDialog}
       onClose={handleCancel}
       aria-labelledby="exit-dialog-title"
       aria-describedby="exit-dialog-description"
