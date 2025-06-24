@@ -1,10 +1,10 @@
 [package]
-name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+name = "aetherlink"
+version = "0.5.0"
+description = "AetherLink - AI-powered chat assistant with advanced features"
+authors = ["AetherLink Team"]
+license = "MIT"
+repository = "https://github.com/your-username/AetherLink-app3"
 edition = "2021"
 rust-version = "1.77.2"
 
