@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Select,
   MenuItem,
-  FormControl,
   Typography,
   useTheme,
   Box,
@@ -13,17 +12,20 @@ import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SelectChangeEvent } from '@mui/material';
+import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 
 interface DropdownModelSelectorProps {
   selectedModel: Model | null;
   availableModels: Model[];
   handleModelSelect: (model: Model) => void;
+  displayStyle?: 'icon' | 'text';
 }
 
 export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
   selectedModel,
   availableModels,
-  handleModelSelect
+  handleModelSelect,
+  displayStyle = 'text'
 }) => {
   const theme = useTheme();
   const providers = useSelector((state: RootState) => state.settings.providers || []);
@@ -132,127 +134,42 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
     return getCompositeValue(selectedModel);
   }, [selectedModel, getCompositeValue, availableModels]);
 
-  // 计算动态字体大小函数
-  const getDynamicFontSize = (text: string): string => {
-    const baseSize = 0.875; // 基础字体大小 (rem)
-    const minSize = 0.65; // 最小字体大小 (rem)
-    const maxLength = 18; // 理想最大长度
+  // 处理下拉菜单打开状态
+  const [open, setOpen] = React.useState(false);
 
-    if (text.length <= maxLength) {
-      return `${baseSize}rem`;
-    }
-
-    // 使用更平滑的缩放算法
-    const lengthRatio = text.length / maxLength;
-    const scaleFactor = Math.max(1 / Math.sqrt(lengthRatio), minSize / baseSize);
-    const scaledSize = baseSize * scaleFactor;
-
-    return `${Math.max(scaledSize, minSize)}rem`;
-  };
-
-  // 自定义渲染选中的值
-  const renderValue = (value: string) => {
-    if (!value || !selectedModel) {
-      return (
-        <Typography
-          variant="body2"
-          sx={{
-            color: theme.palette.text.secondary,
-            fontSize: '0.875rem'
-          }}
-        >
-          选择模型
-        </Typography>
-      );
-    }
-
-    const dynamicFontSize = getDynamicFontSize(selectedModel.name);
-    const providerName = getProviderName(selectedModel.provider);
-
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', py: 0.5 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: 500,
-            fontSize: dynamicFontSize,
-            color: theme.palette.text.primary,
-            maxWidth: '150px', // 限制最大宽度
-            transition: 'font-size 0.2s ease', // 平滑过渡效果
-            wordBreak: 'keep-all', // 保持单词完整
-            lineHeight: 1.1 // 调整行高
-          }}
-          title={selectedModel.name} // 悬停时显示完整名称
-        >
-          {selectedModel.name}
-        </Typography>
-        <Typography
-          variant="caption"
-          sx={{
-            fontSize: '0.7rem',
-            color: theme.palette.text.secondary,
-            lineHeight: 1,
-            mt: 0.25,
-            maxWidth: '150px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-          title={providerName} // 悬停时显示完整供应商名称
-        >
-          {providerName}
-        </Typography>
-      </Box>
-    );
-  };
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   return (
-    <FormControl
-      variant="outlined"
-      size="small"
-      sx={{
-        minWidth: 180,
-        mr: 1,
-        userSelect: 'none', // 禁止文本选择
-        '& .MuiOutlinedInput-root': {
-          borderRadius: '16px',
-          fontSize: '0.9rem',
-          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : theme.palette.background.paper, // 深色模式淡背景，浅色模式跟随主题
-          '& .MuiOutlinedInput-notchedOutline': {
-            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`, // 淡黑边框
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)'}`, // 悬停时稍微明显一点
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)'}`, // 聚焦时更明显
-          },
-          '&:hover': {
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : theme.palette.background.paper,
-          }
-        }
-      }}
-    >
+    <Box sx={{ position: 'relative' }}>
+      <UnifiedModelDisplay
+        selectedModel={selectedModel}
+        onClick={handleOpen}
+        displayStyle={displayStyle}
+      />
       <Select
-        labelId="model-select-label"
-        id="model-select"
+        open={open}
+        onClose={handleClose}
+        onOpen={handleOpen}
         value={getCurrentValue()}
         onChange={handleChange}
         displayEmpty
-        renderValue={renderValue}
+        renderValue={() => null}
         sx={{
-          bgcolor: 'transparent',
-          border: 'none',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          opacity: 0,
+          pointerEvents: open ? 'auto' : 'none',
           '& .MuiSelect-select': {
-            padding: '10px 32px 10px 12px', // 增加垂直内边距以适应两行文字
-            bgcolor: 'transparent',
+            padding: 0,
             border: 'none',
-            '&:focus': {
-              bgcolor: 'transparent',
-            }
+            bgcolor: 'transparent',
           },
           '& .MuiSelect-icon': {
-            color: theme.palette.text.secondary,
+            display: 'none',
           },
           '&:before': {
             display: 'none',
@@ -260,11 +177,8 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           '&:after': {
             display: 'none',
           },
-          '&:focus': {
-            bgcolor: 'transparent',
-          },
-          '&:hover': {
-            bgcolor: 'transparent',
+          '& .MuiOutlinedInput-notchedOutline': {
+            border: 'none',
           }
         }}
         MenuProps={{
@@ -413,7 +327,7 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           ].filter(Boolean);
         })}
       </Select>
-    </FormControl>
+    </Box>
   );
 };
 

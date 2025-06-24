@@ -23,3 +23,15 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.5.0", features = ["devtools"] }
 tauri-plugin-log = "2.0.0-rc"
+tauri-plugin-http = "2.0.0-rc"
+
+# 构建速度优化配置
+[profile.dev]
+# 关闭调试信息以加速构建
+debug = 0
+# 增加代码生成单元数量以提高并行度
+codegen-units = 256
+
+[profile.dev.build-override]
+# 为构建脚本和过程宏启用优化
+opt-level = 3

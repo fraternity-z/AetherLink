@@ -1,6 +1,6 @@
 import type { WebDavConfig, WebDavConnectionResult, WebDavUploadResult, WebDavDownloadResult, WebDavBackupFile } from '../../types';
 import { corsService } from '../network/CORSBypassService';
-import { Capacitor } from '@capacitor/core';
+import { detectPlatform, PlatformType } from '../../utils/platformDetection';
 
 /**
  * 基于 webdav-manager.js 的 WebDAV 服务
@@ -31,7 +31,7 @@ export class WebDavManagerService {
   }
 
   /**
-   * 发送 HTTP 请求 - 使用项目统一的 CORS 绕过服务
+   * 发送 HTTP 请求 - 根据平台选择合适的请求方式
    */
   private async makeRequest(options: {
     url: string;
@@ -39,9 +39,11 @@ export class WebDavManagerService {
     headers?: Record<string, string>;
     data?: string | Blob;
   }) {
+    const platform = detectPlatform();
+
     try {
-      // 在移动端使用 CORS 绕过服务
-      if (Capacitor.isNativePlatform()) {
+      // 移动端(Capacitor)使用 CORS 绕过服务
+      if (platform === PlatformType.CAPACITOR) {
         const headers = {
           'Authorization': this.authHeader,
           ...options.headers
@@ -63,16 +65,89 @@ export class WebDavManagerService {
           data: response.data,
           error: response.success ? undefined : `${response.status} ${response.statusText}`
         };
-      } else {
-        // Web 端直接使用 fetch 和代理
+      }
+      // 桌面端(Tauri)直接使用原始URL
+      else if (platform === PlatformType.TAURI) {
+        return await this.tauriDirectFetch(options);
+      }
+      // Web端使用代理
+      else {
         return await this.fallbackFetch(options);
       }
     } catch (error: any) {
-      if (!Capacitor.isNativePlatform()) {
-        console.warn('CORS 服务失败，回退到 fetch:', error);
-        return await this.fallbackFetch(options);
+      // 如果主要方法失败，尝试回退方案
+      if (platform === PlatformType.CAPACITOR) {
+        console.warn('CORS 服务失败，回退到直接请求:', error);
+        return await this.tauriDirectFetch(options);
+      } else if (platform === PlatformType.TAURI) {
+        console.warn('Tauri 直接请求失败:', error);
+        throw error;
+      } else {
+        console.warn('Web 代理失败:', error);
+        throw error;
       }
-      throw error;
+    }
+  }
+
+  /**
+   * Tauri 桌面端直接请求（使用Tauri HTTP客户端绕过CORS）
+   */
+  private async tauriDirectFetch(options: {
+    url: string;
+    method: string;
+    headers?: Record<string, string>;
+    data?: string | Blob;
+  }) {
+    console.log('🖥️ [WebDAV Manager] Tauri HTTP请求:', options.url);
+
+    try {
+      // 动态导入Tauri HTTP客户端
+      const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
+
+      const headers = {
+        'Authorization': this.authHeader,
+        ...options.headers
+      };
+
+      // 使用Tauri的HTTP客户端
+      const response = await tauriFetch(options.url, {
+        method: options.method as any,
+        headers,
+        body: options.data ? (typeof options.data === 'string' ? options.data : options.data) : undefined
+      });
+
+      // Tauri的fetch返回标准的Response对象，需要调用text()方法获取内容
+      const responseText = await response.text();
+
+      // 显示响应日志
+      console.log('🖥️ [WebDAV Manager] Tauri 响应:', {
+        status: response.status,
+        statusText: response.statusText || 'OK',
+        dataLength: responseText.length,
+        headers: response.headers
+      });
+
+      // 如果是XML相关的请求，显示响应内容的前200字符
+      if (options.method === 'PROPFIND' || responseText.includes('<?xml')) {
+        console.log('🖥️ [WebDAV Manager] XML响应前200字符:', responseText.substring(0, 200));
+      }
+
+      return {
+        success: response.ok,
+        status: response.status,
+        statusText: response.statusText || 'OK',
+        data: responseText,
+        error: response.ok ? undefined : `${response.status} ${response.statusText || 'Request failed'}`
+      };
+    } catch (error) {
+      console.error('🖥️ [WebDAV Manager] Tauri HTTP请求失败:', error);
+      return {
+        success: false,
+        status: 0,
+        statusText: 'Network Error',
+        data: '',
+        error: `Tauri HTTP请求失败: ${error instanceof Error ? error.message : String(error)}`
+      };
     }
   }
 
@@ -120,8 +195,14 @@ export class WebDavManagerService {
       console.log('🌐 [WebDAV Manager] 代理响应:', {
         status: response.status,
         statusText: response.statusText,
-        dataLength: responseText.length
+        dataLength: responseText.length,
+        contentType: response.headers.get('content-type')
       });
+
+      // 如果是XML相关的请求，显示响应内容的前200字符
+      if (options.method === 'PROPFIND' || responseText.includes('<?xml')) {
+        console.log('🌐 [WebDAV Manager] XML响应前200字符:', responseText.substring(0, 200));
+      }
     }
 
     return {
@@ -318,6 +399,10 @@ export class WebDavManagerService {
    */
   private parseWebDavResponse(xmlText: string): WebDavBackupFile[] {
     try {
+      // 添加调试日志，显示原始响应内容
+      console.log('🔍 [WebDAV Manager] 原始XML响应长度:', xmlText.length);
+      console.log('🔍 [WebDAV Manager] 原始XML响应前200字符:', xmlText.substring(0, 200));
+
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
 
@@ -325,6 +410,7 @@ export class WebDavManagerService {
       const parseError = xmlDoc.getElementsByTagName('parsererror')[0];
       if (parseError) {
         console.error('🚫 [WebDAV Manager] XML 解析错误:', parseError.textContent);
+        console.error('🚫 [WebDAV Manager] 完整XML内容:', xmlText);
         return [];
       }
 

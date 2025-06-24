@@ -41,6 +41,23 @@ const SettingsPage: React.FC = () => {
   });
 
   const handleBack = () => {
+    // 返回聊天界面时清理所有设置页面的滚动位置缓存
+    const settingsScrollKeys = [
+      'scroll:settings-main',
+      'scroll:settings-appearance',
+      'scroll:settings-chat-interface',
+      'scroll:settings-behavior',
+      'scroll:settings-top-toolbar'
+    ];
+
+    settingsScrollKeys.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.error('清理滚动位置缓存失败:', error);
+      }
+    });
+
     navigate('/chat');
   };
 
