@@ -58,12 +58,21 @@ jobs:
       - name: build frontend
         run: npm run build
 
-      - name: verify frontend build
+      - name: verify frontend build (Unix)
+        if: runner.os != 'Windows'
         run: |
           echo "Checking frontend build output..."
           ls -la dist/ || echo "dist directory not found"
           echo "Checking Tauri config..."
           cat src-tauri/tauri.conf.json
+
+      - name: verify frontend build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "Checking frontend build output..."
+          if (Test-Path "dist") { Get-ChildItem dist } else { echo "dist directory not found" }
+          echo "Checking Tauri config..."
+          Get-Content src-tauri/tauri.conf.json
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -76,8 +85,8 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-      - name: debug build output
-        if: always()
+      - name: debug build output (Unix)
+        if: always() && runner.os != 'Windows'
         run: |
           echo "Checking build artifacts..."
           find src-tauri/target -name "*.dmg" -o -name "*.app" -o -name "*.msi" -o -name "*.exe" -o -name "*.deb" -o -name "*.AppImage" 2>/dev/null || echo "No build artifacts found"
@@ -85,5 +94,27 @@ jobs:
           ls -la src-tauri/target/release/bundle/ 2>/dev/null || echo "Bundle directory not found"
           echo "Target directory structure:"
           ls -la src-tauri/target/release/ 2>/dev/null || echo "Release directory not found"
+
+      - name: debug build output (Windows)
+        if: always() && runner.os == 'Windows'
+        run: |
+          echo "Checking build artifacts..."
+          if (Test-Path "src-tauri/target") {
+            Get-ChildItem -Recurse src-tauri/target -Include "*.msi", "*.exe" | ForEach-Object { echo $_.FullName }
+          } else {
+            echo "No build artifacts found"
+          }
+          echo "Bundle directory structure:"
+          if (Test-Path "src-tauri/target/release/bundle") {
+            Get-ChildItem src-tauri/target/release/bundle
+          } else {
+            echo "Bundle directory not found"
+          }
+          echo "Target directory structure:"
+          if (Test-Path "src-tauri/target/release") {
+            Get-ChildItem src-tauri/target/release
+          } else {
+            echo "Release directory not found"
+          }
 
 
