@@ -9,7 +9,7 @@ import type { CodeMessageBlock } from '../../../shared/types/newMessage';
 
 // 需要接收并传递 messageRole
 interface MarkdownCodeBlockProps {
-  children: string;
+  children?: string;
   className?: string;
   id?: string;
   onSave?: (id: string, newContent: string) => void;
@@ -36,27 +36,25 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   // 判断是否使用增强版代码块（当启用了任何高级功能时）
   const useEnhancedCodeBlock = codeEditor || codeShowLineNumbers || codeCollapsible || codeWrappable;
 
+  // 统一的安全字符串，避免 children 为空时报错
+  const safeChildren = children ?? '';
+
   // 解析语言
   const match = /language-([\w-+]+)/.exec(className || '');
   const language = match?.[1] ?? 'text';
-  const isCodeBlock = !!match || children?.includes('\n');
+  const isCodeBlock = !!match || safeChildren.includes('\n');
 
   // 创建适配的代码块对象 - 使用 useMemo 来稳定对象引用
   // 注意：必须在所有条件判断之前调用 Hook
   const codeBlock: CodeMessageBlock = useMemo(() => ({
-    id: id || `code-${children.slice(0, 50).replace(/\W/g, '')}-${language}`,
+    id: id || `code-${safeChildren.slice(0, 50).replace(/\W/g, '')}-${language}`,
     messageId: 'markdown',
     type: 'code' as const,
-    content: children,
+    content: safeChildren,
     language: language,
     createdAt: new Date().toISOString(),
     status: 'success' as const
-  }), [id, children, language]);
-
-  // **检测 Mermaid 图表时传递角色**
-  if (language === 'mermaid') {
-    return <MermaidBlock code={children} id={id} messageRole={messageRole} />;
-  }
+  }), [id, safeChildren, language]);
 
   /**
    * 🔧 表格检测和自动转换功能
@@ -87,7 +85,7 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
     if (language !== 'text' && language !== '') return false;
 
     // 分割并过滤空行
-    const lines = children.split('\n').filter(line => line.trim());
+    const lines = safeChildren.split('\n').filter(line => line.trim());
     if (lines.length < 2) return false;
 
     // 检查是否有表格分隔行（包含 --- 或 :---: 等对齐语法）
@@ -102,13 +100,18 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
 
     // 必须同时满足：有分隔行 + 至少2行表格数据
     return hasSeparatorRow && tableRows.length >= 2;
-  }, [children, language]);
+  }, [safeChildren, language]);
+
+  // **检测 Mermaid 图表时传递角色**
+  if (language === 'mermaid') {
+    return <MermaidBlock code={safeChildren} id={id} messageRole={messageRole} />;
+  }
 
   // 如果检测到表格内容，使用Markdown组件渲染而不是代码块
   if (isTableContent) {
     return (
       <div style={{ margin: '16px 0' }}>
-        <Markdown content={children} allowHtml={false} />
+        <Markdown content={safeChildren} allowHtml={false} />
       </div>
     );
   }
@@ -129,7 +132,7 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
           borderRadius: '4px'
         }}
       >
-        {children}
+        {safeChildren}
       </code>
     );
   }
