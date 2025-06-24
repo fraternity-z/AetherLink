@@ -6,7 +6,9 @@ import { CustomIcon } from '../../../components/icons';
 import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
-import { ModelSelector } from './ModelSelector';
+import DialogModelSelector from './DialogModelSelector';
+import DropdownModelSelector from './DropdownModelSelector';
+import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat } from '../../../shared/types';
@@ -174,7 +176,12 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
       flexDirection: 'column',
       height: '100vh',
       overflow: 'hidden',
-      bgcolor: themeColors.background
+      bgcolor: themeColors.background,
+      // 为桌面端侧边栏让出空间，实现推开模式而非覆盖模式
+      ...(drawerOpen && !isMobile ? {
+        paddingLeft: '320px', // 与侧边栏宽度保持一致
+        transition: 'padding-left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms' // 平滑过渡动画
+      } : {})
     },
     appBar: {
       bgcolor: themeColors.paper,
@@ -206,7 +213,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
       color: themeColors.textPrimary,
       mb: 1,
     }
-  }), [themeColors]);
+  }), [themeColors, drawerOpen, isMobile]);
 
   // ==================== 事件处理函数 ====================
 
@@ -219,77 +226,103 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
 
 
 
-  // 工具栏组件渲染
+  // 工具栏组件渲染 - 修改为不依赖开关设置
   const renderToolbarComponent = useCallback((componentId: string) => {
+    // 如果使用DIY布局，不检查开关，直接渲染组件
+    const isDIYMode = mergedTopToolbarSettings.componentPositions?.length > 0;
+
     switch (componentId) {
       case 'menuButton':
-        return mergedTopToolbarSettings.showMenuButton ? (
+        return (isDIYMode || mergedTopToolbarSettings.showMenuButton) ? (
           <IconButton
             key={componentId}
             edge="start"
             color="inherit"
             onClick={() => setDrawerOpen(!drawerOpen)}
-            sx={{ mr: 1 }}
+            sx={{ mr: isDIYMode ? 0 : 1 }}
           >
             <CustomIcon name="documentPanel" size={20} />
           </IconButton>
         ) : null;
 
       case 'chatTitle':
-        return mergedTopToolbarSettings.showChatTitle ? (
+        return (isDIYMode || mergedTopToolbarSettings.showChatTitle) && currentTopic ? (
+          <Typography key={componentId} variant="h6" noWrap component="div">
+            {currentTopic.name}
+          </Typography>
+        ) : (isDIYMode || mergedTopToolbarSettings.showChatTitle) ? (
           <Typography key={componentId} variant="h6" noWrap component="div">
             对话
           </Typography>
         ) : null;
 
       case 'topicName':
-        return mergedTopToolbarSettings.showTopicName && currentTopic ? (
-          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: 1 }}>
+        return (isDIYMode || mergedTopToolbarSettings.showTopicName) && currentTopic ? (
+          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: isDIYMode ? 0 : 1 }}>
             {currentTopic.name}
           </Typography>
         ) : null;
 
       case 'newTopicButton':
-        return mergedTopToolbarSettings.showNewTopicButton ? (
+        return (isDIYMode || mergedTopToolbarSettings.showNewTopicButton) ? (
           <IconButton
             key={componentId}
             color="inherit"
             onClick={handleCreateTopic}
             size="small"
-            sx={{ ml: 1 }}
+            sx={{ ml: isDIYMode ? 0 : 1 }}
           >
             <Plus size={20} />
           </IconButton>
         ) : null;
 
       case 'clearButton':
-        return mergedTopToolbarSettings.showClearButton && currentTopic ? (
+        return (isDIYMode || mergedTopToolbarSettings.showClearButton) && currentTopic ? (
           <IconButton
             key={componentId}
             color="inherit"
             onClick={handleClearTopic}
             size="small"
-            sx={{ ml: 1 }}
+            sx={{ ml: isDIYMode ? 0 : 1 }}
           >
             <Trash2 size={20} />
           </IconButton>
         ) : null;
 
       case 'modelSelector':
-        return mergedTopToolbarSettings.showModelSelector ? (
-          <ModelSelector
-            key={componentId}
-            selectedModel={selectedModel}
-            availableModels={availableModels}
-            handleModelSelect={handleModelSelect}
-            handleMenuClick={handleModelMenuClick}
-            handleMenuClose={handleModelMenuClose}
-            menuOpen={menuOpen}
-          />
+        return (isDIYMode || mergedTopToolbarSettings.showModelSelector) ? (
+          <Box key={componentId} sx={{ display: 'flex', alignItems: 'center' }}>
+            {/* 统一的触发按钮 */}
+            <UnifiedModelDisplay
+              selectedModel={selectedModel}
+              onClick={handleModelMenuClick}
+              displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
+            />
+
+            {/* 隐藏的菜单组件 */}
+            <Box sx={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
+              {mergedTopToolbarSettings.modelSelectorStyle === 'dropdown' ? (
+                <DropdownModelSelector
+                  selectedModel={selectedModel}
+                  availableModels={availableModels}
+                  handleModelSelect={handleModelSelect}
+                />
+              ) : (
+                <DialogModelSelector
+                  selectedModel={selectedModel}
+                  availableModels={availableModels}
+                  handleModelSelect={handleModelSelect}
+                  handleMenuClick={handleModelMenuClick}
+                  handleMenuClose={handleModelMenuClose}
+                  menuOpen={menuOpen}
+                />
+              )}
+            </Box>
+          </Box>
         ) : null;
 
       case 'searchButton':
-        return mergedTopToolbarSettings.showSearchButton ? (
+        return (isDIYMode || mergedTopToolbarSettings.showSearchButton) ? (
           <IconButton
             key={componentId}
             color={showSearch ? "primary" : "inherit"}
@@ -306,7 +339,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
         ) : null;
 
       case 'settingsButton':
-        return mergedTopToolbarSettings.showSettingsButton ? (
+        return (isDIYMode || mergedTopToolbarSettings.showSettingsButton) ? (
           <IconButton key={componentId} color="inherit" onClick={() => navigate('/settings')}>
             <Settings size={20} />
           </IconButton>

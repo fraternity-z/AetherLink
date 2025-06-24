@@ -1,32 +1,36 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'  // 使用 SWC 处理 React，兼容 rolldown-vite
-import vue from '@vitejs/plugin-vue'
 
 // Rolldown-Vite + SWC 配置
-// SWC 处理 React (高性能且兼容)，Vue 使用标准插件
+// SWC 处理 React (高性能且兼容)
 export default defineConfig({
   plugins: [
     // 使用 SWC 处理 React - 兼容 rolldown-vite
-    react(),
-    vue({
-      template: {
-        compilerOptions: {
-          // 将所有带vue-前缀的标签视为自定义元素
-          isCustomElement: tag => tag.startsWith('vue-')
-        }
-      }
-    })
+    react()
     // 注意：Rolldown-Vite 内置了类型检查，不需要额外的 checker 插件
   ],
 
   // 开发服务器配置
   server: {
     port: 5173,
+    host: process.env.TAURI_DEV_HOST || '0.0.0.0', // 使用 Tauri 提供的主机地址
     cors: false, // 完全禁用 CORS 检查
+    strictPort: true, // 严格端口模式
+    // 如果需要 HTTPS，取消注释下面的配置
+    // https: true,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': '*',
       'Access-Control-Allow-Headers': '*',
+    },
+    // 配置 HMR WebSocket 以支持 Tauri 移动端
+    hmr: process.env.TAURI_DEV_HOST ? {
+      protocol: 'ws',
+      host: process.env.TAURI_DEV_HOST,
+      port: 5174,
+    } : {
+      port: 5174,
+      host: '0.0.0.0'
     },
     proxy: {
       // Exa API代理
@@ -145,8 +149,7 @@ export default defineConfig({
       '@mui/material',
       '@mui/system',
       '@mui/utils',
-      '@reduxjs/toolkit',
-      'vue'
+      '@reduxjs/toolkit'
     ],
     force: true
     // 注意：Rolldown-Vite 使用内置优化，不需要 esbuildOptions

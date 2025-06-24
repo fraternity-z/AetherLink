@@ -12,7 +12,7 @@ AetherLink移动应用是一个基于现代Web技术构建的跨平台AI助手�
 
 ## 技术栈
 
-- **前端框架**: React 19、Material UI 7、Vue 3（混合架构）
+- **前端框架**: React 19、Material UI 7
 - **构建工具**: Vite 6、SWC编译器
 - **编程语言**: TypeScript 5.8
 - **移动框架**: Capacitor 7
@@ -88,7 +88,7 @@ npx cap open android
 - **移动端优化**：原生Android应用体验
 - **知识库管理**：文档上传、智能检索
 - **MCP工具集成**：扩展AI能力的工具生态
-- **Vue+React混合架构**：充分利用两个生态优势
+- **React架构**：现代化的React 19应用架构
 
 ## 构建与部署
 
@@ -193,10 +193,9 @@ AetherLink针对移动设备进行了多项优化：
 - **性能优化**：减少不必要的渲染和计算，确保在移动设备上流畅运行
 - **原生功能集成**：相机、文件系统、剪贴板等原生功能无缝集成
 
-### 🎨 Vue + React 混合架构
+### 🎨 React架构
 
 - **React主框架**：使用React 19作为主要UI框架
-- **Vue组件集成**：通过桥接组件无缝集成Vue 3组件
 - **类型安全**：完整的TypeScript支持
 
 ### 📚 知识库管理
@@ -277,7 +276,7 @@ AetherLink/
 │   │   ├── UploadMenu.tsx  # 上传菜单组件
 │   │   ├── UrlScraperStatus.tsx # URL抓取状态组件
 │   │   ├── VoiceRecognition/ # 语音识别组件目录
-│   │   ├── VueComponents/  # Vue组件集成目录
+
 │   │   ├── WebSearchProviderSelector.tsx # 网络搜索提供商选择器
 │   │   ├── chat/           # 聊天相关子组件
 │   │   ├── common/         # 通用组件目录
@@ -310,7 +309,7 @@ AetherLink/
 │   │   │   ├── index.tsx   # 设置主页面
 │   │   │   └── AboutPage/  # 关于页面，显示应用信息
 │   │   ├── SettingsPage.tsx # 设置页面入口
-│   │   ├── VueDemo/        # Vue组件演示页面目录
+
 │   │   └── WelcomePage.tsx # 欢迎/引导页面，首次使用时显示
 │   ├── routes/             # 路由配置和导航逻辑
 │   │   └── index.tsx       # 路由定义和配置
@@ -348,7 +347,7 @@ AetherLink/
 │   │   │   ├── ImageUploadService.ts # 图片上传服务，处理图片选择和压缩
 │   │   │   ├── assistant/  # 助手相关服务目录
 │   │   │   ├── mcpServers/ # MCP服务器集成目录
-│   │   │   ├── vue/        # Vue相关服务目录
+
 │   │   │   └── storageService.ts # 存储服务(IndexedDB/localStorage)
 │   │   ├── store/          # Redux状态管理
 │   │   │   ├── messagesSlice.ts # 消息状态管理

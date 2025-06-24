@@ -33,6 +33,9 @@
     "buildandroid": "npm run build && npx cap sync android",
     "open:android": "npx cap open android",
     "build:apk": "npm run build:android && npm run open:android",
+    "mobile:capacitor": "npm run build:android",
+    "mobile:tauri": "npm run build:tauri-android",
+    "mobile:both": "npm run mobile:capacitor && npm run mobile:tauri",
     "buildapk": "npm run buildandroid && npm run open:android",
     "dev:android": "npm run dev -- --host && npx cap run android",
     "devandroid": "npm run dev -- --host && npx cap run android",
@@ -58,6 +61,10 @@
     "tauri": "tauri",
     "dev:tauri": "tauri dev",
     "build:tauri": "tauri build",
+    "dev:tauri-ios": "tauri ios dev",
+    "build:tauri-ios": "tauri ios build",
+    "dev:tauri-android": "tauri android dev",
+    "build:tauri-android": "tauri android build",
     "build:tauri-debug": "tauri build --debug"
   },
   "overrides": {
