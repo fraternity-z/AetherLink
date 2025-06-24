@@ -13,8 +13,8 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            args: ''
-            target: 'universal-apple-darwin'
+            args: '--target universal-apple-darwin'
+            target: 'aarch64-apple-darwin,x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
             target: 'x86_64-unknown-linux-gnu'
@@ -36,8 +36,22 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      - name: Add Rust targets (Unix)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          IFS=',' read -ra TARGETS <<< "${{ matrix.target }}"
+          for target in "${TARGETS[@]}"; do
+            rustup target add "$target"
+          done
+
+      - name: Add Rust targets (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          $targets = "${{ matrix.target }}" -split ","
+          foreach ($target in $targets) {
+            rustup target add $target.Trim()
+          }
 
       - name: Setup Rust Cache
         uses: swatinem/rust-cache@v2
@@ -54,7 +68,18 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             libssl-dev \
-            libxdo-dev
+            libxdo-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libgtk-4-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            pkg-config
 
       - name: Clear npm cache
         run: npm cache clean --force
