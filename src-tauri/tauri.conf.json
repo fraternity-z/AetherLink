@@ -30,7 +30,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "dmg",
+      "app"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -41,6 +44,35 @@
     "publisher": "AetherLink Team",
     "category": "Productivity",
     "shortDescription": "AI-powered chat assistant with advanced features",
-    "longDescription": "AetherLink is a powerful AI chat assistant that supports multiple models, voice recognition, file processing, and advanced conversation management."
+    "longDescription": "AetherLink is a powerful AI chat assistant that supports multiple models, voice recognition, file processing, and advanced conversation management.",
+    "macOS": {
+      "minimumSystemVersion": "10.13",
+      "frameworks": [],
+      "files": {},
+      "dmg": {
+        "appPosition": {
+          "x": 180,
+          "y": 220
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 220
+        },
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        }
+      }
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
   }
 }
