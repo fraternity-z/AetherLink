@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, IconButton, SwipeableDrawer, useMediaQuery, useTheme } from '@mui/material';
 import { X as CloseIcon } from 'lucide-react';
 import SidebarTabs from './SidebarTabs';
@@ -24,7 +24,8 @@ interface SidebarProps {
   onDesktopToggle?: () => void;
 }
 
-export default function Sidebar({
+// 使用 React.memo 优化组件，避免不必要的重新渲染
+const Sidebar = React.memo(function Sidebar({
   mobileOpen = false,
   onMobileToggle,
   mcpMode,
@@ -47,13 +48,14 @@ export default function Sidebar({
     }
   }, [isSmallScreen]);
 
+  // 优化：减少依赖项，使用更稳定的计算逻辑
   const finalOpen = useMemo(() => {
     if (isSmallScreen) {
       return onMobileToggle ? mobileOpen : showSidebar;
     } else {
       return onDesktopToggle ? desktopOpen : showSidebar;
     }
-  }, [isSmallScreen, onMobileToggle, mobileOpen, showSidebar, onDesktopToggle, desktopOpen]);
+  }, [isSmallScreen, mobileOpen, showSidebar, desktopOpen]);
 
   // 使用返回按键处理Hook，只在移动端且侧边栏打开时启用
   useDialogBackHandler(
@@ -90,9 +92,9 @@ export default function Sidebar({
   }, [onMobileToggle, onDesktopToggle, isSmallScreen]);
 
 
+  // 优化：减少 drawer 的依赖项，避免频繁重新渲染
   const drawer = useMemo(() => (
     <Box sx={getDrawerContentStyles()}>
-
       {(isSmallScreen || onDesktopToggle) && (
         <Box sx={getCloseButtonStyles()}>
           <IconButton
@@ -110,7 +112,7 @@ export default function Sidebar({
         onToolsToggle={onToolsToggle}
       />
     </Box>
-  ), [isSmallScreen, onDesktopToggle, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle]);
+  ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle]);
 
   return (
     <div>
@@ -134,4 +136,6 @@ export default function Sidebar({
       </SwipeableDrawer>
     </div>
   );
-}
+});
+
+export default Sidebar;

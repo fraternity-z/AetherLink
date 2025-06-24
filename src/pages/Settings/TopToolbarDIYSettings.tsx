@@ -194,7 +194,23 @@ const TopToolbarDIYSettings: React.FC = () => {
       }
     };
 
-    const handleGlobalUp = () => {
+    const handleGlobalUp = (e: MouseEvent | TouchEvent) => {
+      if (dragState.isDragging) {
+        // 检查是否在预览区域内释放
+        if (previewRef.current) {
+          const rect = previewRef.current.getBoundingClientRect();
+          const clientX = 'touches' in e ? e.changedTouches[0].clientX : e.clientX;
+          const clientY = 'touches' in e ? e.changedTouches[0].clientY : e.clientY;
+
+          // 如果在预览区域内释放，触发放置
+          if (clientX >= rect.left && clientX <= rect.right &&
+              clientY >= rect.top && clientY <= rect.bottom) {
+            handleDrop(e as any);
+            return;
+          }
+        }
+      }
+
       if (dragState.isDragging || dragState.isLongPressing) {
         handleDragStop();
       }
@@ -218,16 +234,19 @@ const TopToolbarDIYSettings: React.FC = () => {
   }, [dragState.isDragging, dragState.isLongPressing, handleDragStop]);
 
   // 处理放置到预览区域
-  const handleDrop = useCallback((event: React.MouseEvent) => {
+  const handleDrop = useCallback((event: React.MouseEvent | React.TouchEvent) => {
     if (!dragState.isDragging || !dragState.draggedComponent || !previewRef.current) return;
 
     const rect = previewRef.current.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const clientX = 'touches' in event ? event.changedTouches[0].clientX : event.clientX;
+    const clientY = 'touches' in event ? event.changedTouches[0].clientY : event.clientY;
 
-    // 限制在预览区域内
-    const clampedX = Math.max(5, Math.min(95, x));
-    const clampedY = Math.max(5, Math.min(95, y));
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    // 限制在预览区域内，但允许更大的范围
+    const clampedX = Math.max(0, Math.min(100, x));
+    const clampedY = Math.max(0, Math.min(100, y));
 
     const newPositions = [...(topToolbar.componentPositions || [])];
     const existingIndex = newPositions.findIndex(pos => pos.id === dragState.draggedComponent);
@@ -456,6 +475,7 @@ const TopToolbarDIYSettings: React.FC = () => {
               transition: 'border-color 0.2s'
             }}
             onMouseUp={handleDrop}
+            onTouchEnd={handleDrop}
           >
             <AppBar
               position="static"
@@ -471,7 +491,12 @@ const TopToolbarDIYSettings: React.FC = () => {
                 position: 'relative',
                 minHeight: '56px !important',
                 justifyContent: currentDIYComponents.length > 0 ? 'center' : 'space-between',
-                userSelect: 'none'
+                userSelect: 'none',
+                px: 0, // 移除左右padding限制
+                '&.MuiToolbar-root': {
+                  paddingLeft: 0,
+                  paddingRight: 0
+                }
               }}>
                 {/* 渲染已放置的组件 */}
                 {currentDIYComponents.map((position) =>
@@ -552,6 +577,7 @@ const TopToolbarDIYSettings: React.FC = () => {
                         mx: 'auto',
                         position: 'relative',
                         transform: (dragState.isLongPressing && dragState.draggedComponent === componentId) ? 'scale(1.05)' : 'none',
+                        userSelect: 'none',
                         '&:hover': isEnabled ? {
                           transform: 'translateY(-1px)',
                           boxShadow: 1

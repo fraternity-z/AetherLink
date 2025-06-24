@@ -16,8 +16,6 @@ export default defineConfig({
     host: process.env.TAURI_DEV_HOST || '0.0.0.0', // 使用 Tauri 提供的主机地址
     cors: false, // 完全禁用 CORS 检查
     strictPort: true, // 严格端口模式
-    // 如果需要 HTTPS，取消注释下面的配置
-    // https: true,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': '*',
