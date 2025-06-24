@@ -50,6 +50,7 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           key: ${{ matrix.target }}
+          cache-on-failure: true
 
       - name: install frontend dependencies
         run: npm install
