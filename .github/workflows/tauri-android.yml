@@ -47,29 +47,21 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
       
-      - name: Build Android APK
+      - name: Build Android APK (Release)
         run: |
           cd src-tauri
-          tauri android build --apk
+          tauri android build --apk --split-per-abi
         env:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
           NDK_HOME: ${{ env.NDK_HOME }}
       
-      - name: Find and Upload APK
+      - name: Find APK files
         run: |
           echo "Searching for APK files..."
           find src-tauri -name "*.apk" -type f
-          APK_PATH=$(find src-tauri -name "*.apk" -type f | head -1)
-          if [ -n "$APK_PATH" ]; then
-            echo "Found APK: $APK_PATH"
-            echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
-          else
-            echo "No APK found"
-            exit 1
-          fi
 
-      - name: Upload APK
+      - name: Upload All APKs
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: ${{ env.APK_PATH }}
+          name: android-apks-all-architectures
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk

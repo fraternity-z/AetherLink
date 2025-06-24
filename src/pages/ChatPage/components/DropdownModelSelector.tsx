@@ -6,7 +6,8 @@ import {
   useTheme,
   Box,
   ListSubheader,
-  Avatar
+  Avatar,
+  useMediaQuery
 } from '@mui/material';
 import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
@@ -28,6 +29,7 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
   displayStyle = 'text'
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const providers = useSelector((state: RootState) => state.settings.providers || []);
 
   // 获取提供商名称的函数
@@ -185,17 +187,32 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           disableAutoFocus: true,
           disableRestoreFocus: true,
           disableEnforceFocus: true,
+          anchorOrigin: {
+            vertical: 'bottom',
+            horizontal: 'left',
+          },
+          transformOrigin: {
+            vertical: 'top',
+            horizontal: 'left',
+          },
           slotProps: {
             paper: {
               sx: {
-                maxHeight: '70vh', // 增加最大高度到视口高度的70%
-                minHeight: 300, // 设置最小高度
-                width: 'auto', // 自动宽度
-                maxWidth: 400, // 限制最大宽度
-                minWidth: 280, // 设置最小宽度
+                maxHeight: isMobile ? '50vh' : '70vh', // 移动端减少高度避免超出屏幕
+                minHeight: isMobile ? 150 : 300,
+                width: isMobile ? '85vw' : 'auto', // 移动端使用更大宽度
+                maxWidth: isMobile ? '85vw' : 400,
+                minWidth: isMobile ? '300px' : 280,
                 mt: 0.5,
+                // 移动端确保不超出屏幕边界
+                ...(isMobile && {
+                  maxWidth: 'calc(100vw - 32px)', // 留出边距
+                  marginLeft: 'auto',
+                  marginRight: 'auto'
+                }),
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                bgcolor: theme.palette.mode === 'dark' ? '#2A2A2A' : theme.palette.background.paper, // 不透明背景
+                bgcolor: theme.palette.mode === 'dark' ? '#2A2A2A' : theme.palette.background.paper,
+                borderRadius: 1,
                 '& .MuiList-root': {
                   py: 0,
                   bgcolor: 'transparent',
@@ -208,7 +225,7 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
             root: {
               slotProps: {
                 backdrop: {
-                  invisible: false,
+                  invisible: true, // 保持透明背景，维持下拉效果
                   sx: {
                     backgroundColor: 'transparent'
                   }
