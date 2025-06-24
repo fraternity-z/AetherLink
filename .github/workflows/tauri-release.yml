@@ -13,7 +13,7 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: '--target universal-apple-darwin --bundles app,dmg'
             target: 'aarch64-apple-darwin,x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
@@ -102,7 +102,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: ${{ matrix.args }}
-          bundleArgs: ${{ matrix.platform == 'macos-latest' && '--bundles app,dmg' || '' }}
 
       - name: Upload Build Artifacts (Windows)
         if: matrix.platform == 'windows-latest'
