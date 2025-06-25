@@ -19,12 +19,14 @@ import {
   Sparkles
 } from 'lucide-react';
 import { styled } from '@mui/material/styles';
+import { motion } from 'motion/react';
 
 import Markdown from '../Markdown';
 import { formatThinkingTimeSeconds } from '../../../shared/utils/thinkingUtils';
 import { getThinkingScrollbarStyles, getCompactScrollbarStyles } from '../../../shared/utils/scrollbarStyles';
 import type { ThinkingDisplayStyle } from './ThinkingBlock';
 import ThinkingAdvancedStyles from './ThinkingAdvancedStyles';
+// Motion variants are now defined inline for better type safety
 
 interface ThinkingDisplayRendererProps {
   displayStyle: ThinkingDisplayStyle;
@@ -121,14 +123,27 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           borderBottom: expanded ? `1px solid ${theme.palette.divider}` : 'none'
         }}
       >
-        <Lightbulb
-          size={20}
-          color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary}
-          style={{
-            marginRight: theme.spacing(1),
-            animation: isThinking ? 'pulse 1.5s infinite' : 'none'
+        <motion.div
+          animate={isThinking ? {
+            opacity: [1, 0.3, 1],
+            scale: [1, 1.1, 1]
+          } : {
+            opacity: 1,
+            scale: 1
           }}
-        />
+          transition={{
+            duration: isThinking ? 1.2 : 0.3,
+            ease: "easeInOut",
+            repeat: isThinking ? Infinity : 0,
+            times: isThinking ? [0, 0.5, 1] : undefined
+          }}
+          style={{ marginRight: theme.spacing(1) }}
+        >
+          <Lightbulb
+            size={20}
+            color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary}
+          />
+        </motion.div>
 
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
           <Typography variant="subtitle2" component="span">
@@ -201,11 +216,27 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           borderBottom: `1px solid ${theme.palette.divider}`
         }}
       >
-        <Lightbulb
-          size={20}
-          color={isThinking ? theme.palette.warning.main : theme.palette.primary.main}
+        <motion.div
+          animate={isThinking ? {
+            opacity: [1, 0.3, 1],
+            scale: [1, 1.1, 1]
+          } : {
+            opacity: 1,
+            scale: 1
+          }}
+          transition={{
+            duration: isThinking ? 1.2 : 0.3,
+            ease: "easeInOut",
+            repeat: isThinking ? Infinity : 0,
+            times: isThinking ? [0, 0.5, 1] : undefined
+          }}
           style={{ marginRight: theme.spacing(1) }}
-        />
+        >
+          <Lightbulb
+            size={20}
+            color={isThinking ? theme.palette.warning.main : theme.palette.primary.main}
+          />
+        </motion.div>
 
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
           <Typography variant="subtitle2" component="span">
@@ -260,13 +291,26 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             }
           }}
         >
-          <Lightbulb
-            size={16}
-            color={isThinking ? theme.palette.warning.contrastText : theme.palette.text.secondary}
-            style={{
-              animation: isThinking ? 'pulse 1.5s infinite' : 'none'
+          <motion.div
+            animate={isThinking ? {
+              opacity: [1, 0.3, 1],
+              scale: [1, 1.1, 1]
+            } : {
+              opacity: 1,
+              scale: 1
             }}
-          />
+            transition={{
+              duration: isThinking ? 1.2 : 0.3,
+              ease: "easeInOut",
+              repeat: isThinking ? Infinity : 0,
+              times: isThinking ? [0, 0.5, 1] : undefined
+            }}
+          >
+            <Lightbulb
+              size={16}
+              color={isThinking ? theme.palette.warning.contrastText : theme.palette.text.secondary}
+            />
+          </motion.div>
         </Box>
       </Tooltip>
       {expanded && (
@@ -386,18 +430,28 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   const renderTimelineStyle = () => (
     <Box sx={{ display: 'flex', mb: 2 }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 2 }}>
-        <Box
-          sx={{
+        <motion.div
+          animate={isThinking ? {
+            scale: [1, 1.3, 1],
+            boxShadow: [
+              '0 0 0 0 rgba(255, 193, 7, 0.7)',
+              '0 0 0 10px rgba(255, 193, 7, 0)',
+              '0 0 0 0 rgba(255, 193, 7, 0)'
+            ]
+          } : {
+            scale: 1,
+            boxShadow: '0 0 0 0 rgba(255, 193, 7, 0)'
+          }}
+          transition={{
+            duration: isThinking ? 1.5 : 0.3,
+            ease: "easeInOut",
+            repeat: isThinking ? Infinity : 0
+          }}
+          style={{
             width: 12,
             height: 12,
             borderRadius: '50%',
-            backgroundColor: isThinking ? theme.palette.warning.main : theme.palette.success.main,
-            animation: isThinking ? 'pulse 1.5s infinite' : 'none',
-            '@keyframes pulse': {
-              '0%': { transform: 'scale(1)' },
-              '50%': { transform: 'scale(1.2)' },
-              '100%': { transform: 'scale(1)' }
-            }
+            backgroundColor: isThinking ? theme.palette.warning.main : theme.palette.success.main
           }}
         />
         <Box
@@ -491,8 +545,22 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', mb: expanded ? 1.5 : 0 }}>
-          <Box
-            sx={{
+          <motion.div
+            animate={isThinking ? {
+              boxShadow: [
+                `0 0 5px ${theme.palette.warning.main}`,
+                `0 0 20px ${theme.palette.warning.main}`,
+                `0 0 5px ${theme.palette.warning.main}`
+              ]
+            } : {
+              boxShadow: `0 0 5px ${theme.palette.warning.main}20`
+            }}
+            transition={{
+              duration: isThinking ? 2 : 0.3,
+              ease: "easeInOut",
+              repeat: isThinking ? Infinity : 0
+            }}
+            style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -500,17 +568,11 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
               height: 40,
               borderRadius: '50%',
               backgroundColor: isThinking ? theme.palette.warning.main : theme.palette.primary.main,
-              mr: 2,
-              animation: isThinking ? 'glow 2s infinite' : 'none',
-              '@keyframes glow': {
-                '0%': { boxShadow: `0 0 5px ${theme.palette.warning.main}` },
-                '50%': { boxShadow: `0 0 20px ${theme.palette.warning.main}` },
-                '100%': { boxShadow: `0 0 5px ${theme.palette.warning.main}` }
-              }
+              marginRight: theme.spacing(2)
             }}
           >
             <Sparkles size={20} color="white" />
-          </Box>
+          </motion.div>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
               {isThinking ? '🧠 AI 正在深度思考' : '✨ 思考过程完成'}
@@ -581,14 +643,27 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         }}
         onClick={onToggleExpanded}
       >
-        <Lightbulb
-          size={14}
-          color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary}
-          style={{
-            marginRight: theme.spacing(0.5),
-            animation: isThinking ? 'pulse 1.5s infinite' : 'none'
+        <motion.div
+          animate={isThinking ? {
+            opacity: [1, 0.3, 1],
+            scale: [1, 1.1, 1]
+          } : {
+            opacity: 1,
+            scale: 1
           }}
-        />
+          transition={{
+            duration: isThinking ? 1.2 : 0.3,
+            ease: "easeInOut",
+            repeat: isThinking ? Infinity : 0,
+            times: isThinking ? [0, 0.5, 1] : undefined
+          }}
+          style={{ marginRight: theme.spacing(0.5) }}
+        >
+          <Lightbulb
+            size={14}
+            color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary}
+          />
+        </motion.div>
         <Typography variant="caption" sx={{ mr: 0.5 }}>
           {isThinking ? '思考中' : '思考'}
         </Typography>
@@ -666,19 +741,22 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
             <Typography variant="body2" sx={{ mr: 1 }}>AI正在思考</Typography>
             {[0, 1, 2].map((i) => (
-              <Box
+              <motion.div
                 key={i}
-                sx={{
+                animate={{
+                  scale: [0, 1, 0]
+                }}
+                transition={{
+                  duration: 1.4,
+                  ease: "easeInOut",
+                  repeat: Infinity,
+                  delay: i * 0.16
+                }}
+                style={{
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  backgroundColor: theme.palette.primary.main,
-                  animation: `bounce 1.4s infinite ease-in-out`,
-                  animationDelay: `${i * 0.16}s`,
-                  '@keyframes bounce': {
-                    '0%, 80%, 100%': { transform: 'scale(0)' },
-                    '40%': { transform: 'scale(1)' }
-                  }
+                  backgroundColor: theme.palette.primary.main
                 }}
               />
             ))}
