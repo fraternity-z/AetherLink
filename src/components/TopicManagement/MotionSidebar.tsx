@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import { X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -104,38 +104,53 @@ const MotionSidebar = React.memo(function MotionSidebar({
     }
   }, [isSmallScreen]);
 
-  // 优化：减少依赖项，使用更稳定的计算逻辑
+  // 使用 useRef 来稳定回调函数引用，避免无限重新渲染
+  const onMobileToggleRef = useRef(onMobileToggle);
+  const onDesktopToggleRef = useRef(onDesktopToggle);
+
+  // 更新 ref 的值
+  useEffect(() => {
+    onMobileToggleRef.current = onMobileToggle;
+  }, [onMobileToggle]);
+
+  useEffect(() => {
+    onDesktopToggleRef.current = onDesktopToggle;
+  }, [onDesktopToggle]);
+
+  // 优化：使用稳定的计算逻辑，避免回调函数依赖导致的重新渲染
   const finalOpen = useMemo(() => {
     if (isSmallScreen) {
-      return onMobileToggle ? mobileOpen : showSidebar;
+      return onMobileToggleRef.current ? mobileOpen : showSidebar;
     } else {
-      return onDesktopToggle ? desktopOpen : showSidebar;
+      return onDesktopToggleRef.current ? desktopOpen : showSidebar;
     }
   }, [isSmallScreen, mobileOpen, showSidebar, desktopOpen]);
 
-  // 使用返回按键处理Hook，只在移动端且侧边栏打开时启用
-  useDialogBackHandler(
-    SIDEBAR_DIALOG_ID,
-    isSmallScreen && mobileOpen, // 直接使用 mobileOpen 状态
-    () => {
-      // 返回按键关闭侧边栏的逻辑
-      if (onMobileToggle) {
-        onMobileToggle();
+  // 统一的关闭处理函数
+  const handleClose = useCallback(() => {
+    if (isSmallScreen) {
+      // 移动端：优先使用 onMobileToggle，否则使用本地状态
+      if (onMobileToggleRef.current) {
+        onMobileToggleRef.current();
+      } else {
+        setShowSidebar(false);
+      }
+    } else {
+      // 桌面端：优先使用 onDesktopToggle，否则使用本地状态
+      if (onDesktopToggleRef.current) {
+        onDesktopToggleRef.current();
       } else {
         setShowSidebar(false);
       }
     }
-  );
+  }, [isSmallScreen]);
 
-  const handleClose = useCallback(() => {
-    if (onMobileToggle && isSmallScreen) {
-      onMobileToggle();
-    } else if (onDesktopToggle && !isSmallScreen) {
-      onDesktopToggle();
-    } else {
-      setShowSidebar(false);
-    }
-  }, [onMobileToggle, onDesktopToggle, isSmallScreen]);
+  // 使用返回按键处理Hook，只在移动端且侧边栏打开时启用
+  useDialogBackHandler(
+    SIDEBAR_DIALOG_ID,
+    isSmallScreen && finalOpen, // 使用统一的 finalOpen 状态
+    handleClose // 使用统一的关闭处理函数
+  );
 
   const handleBackdropClick = useCallback(() => {
     if (isSmallScreen) {
@@ -211,7 +226,7 @@ const MotionSidebar = React.memo(function MotionSidebar({
         onToolsToggle={onToolsToggle}
       />
     </Box>
-  ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle]);
+  ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle, onDesktopToggle]);
 
   if (isSmallScreen) {
     // 移动端：使用全屏覆盖模式

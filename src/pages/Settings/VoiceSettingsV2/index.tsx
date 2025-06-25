@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -94,30 +94,27 @@ const VoiceSettingsV2: React.FC = () => {
   const [currentTTSService, setCurrentTTSService] = useState<string>('siliconflow');
   const [currentASRService, setCurrentASRService] = useState<string>('capacitor');
 
+  // 提取 loadCurrentServices 到 useEffect 外部
+  const loadCurrentServices = useCallback(async () => {
+    try {
+      const selectedTTSService = await getStorageItem<string>('selected_tts_service') || 'siliconflow';
+      const selectedASRService = await getStorageItem<string>('speech_recognition_provider') || 'capacitor';
+
+      setCurrentTTSService(selectedTTSService);
+      setCurrentASRService(selectedASRService);
+    } catch (error) {
+      console.error('加载当前服务状态失败:', error);
+    }
+  }, []);
+
   // 加载当前服务状态
   useEffect(() => {
-    const loadCurrentServices = async () => {
-      try {
-        const selectedTTSService = await getStorageItem<string>('selected_tts_service') || 'siliconflow';
-        const selectedASRService = await getStorageItem<string>('speech_recognition_provider') || 'capacitor';
-
-        setCurrentTTSService(selectedTTSService);
-        setCurrentASRService(selectedASRService);
-      } catch (error) {
-        console.error('加载当前服务状态失败:', error);
-      }
-    };
-
     loadCurrentServices();
 
     // 监听页面焦点变化，重新加载状态
-    const handleFocus = () => {
-      loadCurrentServices();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+    window.addEventListener('focus', loadCurrentServices);
+    return () => window.removeEventListener('focus', loadCurrentServices);
+  }, [loadCurrentServices]);
 
   const handleBack = () => {
     navigate('/settings');
@@ -136,24 +133,13 @@ const VoiceSettingsV2: React.FC = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         // 页面变为可见时重新加载状态
-        const loadCurrentServices = async () => {
-          try {
-            const selectedTTSService = await getStorageItem<string>('selected_tts_service') || 'siliconflow';
-            const selectedASRService = await getStorageItem<string>('speech_recognition_provider') || 'capacitor';
-
-            setCurrentTTSService(selectedTTSService);
-            setCurrentASRService(selectedASRService);
-          } catch (error) {
-            console.error('加载当前服务状态失败:', error);
-          }
-        };
         loadCurrentServices();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+  }, [loadCurrentServices]);
 
   const currentServices = activeTab === 0 ? TTS_SERVICES : ASR_SERVICES;
 

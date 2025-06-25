@@ -104,7 +104,6 @@ const CapacitorASRSettings: React.FC = () => {
         navigate('/settings/voice');
       }, 0);
 
-
     } catch (error) {
       console.error('保存Capacitor ASR设置失败:', error);
       setUIState(prev => ({
@@ -112,7 +111,7 @@ const CapacitorASRSettings: React.FC = () => {
         saveError: '保存设置失败，请重试',
       }));
     }
-  }, [settings]);
+  }, [settings, navigate]);
 
 
 

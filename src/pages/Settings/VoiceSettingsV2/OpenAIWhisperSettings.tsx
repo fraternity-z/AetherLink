@@ -46,8 +46,6 @@ const OpenAIWhisperSettings: React.FC = () => {
     saveError: '',
   });
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
   // 加载设置
   useEffect(() => {
     const loadSettings = async () => {
