@@ -11,6 +11,13 @@ import { hasToolUseTags } from '../../../utils/mcpToolParser';
 import { TopicNamingService } from '../../topics/TopicNamingService';
 
 /**
+ * 特殊标记常量
+ */
+const SPECIAL_MARKERS = {
+  COMPARISON_RESULT: '__COMPARISON_RESULT__'
+} as const;
+
+/**
  * 响应完成处理器 - 处理响应完成和中断的逻辑
  */
 export class ResponseCompletionHandler {
@@ -36,25 +43,29 @@ export class ResponseCompletionHandler {
     console.log(`[ResponseCompletionHandler] 完成处理 - finalContent长度: ${finalContent?.length || 0}, accumulatedContent长度: ${chunkProcessor.content.length}`);
 
     // 检查是否是对比结果，如果是则不进行常规的完成处理
-    if (finalContent === '__COMPARISON_RESULT__' || chunkProcessor.content === '__COMPARISON_RESULT__') {
+    // 修复：使用常量替代硬编码的特殊标记
+    if (finalContent === SPECIAL_MARKERS.COMPARISON_RESULT || chunkProcessor.content === SPECIAL_MARKERS.COMPARISON_RESULT) {
       console.log(`[ResponseCompletionHandler] 检测到对比结果，跳过常规完成处理`);
       return chunkProcessor.content;
     }
 
-    // 参考 Cline：等待所有工具执行完成
+    // 修复：使用 try-finally 确保工具跟踪器总是被清理
     try {
-      console.log(`[ResponseCompletionHandler] 等待所有工具执行完成...`);
-      await globalToolTracker.waitForAllToolsComplete(60000); // 60秒超时
-      console.log(`[ResponseCompletionHandler] 所有工具执行完成`);
-    } catch (error) {
-      console.warn(`[ResponseCompletionHandler] 等待工具完成超时:`, error);
-      // 继续处理，不阻塞响应完成
-    }
+      // 参考 Cline：等待所有工具执行完成
+      try {
+        console.log(`[ResponseCompletionHandler] 等待所有工具执行完成...`);
+        await globalToolTracker.waitForAllToolsComplete(60000); // 60秒超时
+        console.log(`[ResponseCompletionHandler] 所有工具执行完成`);
+      } catch (error) {
+        console.warn(`[ResponseCompletionHandler] 等待工具完成超时:`, error);
+        // 继续处理，不阻塞响应完成
+      }
 
     let accumulatedContent = chunkProcessor.content;
 
     // 只有在 accumulatedContent 为空时才使用 finalContent（非流式响应的情况）
-    if (!accumulatedContent.trim() && finalContent) {
+    // 修复：避免使用 trim() 判断，防止只有空格的有意义内容被覆盖
+    if (!accumulatedContent && finalContent) {
       accumulatedContent = finalContent;
       console.log(`[ResponseCompletionHandler] 使用 finalContent 作为最终内容`);
     } else {
@@ -76,80 +87,10 @@ export class ResponseCompletionHandler {
 
     const now = new Date().toISOString();
 
-    // 简化完成处理 - 直接更新状态，不使用流处理器
-    // 更新消息状态
-    store.dispatch(newMessagesActions.updateMessage({
-      id: this.messageId,
-      changes: {
-        status: AssistantMessageStatus.SUCCESS,
-        updatedAt: now
-      }
-    }));
+    // 修复：批量更新 Redux 状态，确保原子性
+    this.batchUpdateReduxState(chunkProcessor, accumulatedContent, now);
 
-    // 更新消息块状态（确保所有相关块都被更新）
-    console.log(`[ResponseCompletionHandler] 完成时更新块状态 - lastBlockType: ${chunkProcessor.blockType}, blockId: ${this.blockId}, mainTextBlockId: ${chunkProcessor.textBlockId}`);
-
-    if (chunkProcessor.blockType === MessageBlockType.MAIN_TEXT) {
-      // 只有主文本块，更新原始块
-      console.log(`[ResponseCompletionHandler] 更新主文本块 ${this.blockId} 状态为 SUCCESS`);
-      store.dispatch(updateOneBlock({
-        id: this.blockId,
-        changes: {
-          content: accumulatedContent,
-          status: MessageBlockStatus.SUCCESS,
-          updatedAt: now
-        }
-      }));
-    } else if (chunkProcessor.blockType === MessageBlockType.THINKING) {
-      // 有思考块，更新思考块状态
-      console.log(`[ResponseCompletionHandler] 更新思考块 ${this.blockId} 状态为 SUCCESS`);
-      store.dispatch(updateOneBlock({
-        id: this.blockId,
-        changes: {
-          content: chunkProcessor.thinking,
-          status: MessageBlockStatus.SUCCESS,
-          updatedAt: now
-        }
-      }));
-
-      // 如果还有主文本块，也要更新主文本块状态
-      if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
-        console.log(`[ResponseCompletionHandler] 更新主文本块 ${chunkProcessor.textBlockId} 状态为 SUCCESS`);
-        store.dispatch(updateOneBlock({
-          id: chunkProcessor.textBlockId,
-          changes: {
-            content: accumulatedContent,
-            status: MessageBlockStatus.SUCCESS,
-            updatedAt: now
-          }
-        }));
-      }
-    } else {
-      // 默认情况，更新为主文本块
-      console.log(`[ResponseCompletionHandler] 默认更新块 ${this.blockId} 状态为 SUCCESS`);
-      store.dispatch(updateOneBlock({
-        id: this.blockId,
-        changes: {
-          content: accumulatedContent,
-          status: MessageBlockStatus.SUCCESS,
-          updatedAt: now
-        }
-      }));
-    }
-
-    // 设置主题为非流式响应状态
-    store.dispatch(newMessagesActions.setTopicStreaming({
-      topicId: this.topicId,
-      streaming: false
-    }));
-
-    // 设置主题为非加载状态
-    store.dispatch(newMessagesActions.setTopicLoading({
-      topicId: this.topicId,
-      loading: false
-    }));
-
-    // 处理思考块完成
+    // 处理思考块完成 - 只更新Redux状态，数据库保存在saveBlocksToDatabase中统一处理
     if (chunkProcessor.thinkingId) {
       // 获取思考块
       const thinkingBlock = store.getState().messageBlocks.entities[chunkProcessor.thinkingId];
@@ -164,19 +105,14 @@ export class ResponseCompletionHandler {
           }
         }));
 
-        // 保存到数据库
-        dexieStorage.updateMessageBlock(chunkProcessor.thinkingId, {
-          status: MessageBlockStatus.SUCCESS,
-          updatedAt: now
-        });
-
         console.log(`[ResponseCompletionHandler] 更新思考块 ${chunkProcessor.thinkingId} 状态为 SUCCESS`);
-        console.log(`[ResponseCompletionHandler] 保存思考块 ${chunkProcessor.thinkingId} 到数据库，内容长度: ${thinkingBlock.content?.length || 0}`);
+        console.log(`[ResponseCompletionHandler] 思考块 ${chunkProcessor.thinkingId} 将在saveBlocksToDatabase中保存到数据库，内容长度: ${thinkingBlock.content?.length || 0}`);
       }
     }
 
     // 修复：如果有finalContent但没有主文本块，需要创建主文本块
-    if (finalContent && finalContent.trim() && !chunkProcessor.textBlockId) {
+    // 保持与其他地方一致，避免使用 trim() 判断
+    if (finalContent && !chunkProcessor.textBlockId) {
       console.log(`[ResponseCompletionHandler] 检测到finalContent但没有主文本块，创建新的主文本块`);
 
       // 创建新的主文本块
@@ -193,17 +129,25 @@ export class ResponseCompletionHandler {
 
       console.log(`[ResponseCompletionHandler] 创建主文本块 ${mainTextBlockId}，内容: "${finalContent}"`);
 
-      // 添加到Redux状态
-      store.dispatch(addOneBlock(newMainTextBlock));
-      // 保存到数据库
-      await dexieStorage.saveMessageBlock(newMainTextBlock);
+      // 修复：先保存到数据库，成功后再更新 Redux，确保状态一致性
+      try {
+        // 先保存到数据库
+        await dexieStorage.saveMessageBlock(newMainTextBlock);
 
-      // 将新块添加到消息的blocks数组
-      store.dispatch(newMessagesActions.upsertBlockReference({
-        messageId: this.messageId,
-        blockId: mainTextBlockId,
-        status: MessageBlockStatus.SUCCESS
-      }));
+        // 成功后再更新 Redux
+        store.dispatch(addOneBlock(newMainTextBlock));
+
+        // 将新块添加到消息的blocks数组
+        store.dispatch(newMessagesActions.upsertBlockReference({
+          messageId: this.messageId,
+          blockId: mainTextBlockId,
+          status: MessageBlockStatus.SUCCESS
+        }));
+      } catch (error) {
+        console.error(`[ResponseCompletionHandler] 保存新主文本块失败: ${mainTextBlockId}`, error);
+        // 抛出错误，让调用方处理
+        throw error;
+      }
     }
 
     // 发送完成事件
@@ -224,33 +168,37 @@ export class ResponseCompletionHandler {
       status: 'success'
     });
 
-    // 触发话题自动命名 - 与最佳实例保持一致
-    this.triggerTopicNaming();
+      // 触发话题自动命名 - 与最佳实例保持一致
+      this.triggerTopicNaming();
 
-    // 参考 Cline：清理工具跟踪器
-    try {
-      globalToolTracker.cleanup();
-      console.log(`[ResponseCompletionHandler] 工具跟踪器清理完成`);
-    } catch (error) {
-      console.error(`[ResponseCompletionHandler] 工具跟踪器清理失败:`, error);
+      return accumulatedContent;
+    } finally {
+      // 修复：确保工具跟踪器总是被清理，即使前面的操作失败
+      try {
+        globalToolTracker.cleanup();
+        console.log(`[ResponseCompletionHandler] 工具跟踪器清理完成`);
+      } catch (error) {
+        console.error(`[ResponseCompletionHandler] 工具跟踪器清理失败:`, error);
+      }
     }
-
-    return accumulatedContent;
   }
 
   /**
    * 响应被中断时的完成处理
+   * @param chunkProcessor 块处理器实例
+   * @param isRetry 是否为重试调用，防止无限循环
    * @returns 累计的响应内容
    */
-  async completeWithInterruption(chunkProcessor: any) {
+  async completeWithInterruption(chunkProcessor: any, isRetry = false) {
     console.log(`[ResponseCompletionHandler] 响应被中断 - 消息ID: ${this.messageId}, 当前内容长度: ${chunkProcessor.content.length}`);
 
     const now = new Date().toISOString();
 
     try {
       // 如果有内容，添加中断警告
+      // 修复：保持与 complete 方法一致，避免使用 trim() 判断
       let finalContent = chunkProcessor.content;
-      if (finalContent.trim()) {
+      if (finalContent) {
         finalContent += '\n\n---\n\n> ⚠️ **此回复已被用户中断**\n> \n> 以上内容为中断前已生成的部分内容。';
       } else {
         finalContent = '> ⚠️ **回复已被中断，未生成任何内容**\n> \n> 请重新发送消息以获取完整回复。';
@@ -337,8 +285,20 @@ export class ResponseCompletionHandler {
 
     } catch (error) {
       console.error(`[ResponseCompletionHandler] 中断处理失败:`, error);
-      // 如果处理失败，回退到普通完成处理
-      return await this.complete(chunkProcessor.content, chunkProcessor);
+      // 修复：防止无限循环，仅在第一次失败时尝试回退
+      if (!isRetry) {
+        console.log(`[ResponseCompletionHandler] 尝试回退到普通完成处理`);
+        try {
+          return await this.complete(chunkProcessor.content, chunkProcessor);
+        } catch (fallbackError) {
+          console.error(`[ResponseCompletionHandler] 回退处理也失败:`, fallbackError);
+          // 如果回退也失败，返回当前内容
+          return chunkProcessor.content || '';
+        }
+      }
+      // 如果是重试后仍失败，返回当前内容
+      console.log(`[ResponseCompletionHandler] 重试后仍失败，返回当前内容`);
+      return chunkProcessor.content || '';
     }
   }
 
@@ -396,43 +356,58 @@ export class ResponseCompletionHandler {
       // 情况1：创建了新的主文本块，需要替换占位符块
       console.log(`[ResponseCompletionHandler] 替换占位符块 ${this.blockId} 为主文本块 ${chunkProcessor.textBlockId}`);
 
+      // 修复：使用 Map 来管理顺序和唯一性，避免 Set 的顺序问题
+      const uniqueBlocks = new Map<string, number>();
+      let currentIndex = 0;
+
       // 遍历现有块，按正确顺序构建新数组
       for (const existingBlockId of existingBlocks) {
         if (existingBlockId === this.blockId) {
           // 如果是思考块转换，按正确顺序添加
           if (chunkProcessor.blockType === MessageBlockType.THINKING) {
             // 思考块在前，主文本块在后
-            if (!finalBlockIds.includes(this.blockId)) {
-              finalBlockIds.push(this.blockId);
-            }
-            if (!finalBlockIds.includes(chunkProcessor.textBlockId)) {
-              finalBlockIds.push(chunkProcessor.textBlockId);
-            }
+            uniqueBlocks.set(this.blockId, currentIndex++);
+            uniqueBlocks.set(chunkProcessor.textBlockId, currentIndex++);
           } else {
             // 普通情况，只替换为主文本块
-            if (!finalBlockIds.includes(chunkProcessor.textBlockId)) {
-              finalBlockIds.push(chunkProcessor.textBlockId);
-            }
+            uniqueBlocks.set(chunkProcessor.textBlockId, currentIndex++);
           }
         } else {
-          // 保留其他块（避免重复）
-          if (!finalBlockIds.includes(existingBlockId)) {
-            finalBlockIds.push(existingBlockId);
+          // 保留其他块
+          if (!uniqueBlocks.has(existingBlockId)) {
+            uniqueBlocks.set(existingBlockId, currentIndex++);
           }
         }
       }
 
       // 确保主文本块存在（防止遗漏）
-      if (!finalBlockIds.includes(chunkProcessor.textBlockId)) {
-        finalBlockIds.push(chunkProcessor.textBlockId);
+      if (!uniqueBlocks.has(chunkProcessor.textBlockId)) {
+        uniqueBlocks.set(chunkProcessor.textBlockId, currentIndex++);
       }
+
+      // 按原始顺序排序并转换为数组
+      finalBlockIds = Array.from(uniqueBlocks.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(([id]) => id);
     } else {
       // 情况2：使用原始块ID（没有创建新块）
       console.log(`[ResponseCompletionHandler] 使用原始块ID ${this.blockId}`);
-      finalBlockIds = [...existingBlocks];
-      if (!finalBlockIds.includes(this.blockId)) {
-        finalBlockIds.push(this.blockId);
+      const uniqueBlocks = new Map<string, number>();
+
+      // 保持原有顺序
+      existingBlocks.forEach((id, index) => {
+        uniqueBlocks.set(id, index);
+      });
+
+      // 添加当前块（如果不存在）
+      if (!uniqueBlocks.has(this.blockId)) {
+        uniqueBlocks.set(this.blockId, existingBlocks.length);
       }
+
+      // 按原始顺序排序
+      finalBlockIds = Array.from(uniqueBlocks.entries())
+        .sort((a, b) => a[1] - b[1])
+        .map(([id]) => id);
     }
 
     const allBlockIds = finalBlockIds;
@@ -507,12 +482,111 @@ export class ResponseCompletionHandler {
   }
 
   /**
+   * 批量更新 Redux 状态，确保原子性
+   * 修复：解决并发安全问题，将相关的状态更新批量执行
+   */
+  private batchUpdateReduxState(chunkProcessor: any, accumulatedContent: string, now: string) {
+    // 收集所有需要执行的 dispatch 操作
+    const dispatchActions: Array<() => void> = [];
+
+    // 1. 更新消息状态
+    dispatchActions.push(() => {
+      store.dispatch(newMessagesActions.updateMessage({
+        id: this.messageId,
+        changes: {
+          status: AssistantMessageStatus.SUCCESS,
+          updatedAt: now
+        }
+      }));
+    });
+
+    // 2. 更新消息块状态（确保所有相关块都被更新）
+    console.log(`[ResponseCompletionHandler] 完成时更新块状态 - lastBlockType: ${chunkProcessor.blockType}, blockId: ${this.blockId}, mainTextBlockId: ${chunkProcessor.textBlockId}`);
+
+    if (chunkProcessor.blockType === MessageBlockType.MAIN_TEXT) {
+      // 只有主文本块，更新原始块
+      console.log(`[ResponseCompletionHandler] 更新主文本块 ${this.blockId} 状态为 SUCCESS`);
+      dispatchActions.push(() => {
+        store.dispatch(updateOneBlock({
+          id: this.blockId,
+          changes: {
+            content: accumulatedContent,
+            status: MessageBlockStatus.SUCCESS,
+            updatedAt: now
+          }
+        }));
+      });
+    } else if (chunkProcessor.blockType === MessageBlockType.THINKING) {
+      // 有思考块，更新思考块状态
+      console.log(`[ResponseCompletionHandler] 更新思考块 ${this.blockId} 状态为 SUCCESS`);
+      dispatchActions.push(() => {
+        store.dispatch(updateOneBlock({
+          id: this.blockId,
+          changes: {
+            content: chunkProcessor.thinking,
+            status: MessageBlockStatus.SUCCESS,
+            updatedAt: now
+          }
+        }));
+      });
+
+      // 如果还有主文本块，也要更新主文本块状态
+      if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
+        console.log(`[ResponseCompletionHandler] 更新主文本块 ${chunkProcessor.textBlockId} 状态为 SUCCESS`);
+        dispatchActions.push(() => {
+          store.dispatch(updateOneBlock({
+            id: chunkProcessor.textBlockId,
+            changes: {
+              content: accumulatedContent,
+              status: MessageBlockStatus.SUCCESS,
+              updatedAt: now
+            }
+          }));
+        });
+      }
+    } else {
+      // 默认情况，更新为主文本块
+      console.log(`[ResponseCompletionHandler] 默认更新块 ${this.blockId} 状态为 SUCCESS`);
+      dispatchActions.push(() => {
+        store.dispatch(updateOneBlock({
+          id: this.blockId,
+          changes: {
+            content: accumulatedContent,
+            status: MessageBlockStatus.SUCCESS,
+            updatedAt: now
+          }
+        }));
+      });
+    }
+
+    // 3. 设置主题为非流式响应状态
+    dispatchActions.push(() => {
+      store.dispatch(newMessagesActions.setTopicStreaming({
+        topicId: this.topicId,
+        streaming: false
+      }));
+    });
+
+    // 4. 设置主题为非加载状态
+    dispatchActions.push(() => {
+      store.dispatch(newMessagesActions.setTopicLoading({
+        topicId: this.topicId,
+        loading: false
+      }));
+    });
+
+    // 批量执行所有 dispatch 操作，确保原子性
+    console.log(`[ResponseCompletionHandler] 批量执行 ${dispatchActions.length} 个 Redux 更新操作`);
+    dispatchActions.forEach(action => action());
+  }
+
+  /**
    * 触发话题自动命名
    */
   private triggerTopicNaming() {
-    try {
-      // 异步执行话题命名，不阻塞主流程
-      setTimeout(async () => {
+    // 修复：将错误处理移到 setTimeout 内部，确保能捕获异步错误
+    setTimeout(async () => {
+      try {
         // 获取最新的话题数据
         const topic = await dexieStorage.topics.get(this.topicId);
         if (topic && TopicNamingService.shouldNameTopic(topic)) {
@@ -522,9 +596,9 @@ export class ResponseCompletionHandler {
             console.log(`[ResponseCompletionHandler] 话题自动命名成功: ${newName}`);
           }
         }
-      }, 1000); // 延迟1秒执行，确保消息已完全保存
-    } catch (error) {
-      console.error('[ResponseCompletionHandler] 话题自动命名失败:', error);
-    }
+      } catch (error) {
+        console.error('[ResponseCompletionHandler] 话题自动命名失败:', error);
+      }
+    }, 1000); // 延迟1秒执行，确保消息已完全保存
   }
 }
