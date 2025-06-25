@@ -179,13 +179,19 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
     onSettingsChange({ ...settings, useSSML: checked });
   }, [settings, onSettingsChange]);
 
+  // 处理表单提交，防止默认行为
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+  }, []);
+
   return (
     <>
       <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
         微软Azure TTS API 设置
       </Typography>
 
-      <Stack spacing={3}>
+      <form onSubmit={handleSubmit}>
+        <Stack spacing={3}>
         <FormControl fullWidth variant="outlined">
           <TextField
             label="Azure API密钥"
@@ -388,7 +394,8 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
         <FormHelperText>
           启用SSML可以获得更精细的语音控制，包括语速、音调、停顿等效果
         </FormHelperText>
-      </Stack>
+        </Stack>
+      </form>
     </>
   );
 };

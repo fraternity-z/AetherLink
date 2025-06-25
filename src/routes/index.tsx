@@ -21,7 +21,13 @@ const TopicNamingSettings = lazy(() => import('../pages/Settings/DefaultModelSet
 const ModelProviderSettings = lazy(() => import('../pages/Settings/ModelProviderSettings'));
 const AddProviderPage = lazy(() => import('../pages/Settings/AddProviderPage'));
 const AboutPage = lazy(() => import('../pages/Settings/AboutPage'));
-const VoiceSettings = lazy(() => import('../pages/Settings/VoiceSettings'));
+// 导入语音设置页面
+const VoiceSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2'));
+const SiliconFlowTTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/SiliconFlowTTSSettings'));
+const OpenAITTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/OpenAITTSSettings'));
+const AzureTTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/AzureTTSSettings'));
+const CapacitorASRSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/CapacitorASRSettings'));
+const OpenAIWhisperSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/OpenAIWhisperSettings'));
 const WebSearchSettings = lazy(() => import('../pages/Settings/WebSearchSettings'));
 const AgentPromptsSettings = lazy(() => import('../pages/Settings/AgentPrompts'));
 const DevToolsPage = lazy(() => import('../pages/DevToolsPage'));
@@ -140,6 +146,11 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/add-provider" element={<AddProviderPage />} />
         <Route path="/settings/about" element={<AboutPage />} />
         <Route path="/settings/voice" element={<VoiceSettings />} />
+        <Route path="/settings/voice/tts/siliconflow" element={<SiliconFlowTTSSettings />} />
+        <Route path="/settings/voice/tts/openai" element={<OpenAITTSSettings />} />
+        <Route path="/settings/voice/tts/azure" element={<AzureTTSSettings />} />
+        <Route path="/settings/voice/asr/capacitor" element={<CapacitorASRSettings />} />
+        <Route path="/settings/voice/asr/openai-whisper" element={<OpenAIWhisperSettings />} />
         <Route path="/settings/data" element={<DataSettingsPage />} />
         <Route path="/settings/data/advanced-backup" element={<AdvancedBackupPage />} />
         <Route path="/settings/notion" element={<NotionSettings />} />

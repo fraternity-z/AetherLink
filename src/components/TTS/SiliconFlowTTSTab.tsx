@@ -84,6 +84,11 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
     onSettingsChange(prev => ({ ...prev, useStream: checked }));
   }, [onSettingsChange]);
 
+  // 处理表单提交，防止默认行为
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+  }, []);
+
   // 获取当前模型的语音选项
   const currentVoices = SILICONFLOW_VOICES[settings.selectedModel as keyof typeof SILICONFLOW_VOICES] || [];
 
@@ -101,7 +106,8 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
         硅基流动 TTS API 设置
       </Typography>
 
-      <Stack spacing={{ xs: 2, sm: 3 }}>
+      <form onSubmit={handleSubmit}>
+        <Stack spacing={{ xs: 2, sm: 3 }}>
         <FormControl fullWidth variant="outlined">
           <TextField
             label="API密钥"
@@ -208,7 +214,8 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
         <FormHelperText sx={{ mt: -1, ml: 0 }}>
           流式输出可以实现更快的语音响应，音频将边生成边播放
         </FormHelperText>
-      </Stack>
+        </Stack>
+      </form>
     </>
   );
 };

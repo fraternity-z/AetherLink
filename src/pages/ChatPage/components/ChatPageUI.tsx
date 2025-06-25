@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
 import MessageList from '../../../components/message/MessageList';
@@ -46,6 +47,8 @@ const ErrorBoundary: React.FC<{ children: React.ReactNode; fallback?: React.Reac
 };
 
 
+
+// 暂时移除MotionIconButton，直接使用motion.div包装
 
 // 默认设置常量 - 避免每次渲染时创建新对象
 const DEFAULT_TOP_TOOLBAR_SETTINGS = {
@@ -231,20 +234,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
     }
   }), [themeColors]);
 
-  // 优化：单独计算内容容器样式，只在必要时重新计算
-  const contentContainerStyle = useMemo(() => ({
-    flexGrow: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100vh',
-    overflow: 'hidden',
-    bgcolor: themeColors.background,
-    // 为桌面端侧边栏让出空间，实现推开模式而非覆盖模式
-    ...(drawerOpen && !isMobile ? {
-      paddingLeft: '320px', // 与侧边栏宽度保持一致
-      transition: 'padding-left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms' // 平滑过渡动画
-    } : {})
-  }), [themeColors.background, drawerOpen, isMobile]);
+  // contentContainerStyle已移除，样式直接在motion.div中定义
 
   // ==================== 事件处理函数 ====================
 
@@ -267,15 +257,21 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
     switch (componentId) {
       case 'menuButton':
         return shouldShow('showMenuButton') ? (
-          <IconButton
+          <motion.div
             key={componentId}
-            edge="start"
-            color="inherit"
-            onClick={() => setDrawerOpen(!drawerOpen)}
-            sx={{ mr: isDIYMode ? 0 : 1 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.1 }}
           >
-            <CustomIcon name="documentPanel" size={20} />
-          </IconButton>
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={() => setDrawerOpen(!drawerOpen)}
+              sx={{ mr: isDIYMode ? 0 : 1 }}
+            >
+              <CustomIcon name="documentPanel" size={20} />
+            </IconButton>
+          </motion.div>
         ) : null;
 
       case 'chatTitle':
@@ -294,28 +290,40 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
       case 'newTopicButton':
         return shouldShow('showNewTopicButton') ? (
-          <IconButton
+          <motion.div
             key={componentId}
-            color="inherit"
-            onClick={handleCreateTopic}
-            size="small"
-            sx={{ ml: isDIYMode ? 0 : 1 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.1 }}
           >
-            <Plus size={20} />
-          </IconButton>
+            <IconButton
+              color="inherit"
+              onClick={handleCreateTopic}
+              size="small"
+              sx={{ ml: isDIYMode ? 0 : 1 }}
+            >
+              <Plus size={20} />
+            </IconButton>
+          </motion.div>
         ) : null;
 
       case 'clearButton':
         return shouldShow('showClearButton') && currentTopic ? (
-          <IconButton
+          <motion.div
             key={componentId}
-            color="inherit"
-            onClick={handleClearTopic}
-            size="small"
-            sx={{ ml: isDIYMode ? 0 : 1 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.1 }}
           >
-            <Trash2 size={20} />
-          </IconButton>
+            <IconButton
+              color="inherit"
+              onClick={handleClearTopic}
+              size="small"
+              sx={{ ml: isDIYMode ? 0 : 1 }}
+            >
+              <Trash2 size={20} />
+            </IconButton>
+          </motion.div>
         ) : null;
 
       case 'modelSelector':
@@ -352,26 +360,42 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
       case 'searchButton':
         return shouldShow('showSearchButton') ? (
-          <IconButton
+          <motion.div
             key={componentId}
-            color={showSearch ? "primary" : "inherit"}
-            onClick={handleSearchClick}
-            sx={{
-              backgroundColor: showSearch ? 'action.selected' : 'transparent',
-              '&:hover': {
-                backgroundColor: showSearch ? 'action.hover' : 'action.hover'
-              }
-            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.1 }}
           >
-            <CustomIcon name="search" size={20} />
-          </IconButton>
+            <IconButton
+              color={showSearch ? "primary" : "inherit"}
+              onClick={handleSearchClick}
+              sx={{
+                backgroundColor: showSearch ? 'action.selected' : 'transparent',
+                '&:hover': {
+                  backgroundColor: showSearch ? 'action.hover' : 'action.hover'
+                }
+              }}
+            >
+              <CustomIcon name="search" size={20} />
+            </IconButton>
+          </motion.div>
         ) : null;
 
       case 'settingsButton':
         return shouldShow('showSettingsButton') ? (
-          <IconButton key={componentId} color="inherit" onClick={() => navigate('/settings')}>
-            <Settings size={20} />
-          </IconButton>
+          <motion.div
+            key={componentId}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.1 }}
+          >
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('/settings')}
+            >
+              <Settings size={20} />
+            </IconButton>
+          </motion.div>
         ) : null;
 
       default:
@@ -480,27 +504,28 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
   ]);
 
   const InputContainer = (
-    <Box sx={{
-      width: '100%',
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      zIndex: 2,
-      backgroundColor: 'transparent',
-      boxShadow: 'none',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 0,
-      // 响应侧边栏状态，实现推动效果
-      ...(drawerOpen && !isMobile ? {
-        paddingLeft: '320px', // 与侧边栏宽度保持一致
-        transition: 'padding-left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms' // 平滑过渡动画
-      } : {
-        transition: 'padding-left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms' // 确保关闭时也有过渡动画
-      })
-    }}>
+    <motion.div
+      animate={{
+        left: drawerOpen && !isMobile ? 320 : 0,
+        width: drawerOpen && !isMobile ? 'calc(100% - 320px)' : '100%'
+      }}
+      transition={{
+        duration: 0.2,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }}
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        right: 0,
+        zIndex: 2,
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0,
+      }}
+    >
       {shouldShowToolbar && (
         <Box sx={{
           width: '100%',
@@ -530,7 +555,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
       }}>
         {inputComponent}
       </Box>
-    </Box>
+    </motion.div>
   );
 
   // ==================== 组件渲染 ====================
@@ -539,7 +564,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
     <Box
       sx={baseStyles.mainContainer}
     >
-      {/* 统一的侧边栏组件 */}
+      {/* 统一的侧边栏组件 - 使用Framer Motion优化 */}
       <Sidebar
         mcpMode={mcpMode}
         toolsEnabled={toolsEnabled}
@@ -554,8 +579,24 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
         })}
       />
 
-      {/* 主内容区域 */}
-      <Box sx={contentContainerStyle}>
+      {/* 主内容区域 - 使用motion处理margin动画 */}
+      <motion.div
+        animate={{
+          marginLeft: drawerOpen && !isMobile ? 320 : 0
+        }}
+        transition={{
+          duration: 0.2,
+          ease: [0.25, 0.46, 0.45, 0.94]
+        }}
+        style={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          overflow: 'hidden',
+          backgroundColor: themeColors.background,
+        }}
+      >
         {/* 顶部应用栏 */}
         <AppBar
           position="static"
@@ -577,19 +618,22 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
                   if (!component) return null;
 
                   return (
-                    <Box
+                    <motion.div
                       key={position.id}
-                      sx={{
-                        position: 'absolute',
+                      animate={{
                         left: `${position.x}%`,
                         top: `${position.y}%`,
+                      }}
+                      style={{
+                        position: 'absolute',
                         transform: 'translate(-50%, -50%)',
                         zIndex: 10,
-                        userSelect: 'none' // 禁止DIY布局组件文本选择
+                        userSelect: 'none', // 禁止DIY布局组件文本选择
                       }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
                     >
                       {component}
-                    </Box>
+                    </motion.div>
                   );
                 })}
               </>
@@ -669,7 +713,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
             </>
           )}
         </Box>
-      </Box>
+      </motion.div>
 
 
     </Box>

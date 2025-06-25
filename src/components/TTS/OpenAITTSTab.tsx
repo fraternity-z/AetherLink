@@ -94,13 +94,19 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
     onSettingsChange({ ...settings, useStream: checked });
   }, [settings, onSettingsChange]);
 
+  // 处理表单提交，防止默认行为
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+  }, []);
+
   return (
     <>
       <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
         OpenAI TTS API 设置
       </Typography>
 
-      <Stack spacing={3}>
+      <form onSubmit={handleSubmit}>
+        <Stack spacing={3}>
         <FormControl fullWidth variant="outlined">
           <TextField
             label="OpenAI API密钥"
@@ -225,7 +231,8 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
         <FormHelperText>
           流式传输可以更快地开始播放，但可能影响音质
         </FormHelperText>
-      </Stack>
+        </Stack>
+      </form>
     </>
   );
 };
