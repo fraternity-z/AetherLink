@@ -122,30 +122,42 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
 
   return (
     <Box sx={{ mb: 2, position: 'relative' }}>
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'center',
-        mb: 1,
-        p: 1,
-        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-        borderRadius: 1,
-        border: `1px solid ${theme.palette.divider}`
-      }}>
+      <Box
+        onClick={onToggleExpanded}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          mb: 1,
+          p: 1,
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+          borderRadius: 1,
+          border: `1px solid ${theme.palette.divider}`,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+          }
+        }}>
         <Brain size={16} color={theme.palette.primary.main} style={{ marginRight: 8 }} />
         <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
           {isThinking ? '正在思考...' : '思考完成'} ({formattedThinkingTime}s)
         </Typography>
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={onToggleExpanded}>
-            <ChevronDown
-              size={14}
-              style={{
-                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s'
-              }}
-            />
-          </IconButton>
-          <IconButton size="small" onClick={onCopy} color={copied ? "success" : "default"}>
+          <ChevronDown
+            size={14}
+            style={{
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s'
+            }}
+          />
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopy(e);
+            }}
+            color={copied ? "success" : "default"}
+          >
             <Copy size={14} />
           </IconButton>
         </Box>
