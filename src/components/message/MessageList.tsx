@@ -8,6 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { throttle } from 'lodash';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import { useTranslation } from 'react-i18next';
 
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
@@ -56,6 +57,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   const theme = useTheme();
   const dispatch = useDispatch();
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+  const { t } = useTranslation();
 
   // 修复：添加错误状态管理
   const [error, setError] = useState<string | null>(null);
@@ -152,7 +154,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     };
 
     loadTopicAndAssistant();
-  }, [currentTopicId]);
+  }, [currentTopicId, handleError]);
 
   //  优化：监听助手更新事件，使用ref避免重复渲染
   const currentAssistantRef = useRef(currentAssistant);
@@ -264,7 +266,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
         scrollManagerRef.current.isScrolling = false;
       }
     };
-  }, [scrollToBottom, autoScrollToBottom]);
+  }, [scrollToBottom, autoScrollToBottom, handleError]);
 
   // 使用 ref 存储统一滚动管理器，避免闭包问题
   const unifiedScrollManagerRef = useRef(unifiedScrollManager);
@@ -485,7 +487,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
         dispatch(upsertManyBlocks(blocksToLoad as any));
       }
     }, 300), // 300ms节流，避免频繁加载
-    [] // 空依赖数组，避免重建
+    [handleError] // 添加handleError依赖
   );
 
   useEffect(() => {
@@ -667,7 +669,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
             fontSize: '14px',
           }}
         >
-          新的对话开始了，请输入您的问题
+          {t('chat.newConversation')}
         </Box>
       ) : (
         // 修复：使用无限滚动优化性能，正确配置滚动方向

@@ -3,6 +3,7 @@ import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
+import { useTranslation } from 'react-i18next';
 
 import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
@@ -29,8 +30,10 @@ interface DebateConfig {
 // 简单的错误边界组件
 const ErrorBoundary: React.FC<{ children: React.ReactNode; fallback?: React.ReactNode }> = ({
   children,
-  fallback = <Typography color="error">组件加载出错，请刷新页面重试</Typography>
+  fallback
 }) => {
+  const { t } = useTranslation();
+  const defaultFallback = <Typography color="error">{t('chat.componentError')}</Typography>;
   const [hasError, setHasError] = React.useState(false);
 
   React.useEffect(() => {
@@ -40,7 +43,7 @@ const ErrorBoundary: React.FC<{ children: React.ReactNode; fallback?: React.Reac
   }, []);
 
   if (hasError) {
-    return <>{fallback}</>;
+    return <>{fallback ?? defaultFallback}</>;
   }
 
   return <>{children}</>;

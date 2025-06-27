@@ -23,6 +23,7 @@ import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../sh
 import type { DebateConfig } from '../../shared/services/AIDebateService';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { VoiceButton, EnhancedVoiceInput } from '../VoiceRecognition';
+import { useTranslation } from 'react-i18next';
 
 
 interface CompactChatInputProps {
@@ -68,6 +69,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   toggleWebSearch,
   toggleToolsEnabled
 }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [showProviderSelector, setShowProviderSelector] = useState(false);
   const [showKnowledgeSelector, setShowKnowledgeSelector] = useState(false);
@@ -808,12 +810,12 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
             }}
             placeholder={
               !isActivated
-                ? "和ai助手说点什么..." // 冷激活状态的简化placeholder
+                ? t('input.placeholder.default')
                 : imageGenerationMode
-                  ? "输入图像生成提示词... (Ctrl+Enter 全展开)"
+                  ? t('input.placeholder.imageGeneration')
                   : webSearchActive
-                    ? "输入网络搜索内容... (Ctrl+Enter 全展开)"
-                    : "和ai助手说点什么... (Ctrl+Enter 全展开)"
+                    ? t('input.placeholder.webSearch')
+                    : t('input.placeholder.defaultExpanded')
             }
             value={message}
             onChange={handleInputChange}

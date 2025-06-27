@@ -458,9 +458,295 @@
         "baseUrl": "Base URL",
         "apiKey": "API Key"
       }
+    },
+    "knowledge": {
+      "title": "Knowledge Base Settings",
+      "stats": {
+        "title": "Knowledge Base Statistics",
+        "subtitle": "View usage and storage statistics of your knowledge base",
+        "bases": "KB Count",
+        "documents": "Document Count",
+        "vectors": "Vector Count",
+        "storage": "Storage Size"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "subtitle": "Create and manage knowledge bases quickly",
+        "create": "Create KB",
+        "manage": "Manage KB",
+        "emptyTip": "You haven't created any knowledge base yet. Click \"Create KB\" to get started."
+      },
+      "config": {
+        "title": "KB Configuration Guide",
+        "subtitle": "Learn about KB parameters and usage",
+        "info": "Embedding model, chunk size, similarity threshold and other parameters are set when creating a KB. Each KB can have its own configuration.",
+        "details": {
+          "embeddingModel": "<0>Embedding Model</0>: Converts text into vectors. Different models have different effects and dimensions",
+          "chunkSize": "<0>Chunk Size</0>: Size of each document chunk, affecting search accuracy and context length",
+          "similarity": "<0>Similarity Threshold</0>: Minimum similarity score of search results. Higher is more precise",
+          "docCount": "<0>Document Count</0>: Number of document chunks returned during search, affecting answer detail"
+        }
+      },
+      "data": {
+        "title": "Data Management",
+        "subtitle": "Export backup and clear KB data",
+        "noData": "No knowledge base found. Please create one first before managing data.",
+        "warning": "Data management actions affect all KBs. Proceed with caution. It's recommended to export backup first.",
+        "createFirst": "Create First KB",
+        "export": "Export Data",
+        "clear": "Clear All Data"
+      },
+      "dialogs": {
+        "clear": {
+          "title": "Confirm clearing all KB data",
+          "content": "This will delete all knowledge bases, documents and vectors irreversibly. Continue?",
+          "cancel": "Cancel",
+          "confirm": "Clear"
+        },
+        "export": {
+          "title": "Export KB Data",
+          "content": "All KBs and documents will be exported as a JSON file for backup or migration.",
+          "cancel": "Cancel",
+          "confirm": "Export"
+        }
+      },
+      "createDialog": {
+        "createTitle": "Create KB",
+        "editTitle": "Edit KB",
+        "name": "KB Name",
+        "nameHelper": "Give your KB a descriptive name",
+        "embeddingModel": "Embedding Model",
+        "embeddingModelHelper": "Model used to convert text into vectors",
+        "noModels": "No embedding models found. Please configure them in settings first.",
+        "requestDocs": "Requested document chunks: {{count}}",
+        "advanced": "Advanced Settings",
+        "chunkSize": "Chunk Size",
+        "chunkSizeHelper": "Size of each chunk when splitting document (characters)",
+        "overlap": "Overlap Size",
+        "overlapHelper": "Number of overlapping characters between chunks",
+        "similarityThreshold": "Similarity Threshold",
+        "thresholdHelper": "Minimum similarity score of search results. Higher is more precise",
+        "cancel": "Cancel",
+        "create": "Create",
+        "update": "Update",
+        "saving": "Saving..."
+      }
+    },
+    "data": {
+      "title": "Data Management",
+      "backupHeader": {
+        "title": "Data Backup & Restore",
+        "subtitle": "Backup your conversations and assistant data so you can restore them after switching devices or reinstalling the app"
+      },
+      "buttons": {
+        "basicBackup": "Backup Chats & Assistants",
+        "fullBackup": "Full System Backup",
+        "selectiveBackup": "Selective Backup",
+        "restore": "Import Backup File & Restore",
+        "importExternal": "Import Backup from Other Assistant",
+        "clearAll": "Clear All Assistants & Topics",
+        "webdavSettings": "WebDAV Backup Settings",
+        "webdavBackup": "Backup to WebDAV",
+        "webdavRestore": "Restore from WebDAV",
+        "diagnoseDatabase": "Database Diagnose & Repair"
+      },
+      "status": {
+        "backingUp": "Backing up...",
+        "restoring": "Restoring..."
+      },
+      "localFiles": {
+        "title": "Local Backup Files",
+        "notFound": "No local backup files found",
+        "refresh": "Refresh",
+        "unknownDate": "Unknown date",
+        "dateFormatError": "Date format error",
+        "types": {
+          "full": "Full Backup",
+          "custom": "Custom Backup",
+          "basic": "Basic Backup"
+        }
+      },
+      "dialogs": {
+        "clearConfirm": {
+          "title": "Confirm clearing all assistants and topics",
+          "content": "This will delete all assistants and conversations and cannot be undone. Continue?",
+          "cancel": "Cancel",
+          "confirm": "Clear"
+        }
+      }
+    },
+    "notion": {
+      "title": "Notion Integration Settings",
+      "header": {
+        "title": "Notion Integration Configuration",
+        "desc": "Configure Notion integration to export conversations to your Notion database.",
+        "tutorial": "View Tutorial"
+      },
+      "toggle": {
+        "enable": "Enable Notion Export"
+      },
+      "form": {
+        "apiKey": "Notion API Key",
+        "apiKeyPlaceholder": "secret_xxxxxxxxxxxxxxxxxxxxx",
+        "apiKeyHelper": "Create an integration at https://www.notion.so/my-integrations and copy the API key",
+        "databaseId": "Database ID",
+        "databaseIdPlaceholder": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "databaseIdHelper": "Part of the ID extracted from the Notion database URL",
+        "pageTitle": "Page Title Field",
+        "pageTitlePlaceholder": "Name",
+        "pageTitleHelper": "The field used as title in database, usually 'Name' or '名称'",
+        "dateField": "Created Date Field (optional)",
+        "dateFieldPlaceholder": "Created Date",
+        "dateFieldHelper": "If the database has a date field, enter its name; leave blank to skip"
+      },
+      "buttons": {
+        "test": "Test Connection",
+        "testing": "Testing..."
+      },
+      "messages": {
+        "missingFields": "Please fill API key and Database ID first",
+        "connectionSuccess": "Connected! Database '{{db}}' is ready",
+        "connectionFailed": "Connection failed: {{msg}}",
+        "titleFieldMissing": "Title field '{{field}}' not found in database"
+      },
+      "corsInfo": "About CORS issue:",
+      "corsTips": [
+        "Web proxy is pre-configured for development, mobile app bundles CORS bypass plugin.",
+        "For production, consider:",
+        "1. Using mobile app (auto CORS bypass)",
+        "2. Configuring server-side proxy",
+        "3. Hosting in CORS-friendly environment",
+        "Note: restart dev server after proxy changes take effect."
+      ],
+      "setup": {
+        "title": "Setup Steps:",
+        "steps": [
+          "Visit Notion Integrations and create a new integration",
+          "Copy generated API key and paste into 'Notion API Key' field",
+          "Create a database in Notion and share it with the integration",
+          "Copy database ID from URL and paste into 'Database ID' field",
+          "Confirm the title field name in database, usually 'Name' or localized version",
+          "(Optional) Enter created date field name if needed",
+          "Click 'Test Connection' to verify settings"
+        ]
+      }
+    },
+    "voice": {
+      "title": "Voice Feature Settings",
+      "tabs": {
+        "tts": "Text to Speech (TTS)",
+        "asr": "Speech Recognition (ASR)"
+      },
+      "status": {
+        "recommended": "Recommended",
+        "premium": "Premium",
+        "enterprise": "Enterprise",
+        "free": "Free"
+      }
+    },
+    "about": {
+      "title": "About Us",
+      "appTitle": "About AetherLink",
+      "appDesc1": "AetherLink is a powerful AI assistant app that supports multiple large language models to help you work more efficiently.",
+      "appDesc2": "We are committed to providing users with the best AI assistance experience, bringing AI technology to everyone.",
+      "community": {
+        "title": "User Community",
+        "desc": "If you have questions or suggestions, feel free to join our QQ group for feedback",
+        "groupNumber": "Group No.: 930126592",
+        "join": "Join QQ Group"
+      },
+      "version": "Version: {{ver}}",
+      "buttons": {
+        "github": "GitHub",
+        "devTools": "Dev Tools"
+      }
+    },
+    "sidebar": {
+      "tabs": {
+        "assistants": "Assistants",
+        "topics": "Topics",
+        "settings": "Settings"
+      }
     }
-  },
-  "common": {
+     },
+   "sidebar": {
+     "tabs": {
+       "assistants": "Assistants",
+       "topics": "Topics", 
+       "settings": "Settings"
+     },
+     "assistants": {
+       "title": "All Assistants",
+       "searchPlaceholder": "Search assistants...",
+       "createGroup": "Create Group",
+       "addAssistant": "Add Assistant",
+       "ungroupedTitle": "Ungrouped Assistants",
+       "emptyUngrouped": "No ungrouped assistants",
+       "emptyGroup": "This group has no assistants, please add from ungrouped assistants",
+       "noGroups": "No assistant groups",
+       "menu": {
+         "addToGroup": "Add to Group...",
+         "editAssistant": "Edit Assistant",
+         "changeIcon": "Change Icon",
+         "copyAssistant": "Copy Assistant",
+         "clearTopics": "Clear Topics",
+         "sortPinyinAsc": "Sort by Pinyin Ascending",
+         "sortPinyinDesc": "Sort by Pinyin Descending",
+         "deleteAssistant": "Delete Assistant",
+         "createNewGroup": "Create New Group..."
+       }
+     },
+     "topics": {
+       "title": "All Topics",
+       "assistantTopics": "{{assistantName}}'s Topics",
+       "emptyMessage": "This assistant has no topics, click the \"+\" button above to create a new topic.",
+       "newTopic": "New Topic",
+       "ungroupedTitle": "Ungrouped Topics",
+       "emptyUngrouped": "No topics",
+       "emptyGroup": "This group has no topics, please add from ungrouped topics",
+       "menu": {
+         "addToGroup": "Add to Group...",
+         "editTopic": "Edit Topic",
+         "autoRename": "Auto Rename Topic",
+         "togglePin": "Pin Topic",
+         "toggleUnpin": "Unpin Topic",
+         "clearMessages": "Clear Messages",
+         "moveTo": "Move to...",
+         "copyMarkdown": "Copy as Markdown",
+         "exportMarkdown": "Export as Markdown",
+         "deleteTopic": "Delete Topic",
+         "createNewGroup": "Create New Group..."
+       }
+     }
+   },
+   "input": {
+     "placeholder": {
+       "default": "Say something to the AI assistant...",
+       "defaultExpanded": "Say something to the AI assistant... (Ctrl+Enter to expand)",
+       "imageGeneration": "Enter image generation prompt... (Ctrl+Enter to expand)",
+       "webSearch": "Enter web search content... (Ctrl+Enter to expand)"
+     },
+     "toolbar": {
+       "newTopic": "New Topic",
+       "clearTopic": "Clear Content",
+       "clearConfirm": "Confirm Clear",
+       "generateImage": "Generate Image",
+       "cancelGenerate": "Cancel Generation",
+       "generateVideo": "Generate Video",
+       "tools": "Tools",
+       "mcpTools": "MCP Tools",
+       "knowledge": "Knowledge Base",
+       "webSearch": "Web Search"
+     }
+   },
+   "message": {
+     "generating": "Generating response..."
+   },
+   "chat": {
+       "componentError": "Component failed to load, please refresh the page.",
+       "newConversation": "New conversation started, please enter your question"
+      },
+    "common": {
     "add": "Add",
     "save": "Save",
     "cancel": "Cancel",

@@ -458,15 +458,294 @@
         "baseUrl": "基础 URL",
         "apiKey": "API 密钥"
       }
+    },
+    "knowledge": {
+      "title": "知识库设置",
+      "stats": {
+        "title": "知识库统计",
+        "subtitle": "查看知识库的使用情况和存储统计",
+        "bases": "知识库数量",
+        "documents": "文档数量",
+        "vectors": "向量数量",
+        "storage": "存储大小"
+      },
+      "quickActions": {
+        "title": "快速操作",
+        "subtitle": "创建和管理知识库的快捷操作",
+        "create": "创建知识库",
+        "manage": "管理知识库",
+        "emptyTip": "您还没有创建任何知识库。点击\"创建知识库\"开始使用知识库功能。"
+      },
+      "config": {
+        "title": "知识库配置说明",
+        "subtitle": "了解知识库的各项配置参数和使用说明",
+        "info": "知识库的嵌入模型、分块大小、相似度阈值等参数在创建知识库时设置，每个知识库可以有不同的配置。",
+        "details": {
+          "embeddingModel": "<0>嵌入模型</0>：用于将文本转换为向量，不同模型有不同的效果和维度",
+          "chunkSize": "<0>分块大小</0>：文档分割的块大小，影响搜索精度和上下文长度",
+          "similarity": "<0>相似度阈值</0>：搜索结果的最低相似度，越高结果越精确",
+          "docCount": "<0>文档数量</0>：搜索时返回的文档段数量，影响回答的详细程度"
+        }
+      },
+      "data": {
+        "title": "数据管理",
+        "subtitle": "导出备份和清理知识库数据",
+        "noData": "您还没有创建任何知识库。请先创建知识库后再进行数据管理操作。",
+        "warning": "数据管理操作会影响所有知识库，请谨慎操作。建议在操作前先导出备份。",
+        "createFirst": "创建第一个知识库",
+        "export": "导出数据",
+        "clear": "清理所有数据"
+      },
+      "dialogs": {
+        "clear": {
+          "title": "确认清理所有知识库数据",
+          "content": "此操作将删除所有知识库、文档和向量数据，且无法恢复。确定要继续吗？",
+          "cancel": "取消",
+          "confirm": "确认清理"
+        },
+        "export": {
+          "title": "导出知识库数据",
+          "content": "将导出所有知识库和文档数据为JSON文件，可用于备份或迁移。",
+          "cancel": "取消",
+          "confirm": "确认导出"
+        }
+      },
+      "createDialog": {
+        "createTitle": "创建知识库",
+        "editTitle": "编辑知识库",
+        "name": "知识库名称",
+        "nameHelper": "给知识库起一个描述性的名称",
+        "embeddingModel": "嵌入模型",
+        "embeddingModelHelper": "用于将文本转换为向量的模型",
+        "noModels": "未找到可用的嵌入模型，请先在设置中配置",
+        "requestDocs": "请求文档段数量: {{count}}",
+        "advanced": "高级设置",
+        "chunkSize": "分块大小",
+        "chunkSizeHelper": "将文档分割成的块的大小（字符数）",
+        "overlap": "重叠大小",
+        "overlapHelper": "每个块之间重叠的字符数",
+        "similarityThreshold": "相似度阈值",
+        "thresholdHelper": "搜索结果的最低相似度分数，值越高结果越精确",
+        "cancel": "取消",
+        "create": "创建",
+        "update": "更新",
+        "saving": "保存中..."
+      }
+    },
+    "data": {
+      "title": "数据管理",
+      "backupHeader": {
+        "title": "数据备份与恢复",
+        "subtitle": "备份您的对话和助手数据，以便在更换设备或重新安装应用后恢复"
+      },
+      "buttons": {
+        "basicBackup": "备份聊天和助手",
+        "fullBackup": "完整系统备份",
+        "selectiveBackup": "选择性备份",
+        "restore": "导入备份文件并恢复",
+        "importExternal": "导入其他AI助手备份",
+        "clearAll": "清理全部助手和话题",
+        "webdavSettings": "WebDAV 云备份设置",
+        "webdavBackup": "备份到 WebDAV",
+        "webdavRestore": "从 WebDAV 恢复",
+        "diagnoseDatabase": "数据库诊断与修复"
+      },
+      "status": {
+        "backingUp": "备份中...",
+        "restoring": "恢复中..."
+      },
+      "localFiles": {
+        "title": "本地备份文件",
+        "notFound": "未找到本地备份文件",
+        "refresh": "刷新",
+        "unknownDate": "未知日期",
+        "dateFormatError": "日期格式错误",
+        "types": {
+          "full": "完整备份",
+          "custom": "自定义备份",
+          "basic": "基本备份"
+        }
+      },
+      "dialogs": {
+        "clearConfirm": {
+          "title": "确认清理所有助手和话题",
+          "content": "此操作将删除全部助手和话题，且无法恢复。是否继续？",
+          "cancel": "取消",
+          "confirm": "清理"
+        }
+      }
+    },
+    "notion": {
+      "title": "Notion 集成设置",
+      "header": {
+        "title": "Notion 集成配置",
+        "desc": "配置 Notion 集成，将对话导出到您的 Notion 数据库。",
+        "tutorial": "查看配置教程"
+      },
+      "toggle": {
+        "enable": "启用 Notion 导出"
+      },
+      "form": {
+        "apiKey": "Notion API 密钥",
+        "apiKeyPlaceholder": "secret_xxxxxxxxxxxxxxxxxxxxx",
+        "apiKeyHelper": "在 https://www.notion.so/my-integrations 创建集成并复制 API 密钥",
+        "databaseId": "数据库 ID",
+        "databaseIdPlaceholder": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "databaseIdHelper": "从 Notion 数据库 URL 中提取的 ID 部分",
+        "pageTitle": "页面标题字段名",
+        "pageTitlePlaceholder": "Name",
+        "pageTitleHelper": "数据库中用作标题的字段，通常为 'Name' 或 '名称'",
+        "dateField": "创建日期字段名（可选）",
+        "dateFieldPlaceholder": "创建日期",
+        "dateFieldHelper": "如果数据库中有日期字段，请填入字段名称；留空则不添加日期信息"
+      },
+      "buttons": {
+        "test": "测试连接",
+        "testing": "测试中..."
+      },
+      "messages": {
+        "missingFields": "请先填写 API 密钥和数据库 ID",
+        "connectionSuccess": "连接成功！数据库 '{{db}}' 已就绪",
+        "connectionFailed": "连接失败: {{msg}}",
+        "titleFieldMissing": "数据库中未找到标题字段 '{{field}}'，请检查字段名称是否正确"
+      },
+      "corsInfo": "关于跨域问题：",
+      "corsTips": [
+        "Web 端开发环境已配置代理，可直接使用；移动端应用已配置 CORS 绕过插件。",
+        "生产环境如遇跨域错误，建议：",
+        "1. 使用移动应用版本（自动绕过 CORS）",
+        "2. 配置服务器代理",
+        "3. 部署到支持 CORS 的环境",
+        "注意：修改代理配置后请重启开发服务器以生效。"
+      ],
+      "setup": {
+        "title": "配置步骤：",
+        "steps": [
+          "访问 Notion Integrations 创建一个新的集成",
+          "复制生成的 API 密钥并填入上方 \"Notion API 密钥\" 字段",
+          "在 Notion 中创建一个数据库，并将集成连接到该数据库",
+          "从数据库 URL 中复制数据库 ID 并填入 \"数据库 ID\" 字段",
+          "确认数据库中标题字段的名称，通常为 \"Name\" 或 \"名称\"",
+          "（可选）如果需要添加创建日期，请填入数据库中日期字段的名称",
+          "点击 \"测试连接\" 按钮验证配置是否正确"
+        ]
+      }
+    },
+    "voice": {
+      "title": "语音功能设置",
+      "tabs": {
+        "tts": "语音合成 (TTS)",
+        "asr": "语音识别 (ASR)"
+      },
+      "status": {
+        "recommended": "推荐",
+        "premium": "付费",
+        "enterprise": "企业级",
+        "free": "免费"
+      }
+    },
+    "about": {
+      "title": "关于我们",
+      "appTitle": "关于AetherLink",
+      "appDesc1": "AetherLink是一个强大的AI助手应用，支持多种大语言模型，帮助您更高效地完成工作。",
+      "appDesc2": "我们致力于为用户提供最佳的AI辅助体验，让人工智能技术真正帮助到每一个人。",
+      "community": {
+        "title": "用户交流群",
+        "desc": "如有问题或建议，欢迎加入我们的QQ群进行反馈",
+        "groupNumber": "群号: 930126592",
+        "join": "加入QQ群"
+      },
+      "version": "版本: {{ver}}",
+      "buttons": {
+        "github": "GitHub",
+        "devTools": "开发者工具"
+      }
+    },
+    "sidebar": {
+      "tabs": {
+        "assistants": "助手",
+        "topics": "话题",
+        "settings": "设置"
+      },
+      "assistants": {
+        "title": "所有助手",
+        "searchPlaceholder": "搜索助手...",
+        "createGroup": "创建分组",
+        "addAssistant": "添加助手",
+        "ungroupedTitle": "未分组助手",
+        "emptyUngrouped": "暂无未分组助手",
+        "emptyGroup": "此分组暂无助手，请从未分组助手中添加",
+        "noGroups": "没有助手分组",
+        "menu": {
+          "addToGroup": "添加到分组...",
+          "editAssistant": "编辑助手",
+          "changeIcon": "修改图标",
+          "copyAssistant": "复制助手",
+          "clearTopics": "清空话题",
+          "sortPinyinAsc": "按拼音升序排列",
+          "sortPinyinDesc": "按拼音降序排列",
+          "deleteAssistant": "删除助手",
+          "createNewGroup": "创建新分组..."
+        }
+      },
+      "topics": {
+        "title": "所有话题",
+        "assistantTopics": "{{assistantName}}的话题",
+        "emptyMessage": "此助手没有话题，点击上方的\"+\"按钮创建一个新话题。",
+        "newTopic": "新建话题",
+        "ungroupedTitle": "未分组话题",
+        "emptyUngrouped": "暂无话题",
+        "emptyGroup": "此分组暂无话题，请从未分组话题中添加",
+        "menu": {
+          "addToGroup": "添加到分组...",
+          "editTopic": "编辑话题",
+          "autoRename": "自动命名话题",
+          "togglePin": "固定话题",
+          "toggleUnpin": "取消固定",
+          "clearMessages": "清空消息",
+          "moveTo": "移动到...",
+          "copyMarkdown": "复制为Markdown",
+          "exportMarkdown": "导出为Markdown",
+          "deleteTopic": "删除话题",
+          "createNewGroup": "创建新分组..."
+        }
+      }
+    },
+    "input": {
+      "placeholder": {
+        "default": "和ai助手说点什么...",
+        "defaultExpanded": "和ai助手说点什么... (Ctrl+Enter 全展开)",
+        "imageGeneration": "输入图像生成提示词... (Ctrl+Enter 全展开)",
+        "webSearch": "输入网络搜索内容... (Ctrl+Enter 全展开)"
+      },
+      "toolbar": {
+        "newTopic": "新建话题",
+        "clearTopic": "清空内容",
+        "clearConfirm": "确认清空",
+        "generateImage": "生成图片",
+        "cancelGenerate": "取消生成",
+        "generateVideo": "生成视频",
+        "tools": "工具",
+        "mcpTools": "MCP工具",
+        "knowledge": "知识库",
+        "webSearch": "网络搜索"
+      }
+    },
+    "message": {
+      "generating": "正在生成回复..."
+    },
+    "chat": {
+      "componentError": "组件加载出错，请刷新页面重试",
+      "newConversation": "新的对话开始了，请输入您的问题"
+    },
+    "common": {
+      "add": "添加",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除",
+      "import": "导入",
+      "close": "关闭",
+      "unknownError": "未知错误"
     }
-  },
-  "common": {
-    "add": "添加",
-    "save": "保存",
-    "cancel": "取消",
-    "delete": "删除",
-    "import": "导入",
-    "close": "关闭",
-    "unknownError": "未知错误"
   }
 }
