@@ -4,6 +4,7 @@ import type { RootState } from '../shared/store';
 import { loadTopicMessagesThunk } from '../shared/store/slices/newMessagesSlice';
 import { EventEmitter, EVENT_NAMES } from '../shared/services/EventService';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
+import { topicCacheManager } from '../shared/services/TopicCacheManager';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
 
 /**
@@ -33,7 +34,7 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     }
   }, []);
 
-  // 提取共用的话题获取逻辑
+  // 提取共用的话题获取逻辑 - 使用缓存管理器
   const findTopicById = useCallback(async (topicId: string): Promise<ChatTopic | null> => {
     // 优先从 Redux 中查找
     const topicFromRedux = reduxTopics.find(t => t.id === topicId);
@@ -41,9 +42,9 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
       return topicFromRedux;
     }
 
-    // 从数据库查找
+    // 使用缓存管理器从数据库查找，避免重复查询
     try {
-      const topic = await dexieStorage.getTopic(topicId);
+      const topic = await topicCacheManager.getTopic(topicId);
       return topic;
     } catch (error) {
       console.error(`[useActiveTopic] 获取话题 ${topicId} 失败:`, error);
@@ -60,7 +61,7 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
     // 使用助手的 topicIds
     if (Array.isArray(topicIds) && topicIds.length > 0) {
-      const firstTopic = await dexieStorage.getTopic(topicIds[0]);
+      const firstTopic = await topicCacheManager.getTopic(topicIds[0]);
       if (firstTopic) {
         return firstTopic;
       }

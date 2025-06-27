@@ -3,6 +3,7 @@ import type { EntityState, PayloadAction } from '@reduxjs/toolkit';
 import type { Message, AssistantMessageStatus } from '../../types/newMessage.ts';
 import type { RootState } from '../index';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
+import { topicCacheManager } from '../../services/TopicCacheManager';
 import { upsertManyBlocks } from './messageBlocksSlice';
 
 // 1. 创建实体适配器
@@ -460,8 +461,8 @@ export const loadTopicMessagesThunk = createAsyncThunk(
 
       dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
 
-      // 直接从topic获取消息
-      const topic = await dexieStorage.getTopic(topicId);
+      // 直接从topic获取消息 - 使用缓存管理器
+      const topic = await topicCacheManager.getTopic(topicId);
       if (!topic) {
         // 如果topic不存在就创建一个空的
         await dexieStorage.saveTopic({
