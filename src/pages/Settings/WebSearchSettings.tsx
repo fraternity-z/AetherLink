@@ -63,10 +63,12 @@ import {
   setSelectedSearchEngine
 } from '../../shared/store/slices/webSearchSlice';
 import type { RootState } from '../../shared/store';
+import { useTranslation } from 'react-i18next';
 
 const WebSearchSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   // 从Redux获取设置
   const webSearchSettings = useSelector((state: RootState) => state.webSearch) || {
@@ -248,7 +250,7 @@ const WebSearchSettings: React.FC = () => {
               color: (theme) => theme.palette.text.primary,
             }}
           >
-            <LanguageIcon size={24} color="#3b82f6" style={{ marginRight: 8 }} /> 网络搜索设置
+            <LanguageIcon size={24} color="#3b82f6" style={{ marginRight: 8 }} /> {t('settings.webSearch.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -289,7 +291,7 @@ const WebSearchSettings: React.FC = () => {
               mb: 2,
             }}
           >
-            基本设置
+            {t('settings.webSearch.basic.title')}
           </Typography>
 
           <FormGroup>
@@ -302,8 +304,8 @@ const WebSearchSettings: React.FC = () => {
               }
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography sx={{ mr: 1 }}>启用网络搜索</Typography>
-                  <Tooltip title="开启后，AI可以通过网络搜索获取最新信息">
+                  <Typography sx={{ mr: 1 }}>{t('settings.webSearch.basic.enable')}</Typography>
+                  <Tooltip title={t('settings.webSearch.basic.enableTip')}>
                     <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                   </Tooltip>
                 </Box>
@@ -314,24 +316,24 @@ const WebSearchSettings: React.FC = () => {
           <Divider sx={{ my: 2 }} />
 
           <FormControl fullWidth margin="normal">
-            <InputLabel id="search-provider-label">搜索服务商</InputLabel>
+            <InputLabel id="search-provider-label">{t('settings.webSearch.basic.provider')}</InputLabel>
             <Select
               labelId="search-provider-label"
               value={webSearchSettings.provider}
               onChange={handleProviderChange}
-              input={<OutlinedInput label="搜索服务商" />}
+              input={<OutlinedInput label={t('settings.webSearch.basic.provider')} />}
               disabled={!webSearchSettings.enabled}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="bing-free">🆓 Bing 免费搜索 (推荐)</MenuItem>
-              <MenuItem value="tavily">💎 Tavily (付费)</MenuItem>
-              <MenuItem value="exa">🧠 Exa (神经搜索)</MenuItem>
-              <MenuItem value="bocha">🤖 Bocha (AI搜索)</MenuItem>
-              <MenuItem value="firecrawl"> Firecrawl (网页抓取)</MenuItem>
-              <MenuItem value="custom">⚙️ 自定义服务</MenuItem>
+              <MenuItem value="bing-free">🆓 {t('settings.webSearch.providers.bing')}</MenuItem>
+              <MenuItem value="tavily">💎 {t('settings.webSearch.providers.tavily')}</MenuItem>
+              <MenuItem value="exa">🧠 {t('settings.webSearch.providers.exa')}</MenuItem>
+              <MenuItem value="bocha">🤖 {t('settings.webSearch.providers.bocha')}</MenuItem>
+              <MenuItem value="firecrawl">{t('settings.webSearch.providers.firecrawl')}</MenuItem>
+              <MenuItem value="custom">⚙️ {t('settings.webSearch.providers.custom')}</MenuItem>
             </Select>
           </FormControl>
 

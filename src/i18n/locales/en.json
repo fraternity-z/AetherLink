@@ -212,6 +212,119 @@
         "entertainment": { "title": "Entertainment", "desc": "Entertainment & leisure assistants" },
         "breakthrough": { "title": "Breakthrough", "desc": "Innovation & breakthrough assistants" }
       }
+    },
+    "aiDebate": {
+      "title": "AI Debate Settings",
+      "basic": {
+        "title": "Basic Settings",
+        "desc": "Configure basic parameters and options for AI debate feature",
+        "enable": "Enable AI Debate",
+        "showButton": "Show AI Debate button in input box",
+        "maxRounds": "Max Debate Rounds",
+        "maxRoundsTip": "Enter a number, recommended 1-20 rounds",
+        "maxTokens": "Max Tokens per Round",
+        "maxTokensTip": "Enter a number, recommended 100-4000",
+        "enableModerator": "Enable Moderator Role",
+        "enableSummary": "Auto-generate Debate Summary"
+      },
+      "quick": {
+        "title": "Quick Setup",
+        "desc": "One-click setup for new users, quickly create a complete debate scene",
+        "basic": { "title": "🎯 Basic Debate", "desc": "Pro + Con + Moderator (3 roles)" },
+        "professional": { "title": "🏛️ Professional Debate", "desc": "Pro + Con + Neutral Analyst + Moderator (4 roles)" },
+        "expert": { "title": "🎓 Expert Forum", "desc": "Legal Expert + Economist + Tech Expert + Moderator (4 roles)" },
+        "comprehensive": { "title": "🌟 Comprehensive Analysis", "desc": "6 different roles for a full debate" }
+      },
+      "role": {
+        "title": "Debate Role Management",
+        "desc": "Create and manage various roles in AI debate",
+        "add": "Add Role",
+        "empty": "No debate roles configured yet. Click 'Add Role' to start.",
+        "edit": "Edit Role",
+        "delete": "Delete Role",
+        "editTitle": "Edit Role",
+        "addTitle": "Add New Role",
+        "quickTemplate": "Quick Templates:",
+        "name": "Role Name",
+        "descLabel": "Role Description",
+        "stanceLabel": "Role Stance",
+        "stance": { "pro": "Pro", "con": "Con", "neutral": "Neutral", "moderator": "Moderator", "summary": "Summary" },
+        "model": "Assign Model (optional)",
+        "modelTip": "Leave blank to use default model",
+        "prompt": "System Prompt",
+        "promptTip": "Define the behavior, stance, and response style of this AI role",
+        "color": "Role Color",
+        "unknownModel": "Unknown Model",
+        "defaultModel": "Default Model"
+      },
+      "group": {
+        "title": "Config Group Management",
+        "desc": "Save and manage debate configs for different purposes",
+        "add": "Add Group",
+        "empty": "No config groups saved yet. Click 'Add Group' to create one.",
+        "edit": "Edit",
+        "delete": "Delete",
+        "editTitle": "Edit Config Group",
+        "addTitle": "Add Config Group",
+        "name": "Group Name",
+        "namePlaceholder": "e.g. Academic Debate, Business Analysis, Tech Discussion",
+        "descLabel": "Group Description",
+        "descPlaceholder": "Describe the purpose and features of this config group",
+        "saveTip": "All current settings (including roles, round limits, etc.) will be saved to this group.",
+        "roleCount": "{{count}} roles • {{date}}",
+        "load": "Load",
+        "save": "Save current config to this group",
+        "copy": "Copy",
+        "saveEdit": "Save Changes",
+        "saveAdd": "Create Group"
+      },
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "modelCombo": {
+      "title": "Model Combo",
+      "templates": {
+        "title": "Preset Templates",
+        "useTemplate": "Use Template"
+      },
+      "myCombos": {
+        "title": "My Combos",
+        "emptyTitle": "No model combos created yet",
+        "emptyDesc": "Create model combos to enable advanced features like smart routing and model ensemble.",
+        "createFirst": "Create First Combo"
+      },
+      "deleteDialog": {
+        "title": "Confirm Delete",
+        "content": "Are you sure you want to delete the model combo \"{{name}}\"? This action cannot be undone."
+      },
+      "strategy": {
+        "routing": "Smart Routing (WIP)",
+        "ensemble": "Model Ensemble (WIP)",
+        "comparison": "Comparison Analysis",
+        "cascade": "Cascade Call (WIP)",
+        "sequential": "Sequential Execution"
+      }
+    },
+    "webSearch": {
+      "title": "Web Search Settings",
+      "basic": {
+        "title": "Basic Settings",
+        "enable": "Enable Web Search",
+        "enableTip": "When enabled, AI can fetch the latest information via web search.",
+        "provider": "Search Provider"
+      },
+      "providers": {
+        "bing": "Bing Free Search (Recommended)",
+        "tavily": "Tavily (Paid)",
+        "exa": "Exa (Neural Search)",
+        "bocha": "Bocha (AI Search)",
+        "firecrawl": "Firecrawl (Web Crawler)",
+        "custom": "Custom Service"
+      }
     }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete"
   }
 } 

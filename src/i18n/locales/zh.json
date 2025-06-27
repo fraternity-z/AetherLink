@@ -212,6 +212,119 @@
         "entertainment": { "title": "娱乐", "desc": "娱乐与休闲助手" },
         "breakthrough": { "title": "突破", "desc": "创新与突破助手" }
       }
+    },
+    "aiDebate": {
+      "title": "AI辩论设置",
+      "basic": {
+        "title": "基本设置",
+        "desc": "配置AI辩论功能的基础参数和选项",
+        "enable": "启用AI辩论功能",
+        "showButton": "在输入框显示AI辩论按钮",
+        "maxRounds": "最大辩论轮数",
+        "maxRoundsTip": "输入数字，建议1-20轮",
+        "maxTokens": "每轮最大Token数",
+        "maxTokensTip": "输入数字，建议100-4000",
+        "enableModerator": "启用主持人角色",
+        "enableSummary": "自动生成辩论总结"
+      },
+      "quick": {
+        "title": "快速配置",
+        "desc": "为新手用户提供一键配置，快速创建完整的辩论场景",
+        "basic": { "title": "🎯 基础辩论", "desc": "正方 + 反方 + 主持人（3角色）" },
+        "professional": { "title": "🏛️ 专业辩论", "desc": "正方 + 反方 + 中立分析师 + 主持人（4角色）" },
+        "expert": { "title": "🎓 专家论坛", "desc": "法律专家 + 经济学家 + 技术专家 + 主持人（4角色）" },
+        "comprehensive": { "title": "🌟 全面分析", "desc": "6个不同角色的全方位辩论" }
+      },
+      "role": {
+        "title": "辩论角色管理",
+        "desc": "创建和管理AI辩论中的各种角色",
+        "add": "添加角色",
+        "empty": "还没有配置任何辩论角色。点击\"添加角色\"开始配置。",
+        "edit": "编辑角色",
+        "delete": "删除角色",
+        "editTitle": "编辑角色",
+        "addTitle": "添加新角色",
+        "quickTemplate": "快速模板：",
+        "name": "角色名称",
+        "descLabel": "角色描述",
+        "stanceLabel": "角色立场",
+        "stance": { "pro": "正方", "con": "反方", "neutral": "中立", "moderator": "主持人", "summary": "总结" },
+        "model": "指定模型（可选）",
+        "modelTip": "留空则使用默认模型",
+        "prompt": "系统提示词",
+        "promptTip": "定义这个AI角色的行为、立场和回应风格",
+        "color": "角色颜色",
+        "unknownModel": "未知模型",
+        "defaultModel": "默认模型"
+      },
+      "group": {
+        "title": "配置分组管理",
+        "desc": "保存和管理不同用途的辩论配置",
+        "add": "新建分组",
+        "empty": "还没有保存任何配置分组。点击\"新建分组\"开始创建。",
+        "edit": "编辑",
+        "delete": "删除",
+        "editTitle": "编辑配置分组",
+        "addTitle": "新建配置分组",
+        "name": "分组名称",
+        "namePlaceholder": "例如：学术辩论、商业分析、技术讨论",
+        "descLabel": "分组描述",
+        "descPlaceholder": "描述这个配置分组的用途和特点",
+        "saveTip": "将保存当前的所有配置（包括角色设置、轮数限制等）到这个分组中。",
+        "roleCount": "{{count}} 个角色 • {{date}}",
+        "load": "加载",
+        "save": "保存当前配置到此分组",
+        "copy": "复制",
+        "saveEdit": "保存修改",
+        "saveAdd": "创建分组"
+      },
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "modelCombo": {
+      "title": "模型组合",
+      "templates": {
+        "title": "预设模板",
+        "useTemplate": "使用模板"
+      },
+      "myCombos": {
+        "title": "我的组合",
+        "emptyTitle": "还没有创建任何模型组合",
+        "emptyDesc": "创建模型组合来实现智能路由、模型集成等高级功能",
+        "createFirst": "创建第一个组合"
+      },
+      "deleteDialog": {
+        "title": "确认删除",
+        "content": "确定要删除模型组合 \"{{name}}\" 吗？此操作无法撤销。"
+      },
+      "strategy": {
+        "routing": "智能路由（开发中）",
+        "ensemble": "模型集成（开发中）",
+        "comparison": "对比分析",
+        "cascade": "级联调用（开发中）",
+        "sequential": "顺序执行"
+      }
+    },
+    "webSearch": {
+      "title": "网络搜索设置",
+      "basic": {
+        "title": "基本设置",
+        "enable": "启用网络搜索",
+        "enableTip": "开启后，AI可以通过网络搜索获取最新信息",
+        "provider": "搜索服务商"
+      },
+      "providers": {
+        "bing": "Bing 免费搜索（推荐）",
+        "tavily": "Tavily（付费）",
+        "exa": "Exa（神经搜索）",
+        "bocha": "Bocha（AI搜索）",
+        "firecrawl": "Firecrawl（网页抓取）",
+        "custom": "自定义服务"
+      }
     }
+  },
+  "common": {
+    "cancel": "取消",
+    "delete": "删除"
   }
 } 
