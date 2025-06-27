@@ -142,23 +142,75 @@
         "typeLabel": "Provider Type",
         "cancel": "Cancel",
         "save": "Save"
+      }
+    },
+    "topicNaming": {
+      "title": "Topic Naming Settings",
+      "modelSection": {
+        "title": "Topic Naming Model",
+        "subtitle": "Select the AI model used to automatically generate titles for topics"
       },
-      "topicNaming": {
-        "title": "Topic Naming Settings",
-        "modelSection": {
-          "title": "Topic Naming Model",
-          "subtitle": "Select the AI model used to automatically generate titles for topics"
+      "enableSwitch": {
+        "primary": "Enable Auto Topic Naming",
+        "secondary": "Automatically generate a suitable title for a new topic when the conversation starts"
+      },
+      "promptSection": {
+        "title": "Topic Naming Prompt",
+        "subtitle": "Custom prompt for topic naming. Leave blank for default.",
+        "placeholder": "e.g., Generate a concise title of no more than 5 words for the following conversation..."
+      },
+      "saveButton": "Save Prompt"
+    },
+    "agentPrompts": {
+      "title": "Agent Prompt Library",
+      "systemPromptVar": {
+        "title": "System Prompt Variable Injection",
+        "desc": "Automatically inject time, location and other dynamic variables into system prompts",
+        "chip": {
+          "time": "Time",
+          "location": "Location",
+          "os": "OS",
+          "none": "Disabled"
         },
-        "enableSwitch": {
-          "primary": "Enable Auto Topic Naming",
-          "secondary": "Automatically generate a suitable title for a new topic when the conversation starts"
+        "info": "When enabled, the system will automatically append the corresponding variable information to the end of the system prompt when sending a message.",
+        "time": {
+          "title": "Time Variable",
+          "desc": "Automatically inject current time: {{time}}",
+          "tip": "Time info will be appended to the end of the system prompt"
         },
-        "promptSection": {
-          "title": "Topic Naming Prompt",
-          "subtitle": "Custom prompt for topic naming. Leave blank for default.",
-          "placeholder": "e.g., Generate a concise title of no more than 5 words for the following conversation..."
+        "location": {
+          "title": "Location Variable",
+          "desc": "Inject location info: {{location}}",
+          "placeholder": "Enter custom location (e.g. Chaoyang, Beijing)",
+          "tip": "Location info will be appended to the end of the system prompt",
+          "tip2": "Leave blank to use system-detected location"
         },
-        "saveButton": "Save Prompt"
+        "os": {
+          "title": "OS Variable",
+          "desc": "Inject OS info: {{os}}",
+          "tip": "OS info will be appended to the end of the system prompt"
+        }
+      },
+      "searchTitle": "Search prompts",
+      "searchDesc": "Quickly find the template you need from the rich prompt library",
+      "searchResultTitle": "Search Results ({{count}})",
+      "searchResultDesc": "Found {{count}} matching prompts",
+      "noResult": "No matching prompts found",
+      "searchPlaceholder": "Search prompts...",
+      "copy": "Copy",
+      "copied": "Copied",
+      "promptsCount": "{{count}} prompts",
+      "groups": {
+        "general": { "title": "General Assistant", "desc": "Assistants for daily conversation and general tasks" },
+        "tech": { "title": "Tech Expert", "desc": "Professional assistants in technical fields" },
+        "technical": { "title": "Technical", "desc": "Technical assistants" },
+        "business": { "title": "Business", "desc": "Business & management assistants" },
+        "creative": { "title": "Creative", "desc": "Creative & content generation assistants" },
+        "lifestyle": { "title": "Lifestyle", "desc": "Lifestyle assistants" },
+        "education": { "title": "Education", "desc": "Education & learning assistants" },
+        "professional": { "title": "Professional", "desc": "Professional field assistants" },
+        "entertainment": { "title": "Entertainment", "desc": "Entertainment & leisure assistants" },
+        "breakthrough": { "title": "Breakthrough", "desc": "Innovation & breakthrough assistants" }
       }
     }
   }
