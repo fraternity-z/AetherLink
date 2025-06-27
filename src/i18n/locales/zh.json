@@ -108,6 +108,127 @@
         "about": { "title": "关于我们", "desc": "应用信息和技术支持" }
       }
     },
+    "mcpServer": {
+      "title": "MCP 服务器设置",
+      "list": {
+        "title": "服务器列表",
+        "subtitle": "管理和配置您的 MCP 服务器",
+        "addServer": "添加服务器",
+        "emptyTitle": "未添加任何服务器",
+        "emptyDesc": "您可以手动添加一个新的服务器，或从内置模板中选择。"
+      },
+      "status": {
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "running": "运行中",
+        "opFailed": "操作失败",
+        "fillRequired": "请填写必填项",
+        "urlRequired": "请输入有效的 URL",
+        "addSuccess": "服务器添加成功",
+        "addFailed": "添加服务器失败",
+        "alreadyExists": "{{name}} 已存在",
+        "builtinAddSuccess": "内置服务器 {{name}} 添加成功",
+        "builtinAddFailed": "添加内置服务器失败",
+        "deleteSuccess": "服务器 {{name}} 删除成功",
+        "deleteFailed": "删除服务器失败",
+        "jsonFormatError": "无效的 JSON 格式",
+        "importDesc": "从 {{serverName}} 导入",
+        "importSuccess": "成功导入 {{importCount}} 个服务器。{{errorInfo}}",
+        "importFailed": "导入失败: {{error}}",
+        "importErrorCount": "{{errorCount}} 个服务器导入失败。",
+        "alreadyAdded": "已添加"
+      },
+      "serverType": {
+        "http": "HTTP",
+        "inMemory": "内存"
+      },
+      "quickActions": {
+        "title": "快捷操作",
+        "subtitle": "快速导入或添加内置服务器",
+        "import": "从 JSON 导入",
+        "importDesc": "从 JSON 文件批量导入服务器配置",
+        "builtin": "添加内置服务器",
+        "builtinDesc": "浏览并添加预配置的内置服务器"
+      },
+      "dialog": {
+        "addTitle": "添加新服务器",
+        "importTitle": "从 JSON 导入服务器",
+        "importDesc": "粘贴符合格式的 JSON 内容以批量导入服务器。示例格式如下：",
+        "builtinTitle": "添加内置服务器",
+        "builtinDesc": "这里是一些预配置的常用 MCP 服务器，您可以一键添加至您的列表。",
+        "deleteTitle": "确认删除",
+        "deleteContent": "您确定要删除服务器 \"{{name}}\" 吗？"
+      },
+      "form": {
+        "name": "服务器名称",
+        "type": "服务器类型",
+        "typeHttp": "HTTP (SSE)",
+        "typeMemory": "内存",
+        "url": "服务器 URL",
+        "description": "描述",
+        "enableSSE": "启用 SSE",
+        "json": "JSON 内容",
+        "jsonPlaceholder": "请在此处粘贴 JSON 内容"
+      }
+    },
+    "quickPhrase": {
+      "title": "快捷短语管理",
+      "subtitle": "管理您的快捷短语，在聊天时快速插入常用内容。",
+      "add": "添加快捷短语",
+      "loading": "加载中...",
+      "confirmDelete": "确定要删除这个快捷短语吗？",
+      "displaySettings": {
+        "title": "显示设置",
+        "label": "在输入框显示快捷短语按钮",
+        "caption": "控制是否在聊天输入框中显示快捷短语按钮"
+      },
+      "empty": {
+        "title": "还没有快捷短语",
+        "subtitle": "创建您的第一个快捷短语，让聊天更高效"
+      },
+      "dialog": {
+        "addTitle": "添加快捷短语",
+        "editTitle": "编辑快捷短语",
+        "form": {
+          "title": "标题",
+          "content": "内容"
+        }
+      },
+      "log": {
+        "loadFailed": "加载快捷短语失败:",
+        "deleteFailed": "删除快捷短语失败:",
+        "saveFailed": "保存快捷短语失败:"
+      }
+    },
+    "workspace": {
+      "title": "工作区管理",
+      "permissions": "权限管理",
+      "loading": "加载中...",
+      "listTitle": "工作区列表",
+      "lastAccessed": "最后访问于 {{time}}",
+      "scope": {
+        "global": "全局",
+        "session": "会话"
+      },
+      "empty": {
+        "title": "还没有工作区",
+        "description": "创建工作区来管理您的文件和文档，让人工智能更了解您的项目。",
+        "createButton": "创建第一个工作区"
+      },
+      "deleteDialog": {
+        "title": "删除工作区",
+        "content": "确定要删除工作区 \"{{name}}\" 吗？",
+        "warning": "这只会删除工作区配置，不会删除您计算机上的实际文件。"
+      },
+      "notifications": {
+        "loadFailed": "加载工作区列表失败",
+        "deleteFailed": "删除工作区失败"
+      },
+      "log": {
+        "loadFailed": "加载工作区失败:",
+        "deleteFailed": "删除工作区失败:"
+      }
+    },
     "modelConfig": {
       "title": "模型设置",
       "addProvider": "添加",
@@ -248,83 +369,22 @@
         "name": "角色名称",
         "descLabel": "角色描述",
         "stanceLabel": "角色立场",
-        "stance": { "pro": "正方", "con": "反方", "neutral": "中立", "moderator": "主持人", "summary": "总结" },
-        "model": "指定模型（可选）",
-        "modelTip": "留空则使用默认模型",
-        "prompt": "系统提示词",
-        "promptTip": "定义这个AI角色的行为、立场和回应风格",
-        "color": "角色颜色",
-        "unknownModel": "未知模型",
-        "defaultModel": "默认模型"
-      },
-      "group": {
-        "title": "配置分组管理",
-        "desc": "保存和管理不同用途的辩论配置",
-        "add": "新建分组",
-        "empty": "还没有保存任何配置分组。点击\"新建分组\"开始创建。",
-        "edit": "编辑",
-        "delete": "删除",
-        "editTitle": "编辑配置分组",
-        "addTitle": "新建配置分组",
-        "name": "分组名称",
-        "namePlaceholder": "例如：学术辩论、商业分析、技术讨论",
-        "descLabel": "分组描述",
-        "descPlaceholder": "描述这个配置分组的用途和特点",
-        "saveTip": "将保存当前的所有配置（包括角色设置、轮数限制等）到这个分组中。",
-        "roleCount": "{{count}} 个角色 • {{date}}",
-        "load": "加载",
-        "save": "保存当前配置到此分组",
-        "copy": "复制",
-        "saveEdit": "保存修改",
-        "saveAdd": "创建分组"
-      },
-      "cancel": "取消",
-      "save": "保存"
-    },
-    "modelCombo": {
-      "title": "模型组合",
-      "templates": {
-        "title": "预设模板",
-        "useTemplate": "使用模板"
-      },
-      "myCombos": {
-        "title": "我的组合",
-        "emptyTitle": "还没有创建任何模型组合",
-        "emptyDesc": "创建模型组合来实现智能路由、模型集成等高级功能",
-        "createFirst": "创建第一个组合"
-      },
-      "deleteDialog": {
-        "title": "确认删除",
-        "content": "确定要删除模型组合 \"{{name}}\" 吗？此操作无法撤销。"
-      },
-      "strategy": {
-        "routing": "智能路由（开发中）",
-        "ensemble": "模型集成（开发中）",
-        "comparison": "对比分析",
-        "cascade": "级联调用（开发中）",
-        "sequential": "顺序执行"
-      }
-    },
-    "webSearch": {
-      "title": "网络搜索设置",
-      "basic": {
-        "title": "基本设置",
-        "enable": "启用网络搜索",
-        "enableTip": "开启后，AI可以通过网络搜索获取最新信息",
-        "provider": "搜索服务商"
-      },
-      "providers": {
-        "bing": "Bing 免费搜索（推荐）",
-        "tavily": "Tavily（付费）",
-        "exa": "Exa（神经搜索）",
-        "bocha": "Bocha（AI搜索）",
-        "firecrawl": "Firecrawl（网页抓取）",
-        "custom": "自定义服务"
+        "stances": {
+          "pro": "正方",
+          "con": "反方",
+          "neutral": "中立"
+        },
+        "modelLabel": "使用模型"
       }
     }
   },
   "common": {
+    "add": "添加",
+    "save": "保存",
     "cancel": "取消",
-    "delete": "删除"
+    "delete": "删除",
+    "import": "导入",
+    "close": "关闭",
+    "unknownError": "未知错误"
   }
-} 
+}
