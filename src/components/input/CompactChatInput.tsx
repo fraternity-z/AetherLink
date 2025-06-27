@@ -22,6 +22,7 @@ import type { RootState } from '../../shared/store';
 import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../shared/types';
 import type { DebateConfig } from '../../shared/services/AIDebateService';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
+import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 import { VoiceButton, EnhancedVoiceInput } from '../VoiceRecognition';
 
 
@@ -177,7 +178,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
       if (!currentTopicId) return;
 
       try {
-        const topic = await dexieStorage.getTopic(currentTopicId);
+        const topic = await topicCacheManager.getTopic(currentTopicId);
         if (topic) {
           setCurrentTopicState(topic);
         }

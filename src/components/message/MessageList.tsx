@@ -11,6 +11,7 @@ import { throttle } from 'lodash';
 import InfiniteScroll from 'react-infinite-scroll-component';
 
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
+import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
@@ -132,8 +133,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
       if (!currentTopicId) return;
 
       try {
-        // 获取话题
-        const topic = await dexieStorage.getTopic(currentTopicId);
+        // 获取话题 - 使用缓存管理器
+        const topic = await topicCacheManager.getTopic(currentTopicId);
         if (topic) {
           setCurrentTopic(topic);
 
