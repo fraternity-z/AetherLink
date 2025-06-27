@@ -65,7 +65,6 @@ const BackupButtons: React.FC<BackupButtonsProps> = ({
             },
           }}
         >
-          {isLoading ? '备份中...' : '备份聊天和助手'}
           {isLoading ? t('settings.data.status.backingUp') : t('settings.data.buttons.basicBackup')}
         </Button>
 
