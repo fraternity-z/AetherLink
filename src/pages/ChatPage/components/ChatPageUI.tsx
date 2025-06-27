@@ -522,7 +522,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
           width: '100%',
           display: 'flex',
           justifyContent: 'center',
-          px: { xs: 0, sm: 2 } // 移动端无间距，桌面端保持16px间距
+          px: 2
         }}>
           <ChatToolbar
             onClearTopic={handleClearTopic}
@@ -542,7 +542,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        px: { xs: 0, sm: 2 } // 移动端无间距，桌面端保持16px间距
+        px: 2
       }}>
         {inputComponent}
       </Box>

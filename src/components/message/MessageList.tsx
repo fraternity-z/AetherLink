@@ -15,25 +15,31 @@ import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
-import { scrollContainerStyles, scrollbarStyles, getOptimizedConfig } from '../../shared/config/scrollOptimization';
+import { scrollContainerStyles, scrollbarStyles, getOptimizedConfig, debugScrollPerformance } from '../../shared/config/scrollOptimization';
 import ScrollPerformanceMonitor from '../debug/ScrollPerformanceMonitor';
 
 // 加载更多消息的数量
 const LOAD_MORE_COUNT = 20;
 
-// 优化：简化消息显示逻辑，移除性能日志
+// 修复：简化消息显示逻辑，支持正确的无限滚动
 const computeDisplayMessages = (messages: Message[], startIndex: number, displayCount: number) => {
+  console.log(`[computeDisplayMessages] 输入 ${messages.length} 条消息，从索引 ${startIndex} 开始，显示 ${displayCount} 条`);
+
   const totalMessages = messages.length;
 
   if (totalMessages === 0) {
     return [];
   }
 
-  // 使用正常的索引计算，配合 inverse=true 来实现正确的滚动方向
+  // 修复：使用正常的索引计算，配合 inverse=true 来实现正确的滚动方向
+  // 最新消息在数组末尾，显示时也在底部
   const actualStartIndex = Math.max(0, startIndex);
   const actualEndIndex = Math.min(totalMessages, startIndex + displayCount);
 
-  return messages.slice(actualStartIndex, actualEndIndex);
+  const displayMessages = messages.slice(actualStartIndex, actualEndIndex);
+
+  console.log(`[computeDisplayMessages] 返回 ${displayMessages.length} 条消息，索引范围: ${actualStartIndex}-${actualEndIndex}`);
+  return displayMessages;
 };
 
 interface MessageListProps {
@@ -85,7 +91,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   // 🚀 获取优化配置
   const optimizedConfig = React.useMemo(() => getOptimizedConfig(), []);
 
-  // 移除性能调试，减少开销
+  // 🚀 调试性能配置（仅在开发环境）
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      debugScrollPerformance();
+    }
+  }, []);
 
   // 无限滚动相关状态
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
@@ -374,8 +385,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     loadMissingBlocks();
   }, [messages, messageBlocks, dispatch]);
 
-  // 直接使用有序消息，无需去重
+  // 改造为：直接使用有序消息，无需去重
   const filteredMessages = useMemo(() => {
+    console.log(`[MessageList] 使用，直接使用 ${messages.length} 条有序消息，无需去重`);
+    // ：假设消息已经按时间顺序存储且无重复，直接使用
     return messages;
   }, [messages]);
 

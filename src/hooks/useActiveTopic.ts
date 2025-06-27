@@ -15,7 +15,6 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
   const [activeTopic, setActiveTopic] = useState<ChatTopic | null>(initialTopic || null);
   const isMountedRef = useRef(true);
   const previousAssistantIdRef = useRef<string | undefined>(undefined);
-  const findTopicCacheRef = useRef<Map<string, ChatTopic | null>>(new Map());
 
   // 从Redux获取当前话题ID
   const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
@@ -34,24 +33,17 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     }
   }, []);
 
-  // 优化的话题获取逻辑 - 优先使用 Redux，避免数据库查询
+  // 提取共用的话题获取逻辑
   const findTopicById = useCallback(async (topicId: string): Promise<ChatTopic | null> => {
-    // 检查缓存
-    if (findTopicCacheRef.current.has(topicId)) {
-      return findTopicCacheRef.current.get(topicId) || null;
-    }
-
     // 优先从 Redux 中查找
     const topicFromRedux = reduxTopics.find(t => t.id === topicId);
     if (topicFromRedux) {
-      findTopicCacheRef.current.set(topicId, topicFromRedux);
       return topicFromRedux;
     }
 
-    // 最后才从数据库查找（这是性能瓶颈）
+    // 从数据库查找
     try {
       const topic = await dexieStorage.getTopic(topicId);
-      findTopicCacheRef.current.set(topicId, topic);
       return topic;
     } catch (error) {
       console.error(`[useActiveTopic] 获取话题 ${topicId} 失败:`, error);
@@ -106,23 +98,13 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
   useEffect(() => {
     if (!activeTopic) return;
 
-    const startTime = performance.now();
-    console.log(`[useActiveTopic] 话题变更开始: ${activeTopic.name} (${activeTopic.id})`);
+    console.log(`[useActiveTopic] 话题变更: ${activeTopic.name} (${activeTopic.id})`);
 
     // 发送话题变更事件
-    const eventStartTime = performance.now();
     EventEmitter.emit(EVENT_NAMES.CHANGE_TOPIC, activeTopic);
-    const eventEndTime = performance.now();
-    console.log(`[useActiveTopic] 事件发送耗时: ${(eventEndTime - eventStartTime).toFixed(2)}ms`);
 
     // 加载话题消息
-    const dispatchStartTime = performance.now();
     dispatch(loadTopicMessagesThunk(activeTopic.id) as any);
-    const dispatchEndTime = performance.now();
-    console.log(`[useActiveTopic] dispatch耗时: ${(dispatchEndTime - dispatchStartTime).toFixed(2)}ms`);
-
-    const totalTime = performance.now() - startTime;
-    console.log(`[useActiveTopic] 话题变更总耗时: ${totalTime.toFixed(2)}ms`);
   }, [activeTopic, dispatch]); // 依赖整个对象，确保一致性
 
   // Effect 2: 助手变化时设置第一个话题
@@ -168,29 +150,25 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     };
   }, [assistant?.id, getFirstTopicForAssistant, safeSetActiveTopic]);
 
-  // Effect 3: 响应外部话题ID变化 - 添加防抖
+  // Effect 3: 响应外部话题ID变化
   useEffect(() => {
     if (!currentTopicId || !assistant?.id) return;
 
     // 如果已经是当前话题，跳过
     if (activeTopic?.id === currentTopicId) return;
 
-    console.log(`[useActiveTopic] Effect 3 触发，currentTopicId: ${currentTopicId}, activeTopic?.id: ${activeTopic?.id}`);
+    // 使用 AbortController 来取消异步操作
+    const abortController = new AbortController();
 
-    // 使用 setTimeout 进行防抖，避免快速连续调用
-    const timeoutId = setTimeout(async () => {
-      const startTime = performance.now();
-      console.log(`[useActiveTopic] 开始加载外部话题: ${currentTopicId}`);
-
+    const loadTopicById = async () => {
       try {
-        const findStartTime = performance.now();
         const topic = await findTopicById(currentTopicId);
-        const findEndTime = performance.now();
-        console.log(`[useActiveTopic] findTopicById耗时: ${(findEndTime - findStartTime).toFixed(2)}ms`);
+
+        // 检查是否已取消
+        if (abortController.signal.aborted) return;
 
         if (!isMountedRef.current) return;
 
-        const setTopicStartTime = performance.now();
         if (topic && topic.assistantId === assistant.id) {
           console.log(`[useActiveTopic] 切换到话题: ${topic.name}`);
           safeSetActiveTopic(topic);
@@ -199,20 +177,18 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
         } else {
           console.warn(`[useActiveTopic] 找不到话题 ${currentTopicId}`);
         }
-        const setTopicEndTime = performance.now();
-        console.log(`[useActiveTopic] 设置话题耗时: ${(setTopicEndTime - setTopicStartTime).toFixed(2)}ms`);
-
-        const totalTime = performance.now() - startTime;
-        console.log(`[useActiveTopic] 外部话题加载总耗时: ${totalTime.toFixed(2)}ms`);
       } catch (error) {
-        const totalTime = performance.now() - startTime;
-        console.error(`[useActiveTopic] 加载话题失败，总耗时: ${totalTime.toFixed(2)}ms`, error);
+        if (!abortController.signal.aborted) {
+          console.error(`[useActiveTopic] 加载话题失败:`, error);
+        }
       }
-    }, 10); // 10ms 防抖
+    };
 
-    // 清理函数：取消定时器
+    loadTopicById();
+
+    // 清理函数：取消异步操作
     return () => {
-      clearTimeout(timeoutId);
+      abortController.abort();
     };
   }, [currentTopicId, assistant?.id, activeTopic?.id, findTopicById, safeSetActiveTopic]);
 
