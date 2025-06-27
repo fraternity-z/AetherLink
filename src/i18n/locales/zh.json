@@ -1,0 +1,165 @@
+{
+  "app": {
+    "loading": "正在加载..."
+  },
+  "loadingScreen": {
+    "welcome": "欢迎使用智能对话助手"
+  },
+  "settings": {
+    "appearance": {
+      "language": {
+        "label": "语言",
+        "helper": "切换界面语言，将立即生效",
+        "zh": "中文",
+        "en": "英文"
+      },
+      "title": "外观设置",
+      "section": {
+        "themeFont": {
+          "title": "主题和字体",
+          "subtitle": "自定义应用的外观主题和全局字体大小设置"
+        },
+        "customization": {
+          "title": "界面定制",
+          "subtitle": "自定义聊天界面、消息气泡和工具栏的外观设置",
+          "topToolbar": { "primary": "顶部工具栏设置", "secondary": "自定义顶部工具栏的组件和布局，支持拖拽DIY布局" },
+          "chatInterface": { "primary": "聊天界面设置", "secondary": "自定义聊天界面布局和显示选项" },
+          "thinkingProcess": { "primary": "思考过程设置", "secondary": "自定义AI思考过程的显示方式和自动折叠行为" },
+          "messageBubble": { "primary": "信息气泡管理", "secondary": "调整消息气泡的样式和宽度设置" },
+          "inputToolbar": { "primary": "输入框工具栏设置", "secondary": "自定义输入框工具栏的背景样式和外观效果" },
+          "inputBox": { "primary": "输入框管理设置", "secondary": "自定义输入框的风格和布局样式" }
+        },
+        "devTools": {
+          "title": "开发者工具",
+          "subtitle": "用于调试和性能监控的开发者工具设置",
+          "performanceMonitor": { "primary": "显示性能监控", "secondary": "在聊天界面显示实时性能监控面板，包括FPS、滚动事件、渲染时间和内存使用情况" }
+        }
+      },
+      "theme": {
+        "label": "主题",
+        "light": "浅色",
+        "dark": "深色",
+        "system": "跟随系统",
+        "helper": "选择应用的外观主题，跟随系统将自动适配设备的深色/浅色模式"
+      },
+      "fontSize": {
+        "label": "全局字体大小",
+        "preset": {
+          "tiny": "极小",
+          "small": "小",
+          "normal": "标准",
+          "large": "大",
+          "xlarge": "极大",
+          "huge": "超大"
+        },
+        "custom": "自定义",
+        "helper": "调整应用中所有文本的基础字体大小，影响聊天消息、界面文字等全局显示效果"
+      },
+      "font": {
+        "label": "全局字体",
+        "inputLabel": "字体",
+        "system": "系统默认",
+        "helper": "选择应用的全局字体，将影响所有界面文字的显示效果"
+      }
+    },
+    "behavior": {
+      "title": "行为设置",
+      "section": {
+        "interaction": {
+          "title": "交互行为",
+          "subtitle": "自定义应用的交互方式和通知设置"
+        }
+      },
+      "sendWithEnter": {
+        "primary": "使用Enter键发送消息",
+        "secondary": "按Enter键快速发送消息，使用Shift+Enter添加换行"
+      },
+      "notifications": {
+        "primary": "启用通知",
+        "secondary": "当AI助手回复完成时，显示系统通知"
+      }
+    },
+    "main": {
+      "title": "设置",
+      "groups": {
+        "basic": "基本设置",
+        "modelServices": "模型服务",
+        "shortcuts": "快捷方式",
+        "others": "其他设置"
+      },
+      "items": {
+        "appearance": { "title": "外观", "desc": "主题、字体大小和语言设置" },
+        "behavior": { "title": "行为", "desc": "消息发送和通知设置" },
+        "default-model": { "title": "配置模型", "desc": "管理AI模型和API密钥" },
+        "topic-naming-settings": { "title": "话题命名设置", "desc": "配置话题自动命名功能" },
+        "agent-prompts": { "title": "智能体提示词集合", "desc": "浏览和使用内置的丰富提示词模板" },
+        "ai-debate": { "title": "AI辩论设置", "desc": "配置AI互相辩论讨论功能" },
+        "model-combo": { "title": "模型组合", "desc": "创建和管理多模型组合" },
+        "web-search": { "title": "网络搜索", "desc": "配置网络搜索和相关服务" },
+        "mcp-server": { "title": "MCP 服务器", "desc": "高级服务器配置" },
+        "shortcuts": { "title": "快捷助手", "desc": "自定义键盘快捷键" },
+        "quick-phrases": { "title": "快捷短语", "desc": "创建常用短语模板" },
+        "workspace-settings": { "title": "工作区管理", "desc": "创建和管理文件工作区" },
+        "knowledge-settings": { "title": "知识库设置", "desc": "管理知识库配置和嵌入模型" },
+        "data-settings": { "title": "数据设置", "desc": "管理数据存储和隐私选项" },
+        "notion-settings": { "title": "Notion 集成", "desc": "配置Notion数据库导出设置" },
+        "voice-settings": { "title": "语音功能", "desc": "语音识别和文本转语音设置" },
+        "features": { "title": "功能模块", "desc": "启用或禁用应用功能" },
+        "about": { "title": "关于我们", "desc": "应用信息和技术支持" }
+      }
+    },
+    "modelConfig": {
+      "title": "模型设置",
+      "addProvider": "添加",
+      "providerSection": {
+        "title": "模型服务商",
+        "subtitle": "您可以配置多个模型服务商，点击对应的服务商进行设置和管理"
+      },
+      "providerStatus": {
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "modelsCount": "{{count}} 个模型"
+      },
+      "recommendations": {
+        "title": "推荐操作",
+        "topicNaming": {
+          "primary": "话题命名设置",
+          "secondary": "设置话题自动命名的模型和选项"
+        },
+        "selectorStyle": {
+          "primary": "模型选择器样式",
+          "dialog": "当前：弹窗式选择器（点击切换为下拉式）",
+          "dropdown": "当前：下拉式选择器（点击切换为弹窗式）"
+        },
+        "addNewProvider": {
+          "primary": "添加新的服务商",
+          "secondary": "扩展您的AI模型库"
+        }
+      },
+      "editDialog": {
+        "title": "编辑服务商",
+        "nameLabel": "服务商名称",
+        "typeLabel": "服务商类型",
+        "cancel": "取消",
+        "save": "保存"
+      },
+      "topicNaming": {
+        "title": "话题命名设置",
+        "modelSection": {
+          "title": "话题命名模型",
+          "subtitle": "选择用于自动为话题生成标题的AI模型"
+        },
+        "enableSwitch": {
+          "primary": "启用话题自动命名",
+          "secondary": "在对话开始时，自动为新话题生成一个合适的标题"
+        },
+        "promptSection": {
+          "title": "话题命名提示词",
+          "subtitle": "自定义话题命名时使用的提示词，留空则使用默认提示词",
+          "placeholder": "例如：请为以下对话生成一个简洁的、不超过5个单词的标题..."
+        },
+        "saveButton": "保存提示词"
+      }
+    }
+  }
+} 

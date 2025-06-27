@@ -1,0 +1,165 @@
+{
+  "app": {
+    "loading": "Loading..."
+  },
+  "loadingScreen": {
+    "welcome": "Welcome to the AI Chat Assistant"
+  },
+  "settings": {
+    "appearance": {
+      "language": {
+        "label": "Language",
+        "helper": "Switch UI language, effective immediately",
+        "zh": "Chinese",
+        "en": "English"
+      },
+      "title": "Appearance Settings",
+      "section": {
+        "themeFont": {
+          "title": "Theme & Font",
+          "subtitle": "Customize app theme and global font size settings"
+        }
+      },
+      "theme": {
+        "label": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System",
+        "helper": "Select the app theme. System will follow your device's light/dark mode."
+      },
+      "fontSize": {
+        "label": "Global Font Size",
+        "preset": {
+          "tiny": "Tiny",
+          "small": "Small",
+          "normal": "Normal",
+          "large": "Large",
+          "xlarge": "Extra Large",
+          "huge": "Huge"
+        },
+        "custom": "Custom",
+        "helper": "Adjust the base font size of all texts in the app, affecting chat messages and interface texts"
+      },
+      "font": {
+        "label": "Global Font",
+        "inputLabel": "Font",
+        "system": "System Default",
+        "helper": "Select a global font for the app, affecting the appearance of all interface texts"
+      },
+      "customization": {
+        "title": "Interface Customization",
+        "subtitle": "Customize chat interface, message bubbles and toolbar appearance",
+        "topToolbar": { "primary": "Top Toolbar", "secondary": "Customize components and layout of top toolbar with drag-n-drop" },
+        "chatInterface": { "primary": "Chat Interface", "secondary": "Customize chat layout and display options" },
+        "thinkingProcess": { "primary": "Thinking Process", "secondary": "Customize how AI thinking process is displayed and auto-collapse behavior" },
+        "messageBubble": { "primary": "Message Bubble", "secondary": "Adjust bubble style and width settings" },
+        "inputToolbar": { "primary": "Input Toolbar", "secondary": "Customize background style and appearance of input toolbar" },
+        "inputBox": { "primary": "Input Box", "secondary": "Customize input box style and layout" }
+      },
+      "devTools": {
+        "title": "Developer Tools",
+        "subtitle": "Settings for debugging and performance monitor",
+        "performanceMonitor": { "primary": "Show Performance Monitor", "secondary": "Display real-time FPS, scroll events, render time and memory usage in chat view" }
+      }
+    },
+    "behavior": {
+      "title": "Behavior Settings",
+      "section": {
+        "interaction": {
+          "title": "Interaction",
+          "subtitle": "Customize interaction style and notification settings"
+        }
+      },
+      "sendWithEnter": {
+        "primary": "Send messages with Enter key",
+        "secondary": "Press Enter to send quickly, use Shift+Enter for new line"
+      },
+      "notifications": {
+        "primary": "Enable notifications",
+        "secondary": "Show system notification when AI reply is complete"
+      }
+    },
+    "main": {
+      "title": "Settings",
+      "groups": {
+        "basic": "Basic",
+        "modelServices": "Model Services",
+        "shortcuts": "Shortcuts",
+        "others": "Other Settings"
+      },
+      "items": {
+        "appearance": { "title": "Appearance", "desc": "Theme, font size and language" },
+        "behavior": { "title": "Behavior", "desc": "Message sending and notifications" },
+        "default-model": { "title": "Model Config", "desc": "Manage AI models and API keys" },
+        "topic-naming-settings": { "title": "Topic Naming", "desc": "Configure auto topic naming" },
+        "agent-prompts": { "title": "Agent Prompt Library", "desc": "Browse rich prompt templates" },
+        "ai-debate": { "title": "AI Debate", "desc": "Configure AI debate feature" },
+        "model-combo": { "title": "Model Combo", "desc": "Create and manage model combos" },
+        "web-search": { "title": "Web Search", "desc": "Configure web search and related services" },
+        "mcp-server": { "title": "MCP Server", "desc": "Advanced server settings" },
+        "shortcuts": { "title": "Quick Assistant", "desc": "Custom keyboard shortcuts" },
+        "quick-phrases": { "title": "Quick Phrases", "desc": "Create reusable phrase templates" },
+        "workspace-settings": { "title": "Workspace", "desc": "Create and manage file workspaces" },
+        "knowledge-settings": { "title": "Knowledge Base", "desc": "Manage KB configs and embedding models" },
+        "data-settings": { "title": "Data Settings", "desc": "Manage storage and privacy" },
+        "notion-settings": { "title": "Notion Integration", "desc": "Configure Notion export settings" },
+        "voice-settings": { "title": "Voice", "desc": "Speech recognition & TTS" },
+        "features": { "title": "Feature Modules", "desc": "Enable or disable app features" },
+        "about": { "title": "About", "desc": "App info & support" }
+      }
+    },
+    "modelConfig": {
+      "title": "Model Settings",
+      "addProvider": "Add",
+      "providerSection": {
+        "title": "Model Providers",
+        "subtitle": "Configure multiple model providers. Click to manage settings."
+      },
+      "providerStatus": {
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "modelsCount": "{{count}} models"
+      },
+      "recommendations": {
+        "title": "Recommendations",
+        "topicNaming": {
+          "primary": "Topic Naming Settings",
+          "secondary": "Configure model and options for auto topic naming"
+        },
+        "selectorStyle": {
+          "primary": "Model Selector Style",
+          "dialog": "Current: Dialog (Click to switch to dropdown)",
+          "dropdown": "Current: Dropdown (Click to switch to dialog)"
+        },
+        "addNewProvider": {
+          "primary": "Add New Provider",
+          "secondary": "Expand your AI model library"
+        }
+      },
+      "editDialog": {
+        "title": "Edit Provider",
+        "nameLabel": "Provider Name",
+        "typeLabel": "Provider Type",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "topicNaming": {
+        "title": "Topic Naming Settings",
+        "modelSection": {
+          "title": "Topic Naming Model",
+          "subtitle": "Select the AI model used to automatically generate titles for topics"
+        },
+        "enableSwitch": {
+          "primary": "Enable Auto Topic Naming",
+          "secondary": "Automatically generate a suitable title for a new topic when the conversation starts"
+        },
+        "promptSection": {
+          "title": "Topic Naming Prompt",
+          "subtitle": "Custom prompt for topic naming. Leave blank for default.",
+          "placeholder": "e.g., Generate a concise title of no more than 5 words for the following conversation..."
+        },
+        "saveButton": "Save Prompt"
+      }
+    }
+  }
+} 
