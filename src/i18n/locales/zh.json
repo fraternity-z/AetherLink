@@ -33,27 +33,6 @@
         "subtitle": "用于调试和性能监控的开发者工具设置",
         "performanceMonitor": { "primary": "显示性能监控", "secondary": "在聊天界面显示实时性能监控面板，包括FPS、滚动事件、渲染时间和内存使用情况" }
       },
-      "section": {
-        "themeFont": {
-          "title": "主题和字体",
-          "subtitle": "自定义应用的外观主题和全局字体大小设置"
-        },
-        "customization": {
-          "title": "界面定制",
-          "subtitle": "自定义聊天界面、消息气泡和工具栏的外观设置",
-          "topToolbar": { "primary": "顶部工具栏设置", "secondary": "自定义顶部工具栏的组件和布局，支持拖拽DIY布局" },
-          "chatInterface": { "primary": "聊天界面设置", "secondary": "自定义聊天界面布局和显示选项" },
-          "thinkingProcess": { "primary": "思考过程设置", "secondary": "自定义AI思考过程的显示方式和自动折叠行为" },
-          "messageBubble": { "primary": "信息气泡管理", "secondary": "调整消息气泡的样式和宽度设置" },
-          "inputToolbar": { "primary": "输入框工具栏设置", "secondary": "自定义输入框工具栏的背景样式和外观效果" },
-          "inputBox": { "primary": "输入框管理设置", "secondary": "自定义输入框的风格和布局样式" }
-        },
-        "devTools": {
-          "title": "开发者工具",
-          "subtitle": "用于调试和性能监控的开发者工具设置",
-          "performanceMonitor": { "primary": "显示性能监控", "secondary": "在聊天界面显示实时性能监控面板，包括FPS、滚动事件、渲染时间和内存使用情况" }
-        }
-      },
       "theme": {
         "label": "主题",
         "light": "浅色",

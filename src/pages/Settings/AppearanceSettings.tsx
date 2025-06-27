@@ -202,10 +202,10 @@ const AppearanceSettings: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {t('settings.appearance.section.themeFont.title')}
+              {t('settings.appearance.themeFont.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {t('settings.appearance.section.themeFont.subtitle')}
+              {t('settings.appearance.themeFont.subtitle')}
             </Typography>
           </Box>
 

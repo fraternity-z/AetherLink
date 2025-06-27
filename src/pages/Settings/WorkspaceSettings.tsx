@@ -59,7 +59,9 @@ const WorkspaceSettings: React.FC = () => {
     // dayjs 本地化
     const dayjsLocale = i18n.language === 'zh' ? 'zh-cn' : 'en';
     dayjs.locale(dayjsLocale);
-    import(`dayjs/locale/${dayjsLocale}`);
+    import(`dayjs/locale/${dayjsLocale}`).catch((err) => {
+      console.warn(`Failed to load dayjs locale: ${dayjsLocale}`, err);
+    });
   }, [i18n.language]);
 
   // 加载工作区列表
