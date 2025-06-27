@@ -14,6 +14,25 @@
         "en": "英文"
       },
       "title": "外观设置",
+      "themeFont": {
+        "title": "主题和字体",
+        "subtitle": "自定义应用的外观主题和全局字体大小设置"
+      },
+      "customization": {
+        "title": "界面定制",
+        "subtitle": "自定义聊天界面、消息气泡和工具栏的外观设置",
+        "topToolbar": { "primary": "顶部工具栏设置", "secondary": "自定义顶部工具栏的组件和布局，支持拖拽DIY布局" },
+        "chatInterface": { "primary": "聊天界面设置", "secondary": "自定义聊天界面布局和显示选项" },
+        "thinkingProcess": { "primary": "思考过程设置", "secondary": "自定义AI思考过程的显示方式和自动折叠行为" },
+        "messageBubble": { "primary": "信息气泡管理", "secondary": "调整消息气泡的样式和宽度设置" },
+        "inputToolbar": { "primary": "输入框工具栏设置", "secondary": "自定义输入框工具栏的背景样式和外观效果" },
+        "inputBox": { "primary": "输入框管理设置", "secondary": "自定义输入框的风格和布局样式" }
+      },
+      "devTools": {
+        "title": "开发者工具",
+        "subtitle": "用于调试和性能监控的开发者工具设置",
+        "performanceMonitor": { "primary": "显示性能监控", "secondary": "在聊天界面显示实时性能监控面板，包括FPS、滚动事件、渲染时间和内存使用情况" }
+      },
       "section": {
         "themeFont": {
           "title": "主题和字体",
@@ -356,6 +375,18 @@
         "expert": { "title": "🎓 专家论坛", "desc": "法律专家 + 经济学家 + 技术专家 + 主持人（4角色）" },
         "comprehensive": { "title": "🌟 全面分析", "desc": "6个不同角色的全方位辩论" }
       },
+      "group": {
+        "title": "配置分组管理",
+        "desc": "将不同的辩论配置保存为分组，方便快速切换",
+        "add": "新建分组",
+        "empty": "还没有任何分组",
+        "roleCount": "{{count}} 个角色 • 更新于 {{date}}",
+        "load": "加载",
+        "edit": "编辑",
+        "save": "保存",
+        "copy": "复制",
+        "delete": "删除"
+      },
       "role": {
         "title": "辩论角色管理",
         "desc": "创建和管理AI辩论中的各种角色",
@@ -375,6 +406,78 @@
           "neutral": "中立"
         },
         "modelLabel": "使用模型"
+      }
+    },
+    "modelCombo": {
+      "title": "模型组合",
+      "templates": {
+        "title": "模板组合",
+        "useTemplate": "使用此模板"
+      },
+      "strategy": {
+        "routing": "路由",
+        "ensemble": "集成",
+        "comparison": "对比",
+        "cascade": "级联",
+        "sequential": "顺序"
+      },
+      "myCombos": {
+        "title": "我的组合",
+        "emptyTitle": "还没有模型组合",
+        "emptyDesc": "创建模型组合，将多个模型编排为一个工作流。",
+        "createFirst": "创建第一个模型组合"
+      },
+      "deleteDialog": {
+        "title": "删除模型组合",
+        "content": "确定要删除模型组合 \"{{name}}\" 吗？"
+      }
+    },
+    "webSearch": {
+      "title": "网络搜索",
+      "basic": {
+        "title": "基础设置",
+        "enable": "启用搜索",
+        "enableTip": "启用后，AI 可通过网络搜索获取最新信息",
+        "provider": "搜索服务商"
+      },
+      "providers": {
+        "bing": "Bing 免费版",
+        "tavily": "Tavily",
+        "exa": "Exa",
+        "bocha": "Bocha AI",
+        "firecrawl": "Firecrawl",
+        "custom": "自定义"
+      },
+      "searchEngine": "搜索引擎",
+      "engines": {
+        "baidu": "百度",
+        "sogou": "搜狗"
+      },
+      "apiKey": "API 密钥",
+      "apiKeyPlaceholder": "输入 {{provider}} 的 API 密钥",
+      "alert": {
+        "tavily": "Tavily 每日有免费配额，注册后可获取 API 密钥。"
+      },
+      "options": {
+        "title": "搜索选项",
+        "maxResults": "最大结果数",
+        "includeInContext": "将搜索结果插入上下文",
+        "showTimestamp": "显示时间戳",
+        "safeSearch": "安全搜索过滤",
+        "addDate": "附加当前日期"
+      },
+      "advanced": {
+        "title": "高级过滤",
+        "excludeLabel": "排除关键字",
+        "placeholder": "输入要排除的关键字...(用逗号分隔)",
+        "note": "排除的关键字将不会出现在搜索结果中"
+      },
+      "customProvider": {
+        "enableThis": "启用此服务",
+        "add": "添加自定义服务",
+        "name": "服务名称",
+        "baseUrl": "基础 URL",
+        "apiKey": "API 密钥"
       }
     }
   },

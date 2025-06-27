@@ -14,26 +14,24 @@
         "en": "English"
       },
       "title": "Appearance Settings",
-      "section": {
-        "themeFont": {
-          "title": "Theme & Font",
-          "subtitle": "Customize app theme and global font size settings"
-        },
-        "customization": {
-          "title": "Interface Customization",
-          "subtitle": "Customize chat interface, message bubbles and toolbar appearance",
-          "topToolbar": { "primary": "Top Toolbar", "secondary": "Customize components and layout of top toolbar with drag-n-drop" },
-          "chatInterface": { "primary": "Chat Interface", "secondary": "Customize chat layout and display options" },
-          "thinkingProcess": { "primary": "Thinking Process", "secondary": "Customize how AI thinking process is displayed and auto-collapse behavior" },
-          "messageBubble": { "primary": "Message Bubble", "secondary": "Adjust bubble style and width settings" },
-          "inputToolbar": { "primary": "Input Toolbar", "secondary": "Customize background style and appearance of input toolbar" },
-          "inputBox": { "primary": "Input Box", "secondary": "Customize input box style and layout" }
-        },
-        "devTools": {
-          "title": "Developer Tools",
-          "subtitle": "Settings for debugging and performance monitor",
-          "performanceMonitor": { "primary": "Show Performance Monitor", "secondary": "Display real-time FPS, scroll events, render time and memory usage in chat view" }
-        }
+      "themeFont": {
+        "title": "Theme & Font",
+        "subtitle": "Customize app theme and global font size settings"
+      },
+      "customization": {
+        "title": "Interface Customization",
+        "subtitle": "Customize chat interface, message bubbles and toolbar appearance",
+        "topToolbar": { "primary": "Top Toolbar", "secondary": "Customize components and layout of top toolbar with drag-n-drop" },
+        "chatInterface": { "primary": "Chat Interface", "secondary": "Customize chat layout and display options" },
+        "thinkingProcess": { "primary": "Thinking Process", "secondary": "Customize how AI thinking process is displayed and auto-collapse behavior" },
+        "messageBubble": { "primary": "Message Bubble", "secondary": "Adjust bubble style and width settings" },
+        "inputToolbar": { "primary": "Input Toolbar", "secondary": "Customize background style and appearance of input toolbar" },
+        "inputBox": { "primary": "Input Box", "secondary": "Customize input box style and layout" }
+      },
+      "devTools": {
+        "title": "Developer Tools",
+        "subtitle": "Settings for debugging and performance monitor",
+        "performanceMonitor": { "primary": "Show Performance Monitor", "secondary": "Display real-time FPS, scroll events, render time and memory usage in chat view" }
       },
       "theme": {
         "label": "Theme",
@@ -356,6 +354,18 @@
         "expert": { "title": "🎓 Expert Forum", "desc": "Legal Expert + Economist + Tech Expert + Moderator (4 roles)" },
         "comprehensive": { "title": "🌟 Comprehensive Analysis", "desc": "6 different roles for a full debate" }
       },
+      "group": {
+        "title": "Config Groups",
+        "desc": "Save different debate configurations into groups for quick switching",
+        "add": "Add Group",
+        "empty": "No groups yet",
+        "roleCount": "{{count}} roles • Updated {{date}}",
+        "load": "Load",
+        "edit": "Edit",
+        "save": "Save",
+        "copy": "Copy",
+        "delete": "Delete"
+      },
       "role": {
         "title": "Debate Role Management",
         "desc": "Create and manage various roles in AI debate",
@@ -375,6 +385,78 @@
           "neutral": "Neutral"
         },
         "modelLabel": "Use Model"
+      }
+    },
+    "modelCombo": {
+      "title": "Model Combo",
+      "templates": {
+        "title": "Template Combos",
+        "useTemplate": "Use this template"
+      },
+      "strategy": {
+        "routing": "Routing",
+        "ensemble": "Ensemble",
+        "comparison": "Comparison",
+        "cascade": "Cascade",
+        "sequential": "Sequential"
+      },
+      "myCombos": {
+        "title": "My Combos",
+        "emptyTitle": "No model combos yet",
+        "emptyDesc": "Create a model combo to orchestrate multiple models into one workflow.",
+        "createFirst": "Create First Combo"
+      },
+      "deleteDialog": {
+        "title": "Delete Model Combo",
+        "content": "Are you sure you want to delete model combo \"{{name}}\"?"
+      }
+    },
+    "webSearch": {
+      "title": "Web Search",
+      "basic": {
+        "title": "Basic Settings",
+        "enable": "Enable Search",
+        "enableTip": "When enabled, AI can fetch latest info via web search",
+        "provider": "Search Provider"
+      },
+      "providers": {
+        "bing": "Bing Free",
+        "tavily": "Tavily",
+        "exa": "Exa",
+        "bocha": "Bocha AI",
+        "firecrawl": "Firecrawl",
+        "custom": "Custom"
+      },
+      "searchEngine": "Search Engine",
+      "engines": {
+        "baidu": "Baidu",
+        "sogou": "Sogou"
+      },
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter {{provider}} API key",
+      "alert": {
+        "tavily": "Tavily offers free daily quota. Get your API key at app.tavily.com."
+      },
+      "options": {
+        "title": "Search Options",
+        "maxResults": "Max results",
+        "includeInContext": "Include results in context",
+        "showTimestamp": "Show timestamp",
+        "safeSearch": "Safe search filter",
+        "addDate": "Append current date"
+      },
+      "advanced": {
+        "title": "Advanced Filters",
+        "excludeLabel": "Exclude keywords",
+        "placeholder": "Enter keywords to exclude... (comma separated)",
+        "note": "Excluded keywords will be filtered out from results"
+      },
+      "customProvider": {
+        "enableThis": "Enable this provider",
+        "add": "Add custom provider",
+        "name": "Provider Name",
+        "baseUrl": "Base URL",
+        "apiKey": "API Key"
       }
     }
   },
