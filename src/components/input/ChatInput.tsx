@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { IconButton, Tooltip } from '@mui/material';
+import { Keyboard, Mic, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 
@@ -7,12 +9,11 @@ import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import MultiModelSelector from './MultiModelSelector';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
 
-
 import type { FileStatus } from '../FilePreview';
 import UploadMenu from './UploadMenu';
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
-import ButtonToolbar from './ChatInput/ButtonToolbar';
+import ChatInputButtons from './ChatInput/ChatInputButtons';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { useSelector } from 'react-redux';
@@ -506,7 +507,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
 
 
-
   // 根据屏幕尺寸调整样式
   const getResponsiveStyles = () => {
     if (isMobile) {
@@ -604,31 +604,67 @@ const ChatInput: React.FC<ChatInputProps> = ({
         WebkitTouchCallout: 'none',
         WebkitTapHighlightColor: 'transparent'
       }}>
-        {/* 按钮工具栏 */}
-        <ButtonToolbar
-          voiceState={voiceState}
-          shouldHideVoiceButton={shouldHideVoiceButton}
-          showExpandButton={showExpandButton}
-          expanded={expanded}
-          isDarkMode={isDarkMode}
-          iconColor={iconColor}
-          disabledColor={disabledColor}
-          isTablet={isTablet}
-          uploadingMedia={uploadingMedia}
-          isLoading={isLoading}
-          allowConsecutiveMessages={allowConsecutiveMessages}
-          isStreaming={isStreaming}
-          imageGenerationMode={imageGenerationMode}
-          webSearchActive={webSearchActive}
-          images={images}
-          files={files}
-          canSendMessage={canSendMessage as () => boolean}
-          handleToggleVoiceMode={handleToggleVoiceMode}
-          handleExpandToggle={handleExpandToggle}
-          handleOpenUploadMenu={handleOpenUploadMenu}
-          handleSubmit={handleSubmit}
-          onStopResponse={onStopResponse}
-        />
+        {/* 展开/收起按钮 - 显示在输入框容器右上角 */}
+        {showExpandButton && (
+          <div style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            zIndex: 10
+          }}>
+            <Tooltip title={expanded ? "收起输入框" : "展开输入框"}>
+              <IconButton
+                onClick={handleExpandToggle}
+                size="small"
+                style={{
+                  color: expanded ? '#2196F3' : iconColor,
+                  padding: '2px',
+                  width: '20px',
+                  height: '20px',
+                  minWidth: '20px',
+                  backgroundColor: isDarkMode
+                    ? 'rgba(42, 42, 42, 0.9)'
+                    : 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(4px)',
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {expanded ? (
+                  <ChevronDown size={14} />
+                ) : (
+                  <ChevronUp size={14} />
+                )}
+              </IconButton>
+            </Tooltip>
+          </div>
+        )}
+
+        {/* 语音识别按钮 - 根据状态显示不同图标，当文本超过3行时隐藏 */}
+        {!shouldHideVoiceButton && (
+          <Tooltip title={voiceState === 'normal' ? "切换到语音输入模式" : "退出语音输入模式"}>
+            <span>
+              <IconButton
+                onClick={handleToggleVoiceMode}
+                disabled={uploadingMedia || (isLoading && !allowConsecutiveMessages)}
+                size={isTablet ? "large" : "medium"}
+                style={{
+                  color: voiceState !== 'normal' ? '#f44336' : (isDarkMode ? '#ffffff' : '#000000'),
+                  padding: isTablet ? '10px' : '8px',
+                  backgroundColor: voiceState !== 'normal' ? 'rgba(211, 47, 47, 0.15)' : 'transparent',
+                  transition: 'all 0.25s ease-in-out'
+                }}
+              >
+                {voiceState === 'normal' ? (
+                  <Mic size={isTablet ? 28 : 24} />
+                ) : (
+                  <Keyboard size={isTablet ? 28 : 24} />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
 
         {/* 输入区域 - 根据三状态显示不同的输入方式 */}
         {voiceState === 'recording' ? (
@@ -685,6 +721,26 @@ const ChatInput: React.FC<ChatInputProps> = ({
           />
         )}
 
+        {/* 在非录音状态下显示右侧按钮 */}
+        {voiceState !== 'recording' && (
+          <ChatInputButtons
+            uploadingMedia={uploadingMedia}
+            isLoading={isLoading}
+            allowConsecutiveMessages={allowConsecutiveMessages}
+            isStreaming={isStreaming}
+            imageGenerationMode={imageGenerationMode}
+            webSearchActive={webSearchActive}
+            images={images}
+            files={files}
+            isDarkMode={isDarkMode}
+            isTablet={isTablet}
+            disabledColor={disabledColor}
+            handleOpenUploadMenu={handleOpenUploadMenu}
+            handleSubmit={handleSubmit}
+            onStopResponse={onStopResponse}
+            canSendMessage={canSendMessage}
+          />
+        )}
 
       </div>
 

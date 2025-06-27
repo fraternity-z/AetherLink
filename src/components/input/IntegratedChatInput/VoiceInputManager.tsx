@@ -7,7 +7,7 @@ import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../..
 interface VoiceInputManagerProps {
   // 基础props
   message: string;
-  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  setMessage: (message: string) => void;
   isDarkMode: boolean;
   isLoading: boolean;
   allowConsecutiveMessages: boolean;
@@ -15,9 +15,9 @@ interface VoiceInputManagerProps {
 
   // 文件和图片相关
   files: FileContent[];
-  setImages: React.Dispatch<React.SetStateAction<ImageContent[]>>;
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
-  setUploadingMedia: React.Dispatch<React.SetStateAction<boolean>>;
+  setImages: (images: ImageContent[]) => void;
+  setFiles: (files: FileContent[]) => void;
+  setUploadingMedia: (uploading: boolean) => void;
   processImages: () => Promise<SiliconFlowImageFormat[]>;
 
   // 发送消息相关

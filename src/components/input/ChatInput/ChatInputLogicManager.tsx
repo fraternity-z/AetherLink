@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useChatInputLogic } from '../../../shared/hooks/useChatInputLogic';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import { toastManager } from '../../EnhancedToast';
@@ -22,8 +22,8 @@ interface ChatInputLogicManagerProps {
   // 文件和图片状态
   images: ImageContent[];
   files: FileContent[];
-  setImages: React.Dispatch<React.SetStateAction<ImageContent[]>>;
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  setImages: (images: ImageContent[]) => void;
+  setFiles: (files: FileContent[]) => void;
   
   // Toast消息管理
   setToastMessages: (messages: any[]) => void;

@@ -50,10 +50,10 @@ interface MenuManagerProps {
   // 多模型发送处理
   processImages: () => Promise<SiliconFlowImageFormat[]>;
   files: FileContent[];
-  setImages: React.Dispatch<React.SetStateAction<ImageContent[]>>;
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
-  setUploadingMedia: React.Dispatch<React.SetStateAction<boolean>>;
-  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  setImages: (images: ImageContent[]) => void;
+  setFiles: (files: FileContent[]) => void;
+  setUploadingMedia: (uploading: boolean) => void;
+  setMessage: (message: string) => void;
 }
 
 const useMenuManager = ({
