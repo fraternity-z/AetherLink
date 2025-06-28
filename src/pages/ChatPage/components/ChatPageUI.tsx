@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef, startTransition } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -52,6 +52,32 @@ const BUTTON_ANIMATION_CONFIG = {
   duration: 0.1
 } as const;
 
+// 🚀 预计算的布局配置 - 避免运行时计算
+const LAYOUT_CONFIGS = {
+  // 侧边栏关闭时的布局
+  SIDEBAR_CLOSED: {
+    mainContent: {
+      marginLeft: 0,
+      width: '100%'
+    },
+    inputContainer: {
+      left: 0,
+      width: '100%'
+    }
+  },
+  // 侧边栏打开时的布局
+  SIDEBAR_OPEN: {
+    mainContent: {
+      marginLeft: DRAWER_WIDTH,
+      width: `calc(100% - ${DRAWER_WIDTH}px)`
+    },
+    inputContainer: {
+      left: DRAWER_WIDTH,
+      width: `calc(100% - ${DRAWER_WIDTH}px)`
+    }
+  }
+} as const;
+
 // 记忆化的选择器 - 避免不必要的重渲染
 const selectChatPageSettings = createSelector(
   (state: RootState) => state.settings.themeStyle,
@@ -83,7 +109,7 @@ interface ChatPageUIProps {
   isLoading: boolean;
   isMobile: boolean;
   drawerOpen: boolean;
-  setDrawerOpen: (open: boolean) => void;
+  setDrawerOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   navigate: (path: string) => void;
   selectedModel: Model | null;
   availableModels: Model[];
@@ -116,6 +142,47 @@ interface ChatPageUIProps {
   showSearch?: boolean;
   onSearchToggle?: () => void;
 }
+
+// 自定义比较函数，只比较关键props - 更精确的比较
+const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) => {
+  // 🔧 分组比较，提高性能
+
+  // 1. 侧边栏相关的关键props
+  const sidebarPropsEqual = (
+    prevProps.drawerOpen === nextProps.drawerOpen &&
+    prevProps.isMobile === nextProps.isMobile
+  );
+
+  // 2. 内容相关的关键props
+  const contentPropsEqual = (
+    prevProps.currentTopic?.id === nextProps.currentTopic?.id &&
+    prevProps.currentMessages.length === nextProps.currentMessages.length &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.isLoading === nextProps.isLoading
+  );
+
+  // 3. UI状态相关的props
+  const uiPropsEqual = (
+    prevProps.selectedModel?.id === nextProps.selectedModel?.id &&
+    prevProps.menuOpen === nextProps.menuOpen &&
+    prevProps.showSearch === nextProps.showSearch
+  );
+
+  const result = sidebarPropsEqual && contentPropsEqual && uiPropsEqual;
+
+  // 🔧 调试日志：记录比较结果
+  if (!result) {
+    console.log('🔄 ChatPageUI props变化，需要重新渲染', {
+      sidebarPropsEqual,
+      contentPropsEqual,
+      uiPropsEqual,
+      drawerOpen: { prev: prevProps.drawerOpen, next: nextProps.drawerOpen },
+      isMobile: { prev: prevProps.isMobile, next: nextProps.isMobile }
+    });
+  }
+
+  return result;
+};
 
 // 使用 React.memo 优化组件，避免不必要的重新渲染
 export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
@@ -157,11 +224,37 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
   showSearch,
   onSearchToggle
 }) => {
+  // 🔧 渲染计数器，监控重复渲染
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log(`🎬 ChatPageUI渲染 #${renderCount.current}`, { drawerOpen, isMobile });
+
   // ==================== Hooks 和基础状态 ====================
   const theme = useTheme();
 
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
+
+  // 🔧 稳定化的回调函数，避免重复渲染 - 使用函数式更新
+  const handleToggleDrawer = useCallback(() => {
+    console.log('🔘 侧边栏切换开始', { current: drawerOpen });
+    // 🔧 使用startTransition + 函数式更新，完全避免依赖项
+    startTransition(() => {
+      setDrawerOpen(prev => !prev);
+    });
+  }, [setDrawerOpen]);
+
+  const handleMobileToggle = useCallback(() => {
+    startTransition(() => {
+      setDrawerOpen(prev => !prev);
+    });
+  }, [setDrawerOpen]);
+
+  const handleDesktopToggle = useCallback(() => {
+    startTransition(() => {
+      setDrawerOpen(prev => !prev);
+    });
+  }, [setDrawerOpen]);
 
   // 本地状态
 
@@ -259,7 +352,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
             <IconButton
               edge="start"
               color="inherit"
-              onClick={() => setDrawerOpen(!drawerOpen)}
+              onClick={handleToggleDrawer}
               sx={{ mr: isDIYMode ? 0 : 1 }}
             >
               <CustomIcon name="documentPanel" size={20} />
@@ -403,8 +496,8 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
     availableModels,
     menuOpen,
     showSearch,
-    // 稳定的函数引用
-    setDrawerOpen,
+    // 🔧 使用稳定的函数引用
+    handleToggleDrawer,
     handleCreateTopic,
     handleClearTopic,
     handleModelSelect,
@@ -499,10 +592,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
   const InputContainer = useMemo(() => (
     <motion.div
-      animate={{
-        left: isDrawerVisible ? DRAWER_WIDTH : 0,
-        width: isDrawerVisible ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%'
-      }}
+      animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       transition={ANIMATION_CONFIG}
       style={{
         position: 'fixed',
@@ -542,24 +632,17 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        px: 2
+        px: isMobile ? 0 : 2  // 移动端不要边距，桌面端保持边距
       }}>
         {inputComponent}
       </Box>
     </motion.div>
   ), [
+    // 🔧 只包含真正影响InputContainer的关键依赖
     isDrawerVisible,
     shouldShowToolbar,
     inputComponent,
-    handleClearTopic,
-    imageGenerationMode,
-    toggleImageGenerationMode,
-    videoGenerationMode,
-    toggleVideoGenerationMode,
-    webSearchActive,
-    toggleWebSearch,
-    toolsEnabled,
-    toggleToolsEnabled
+    isMobile
   ]);
 
   // ==================== 组件渲染 ====================
@@ -576,22 +659,29 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
         onToolsToggle={toggleToolsEnabled}
         {...(isMobile ? {
           mobileOpen: drawerOpen,
-          onMobileToggle: () => setDrawerOpen(!drawerOpen)
+          onMobileToggle: handleMobileToggle
         } : {
           desktopOpen: drawerOpen,
-          onDesktopToggle: () => setDrawerOpen(!drawerOpen)
+          onDesktopToggle: handleDesktopToggle
         })}
       />
 
-      {/* 主内容区域 - 移除margin，让Drawer自然推开 */}
+      {/* 主内容区域 - 🚀 使用预计算布局，避免Drawer推开导致的重新布局 */}
       <Box
+        component={motion.div}
+        animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.mainContent : LAYOUT_CONFIGS.SIDEBAR_CLOSED.mainContent}
+        transition={ANIMATION_CONFIG}
         sx={{
-          flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
           height: '100vh',
           overflow: 'hidden',
           backgroundColor: themeColors.background,
+          // 🔧 固定定位，避免被Drawer推开
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          zIndex: 1,
         }}
       >
         {/* 顶部应用栏 */}
@@ -715,4 +805,4 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
     </Box>
   );
-});
+}, arePropsEqual);

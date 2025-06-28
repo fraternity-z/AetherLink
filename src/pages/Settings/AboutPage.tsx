@@ -147,7 +147,7 @@ const AboutPage: React.FC = () => {
                 }}
               >
                 <img
-                  src="/assets/logo.png"
+                  src="/resources/icon.png"
                   alt="AetherLink Logo"
                   style={{
                     width: 120,
