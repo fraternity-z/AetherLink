@@ -143,40 +143,10 @@ interface ChatPageUIProps {
   onSearchToggle?: () => void;
 }
 
-// 自定义比较函数，只比较关键props - 更精确的比较
-const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) => {
-  // 🔧 分组比较，提高性能
 
-  // 1. 侧边栏相关的关键props
-  const sidebarPropsEqual = (
-    prevProps.drawerOpen === nextProps.drawerOpen &&
-    prevProps.isMobile === nextProps.isMobile
-  );
 
-  // 2. 内容相关的关键props
-  const contentPropsEqual = (
-    prevProps.currentTopic?.id === nextProps.currentTopic?.id &&
-    prevProps.currentMessages.length === nextProps.currentMessages.length &&
-    prevProps.isStreaming === nextProps.isStreaming &&
-    prevProps.isLoading === nextProps.isLoading &&
-    // 🔧 修复流式输出问题：检查最后一条消息的blocks是否变化
-    (prevProps.currentMessages.length === 0 ||
-     JSON.stringify(prevProps.currentMessages[prevProps.currentMessages.length - 1]?.blocks) ===
-     JSON.stringify(nextProps.currentMessages[nextProps.currentMessages.length - 1]?.blocks))
-  );
-
-  // 3. UI状态相关的props
-  const uiPropsEqual = (
-    prevProps.selectedModel?.id === nextProps.selectedModel?.id &&
-    prevProps.menuOpen === nextProps.menuOpen &&
-    prevProps.showSearch === nextProps.showSearch
-  );
-
-  return sidebarPropsEqual && contentPropsEqual && uiPropsEqual;
-};
-
-// 使用 React.memo 优化组件，避免不必要的重新渲染
-export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
+// 🔧 暂时移除memo优化，确保所有功能正常工作
+export const ChatPageUI: React.FC<ChatPageUIProps> = ({
   currentTopic,
   currentMessages,
   isStreaming,
@@ -796,4 +766,4 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
     </Box>
   );
-}, arePropsEqual);
+};
