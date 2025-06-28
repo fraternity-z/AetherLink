@@ -133,24 +133,23 @@ const MotionSidebar = React.memo(function MotionSidebar({
       display: 'flex',
       flexDirection: 'column',
       overflow: 'auto',
-      // 自定义滚动条样式 - 修复滚动问题：使滚动条更加可见
+      // 自定义滚动条样式
       '&::-webkit-scrollbar': {
-        width: '6px', // 增加滚动条宽度，使其更容易操作
+        width: '1px', // 故意设计为1px以隐藏滚动条
       },
       '&::-webkit-scrollbar-track': {
-        background: 'rgba(0, 0, 0, 0.05)', // 添加轻微背景色
-        borderRadius: '3px',
+        background: 'transparent',
       },
       '&::-webkit-scrollbar-thumb': {
-        background: 'rgba(0, 0, 0, 0.3)', // 增加滚动条可见度
+        background: 'rgba(0, 0, 0, 0.2)',
         borderRadius: '3px',
         '&:hover': {
-          background: 'rgba(0, 0, 0, 0.5)', // 悬停时更明显
+          background: 'rgba(0, 0, 0, 0.3)',
         },
       },
       // Firefox 滚动条样式
       scrollbarWidth: 'thin',
-      scrollbarColor: 'rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.05)',
+      scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
     }}>
       {(isSmallScreen || onDesktopToggle) && (
         <Box sx={{
@@ -286,22 +285,15 @@ const MotionSidebar = React.memo(function MotionSidebar({
     );
   }
 
-  // 🚀 桌面端：使用临时 Drawer，避免推开内容导致的性能问题
+  // 🚀 桌面端：回到persistent模式，但使用我们的预计算布局避免性能问题
   return (
     <Drawer
-      variant="temporary"
+      variant="persistent"
       anchor="left"
       open={finalOpen}
-      onClose={handleClose}
-      ModalProps={{
-        keepMounted: true, // 保持DOM挂载，提升性能
-        disablePortal: false,
-        // 🔧 移除背景遮罩，让内容可见
-        BackdropProps: {
-          invisible: true, // 隐藏背景遮罩
-        }
-      }}
       sx={{
+        width: 0, // 🔧 关键：设置为0，不占用布局空间，避免推开内容
+        flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
