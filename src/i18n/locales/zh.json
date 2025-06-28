@@ -661,7 +661,44 @@
         "devTools": "开发者工具"
       }
     },
-    "sidebar": {
+    "input": {
+      "placeholder": {
+        "default": "和ai助手说点什么...",
+        "defaultExpanded": "和ai助手说点什么... (Ctrl+Enter 全展开)",
+        "imageGeneration": "输入图像生成提示词... (Ctrl+Enter 全展开)",
+        "webSearch": "输入网络搜索内容... (Ctrl+Enter 全展开)"
+      },
+      "toolbar": {
+        "newTopic": "新建话题",
+        "clearTopic": "清空内容",
+        "clearConfirm": "确认清空",
+        "generateImage": "生成图片",
+        "cancelGenerate": "取消生成",
+        "generateVideo": "生成视频",
+        "tools": "工具",
+        "mcpTools": "MCP工具",
+        "knowledge": "知识库",
+        "webSearch": "网络搜索"
+      }
+    },
+    "message": {
+      "generating": "正在生成回复..."
+    },
+    "chat": {
+      "componentError": "组件加载出错，请刷新页面重试",
+      "newConversation": "新的对话开始了，请输入您的问题"
+    },
+    "common": {
+      "add": "添加",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除",
+      "import": "导入",
+      "close": "关闭",
+      "unknownError": "未知错误"
+    }
+  },
+  "sidebar": {
       "tabs": {
         "assistants": "助手",
         "topics": "话题",
@@ -710,42 +747,5 @@
           "createNewGroup": "创建新分组..."
         }
       }
-    },
-    "input": {
-      "placeholder": {
-        "default": "和ai助手说点什么...",
-        "defaultExpanded": "和ai助手说点什么... (Ctrl+Enter 全展开)",
-        "imageGeneration": "输入图像生成提示词... (Ctrl+Enter 全展开)",
-        "webSearch": "输入网络搜索内容... (Ctrl+Enter 全展开)"
-      },
-      "toolbar": {
-        "newTopic": "新建话题",
-        "clearTopic": "清空内容",
-        "clearConfirm": "确认清空",
-        "generateImage": "生成图片",
-        "cancelGenerate": "取消生成",
-        "generateVideo": "生成视频",
-        "tools": "工具",
-        "mcpTools": "MCP工具",
-        "knowledge": "知识库",
-        "webSearch": "网络搜索"
-      }
-    },
-    "message": {
-      "generating": "正在生成回复..."
-    },
-    "chat": {
-      "componentError": "组件加载出错，请刷新页面重试",
-      "newConversation": "新的对话开始了，请输入您的问题"
-    },
-    "common": {
-      "add": "添加",
-      "save": "保存",
-      "cancel": "取消",
-      "delete": "删除",
-      "import": "导入",
-      "close": "关闭",
-      "unknownError": "未知错误"
     }
-  }
 }

@@ -676,10 +676,10 @@
        "settings": "Settings"
      },
      "assistants": {
-       "title": "All Assistants",
+       "title": "Agents",
        "searchPlaceholder": "Search assistants...",
-       "createGroup": "Create Group",
-       "addAssistant": "Add Assistant",
+       "createGroup": "Group",
+       "addAssistant": "Assistant",
        "ungroupedTitle": "Ungrouped Assistants",
        "emptyUngrouped": "No ungrouped assistants",
        "emptyGroup": "This group has no assistants, please add from ungrouped assistants",

@@ -131,7 +131,7 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               }}
             >
               <Tab
-                label={t('settings.sidebar.tabs.assistants')}
+                label={t('sidebar.tabs.assistants')}
                 icon={<Bot size={18} />}
                 {...a11yProps(0)}
                 sx={{
@@ -150,7 +150,7 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                 }}
               />
               <Tab
-                label={t('settings.sidebar.tabs.topics')}
+                label={t('sidebar.tabs.topics')}
                 icon={<MessageSquare size={18} />}
                 {...a11yProps(1)}
                 sx={{
@@ -169,7 +169,7 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                 }}
               />
               <Tab
-                label={t('settings.sidebar.tabs.settings')}
+                label={t('sidebar.tabs.settings')}
                 icon={<Settings size={18} />}
                 {...a11yProps(2)}
                 sx={{
