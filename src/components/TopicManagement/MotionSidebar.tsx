@@ -285,22 +285,15 @@ const MotionSidebar = React.memo(function MotionSidebar({
     );
   }
 
-  // 🚀 桌面端：使用临时 Drawer，避免推开内容导致的性能问题
+  // 🚀 桌面端：回到persistent模式，但使用我们的预计算布局避免性能问题
   return (
     <Drawer
-      variant="temporary"
+      variant="persistent"
       anchor="left"
       open={finalOpen}
-      onClose={handleClose}
-      ModalProps={{
-        keepMounted: true, // 保持DOM挂载，提升性能
-        disablePortal: false,
-        // 🔧 移除背景遮罩，让内容可见
-        BackdropProps: {
-          invisible: true, // 隐藏背景遮罩
-        }
-      }}
       sx={{
+        width: 0, // 🔧 关键：设置为0，不占用布局空间，避免推开内容
+        flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',

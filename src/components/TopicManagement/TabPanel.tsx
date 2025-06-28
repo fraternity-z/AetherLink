@@ -20,18 +20,14 @@ const TabPanel = React.memo(function TabPanel(props: TabPanelProps) {
       id={`sidebar-tabpanel-${index}`}
       aria-labelledby={`sidebar-tab-${index}`}
       sx={{
-        height: 'calc(100% - 48px)',
-        overflow: 'auto',
+        // 修复滚动问题：移除内层滚动，让外层容器处理滚动
+        // height: 'calc(100% - 48px)', // 移除固定高度
+        // overflow: 'auto', // 移除内层滚动
         padding: '10px',
         display: value === index ? 'block' : 'none',
         // 性能优化 - 简化样式，减少重排计算
         transform: 'translateZ(0)', // 启用硬件加速
-        // 隐藏滚动条，与虚拟化列表保持一致
-        scrollbarWidth: 'none', // Firefox
-        msOverflowStyle: 'none', // IE/Edge
-        '&::-webkit-scrollbar': {
-          display: 'none', // WebKit浏览器
-        },
+        // 移除滚动条相关样式，因为不再需要内层滚动
         // 防止过度滚动
         overscrollBehavior: 'contain',
       }}

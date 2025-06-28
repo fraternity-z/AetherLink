@@ -143,45 +143,32 @@ interface ChatPageUIProps {
   onSearchToggle?: () => void;
 }
 
-// 自定义比较函数，只比较关键props - 更精确的比较
+// 🔧 修复：移除过度优化的React.memo比较函数，恢复默认行为
+// 只针对侧边栏相关的props进行优化，不影响聊天功能
 const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) => {
-  // 🔧 分组比较，提高性能
+  // 🚨 重要：对于聊天相关的props，使用默认比较（浅比较）
+  // 只优化侧边栏相关的props，确保聊天流式输出正常工作
 
-  // 1. 侧边栏相关的关键props
-  const sidebarPropsEqual = (
+  // 如果是流式输出状态变化，立即重新渲染
+  if (prevProps.isStreaming !== nextProps.isStreaming) {
+    return false;
+  }
+
+  // 如果消息数组引用变化（包括内容更新），立即重新渲染
+  if (prevProps.currentMessages !== nextProps.currentMessages) {
+    return false;
+  }
+
+  // 如果话题变化，立即重新渲染
+  if (prevProps.currentTopic !== nextProps.currentTopic) {
+    return false;
+  }
+
+  // 只对侧边栏相关的props进行优化
+  return (
     prevProps.drawerOpen === nextProps.drawerOpen &&
     prevProps.isMobile === nextProps.isMobile
   );
-
-  // 2. 内容相关的关键props
-  const contentPropsEqual = (
-    prevProps.currentTopic?.id === nextProps.currentTopic?.id &&
-    prevProps.currentMessages.length === nextProps.currentMessages.length &&
-    prevProps.isStreaming === nextProps.isStreaming &&
-    prevProps.isLoading === nextProps.isLoading
-  );
-
-  // 3. UI状态相关的props
-  const uiPropsEqual = (
-    prevProps.selectedModel?.id === nextProps.selectedModel?.id &&
-    prevProps.menuOpen === nextProps.menuOpen &&
-    prevProps.showSearch === nextProps.showSearch
-  );
-
-  const result = sidebarPropsEqual && contentPropsEqual && uiPropsEqual;
-
-  // 🔧 调试日志：记录比较结果
-  if (!result) {
-    console.log('🔄 ChatPageUI props变化，需要重新渲染', {
-      sidebarPropsEqual,
-      contentPropsEqual,
-      uiPropsEqual,
-      drawerOpen: { prev: prevProps.drawerOpen, next: nextProps.drawerOpen },
-      isMobile: { prev: prevProps.isMobile, next: nextProps.isMobile }
-    });
-  }
-
-  return result;
 };
 
 // 使用 React.memo 优化组件，避免不必要的重新渲染
