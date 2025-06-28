@@ -4,7 +4,7 @@ import {
   IconButton,
   useMediaQuery,
   useTheme,
-  Drawer
+  SwipeableDrawer
 } from '@mui/material';
 import { X as CloseIcon } from 'lucide-react';
 import SidebarTabs from './SidebarTabs';
@@ -59,10 +59,7 @@ const MotionSidebar = React.memo(function MotionSidebar({
   desktopOpen = true,
   onDesktopToggle
 }: MotionSidebarProps) {
-  // 🔧 渲染计数器，监控重复渲染
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log(`🎬 MotionSidebar渲染 #${renderCount.current}`, { mobileOpen, desktopOpen });
+
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md')); // 与ChatPageUI保持一致
@@ -197,118 +194,63 @@ const MotionSidebar = React.memo(function MotionSidebar({
   ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle, onDesktopToggle]);
 
   if (isSmallScreen) {
-    // 🚀 移动端：高性能Drawer + 简化手势支持
+    // 移动端：使用 SwipeableDrawer，支持右滑打开
     return (
-      <>
-        {/* � 高性能边缘滑动区域 - 替代SwipeableDrawer */}
-        {!finalOpen && (
-          <Box
-            sx={{
-              position: 'fixed',
-              left: 0,
-              top: 0,
-              width: 30, // 30px触发区域，与原SwipeableDrawer一致
-              height: '100vh',
-              zIndex: 1300,
-              backgroundColor: 'transparent',
-              // 🔧 添加视觉提示
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 3,
-                height: 40,
-                backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                borderRadius: '0 3px 3px 0',
-                opacity: 0,
-                transition: 'opacity 0.3s ease',
-              },
-              '&:active::after': {
-                opacity: 1,
-              }
-            }}
-            onTouchStart={(e) => {
-              // 🚀 优化的手势检测 - 比SwipeableDrawer更轻量
-              const touch = e.touches[0];
-              if (touch.clientX < 30) {
-                console.log('📱 移动端边缘滑动触发');
-                if (onMobileToggleRef.current) {
-                  onMobileToggleRef.current();
-                } else {
-                  setShowSidebar(true);
-                }
-              }
-            }}
-          />
-        )}
-
-        <Drawer
-          variant="temporary"
-          anchor="left"
-          open={finalOpen}
-          onClose={handleClose}
-          ModalProps={{
-            keepMounted: true, // 保持DOM挂载，提升性能
-            disablePortal: false,
-            // 🔧 优化背景遮罩性能
-            BackdropProps: {
-              sx: {
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                // 🚀 使用GPU加速的opacity动画
-                transition: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-              }
-            },
-            // 🔧 移动端性能优化
-            disableScrollLock: true, // 避免滚动锁定开销
-            disableEnforceFocus: true, // 减少焦点管理开销
-            disableAutoFocus: true, // 避免自动聚焦开销
-          }}
-          sx={{
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              borderRadius: '0 16px 16px 0',
-              boxShadow: theme.shadows[16],
-              // 🚀 关键优化：使用transform而不是默认动画
-              transform: finalOpen ? 'translateX(0)' : `translateX(-${drawerWidth}px)`,
-              transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-              // 🔧 移动端优化
-              willChange: 'transform', // 提示浏览器优化
-              backfaceVisibility: 'hidden', // 避免闪烁
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </>
+      <SwipeableDrawer
+        anchor="left"
+        open={finalOpen}
+        onClose={handleClose}
+        onOpen={() => {
+          // 滑动打开时的处理
+          if (onMobileToggleRef.current) {
+            onMobileToggleRef.current();
+          } else {
+            setShowSidebar(true);
+          }
+        }}
+        disableSwipeToOpen={false} // 启用滑动打开功能
+        swipeAreaWidth={30} // 设置滑动区域宽度为30px，更容易触发
+        disableBackdropTransition={false} // 启用背景过渡动画
+        disableDiscovery={false} // 启用发现模式，显示滑动提示
+        ModalProps={{
+          keepMounted: true, // 提升移动端性能
+        }}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            borderRadius: '0 16px 16px 0',
+            boxShadow: theme.shadows[16],
+          },
+        }}
+      >
+        {drawer}
+      </SwipeableDrawer>
     );
   }
 
-  // 🚀 桌面端：回到persistent模式，但使用我们的预计算布局避免性能问题
+  // 🚀 桌面端：直接用Box，不用Modal层
   return (
-    <Drawer
-      variant="persistent"
-      anchor="left"
-      open={finalOpen}
+    <Box
       sx={{
-        width: 0, // 🔧 关键：设置为0，不占用布局空间，避免推开内容
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-          borderRight: `1px solid ${theme.palette.divider}`,
-          // 🚀 关键优化：使用transform而不是width变化
-          transform: finalOpen ? 'translateX(0)' : `translateX(-${drawerWidth}px)`,
-          transition: theme.transitions.create(['transform'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-          }),
-        },
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        width: drawerWidth,
+        height: '100vh',
+        zIndex: 0,
+        boxSizing: 'border-box',
+        borderRight: `1px solid ${theme.palette.divider}`,
+        backgroundColor: theme.palette.background.paper,
+        // 🚀 关键优化：使用transform而不是width变化，避免重新布局
+        transform: finalOpen ? 'translateX(0)' : `translateX(-${drawerWidth}px)`,
+        transition: theme.transitions.create(['transform'], {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.enteringScreen,
+        }),
       }}
     >
       {drawer}
-    </Drawer>
+    </Box>
   );
 }, areMotionSidebarPropsEqual);
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, startTransition } from 'react';
+import React, { useMemo, useCallback, startTransition } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -143,32 +143,36 @@ interface ChatPageUIProps {
   onSearchToggle?: () => void;
 }
 
-// 🔧 修复：移除过度优化的React.memo比较函数，恢复默认行为
-// 只针对侧边栏相关的props进行优化，不影响聊天功能
+// 自定义比较函数，只比较关键props - 更精确的比较
 const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) => {
-  // 🚨 重要：对于聊天相关的props，使用默认比较（浅比较）
-  // 只优化侧边栏相关的props，确保聊天流式输出正常工作
+  // 🔧 分组比较，提高性能
 
-  // 如果是流式输出状态变化，立即重新渲染
-  if (prevProps.isStreaming !== nextProps.isStreaming) {
-    return false;
-  }
-
-  // 如果消息数组引用变化（包括内容更新），立即重新渲染
-  if (prevProps.currentMessages !== nextProps.currentMessages) {
-    return false;
-  }
-
-  // 如果话题变化，立即重新渲染
-  if (prevProps.currentTopic !== nextProps.currentTopic) {
-    return false;
-  }
-
-  // 只对侧边栏相关的props进行优化
-  return (
+  // 1. 侧边栏相关的关键props
+  const sidebarPropsEqual = (
     prevProps.drawerOpen === nextProps.drawerOpen &&
     prevProps.isMobile === nextProps.isMobile
   );
+
+  // 2. 内容相关的关键props
+  const contentPropsEqual = (
+    prevProps.currentTopic?.id === nextProps.currentTopic?.id &&
+    prevProps.currentMessages.length === nextProps.currentMessages.length &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.isLoading === nextProps.isLoading &&
+    // 🔧 修复流式输出问题：检查最后一条消息的blocks是否变化
+    (prevProps.currentMessages.length === 0 ||
+     JSON.stringify(prevProps.currentMessages[prevProps.currentMessages.length - 1]?.blocks) ===
+     JSON.stringify(nextProps.currentMessages[nextProps.currentMessages.length - 1]?.blocks))
+  );
+
+  // 3. UI状态相关的props
+  const uiPropsEqual = (
+    prevProps.selectedModel?.id === nextProps.selectedModel?.id &&
+    prevProps.menuOpen === nextProps.menuOpen &&
+    prevProps.showSearch === nextProps.showSearch
+  );
+
+  return sidebarPropsEqual && contentPropsEqual && uiPropsEqual;
 };
 
 // 使用 React.memo 优化组件，避免不必要的重新渲染
@@ -211,10 +215,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
   showSearch,
   onSearchToggle
 }) => {
-  // 🔧 渲染计数器，监控重复渲染
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log(`🎬 ChatPageUI渲染 #${renderCount.current}`, { drawerOpen, isMobile });
+
 
   // ==================== Hooks 和基础状态 ====================
   const theme = useTheme();
@@ -224,7 +225,6 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
   // 🔧 稳定化的回调函数，避免重复渲染 - 使用函数式更新
   const handleToggleDrawer = useCallback(() => {
-    console.log('🔘 侧边栏切换开始', { current: drawerOpen });
     // 🔧 使用startTransition + 函数式更新，完全避免依赖项
     startTransition(() => {
       setDrawerOpen(prev => !prev);
