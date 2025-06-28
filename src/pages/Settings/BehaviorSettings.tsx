@@ -16,10 +16,10 @@ import {
   ListItemText,
   Avatar
 } from '@mui/material';
-import { ArrowLeft, Send, Bell } from 'lucide-react';
+import { ArrowLeft, Send, Bell, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { setSendWithEnter, setEnableNotifications } from '../../shared/store/settingsSlice';
+import { setSendWithEnter, setEnableNotifications, setMobileInputMethodEnterAsNewline } from '../../shared/store/settingsSlice';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useTranslation } from 'react-i18next';
 
@@ -217,6 +217,52 @@ const BehaviorSettings: React.FC = () => {
                       <ListItemText
                         primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.notifications.primary')}</Typography>}
                         secondary={t('settings.behavior.notifications.secondary')}
+                      />
+                    </Box>
+                  }
+                />
+              </Box>
+            </ListItem>
+
+            <Divider variant="inset" component="li" sx={{ ml: 0 }} />
+
+            <ListItem disablePadding>
+              <Box sx={{ width: '100%', p: 2 }}>
+                <FormControlLabel
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    m: 0,
+                    '& .MuiFormControlLabel-label': {
+                      flex: 1
+                    }
+                  }}
+                  labelPlacement="start"
+                  control={
+                    <Switch
+                      checked={settings.mobileInputMethodEnterAsNewline}
+                      onChange={(e) => dispatch(setMobileInputMethodEnterAsNewline(e.target.checked))}
+                      color="primary"
+                      sx={{ ml: 2 }}
+                    />
+                  }
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <ListItemAvatar sx={{ minWidth: 'auto', mr: 2 }}>
+                        <Avatar sx={{
+                          bgcolor: alpha('#f59e0b', 0.12),
+                          color: '#f59e0b',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                          width: 40,
+                          height: 40
+                        }}>
+                          <Smartphone size={20} />
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>移动端输入法换行模式</Typography>}
+                        secondary="开启后，移动端输入法的发送按钮将变为换行功能，需要点击输入框的发送按钮来发送消息"
                       />
                     </Box>
                   }

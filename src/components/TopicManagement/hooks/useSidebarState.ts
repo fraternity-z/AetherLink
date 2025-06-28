@@ -8,6 +8,7 @@ import type { Assistant } from '../../../shared/types/Assistant';
 import type { RootState } from '../../../shared/store';
 import { setAssistants, setCurrentAssistant as setReduxCurrentAssistant } from '../../../shared/store/slices/assistantsSlice';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
+import { topicCacheManager } from '../../../shared/services/TopicCacheManager';
 
 /**
  * 侧边栏状态管理钩子
@@ -69,8 +70,8 @@ export function useSidebarState() {
           }
         }
 
-        // 🔄 兜底：从数据库加载话题
-        const topic = await dexieStorage.getTopic(currentTopicId);
+        // 🔄 兜底：从数据库加载话题 - 使用缓存管理器
+        const topic = await topicCacheManager.getTopic(currentTopicId);
         if (topic) {
           console.log('[useSidebarState] 从数据库加载话题:', topic.name);
           setCurrentTopic(topic);
