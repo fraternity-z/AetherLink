@@ -133,23 +133,24 @@ const MotionSidebar = React.memo(function MotionSidebar({
       display: 'flex',
       flexDirection: 'column',
       overflow: 'auto',
-      // 自定义滚动条样式
+      // 自定义滚动条样式 - 修复滚动问题：使滚动条更加可见
       '&::-webkit-scrollbar': {
-        width: '1px', // 故意设计为1px以隐藏滚动条
+        width: '6px', // 增加滚动条宽度，使其更容易操作
       },
       '&::-webkit-scrollbar-track': {
-        background: 'transparent',
+        background: 'rgba(0, 0, 0, 0.05)', // 添加轻微背景色
+        borderRadius: '3px',
       },
       '&::-webkit-scrollbar-thumb': {
-        background: 'rgba(0, 0, 0, 0.2)',
+        background: 'rgba(0, 0, 0, 0.3)', // 增加滚动条可见度
         borderRadius: '3px',
         '&:hover': {
-          background: 'rgba(0, 0, 0, 0.3)',
+          background: 'rgba(0, 0, 0, 0.5)', // 悬停时更明显
         },
       },
       // Firefox 滚动条样式
       scrollbarWidth: 'thin',
-      scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+      scrollbarColor: 'rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.05)',
     }}>
       {(isSmallScreen || onDesktopToggle) && (
         <Box sx={{
