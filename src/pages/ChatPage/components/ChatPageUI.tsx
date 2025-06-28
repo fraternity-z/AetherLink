@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, startTransition } from 'react';
+import React, { useMemo, useCallback, useRef, startTransition } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -215,7 +215,10 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
   showSearch,
   onSearchToggle
 }) => {
-
+  // 🔧 渲染计数器，监控重复渲染
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log(`🎬 ChatPageUI渲染 #${renderCount.current}`, { drawerOpen, isMobile });
 
   // ==================== Hooks 和基础状态 ====================
   const theme = useTheme();
@@ -225,6 +228,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
 
   // 🔧 稳定化的回调函数，避免重复渲染 - 使用函数式更新
   const handleToggleDrawer = useCallback(() => {
+    console.log('🔘 侧边栏切换开始', { current: drawerOpen });
     // 🔧 使用startTransition + 函数式更新，完全避免依赖项
     startTransition(() => {
       setDrawerOpen(prev => !prev);
