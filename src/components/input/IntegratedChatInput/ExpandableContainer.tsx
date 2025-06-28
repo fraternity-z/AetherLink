@@ -202,7 +202,7 @@ const useExpandableContainer = ({
           display: 'flex',
           flexDirection: 'column',
           padding: isTablet ? '8px 12px' : isMobile ? '6px 8px' : '7px 10px',
-          borderRadius: '20px',
+          borderRadius: borderRadius,
           background: themeColors.paper,
           border: border,
           minHeight: isTablet ? '72px' : isMobile ? '64px' : '68px',
@@ -227,7 +227,7 @@ const useExpandableContainer = ({
     );
   }, [
     getResponsiveStyles, isKeyboardVisible, isMobile, isTablet, isIOS, themeColors.paper,
-    border, boxShadow, inputBoxStyle, renderExpandButton
+    border, borderRadius, boxShadow, inputBoxStyle, renderExpandButton
   ]);
 
   return {
