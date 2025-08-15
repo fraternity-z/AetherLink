@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -41,16 +41,18 @@ const DefaultModelSettingsPage: React.FC = () => {
   const [modelSelectorOpen, setModelSelectorOpen] = useState<boolean>(false);
 
   // 获取所有可用模型
-  const allModels = providers
-    .filter(provider => provider.isEnabled)
-    .flatMap(provider =>
-      provider.models
-        .filter(model => model.enabled)
-        .map(model => ({
-          ...model,
-          providerName: provider.name // 添加提供商名称
-        }))
-    );
+  const allModels = useMemo(() => (
+    providers
+      .filter(provider => provider.isEnabled)
+      .flatMap(provider =>
+        provider.models
+          .filter(model => model.enabled)
+          .map(model => ({
+            ...model,
+            providerName: provider.name // 添加提供商名称
+          }))
+      )
+  ), [providers]);
 
   // 当前选中的模型
   const selectedModel = allModels.find(model => model.id === (topicNamingModelId || defaultModelId)) || null;
