@@ -21,7 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { updateSettings } from '../../../shared/store/settingsSlice';
 import DialogModelSelector from '../../../pages/ChatPage/components/DialogModelSelector';
-import DropdownModelSelector from '../../../pages/ChatPage/components/DropdownModelSelector';
+
 
 const DefaultModelSettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -32,7 +32,6 @@ const DefaultModelSettingsPage: React.FC = () => {
   const topicNamingModelId = useSelector((state: RootState) => state.settings.topicNamingModelId);
   const providers = useSelector((state: RootState) => state.settings.providers);
 
-  const modelSelectorStyle = useSelector((state: RootState) => state.settings.modelSelectorStyle || 'dialog');
 
   // 话题命名功能的状态 - 统一字段名称
   const enableTopicNaming = useSelector((state: RootState) => state.settings.enableTopicNaming);
@@ -42,12 +41,16 @@ const DefaultModelSettingsPage: React.FC = () => {
   const [modelSelectorOpen, setModelSelectorOpen] = useState<boolean>(false);
 
   // 获取所有可用模型
-  const allModels = providers.flatMap(provider =>
-    provider.models.filter(model => model.enabled).map(model => ({
-      ...model,
-      providerName: provider.name // 添加提供商名称
-    }))
-  );
+  const allModels = providers
+    .filter(provider => provider.isEnabled)
+    .flatMap(provider =>
+      provider.models
+        .filter(model => model.enabled)
+        .map(model => ({
+          ...model,
+          providerName: provider.name // 添加提供商名称
+        }))
+    );
 
   // 当前选中的模型
   const selectedModel = allModels.find(model => model.id === (topicNamingModelId || defaultModelId)) || null;
@@ -179,25 +182,21 @@ const DefaultModelSettingsPage: React.FC = () => {
 
           <Divider />
 
-          <Box sx={{ p: 2 }}>
-            {modelSelectorStyle === 'dropdown' ? (
-              // 下拉式选择器
-              <DropdownModelSelector
-                selectedModel={selectedModel}
-                availableModels={allModels}
-                handleModelSelect={handleTopicNamingModelChange}
-              />
-            ) : (
-              // 弹窗式选择器
-              <DialogModelSelector
-                selectedModel={selectedModel}
-                availableModels={allModels}
-                handleModelSelect={handleTopicNamingModelChange}
-                handleMenuClick={handleOpenModelSelector}
-                handleMenuClose={handleCloseModelSelector}
-                menuOpen={modelSelectorOpen}
-              />
-            )}
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Button variant="outlined" onClick={handleOpenModelSelector} size="small">
+              选择模型
+            </Button>
+            <Typography variant="body2" color="text.secondary">
+              当前：{selectedModel ? selectedModel.name : '未选择'}
+            </Typography>
+            <DialogModelSelector
+              selectedModel={selectedModel}
+              availableModels={allModels}
+              handleModelSelect={handleTopicNamingModelChange}
+              handleMenuClick={handleOpenModelSelector}
+              handleMenuClose={handleCloseModelSelector}
+              menuOpen={modelSelectorOpen}
+            />
           </Box>
         </Paper>
 
