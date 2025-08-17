@@ -32,7 +32,7 @@ const ThinkingProcessSettings: React.FC = () => {
   const settings = useAppSelector((state) => state.settings);
 
   // 获取思考过程相关设置
-  const thinkingDisplayStyle = (settings as any).thinkingDisplayStyle || ThinkingDisplayStyle.COMPACT;
+  const thinkingDisplayStyle = ThinkingDisplayStyle.STREAM; // 仅保留流式文字
   const thoughtAutoCollapse = (settings as any).thoughtAutoCollapse !== false;
 
   // 创建预览用的思考块数据
@@ -76,10 +76,8 @@ const ThinkingProcessSettings: React.FC = () => {
   };
 
   // 事件处理函数
-  const handleThinkingStyleChange = (event: { target: { value: any } }) => {
-    dispatch(updateSettings({
-      thinkingDisplayStyle: event.target.value
-    }));
+  const handleThinkingStyleChange = () => {
+    // 仅单一样式，无需处理
   };
 
   const handleThoughtAutoCollapseChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,27 +87,7 @@ const ThinkingProcessSettings: React.FC = () => {
   };
 
   // 获取样式显示名称的辅助函数
-  const getStyleDisplayName = (style: string) => {
-    const styleNames: Record<string, string> = {
-      [ThinkingDisplayStyle.COMPACT]: '紧凑模式',
-      [ThinkingDisplayStyle.FULL]: '完整模式',
-      [ThinkingDisplayStyle.MINIMAL]: '极简模式',
-      [ThinkingDisplayStyle.BUBBLE]: '气泡模式',
-      [ThinkingDisplayStyle.TIMELINE]: '时间线模式',
-      [ThinkingDisplayStyle.CARD]: '卡片模式',
-      [ThinkingDisplayStyle.INLINE]: '内联模式',
-      [ThinkingDisplayStyle.HIDDEN]: '隐藏',
-      [ThinkingDisplayStyle.STREAM]: '🌊 流式文字',
-      [ThinkingDisplayStyle.DOTS]: '💫 思考点动画',
-      [ThinkingDisplayStyle.WAVE]: '🌀 波浪流动',
-      [ThinkingDisplayStyle.SIDEBAR]: '📋 侧边栏',
-      [ThinkingDisplayStyle.OVERLAY]: '🔍 全屏覆盖',
-      [ThinkingDisplayStyle.BREADCRUMB]: '🔗 面包屑',
-      [ThinkingDisplayStyle.FLOATING]: '✨ 悬浮气泡',
-      [ThinkingDisplayStyle.TERMINAL]: '💻 终端模式'
-    };
-    return styleNames[style] || style;
-  };
+  const getStyleDisplayName = () => '🌊 流式文字';
 
   return (
     <Box sx={{
@@ -221,32 +199,8 @@ const ThinkingProcessSettings: React.FC = () => {
           <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
             <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
               <InputLabel>显示样式</InputLabel>
-              <Select
-                value={thinkingDisplayStyle}
-                onChange={handleThinkingStyleChange}
-                label="显示样式"
-                MenuProps={{
-                  disableAutoFocus: true,
-                  disableRestoreFocus: true
-                }}
-              >
-                <MenuItem value={ThinkingDisplayStyle.COMPACT}>紧凑模式（可折叠）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.FULL}>完整模式（始终展开）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.MINIMAL}>极简模式（小图标）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.BUBBLE}>气泡模式（聊天气泡）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.TIMELINE}>时间线模式（左侧指示器）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.CARD}>卡片模式（突出显示）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.INLINE}>内联模式（嵌入消息）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.HIDDEN}>隐藏（不显示思考过程）</MenuItem>
-                {/* 2025年新增的先进样式 */}
+              <Select value={thinkingDisplayStyle} onChange={handleThinkingStyleChange} label="显示样式" disabled>
                 <MenuItem value={ThinkingDisplayStyle.STREAM}>🌊 流式文字（逐字显示）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.DOTS}>💫 思考点动画（输入指示器）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.WAVE}>🌀 波浪流动（思维可视化）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.SIDEBAR}>📋 侧边栏（滑出显示）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.OVERLAY}>🔍 全屏覆盖（沉浸体验）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.BREADCRUMB}>🔗 面包屑（步骤展示）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.FLOATING}>✨ 悬浮气泡（跟随鼠标）</MenuItem>
-                <MenuItem value={ThinkingDisplayStyle.TERMINAL}>💻 终端模式（命令行风格）</MenuItem>
               </Select>
             </FormControl>
 
@@ -263,40 +217,14 @@ const ThinkingProcessSettings: React.FC = () => {
               />
             </FormGroup>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mt: 1,
-                fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                lineHeight: 1.5
-              }}
-            >
-              设置AI助手思考过程的显示方式：
-              <br />• 紧凑模式：标准卡片样式，可折叠展开
-              <br />• 完整模式：始终展开显示全部内容
-              <br />• 极简模式：只显示小图标，悬停查看内容
-              <br />• 气泡模式：类似聊天气泡的圆润设计
-              <br />• 时间线模式：左侧带时间线指示器
-              <br />• 卡片模式：突出的渐变卡片设计
-              <br />• 内联模式：嵌入在消息中的紧凑显示
-              <br />• 隐藏：完全不显示思考过程
-              <br />
-              <br />🚀 <strong>2025年新增先进样式：</strong>
-              <br />• 流式文字：打字机效果，逐字显示思考内容
-              <br />• 思考点动画：类似聊天应用的"正在输入"指示器
-              <br />• 波浪流动：动态波浪效果，可视化思维流动
-              <br />• 侧边栏：从右侧滑出的全屏思考面板
-              <br />• 全屏覆盖：沉浸式全屏思考内容展示
-              <br />• 面包屑：步骤化展示思考过程的关键节点
-              <br />• 悬浮气泡：跟随鼠标的动态悬浮预览
-              <br />• 终端模式：程序员风格的命令行界面显示
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' }, lineHeight: 1.5 }}>
+              当前系统仅保留 <strong>流式文字（逐字显示）</strong> 思考过程展示方式，其它样式已移除。
             </Typography>
           </Box>
         </Paper>
 
         {/* 实时预览组件 */}
-        {thinkingDisplayStyle !== ThinkingDisplayStyle.HIDDEN && (
+  {true && (
           <Paper
             elevation={0}
             sx={{
@@ -344,7 +272,7 @@ const ThinkingProcessSettings: React.FC = () => {
                 color="text.secondary"
                 sx={{ mb: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
               >
-                当前样式：<strong>{getStyleDisplayName(thinkingDisplayStyle)}</strong>
+                当前样式：<strong>{getStyleDisplayName()}</strong>
               </Typography>
 
               {/* 预览思考块 */}

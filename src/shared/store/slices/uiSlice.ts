@@ -6,8 +6,8 @@ export interface UIState {
   generating: boolean;
   // 是否显示思考过程
   showThinking: boolean;
-  // 思考过程显示样式
-  thinkingDisplayStyle: 'compact' | 'detailed' | 'hidden';
+  // 思考过程显示样式（仅保留流式文字）
+  thinkingDisplayStyle: 'stream';
   // 思考过程自动折叠
   thoughtAutoCollapse: boolean;
   // 思考过程默认深度
@@ -39,7 +39,7 @@ export interface UIState {
 const initialState: UIState = {
   generating: false,
   showThinking: true,
-  thinkingDisplayStyle: 'compact',
+  thinkingDisplayStyle: 'stream',
   thoughtAutoCollapse: true,
   defaultThinkingEffort: 'high',
   multiModelDisplayStyle: 'horizontal',
@@ -65,7 +65,7 @@ export const uiSlice = createSlice({
     setShowThinking: (state, action: PayloadAction<boolean>) => {
       state.showThinking = action.payload;
     },
-    setThinkingDisplayStyle: (state, action: PayloadAction<'compact' | 'detailed' | 'hidden'>) => {
+    setThinkingDisplayStyle: (state, action: PayloadAction<'stream'>) => {
       state.thinkingDisplayStyle = action.payload;
     },
     setThoughtAutoCollapse: (state, action: PayloadAction<boolean>) => {

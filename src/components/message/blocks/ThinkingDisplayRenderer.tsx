@@ -798,10 +798,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
 
   // 检查是否是高级样式
   const advancedStyles = ['stream', 'wave', 'sidebar', 'overlay', 'breadcrumb', 'floating', 'terminal'];
-  if (advancedStyles.includes(displayStyle)) {
+  if (displayStyle === 'stream') {
     return (
       <ThinkingAdvancedStyles
-        displayStyle={displayStyle}
+        displayStyle={'stream'}
         isThinking={isThinking}
         thinkingTime={thinkingTime}
         content={content}
@@ -820,25 +820,8 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   }
 
   // 根据样式选择渲染方法
-  switch (displayStyle) {
-    case 'full':
-      return renderFullStyle();
-    case 'minimal':
-      return renderMinimalStyle();
-    case 'bubble':
-      return renderBubbleStyle();
-    case 'timeline':
-      return renderTimelineStyle();
-    case 'card':
-      return renderCardStyle();
-    case 'inline':
-      return renderInlineStyle();
-    case 'dots':
-      return renderDotsStyle();
-    case 'compact':
-    default:
-      return renderCompactStyle();
-  }
+  // 仅保留流式样式，其余不渲染
+  return null;
 };
 
 export default React.memo(ThinkingDisplayRenderer);

@@ -31,15 +31,13 @@ const ThinkingSettings: React.FC = () => {
   const dispatch = useDispatch();
   const {
     showThinking,
-    thinkingDisplayStyle,
     thoughtAutoCollapse,
     defaultThinkingEffort
   } = useSelector((state: RootState) => state.ui);
 
   // 处理显示样式变更
-  const handleDisplayStyleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setThinkingDisplayStyle(event.target.value as 'compact' | 'detailed' | 'hidden'));
-  };
+  // 仅保留流式文字，保持 UI 状态与设置一致
+  const setStreamStyle = () => dispatch(setThinkingDisplayStyle('stream'));
 
   // 处理自动折叠变更
   const handleAutoCollapseChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,16 +87,11 @@ const ThinkingSettings: React.FC = () => {
         />
       </FormGroup>
 
-      {/* 思考过程显示样式 */}
+      {/* 思考过程显示样式（仅保留流式文字） */}
       <FormControl component="fieldset" sx={{ mt: 2 }} disabled={!showThinking}>
-        <FormLabel component="legend">思考过程显示样式</FormLabel>
-        <RadioGroup
-          value={thinkingDisplayStyle}
-          onChange={handleDisplayStyleChange}
-        >
-          <FormControlLabel value="compact" control={<Radio />} label="紧凑模式" />
-          <FormControlLabel value="detailed" control={<Radio />} label="详细模式" />
-          <FormControlLabel value="hidden" control={<Radio />} label="隐藏模式" />
+        <FormLabel component="legend">显示样式</FormLabel>
+        <RadioGroup value={'stream'}>
+          <FormControlLabel value="stream" control={<Radio />} label="流式文字（逐字显示）" onClick={setStreamStyle} />
         </RadioGroup>
       </FormControl>
 

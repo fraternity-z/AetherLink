@@ -8,28 +8,11 @@ import { useDeepMemo } from '../../../hooks/useMemoization';
 import ThinkingDisplayRenderer from './ThinkingDisplayRenderer';
 
 // 思考过程显示样式类型
-export type ThinkingDisplayStyle = 'compact' | 'full' | 'hidden' | 'minimal' | 'bubble' | 'timeline' | 'card' | 'inline' |
-  'stream' | 'dots' | 'wave' | 'sidebar' | 'overlay' | 'breadcrumb' | 'floating' | 'terminal';
+export type ThinkingDisplayStyle = 'stream';
 
 // 思考过程显示样式常量
 export const ThinkingDisplayStyle = {
-  COMPACT: 'compact' as ThinkingDisplayStyle,
-  FULL: 'full' as ThinkingDisplayStyle,
-  HIDDEN: 'hidden' as ThinkingDisplayStyle,
-  MINIMAL: 'minimal' as ThinkingDisplayStyle,
-  BUBBLE: 'bubble' as ThinkingDisplayStyle,
-  TIMELINE: 'timeline' as ThinkingDisplayStyle,
-  CARD: 'card' as ThinkingDisplayStyle,
-  INLINE: 'inline' as ThinkingDisplayStyle,
-  // 2025年新增的先进样式
-  STREAM: 'stream' as ThinkingDisplayStyle,
-  DOTS: 'dots' as ThinkingDisplayStyle,
-  WAVE: 'wave' as ThinkingDisplayStyle,
-  SIDEBAR: 'sidebar' as ThinkingDisplayStyle,
-  OVERLAY: 'overlay' as ThinkingDisplayStyle,
-  BREADCRUMB: 'breadcrumb' as ThinkingDisplayStyle,
-  FLOATING: 'floating' as ThinkingDisplayStyle,
-  TERMINAL: 'terminal' as ThinkingDisplayStyle
+  STREAM: 'stream' as ThinkingDisplayStyle
 };
 
 interface Props {
@@ -41,10 +24,8 @@ interface Props {
  * 显示AI的思考过程，支持多种显示样式
  */
 const ThinkingBlock: React.FC<Props> = ({ block }) => {
-  // 从设置中获取思考过程显示样式
-  const thinkingDisplayStyle = useSelector((state: RootState) =>
-    (state.settings as any).thinkingDisplayStyle || 'compact'
-  );
+  // 固定为流式文字显示
+  const thinkingDisplayStyle: ThinkingDisplayStyle = 'stream';
 
   // 从设置中获取是否自动折叠思考过程
   const thoughtAutoCollapse = useSelector((state: RootState) =>

@@ -10,8 +10,8 @@ export interface SettingsState {
   // 主题设置
   theme: 'light' | 'dark' | 'system';
 
-  // 思考过程显示样式
-  thinkingDisplayStyle?: 'compact' | 'full' | 'hidden';
+  // 思考过程显示样式（仅保留流式文字）
+  thinkingDisplayStyle?: 'stream';
 
   // 思考过程自动折叠
   thoughtAutoCollapse?: boolean;
@@ -63,7 +63,7 @@ const loadFromStorage = async (): Promise<SettingsState> => {
   // 默认初始状态
   return {
     theme: 'system',
-    thinkingDisplayStyle: 'compact',
+    thinkingDisplayStyle: 'stream',
     thoughtAutoCollapse: true,
     defaultThinkingEffort: 'medium',
     multiModelDisplayStyle: 'horizontal',
@@ -95,7 +95,7 @@ const loadFromStorage = async (): Promise<SettingsState> => {
 // 定义初始状态（首次加载使用默认值）
 const initialState: SettingsState = {
   theme: 'system',
-  thinkingDisplayStyle: 'compact',
+  thinkingDisplayStyle: 'stream',
   thoughtAutoCollapse: true,
   defaultThinkingEffort: 'medium',
   multiModelDisplayStyle: 'horizontal',

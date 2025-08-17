@@ -167,11 +167,8 @@ const MessageBlockRenderer: React.FC<Props> = ({
 
             switch (block.type) {
               case MessageBlockType.UNKNOWN:
-                // 参考最佳实例逻辑：PROCESSING状态下渲染占位符块，SUCCESS状态下当作主文本块处理
-                if (block.status === MessageBlockStatus.PROCESSING) {
-                  blockComponent = <PlaceholderBlock key={block.id} block={block} />;
-                } else if (block.status === MessageBlockStatus.SUCCESS) {
-                  // 兼容性处理：将 UNKNOWN 类型的成功状态块当作主文本块处理
+                // 兼容处理：仅在 SUCCESS 时作为主文本渲染
+                if (block.status === MessageBlockStatus.SUCCESS) {
                   blockComponent = <MainTextBlock key={block.id} block={block as any} role={message.role} messageId={message.id} />;
                 }
                 break;

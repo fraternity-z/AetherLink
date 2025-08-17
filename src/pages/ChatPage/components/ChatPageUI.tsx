@@ -150,19 +150,18 @@ const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) =
   // 只优化侧边栏相关的props，确保聊天流式输出正常工作
 
   // 如果是流式输出状态变化，立即重新渲染
-  if (prevProps.isStreaming !== nextProps.isStreaming) {
-    return false;
-  }
+  if (prevProps.isStreaming !== nextProps.isStreaming) return false;
 
   // 如果消息数组引用变化（包括内容更新），立即重新渲染
-  if (prevProps.currentMessages !== nextProps.currentMessages) {
-    return false;
-  }
+  if (prevProps.currentMessages !== nextProps.currentMessages) return false;
 
   // 如果话题变化，立即重新渲染
-  if (prevProps.currentTopic !== nextProps.currentTopic) {
-    return false;
-  }
+  if (prevProps.currentTopic !== nextProps.currentTopic) return false;
+
+  // 确保模型选择器状态变化能触发渲染
+  if (prevProps.menuOpen !== nextProps.menuOpen) return false;
+  if (prevProps.selectedModel !== nextProps.selectedModel) return false;
+  if (prevProps.availableModels !== nextProps.availableModels) return false;
 
   // 只对侧边栏相关的props进行优化
   return (
