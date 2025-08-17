@@ -1,5 +1,6 @@
 import { dexieStorage } from '../../../services/storage/DexieStorageService';
 import { throttle } from 'lodash';
+import { newMessagesActions } from '../../slices/newMessagesSlice';
 import type { Message, MessageBlock } from '../../../types/newMessage';
 
 export const saveMessageAndBlocksToDB = async (message: Message, blocks: MessageBlock[]) => {
@@ -52,3 +53,14 @@ export const throttledBlockUpdate = throttle(async (id: string, blockUpdate: Par
   // 只更新数据库，Redux状态由ResponseHandler处理
   await dexieStorage.updateMessageBlock(id, blockUpdate);
 }, 150);
+
+// 批量设置话题的 loading/streaming 状态，减少重复 dispatch
+export const setTopicLoadingStreaming = (
+  dispatch: (action: any) => void,
+  topicId: string,
+  loading: boolean,
+  streaming: boolean
+) => {
+  dispatch(newMessagesActions.setTopicLoading({ topicId, loading }));
+  dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming }));
+};

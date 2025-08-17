@@ -3,7 +3,7 @@ import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { removeManyBlocks } from '../../slices/messageBlocksSlice';
 import { DataRepository } from '../../../services/storage/DataRepository';
 import { createAssistantMessage } from '../../../utils/messageUtils';
-import { saveMessageAndBlocksToDB } from './utils';
+import { saveMessageAndBlocksToDB, setTopicLoadingStreaming } from './utils';
 import { processAssistantResponse } from './assistantResponse';
 import { versionService } from '../../../services/VersionService';
 import { getMainTextContent } from '../../../utils/blockUtils';
@@ -183,9 +183,8 @@ export const resendUserMessage = (userMessageId: string, topicId: string, model:
       }
     }
 
-    // 7. 设置加载状态
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: true }));
+    // 7. 设置加载状态（合并dispatch）
+    setTopicLoadingStreaming(dispatch, topicId, true, true);
 
     // 8. 重新生成助手响应
     for (const resetMsg of resetDataList) {
@@ -196,9 +195,8 @@ export const resendUserMessage = (userMessageId: string, topicId: string, model:
   } catch (error) {
     console.error(`重新发送用户消息失败:`, error);
 
-    // 清除加载状态
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+    // 清除加载状态（合并dispatch）
+    setTopicLoadingStreaming(dispatch, topicId, false, false);
 
     throw error;
   }
@@ -355,9 +353,8 @@ export const regenerateMessage = (messageId: string, topicId: string, model: Mod
       }
     });
 
-    // 9. 设置流式状态 - 关键修复：让重新生成时显示停止按钮
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: true }));
+    // 9. 设置流式状态 - 关键修复：让重新生成时显示停止按钮（合并dispatch）
+    setTopicLoadingStreaming(dispatch, topicId, true, true);
 
     // 10. 处理助手响应
     await processAssistantResponse(dispatch, getState, resetMessage, topicId, model, true); // 默认启用工具
@@ -366,9 +363,8 @@ export const regenerateMessage = (messageId: string, topicId: string, model: Mod
   } catch (error) {
     console.error(`重新生成消息 ${messageId} 失败:`, error);
 
-    // 清除加载状态
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+    // 清除加载状态（合并dispatch）
+    setTopicLoadingStreaming(dispatch, topicId, false, false);
 
     throw error;
   }

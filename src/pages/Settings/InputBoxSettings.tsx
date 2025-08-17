@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
 import DraggableButtonConfig from '../../components/DraggableButtonConfig';
-import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../components/input';
+import { IntegratedChatInput } from '../../components/input';
 
 // 可用的自定义按钮配置
 const AVAILABLE_BUTTONS = [
@@ -142,8 +142,7 @@ const AVAILABLE_BUTTONS = [
 // 输入框预览组件
 const InputBoxPreview: React.FC<{
   inputBoxStyle: string;
-  inputLayoutStyle: string;
-}> = ({ inputLayoutStyle }) => {
+}> = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -171,39 +170,9 @@ const InputBoxPreview: React.FC<{
   };
 
   // 根据布局样式选择对应的输入框组件
-  const renderInputComponent = () => {
-    switch (inputLayoutStyle) {
-      case 'compact':
-        return (
-          <CompactChatInput
-            {...previewProps}
-          />
-        );
-      case 'integrated':
-        return (
-          <IntegratedChatInput
-            {...previewProps}
-          />
-        );
-      default:
-        return (
-          <Box>
-            <ChatInput {...previewProps} />
-            <Box sx={{ mt: 1 }}>
-              <ChatToolbar
-                onClearTopic={previewProps.onClearTopic}
-                toggleImageGenerationMode={previewProps.toggleImageGenerationMode}
-                toggleWebSearch={previewProps.toggleWebSearch}
-                onToolsEnabledChange={previewProps.onToolsEnabledChange}
-                imageGenerationMode={false}
-                webSearchActive={false}
-                toolsEnabled={true}
-              />
-            </Box>
-          </Box>
-        );
-    }
-  };
+  const renderInputComponent = () => (
+    <IntegratedChatInput {...previewProps} />
+  );
 
   return (
     <Box
@@ -244,7 +213,6 @@ const InputBoxSettings: React.FC = () => {
 
   // 获取输入框相关设置
   const inputBoxStyle = settings.inputBoxStyle || 'default';
-  const inputLayoutStyle = (settings as any).inputLayoutStyle || 'default';
 
   // 新的左右布局配置
   const leftButtons = (settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search'];
@@ -261,11 +229,7 @@ const InputBoxSettings: React.FC = () => {
     }));
   };
 
-  const handleInputLayoutStyleChange = (event: { target: { value: any } }) => {
-    dispatch(updateSettings({
-      inputLayoutStyle: event.target.value
-    }));
-  };
+  // 布局样式已固定为集成，不再需要事件处理
 
 
 
@@ -349,16 +313,14 @@ const InputBoxSettings: React.FC = () => {
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
             实时预览
           </Typography>
-          <InputBoxPreview
-            inputBoxStyle={inputBoxStyle}
-            inputLayoutStyle={inputLayoutStyle}
-          />
+          <InputBoxPreview inputBoxStyle={inputBoxStyle} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-            当前配置：{inputBoxStyle === 'default' ? '默认风格' : inputBoxStyle === 'modern' ? '现代风格' : '简约风格'} + {inputLayoutStyle === 'default' ? '默认样式' : inputLayoutStyle === 'compact' ? '聚合样式' : '集成样式'}
+            当前配置：{inputBoxStyle === 'default' ? '默认风格' : inputBoxStyle === 'modern' ? '现代风格' : '简约风格'} + 集成布局
           </Typography>
 
           {/* 集成样式自定义按钮配置 - 新的拖拽式配置 */}
-          {inputLayoutStyle === 'integrated' && (
+          {/* 集成布局按钮配置始终显示 */}
+          {
             <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #eee' }}>
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
                 自定义输入框按钮布局
@@ -380,7 +342,7 @@ const InputBoxSettings: React.FC = () => {
                 按钮将按配置的左右布局显示在输入框底部。
               </Typography>
             </Box>
-          )}
+          }
         </Paper>
 
         <Divider sx={{ mb: 3 }} />
@@ -416,36 +378,7 @@ const InputBoxSettings: React.FC = () => {
           </Typography>
         </Paper>
 
-        {/* 输入框布局样式设置 */}
-        <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            输入框布局样式
-          </Typography>
-
-          <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-            <InputLabel>布局样式</InputLabel>
-            <Select
-              value={inputLayoutStyle}
-              onChange={handleInputLayoutStyleChange}
-              label="布局样式"
-              MenuProps={{
-                disableAutoFocus: true,
-                disableRestoreFocus: true
-              }}
-            >
-              <MenuItem value="default">默认样式（工具栏+输入框分离）</MenuItem>
-              <MenuItem value="compact">聚合样式（输入框+功能图标集成）</MenuItem>
-              <MenuItem value="integrated">集成样式（工具菜单+垂直布局）</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            选择聊天输入区域的布局方式：
-            <br />• 默认样式：工具栏和输入框分别显示，功能清晰分离
-            <br />• 聚合样式：输入框上方，下方为功能图标行，点击+号可展开更多功能
-            <br />• 集成样式：工具菜单集成到输入框，采用垂直布局和现代化设计
-          </Typography>
-        </Paper>
+  {/* 布局样式选择已移除，统一为集成布局 */}
 
 
 

@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
 import MessageList from '../../../components/message/MessageList';
-import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
+import { IntegratedChatInput } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
 import DialogModelSelector from './DialogModelSelector';
 import DropdownModelSelector from './DropdownModelSelector';
@@ -81,13 +81,12 @@ const LAYOUT_CONFIGS = {
 // 记忆化的选择器 - 避免不必要的重渲染
 const selectChatPageSettings = createSelector(
   (state: RootState) => state.settings.themeStyle,
-  (state: RootState) => state.settings.inputLayoutStyle,
+  (state: RootState) => state.settings.inputLayoutStyle, // 固定为 integrated
   (state: RootState) => state.settings.topToolbar,
   (state: RootState) => state.settings.modelSelectorStyle,
   (state: RootState) => state.settings.chatBackground,
-  (themeStyle, inputLayoutStyle, topToolbar, modelSelectorStyle, chatBackground) => ({
+  (themeStyle, _inputLayoutStyle, topToolbar, modelSelectorStyle, chatBackground) => ({
     themeStyle,
-    inputLayoutStyle: inputLayoutStyle || 'default',
     topToolbar,
     modelSelectorStyle,
     chatBackground: chatBackground || {
@@ -258,7 +257,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
     ...settings.topToolbar
   };
 
-  const shouldShowToolbar = settings.inputLayoutStyle === 'default';
+  const shouldShowToolbar = false; // 旧分离工具栏样式移除
 
   // 生成背景样式
   const backgroundStyle = useMemo(() =>
@@ -538,40 +537,21 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
     })
   };
 
-  const inputComponent = useMemo(() => {
-    if (settings.inputLayoutStyle === 'compact') {
-      return (
-        <CompactChatInput
-          key="compact-input"
-          {...commonProps}
-          onClearTopic={handleClearTopic}
-          onNewTopic={handleCreateTopic}
-          toggleImageGenerationMode={toggleImageGenerationMode}
-          toggleWebSearch={toggleWebSearch}
-          toggleToolsEnabled={toggleToolsEnabled}
-        />
-      );
-    } else if (settings.inputLayoutStyle === 'integrated') {
-      return (
-        <IntegratedChatInput
-          key="integrated-input"
-          {...commonProps}
-          onClearTopic={handleClearTopic}
-          toggleImageGenerationMode={toggleImageGenerationMode}
-          toggleVideoGenerationMode={toggleVideoGenerationMode}
-          toggleWebSearch={toggleWebSearch}
-          onToolsEnabledChange={toggleToolsEnabled}
-        />
-      );
-    } else {
-      return <ChatInput key="default-input" {...commonProps} />;
-    }
-  }, [
-    settings.inputLayoutStyle,
+  const inputComponent = useMemo(() => (
+    <IntegratedChatInput
+      key="integrated-input"
+      {...commonProps}
+      onClearTopic={handleClearTopic}
+      toggleImageGenerationMode={toggleImageGenerationMode}
+      toggleVideoGenerationMode={toggleVideoGenerationMode}
+      toggleWebSearch={toggleWebSearch}
+      onToolsEnabledChange={toggleToolsEnabled}
+    />
+  ), [
     commonProps,
     handleClearTopic,
-    handleCreateTopic,
     toggleImageGenerationMode,
+    toggleVideoGenerationMode,
     toggleWebSearch,
     toggleToolsEnabled
   ]);
@@ -593,26 +573,7 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = React.memo(({
         gap: 0,
       }}
     >
-      {shouldShowToolbar && (
-        <Box sx={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          px: 2
-        }}>
-          <ChatToolbar
-            onClearTopic={handleClearTopic}
-            imageGenerationMode={imageGenerationMode}
-            toggleImageGenerationMode={toggleImageGenerationMode}
-            videoGenerationMode={videoGenerationMode}
-            toggleVideoGenerationMode={toggleVideoGenerationMode}
-            webSearchActive={webSearchActive}
-            toggleWebSearch={toggleWebSearch}
-            toolsEnabled={toolsEnabled}
-            onToolsEnabledChange={toggleToolsEnabled}
-          />
-        </Box>
-      )}
+  {/* 旧的分离工具栏已移除 */}
 
       <Box sx={{
         width: '100%',

@@ -14,6 +14,23 @@ export const selectMessageBlocksState = (state: RootState) => state.messageBlock
 // 选择特定主题的消息 - 使用 newMessagesSlice 中的选择器
 export const selectMessagesForTopic = selectMessagesByTopicId;
 
+// 为不同topicId提供稳定的选择器缓存，避免在组件中重复创建
+const messagesSelectorCache = new Map<string, ReturnType<typeof createSelector>>();
+export const getMessagesSelectorForTopic = (topicId: string | undefined) => {
+  if (!topicId) {
+    // 始终返回稳定的空数组以避免组件重复渲染
+    return () => EMPTY_TOPICS_ARRAY as any[];
+  }
+  if (!messagesSelectorCache.has(topicId)) {
+    const selector = createSelector(
+      [(state: RootState) => selectMessagesForTopic(state, topicId)],
+      (messages) => Array.isArray(messages) ? messages : EMPTY_TOPICS_ARRAY
+    );
+    messagesSelectorCache.set(topicId, selector);
+  }
+  return messagesSelectorCache.get(topicId)!;
+};
+
 // 选择消息块实体 - 使用记忆化避免不必要的重新渲染
 export const selectMessageBlockEntities = createSelector(
   [selectMessageBlocksState],

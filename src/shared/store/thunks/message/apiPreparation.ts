@@ -132,21 +132,32 @@ export const prepareMessagesForApi = async (
   topicId: string,
   assistantMessageId: string,
   _mcpTools?: MCPTool[], // 添加下划线前缀表示未使用的参数
-  options?: { skipKnowledgeSearch?: boolean }
+  options?: { skipKnowledgeSearch?: boolean },
+  preloadedMessages?: Message[]
 ) => {
   console.log('[prepareMessagesForApi] 开始准备API消息', { topicId, assistantMessageId, options });
 
-  // 1. 首先检查是否需要进行知识库搜索（风格：在API调用前搜索）
-  if (!options?.skipKnowledgeSearch) {
-    console.log('[prepareMessagesForApi] 调用知识库搜索检查...');
-    await performKnowledgeSearchIfNeeded(topicId, assistantMessageId);
-    console.log('[prepareMessagesForApi] 知识库搜索检查完成');
+  // 1. 并行：知识库搜索 与 消息获取（若未预加载）
+  let messages: Message[];
+  if (preloadedMessages && Array.isArray(preloadedMessages)) {
+    messages = preloadedMessages;
   } else {
-    console.log('[prepareMessagesForApi] 跳过知识库搜索检查');
+    const tasks: Promise<any>[] = [dexieStorage.getTopicMessages(topicId)];
+    if (!options?.skipKnowledgeSearch) {
+      console.log('[prepareMessagesForApi] 并行启动知识库搜索检查...');
+      tasks.push(performKnowledgeSearchIfNeeded(topicId, assistantMessageId));
+    } else {
+      console.log('[prepareMessagesForApi] 跳过知识库搜索检查');
+    }
+    const results = await Promise.allSettled(tasks);
+    const messagesResult = results[0];
+    if (messagesResult.status === 'fulfilled') {
+      messages = messagesResult.value as Message[];
+    } else {
+      console.warn('[prepareMessagesForApi] 获取消息失败，使用空数组');
+      messages = [] as Message[];
+    }
   }
-
-  // 2. 获取包含content字段的消息
-  const messages = await dexieStorage.getTopicMessages(topicId);
 
 
 
@@ -332,28 +343,33 @@ export const prepareMessagesForApi = async (
         }
       }
 
-      // 处理文件块
-      for (const fileBlock of fileBlocks) {
-        if (fileBlock.file) {
+      // 处理文件块（并行读取文件内容）
+      if (fileBlocks.length > 0) {
+        const readTasks = fileBlocks.map(async (fileBlock) => {
+          if (!fileBlock.file) return null;
           const fileType = getFileTypeByExtension(fileBlock.file.name || fileBlock.file.origin_name || '');
-
-          // 处理文本、代码和文档类型的文件
-          if (fileType === FileTypes.TEXT || fileType === FileTypes.CODE || fileType === FileTypes.DOCUMENT) {
-            try {
-              const fileContent = await readFileContent(fileBlock.file);
-              if (fileContent) {
-                // 按照最佳实例格式：文件名\n文件内容
-                const fileName = fileBlock.file.origin_name || fileBlock.file.name || '未知文件';
-                parts.push({
-                  type: 'text',
-                  text: `${fileName}\n${fileContent}`
-                });
-              }
-            } catch (error) {
-              console.error(`[prepareMessagesForApi] 读取文件内容失败:`, error);
-            }
+          if (fileType !== FileTypes.TEXT && fileType !== FileTypes.CODE && fileType !== FileTypes.DOCUMENT) {
+            return null;
           }
-        }
+          try {
+            const fileContent = await readFileContent(fileBlock.file);
+            if (!fileContent) return null;
+            const fileName = fileBlock.file.origin_name || fileBlock.file.name || '未知文件';
+            return {
+              type: 'text' as const,
+              text: `${fileName}\n${fileContent}`
+            };
+          } catch (error) {
+            console.error(`[prepareMessagesForApi] 读取文件内容失败:`, error);
+            return null;
+          }
+        });
+        const results = await Promise.allSettled(readTasks);
+        results.forEach((r) => {
+          if (r.status === 'fulfilled' && r.value) {
+            parts.push(r.value);
+          }
+        });
       }
 
       apiMessages.push({

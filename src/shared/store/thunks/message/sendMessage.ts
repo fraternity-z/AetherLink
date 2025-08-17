@@ -4,7 +4,7 @@ import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { upsertManyBlocks } from '../../slices/messageBlocksSlice';
 import type { Model, FileType } from '../../../types';
 import type { RootState, AppDispatch } from '../../index';
-import { saveMessageAndBlocksToDB } from './utils';
+import { saveMessageAndBlocksToDB, setTopicLoadingStreaming } from './utils';
 import { processAssistantResponse } from './assistantResponse';
 
 export const sendMessage = (
@@ -63,9 +63,8 @@ export const sendMessage = (
     // 6. 更新Redux状态
     dispatch(newMessagesActions.addMessage({ topicId, message: assistantMessage }));
 
-    // 7. 设置加载状态
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: true }));
+    // 7. 设置加载状态（合并dispatch）
+    setTopicLoadingStreaming(dispatch, topicId, true, true);
 
     // 8. 处理助手响应
     await processAssistantResponse(dispatch, getState, assistantMessage, topicId, model, toolsEnabled);
@@ -74,9 +73,8 @@ export const sendMessage = (
   } catch (error) {
     console.error('发送消息失败:', error);
 
-    // 清除加载状态
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+    // 清除加载状态（合并dispatch）
+    setTopicLoadingStreaming(dispatch, topicId, false, false);
 
     throw error;
   }

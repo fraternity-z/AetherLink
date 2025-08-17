@@ -28,7 +28,8 @@ interface SettingsState {
   thinkingDisplayStyle: string;
   toolbarDisplayStyle: 'icon' | 'text' | 'both'; // 工具栏显示样式：仅图标、仅文字、图标+文字
   inputBoxStyle: 'default' | 'modern' | 'minimal'; // 输入框风格：默认、现代、简约
-  inputLayoutStyle: 'default' | 'compact' | 'integrated'; // 输入框布局样式：默认（分离）、聚合或集成
+  // 输入框布局样式：现在仅保留集成样式（之前的 default/compact 已移除）
+  inputLayoutStyle: 'integrated';
 
   // 代码块设置
   codeStyle: string; // 代码主题风格
@@ -181,10 +182,11 @@ const getInitialState = (): SettingsState => {
     enableTopicNaming: true, // 统一字段名称，与最佳实例保持一致
     topicNamingPrompt: '', // 添加默认空提示词
     modelSelectorStyle: 'dialog' as 'dialog' | 'dropdown',
-    thinkingDisplayStyle: ThinkingDisplayStyle.COMPACT,
+  // 仅保留流式思考显示样式
+  thinkingDisplayStyle: ThinkingDisplayStyle.STREAM,
     toolbarDisplayStyle: 'both' as 'icon' | 'text' | 'both',
-    inputBoxStyle: 'default' as 'default' | 'modern' | 'minimal', // 默认输入框风格
-    inputLayoutStyle: 'integrated' as 'default' | 'compact' | 'integrated', // 输入框布局样式：默认（分离）、聚合或集成
+  inputBoxStyle: 'default' as 'default' | 'modern' | 'minimal', // 默认输入框风格
+  inputLayoutStyle: 'integrated', // 输入框布局样式仅保留集成
 
     // 代码块默认设置
     codeStyle: 'auto',
@@ -336,9 +338,8 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       }
 
       // 如果没有思考过程显示样式设置，使用默认值
-      if (!savedSettings.thinkingDisplayStyle) {
-        savedSettings.thinkingDisplayStyle = ThinkingDisplayStyle.COMPACT;
-      }
+  // 强制统一为流式思考显示样式
+  savedSettings.thinkingDisplayStyle = ThinkingDisplayStyle.STREAM;
 
       // 如果没有工具栏显示样式设置，使用默认值
       if (!savedSettings.toolbarDisplayStyle) {
@@ -350,10 +351,8 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
         savedSettings.inputBoxStyle = 'default';
       }
 
-      // 如果没有输入框布局样式设置，使用默认值
-      if (!savedSettings.inputLayoutStyle) {
-        savedSettings.inputLayoutStyle = 'default';
-      }
+  // 统一为集成输入框布局（迁移旧值）
+  (savedSettings as any).inputLayoutStyle = 'integrated';
 
       // 如果没有系统提示词气泡显示设置，使用默认值
       if (savedSettings.showSystemPromptBubble === undefined) {

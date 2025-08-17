@@ -14,6 +14,7 @@ import type { Message, MessageBlock } from '../../../types/newMessage';
 import type { Model, MCPTool } from '../../../types';
 import type { RootState, AppDispatch } from '../../index';
 import { prepareMessagesForApi, performKnowledgeSearchIfNeeded } from './apiPreparation';
+import { setTopicLoadingStreaming } from './utils';
 import { getActualProviderType } from '../../../services/ProviderFactory';
 
 export const processAssistantResponse = async (
@@ -61,16 +62,15 @@ export const processAssistantResponse = async (
       console.log(`[MCP] 工具未启用 (toolsEnabled=${toolsEnabled})`);
     }
 
-    // 暂时不进行知识库搜索，等ResponseHandler创建后再搜索
-    const apiMessages = await prepareMessagesForApi(topicId, assistantMessage.id, mcpTools, { skipKnowledgeSearch: true });
-
-    // 获取原始消息对象用于Gemini provider
+    // 预先获取原始消息，避免重复查询，并传入prepareMessagesForApi
     const originalMessages = await dexieStorage.getTopicMessages(topicId);
     const sortedOriginalMessages = [...originalMessages].sort((a, b) => {
       const timeA = new Date(a.createdAt).getTime();
       const timeB = new Date(b.createdAt).getTime();
       return timeA - timeB;
     });
+    // 暂时不进行知识库搜索，等ResponseHandler创建后再搜索
+    const apiMessages = await prepareMessagesForApi(topicId, assistantMessage.id, mcpTools, { skipKnowledgeSearch: true }, sortedOriginalMessages as any);
 
     // 过滤出需要的消息（与prepareMessagesForApi相同的逻辑）
     const assistantMessageTime = new Date(assistantMessage.createdAt).getTime();
@@ -108,8 +108,7 @@ export const processAssistantResponse = async (
     // 添加占位符块到Redux
     dispatch(upsertOneBlock(placeholderBlock));
 
-    // 保存占位符块到数据库
-    await dexieStorage.saveMessageBlock(placeholderBlock);
+    // 保存占位符块与消息更新放入同一事务，减少一次IO
 
 // 5. 关联占位符块到消息
     dispatch(newMessagesActions.updateMessage({
@@ -121,9 +120,12 @@ export const processAssistantResponse = async (
 
 // 6. 更新消息数据库（同时更新messages表和topic.messages数组）
     await dexieStorage.transaction('rw', [
+      dexieStorage.message_blocks,
       dexieStorage.messages,
       dexieStorage.topics
     ], async () => {
+      // 保存占位符块
+      await dexieStorage.saveMessageBlock(placeholderBlock);
       // 更新messages表
       await dexieStorage.updateMessage(assistantMessage.id, {
         blocks: [placeholderBlock.id]
@@ -264,9 +266,6 @@ export const processAssistantResponse = async (
           // 添加图片块到 Redux 状态
           dispatch(addOneBlock(imageBlock));
 
-          // 保存图片块到数据库
-          await dexieStorage.saveMessageBlock(imageBlock);
-
           // 将图片块ID添加到消息的blocks数组
           dispatch(newMessagesActions.upsertBlockReference({
             messageId: assistantMessage.id,
@@ -287,15 +286,14 @@ export const processAssistantResponse = async (
             changes: updatedMessage
           }));
 
-          // 保存消息到数据库并更新topics表
+          // 保存图片块与消息更新放入同一事务，减少IO往返
           await dexieStorage.transaction('rw', [
+            dexieStorage.message_blocks,
             dexieStorage.messages,
             dexieStorage.topics
           ], async () => {
-            // 更新messages表
+            await dexieStorage.saveMessageBlock(imageBlock);
             await dexieStorage.updateMessage(assistantMessage.id, updatedMessage);
-
-            // 更新topics表中的messages数组
             const topic = await dexieStorage.topics.get(topicId);
             if (topic && topic.messages) {
               const messageIndex = topic.messages.findIndex((m: Message) => m.id === assistantMessage.id);
@@ -434,10 +432,8 @@ export const processAssistantResponse = async (
     }
   } catch (error) {
     console.error('处理助手响应失败:', error);
-
-    // 错误恢复：确保状态重置
-    dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
-    dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+    // 错误恢复：确保状态重置（批量）
+    setTopicLoadingStreaming(dispatch, topicId, false, false);
 
     throw error;
   }
