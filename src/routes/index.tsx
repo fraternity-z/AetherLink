@@ -11,7 +11,6 @@ const SettingsPage = lazy(() => import('../pages/Settings'));
 const AppearanceSettings = lazy(() => import('../pages/Settings/AppearanceSettings.tsx'));
 const BehaviorSettings = lazy(() => import('../pages/Settings/BehaviorSettings'));
 const ChatInterfaceSettings = lazy(() => import('../pages/Settings/ChatInterfaceSettings'));
-const TopToolbarDIYSettings = lazy(() => import('../pages/Settings/TopToolbarDIYSettings'));
 const DefaultModelSettings = lazy(() => import('../pages/Settings/DefaultModelSettings'));
 // 导入知识库页面
 const KnowledgeBasePage = lazy(() => import('../pages/KnowledgeBase'));
@@ -135,7 +134,6 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/appearance/toolbar-customization" element={<ToolbarCustomization />} />
         <Route path="/settings/appearance/thinking-process" element={<ThinkingProcessSettings />} />
         <Route path="/settings/appearance/input-box" element={<InputBoxSettings />} />
-        <Route path="/settings/appearance/top-toolbar" element={<TopToolbarDIYSettings />} />
         <Route path="/settings/behavior" element={<BehaviorSettings />} />
         <Route path="/settings/default-model" element={<DefaultModelSettings />} />
         <Route path="/settings/topic-naming-settings" element={<TopicNamingSettings />} />

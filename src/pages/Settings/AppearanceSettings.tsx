@@ -86,9 +86,7 @@ const AppearanceSettings: React.FC = () => {
     navigate('/settings/appearance/chat-interface');
   };
 
-  const handleNavigateToTopToolbar = () => {
-    navigate('/settings/appearance/top-toolbar');
-  };
+  // 顶部工具栏 DIY 功能已移除
 
   const handleNavigateToToolbarCustomization = () => {
     navigate('/settings/appearance/toolbar-customization');
@@ -448,37 +446,7 @@ const AppearanceSettings: React.FC = () => {
           <Divider />
 
           <List disablePadding>
-            {/* 1. 顶部工具栏设置 */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={handleNavigateToTopToolbar}
-                sx={{
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                  }
-                }}
-              >
-                <ListItemAvatar>
-                  <Avatar sx={{
-                    bgcolor: alpha('#10b981', 0.12),
-                    color: '#10b981',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-                  }}>
-                    <Wrench size={20} />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>顶部工具栏设置</Typography>}
-                  secondary="自定义顶部工具栏的组件和布局，支持拖拽DIY布局"
-                />
-                <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
-              </ListItemButton>
-            </ListItem>
-
-            <Divider variant="inset" component="li" sx={{ ml: 0 }} />
-
-            {/* 2. 聊天界面设置 */}
+            {/* 1. 聊天界面设置 */}
             <ListItem disablePadding>
               <ListItemButton
                 onClick={handleNavigateToChatInterface}
