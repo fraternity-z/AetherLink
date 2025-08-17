@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Clock as AccessTimeIcon, MapPin as LocationOnIcon, Info as InfoIcon, Monitor as ComputerIcon } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../shared/store';
-import { updateSettings } from '../shared/store/slices/settingsSlice';
+import { updateSettings } from '../shared/store/settingsSlice';
 import {
   getCurrentTimeString,
   getLocationString,
