@@ -21,7 +21,6 @@ import MultiModelBlock from './blocks/MultiModelBlock';
 import ModelComparisonBlock from './blocks/ModelComparisonBlock';
 import ChartBlock from './blocks/ChartBlock';
 import FileBlock from './blocks/FileBlock';
-import PlaceholderBlock from './blocks/PlaceholderBlock';
 import SearchResultsBlock from './blocks/SearchResultsBlock';
 import KnowledgeReferenceBlock from './blocks/KnowledgeReferenceBlock';
 // import ToolBlock from './blocks/ToolBlock'; // 已移除：工具块在 MainTextBlock 中原位渲染
