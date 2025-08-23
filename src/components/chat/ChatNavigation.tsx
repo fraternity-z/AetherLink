@@ -24,26 +24,30 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) {
       clearTimeout(hideTimer.current);
+      hideTimer.current = null;
     }
     hideTimer.current = setTimeout(() => {
       if (!isNearButtons) {
         setIsVisible(false);
       }
-    }, 3000);
+    }, 1500);
   }, [isNearButtons]);
 
   const handleMouseEnter = useCallback(() => {
+    if (isMobile) return; // 移动端不处理鼠标事件
     setIsNearButtons(true);
     setIsVisible(true);
     if (hideTimer.current) {
       clearTimeout(hideTimer.current);
+      hideTimer.current = null;
     }
-  }, []);
+  }, [isMobile]);
 
   const handleMouseLeave = useCallback(() => {
+    if (isMobile) return; // 移动端不处理鼠标事件
     setIsNearButtons(false);
     resetHideTimer();
-  }, [resetHideTimer]);
+  }, [resetHideTimer, isMobile]);
 
   // 查找所有消息元素
   const findAllMessages = useCallback(() => {
@@ -194,8 +198,9 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
                              touch.clientY > centerY - triggerHeight / 2 &&
                              touch.clientY < centerY + triggerHeight / 2;
 
-      if (isInTriggerArea && !isNearButtons) {
+      if (isInTriggerArea) {
         setIsVisible(true);
+        setIsNearButtons(false); // 移动端强制重置状态
         resetHideTimer();
       }
     };
@@ -211,9 +216,20 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
       window.removeEventListener('touchstart', handleTouchStart);
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
+        hideTimer.current = null;
       }
     };
   }, [containerId, isNearButtons, resetHideTimer, isMobile]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
+        hideTimer.current = null;
+      }
+    };
+  }, []);
 
   // 如果设置为none，不显示导航
   if (messageNavigation !== 'buttons') {
