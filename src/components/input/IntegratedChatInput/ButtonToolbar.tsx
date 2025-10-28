@@ -94,7 +94,7 @@ const useButtonToolbar = ({
     (state.settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search']
   );
   const rightButtons = useSelector((state: RootState) =>
-    (state.settings as any).integratedInputRightButtons || ['voice', 'send']
+    (state.settings as any).integratedInputRightButtons || ['upload', 'voice', 'send']
   );
 
   // 处理清空主题

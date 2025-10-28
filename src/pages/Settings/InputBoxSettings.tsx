@@ -248,7 +248,7 @@ const InputBoxSettings: React.FC = () => {
 
   // 新的左右布局配置
   const leftButtons = (settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search'];
-  const rightButtons = (settings as any).integratedInputRightButtons || ['voice', 'send'];
+  const rightButtons = (settings as any).integratedInputRightButtons || ['upload', 'voice', 'send'];
 
   const handleBack = () => {
     navigate('/settings/appearance');

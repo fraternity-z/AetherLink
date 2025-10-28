@@ -41,16 +41,16 @@ const AboutPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
+        height: '100vh',
         background: `linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)`,
         display: 'flex',
         flexDirection: 'column',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch',
+        overflow: 'hidden', // 防止整体滚动
       }}
     >
       {/* 顶部 AppBar 透明渐变，滚动时加阴影 */}
       <AppBar
-        position="sticky"
+        position="static"
         elevation={0}
         sx={{
           background: 'rgba(255,255,255,0.15)',
@@ -58,6 +58,7 @@ const AboutPage: React.FC = () => {
           boxShadow: '0 2px 16px 0 rgba(147,51,234,0.08)',
           borderBottom: `1.5px solid ${theme.palette.mode === 'dark' ? 'rgba(147,51,234,0.18)' : 'rgba(147,51,234,0.12)'}`,
           zIndex: 1100,
+          flexShrink: 0, // 防止AppBar被压缩
         }}
       >
         <Toolbar>
@@ -93,18 +94,25 @@ const AboutPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="sm" sx={{
-        py: 4,
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
-      }}>
+      <Container
+        maxWidth="sm"
+        sx={{
+          py: { xs: 2, sm: 4 }, // 移动端减少内边距
+          px: { xs: 2, sm: 3 }, // 移动端减少左右内边距
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'auto', // 允许滚动
+          overflowX: 'hidden', // 禁止横向滚动
+          WebkitOverflowScrolling: 'touch', // iOS 平滑滚动
+        }}
+      >
         <Fade in timeout={800}>
           <Paper
             elevation={0}
             sx={{
               p: { xs: 2, sm: 4 },
+              mb: { xs: 2, sm: 3 }, // 底部留出空间
               borderRadius: 5,
               background: 'rgba(255,255,255,0.35)',
               boxShadow: '0 8px 32px 0 rgba(31,38,135,0.18)',
@@ -159,11 +167,11 @@ const AboutPage: React.FC = () => {
               </Box>
             </Box>
 
-            <Typography variant="body1" paragraph sx={{ fontSize: 18, fontWeight: 500, color: '#3b0764', mb: 1 }}>
+            <Typography variant="body1" sx={{ fontSize: { xs: 16, sm: 18 }, fontWeight: 500, color: '#3b0764', mb: 1 }}>
               AetherLink是一个强大的AI助手应用，支持多种大语言模型，帮助您更高效地完成工作。
             </Typography>
 
-            <Typography variant="body1" paragraph sx={{ fontSize: 17, color: '#5b21b6', mb: 2 }}>
+            <Typography variant="body1" sx={{ fontSize: { xs: 15, sm: 17 }, color: '#5b21b6', mb: 2 }}>
               我们致力于为用户提供最佳的AI辅助体验，让人工智能技术真正帮助到每一个人。
             </Typography>
 
@@ -224,7 +232,14 @@ const AboutPage: React.FC = () => {
             </Typography>
 
             {/* 底部按钮组 */}
-            <Box sx={{ mt: 5, display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Box sx={{
+              mt: { xs: 3, sm: 5 },
+              mb: { xs: 1, sm: 0 }, // 移动端底部留出空间
+              display: 'flex',
+              gap: 2,
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
               <Button
                 variant="outlined"
                 href="https://github.com/1600822305/CS-LLM-house"

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,7 +8,9 @@ import {
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import { Eye, EyeOff, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
@@ -34,6 +36,15 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
   rightButtons,
   onUpdateLayout
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    // 检测是否为触摸设备
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
   // 创建按钮映射
   const buttonMap = React.useMemo(() => {
     const map = new Map<string, ButtonConfig>();
@@ -144,11 +155,35 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
               '&:hover': {
                 borderColor: 'primary.main',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }
+              },
+              // 优化触摸设备样式
+              ...(isTouchDevice && {
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+              })
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <GripVertical size={16} color="rgba(0,0,0,0.4)" />
+            <ListItemIcon 
+              sx={{ 
+                minWidth: 40,
+                ...(isTouchDevice && {
+                  cursor: 'grab',
+                  WebkitTapHighlightColor: 'transparent',
+                })
+              }}
+            >
+              <GripVertical 
+                size={16} 
+                color="rgba(0,0,0,0.4)" 
+                style={{ 
+                  ...(isTouchDevice && {
+                    pointerEvents: 'none',
+                    WebkitUserSelect: 'none',
+                    userSelect: 'none',
+                  })
+                }}
+              />
             </ListItemIcon>
 
             <ListItemIcon sx={{ minWidth: 40 }}>
@@ -179,6 +214,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                   bgcolor: isVisible ? 'primary.light' : 'action.hover'
                 }
               }}
+              disabled={isTouchDevice}
             >
               {isVisible ? <Eye size={18} /> : <EyeOff size={18} />}
             </IconButton>
@@ -190,23 +226,42 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 2, 
+        flexDirection: { xs: 'column', md: 'row' },
+        padding: isMobile ? 1 : 2
+      }}>
         {/* 左侧按钮区域 */}
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ 
+          flex: 1, 
+          minWidth: isMobile ? '100%' : '300px',
+          maxWidth: isMobile ? '100%' : '50%'
+        }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
             左侧按钮
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
               ({leftButtons.length} 个)
             </Typography>
           </Typography>
 
-          <Paper sx={{ p: 1, minHeight: 200, backgroundColor: 'rgba(25, 118, 210, 0.02)' }}>
+          <Paper 
+            sx={{ 
+              p: 1, 
+              minHeight: 200, 
+              backgroundColor: 'rgba(25, 118, 210, 0.02)',
+              border: '1px dashed #90caf9'
+            }}
+          >
             <Droppable droppableId="left-buttons">
               {(provided) => (
                 <List
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  sx={{ minHeight: 150 }}
+                  sx={{ 
+                    minHeight: 150,
+                    padding: 0
+                  }}
                 >
                   {leftButtons.map((buttonId, index) => {
                     const button = buttonMap.get(buttonId);
@@ -215,7 +270,15 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                   })}
                   {provided.placeholder}
                   {leftButtons.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary" 
+                      sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        fontStyle: 'italic'
+                      }}
+                    >
                       拖拽按钮到这里
                     </Typography>
                   )}
@@ -226,21 +289,35 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
         </Box>
 
         {/* 右侧按钮区域 */}
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ 
+          flex: 1, 
+          minWidth: isMobile ? '100%' : '300px',
+          maxWidth: isMobile ? '100%' : '50%'
+        }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
             右侧按钮
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
               ({rightButtons.length} 个)
             </Typography>
           </Typography>
 
-          <Paper sx={{ p: 1, minHeight: 200, backgroundColor: 'rgba(76, 175, 80, 0.02)' }}>
+          <Paper 
+            sx={{ 
+              p: 1, 
+              minHeight: 200, 
+              backgroundColor: 'rgba(76, 175, 80, 0.02)',
+              border: '1px dashed #a5d6a7'
+            }}
+          >
             <Droppable droppableId="right-buttons">
               {(provided) => (
                 <List
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  sx={{ minHeight: 150 }}
+                  sx={{ 
+                    minHeight: 150,
+                    padding: 0
+                  }}
                 >
                   {rightButtons.map((buttonId, index) => {
                     const button = buttonMap.get(buttonId);
@@ -249,7 +326,15 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                   })}
                   {provided.placeholder}
                   {rightButtons.length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary" 
+                      sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        fontStyle: 'italic'
+                      }}
+                    >
                       拖拽按钮到这里
                     </Typography>
                   )}
@@ -261,14 +346,24 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
       </Box>
 
       {/* 可用按钮区域 - 始终显示 */}
-      <Box sx={{ mt: 3 }}>
-        <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      <Box sx={{ 
+        mt: 2,
+        padding: isMobile ? 1 : 2
+      }}>
+        <Typography variant="h6" sx={{ mb: 1 }}>
           可用按钮 ({unusedButtons.length} 个)
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           拖拽按钮到上方左右区域来使用，或拖拽已使用的按钮回到这里来移除
         </Typography>
-        <Paper sx={{ p: 1, minHeight: 100, backgroundColor: 'rgba(158, 158, 158, 0.02)' }}>
+        <Paper 
+          sx={{ 
+            p: 1, 
+            minHeight: 100, 
+            backgroundColor: 'rgba(158, 158, 158, 0.02)',
+            border: '1px dashed #bdbdbd'
+          }}
+        >
           <Droppable droppableId="unused-buttons">
             {(provided, snapshot) => (
               <List
@@ -276,12 +371,18 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                 {...provided.droppableProps}
                 sx={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gridTemplateColumns: { 
+                    xs: '1fr', 
+                    sm: 'repeat(2, 1fr)', 
+                    md: 'repeat(3, 1fr)',
+                    lg: 'repeat(4, 1fr)'
+                  },
                   gap: 1,
                   minHeight: 80,
                   backgroundColor: snapshot.isDraggingOver ? 'rgba(158, 158, 158, 0.1)' : 'transparent',
                   borderRadius: 1,
-                  transition: 'background-color 0.2s ease'
+                  transition: 'background-color 0.2s ease',
+                  padding: 0
                 }}
               >
                 {unusedButtons.map((button, index) =>
@@ -312,3 +413,6 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
 };
 
 export default DraggableButtonConfig;
+
+
+

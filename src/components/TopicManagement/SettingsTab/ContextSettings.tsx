@@ -421,7 +421,6 @@ export default function ContextSettings({
                 step={128}
                 marks={[
                   { value: 128, label: '128' },
-                  { value: 1024, label: '1K' },
                   { value: 4096, label: '4K' },
                   { value: 16384, label: '16K' },
                   { value: 32768, label: '32K' }
