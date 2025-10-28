@@ -536,7 +536,7 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
             break;
 
           default:
-            // 兼容旧格式 - 处理 output 数组格式
+            // 处理非标准事件格式 - 某些 API 版本可能返回 output 数组
             if (chunk.output) {
               for (const output of chunk.output) {
                 switch (output.type) {
