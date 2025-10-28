@@ -55,7 +55,7 @@ interface MCPToolsButtonProps {
 }
 
 const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
-  toolsEnabled = true,
+  toolsEnabled = false,
   onToolsEnabledChange
 }) => {
   const navigate = useNavigate();

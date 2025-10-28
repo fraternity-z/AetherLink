@@ -49,7 +49,7 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
   onMCPModeChange,
   mcpMode = 'function',
   onToolsToggle,
-  toolsEnabled = true
+  toolsEnabled = false
 }) => {
   const navigate = useNavigate();
   const [servers, setServers] = useState<MCPServer[]>([]);

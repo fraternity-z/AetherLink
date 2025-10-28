@@ -31,7 +31,7 @@ export const useChatInputLogic = ({
   allowConsecutiveMessages = true,
   imageGenerationMode = false,
   videoGenerationMode = false,
-  toolsEnabled = true,
+  toolsEnabled = false,
   images,
   files,
   setImages,

@@ -59,7 +59,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onStopResponse,
   isStreaming = false,
   isDebating = false, // 默认不在辩论中
-  toolsEnabled = true, // 默认启用工具
+  toolsEnabled = false, // 默认关闭工具
   availableModels = [] // 默认空数组
 }) => {
   // 基础状态 - 内存泄漏防护：避免存储DOM引用

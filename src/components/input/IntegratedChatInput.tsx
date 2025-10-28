@@ -59,7 +59,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   onStopResponse,
   isStreaming = false,
   isDebating = false, // 默认不在辩论中
-  toolsEnabled = true, // 默认启用工具
+  toolsEnabled = false, // 默认关闭工具
   availableModels = [], // 默认空数组
   // 工具栏相关props
   onClearTopic,

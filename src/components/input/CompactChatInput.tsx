@@ -61,7 +61,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   onStopResponse,
   isStreaming = false,
   isDebating = false, // 启用辩论状态
-  toolsEnabled = true,
+  toolsEnabled = false,
   availableModels = [], // 启用多模型功能
   onClearTopic,
   onNewTopic,

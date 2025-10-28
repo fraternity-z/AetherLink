@@ -41,7 +41,7 @@ export const useChatFeatures = (
   // MCP 工具开关状态 - 从 localStorage 读取并持久化
   const [toolsEnabled, setToolsEnabled] = useState(() => {
     const saved = localStorage.getItem('mcp-tools-enabled');
-    return saved !== null ? JSON.parse(saved) : true; // 默认启用
+    return saved !== null ? JSON.parse(saved) : false; // 默认关闭
   });
   // MCP 工具调用模式 - 从 localStorage 读取
   const [mcpMode, setMcpMode] = useState<'prompt' | 'function'>(() => {

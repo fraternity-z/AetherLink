@@ -36,7 +36,7 @@ export const useMCP = (): MCPState & MCPActions => {
     prompts: [],
     resources: [],
     mode: 'function',
-    enabled: true,
+    enabled: false,
     loading: false
   });
 
@@ -50,7 +50,7 @@ export const useMCP = (): MCPState & MCPActions => {
         setState(prev => ({
           ...prev,
           mode: savedMode || 'function',
-          enabled: savedEnabled !== null ? JSON.parse(savedEnabled) : true
+          enabled: savedEnabled !== null ? JSON.parse(savedEnabled) : false
         }));
       } catch (error) {
         console.error('[MCP Hook] 加载设置失败:', error);
