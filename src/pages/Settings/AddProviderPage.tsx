@@ -34,6 +34,7 @@ const providerTypes = [
   { value: 'zhipu', label: '智谱AI' },
   { value: 'siliconflow', label: '硅基流动 (SiliconFlow)' },
   { value: 'volcengine', label: '火山引擎' },
+  { value: 'minimax', label: 'MiniMax' },
   { value: 'custom', label: '其他' },
 ];
 
@@ -100,6 +101,8 @@ const AddProviderPage: React.FC = () => {
         return 'https://api.siliconflow.cn/v1';
       case 'volcengine':
         return 'https://ark.cn-beijing.volces.com/api/v3';
+      case 'minimax':
+        return 'https://api.minimaxi.com';
       default:
         return '';
     }

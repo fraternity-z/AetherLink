@@ -214,6 +214,20 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
       { id: 'glm-4v-plus', name: 'GLM-4V-Plus', provider: 'zhipu', enabled: true, isDefault: false, description: 'GLM-4V增强版' },
       { id: 'glm-4-alltools', name: 'GLM-4-AllTools', provider: 'zhipu', enabled: true, isDefault: false, description: 'GLM-4全工具版，支持网络搜索等工具' }
     ]
+  },
+  {
+    id: 'minimax',
+    name: 'MiniMax',
+    avatar: 'M',
+    color: '#ff6b6b',
+    isEnabled: false,
+    apiKey: '',
+    baseUrl: 'https://api.minimaxi.com/v1',
+    providerType: 'openai',
+    models: [
+      { id: 'MiniMax-M2', name: 'MiniMax M2', provider: 'minimax', enabled: true, isDefault: false, description: 'MiniMax 最新一代大模型，支持多模态理解' },
+      { id: 'MiniMax-Text-01', name: 'MiniMax Text 01', provider: 'minimax', enabled: true, isDefault: false, description: 'MiniMax 文本生成模型' }
+    ]
   }
 ];
 

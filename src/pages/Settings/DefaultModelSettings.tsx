@@ -24,12 +24,13 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Checkbox
 } from '@mui/material';
-import { ArrowLeft as ArrowBackIcon, Plus as AddIcon, ChevronRight as ChevronRightIcon, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft as ArrowBackIcon, Plus as AddIcon, ChevronRight as ChevronRightIcon, Settings as SettingsIcon, Trash2 as DeleteIcon, X as CloseIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { setModelSelectorStyle, reorderProviders, updateProvider } from '../../shared/store/settingsSlice';
+import { setModelSelectorStyle, reorderProviders, updateProvider, deleteProvider } from '../../shared/store/settingsSlice';
 import type { ModelProvider } from '../../shared/config/defaultModels';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
@@ -51,6 +52,11 @@ const DefaultModelSettings: React.FC = () => {
   const [editingProvider, setEditingProvider] = useState<ModelProvider | null>(null);
   const [editProviderName, setEditProviderName] = useState('');
   const [editProviderType, setEditProviderType] = useState('');
+
+  // 多选删除状态
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedProviders, setSelectedProviders] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const handleBack = () => {
     navigate('/settings');
@@ -123,6 +129,47 @@ const DefaultModelSettings: React.FC = () => {
     setEditProviderType('');
   };
 
+  // 多选删除相关函数
+  const handleToggleMultiSelect = () => {
+    setIsMultiSelectMode(!isMultiSelectMode);
+    setSelectedProviders(new Set());
+  };
+
+  const handleToggleProvider = (providerId: string) => {
+    const newSelected = new Set(selectedProviders);
+    if (newSelected.has(providerId)) {
+      newSelected.delete(providerId);
+    } else {
+      newSelected.add(providerId);
+    }
+    setSelectedProviders(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProviders.size === providers.length) {
+      setSelectedProviders(new Set());
+    } else {
+      setSelectedProviders(new Set(providers.map(p => p.id)));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    selectedProviders.forEach(providerId => {
+      dispatch(deleteProvider(providerId));
+    });
+    setSelectedProviders(new Set());
+    setIsMultiSelectMode(false);
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmOpen(false);
+  };
+
   // 供应商类型选项
   const providerTypeOptions = [
     { value: 'openai', label: 'OpenAI' },
@@ -185,20 +232,76 @@ const DefaultModelSettings: React.FC = () => {
           >
             模型设置
           </Typography>
-          <Button
-            startIcon={<AddIcon />}
-            onClick={handleAddProvider}
-            sx={{
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              color: 'primary.main',
-              '&:hover': {
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
-              },
-              borderRadius: 2,
-            }}
-          >
-            添加
-          </Button>
+          {isMultiSelectMode ? (
+            <>
+              <Button
+                startIcon={<CloseIcon />}
+                onClick={handleToggleMultiSelect}
+                sx={{
+                  mr: 1,
+                  bgcolor: (theme) => alpha(theme.palette.grey[500], 0.1),
+                  color: 'text.secondary',
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.grey[500], 0.2),
+                  },
+                  borderRadius: 2,
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                startIcon={<DeleteIcon />}
+                onClick={handleDeleteSelected}
+                disabled={selectedProviders.size === 0}
+                sx={{
+                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+                  color: 'error.main',
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
+                  },
+                  '&:disabled': {
+                    bgcolor: (theme) => alpha(theme.palette.grey[500], 0.05),
+                    color: 'text.disabled',
+                  },
+                  borderRadius: 2,
+                }}
+              >
+                删除 ({selectedProviders.size})
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                startIcon={<DeleteIcon />}
+                onClick={handleToggleMultiSelect}
+                sx={{
+                  mr: 1,
+                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+                  color: 'error.main',
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
+                  },
+                  borderRadius: 2,
+                }}
+              >
+                批量删除
+              </Button>
+              <Button
+                startIcon={<AddIcon />}
+                onClick={handleAddProvider}
+                sx={{
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                  },
+                  borderRadius: 2,
+                }}
+              >
+                添加
+              </Button>
+            </>
+          )}
         </Toolbar>
       </AppBar>
 
@@ -229,19 +332,35 @@ const DefaultModelSettings: React.FC = () => {
             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              模型服务商
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              您可以配置多个模型服务商，点击对应的服务商进行设置和管理
-            </Typography>
+          <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                模型服务商
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {isMultiSelectMode ? '选择要删除的服务商' : '您可以配置多个模型服务商，点击对应的服务商进行设置和管理'}
+              </Typography>
+            </Box>
+            {isMultiSelectMode && (
+              <Button
+                size="small"
+                onClick={handleSelectAll}
+                sx={{
+                  color: 'primary.main',
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  },
+                }}
+              >
+                {selectedProviders.size === providers.length ? '取消全选' : '全选'}
+              </Button>
+            )}
           </Box>
 
           <Divider />
 
           <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <Droppable droppableId="providers-list">
+            <Droppable droppableId="providers-list" isDropDisabled={isMultiSelectMode}>
               {(provided) => (
                 <List
                   disablePadding
@@ -253,41 +372,51 @@ const DefaultModelSettings: React.FC = () => {
                       key={provider.id}
                       draggableId={provider.id}
                       index={index}
+                      isDragDisabled={isMultiSelectMode}
                     >
                       {(provided, snapshot) => (
                         <ListItemButton
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          onClick={() => handleProviderClick(provider.id)}
+                          onClick={() => isMultiSelectMode ? handleToggleProvider(provider.id) : handleProviderClick(provider.id)}
                           sx={{
                             transition: 'all 0.2s',
                             transform: snapshot.isDragging ? 'rotate(5deg)' : 'none',
                             boxShadow: snapshot.isDragging ? '0 8px 24px rgba(0,0,0,0.15)' : 'none',
-                            bgcolor: snapshot.isDragging ? 'background.paper' : 'transparent',
+                            bgcolor: snapshot.isDragging ? 'background.paper' : selectedProviders.has(provider.id) ? (theme) => alpha(theme.palette.primary.main, 0.08) : 'transparent',
                             '&:hover': {
                               bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
                             },
                             ...provided.draggableProps.style,
                           }}
                         >
-                          <Box
-                            {...provided.dragHandleProps}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              mr: 1,
-                              cursor: 'grab',
-                              '&:active': {
-                                cursor: 'grabbing',
-                              },
-                              opacity: 0.6,
-                              '&:hover': {
-                                opacity: 1,
-                              }
-                            }}
-                          >
-                            <DragIndicatorIcon fontSize="small" />
-                          </Box>
+                          {isMultiSelectMode ? (
+                            <Checkbox
+                              checked={selectedProviders.has(provider.id)}
+                              onChange={() => handleToggleProvider(provider.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              sx={{ mr: 1 }}
+                            />
+                          ) : (
+                            <Box
+                              {...provided.dragHandleProps}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                mr: 1,
+                                cursor: 'grab',
+                                '&:active': {
+                                  cursor: 'grabbing',
+                                },
+                                opacity: 0.6,
+                                '&:hover': {
+                                  opacity: 1,
+                                }
+                              }}
+                            >
+                              <DragIndicatorIcon fontSize="small" />
+                            </Box>
+                          )}
                           <ListItemAvatar>
                             <Avatar
                               sx={{
@@ -325,21 +454,25 @@ const DefaultModelSettings: React.FC = () => {
                               </span>
                             }
                           />
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleEditProvider(provider, e)}
-                            sx={{
-                              mr: 1,
-                              color: 'text.secondary',
-                              '&:hover': {
-                                color: 'primary.main',
-                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                              },
-                            }}
-                          >
-                            <SettingsIcon size={16} />
-                          </IconButton>
-                          <ChevronRightIcon size={20} style={{ color: 'rgba(79, 70, 229, 0.5)' }} />
+                          {!isMultiSelectMode && (
+                            <>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleEditProvider(provider, e)}
+                                sx={{
+                                  mr: 1,
+                                  color: 'text.secondary',
+                                  '&:hover': {
+                                    color: 'primary.main',
+                                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                                  },
+                                }}
+                              >
+                                <SettingsIcon size={16} />
+                              </IconButton>
+                              <ChevronRightIcon size={20} style={{ color: 'rgba(79, 70, 229, 0.5)' }} />
+                            </>
+                          )}
                         </ListItemButton>
                       )}
                     </Draggable>
@@ -528,6 +661,50 @@ const DefaultModelSettings: React.FC = () => {
             }}
           >
             保存
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 删除确认对话框 */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          fontWeight: 600,
+          color: 'error.main',
+        }}>
+          确认删除
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            您确定要删除选中的 <strong>{selectedProviders.size}</strong> 个供应商吗？
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            此操作将删除这些供应商及其所有配置信息，且无法恢复。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCancelDelete}>取消</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+              color: 'error.main',
+              '&:hover': {
+                bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
+              },
+              borderRadius: 2,
+            }}
+          >
+            确认删除
           </Button>
         </DialogActions>
       </Dialog>

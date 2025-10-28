@@ -16,11 +16,11 @@ export function getHighPerformanceStreamingSetting(): boolean {
     if (saved !== null) {
       return JSON.parse(saved);
     }
-    // 默认启用高性能流式输出
-    return true;
+    // 默认关闭高性能流式输出
+    return false;
   } catch (error) {
     console.error('[performanceSettings] 获取高性能流式输出设置失败:', error);
-    return true; // 默认启用
+    return false; // 默认关闭
   }
 }
 

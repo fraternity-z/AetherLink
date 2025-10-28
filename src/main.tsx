@@ -94,6 +94,20 @@ async function initializeApp() {
 // 后台初始化函数
 async function initializeInBackground() {
   try {
+    // 清理所有设置页面的滚动位置缓存
+    // 确保每次启动应用时，设置页面都从顶部开始
+    try {
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('scroll:settings-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      console.log('[App] 已清理设置页面滚动位置缓存');
+    } catch (error) {
+      console.warn('[App] 清理滚动位置缓存失败:', error);
+    }
+
     // 首先，确保Dexie数据库已经打开并准备就绪
     try {
       const isOpen = await dexieStorage.isOpen();
