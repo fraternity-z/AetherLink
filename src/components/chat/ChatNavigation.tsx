@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, IconButton, Tooltip, Paper, Fade, useMediaQuery, useTheme } from '@mui/material';
-import { ChevronUp, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { ChevronUp, ChevronDown, ArrowUp, ArrowDown, Scroll } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
+import { updateSettings } from '../../shared/store/slices/settingsSlice';
 
 interface ChatNavigationProps {
   containerId: string;
@@ -13,12 +14,18 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
   const [isNearButtons, setIsNearButtons] = useState(false);
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
   const lastMoveTime = useRef(0);
+  const scrollTimer = useRef<NodeJS.Timeout | null>(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const dispatch = useDispatch();
 
   const messageNavigation = useSelector((state: RootState) =>
     (state.settings as any).messageNavigation || 'none'
+  );
+
+  const showNavigationOnScroll = useSelector((state: RootState) =>
+    (state.settings as any).showNavigationOnScroll ?? false
   );
 
   const resetHideTimer = useCallback(() => {
@@ -160,6 +167,12 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     scrollToBottom();
   }, [resetHideTimer, scrollToBottom]);
 
+  const handleToggleScrollNavigation = useCallback(() => {
+    dispatch(updateSettings({
+      showNavigationOnScroll: !showNavigationOnScroll
+    }));
+  }, [dispatch, showNavigationOnScroll]);
+
   useEffect(() => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -221,12 +234,47 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     };
   }, [containerId, isNearButtons, resetHideTimer, isMobile]);
 
+  // 监听滚动事件
+  useEffect(() => {
+    if (!showNavigationOnScroll) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let throttleTimer: NodeJS.Timeout | null = null;
+    const handleScroll = () => {
+      if (throttleTimer) return;
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null;
+        if (scrollTimer.current) clearTimeout(scrollTimer.current);
+        setIsVisible(true);
+        scrollTimer.current = setTimeout(() => {
+          setIsVisible(prev => isNearButtons ? prev : false);
+          scrollTimer.current = null;
+        }, 1000);
+      }, 50);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (throttleTimer) clearTimeout(throttleTimer);
+      if (scrollTimer.current) {
+        clearTimeout(scrollTimer.current);
+        scrollTimer.current = null;
+      }
+    };
+  }, [containerId, showNavigationOnScroll, isNearButtons]);
+
   // 组件卸载时清理定时器
   useEffect(() => {
     return () => {
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
         hideTimer.current = null;
+      }
+      if (scrollTimer.current) {
+        clearTimeout(scrollTimer.current);
+        scrollTimer.current = null;
       }
     };
   }, []);
@@ -304,6 +352,35 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
             })
           }}
         >
+          {/* 滚动时显示导航开关按钮 */}
+          <Tooltip 
+            title={showNavigationOnScroll ? "滚动时显示导航：已开启" : "滚动时显示导航：已关闭"} 
+            placement="left" 
+            disableHoverListener={isMobile}
+          >
+            <IconButton
+              onClick={handleToggleScrollNavigation}
+              size="small"
+              sx={{
+                borderRadius: 0,
+                minHeight: isMobile ? 36 : 'auto',
+                minWidth: isMobile ? 36 : 'auto',
+                padding: isMobile ? '6px' : '8px',
+                bgcolor: showNavigationOnScroll ? 'action.selected' : 'transparent',
+                '&:hover': {
+                  bgcolor: 'action.hover'
+                },
+                '&:active': {
+                  bgcolor: 'action.selected'
+                }
+              }}
+            >
+              <Scroll size={isMobile ? 18 : 20} style={{ 
+                opacity: showNavigationOnScroll ? 1 : 0.5 
+              }} />
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="回到顶部" placement="left" disableHoverListener={isMobile}>
             <IconButton
               onClick={handleScrollToTop}
