@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import CustomSwitch from '../../CustomSwitch';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import type { MathRendererType } from '../../../shared/types';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
 
 interface ContextSettingsProps {
@@ -25,14 +24,12 @@ interface ContextSettingsProps {
   contextCount: number;
   maxOutputTokens: number;
   enableMaxOutputTokens: boolean;
-  mathRenderer: MathRendererType;
   thinkingEffort: ThinkingOption;
   thinkingBudget: number;
   onContextLengthChange: (value: number) => void;
   onContextCountChange: (value: number) => void;
   onMaxOutputTokensChange: (value: number) => void;
   onEnableMaxOutputTokensChange: (value: boolean) => void;
-  onMathRendererChange: (value: MathRendererType) => void;
   onThinkingEffortChange: (value: ThinkingOption) => void;
   onThinkingBudgetChange: (value: number) => void;
 }
@@ -45,14 +42,12 @@ export default function ContextSettings({
   contextCount,
   maxOutputTokens,
   enableMaxOutputTokens,
-  mathRenderer,
   thinkingEffort,
   thinkingBudget,
   onContextLengthChange,
   onContextCountChange,
   onMaxOutputTokensChange,
   onEnableMaxOutputTokensChange,
-  onMathRendererChange,
   onThinkingEffortChange,
   onThinkingBudgetChange
 }: ContextSettingsProps) {
@@ -116,12 +111,6 @@ export default function ContextSettings({
     onThinkingBudgetChange(value);
     // 触发自定义事件通知其他组件
     window.dispatchEvent(new CustomEvent('thinkingBudgetChanged', { detail: value }));
-  };
-
-  // 处理数学渲染器变化
-  const handleMathRendererChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-    const value = event.target.value as MathRendererType;
-    onMathRendererChange(value);
   };
 
   // 处理思维链长度变化
@@ -468,25 +457,6 @@ export default function ContextSettings({
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }}>
               思考预算控制模型的思考深度。较高的值允许更深入的思考，但会增加响应时间。
             </Typography>
-          </Box>
-          <Divider sx={{ my: 2 }} /> {/* 添加分割线 */}
-
-          {/* 数学公式渲染器选择 */}
-          <Box>
-            <FormControl fullWidth size="small">
-              <InputLabel id="math-renderer-label">数学公式渲染器</InputLabel>
-              <Select
-                labelId="math-renderer-label"
-                id="math-renderer-select"
-                value={mathRenderer}
-                label="数学公式渲染器"
-                onChange={handleMathRendererChange as any}
-              >
-                <MenuItem value="KaTeX">KaTeX</MenuItem>
-                <MenuItem value="MathJax">MathJax</MenuItem>
-                <MenuItem value="none">禁用</MenuItem>
-              </Select>
-            </FormControl>
           </Box>
         </Box>
       </Collapse>
