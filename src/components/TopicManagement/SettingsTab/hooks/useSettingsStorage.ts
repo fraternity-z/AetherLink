@@ -11,6 +11,7 @@ export interface AppSettings {
   maxOutputTokens?: number;
   enableMaxOutputTokens?: boolean;
   mathRenderer?: MathRendererType;
+  mathEnableSingleDollar?: boolean;
   defaultThinkingEffort?: ThinkingOption;
   thinkingBudget?: number;
   
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   maxOutputTokens: 8192,
   enableMaxOutputTokens: true,
   mathRenderer: 'KaTeX' as MathRendererType,
+  mathEnableSingleDollar: true, // 默认启用单美元符号
   defaultThinkingEffort: 'medium' as ThinkingOption,
   thinkingBudget: 1024,
   streamOutput: true,

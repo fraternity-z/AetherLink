@@ -21,6 +21,7 @@ import ThrottleLevelSelector from './ThrottleLevelSelector';
 import ContextSettings from './ContextSettings';
 import CodeBlockSettings from './CodeBlockSettings';
 import InputSettings from './InputSettings';
+import MathSettings from './MathSettings';
 import { useSettingsStorage, syncAssistantMaxTokens } from './hooks/useSettingsStorage';
 
 
@@ -220,7 +221,6 @@ export default function SettingsTab({
         contextCount={getSetting('contextCount', 5)}
         maxOutputTokens={getSetting('maxOutputTokens', 8192)}
         enableMaxOutputTokens={getSetting('enableMaxOutputTokens', true)}
-        mathRenderer={getSetting('mathRenderer', 'KaTeX')}
         thinkingEffort={getSetting('defaultThinkingEffort', 'medium')}
         thinkingBudget={getSetting('thinkingBudget', 1024)}
         onContextLengthChange={(value) => updateSetting('contextLength', value)}
@@ -231,9 +231,17 @@ export default function SettingsTab({
           await syncAssistantMaxTokens(value);
         }}
         onEnableMaxOutputTokensChange={(value) => updateSetting('enableMaxOutputTokens', value)}
-        onMathRendererChange={(value) => updateSetting('mathRenderer', value)}
         onThinkingEffortChange={(value) => updateSetting('defaultThinkingEffort', value)}
         onThinkingBudgetChange={(value) => updateSetting('thinkingBudget', value)}
+      />
+      <Divider sx={{ my: 0.5 }} />
+
+      {/* 数学公式设置 */}
+      <MathSettings
+        mathRenderer={getSetting('mathRenderer', 'KaTeX')}
+        mathEnableSingleDollar={getSetting('mathEnableSingleDollar', true)}
+        onMathRendererChange={(value) => updateSetting('mathRenderer', value)}
+        onMathEnableSingleDollarChange={(value) => updateSetting('mathEnableSingleDollar', value)}
       />
       <Divider sx={{ my: 0.5 }} />
 

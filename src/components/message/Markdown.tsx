@@ -35,20 +35,22 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
   // 从用户设置获取数学引擎配置
   // 使用 useState 和 useEffect 来监听设置变化
   const [mathEngine, setMathEngine] = React.useState<string>('KaTeX');
+  const [mathEnableSingleDollar, setMathEnableSingleDollar] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    const updateMathEngine = () => {
+    const updateMathSettings = () => {
       const settings = getAppSettings();
       setMathEngine(settings.mathRenderer || 'KaTeX');
+      setMathEnableSingleDollar(settings.mathEnableSingleDollar !== undefined ? settings.mathEnableSingleDollar : true);
     };
 
     // 初始加载
-    updateMathEngine();
+    updateMathSettings();
 
     // 监听 localStorage 变化
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'appSettings') {
-        updateMathEngine();
+        updateMathSettings();
       }
     };
 
@@ -56,7 +58,7 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
 
     // 监听自定义事件（同一页面内的设置变化）
     const handleSettingsChange = () => {
-      updateMathEngine();
+      updateMathSettings();
     };
 
     window.addEventListener('appSettingsChanged', handleSettingsChange);
@@ -71,10 +73,12 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
     const plugins = [remarkGfm, remarkCjkFriendly];
     // 只有当数学引擎不是 'none' 时才添加数学支持
     if (mathEngine !== 'none') {
-      plugins.push(remarkMath);
+      // 配置 remark-math 插件
+      // singleDollarTextMath: true 表示启用单美元符号 $...$
+      plugins.push([remarkMath, { singleDollarTextMath: mathEnableSingleDollar }]);
     }
     return plugins;
-  }, [mathEngine]);
+  }, [mathEngine, mathEnableSingleDollar]);
 
   const messageContent = useMemo(() => {
     let processedContent = '';
