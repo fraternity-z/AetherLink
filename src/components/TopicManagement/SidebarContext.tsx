@@ -9,7 +9,6 @@ export interface Settings {
   streamOutput: boolean;
   showMessageDivider: boolean;
   copyableCodeBlocks: boolean;
-  highPerformanceStreaming: boolean; // 新增：高性能流式输出
   contextLength: number;
   contextCount: number;
   mathRenderer: 'KaTeX' | 'MathJax';

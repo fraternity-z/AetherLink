@@ -51,7 +51,7 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
     store,
     dexieStorage,
     { updateOneBlock, addOneBlock, upsertBlockReference: newMessagesActions.upsertBlockReference },
-    getHighPerformanceUpdateInterval()
+    getHighPerformanceUpdateInterval() // 根据节流强度设置动态调整
   );
   const toolHandler = new ToolResponseHandler(messageId);
   const comparisonHandler = new ComparisonResultHandler(messageId);

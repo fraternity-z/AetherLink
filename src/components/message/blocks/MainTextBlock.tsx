@@ -10,10 +10,8 @@ import Markdown from '../Markdown';
 import ToolBlock from './ToolBlock';
 import { hasToolUseTags, fixBrokenToolTags } from '../../../shared/utils/mcpToolParser';
 import {
-  shouldUseHighPerformanceMode,
   getHighPerformanceUpdateInterval
 } from '../../../shared/utils/performanceSettings';
-import HighPerformanceStreamingContainer from './HighPerformanceStreamingContainer';
 
 interface Props {
   block: MainTextMessageBlock;
@@ -53,10 +51,9 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
   // 🚀 流式输出节流机制
   const [throttledContent, setThrottledContent] = useState(content);
   const contentRef = useRef(content);
-  const useHighPerformance = shouldUseHighPerformanceMode(isStreaming);
 
-  // 🎯 节流机制独立于高性能渲染模式
-  const shouldUseThrottling = isStreaming; // 只要是流式输出就可以使用节流
+  // 🎯 流式输出时使用节流
+  const shouldUseThrottling = isStreaming;
 
   // 创建节流更新函数
   const throttledUpdate = useMemo(() => {
@@ -91,29 +88,8 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
   // 决定使用哪个内容进行渲染
   const displayContent = shouldUseThrottling ? throttledContent : content;
 
-  // 🚀 高性能流式渲染容器（仅在流式且启用高性能时使用）
-  const highPerformanceRenderer = useMemo(() => {
-    if (useHighPerformance && isStreaming && !isUserMessage) {
-      return (
-        <HighPerformanceStreamingContainer
-          content={displayContent}
-          isStreaming={isStreaming}
-          onComplete={() => {
-            // 流式完成后，确保显示完整内容
-            setThrottledContent(content);
-          }}
-        />
-      );
-    }
-    return null;
-  }, [useHighPerformance, isStreaming, isUserMessage, displayContent, content]);
-
   // 处理内容和工具块的原位置渲染
   const renderedContent = useMemo(() => {
-    // 🚀 如果启用了高性能渲染且正在流式输出，使用高性能容器
-    if (highPerformanceRenderer) {
-      return highPerformanceRenderer;
-    }
 
     // 创建一个临时的 block 对象，使用节流后的内容
     const displayBlock = { ...block, content: displayContent };
@@ -215,7 +191,7 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
     }
 
     return <>{parts}</>;
-  }, [displayContent, isUserMessage, toolBlocks, messageId, renderUserInputAsMarkdown, block, role, highPerformanceRenderer]);
+  }, [displayContent, isUserMessage, toolBlocks, messageId, renderUserInputAsMarkdown, block, role]);
 
   if (!displayContent.trim()) {
     return null;

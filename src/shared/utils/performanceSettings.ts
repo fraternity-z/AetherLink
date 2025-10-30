@@ -1,54 +1,7 @@
 /**
  * 性能设置工具函数
- * 用于管理高性能流式输出等性能相关设置
+ * 用于管理流式输出等性能相关设置
  */
-
-// 高性能流式输出设置的 localStorage 键
-const HIGH_PERFORMANCE_STREAMING_KEY = 'highPerformanceStreaming';
-
-/**
- * 获取高性能流式输出设置
- * @returns 是否启用高性能流式输出
- */
-export function getHighPerformanceStreamingSetting(): boolean {
-  try {
-    const saved = localStorage.getItem(HIGH_PERFORMANCE_STREAMING_KEY);
-    if (saved !== null) {
-      return JSON.parse(saved);
-    }
-    // 默认关闭高性能流式输出
-    return false;
-  } catch (error) {
-    console.error('[performanceSettings] 获取高性能流式输出设置失败:', error);
-    return false; // 默认关闭
-  }
-}
-
-/**
- * 设置高性能流式输出
- * @param enabled 是否启用高性能流式输出
- */
-export function setHighPerformanceStreamingSetting(enabled: boolean): void {
-  try {
-    localStorage.setItem(HIGH_PERFORMANCE_STREAMING_KEY, JSON.stringify(enabled));
-    console.log(`[performanceSettings] 高性能流式输出设置已更新: ${enabled}`);
-  } catch (error) {
-    console.error('[performanceSettings] 保存高性能流式输出设置失败:', error);
-  }
-}
-
-/**
- * 判断是否应该使用高性能渲染模式
- * @param isStreaming 是否正在流式输出
- * @returns 是否使用高性能渲染模式
- */
-export function shouldUseHighPerformanceMode(isStreaming: boolean): boolean {
-  if (!isStreaming) {
-    return false; // 非流式时始终使用完整渲染
-  }
-
-  return getHighPerformanceStreamingSetting();
-}
 
 /**
  * 节流强度级别
@@ -125,37 +78,3 @@ export function getHighPerformanceScrollThrottle(): number {
   }
 }
 
-/**
- * 获取高性能渲染模式类型
- */
-export type HighPerformanceRenderMode = 'virtual' | 'canvas' | 'minimal' | 'normal';
-
-/**
- * 获取高性能渲染模式设置
- * @returns 渲染模式
- */
-export function getHighPerformanceRenderMode(): HighPerformanceRenderMode {
-  try {
-    const saved = localStorage.getItem('highPerformanceRenderMode');
-    if (saved) {
-      return saved as HighPerformanceRenderMode;
-    }
-    return 'virtual'; // 默认使用虚拟化渲染
-  } catch (error) {
-    console.error('[performanceSettings] 获取渲染模式失败:', error);
-    return 'virtual';
-  }
-}
-
-/**
- * 设置高性能渲染模式
- * @param mode 渲染模式
- */
-export function setHighPerformanceRenderMode(mode: HighPerformanceRenderMode): void {
-  try {
-    localStorage.setItem('highPerformanceRenderMode', mode);
-    console.log(`[performanceSettings] 渲染模式已更新: ${mode}`);
-  } catch (error) {
-    console.error('[performanceSettings] 保存渲染模式失败:', error);
-  }
-}
