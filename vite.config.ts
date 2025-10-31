@@ -16,6 +16,10 @@ export default defineConfig({
     host: process.env.TAURI_DEV_HOST || '0.0.0.0', // 使用 Tauri 提供的主机地址
     cors: false, // 完全禁用 CORS 检查
     strictPort: true, // 严格端口模式
+    // 预热常用文件，提升首次加载速度
+    warmup: {
+      clientFiles: ['./src/main.tsx', './src/App.tsx', './src/shared/store/index.ts'],
+    },
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': '*',
@@ -144,12 +148,16 @@ export default defineConfig({
       'react',
       'react-dom',
       'react-router-dom',
-      '@mui/material',
-      '@mui/system',
-      '@mui/utils',
-      '@reduxjs/toolkit'
+      '@reduxjs/toolkit',
+      'redux-persist',
+      'react-redux',
+      'lodash',
+      '@emotion/react',
+      '@emotion/styled',
+      'axios',
     ],
-    force: true
+    // 移除 force: true，避免每次都重新构建
+    // force: true
     // 注意：Rolldown-Vite 使用内置优化，不需要 esbuildOptions
   },
 

@@ -1,6 +1,13 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import type { WebStorage } from 'redux-persist';
+
+// 兼容 rolldown-vite 7.1.20+ 的 storage 适配器
+const storage: WebStorage = {
+  getItem: (key) => Promise.resolve(localStorage.getItem(key)),
+  setItem: (key, value) => Promise.resolve(localStorage.setItem(key, value)),
+  removeItem: (key) => Promise.resolve(localStorage.removeItem(key)),
+};
 // 移除旧的 messagesReducer 导入
 import messagesReducer from './slices/newMessagesSlice'; // 使用 normalizedMessagesReducer 作为唯一的消息状态管理
 import settingsReducer, { settingsMiddleware, loadSettings } from './settingsSlice';
@@ -32,7 +39,7 @@ const rootReducer = combineReducers({
 // 配置Redux持久化
 const persistConfig = {
   key: 'cherry-studio',
-  storage,
+  storage: storage!,  // 使用非空断言，因为在浏览器环境中storage一定存在
   version: 2, // 增加版本号，因为我们添加了新的状态切片
   // 与电脑端保持一致，不持久化messages和messageBlocks
   // 同时排除assistants，因为它包含非序列化的React元素

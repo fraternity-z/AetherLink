@@ -28,8 +28,8 @@ if (typeof window !== 'undefined') {
 
 
 // 显示启动画面的最小时间（毫秒）
-const MIN_SPLASH_DURATION_NORMAL = 1000; // 正常启动1秒
-const MIN_SPLASH_DURATION_FIRST_INSTALL = 3000; // 首次安装3秒
+const MIN_SPLASH_DURATION_NORMAL = 300; // 正常启动0.3秒
+const MIN_SPLASH_DURATION_FIRST_INSTALL = 1000; // 首次安装1秒
 
 // 初始化系统服务
 async function initializeApp() {
@@ -94,51 +94,55 @@ async function initializeApp() {
 // 后台初始化函数
 async function initializeInBackground() {
   try {
-    // 清理所有设置页面的滚动位置缓存
-    // 确保每次启动应用时，设置页面都从顶部开始
-    try {
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith('scroll:settings-')) {
-          localStorage.removeItem(key);
-        }
-      });
-      console.log('[App] 已清理设置页面滚动位置缓存');
-    } catch (error) {
-      console.warn('[App] 清理滚动位置缓存失败:', error);
-    }
-
-    // 首先，确保Dexie数据库已经打开并准备就绪
-    try {
-      const isOpen = await dexieStorage.isOpen();
-      if (!isOpen) {
-        await dexieStorage.open();
+    // 快速初始化：只做必要的同步操作
+    const cleanupPromise = Promise.resolve().then(() => {
+      try {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.startsWith('scroll:settings-')) {
+            localStorage.removeItem(key);
+          }
+        });
+        console.log('[App] 已清理设置页面滚动位置缓存');
+      } catch (error) {
+        console.warn('[App] 清理滚动位置缓存失败:', error);
       }
-      console.log('数据库连接已就绪');
-    } catch (dbError) {
-      console.error('数据库连接初始化失败:',
-        dbError instanceof Error ? dbError.message : String(dbError));
-      throw new Error('数据库连接失败，无法初始化应用');
-    }
+    });
 
-    // 初始化存储服务，包括数据迁移
-    await initStorageService();
-    console.log('Dexie存储服务初始化成功');
+    // 数据库初始化 - 只打开连接，不等待迁移
+    const dbPromise = (async () => {
+      try {
+        const isOpen = await dexieStorage.isOpen();
+        if (!isOpen) {
+          await dexieStorage.open();
+        }
+        console.log('数据库连接已就绪');
+      } catch (dbError) {
+        console.error('数据库连接初始化失败:',
+          dbError instanceof Error ? dbError.message : String(dbError));
+        throw new Error('数据库连接失败，无法初始化应用');
+      }
+    })();
 
-    // 初始化其他服务
-    await initializeServices();
-    console.log('所有服务初始化完成');
+    // 等待数据库打开，但不等待其他初始化
+    await dbPromise;
 
+    // 其他初始化在后台继续，不阻塞页面渲染
+    Promise.all([
+      cleanupPromise,
+      initStorageService().then(() => console.log('Dexie存储服务初始化成功')),
+      initializeServices().then(() => console.log('所有服务初始化完成'))
+    ]).then(() => {
+      console.log('[App] 后台初始化完成');
+      if (Capacitor.isNativePlatform()) {
+        console.log('移动端：原生层已禁用CORS，直接使用标准fetch');
+      }
+    }).catch(error => {
+      console.error('[ERROR] 后台初始化失败:', error);
+    });
 
-
-    // 移动端：原生层已禁用CORS，无需代理服务
-    if (Capacitor.isNativePlatform()) {
-      console.log('移动端：原生层已禁用CORS，直接使用标准fetch');
-    }
-
-    console.log('[App] 后台初始化完成');
   } catch (error) {
-    console.error('[ERROR] 后台初始化失败:', error);
+    console.error('[ERROR] 关键初始化失败:', error);
     throw error;
   }
 }
