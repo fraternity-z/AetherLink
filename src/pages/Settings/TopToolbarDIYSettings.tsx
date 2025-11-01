@@ -131,7 +131,7 @@ const TopToolbarDIYSettings: React.FC = () => {
         longPressTimer: null
       }));
       setMousePosition({ x: clientX, y: clientY });
-    }, 300); // 减少到300ms，更快响应
+    }, 300);
 
     setDragState(prev => ({
       ...prev,
@@ -179,57 +179,49 @@ const TopToolbarDIYSettings: React.FC = () => {
     };
   }, [dragState.longPressTimer]);
 
-  // 全局鼠标移动监听
+  // 全局鼠标移动监听和滚动阻止
   useEffect(() => {
+    if (!dragState.isDragging && !dragState.isLongPressing) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (dragState.isDragging && e.touches[0]) {
+        setMousePosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      }
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
       if (dragState.isDragging) {
         setMousePosition({ x: e.clientX, y: e.clientY });
       }
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (dragState.isDragging && e.touches[0]) {
-        setMousePosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-        e.preventDefault(); // 防止页面滚动
-      }
-    };
-
     const handleGlobalUp = (e: MouseEvent | TouchEvent) => {
-      if (dragState.isDragging) {
-        // 检查是否在预览区域内释放
-        if (previewRef.current) {
-          const rect = previewRef.current.getBoundingClientRect();
-          const clientX = 'touches' in e ? e.changedTouches[0].clientX : e.clientX;
-          const clientY = 'touches' in e ? e.changedTouches[0].clientY : e.clientY;
-
-          // 如果在预览区域内释放，触发放置
-          if (clientX >= rect.left && clientX <= rect.right &&
-              clientY >= rect.top && clientY <= rect.bottom) {
-            handleDrop(e as any);
-            return;
-          }
+      if (dragState.isDragging && previewRef.current) {
+        const rect = previewRef.current.getBoundingClientRect();
+        const clientX = 'touches' in e ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.changedTouches[0].clientY : e.clientY;
+        if (clientX >= rect.left && clientX <= rect.right &&
+            clientY >= rect.top && clientY <= rect.bottom) {
+          handleDrop(e as any);
+          return;
         }
       }
-
-      if (dragState.isDragging || dragState.isLongPressing) {
-        handleDragStop();
-      }
+      handleDragStop();
     };
 
-    if (dragState.isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('mouseup', handleGlobalUp);
-      document.addEventListener('touchend', handleGlobalUp);
-      document.addEventListener('touchcancel', handleGlobalUp);
-    }
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('touchend', handleGlobalUp);
+    document.addEventListener('touchcancel', handleGlobalUp);
+    document.addEventListener('mouseup', handleGlobalUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('mouseup', handleGlobalUp);
+      document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('touchend', handleGlobalUp);
       document.removeEventListener('touchcancel', handleGlobalUp);
+      document.removeEventListener('mouseup', handleGlobalUp);
     };
   }, [dragState.isDragging, dragState.isLongPressing, handleDragStop]);
 
@@ -578,6 +570,7 @@ const TopToolbarDIYSettings: React.FC = () => {
                         position: 'relative',
                         transform: (dragState.isLongPressing && dragState.draggedComponent === componentId) ? 'scale(1.05)' : 'none',
                         userSelect: 'none',
+                        touchAction: 'none',
                         '&:hover': isEnabled ? {
                           transform: 'translateY(-1px)',
                           boxShadow: 1

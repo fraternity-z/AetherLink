@@ -789,9 +789,17 @@ const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) =
   }
 
   // 话题比较 - 只比较关键属性
+  // 🔥 关键修复：添加 prompt 比较，确保系统提示词变化时能正确更新
   if (prevProps.currentTopic?.id !== nextProps.currentTopic?.id ||
       prevProps.currentTopic?.name !== nextProps.currentTopic?.name ||
-      prevProps.currentTopic?.updatedAt !== nextProps.currentTopic?.updatedAt) {
+      prevProps.currentTopic?.updatedAt !== nextProps.currentTopic?.updatedAt ||
+      prevProps.currentTopic?.prompt !== nextProps.currentTopic?.prompt) {
+    return false;
+  }
+
+  // 🔥 关键修复：比较助手对象，确保 systemPrompt 变化时能正确更新
+  // 注意：助手对象可能通过 Redux 传递，需要比较关键属性
+  if (prevProps.currentTopic?.assistantId !== nextProps.currentTopic?.assistantId) {
     return false;
   }
 

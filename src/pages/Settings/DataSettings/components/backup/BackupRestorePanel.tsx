@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Paper, LinearProgress, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
-import BackupHeader from './BackupHeader';
-import BackupButtons from './BackupButtons';
+import { LinearProgress, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import {
+  Save,
+  Folder,
+  RotateCcw,
+  Settings,
+  CloudDownload,
+  CloudUpload,
+  Cloud,
+  Database,
+} from 'lucide-react';
+import { SettingGroup, SettingItem, YStack } from '../../../../../components/settings/SettingComponents';
 import BackupFilesList from './BackupFilesList';
 import SelectiveBackupDialog from './SelectiveBackupDialog';
 import ImportExternalBackupDialog from './ImportExternalBackupDialog';
@@ -473,23 +482,10 @@ const BackupRestorePanel: React.FC = () => {
   };
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        mb: 3,
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-      }}
-    >
-      <BackupHeader />
-
+    <YStack sx={{ gap: 3 }}>
       {/* 恢复进度 */}
       {restoreProgress.active && (
-        <Box sx={{ mb: 3, mt: 2 }}>
+        <Box sx={{ mb: 2 }}>
           <Typography variant="body2" sx={{ mb: 1 }}>
             {restoreProgress.stage}
           </Typography>
@@ -507,19 +503,98 @@ const BackupRestorePanel: React.FC = () => {
         </Box>
       )}
 
-      <BackupButtons
-        isLoading={isLoading}
-        onBasicBackup={handleBasicBackup}
-        onFullBackup={handleFullBackup}
-        onSelectiveBackup={openSelectiveBackupDialog}
-        onRestore={handleRestore}
-        onImportExternal={openImportExternalDialog}
-        onClearAll={handleClearAll}
-        onDiagnoseDatabase={openDatabaseDiagnosticDialog}
-        onWebDavSettings={handleWebDavSettings}
-        onWebDavBackup={handleWebDavBackup}
-        onWebDavRestore={handleWebDavRestoreOpen}
-      />
+      {/* 备份与恢复分组 */}
+      <SettingGroup title="备份与恢复">
+        <SettingItem
+          title="备份聊天和助手"
+          description="备份当前所有对话话题和助手配置"
+          icon={<Save size={24} />}
+          onClick={handleBasicBackup}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title="完整系统备份"
+          description="备份所有数据，包括设置和本地存储"
+          icon={<Save size={24} />}
+          onClick={handleFullBackup}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title="选择性备份"
+          description="自定义选择要备份的数据类型"
+          icon={<Settings size={24} />}
+          onClick={openSelectiveBackupDialog}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title="导入备份文件并恢复"
+          description="从本地文件恢复备份数据"
+          icon={<Folder size={24} />}
+          onClick={handleRestore}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title="导入其他AI助手备份"
+          description="导入来自其他AI助手应用的备份文件"
+          icon={<CloudDownload size={24} />}
+          onClick={openImportExternalDialog}
+          disabled={isLoading}
+          showArrow={false}
+        />
+      </SettingGroup>
+
+      {/* 云备份分组 */}
+      <SettingGroup title="云备份">
+        <SettingItem
+          title="WebDAV 云备份设置"
+          description="配置 WebDAV 服务器连接"
+          icon={<Cloud size={24} />}
+          onClick={handleWebDavSettings}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title="备份到 WebDAV"
+          description="将备份上传到已配置的 WebDAV 服务器"
+          icon={<CloudUpload size={24} />}
+          onClick={handleWebDavBackup}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title="从 WebDAV 恢复"
+          description="从 WebDAV 服务器下载并恢复备份"
+          icon={<CloudDownload size={24} />}
+          onClick={handleWebDavRestoreOpen}
+          disabled={isLoading}
+          showArrow={false}
+        />
+      </SettingGroup>
+
+      {/* 数据管理分组 */}
+      <SettingGroup title="数据管理">
+        <SettingItem
+          title="数据库诊断与修复"
+          description="检查并修复数据库问题"
+          icon={<Database size={24} />}
+          onClick={openDatabaseDiagnosticDialog}
+          disabled={isLoading}
+          showArrow={false}
+        />
+        <SettingItem
+          title={isLoading ? '清理中...' : '清理全部助手和话题'}
+          description="永久删除所有对话话题和助手数据"
+          icon={<RotateCcw size={24} />}
+          onClick={handleClearAll}
+          disabled={isLoading}
+          danger={true}
+          showArrow={false}
+        />
+      </SettingGroup>
 
       {/* 备份文件列表 */}
       <BackupFilesList
@@ -626,7 +701,7 @@ const BackupRestorePanel: React.FC = () => {
         config={webdavConfig}
         onRestore={handleWebDavRestoreFile}
       />
-    </Paper>
+    </YStack>
   );
 };
 

@@ -16,9 +16,9 @@ interface SystemPromptBubbleProps {
 /**
  * 系统提示词气泡组件
  * 显示在消息列表顶部，点击可以编辑系统提示词
- *  优化：使用React.memo避免不必要的重新渲染
+ * 🚀 优化：使用React.memo避免不必要的重新渲染
  */
-const SystemPromptBubble: React.FC<SystemPromptBubbleProps> = React.memo(({ topic, assistant, onClick }) => {
+const SystemPromptBubbleComponent: React.FC<SystemPromptBubbleProps> = ({ topic, assistant, onClick }) => {
   const theme = useTheme();
   
   // 使用默认提示词替代旧的系统提示词
@@ -124,7 +124,32 @@ const SystemPromptBubble: React.FC<SystemPromptBubbleProps> = React.memo(({ topi
       />
     </Paper>
   );
-});
+};
+
+// 🚀 自定义比较函数，确保提示词变化时能正确更新
+const arePropsEqual = (prevProps: SystemPromptBubbleProps, nextProps: SystemPromptBubbleProps) => {
+  // 比较话题
+  if (prevProps.topic?.id !== nextProps.topic?.id ||
+      prevProps.topic?.prompt !== nextProps.topic?.prompt ||
+      prevProps.topic?.updatedAt !== nextProps.topic?.updatedAt) {
+    return false;
+  }
+
+  // 🔥 关键：比较助手的 systemPrompt，确保从设置返回时能正确更新
+  if (prevProps.assistant?.id !== nextProps.assistant?.id ||
+      prevProps.assistant?.systemPrompt !== nextProps.assistant?.systemPrompt ||
+      prevProps.assistant?.updatedAt !== nextProps.assistant?.updatedAt) {
+    return false;
+  }
+
+  // onClick 函数引用变化不影响显示，但为了安全起见，如果变化也重新渲染
+  // 实际上 onClick 通常不会变化，所以这里可以忽略
+
+  return true;
+};
+
+// 使用React.memo优化，并添加自定义比较函数
+const SystemPromptBubble = React.memo(SystemPromptBubbleComponent, arePropsEqual);
 
 // 设置displayName便于调试
 SystemPromptBubble.displayName = 'SystemPromptBubble';

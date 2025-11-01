@@ -32,7 +32,7 @@ dependencies {
     implementation project(':capacitor-cors-bypass-enhanced')
 
 }
-
+apply from: "../../node_modules/cordova-plugin-websocket-server/src/android/websocket-server.gradle"
 
 if (hasProperty('postBuildExtras')) {
   postBuildExtras()

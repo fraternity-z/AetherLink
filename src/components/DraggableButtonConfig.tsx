@@ -4,7 +4,6 @@ import {
   Typography,
   IconButton,
   Paper,
-  Tooltip,
   List,
   ListItem,
   ListItemIcon,
@@ -140,7 +139,6 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
           <ListItem
             ref={provided.innerRef}
             {...provided.draggableProps}
-            {...provided.dragHandleProps}
             sx={{
               mb: 1,
               bgcolor: snapshot.isDragging ? 'primary.light' : 'background.paper',
@@ -165,10 +163,12 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
             }}
           >
             <ListItemIcon 
+              {...provided.dragHandleProps}
               sx={{ 
                 minWidth: 40,
+                cursor: 'grab',
+                '&:active': { cursor: 'grabbing' },
                 ...(isTouchDevice && {
-                  cursor: 'grab',
                   WebkitTapHighlightColor: 'transparent',
                 })
               }}
@@ -178,7 +178,6 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                 color="rgba(0,0,0,0.4)" 
                 style={{ 
                   ...(isTouchDevice && {
-                    pointerEvents: 'none',
                     WebkitUserSelect: 'none',
                     userSelect: 'none',
                   })
@@ -207,14 +206,22 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                 e.preventDefault();
                 handleToggleVisibility(button.id);
               }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
               sx={{
                 color: isVisible ? 'primary.main' : 'text.disabled',
                 ml: 1,
+                position: 'relative',
+                zIndex: 10,
+                pointerEvents: 'auto',
                 '&:hover': {
                   bgcolor: isVisible ? 'primary.light' : 'action.hover'
                 }
               }}
-              disabled={isTouchDevice}
             >
               {isVisible ? <Eye size={18} /> : <EyeOff size={18} />}
             </IconButton>

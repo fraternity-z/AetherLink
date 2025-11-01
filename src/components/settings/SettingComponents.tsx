@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 // SafeAreaContainer - 安全区域容器
 export const SafeAreaContainer = styled(Box)(({ theme }) => ({
@@ -26,11 +27,12 @@ export const SafeAreaContainer = styled(Box)(({ theme }) => ({
 export const Container = styled(Box)(({ theme }) => ({
   flex: 1,
   padding: theme.spacing(2),
-  gap: theme.spacing(2.5),
+  gap: theme.spacing(3), // gap-6 (24px)
   display: 'flex',
   flexDirection: 'column',
   overflow: 'auto',
   backgroundColor: 'transparent',
+  minHeight: 0, // 允许 flex 子元素缩小，使滚动生效
 }));
 
 // HeaderBar - 标题栏
@@ -143,12 +145,14 @@ interface PressableRowProps {
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
+  sx?: SxProps<Theme>;
 }
 
 export const PressableRow: React.FC<PressableRowProps> = ({
   children,
   onClick,
   disabled = false,
+  sx,
 }) => {
   return (
     <ListItemButton
@@ -163,6 +167,7 @@ export const PressableRow: React.FC<PressableRowProps> = ({
         '&:hover': {
           backgroundColor: 'transparent',
         },
+        ...sx,
       }}
     >
       {children}
@@ -193,8 +198,8 @@ interface SettingGroupProps {
 
 export const SettingGroup: React.FC<SettingGroupProps> = ({ title, children }) => {
   return (
-    <YStack sx={{ gap: 1 }}>
-      {title && <GroupTitle>{title}</GroupTitle>}
+    <YStack sx={{ gap: 1 }}> {/* gap-2 (8px) */}
+      {title && title.trim() !== '' && <GroupTitle>{title}</GroupTitle>}
       <Group>{children}</Group>
     </YStack>
   );
@@ -209,6 +214,7 @@ interface SettingItemProps {
   disabled?: boolean;
   value?: string;
   showArrow?: boolean;
+  danger?: boolean; // 危险操作样式（红色文字）
 }
 
 export const SettingItem: React.FC<SettingItemProps> = ({
@@ -219,19 +225,32 @@ export const SettingItem: React.FC<SettingItemProps> = ({
   disabled = false,
   value,
   showArrow = true,
+  danger = false,
 }) => {
   const theme = useTheme();
 
   return (
-    <PressableRow onClick={onClick} disabled={disabled}>
+    <PressableRow 
+      onClick={onClick} 
+      disabled={disabled}
+      sx={{ opacity: disabled ? 0.5 : 1 }}
+    >
       <XStack sx={{ gap: 1.5, alignItems: 'center', flex: 1 }}>
-        {icon && <Box sx={{ display: 'flex', alignItems: 'center' }}>{icon}</Box>}
+        {icon && (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            color: danger ? theme.palette.error.main : 'inherit'
+          }}>
+            {icon}
+          </Box>
+        )}
         <Box sx={{ flex: 1 }}>
           <Typography
             sx={{
               fontWeight: 600,
               fontSize: '1rem',
-              color: theme.palette.text.primary,
+              color: danger ? theme.palette.error.main : theme.palette.text.primary,
             }}
           >
             {title}
