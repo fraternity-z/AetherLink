@@ -35,16 +35,22 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
   }, []);
 
   // 提取共用的话题获取逻辑 - 使用缓存管理器
+  // 🚀 优化：优先从 Redux 中查找，避免重复数据库查询
   const findTopicById = useCallback(async (topicId: string): Promise<ChatTopic | null> => {
-    // 优先从 Redux 中查找
+    // 优先从 Redux 中查找（最快，无需异步）
     const topicFromRedux = reduxTopics.find(t => t.id === topicId);
     if (topicFromRedux) {
+      console.log(`[useActiveTopic] 从Redux获取话题: ${topicFromRedux.name}`);
       return topicFromRedux;
     }
 
-    // 使用缓存管理器从数据库查找，避免重复查询
+    // 如果Redux中没有，使用缓存管理器从数据库查找
+    // 注意：TopicCacheManager 会缓存查询结果，避免重复查询
     try {
       const topic = await topicCacheManager.getTopic(topicId);
+      if (topic) {
+        console.log(`[useActiveTopic] 从数据库获取话题: ${topic.name}`);
+      }
       return topic;
     } catch (error) {
       console.error(`[useActiveTopic] 获取话题 ${topicId} 失败:`, error);
@@ -95,10 +101,25 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     };
   }, []);
 
-  // Effect 1: 话题变化时触发事件和加载消息
-  useEffect(() => {
-    if (!activeTopic) return;
+  // 🚀 优化：使用ref追踪上次的话题ID，避免重复触发
+  const activeTopicIdRef = useRef<string | null>(null);
 
+  // Effect 1: 话题变化时触发事件和加载消息
+  // 🚀 优化：只依赖activeTopic.id，避免对象引用变化导致的重复触发
+  useEffect(() => {
+    if (!activeTopic) {
+      if (activeTopicIdRef.current !== null) {
+        activeTopicIdRef.current = null;
+      }
+      return;
+    }
+
+    // 如果话题ID没有变化，跳过
+    if (activeTopicIdRef.current === activeTopic.id) {
+      return;
+    }
+
+    activeTopicIdRef.current = activeTopic.id;
     console.log(`[useActiveTopic] 话题变更: ${activeTopic.name} (${activeTopic.id})`);
 
     // 发送话题变更事件
@@ -106,7 +127,7 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
     // 加载话题消息
     dispatch(loadTopicMessagesThunk(activeTopic.id) as any);
-  }, [activeTopic, dispatch]); // 依赖整个对象，确保一致性
+  }, [activeTopic?.id, dispatch]); // 只依赖ID，避免对象引用变化
 
   // Effect 2: 助手变化时设置第一个话题
   useEffect(() => {
@@ -151,12 +172,19 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     };
   }, [assistant?.id, getFirstTopicForAssistant, safeSetActiveTopic]);
 
+  // 🚀 优化：使用ref追踪上次的话题ID，避免重复加载
+  const previousTopicIdRef = useRef<string | null>(null);
+
   // Effect 3: 响应外部话题ID变化
   useEffect(() => {
     if (!currentTopicId || !assistant?.id) return;
 
     // 如果已经是当前话题，跳过
-    if (activeTopic?.id === currentTopicId) return;
+    if (previousTopicIdRef.current === currentTopicId && activeTopic?.id === currentTopicId) {
+      return;
+    }
+
+    previousTopicIdRef.current = currentTopicId;
 
     // 使用 AbortController 来取消异步操作
     const abortController = new AbortController();

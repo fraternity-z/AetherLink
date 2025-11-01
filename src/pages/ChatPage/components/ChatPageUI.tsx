@@ -145,8 +145,8 @@ interface ChatPageUIProps {
 
 
 
-// 🔧 暂时移除memo优化，确保所有功能正常工作
-export const ChatPageUI: React.FC<ChatPageUIProps> = ({
+// 🚀 使用React.memo优化性能，避免不必要的重新渲染
+const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   currentTopic,
   currentMessages,
   isStreaming,
@@ -767,3 +767,85 @@ export const ChatPageUI: React.FC<ChatPageUIProps> = ({
     </Box>
   );
 };
+
+// 🚀 自定义比较函数，只比较关键props
+const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) => {
+  // 基础属性比较
+  if (
+    prevProps.isMobile !== nextProps.isMobile ||
+    prevProps.drawerOpen !== nextProps.drawerOpen ||
+    prevProps.isStreaming !== nextProps.isStreaming ||
+    prevProps.isLoading !== nextProps.isLoading ||
+    prevProps.webSearchActive !== nextProps.webSearchActive ||
+    prevProps.imageGenerationMode !== nextProps.imageGenerationMode ||
+    prevProps.videoGenerationMode !== nextProps.videoGenerationMode ||
+    prevProps.toolsEnabled !== nextProps.toolsEnabled ||
+    prevProps.mcpMode !== nextProps.mcpMode ||
+    prevProps.isDebating !== nextProps.isDebating ||
+    prevProps.menuOpen !== nextProps.menuOpen ||
+    prevProps.showSearch !== nextProps.showSearch
+  ) {
+    return false;
+  }
+
+  // 话题比较 - 只比较关键属性
+  if (prevProps.currentTopic?.id !== nextProps.currentTopic?.id ||
+      prevProps.currentTopic?.name !== nextProps.currentTopic?.name ||
+      prevProps.currentTopic?.updatedAt !== nextProps.currentTopic?.updatedAt) {
+    return false;
+  }
+
+  // 模型比较
+  if (prevProps.selectedModel?.id !== nextProps.selectedModel?.id) {
+    return false;
+  }
+
+  // 🚀 流式输出时，总是允许重新渲染（因为块内容会频繁更新）
+  // 注意：块的更新在Redux的messageBlocks中，不会反映在消息的blocks数组（只是ID数组）
+  if (prevProps.isStreaming || nextProps.isStreaming) {
+    return false; // 流式输出时总是重新渲染
+  }
+
+  // 消息列表比较 - 只比较长度和关键属性
+  if (prevProps.currentMessages.length !== nextProps.currentMessages.length) {
+    return false;
+  }
+
+  // 比较每条消息的关键属性
+  for (let i = 0; i < prevProps.currentMessages.length; i++) {
+    const prevMsg = prevProps.currentMessages[i];
+    const nextMsg = nextProps.currentMessages[i];
+    
+    if (
+      prevMsg.id !== nextMsg.id ||
+      prevMsg.updatedAt !== nextMsg.updatedAt ||
+      prevMsg.status !== nextMsg.status
+    ) {
+      return false;
+    }
+
+    // 🔥 关键：比较blocks数组，检测流式输出时的块变化
+    const prevBlocks = prevMsg.blocks || [];
+    const nextBlocks = nextMsg.blocks || [];
+    if (prevBlocks.length !== nextBlocks.length) {
+      return false;
+    }
+    
+    // 比较blocks数组的每个元素（block IDs）
+    for (let j = 0; j < prevBlocks.length; j++) {
+      if (prevBlocks[j] !== nextBlocks[j]) {
+        return false;
+      }
+    }
+  }
+
+  // 可用模型列表比较
+  if (prevProps.availableModels.length !== nextProps.availableModels.length) {
+    return false;
+  }
+
+  return true;
+};
+
+// 导出使用React.memo优化的组件
+export const ChatPageUI = React.memo(ChatPageUIComponent, arePropsEqual);

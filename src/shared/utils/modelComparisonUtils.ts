@@ -344,7 +344,7 @@ export function getModelInfo(modelId: string): {
         return {
           name: model.name,
           providerName: provider.name,
-          avatar: provider.avatar || '',
+          avatar: provider.avatar || provider.name.charAt(0).toUpperCase(),
           color: provider.color || '#1976d2'
         };
       }

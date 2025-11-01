@@ -244,7 +244,7 @@ const ModelProviderSettings: React.FC = () => {
                 boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
               }}
             >
-              {provider.avatar}
+              {provider.avatar || provider.name.charAt(0).toUpperCase()}
             </Avatar>
             <Box>
               <Typography

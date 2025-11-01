@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../../shared/store';
@@ -149,32 +149,32 @@ const ChatPage: React.FC = () => {
   // 话题管理钩子 - 移除未使用的 handleCreateTopic
   // const { handleCreateTopic } = useTopicManagement();
 
-  // 本地清空话题功能
-  const handleClearTopic = () => {
+  // 🚀 优化：使用useCallback稳定函数引用
+  const handleClearTopic = useCallback(() => {
     if (currentTopic) {
       TopicService.clearTopicContent(currentTopic.id);
     }
-  };
+  }, [currentTopic?.id]);
 
-  // 搜索相关处理函数
-  const handleSearchToggle = () => {
-    setShowSearch(!showSearch);
-  };
+  // 搜索相关处理函数 - 使用useCallback稳定引用
+  const handleSearchToggle = useCallback(() => {
+    setShowSearch(prev => !prev);
+  }, []);
 
-  const handleSearchClose = () => {
+  const handleSearchClose = useCallback(() => {
     setShowSearch(false);
-  };
+  }, []);
 
-  const handleTopicSelect = (topicId: string) => {
+  const handleTopicSelect = useCallback((topicId: string) => {
     dispatch(newMessagesActions.setCurrentTopicId(topicId));
-  };
+  }, [dispatch]);
 
-  const handleMessageSelect = (topicId: string, messageId: string) => {
+  const handleMessageSelect = useCallback((topicId: string, messageId: string) => {
     // 切换到对应话题并滚动到对应消息
     dispatch(newMessagesActions.setCurrentTopicId(topicId));
     // TODO: 添加滚动到特定消息的逻辑，使用 messageId
     console.log(`[ChatPage] 切换到话题 ${topicId}，消息 ${messageId}`);
-  };
+  }, [dispatch]);
 
   // 消息处理钩子
   const {

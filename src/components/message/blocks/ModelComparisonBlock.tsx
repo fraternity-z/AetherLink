@@ -47,7 +47,7 @@ const ModelComparisonBlock: React.FC<ModelComparisonBlockProps> = ({ block }) =>
         return {
           name: model.name,
           providerName: provider.name,
-          avatar: provider.avatar,
+          avatar: provider.avatar || provider.name.charAt(0).toUpperCase(),
           color: provider.color
         };
       }
