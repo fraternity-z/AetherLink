@@ -26,22 +26,74 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
   const isStreaming = block.status === MessageBlockStatus.STREAMING;
 
   // 获取当前消息的工具块，使用 useMemo 优化性能
+  // 🔥 关键修复：按照消息的 blocks 数组顺序排序工具块
   const toolBlocks = useSelector((state: RootState) => {
     if (!messageId) return [];
     const entities = messageBlocksSelectors.selectEntities(state);
-    return Object.values(entities).filter(
-      (block): block is ToolMessageBlock =>
-        block?.type === MessageBlockType.TOOL &&
-        block.messageId === messageId
-    );
+    
+    // 获取消息对象，以便按照 blocks 数组顺序排序
+    const message = state.messages.entities[messageId];
+    if (!message?.blocks) {
+      // 如果没有消息或 blocks 数组，按创建时间排序
+      return Object.values(entities)
+        .filter(
+          (block): block is ToolMessageBlock =>
+            block?.type === MessageBlockType.TOOL &&
+            block.messageId === messageId
+        )
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+    
+    // 🔥 按照消息的 blocks 数组顺序排序工具块
+    const toolBlocksMap = new Map<string, ToolMessageBlock>();
+    Object.values(entities).forEach((block) => {
+      if (block?.type === MessageBlockType.TOOL && block.messageId === messageId) {
+        toolBlocksMap.set(block.id, block as ToolMessageBlock);
+      }
+    });
+    
+    // 按照消息的 blocks 数组顺序返回工具块
+    const sortedToolBlocks: ToolMessageBlock[] = [];
+    for (const blockId of message.blocks) {
+      const toolBlock = toolBlocksMap.get(blockId);
+      if (toolBlock) {
+        sortedToolBlocks.push(toolBlock);
+      }
+    }
+    
+    return sortedToolBlocks;
   }, (left, right) => {
-    // 自定义比较函数，只有当工具块实际发生变化时才重新渲染
+    // 🔥 自定义比较函数：比较工具块的关键属性，确保更新时能正确重新渲染
     if (left.length !== right.length) return false;
     return left.every((leftBlock, index) => {
       const rightBlock = right[index];
-      return leftBlock?.id === rightBlock?.id &&
-             leftBlock?.status === rightBlock?.status &&
-             leftBlock?.content === rightBlock?.content;
+      if (!rightBlock) return false;
+      
+      // 比较基本属性
+      if (leftBlock?.id !== rightBlock?.id ||
+          leftBlock?.status !== rightBlock?.status ||
+          leftBlock?.content !== rightBlock?.content ||
+          leftBlock?.updatedAt !== rightBlock?.updatedAt) {
+        return false;
+      }
+      
+      // 🔥 关键修复：比较 metadata，确保 MCP 工具响应数据更新时能重新渲染
+      const leftMetadata = leftBlock?.metadata;
+      const rightMetadata = rightBlock?.metadata;
+      if (leftMetadata !== rightMetadata) {
+        // 如果 metadata 对象引用不同，比较关键字段
+        if (JSON.stringify(leftMetadata?.rawMcpToolResponse) !== 
+            JSON.stringify(rightMetadata?.rawMcpToolResponse)) {
+          return false;
+        }
+      }
+      
+      // 🔥 比较 arguments，确保工具调用参数更新时能重新渲染
+      if (JSON.stringify(leftBlock?.arguments) !== JSON.stringify(rightBlock?.arguments)) {
+        return false;
+      }
+      
+      return true;
     });
   });
 

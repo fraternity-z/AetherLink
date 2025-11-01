@@ -394,4 +394,36 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   transition: theme.transitions.create(['background-color', 'box-shadow']),
 }));
 
-export default React.memo(ToolBlock);
+// 🔥 自定义比较函数，确保工具块更新时能正确重新渲染
+const arePropsEqual = (prevProps: Props, nextProps: Props) => {
+  const prevBlock = prevProps.block;
+  const nextBlock = nextProps.block;
+  
+  // 比较基本属性
+  if (prevBlock.id !== nextBlock.id ||
+      prevBlock.status !== nextBlock.status ||
+      prevBlock.content !== nextBlock.content ||
+      prevBlock.updatedAt !== nextBlock.updatedAt) {
+    return false;
+  }
+  
+  // 🔥 关键：比较 metadata，确保 MCP 工具响应数据更新时能重新渲染
+  const prevMetadata = prevBlock.metadata;
+  const nextMetadata = nextBlock.metadata;
+  if (prevMetadata !== nextMetadata) {
+    // 如果 metadata 对象引用不同，比较关键字段
+    if (JSON.stringify(prevMetadata?.rawMcpToolResponse) !== 
+        JSON.stringify(nextMetadata?.rawMcpToolResponse)) {
+      return false;
+    }
+  }
+  
+  // 🔥 比较 arguments，确保工具调用参数更新时能重新渲染
+  if (JSON.stringify(prevBlock.arguments) !== JSON.stringify(nextBlock.arguments)) {
+    return false;
+  }
+  
+  return true;
+};
+
+export default React.memo(ToolBlock, arePropsEqual);

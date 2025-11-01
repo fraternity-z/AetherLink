@@ -60,6 +60,16 @@
 	<key>NSRemovableVolumesUsageDescription</key>
 	<string>AetherLink需要访问外部存储设备，以便管理外部文件。</string>
 
+	<!-- Calendar Permissions -->
+	<!-- iOS 17+ 需要 -->
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>AetherLink需要访问您的日历以帮助您管理日程和事件</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>AetherLink需要访问您的日历以创建和修改事件</string>
+	<!-- iOS 13-16 需要 -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>AetherLink需要访问您的日历以帮助您管理日程和事件</string>
+
 	<!--  禁用 iOS WebView 的 CORS 检查 -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

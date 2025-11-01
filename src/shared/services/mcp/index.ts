@@ -16,15 +16,9 @@ export { HttpStreamMCPClient } from './clients/HttpStreamMCPClient';
 export { CapacitorCorsMCPClient } from './clients/CapacitorCorsMCPClient';
 
 // 内置服务器
-export { BraveSearchServer } from './servers/BraveSearchServer';
-export { CalculatorServer } from './servers/CalculatorServer';
-export { DifyKnowledgeServer } from './servers/DifyKnowledgeServer';
-export { FetchServer } from './servers/FetchServer';
-export { FileSystemServer } from './servers/FileSystemServer';
-export { LocalGoogleSearchServer } from './servers/LocalGoogleSearchServer';
-export { MemoryServer } from './servers/MemoryServer';
-export { ThinkingServer } from './servers/ThinkingServer';
-export { WebScoutServer } from './servers/WebScoutServer';
+export { TimeServer } from './servers/TimeServer.js';
+export { FetchServer } from './servers/FetchServer.js';
+export { CalculatorServer } from './servers/CalculatorServer.js';
 
 // 类型定义 (从共享类型中重新导出)
 export type {

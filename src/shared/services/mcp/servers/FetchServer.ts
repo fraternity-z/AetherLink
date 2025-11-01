@@ -1,26 +1,28 @@
-// Fetch MCP Server
-// 移植自最佳实例的 Fetch 服务器
+/**
+ * Fetch MCP Server
+ * 提供网页内容抓取功能，支持 HTML 和 JSON 格式
+ */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import DOMPurify from 'dompurify';
 import { universalFetch } from '../../../utils/universalFetch';
 
 // 工具定义
-const FETCH_HTML_TOOL: Tool = {
-  name: 'fetch_html',
-  description: 'Fetch a website and return the content as HTML',
+const FETCH_URL_AS_HTML_TOOL: Tool = {
+  name: 'fetch_url_as_html',
+  description: '获取指定 URL 的网页内容，返回 HTML 格式',
   inputSchema: {
     type: 'object',
     properties: {
       url: {
         type: 'string',
-        description: 'URL of the website to fetch'
+        format: 'uri',
+        description: '要获取的 URL 地址'
       },
       headers: {
         type: 'object',
-        description: 'Optional headers to include in the request',
+        description: '可选的 HTTP 请求头',
         additionalProperties: {
           type: 'string'
         }
@@ -30,19 +32,20 @@ const FETCH_HTML_TOOL: Tool = {
   }
 };
 
-const FETCH_MARKDOWN_TOOL: Tool = {
-  name: 'fetch_markdown',
-  description: 'Fetch a website and return the content as Markdown',
+const FETCH_URL_AS_JSON_TOOL: Tool = {
+  name: 'fetch_url_as_json',
+  description: '获取指定 URL 的内容，解析为 JSON 格式返回',
   inputSchema: {
     type: 'object',
     properties: {
       url: {
         type: 'string',
-        description: 'URL of the website to fetch'
+        format: 'uri',
+        description: '要获取的 URL 地址'
       },
       headers: {
         type: 'object',
-        description: 'Optional headers to include in the request',
+        description: '可选的 HTTP 请求头',
         additionalProperties: {
           type: 'string'
         }
@@ -52,19 +55,20 @@ const FETCH_MARKDOWN_TOOL: Tool = {
   }
 };
 
-const FETCH_TXT_TOOL: Tool = {
-  name: 'fetch_txt',
-  description: 'Fetch a website, return the content as plain text (HTML tags stripped)',
+const FETCH_URL_AS_TEXT_TOOL: Tool = {
+  name: 'fetch_url_as_text',
+  description: '获取指定 URL 的内容，返回纯文本格式',
   inputSchema: {
     type: 'object',
     properties: {
       url: {
         type: 'string',
-        description: 'URL of the website to fetch'
+        format: 'uri',
+        description: '要获取的 URL 地址'
       },
       headers: {
         type: 'object',
-        description: 'Optional headers to include in the request',
+        description: '可选的 HTTP 请求头',
         additionalProperties: {
           type: 'string'
         }
@@ -74,154 +78,16 @@ const FETCH_TXT_TOOL: Tool = {
   }
 };
 
-const FETCH_JSON_TOOL: Tool = {
-  name: 'fetch_json',
-  description: 'Fetch a JSON file from a URL',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      url: {
-        type: 'string',
-        description: 'URL of the JSON file to fetch'
-      },
-      headers: {
-        type: 'object',
-        description: 'Optional headers to include in the request',
-        additionalProperties: {
-          type: 'string'
-        }
-      }
-    },
-    required: ['url']
-  }
-};
-
-// 类型定义
-interface FetchArgs {
-  url: string;
-  headers?: Record<string, string>;
-}
-
-// 简单的 HTML 到 Markdown 转换器
-class SimpleHtmlToMarkdown {
-  convert(html: string): string {
-    // 清理 HTML
-    const cleanHtml = DOMPurify.sanitize(html);
-
-    // 创建临时 DOM 元素
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = cleanHtml;
-
-    // 简单的转换规则
-    let markdown = tempDiv.textContent || tempDiv.innerText || '';
-
-    // 基本的 Markdown 转换
-    markdown = markdown
-      .replace(/\n\s*\n\s*\n/g, '\n\n') // 多个换行符合并为两个
-      .replace(/^\s+|\s+$/g, '') // 去除首尾空白
-      .trim();
-
-    return markdown;
-  }
-}
-
-// 参数验证
-function isFetchArgs(args: any): args is FetchArgs {
-  return typeof args === 'object' && typeof args.url === 'string';
-}
-
-// URL 验证
-function isValidUrl(url: string): boolean {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// 基础获取方法
-async function fetchResponse(url: string, headers?: Record<string, string>): Promise<Response> {
-  if (!isValidUrl(url)) {
-    throw new Error('无效的 URL 格式');
-  }
-
-  // 使用 universalFetch 自动选择最佳请求方式
-  console.log(`[FetchServer] 请求 URL: ${url}`);
-
-  const response = await universalFetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      ...headers
-    },
-    timeout: 30000 // 30秒超时
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP 错误: ${response.status} ${response.statusText}`);
-  }
-
-  return response;
-}
-
-// 获取 HTML 内容
-async function fetchHtml(url: string, headers?: Record<string, string>): Promise<string> {
-  const response = await fetchResponse(url, headers);
-  const html = await response.text();
-  return html;
-}
-
-// 获取 JSON 内容
-async function fetchJson(url: string, headers?: Record<string, string>): Promise<string> {
-  const response = await fetchResponse(url, headers);
-  const json = await response.json();
-  return JSON.stringify(json, null, 2);
-}
-
-// 获取纯文本内容
-async function fetchTxt(url: string, headers?: Record<string, string>): Promise<string> {
-  const response = await fetchResponse(url, headers);
-  const html = await response.text();
-
-  // 创建临时 DOM 元素来解析 HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = DOMPurify.sanitize(html);
-
-  // 移除脚本和样式标签
-  const scripts = tempDiv.getElementsByTagName('script');
-  const styles = tempDiv.getElementsByTagName('style');
-  Array.from(scripts).forEach(script => script.remove());
-  Array.from(styles).forEach(style => style.remove());
-
-  // 获取纯文本内容
-  const text = tempDiv.textContent || tempDiv.innerText || '';
-
-  // 规范化文本（合并多个空白字符）
-  const normalizedText = text.replace(/\s+/g, ' ').trim();
-
-  return normalizedText;
-}
-
-// 获取 Markdown 内容
-async function fetchMarkdown(url: string, headers?: Record<string, string>): Promise<string> {
-  const response = await fetchResponse(url, headers);
-  const html = await response.text();
-
-  // 转换 HTML 到 Markdown
-  const converter = new SimpleHtmlToMarkdown();
-  const markdown = converter.convert(html);
-
-  return markdown;
-}
-
+/**
+ * Fetch Server 类
+ */
 export class FetchServer {
   public server: Server;
 
   constructor() {
     this.server = new Server(
       {
-        name: 'fetch-server',
+        name: '@aether/fetch',
         version: '1.0.0'
       },
       {
@@ -231,72 +97,160 @@ export class FetchServer {
       }
     );
 
-    this.initialize();
+    this.setupHandlers();
   }
 
-  initialize() {
-    // 工具处理器
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [FETCH_HTML_TOOL, FETCH_MARKDOWN_TOOL, FETCH_TXT_TOOL, FETCH_JSON_TOOL]
-    }));
+  private setupHandlers(): void {
+    // 列出可用工具
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      return {
+        tools: [FETCH_URL_AS_HTML_TOOL, FETCH_URL_AS_JSON_TOOL, FETCH_URL_AS_TEXT_TOOL]
+      };
+    });
 
+    // 执行工具调用
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      try {
-        const { name, arguments: args } = request.params;
+      const { name, arguments: args } = request.params;
 
-        if (!args || !isFetchArgs(args)) {
-          throw new Error('无效的参数：需要 url 字段');
-        }
-
-        const { url, headers } = args;
-
-        console.log(`[Fetch] 调用工具: ${name}, URL: ${url}`);
-
-        let content: string;
-
-        switch (name) {
-          case 'fetch_html':
-            content = await fetchHtml(url, headers);
-            break;
-          case 'fetch_markdown':
-            content = await fetchMarkdown(url, headers);
-            break;
-          case 'fetch_txt':
-            content = await fetchTxt(url, headers);
-            break;
-          case 'fetch_json':
-            content = await fetchJson(url, headers);
-            break;
-          default:
-            return {
-              content: [{ type: 'text', text: `未知工具: ${name}` }],
-              isError: true
-            };
-        }
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: content
-            }
-          ],
-          isError: false
-        };
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`[Fetch] 错误:`, error);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `获取 URL 内容失败: ${errorMessage}`
-            }
-          ],
-          isError: true
-        };
+      if (name === 'fetch_url_as_html') {
+        return this.fetchAsHtml(args as { url: string; headers?: Record<string, string> });
+      } else if (name === 'fetch_url_as_json') {
+        return this.fetchAsJson(args as { url: string; headers?: Record<string, string> });
+      } else if (name === 'fetch_url_as_text') {
+        return this.fetchAsText(args as { url: string; headers?: Record<string, string> });
       }
+
+      throw new Error(`未知的工具: ${name}`);
     });
   }
+
+  /**
+   * 通用的 fetch 方法
+   */
+  private async fetch(url: string, headers?: Record<string, string>): Promise<Response> {
+    try {
+      const response = await universalFetch(url, {
+        method: 'GET',
+        headers: headers || {}
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP 错误: ${response.status} ${response.statusText}`);
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`获取 ${url} 失败: ${error.message}`);
+      } else {
+        throw new Error(`获取 ${url} 失败: 未知错误`);
+      }
+    }
+  }
+
+  /**
+   * 获取 HTML 内容
+   */
+  private async fetchAsHtml(params: {
+    url: string;
+    headers?: Record<string, string>;
+  }): Promise<{
+    content: Array<{ type: string; text: string }>;
+    isError?: boolean;
+  }> {
+    try {
+      const response = await this.fetch(params.url, params.headers);
+      const html = await response.text();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: html
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: error instanceof Error ? error.message : '未知错误'
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 获取 JSON 内容
+   */
+  private async fetchAsJson(params: {
+    url: string;
+    headers?: Record<string, string>;
+  }): Promise<{
+    content: Array<{ type: string; text: string }>;
+    isError?: boolean;
+  }> {
+    try {
+      const response = await this.fetch(params.url, params.headers);
+      const json = await response.json();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(json, null, 2)
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `解析 JSON 失败: ${error instanceof Error ? error.message : '未知错误'}`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 获取纯文本内容
+   */
+  private async fetchAsText(params: {
+    url: string;
+    headers?: Record<string, string>;
+  }): Promise<{
+    content: Array<{ type: string; text: string }>;
+    isError?: boolean;
+  }> {
+    try {
+      const response = await this.fetch(params.url, params.headers);
+      const text = await response.text();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: text
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: error instanceof Error ? error.message : '未知错误'
+          }
+        ],
+        isError: true
+      };
+    }
+  }
 }
+

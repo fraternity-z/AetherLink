@@ -3,7 +3,7 @@ import { getStorageItem, setStorageItem } from '../../../utils/storage';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createInMemoryMCPServer } from './MCPServerFactory';
-import { getBuiltinMCPServers } from '../../../config/builtinMCPServers';
+import { getBuiltinMCPServers, isBuiltinServer } from '../../../config/builtinMCPServers';
 import { HttpStreamMCPClient } from '../clients/HttpStreamMCPClient';
 import { CapacitorCorsMCPClient } from '../clients/CapacitorCorsMCPClient';
 
@@ -715,15 +715,7 @@ export class MCPService {
    * 检查服务器是否为内置服务器
    */
   public isBuiltinServer(serverName: string): boolean {
-    const builtinNames = [
-      '@aether/memory',
-      '@aether/sequentialthinking',
-      '@aether/brave-search',
-      '@aether/fetch',
-      '@aether/filesystem',
-      '@aether/dify-knowledge'
-    ];
-    return builtinNames.includes(serverName);
+    return isBuiltinServer(serverName);
   }
 
   /**

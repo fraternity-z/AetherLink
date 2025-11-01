@@ -11,103 +11,34 @@ import type { MCPServer } from '../types';
  */
 export const BUILTIN_MCP_SERVERS: MCPServer[] = [
   {
+    id: 'builtin-time',
+    name: '@aether/time',
+    type: 'inMemory',
+    description: '获取当前时间和日期，支持多种格式（本地化、ISO 8601、时间戳）和时区设置',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['时间', '日期', '工具']
+  },
+  {
     id: 'builtin-fetch',
     name: '@aether/fetch',
     type: 'inMemory',
-    description: '用于获取 URL 网页内容的 MCP 服务器',
+    description: '获取网页内容，支持 HTML、JSON 和纯文本格式，可自定义请求头',
     isActive: false,
     provider: 'AetherAI',
     logoUrl: '',
-    tags: ['网页', '抓取']
-  },
-  {
-    id: 'builtin-thinking',
-    name: '@aether/sequentialthinking',
-    type: 'inMemory',
-    description: '一个 MCP 服务器实现，提供了通过结构化思维过程进行动态和反思性问题解决的工具',
-    isActive: false,
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['思维', '推理']
-  },
-  {
-    id: 'builtin-memory',
-    name: '@aether/memory',
-    type: 'inMemory',
-    description: '基于本地知识图谱的持久性记忆基础实现。这使得模型能够在不同对话间记住用户的相关信息。需要配置 MEMORY_FILE_PATH 环境变量。',
-    isActive: false,
-    env: {
-      MEMORY_FILE_PATH: 'memory.json'
-    },
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['记忆', '知识图谱']
-  },
-  {
-    id: 'builtin-brave-search',
-    name: '@aether/brave-search',
-    type: 'inMemory',
-    description: '一个集成了 Brave 搜索 API 的 MCP 服务器实现，提供网页与本地搜索双重功能。需要配置 BRAVE_API_KEY 环境变量',
-    isActive: false,
-    env: {
-      BRAVE_API_KEY: 'YOUR_API_KEY'
-    },
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['搜索', 'Brave']
-  },
-  {
-    id: 'builtin-filesystem',
-    name: '@aether/filesystem',
-    type: 'inMemory',
-    description: '实现文件系统操作的模型上下文协议（MCP）的 Node.js 服务器',
-    isActive: false,
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['文件系统', '文件操作']
-  },
-  {
-    id: 'builtin-dify-knowledge',
-    name: '@aether/dify-knowledge',
-    type: 'inMemory',
-    description: 'Dify 知识库集成服务器，提供知识库搜索功能。需要配置 DIFY_KEY 环境变量',
-    isActive: false,
-    env: {
-      DIFY_KEY: 'YOUR_DIFY_KEY'
-    },
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['Dify', '知识库']
-  },
-  {
-    id: 'builtin-local-google-search',
-    name: '@aether/local-google-search',
-    type: 'inMemory',
-    description: '本地 Google 和 Bing 搜索服务器，提供免费的网络搜索功能，无需 API 密钥暂不可用',
-    isActive: false,
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['搜索', 'Google', 'Bing', '免费']
+    tags: ['网页', '抓取', 'HTTP', 'API']
   },
   {
     id: 'builtin-calculator',
     name: '@aether/calculator',
     type: 'inMemory',
-    description: '数学计算器，支持基本四则运算和高级数学函数（三角函数、对数、幂运算等）',
+    description: '高级计算器，支持基本运算、科学计算、进制转换、单位转换和统计计算',
     isActive: false,
     provider: 'AetherAI',
     logoUrl: '',
-    tags: ['计算', '数学', '工具', '函数']
-  },
-  {
-    id: 'builtin-web-scout',
-    name: '@aether/web-scout',
-    type: 'inMemory',
-    description: '基于 DuckDuckGo 的免费网页搜索和内容提取服务器，无需 API 密钥。支持网页搜索和批量内容提取',
-    isActive: false,
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['搜索', 'DuckDuckGo', '免费', '内容提取', '网页抓取']
+    tags: ['计算', '数学', '转换', '统计', '工具']
   }
 ];
 
