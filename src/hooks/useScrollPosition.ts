@@ -1,22 +1,19 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { throttle } from 'lodash';
 
+interface UseScrollPositionOptions {
+  throttleTime?: number;
+  autoRestore?: boolean;
+  restoreDelay?: number;
+  onScroll?: (position: number) => void;
+}
+
 /**
- * 滚动位置钩子
- * 用于保存和恢复滚动位置
+ * 滚动位置钩子 - 用于保存和恢复滚动位置
  * @param key 唯一标识符，用于区分不同的滚动容器
  * @param options 配置选项
- * @returns 滚动容器引用和滚动处理函数
  */
-export function useScrollPosition(
-  key: string,
-  options: {
-    throttleTime?: number;
-    autoRestore?: boolean;
-    restoreDelay?: number;
-    onScroll?: (position: number) => void;
-  } = {}
-) {
+export function useScrollPosition(key: string, options: UseScrollPositionOptions = {}) {
   const {
     throttleTime = 100,
     autoRestore = true,
@@ -25,86 +22,76 @@ export function useScrollPosition(
   } = options;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const scrollKey = `scroll:${key}`;
+  const scrollKey = useMemo(() => `scroll:${key}`, [key]);
 
-  // 保存滚动位置
-  const saveScrollPosition = useCallback(
-    (position: number) => {
-      try {
-        localStorage.setItem(scrollKey, position.toString());
-      } catch (error) {
-        console.error('保存滚动位置失败:', error);
-      }
-    },
-    [scrollKey]
-  );
+  // 保存滚动位置到 localStorage
+  const saveScrollPosition = useCallback((position: number) => {
+    try {
+      localStorage.setItem(scrollKey, position.toString());
+    } catch (error) {
+      console.error('保存滚动位置失败:', error);
+    }
+  }, [scrollKey]);
 
-  // 获取保存的滚动位置
+  // 从 localStorage 获取保存的滚动位置
   const getSavedScrollPosition = useCallback((): number => {
     try {
       const saved = localStorage.getItem(scrollKey);
       return saved ? parseInt(saved, 10) : 0;
-    } catch (error) {
-      console.error('获取滚动位置失败:', error);
+    } catch {
       return 0;
     }
   }, [scrollKey]);
 
-  // 处理滚动事件
-  const handleScroll = useCallback(
-    throttle(() => {
-      if (!containerRef.current) return;
+  // 处理滚动事件（节流）
+  const handleScroll = useMemo(
+    () =>
+      throttle(() => {
+        const container = containerRef.current;
+        if (!container) return;
 
-      const position = containerRef.current.scrollTop;
-
-      // 保存滚动位置
-      window.requestAnimationFrame(() => {
-        saveScrollPosition(position);
-      });
-
-      // 调用外部滚动回调
-      onScroll?.(position);
-    }, throttleTime),
-    [saveScrollPosition, throttleTime, onScroll]
+        const position = container.scrollTop;
+        requestAnimationFrame(() => saveScrollPosition(position));
+        onScroll?.(position);
+      }, throttleTime),
+    [throttleTime, saveScrollPosition, onScroll]
   );
 
   // 恢复滚动位置
   const restoreScrollPosition = useCallback(() => {
-    if (!containerRef.current) return;
-
-    const savedPosition = getSavedScrollPosition();
-    containerRef.current.scrollTop = savedPosition;
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTop = getSavedScrollPosition();
+    }
   }, [getSavedScrollPosition]);
 
-  // 滚动到底部
+  // 滚动方法
   const scrollToBottom = useCallback(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    // 使用 requestAnimationFrame 确保在下一帧渲染时滚动
-    // 这样可以确保在DOM更新后滚动到底部
-    window.requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
       if (containerRef.current) {
-        // 使用 scrollTo 方法，可以添加平滑滚动效果
         containerRef.current.scrollTo({
           top: containerRef.current.scrollHeight,
-          behavior: 'auto' // 使用 'auto' 而不是 'smooth'，避免在流式输出时滚动延迟
+          behavior: 'auto',
         });
       }
     });
   }, []);
 
-  // 滚动到顶部
   const scrollToTop = useCallback(() => {
-    if (!containerRef.current) return;
-
-    containerRef.current.scrollTop = 0;
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTop = 0;
+    }
   }, []);
 
-  // 滚动到指定位置
   const scrollToPosition = useCallback((position: number) => {
-    if (!containerRef.current) return;
-
-    containerRef.current.scrollTop = position;
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTop = position;
+    }
   }, []);
 
   // 自动恢复滚动位置
@@ -115,12 +102,8 @@ export function useScrollPosition(
     }
   }, [autoRestore, restoreScrollPosition, restoreDelay]);
 
-  // 清理
-  useEffect(() => {
-    return () => {
-      handleScroll.cancel();
-    };
-  }, [handleScroll]);
+  // 清理节流函数
+  useEffect(() => () => handleScroll.cancel(), [handleScroll]);
 
   return {
     containerRef,

@@ -71,23 +71,39 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
 /**
  * 处理Android返回键的组件
  * 当用户点击返回键时，根据当前路由和对话框状态决定行为
+ * 
+ * 重构改进：
+ * 1. 使用 closeLastDialog 方法，保证按 LIFO 顺序关闭对话框
+ * 2. 移除自定义事件系统，使用回调模式
+ * 3. 修复防抖逻辑，确保事件被正确处理
+ * 4. 改进错误处理和状态同步
  */
 const BackButtonHandler: React.FC = () => {
   const navigate = useNavigate();
-  const { setShowExitConfirm, hasOpenDialogs, openDialogs, closeDialog } = useAppState();
+  const { 
+    setShowExitConfirm, 
+    hasOpenDialogs, 
+    closeLastDialog 
+  } = useAppState();
 
   // 防抖机制：防止短时间内重复处理返回键事件
   const lastBackButtonTime = useRef<number>(0);
   const DEBOUNCE_DELAY = 300; // 300ms 防抖延迟
-
+  
   // 用于追踪组件是否已卸载
   const isMountedRef = useRef(true);
-
-  // 使用useCallback缓存处理函数，避免因为依赖变化导致监听器重复创建
+  
+  // 处理返回键的逻辑
   const handleBackButton = useCallback(() => {
+    // 检查组件是否已卸载
+    if (!isMountedRef.current) {
+      return;
+    }
+
     const now = Date.now();
 
     // 防抖检查：如果距离上次处理时间太短，则忽略此次事件
+    // 注意：虽然我们忽略事件，但不会阻止默认行为（因为 Capacitor 的 backButton 事件没有返回值）
     if (now - lastBackButtonTime.current < DEBOUNCE_DELAY) {
       console.log('[BackButtonHandler] 防抖：忽略重复的返回键事件');
       return;
@@ -100,17 +116,15 @@ const BackButtonHandler: React.FC = () => {
 
     // 优先处理对话框关闭
     if (hasOpenDialogs()) {
-      // 关闭最后打开的对话框
-      const dialogsArray = Array.from(openDialogs);
-      const lastDialog = dialogsArray[dialogsArray.length - 1];
-      if (lastDialog) {
-        closeDialog(lastDialog);
-        // 触发对话框关闭事件
-        window.dispatchEvent(new CustomEvent('closeDialog', {
-          detail: { dialogId: lastDialog }
-        }));
+      // 关闭最后打开的对话框（栈顶）
+      const closed = closeLastDialog();
+      if (closed) {
+        console.log('[BackButtonHandler] 已关闭最后一个对话框');
+        // 对话框的关闭回调会在 closeLastDialog 中执行，不需要额外处理
+        return;
       }
-      return;
+      // 如果关闭失败，继续执行页面返回逻辑
+      console.warn('[BackButtonHandler] 关闭对话框失败，继续执行页面返回逻辑');
     }
 
     // 根据当前路径决定行为
@@ -127,7 +141,7 @@ const BackButtonHandler: React.FC = () => {
       // 在其他页面，返回到聊天页面
       navigate('/chat');
     }
-  }, [navigate, setShowExitConfirm, hasOpenDialogs, openDialogs, closeDialog]);
+  }, [navigate, setShowExitConfirm, hasOpenDialogs, closeLastDialog]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -148,13 +162,13 @@ const BackButtonHandler: React.FC = () => {
           listener.remove();
         }
       } catch (error) {
-        console.error('设置返回键监听器失败:', error);
+        console.error('[BackButtonHandler] 设置返回键监听器失败:', error);
       }
     };
 
     // 设置监听器并处理Promise
     setupListener().catch(error => {
-      console.error('BackButtonHandler setupListener error:', error);
+      console.error('[BackButtonHandler] setupListener error:', error);
     });
 
     // 组件卸载时移除监听器
@@ -164,7 +178,7 @@ const BackButtonHandler: React.FC = () => {
         listenerCleanup();
       }
     };
-  }, [handleBackButton]); // 只依赖handleBackButton
+  }, [handleBackButton]);
 
   // 组件卸载时设置标记
   useEffect(() => {

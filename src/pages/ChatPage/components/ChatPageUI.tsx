@@ -219,8 +219,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
   // 本地状态
 
-  // 提取重复的条件判断
-  const isDrawerVisible = drawerOpen && !isMobile;
+  // 提取重复的条件判断 - 使用useMemo确保初始值稳定
+  const isDrawerVisible = useMemo(() => drawerOpen && !isMobile, [drawerOpen, isMobile]);
 
   // 使用记忆化的选择器
   const settings = useSelector(selectChatPageSettings);
@@ -306,6 +306,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         return shouldShow('showMenuButton') ? (
           <motion.div
             key={componentId}
+            initial={{ scale: 1, opacity: 1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={BUTTON_ANIMATION_CONFIG}
@@ -339,6 +340,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         return shouldShow('showNewTopicButton') ? (
           <motion.div
             key={componentId}
+            initial={{ scale: 1, opacity: 1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={BUTTON_ANIMATION_CONFIG}
@@ -358,6 +360,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         return shouldShow('showClearButton') && currentTopic ? (
           <motion.div
             key={componentId}
+            initial={{ scale: 1, opacity: 1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={BUTTON_ANIMATION_CONFIG}
@@ -409,6 +412,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         return shouldShow('showSearchButton') ? (
           <motion.div
             key={componentId}
+            initial={{ scale: 1, opacity: 1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={BUTTON_ANIMATION_CONFIG}
@@ -432,6 +436,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         return shouldShow('showSettingsButton') ? (
           <motion.div
             key={componentId}
+            initial={{ scale: 1, opacity: 1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             transition={BUTTON_ANIMATION_CONFIG}
@@ -513,6 +518,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     })
   };
 
+
   const inputComponent = useMemo(() => {
     if (settings.inputLayoutStyle === 'compact') {
       return (
@@ -553,6 +559,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
   const InputContainer = useMemo(() => (
     <motion.div
+      initial={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       transition={ANIMATION_CONFIG}
       style={{
@@ -630,6 +637,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       {/* 主内容区域 - 🚀 使用预计算布局，避免Drawer推开导致的重新布局 */}
       <Box
         component={motion.div}
+        initial={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.mainContent : LAYOUT_CONFIGS.SIDEBAR_CLOSED.mainContent}
         animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.mainContent : LAYOUT_CONFIGS.SIDEBAR_CLOSED.mainContent}
         transition={ANIMATION_CONFIG}
         sx={{
@@ -668,6 +676,10 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
                   return (
                     <motion.div
                       key={position.id}
+                      initial={{
+                        left: `${position.x}%`,
+                        top: `${position.y}%`,
+                      }}
                       animate={{
                         left: `${position.x}%`,
                         top: `${position.y}%`,
