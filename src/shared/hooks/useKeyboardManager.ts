@@ -16,10 +16,36 @@ export const useKeyboardManager = () => {
   const previousPathRef = useRef(location.pathname);
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Capacitor 键盘事件监听器
+  // Capacitor 键盘事件监听器 + Visual Viewport API（iOS 完美支持）
   useEffect(() => {
     let keyboardShowListener: any = null;
     let keyboardHideListener: any = null;
+    
+    // Visual Viewport 处理函数
+    const handleViewportResize = () => {
+      if (!window.visualViewport) return;
+      
+      const viewport = window.visualViewport;
+      const viewportHeight = viewport.height;
+      const windowHeight = window.innerHeight;
+      const keyboardHeight = windowHeight - viewportHeight;
+      
+      console.log('[KeyboardManager] Visual Viewport 变化，键盘高度:', keyboardHeight);
+      
+      if (keyboardHeight > 100) {
+        // 键盘弹出（高度差大于100px）
+        setIsKeyboardVisible(true);
+        setKeyboardHeight(keyboardHeight);
+        
+        // 调整页面布局 - 使用 CSS 变量，让输入框组件自己处理位置
+        document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+      } else {
+        // 键盘收起
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+        document.documentElement.style.setProperty('--keyboard-height', '0px');
+      }
+    };
 
     const setupKeyboardListeners = async () => {
       // 只在原生移动平台上设置键盘监听器
@@ -31,14 +57,7 @@ export const useKeyboardManager = () => {
             setIsKeyboardVisible(true);
             setKeyboardHeight(info.keyboardHeight);
             
-            // 键盘显示时立即调整页面布局
-            if (info.keyboardHeight > 0) {
-              // 给 body 添加底部 padding，避免内容被键盘遮挡
-              document.body.style.paddingBottom = `${info.keyboardHeight}px`;
-              document.body.style.transition = 'padding-bottom 0.25s ease-out';
-            }
-            
-            // 键盘显示时清除页面切换状态，但要延迟一点确保页面已稳定
+            // 键盘显示时清除页面切换状态
             setTimeout(() => {
               setIsPageTransitioning(false);
             }, 100);
@@ -49,17 +68,20 @@ export const useKeyboardManager = () => {
             console.log('[KeyboardManager] 键盘已隐藏');
             setIsKeyboardVisible(false);
             setKeyboardHeight(0);
-            
-            // 恢复页面布局
-            document.body.style.paddingBottom = '0px';
           });
 
           console.log('[KeyboardManager] 键盘事件监听器设置成功');
         } catch (error) {
           console.warn('[KeyboardManager] 键盘事件监听器设置失败:', error);
         }
-      } else {
-        console.log('[KeyboardManager] Web 平台，跳过 Capacitor 键盘监听器设置');
+      }
+      
+      // 使用 Visual Viewport API（iOS/Android 都支持，完美同步）
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleViewportResize);
+        window.visualViewport.addEventListener('scroll', handleViewportResize);
+        
+        console.log('[KeyboardManager] Visual Viewport 监听器设置成功');
       }
     };
 
@@ -72,8 +94,14 @@ export const useKeyboardManager = () => {
       if (keyboardHideListener) {
         keyboardHideListener.remove();
       }
-      // 清理时恢复 body 样式
-      document.body.style.paddingBottom = '0px';
+      
+      // 清理 Visual Viewport 监听器
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportResize);
+        window.visualViewport.removeEventListener('scroll', handleViewportResize);
+      }
+      
+      document.documentElement.style.setProperty('--keyboard-height', '0px');
     };
   }, []);
 

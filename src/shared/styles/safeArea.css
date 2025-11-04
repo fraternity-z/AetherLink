@@ -18,6 +18,9 @@
   --android-nav-bar-height: 0px;
   --chat-input-bottom-padding: 8px;
   
+  /* 键盘高度变量 - 由 useKeyboardManager 动态设置 */
+  --keyboard-height: 0px;
+  
   /* 聊天界面专用变量 */
   --chat-container-padding-top: var(--safe-area-inset-top);
   --chat-container-padding-bottom: var(--safe-area-inset-bottom);
