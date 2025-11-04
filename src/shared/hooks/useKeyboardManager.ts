@@ -6,9 +6,11 @@ import { useLocation } from 'react-router-dom';
 /**
  * 键盘管理 Hook
  * 统一处理键盘显示/隐藏事件，避免页面切换时的输入法闪烁问题
+ * 提供键盘高度信息，实现输入框与键盘完美同步
  */
 export const useKeyboardManager = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const location = useLocation();
   const previousPathRef = useRef(location.pathname);
@@ -23,10 +25,19 @@ export const useKeyboardManager = () => {
       // 只在原生移动平台上设置键盘监听器
       if (Capacitor.isNativePlatform()) {
         try {
-          // 监听键盘显示事件
-          keyboardShowListener = await CapacitorKeyboard.addListener('keyboardWillShow', () => {
-            console.log('[KeyboardManager] 键盘将要显示');
+          // 监听键盘显示事件 - 使用 keyboardWillShow 实现提前响应
+          keyboardShowListener = await CapacitorKeyboard.addListener('keyboardWillShow', (info: any) => {
+            console.log('[KeyboardManager] 键盘将要显示，高度:', info.keyboardHeight);
             setIsKeyboardVisible(true);
+            setKeyboardHeight(info.keyboardHeight);
+            
+            // 键盘显示时立即调整页面布局
+            if (info.keyboardHeight > 0) {
+              // 给 body 添加底部 padding，避免内容被键盘遮挡
+              document.body.style.paddingBottom = `${info.keyboardHeight}px`;
+              document.body.style.transition = 'padding-bottom 0.25s ease-out';
+            }
+            
             // 键盘显示时清除页面切换状态，但要延迟一点确保页面已稳定
             setTimeout(() => {
               setIsPageTransitioning(false);
@@ -37,6 +48,10 @@ export const useKeyboardManager = () => {
           keyboardHideListener = await CapacitorKeyboard.addListener('keyboardDidHide', () => {
             console.log('[KeyboardManager] 键盘已隐藏');
             setIsKeyboardVisible(false);
+            setKeyboardHeight(0);
+            
+            // 恢复页面布局
+            document.body.style.paddingBottom = '0px';
           });
 
           console.log('[KeyboardManager] 键盘事件监听器设置成功');
@@ -57,6 +72,8 @@ export const useKeyboardManager = () => {
       if (keyboardHideListener) {
         keyboardHideListener.remove();
       }
+      // 清理时恢复 body 样式
+      document.body.style.paddingBottom = '0px';
     };
   }, []);
 
@@ -131,6 +148,7 @@ export const useKeyboardManager = () => {
 
   return {
     isKeyboardVisible,
+    keyboardHeight,
     isPageTransitioning,
     hideKeyboard,
     shouldHandleFocus,
