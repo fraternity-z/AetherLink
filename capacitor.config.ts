@@ -45,9 +45,7 @@ const config: CapacitorConfig = {
       allowFileAccess: true
     },
     Keyboard: {
-      resize: "body", // iOS 上调整 body 大小以适应键盘
-      resizeOnFullScreen: false, // 根据edge-to-edge插件要求设置为false
-      style: "dark" // 键盘样式
+      resizeOnFullScreen: false // 根据edge-to-edge插件要求设置为false
     },
     StatusBar: {
       // 移除硬编码的背景色，由StatusBarService动态设置

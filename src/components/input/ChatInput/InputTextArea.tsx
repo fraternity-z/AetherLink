@@ -156,11 +156,37 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
         return;
       }
 
-      // iOS 焦点处理简化：让 Capacitor Keyboard API 自动处理键盘和输入框同步
-      // 不再需要 setTimeout 延迟和键盘高度估算，键盘事件会自动调整页面布局
+      // iOS设备特殊处理
       if (isIOS && textareaRef.current) {
-        // 只需确保输入框可见，其他由 useKeyboardManager 处理
-        textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 延迟执行，确保输入法已弹出
+        setTimeout(() => {
+          if (!textareaRef.current) return;
+
+          // 滚动到输入框位置
+          textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          // 额外处理：尝试滚动页面到底部
+          window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: 'smooth'
+          });
+
+          // iOS特有：确保输入框在可视区域内
+          const viewportHeight = window.innerHeight;
+          const keyboardHeight = viewportHeight * 0.4; // 估计键盘高度约为视口的40%
+
+          const inputRect = textareaRef.current.getBoundingClientRect();
+          const inputBottom = inputRect.bottom;
+
+          // 如果输入框底部被键盘遮挡，则滚动页面
+          if (inputBottom > viewportHeight - keyboardHeight) {
+            const scrollAmount = inputBottom - (viewportHeight - keyboardHeight) + 20; // 额外20px空间
+            window.scrollBy({
+              top: scrollAmount,
+              behavior: 'smooth'
+            });
+          }
+        }, 300); // 减少延迟时间
       }
     };
 

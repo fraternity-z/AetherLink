@@ -562,10 +562,9 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       initial={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       transition={ANIMATION_CONFIG}
-      className="chat-input-fixed-container"
       style={{
         position: 'fixed',
-        bottom: 'var(--keyboard-height, 0px)', // 使用键盘高度变量
+        bottom: 0,
         right: 0,
         zIndex: 2,
         backgroundColor: 'transparent',
@@ -574,7 +573,6 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: 0,
-        transition: 'bottom 0.25s ease-out', // 添加平滑过渡
       }}
     >
       {shouldShowToolbar && (
