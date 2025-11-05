@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n';
 
 const SettingsPageRedirect: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // 重定向到新的设置页面
@@ -12,7 +14,7 @@ const SettingsPageRedirect: React.FC = () => {
   // 显示加载中
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      加载中...
+      {t('common.loading')}
     </div>
   );
 };

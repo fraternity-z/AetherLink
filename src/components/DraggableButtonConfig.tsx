@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Eye, EyeOff, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
+import { useTranslation } from '../i18n';
 
 interface ButtonConfig {
   id: string;
@@ -35,6 +36,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
   rightButtons,
   onUpdateLayout
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -246,9 +248,9 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
           maxWidth: isMobile ? '100%' : '50%'
         }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            左侧按钮
+            {t('settings.appearance.inputBox.draggableButtonConfig.leftButtons')}
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-              ({leftButtons.length} 个)
+              ({leftButtons.length}{t('settings.appearance.inputBox.draggableButtonConfig.count')})
             </Typography>
           </Typography>
 
@@ -286,7 +288,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                         fontStyle: 'italic'
                       }}
                     >
-                      拖拽按钮到这里
+                      {t('settings.appearance.inputBox.draggableButtonConfig.dragHere')}
                     </Typography>
                   )}
                 </List>
@@ -302,9 +304,9 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
           maxWidth: isMobile ? '100%' : '50%'
         }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            右侧按钮
+            {t('settings.appearance.inputBox.draggableButtonConfig.rightButtons')}
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-              ({rightButtons.length} 个)
+              ({rightButtons.length}{t('settings.appearance.inputBox.draggableButtonConfig.count')})
             </Typography>
           </Typography>
 
@@ -342,7 +344,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                         fontStyle: 'italic'
                       }}
                     >
-                      拖拽按钮到这里
+                      {t('settings.appearance.inputBox.draggableButtonConfig.dragHere')}
                     </Typography>
                   )}
                 </List>
@@ -358,10 +360,10 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
         padding: isMobile ? 1 : 2
       }}>
         <Typography variant="h6" sx={{ mb: 1 }}>
-          可用按钮 ({unusedButtons.length} 个)
+          {t('settings.appearance.inputBox.draggableButtonConfig.availableButtons')} ({unusedButtons.length}{t('settings.appearance.inputBox.draggableButtonConfig.count')})
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          拖拽按钮到上方左右区域来使用，或拖拽已使用的按钮回到这里来移除
+          {t('settings.appearance.inputBox.draggableButtonConfig.dragToUse')}
         </Typography>
         <Paper 
           sx={{ 
@@ -407,7 +409,9 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                       fontStyle: 'italic'
                     }}
                   >
-                    {snapshot.isDraggingOver ? '松开鼠标移除按钮' : '所有按钮都已使用，拖拽按钮到这里可以移除'}
+                    {snapshot.isDraggingOver 
+                      ? t('settings.appearance.inputBox.draggableButtonConfig.releaseToRemove')
+                      : t('settings.appearance.inputBox.draggableButtonConfig.allUsed')}
                   </Typography>
                 )}
               </List>

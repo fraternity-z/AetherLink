@@ -11,12 +11,12 @@ export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 /**
  * 验证上传的图片文件
  */
-export const validateImageFile = (file: File): { valid: boolean; error?: string } => {
+export const validateImageFile = (file: File, t?: (key: string) => string): { valid: boolean; error?: string } => {
   // 检查文件类型
   if (!SUPPORTED_IMAGE_FORMATS.includes(file.type)) {
     return {
       valid: false,
-      error: '不支持的图片格式。请上传 JPG、PNG、GIF 或 WebP 格式的图片。'
+      error: t ? t('settings.appearance.chatInterface.background.errors.invalidFormat') : '不支持的图片格式。请上传 JPG、PNG、GIF 或 WebP 格式的图片。'
     };
   }
 
@@ -24,7 +24,7 @@ export const validateImageFile = (file: File): { valid: boolean; error?: string 
   if (file.size > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: '图片文件过大。请上传小于 5MB 的图片。'
+      error: t ? t('settings.appearance.chatInterface.background.errors.fileTooLarge') : '图片文件过大。请上传小于 5MB 的图片。'
     };
   }
 

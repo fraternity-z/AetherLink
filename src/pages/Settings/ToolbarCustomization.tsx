@@ -29,64 +29,68 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setToolbarStyle, updateSettings, updateToolbarButtons } from '../../shared/store/settingsSlice';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
-
-// 工具栏按钮配置
-const TOOLBAR_BUTTONS = [
-  {
-    id: 'mcp-tools',
-    icon: Wrench,
-    label: 'MCP工具',
-    description: '启用/禁用MCP工具调用功能',
-    color: 'rgba(255, 152, 0, 0.8)'
-  },
-  {
-    id: 'new-topic',
-    icon: Plus,
-    label: '新建话题',
-    description: '创建新的对话话题',
-    color: 'rgba(76, 175, 80, 0.8)'
-  },
-  {
-    id: 'clear-topic',
-    icon: Trash2,
-    label: '清空内容',
-    description: '清空当前话题的所有消息',
-    color: 'rgba(33, 150, 243, 0.8)'
-  },
-  {
-    id: 'generate-image',
-    icon: Camera,
-    label: '生成图片',
-    description: '切换到图像生成模式',
-    color: 'rgba(156, 39, 176, 0.8)'
-  },
-  {
-    id: 'generate-video',
-    icon: Video,
-    label: '生成视频',
-    description: '切换到视频生成模式',
-    color: 'rgba(233, 30, 99, 0.8)'
-  },
-  {
-    id: 'knowledge',
-    icon: BookOpen,
-    label: '知识库',
-    description: '选择知识库进行搜索',
-    color: 'rgba(5, 150, 105, 0.8)'
-  },
-  {
-    id: 'web-search',
-    icon: Search,
-    label: '网络搜索',
-    description: '启用网络搜索功能',
-    color: 'rgba(59, 130, 246, 0.8)'
-  }
-];
+import { useTranslation } from '../../i18n';
 
 const ToolbarCustomization: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
+  
+  // 获取工具栏按钮配置
+  const getToolbarButtons = () => [
+    {
+      id: 'mcp-tools',
+      icon: Wrench,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.mcpTools.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.mcpTools.description'),
+      color: 'rgba(255, 152, 0, 0.8)'
+    },
+    {
+      id: 'new-topic',
+      icon: Plus,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.newTopic.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.newTopic.description'),
+      color: 'rgba(76, 175, 80, 0.8)'
+    },
+    {
+      id: 'clear-topic',
+      icon: Trash2,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.clearTopic.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.clearTopic.description'),
+      color: 'rgba(33, 150, 243, 0.8)'
+    },
+    {
+      id: 'generate-image',
+      icon: Camera,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.generateImage.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.generateImage.description'),
+      color: 'rgba(156, 39, 176, 0.8)'
+    },
+    {
+      id: 'generate-video',
+      icon: Video,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.generateVideo.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.generateVideo.description'),
+      color: 'rgba(233, 30, 99, 0.8)'
+    },
+    {
+      id: 'knowledge',
+      icon: BookOpen,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.knowledge.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.knowledge.description'),
+      color: 'rgba(5, 150, 105, 0.8)'
+    },
+    {
+      id: 'web-search',
+      icon: Search,
+      label: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.webSearch.label'),
+      description: t('settings.appearance.toolbarCustomization.buttonCustomization.buttons.webSearch.description'),
+      color: 'rgba(59, 130, 246, 0.8)'
+    }
+  ];
+  
+  const TOOLBAR_BUTTONS = getToolbarButtons();
   const isDarkMode = settings.theme === 'dark' ||
     (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -287,7 +291,7 @@ const ToolbarCustomization: React.FC = () => {
               color: 'transparent',
             }}
           >
-            输入框工具栏定制
+            {t('settings.appearance.toolbarCustomization.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -320,21 +324,21 @@ const ToolbarCustomization: React.FC = () => {
             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              工具栏背景样式
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
+              {t('settings.appearance.toolbarCustomization.backgroundStyle.title')}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              选择输入框工具栏的背景效果，影响新建话题、清空内容等按钮的外观
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+              {t('settings.appearance.toolbarCustomization.backgroundStyle.description')}
             </Typography>
           </Box>
 
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: { xs: 1.5, sm: 3 } }}>
             <FormControl component="fieldset" fullWidth>
               <RadioGroup
                 value={settings.toolbarStyle || 'glassmorphism'}
                 onChange={handleToolbarStyleChange}
-                sx={{ gap: 2 }}
+                sx={{ gap: { xs: 1.5, sm: 2 } }}
               >
                 {/* 毛玻璃效果选项 */}
                 <Card
@@ -353,54 +357,120 @@ const ToolbarCustomization: React.FC = () => {
                   }}
                   onClick={() => dispatch(setToolbarStyle('glassmorphism'))}
                 >
-                  <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: { xs: 1, sm: 0 },
+                      mb: { xs: 1.5, sm: 2 }
+                    }}>
                       <FormControlLabel
                         value="glassmorphism"
                         control={<Radio />}
                         label={
                           <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                              毛玻璃效果 (推荐)
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '0.95rem' } }}>
+                              {t('settings.appearance.toolbarCustomization.backgroundStyle.glassmorphism.label')}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              现代玻璃UI设计，具有模糊背景和立体阴影效果
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary" 
+                              sx={{ 
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                lineHeight: 1.4
+                              }}
+                            >
+                              {t('settings.appearance.toolbarCustomization.backgroundStyle.glassmorphism.description')}
                             </Typography>
                           </Box>
                         }
                         sx={{ m: 0, flex: 1 }}
                       />
                       {settings.toolbarStyle === 'glassmorphism' && (
-                        <Chip label="当前" size="small" color="primary" />
+                        <Chip 
+                          label={t('settings.appearance.toolbarCustomization.backgroundStyle.current')} 
+                          size="small" 
+                          color="primary"
+                          sx={{ 
+                            height: { xs: '24px', sm: '24px' },
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                            mt: { xs: 0, sm: 0.5 }
+                          }}
+                        />
                       )}
                     </Box>
                     
                     {/* 毛玻璃效果预览 */}
                     <Box sx={{ 
                       display: 'flex', 
-                      gap: 1, 
-                      p: 2, 
+                      gap: { xs: 0.5, sm: 1 },
+                      p: { xs: 1, sm: 2 },
                       bgcolor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
                       borderRadius: 2,
                       position: 'relative',
-                      overflow: 'hidden'
+                      overflow: 'auto',
+                      flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                      '&::-webkit-scrollbar': {
+                        height: '4px',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: 'rgba(0,0,0,0.2)',
+                        borderRadius: '2px',
+                      },
                     }}>
-                      <Box sx={getGlassPreviewStyle()}>
-                        <Plus size={16} />
-                        <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                          新建话题
+                      <Box sx={{
+                        ...getGlassPreviewStyle(),
+                        padding: { xs: '6px 10px', sm: '8px 14px' },
+                        minHeight: { xs: '32px', sm: '36px' },
+                        flex: { xs: '0 0 auto', sm: 'initial' },
+                      }}>
+                        <Plus size={14} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontSize: { xs: '11px', sm: '13px' },
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.newTopic')}
                         </Typography>
                       </Box>
-                      <Box sx={getGlassPreviewStyle()}>
-                        <Trash2 size={16} />
-                        <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                          清空内容
+                      <Box sx={{
+                        ...getGlassPreviewStyle(),
+                        padding: { xs: '6px 10px', sm: '8px 14px' },
+                        minHeight: { xs: '32px', sm: '36px' },
+                        flex: { xs: '0 0 auto', sm: 'initial' },
+                      }}>
+                        <Trash2 size={14} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontSize: { xs: '11px', sm: '13px' },
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.clearContent')}
                         </Typography>
                       </Box>
-                      <Box sx={getGlassPreviewStyle()}>
-                        <Wrench size={16} />
-                        <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                          工具
+                      <Box sx={{
+                        ...getGlassPreviewStyle(),
+                        padding: { xs: '6px 10px', sm: '8px 14px' },
+                        minHeight: { xs: '32px', sm: '36px' },
+                        flex: { xs: '0 0 auto', sm: 'initial' },
+                      }}>
+                        <Wrench size={14} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontSize: { xs: '11px', sm: '13px' },
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.tools')}
                         </Typography>
                       </Box>
                     </Box>
@@ -424,52 +494,119 @@ const ToolbarCustomization: React.FC = () => {
                   }}
                   onClick={() => dispatch(setToolbarStyle('transparent'))}
                 >
-                  <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'flex-start',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: { xs: 1, sm: 0 },
+                      mb: { xs: 1.5, sm: 2 }
+                    }}>
                       <FormControlLabel
                         value="transparent"
                         control={<Radio />}
                         label={
                           <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                              透明效果
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: { xs: '0.9rem', sm: '0.95rem' } }}>
+                              {t('settings.appearance.toolbarCustomization.backgroundStyle.transparent.label')}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              简约透明设计，悬停时显示淡色背景
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary" 
+                              sx={{ 
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                lineHeight: 1.4
+                              }}
+                            >
+                              {t('settings.appearance.toolbarCustomization.backgroundStyle.transparent.description')}
                             </Typography>
                           </Box>
                         }
                         sx={{ m: 0, flex: 1 }}
                       />
                       {settings.toolbarStyle === 'transparent' && (
-                        <Chip label="当前" size="small" color="primary" />
+                        <Chip 
+                          label={t('settings.appearance.toolbarCustomization.backgroundStyle.current')} 
+                          size="small" 
+                          color="primary"
+                          sx={{ 
+                            height: { xs: '24px', sm: '24px' },
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                            mt: { xs: 0, sm: 0.5 }
+                          }}
+                        />
                       )}
                     </Box>
                     
                     {/* 透明效果预览 */}
                     <Box sx={{ 
                       display: 'flex', 
-                      gap: 1, 
-                      p: 2, 
+                      gap: { xs: 0.5, sm: 1 },
+                      p: { xs: 1, sm: 2 },
                       bgcolor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
-                      borderRadius: 2 
+                      borderRadius: 2,
+                      overflow: 'auto',
+                      flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                      '&::-webkit-scrollbar': {
+                        height: '4px',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: 'rgba(0,0,0,0.2)',
+                        borderRadius: '2px',
+                      },
                     }}>
-                      <Box sx={getTransparentPreviewStyle()}>
-                        <Plus size={16} />
-                        <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500 }}>
-                          新建话题
+                      <Box sx={{
+                        ...getTransparentPreviewStyle(),
+                        padding: { xs: '6px 10px', sm: '6px 12px' },
+                        minHeight: { xs: '28px', sm: '32px' },
+                        flex: { xs: '0 0 auto', sm: 'initial' },
+                      }}>
+                        <Plus size={14} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontSize: { xs: '11px', sm: '13px' },
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.newTopic')}
                         </Typography>
                       </Box>
-                      <Box sx={getTransparentPreviewStyle()}>
-                        <Trash2 size={16} />
-                        <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500 }}>
-                          清空内容
+                      <Box sx={{
+                        ...getTransparentPreviewStyle(),
+                        padding: { xs: '6px 10px', sm: '6px 12px' },
+                        minHeight: { xs: '28px', sm: '32px' },
+                        flex: { xs: '0 0 auto', sm: 'initial' },
+                      }}>
+                        <Trash2 size={14} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontSize: { xs: '11px', sm: '13px' },
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.clearContent')}
                         </Typography>
                       </Box>
-                      <Box sx={getTransparentPreviewStyle()}>
-                        <Wrench size={16} />
-                        <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 500 }}>
-                          工具
+                      <Box sx={{
+                        ...getTransparentPreviewStyle(),
+                        padding: { xs: '6px 10px', sm: '6px 12px' },
+                        minHeight: { xs: '28px', sm: '32px' },
+                        flex: { xs: '0 0 auto', sm: 'initial' },
+                      }}>
+                        <Wrench size={14} />
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            fontSize: { xs: '11px', sm: '13px' },
+                            fontWeight: 500,
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.tools')}
                         </Typography>
                       </Box>
                     </Box>
@@ -493,103 +630,180 @@ const ToolbarCustomization: React.FC = () => {
             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              工具栏显示方式
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
+              {t('settings.appearance.toolbarCustomization.displayStyle.title')}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              设置工具栏按钮的显示方式，可以选择同时显示图标和文字，或仅显示图标，或仅显示文字
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+              {t('settings.appearance.toolbarCustomization.displayStyle.description')}
             </Typography>
           </Box>
 
           <Divider />
 
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: { xs: 1.5, sm: 3 } }}>
             <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-              <InputLabel>工具栏显示样式</InputLabel>
+              <InputLabel sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                {t('settings.appearance.toolbarCustomization.displayStyle.label')}
+              </InputLabel>
               <Select
                 value={toolbarDisplayStyle}
                 onChange={handleToolbarDisplayStyleChange}
-                label="工具栏显示样式"
+                label={t('settings.appearance.toolbarCustomization.displayStyle.label')}
+                sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}
                 MenuProps={{
                   disableAutoFocus: true,
                   disableRestoreFocus: true
                 }}
               >
-                <MenuItem value="both">图标+文字（默认）</MenuItem>
-                <MenuItem value="icon">仅图标</MenuItem>
-                <MenuItem value="text">仅文字</MenuItem>
+                <MenuItem value="both" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                  {t('settings.appearance.toolbarCustomization.displayStyle.both')}
+                </MenuItem>
+                <MenuItem value="icon" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                  {t('settings.appearance.toolbarCustomization.displayStyle.icon')}
+                </MenuItem>
+                <MenuItem value="text" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                  {t('settings.appearance.toolbarCustomization.displayStyle.text')}
+                </MenuItem>
               </Select>
             </FormControl>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              设置聊天界面工具栏的显示方式。可以选择同时显示图标和文字，或仅显示图标，或仅显示文字。
+            <Typography 
+              variant="body2" 
+              color="text.secondary" 
+              sx={{ 
+                mt: 1, 
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                lineHeight: 1.4
+              }}
+            >
+              {t('settings.appearance.toolbarCustomization.displayStyle.hint')}
             </Typography>
 
             {/* 预览效果 */}
             <Box sx={{
-              mt: 3,
-              p: 2,
+              mt: { xs: 2, sm: 3 },
+              p: { xs: 1, sm: 2 },
               bgcolor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
               borderRadius: 2,
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                height: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: 'rgba(0,0,0,0.2)',
+                borderRadius: '2px',
+              },
             }}>
-              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
-                预览效果：
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  mb: { xs: 1.5, sm: 2 }, 
+                  fontWeight: 600,
+                  fontSize: { xs: '0.85rem', sm: '0.875rem' }
+                }}
+              >
+                {t('settings.appearance.toolbarCustomization.displayStyle.preview')}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: { xs: 0.5, sm: 1 },
+                flexWrap: { xs: 'wrap', sm: 'nowrap' }
+              }}>
                 {/* 根据当前选择的样式显示预览 */}
                 {toolbarDisplayStyle === 'both' && (
                   <>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Plus size={16} />
-                      <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                        新建话题
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                      flex: { xs: '0 0 auto', sm: 'initial' },
+                    }}>
+                      <Plus size={14} />
+                      <Typography variant="body2" sx={{ fontSize: { xs: '11px', sm: '13px' }, fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500, whiteSpace: 'nowrap' }}>
+                        {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.newTopic')}
                       </Typography>
                     </Box>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Trash2 size={16} />
-                      <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                        清空内容
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                      flex: { xs: '0 0 auto', sm: 'initial' },
+                    }}>
+                      <Trash2 size={14} />
+                      <Typography variant="body2" sx={{ fontSize: { xs: '11px', sm: '13px' }, fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500, whiteSpace: 'nowrap' }}>
+                        {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.clearContent')}
                       </Typography>
                     </Box>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Wrench size={16} />
-                      <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                        工具
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                      flex: { xs: '0 0 auto', sm: 'initial' },
+                    }}>
+                      <Wrench size={14} />
+                      <Typography variant="body2" sx={{ fontSize: { xs: '11px', sm: '13px' }, fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500, whiteSpace: 'nowrap' }}>
+                        {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.tools')}
                       </Typography>
                     </Box>
                   </>
                 )}
                 {toolbarDisplayStyle === 'icon' && (
                   <>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Plus size={16} />
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                    }}>
+                      <Plus size={14} />
                     </Box>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Trash2 size={16} />
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                    }}>
+                      <Trash2 size={14} />
                     </Box>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Wrench size={16} />
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                    }}>
+                      <Wrench size={14} />
                     </Box>
                   </>
                 )}
                 {toolbarDisplayStyle === 'text' && (
                   <>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                        新建话题
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                      flex: { xs: '0 0 auto', sm: 'initial' },
+                    }}>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '11px', sm: '13px' }, fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500, whiteSpace: 'nowrap' }}>
+                        {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.newTopic')}
                       </Typography>
                     </Box>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                        清空内容
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                      flex: { xs: '0 0 auto', sm: 'initial' },
+                    }}>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '11px', sm: '13px' }, fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500, whiteSpace: 'nowrap' }}>
+                        {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.clearContent')}
                       </Typography>
                     </Box>
-                    <Box sx={settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()}>
-                      <Typography variant="body2" sx={{ fontSize: '13px', fontWeight: 600 }}>
-                        工具
+                    <Box sx={{
+                      ...(settings.toolbarStyle === 'glassmorphism' ? getGlassPreviewStyle() : getTransparentPreviewStyle()),
+                      padding: { xs: '6px 10px', sm: '8px 14px' },
+                      minHeight: { xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' },
+                      flex: { xs: '0 0 auto', sm: 'initial' },
+                    }}>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '11px', sm: '13px' }, fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500, whiteSpace: 'nowrap' }}>
+                        {t('settings.appearance.toolbarCustomization.backgroundStyle.preview.tools')}
                       </Typography>
                     </Box>
                   </>
@@ -612,14 +826,33 @@ const ToolbarCustomization: React.FC = () => {
             boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                  工具栏按钮自定义
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: { xs: 'flex-start', sm: 'center' }, 
+              justifyContent: 'space-between', 
+              mb: 1,
+              gap: 1
+            }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography 
+                  variant="subtitle1" 
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: { xs: '0.95rem', sm: '1rem' }
+                  }}
+                >
+                  {t('settings.appearance.toolbarCustomization.buttonCustomization.title')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  拖拽调整按钮顺序，点击眼睛图标控制按钮显示/隐藏
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    lineHeight: 1.4
+                  }}
+                >
+                  {t('settings.appearance.toolbarCustomization.buttonCustomization.description')}
                 </Typography>
               </Box>
               <IconButton
@@ -627,7 +860,8 @@ const ToolbarCustomization: React.FC = () => {
                 size="small"
                 sx={{
                   bgcolor: 'action.hover',
-                  '&:hover': { bgcolor: 'action.selected' }
+                  '&:hover': { bgcolor: 'action.selected' },
+                  flexShrink: 0
                 }}
               >
                 <Wrench size={16} />
@@ -637,7 +871,7 @@ const ToolbarCustomization: React.FC = () => {
 
           <Divider />
 
-          <Box sx={{ p: 3, position: 'relative' }}>
+          <Box sx={{ p: { xs: 1.5, sm: 3 }, position: 'relative' }}>
             {/* 防止复制的覆盖层 */}
             <Box
               sx={{
@@ -772,17 +1006,32 @@ const ToolbarCustomization: React.FC = () => {
             </DragDropContext>
 
             {/* 实时预览 */}
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600 }}>
-                实时预览：
+            <Box sx={{ mt: { xs: 2, sm: 3 } }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  mb: { xs: 1.5, sm: 2 }, 
+                  fontWeight: 600,
+                  fontSize: { xs: '0.85rem', sm: '0.875rem' }
+                }}
+              >
+                {t('settings.appearance.toolbarCustomization.buttonCustomization.livePreview')}
               </Typography>
               <Box sx={{
                 display: 'flex',
-                gap: 1,
-                p: 2,
+                gap: { xs: 0.5, sm: 1 },
+                p: { xs: 1, sm: 2 },
                 bgcolor: isDarkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)',
                 borderRadius: 2,
-                flexWrap: 'wrap'
+                flexWrap: 'wrap',
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  height: '4px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: 'rgba(0,0,0,0.2)',
+                  borderRadius: '2px',
+                },
               }}>
                 {localButtonOrder
                   .filter(buttonId => localButtonVisibility[buttonId])
@@ -796,15 +1045,27 @@ const ToolbarCustomization: React.FC = () => {
                       : getTransparentPreviewStyle();
 
                     return (
-                      <Box key={buttonId} sx={previewStyle}>
+                      <Box 
+                        key={buttonId} 
+                        sx={{
+                          ...previewStyle,
+                          padding: { xs: '6px 10px', sm: '8px 14px' },
+                          minHeight: { 
+                            xs: settings.toolbarStyle === 'glassmorphism' ? '32px' : '28px', 
+                            sm: settings.toolbarStyle === 'glassmorphism' ? '36px' : '32px' 
+                          },
+                          flex: { xs: '0 0 auto', sm: 'initial' },
+                        }}
+                      >
                         {toolbarDisplayStyle !== 'text' && (
-                          <IconComponent size={16} color={buttonConfig.color} />
+                          <IconComponent size={14} color={buttonConfig.color} />
                         )}
                         {toolbarDisplayStyle !== 'icon' && (
                           <Typography variant="body2" sx={{
-                            fontSize: '13px',
+                            fontSize: { xs: '11px', sm: '13px' },
                             fontWeight: settings.toolbarStyle === 'glassmorphism' ? 600 : 500,
-                            ml: toolbarDisplayStyle === 'both' ? 0.5 : 0
+                            ml: toolbarDisplayStyle === 'both' ? 0.5 : 0,
+                            whiteSpace: 'nowrap'
                           }}>
                             {buttonConfig.label}
                           </Typography>

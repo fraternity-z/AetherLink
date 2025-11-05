@@ -6,6 +6,7 @@ import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventEmitter';
 import { useDeepMemo } from '../../../hooks/useMemoization';
 import ThinkingDisplayRenderer from './ThinkingDisplayRenderer';
+import { useTranslation } from '../../../i18n';
 
 // 思考过程显示样式类型
 export type ThinkingDisplayStyle = 'compact' | 'full' | 'hidden' | 'minimal' | 'bubble' | 'timeline' | 'card' | 'inline' |
@@ -41,6 +42,7 @@ interface Props {
  * 显示AI的思考过程，支持多种显示样式
  */
 const ThinkingBlock: React.FC<Props> = ({ block }) => {
+  const { t } = useTranslation();
   // 从设置中获取思考过程显示样式
   const thinkingDisplayStyle = useSelector((state: RootState) =>
     (state.settings as any).thinkingDisplayStyle || 'compact'
@@ -76,9 +78,9 @@ const ThinkingBlock: React.FC<Props> = ({ block }) => {
       navigator.clipboard.writeText(block.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      EventEmitter.emit(EVENT_NAMES.UI_COPY_SUCCESS || 'ui:copy_success', { content: '已复制思考内容' });
+      EventEmitter.emit(EVENT_NAMES.UI_COPY_SUCCESS || 'ui:copy_success', { content: t('settings.appearance.thinkingProcess.preview.texts.copySuccess') });
     }
-  }, [block.content]);
+  }, [block.content, t]);
 
   // 切换折叠/展开状态
   const toggleExpanded = useCallback(() => {

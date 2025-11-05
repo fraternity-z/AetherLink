@@ -1,0 +1,739 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "more": "More",
+    "less": "Less",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "copy": "Copy",
+    "paste": "Paste",
+    "cut": "Cut",
+    "select": "Select",
+    "selectAll": "Select All",
+    "deselect": "Deselect",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "apply": "Apply",
+    "discard": "Discard"
+  },
+  "welcome": {
+    "title": "AetherLink",
+    "subtitle": "Start Your AI Conversation Journey",
+    "startButton": "Get Started",
+    "savingError": "Failed to save user status"
+  },
+  "chat": {
+    "title": "Chat",
+    "sendMessage": "Send Message",
+    "inputPlaceholder": "Type a message...",
+    "thinking": "Thinking...",
+    "streaming": "Generating...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "delete": "Delete",
+    "edit": "Edit",
+    "stop": "Stop",
+    "clear": "Clear"
+  },
+  "settings": {
+    "title": "Settings",
+    "behavior": "Behavior",
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "fontSize": "Font Size",
+    "chinese": "简体中文",
+    "english": "English",
+    "groups": {
+      "basic": "Basic Settings",
+      "modelService": "Model Services",
+      "shortcuts": "Shortcuts",
+      "other": "Other Settings"
+    },
+    "items": {
+      "appearance": {
+        "title": "Appearance",
+        "description": "Theme, font size and language settings"
+      },
+      "behavior": {
+        "title": "Behavior",
+        "description": "Message sending and notification settings"
+      },
+      "defaultModel": {
+        "title": "Configure Models",
+        "description": "Manage AI models and API keys"
+      },
+      "topicNaming": {
+        "title": "Topic Naming Settings",
+        "description": "Configure automatic topic naming"
+      },
+      "agentPrompts": {
+        "title": "Agent Prompts Collection",
+        "description": "Browse and use built-in rich prompt templates"
+      },
+      "aiDebate": {
+        "title": "AI Debate Settings",
+        "description": "Configure AI mutual debate discussion feature"
+      },
+      "modelCombo": {
+        "title": "Model Combo",
+        "description": "Create and manage multi-model combinations"
+      },
+      "webSearch": {
+        "title": "Web Search",
+        "description": "Configure web search and related services"
+      },
+      "mcpServer": {
+        "title": "MCP Server",
+        "description": "Advanced server configuration"
+      },
+      "shortcuts": {
+        "title": "Quick Assistant",
+        "description": "Customize keyboard shortcuts"
+      },
+      "quickPhrases": {
+        "title": "Quick Phrases",
+        "description": "Create common phrase templates"
+      },
+      "workspace": {
+        "title": "Workspace Management",
+        "description": "Create and manage file workspaces"
+      },
+      "knowledge": {
+        "title": "Knowledge Base Settings",
+        "description": "Manage knowledge base configuration and embedding models"
+      },
+      "data": {
+        "title": "Data Settings",
+        "description": "Manage data storage and privacy options"
+      },
+      "notion": {
+        "title": "Notion Integration",
+        "description": "Configure Notion database export settings"
+      },
+      "voice": {
+        "title": "Voice Features",
+        "description": "Voice recognition and text-to-speech settings"
+      },
+      "features": {
+        "title": "Feature Modules",
+        "description": "Enable or disable application features"
+      },
+      "about": {
+        "title": "About Us",
+        "description": "Application information and technical support"
+      }
+    },
+    "scrollCacheError": "Failed to clear scroll position cache",
+    "appearance": {
+      "title": "Appearance Settings",
+      "themeAndFont": {
+        "title": "Theme and Font",
+        "description": "Customize the appearance theme and global font size settings"
+      },
+      "theme": {
+        "label": "Theme",
+        "helperText": "Select the appearance theme. System will automatically adapt to the device's dark/light mode"
+      },
+      "language": {
+        "label": "Language",
+        "helperText": "Select the display language. Changes will take effect immediately"
+      },
+      "fontSize": {
+        "label": "Global Font Size",
+        "presets": {
+          "12": "Extra Small",
+          "14": "Small",
+          "16": "Standard",
+          "18": "Large",
+          "20": "Extra Large",
+          "24": "Huge"
+        },
+        "custom": "Custom",
+        "helperText": "Adjust the base font size for all text in the app, affecting chat messages, interface text and other global display effects"
+      },
+      "fontFamily": {
+        "label": "Global Font",
+        "systemDefault": "System Default",
+        "helperText": "Select the global font for the app, which will affect the display of all interface text"
+      },
+      "fontCategory": {
+        "system": "System Fonts",
+        "chinese": "Chinese Fonts",
+        "english": "English Fonts",
+        "monospace": "Monospace Fonts"
+      },
+      "customization": {
+        "title": "Interface Customization",
+        "description": "Customize the appearance settings for chat interface, message bubbles and toolbar"
+      },
+      "topToolbar": {
+        "title": "Top Toolbar Settings",
+        "description": "Customize the components and layout of the top toolbar, supports drag-and-drop DIY layout"
+      },
+      "developerTools": {
+        "title": "Developer Tools",
+        "description": "Developer tool settings for debugging and performance monitoring",
+        "performanceMonitor": {
+          "title": "Show Performance Monitor",
+          "description": "Display real-time performance monitoring panel in the chat interface, including FPS, scroll events, render time and memory usage"
+        }
+      },
+      "topToolbarDIY": {
+        "title": "Top Toolbar DIY",
+        "resetButton": "Reset",
+        "alignButton": "Align",
+        "components": {
+          "menuButton": "Menu",
+          "chatTitle": "Title",
+          "topicName": "Topic",
+          "newTopicButton": "New",
+          "clearButton": "Clear",
+          "searchButton": "Search",
+          "modelSelector": "Model",
+          "settingsButton": "Settings"
+        },
+        "preview": {
+          "title": "DIY Layout Preview",
+          "tooltip": "Drag components below to this area for custom layout",
+          "chatTitleExample": "Chat",
+          "topicNameExample": "Sample Topic",
+          "emptyHint": "Drag components here"
+        },
+        "componentPanel": {
+          "title": "Available Components",
+          "tooltip": "Long press and drag components to the preview area",
+          "placed": "Placed",
+          "hint": "💡 Tip: Long press a component for 0.3s to start dragging to preview area. Card turns yellow when long pressing. Placed components have a hide button below."
+        },
+        "modelSelector": {
+          "title": "Model Selector Style",
+          "tooltip": "Choose display style for model selector in DIY layout",
+          "iconMode": "Icon (Bot icon only)",
+          "textMode": "Text (Model name + provider)",
+          "hint": "Icon mode is more compact, text mode shows current model clearly."
+        },
+        "instructions": {
+          "title": "🎨 DIY Layout Instructions",
+          "step1": "First enable components in component display settings",
+          "step2": "Long press components and drag them to preview area",
+          "step3": "Place components anywhere on the toolbar",
+          "step4": "Click the eye button below placed components to remove",
+          "step5": "Click \"Reset\" to clear all custom positions",
+          "step6": "Changes are saved and applied to chat page instantly"
+        }
+      },
+      "chatInterface": {
+        "title": "Chat Interface",
+        "description": "Customize chat interface layout and display options",
+        "multiModel": {
+          "title": "Multi-Model Display",
+          "tooltip": "Configure layout for multi-model comparison",
+          "layoutLabel": "Layout",
+          "horizontal": "Horizontal (default)",
+          "vertical": "Vertical (side-by-side)",
+          "single": "Single (stacked)",
+          "description": "Set layout for multi-model comparison. Horizontal shows responses side-by-side, vertical stacks them, single stacks them separately."
+        },
+        "toolCall": {
+          "title": "Tool Call Settings",
+          "tooltip": "Configure tool call display details",
+          "showDetails": "Show tool call details",
+          "description": "Control whether to show detailed tool call information, including parameters and results."
+        },
+        "citation": {
+          "title": "Citation Settings",
+          "tooltip": "Configure citation display details",
+          "showDetails": "Show citation details",
+          "description": "Control whether to show detailed citation information, including sources and related content."
+        },
+        "systemPrompt": {
+          "title": "System Prompt Bubble",
+          "label": "System Prompt Display",
+          "show": "Show",
+          "hide": "Hide",
+          "description": "Control whether to show system prompt bubble at top of chat. It helps you view and edit the current session's system prompt."
+        },
+        "background": {
+          "title": "Chat Background",
+          "enable": "Enable custom background",
+          "imageLabel": "Background Image",
+          "previewAlt": "Background preview",
+          "remove": "Remove",
+          "uploadHint": "Click to upload image",
+          "uploadFormat": "JPG, PNG, GIF, WebP, max 5MB",
+          "selectImage": "Select Image",
+          "uploading": "Uploading...",
+          "opacityLabel": "Opacity",
+          "sizeLabel": "Size",
+          "positionLabel": "Position",
+          "repeatLabel": "Repeat",
+          "description": "Customize chat background image. Background only shows in message area, not affecting toolbar or sidebar. Messages appear above background.",
+          "presets": {
+            "cover": {
+              "label": "Cover",
+              "description": "Cover entire area, may crop"
+            },
+            "contain": {
+              "label": "Contain",
+              "description": "Show full image, may have blank areas"
+            },
+            "auto": {
+              "label": "Auto",
+              "description": "Display at original size"
+            }
+          },
+          "positions": {
+            "center": "Center",
+            "top": "Top",
+            "bottom": "Bottom",
+            "left": "Left",
+            "right": "Right"
+          },
+          "repeats": {
+            "noRepeat": "No Repeat",
+            "repeat": "Repeat",
+            "repeatX": "Repeat X",
+            "repeatY": "Repeat Y"
+          },
+          "errors": {
+            "invalidFormat": "Unsupported format. Please upload JPG, PNG, GIF or WebP.",
+            "fileTooLarge": "File too large. Please upload image smaller than 5MB.",
+            "uploadFailed": "Upload failed, please try again",
+            "validationFailed": "File validation failed"
+          }
+        }
+      },
+      "thinkingProcess": {
+        "title": "Thinking Process",
+        "description": "Customize AI thinking process display and auto-collapse behavior",
+        "display": {
+          "title": "Thinking Display",
+          "tooltip": "Configure AI thinking process display and behavior",
+          "description": "Customize AI thinking process display and auto-collapse behavior",
+          "styleLabel": "Display Style",
+          "autoCollapse": "Auto-collapse when complete",
+          "styles": {
+            "compact": "Compact (collapsible)",
+            "full": "Full (always expanded)",
+            "minimal": "Minimal (icon only)",
+            "bubble": "Bubble (chat style)",
+            "timeline": "Timeline (left indicator)",
+            "card": "Card (highlighted)",
+            "inline": "Inline (embedded)",
+            "hidden": "Hidden (not shown)",
+            "stream": "🌊 Stream (typewriter)",
+            "dots": "💫 Dots (typing indicator)",
+            "wave": "🌀 Wave (flow visualization)",
+            "sidebar": "📋 Sidebar (slide out)",
+            "overlay": "🔍 Overlay (immersive)",
+            "breadcrumb": "🔗 Breadcrumb (steps)",
+            "floating": "✨ Floating (follow mouse)",
+            "terminal": "💻 Terminal (CLI style)"
+          },
+          "instructions": {
+            "intro": "Set AI thinking process display:",
+            "compact": "• Compact: Standard card, collapsible",
+            "full": "• Full: Always expanded, show all",
+            "minimal": "• Minimal: Icon only, hover to view",
+            "bubble": "• Bubble: Rounded chat bubble design",
+            "timeline": "• Timeline: Left timeline indicator",
+            "card": "• Card: Highlighted gradient card",
+            "inline": "• Inline: Compact embedded in message",
+            "hidden": "• Hidden: Not displayed at all",
+            "newStylesTitle": "🚀 New 2025 Advanced Styles:",
+            "stream": "• Stream: Typewriter effect, word by word",
+            "dots": "• Dots: Typing indicator like chat apps",
+            "wave": "• Wave: Dynamic wave, visualize flow",
+            "sidebar": "• Sidebar: Full-screen panel from right",
+            "overlay": "• Overlay: Immersive full-screen display",
+            "breadcrumb": "• Breadcrumb: Step-by-step key nodes",
+            "floating": "• Floating: Dynamic preview follows mouse",
+            "terminal": "• Terminal: Programmer-style CLI interface"
+          }
+        },
+        "preview": {
+          "title": "Live Preview",
+          "tooltip": "Preview selected thinking display style",
+          "description": "View real-time thinking process display effect",
+          "currentStyle": "Current style:",
+          "texts": {
+            "thinkingProcess": "Thinking Process",
+            "thinking": "Thinking...",
+            "thinkingComplete": "Thinking Complete",
+            "deepThinking": "Deep Thinking...",
+            "deepThinkingProcess": "Deep Thinking Process",
+            "thinkingContent": "Thinking Content:",
+            "thinkingCompleteTime": "Thinking Complete {time}s",
+            "thinkingInProgress": "Thinking... {time}s",
+            "thinkingInProgressSimple": "Thinking",
+            "thinkingSimple": "Think",
+            "aiThinking": "AI is Thinking",
+            "aiDeepThinking": "🧠 AI Deep Thinking",
+            "thinkingProcessComplete": "✨ Thinking Process Complete",
+            "timeSpent": "Time Spent {time}s",
+            "thinkingProcessWithTime": "Thinking Process ({time}s)",
+            "viewThinkingProcess": "View Thinking Process...",
+            "viewThinkingDetails": "View Thinking Details",
+            "thinkingProcessDetails": "Thinking Process Details",
+            "timeSpentChip": "Time Spent {time}s",
+            "fullThinkingProcess": "💭 Full Thinking Process",
+            "thinkingPath": "Thinking Path",
+            "thinkingCompleteBreadcrumb": "💭 Full Thinking Process:",
+            "thinkingInProgressBreadcrumb": "Thinking",
+            "thinkingStream": "Thinking...",
+            "thinkingStreamComplete": "Thinking Complete",
+            "thinkingWave": "Mind Waves Active...",
+            "thinkingWaveComplete": "Thinking Complete",
+            "immersiveThinking": "Immersive Thinking Experience",
+            "viewFullThinking": "View Full Thinking",
+            "aiThinkingProcess": "AI Thinking Process",
+            "aiThinkingProcessComplete": "Thinking Process Complete",
+            "thinkingParticlesActive": "💫 Thinking Particles Active...",
+            "hoverToViewThinking": "✨ Hover to View Thinking Process",
+            "aiThinkingProcessTerminal": "AI-Thinking Process",
+            "running": "Running",
+            "completed": "Completed",
+            "copySuccess": "Thinking content copied",
+            "previewContent": "The user asked about \"how to improve work efficiency\". I need to analyze this question from multiple angles:\n\nFirst, I should consider the definition of work efficiency. Work efficiency usually refers to the amount and quality of work completed per unit of time. Improving work efficiency can be approached from the following aspects:\n\n1. Time Management\n- Use the Pomodoro Technique, breaking work into 25-minute focused sessions\n- Create a priority list, handling important and urgent tasks first\n- Avoid multitasking, focus on one thing at a time\n\n2. Work Environment Optimization\n- Keep the workspace clean and organized\n- Reduce distractions, such as closing unnecessary notifications\n- Ensure good lighting and comfortable seating\n\n3. Skill Development\n- Learn to use efficiency tools and software\n- Improve professional skills to reduce time needed to complete tasks\n- Develop good communication skills\n\n4. Physical and Mental Health\n- Ensure adequate sleep\n- Exercise regularly to maintain physical health\n- Learn to relax and reduce stress\n\nI think this answer covers the main aspects of work efficiency, being both practical and comprehensive. Users should be able to find methods that suit them."
+          }
+        }
+      },
+      "messageBubble": {
+        "title": "Message Bubble",
+        "description": "Adjust message bubble style and width settings",
+        "function": {
+          "title": "Bubble Functions",
+          "tooltip": "Configure bubble functions and display",
+          "description": "Customize message version history and function bubbles",
+          "actionMode": {
+            "label": "Action Display Mode",
+            "bubbles": "Bubbles (default)",
+            "toolbar": "Bottom Toolbar",
+            "description": "Choose action display mode:",
+            "bubblesDesc": "• Bubbles: Show small function bubbles and menu above message (default)",
+            "toolbarDesc": "• Toolbar: Show full action toolbar at bottom with all buttons"
+          },
+          "showMicroBubbles": {
+            "label": "Show Function Bubbles",
+            "description": "Show play and version switch bubbles above message"
+          },
+          "versionSwitch": {
+            "label": "Version Switch Style",
+            "popup": "Popup List (default)",
+            "arrows": "Arrows < 2 >",
+            "description": "Set version history display:",
+            "popupDesc": "• Popup: Click to show all versions list (default)",
+            "arrowsDesc": "• Arrows: Use left/right arrows to switch, like < 2 >"
+          }
+        },
+        "width": {
+          "title": "Bubble Width",
+          "tooltip": "Customize message bubble width range for different screens",
+          "description": "Adjust bubble width range for different device screens",
+          "aiMaxWidth": "AI Max Width",
+          "userMaxWidth": "User Max Width",
+          "minWidth": "Min Width",
+          "instructions": {
+            "title": "Width Settings:",
+            "aiMaxWidth": "• AI Max Width: Controls max display width of AI replies",
+            "userMaxWidth": "• User Max Width: Controls max display width of user messages",
+            "minWidth": "• Min Width: Minimum width for all messages to avoid too narrow",
+            "note": "• Smaller width fits phones, larger width fits tablets and desktops"
+          }
+        },
+        "avatar": {
+          "title": "Avatar & Name",
+          "tooltip": "Customize user and model avatar/name display",
+          "description": "Control avatar and name display for user and AI model",
+          "showUserAvatar": "Show User Avatar",
+          "showUserName": "Show User Name",
+          "showModelAvatar": "Show Model Avatar",
+          "showModelName": "Show Model Name",
+          "hint": "Control avatar and name display. Hide elements for cleaner chat experience."
+        },
+        "colors": {
+          "title": "Custom Colors",
+          "tooltip": "Customize user and AI bubble background and text colors",
+          "description": "Customize bubble colors, leave empty for system defaults",
+          "reset": "Reset",
+          "backgroundColor": "Background",
+          "textColor": "Text",
+          "userMessage": "User",
+          "aiReply": "AI",
+          "hint": "Tip: Text color controls bubble text and toolbar button colors"
+        },
+        "preview": {
+          "title": "Live Preview",
+          "userInitial": "U",
+          "userName": "User",
+          "userSampleTime": "12:30",
+          "userSampleText": "Hello! How can I help you today?",
+          "aiInitial": "AI",
+          "aiName": "AI Assistant",
+          "aiSampleTime": "12:32",
+          "aiSampleText": "I'm your AI assistant, happy to help! I can answer questions, provide information, and assist with many tasks.",
+          "modeLabel": "Current mode: {{mode}}",
+          "mode": {
+            "bubbles": "Function Bubble Mode",
+            "toolbar": "Bottom Toolbar Mode"
+          },
+          "microBubblesHidden": "(Function bubbles hidden)"
+        }
+      },
+      "toolbarCustomization": {
+        "title": "Input Toolbar",
+        "description": "Customize input toolbar background style and appearance",
+        "backgroundStyle": {
+          "title": "Background Style",
+          "description": "Choose toolbar background effect for buttons",
+          "glassmorphism": {
+            "label": "Glassmorphism (Recommended)",
+            "description": "Modern glass UI with blur and shadow effects"
+          },
+          "transparent": {
+            "label": "Transparent",
+            "description": "Minimal transparent design with hover background"
+          },
+          "current": "Current",
+          "preview": {
+            "newTopic": "New Topic",
+            "clearContent": "Clear",
+            "tools": "Tools"
+          }
+        },
+        "displayStyle": {
+          "title": "Display Style",
+          "description": "Set toolbar button display: icon+text, icon only, or text only",
+          "label": "Display Style",
+          "both": "Icon + Text (default)",
+          "icon": "Icon Only",
+          "text": "Text Only",
+          "hint": "Set toolbar display: icon+text, icon only, or text only.",
+          "preview": "Preview:"
+        },
+        "buttonCustomization": {
+          "title": "Button Customization",
+          "description": "Drag to reorder, click eye icon to show/hide",
+          "livePreview": "Live Preview:",
+          "buttons": {
+            "mcpTools": {
+              "label": "MCP Tools",
+              "description": "Enable/disable MCP tool calls"
+            },
+            "newTopic": {
+              "label": "New Topic",
+              "description": "Create new conversation topic"
+            },
+            "clearTopic": {
+              "label": "Clear",
+              "description": "Clear all messages in current topic"
+            },
+            "generateImage": {
+              "label": "Generate Image",
+              "description": "Switch to image generation mode"
+            },
+            "generateVideo": {
+              "label": "Generate Video",
+              "description": "Switch to video generation mode"
+            },
+            "knowledge": {
+              "label": "Knowledge",
+              "description": "Select knowledge base for search"
+            },
+            "webSearch": {
+              "label": "Web Search",
+              "description": "Enable web search function"
+            }
+          }
+        }
+      },
+      "inputBox": {
+        "title": "Input Box",
+        "description": "Customize input box style and layout",
+        "preview": {
+          "title": "Live Preview",
+          "label": "Live Preview",
+          "currentConfig": "Current:",
+          "styles": {
+            "default": "Default",
+            "modern": "Modern",
+            "minimal": "Minimal"
+          },
+          "layouts": {
+            "default": "Default",
+            "compact": "Compact",
+            "integrated": "Integrated"
+          },
+          "buttonLayout": {
+            "title": "Custom Button Layout",
+            "description": "Drag buttons to customize left/right layout, click eye icon to show/hide. View effect in preview above:",
+            "summary": "Left: {{left}} buttons, Right: {{right}} buttons. Buttons display at bottom per layout."
+          }
+        },
+        "style": {
+          "title": "Input Style",
+          "label": "Input Style",
+          "default": "Default",
+          "modern": "Modern",
+          "minimal": "Minimal",
+          "description": "Choose visual style for input box and toolbar:",
+          "defaultDesc": "• Default: Standard rounded corners, moderate shadow, classic look",
+          "modernDesc": "• Modern: Rounded corners, 3D shadow, glassmorphism background",
+          "minimalDesc": "• Minimal: Sharp corners, no shadow, clean and simple"
+        },
+        "layout": {
+          "title": "Layout Style",
+          "label": "Layout Style",
+          "default": "Default (Toolbar + Input separate)",
+          "compact": "Compact (Input + Icons integrated)",
+          "integrated": "Integrated (Menu + Vertical layout)",
+          "description": "Choose layout for input area:",
+          "defaultDesc": "• Default: Toolbar and input shown separately, clear separation",
+          "compactDesc": "• Compact: Input above, icon row below, click + to expand",
+          "integratedDesc": "• Integrated: Tool menu integrated into input, vertical layout"
+        },
+        "buttons": {
+          "tools": {
+            "label": "Extend",
+            "description": "Enable/disable extension features"
+          },
+          "mcpTools": {
+            "label": "Tools",
+            "description": "Enable/disable MCP tools"
+          },
+          "clear": {
+            "label": "Clear",
+            "description": "Clear current topic content"
+          },
+          "image": {
+            "label": "Generate Image",
+            "description": "Switch to image generation mode"
+          },
+          "video": {
+            "label": "Generate Video",
+            "description": "Switch to video generation mode"
+          },
+          "knowledge": {
+            "label": "Knowledge",
+            "description": "Access knowledge base"
+          },
+          "search": {
+            "label": "Web Search",
+            "description": "Enable web search"
+          },
+          "upload": {
+            "label": "Add Content",
+            "description": "Add images, files or other features"
+          },
+          "camera": {
+            "label": "Take Photo",
+            "description": "Use camera to take photo"
+          },
+          "photoSelect": {
+            "label": "Select Image",
+            "description": "Select image from gallery"
+          },
+          "fileUpload": {
+            "label": "Upload File",
+            "description": "Upload documents or files"
+          },
+          "aiDebate": {
+            "label": "AI Debate",
+            "description": "Start multi-AI character debate"
+          },
+          "quickPhrase": {
+            "label": "Quick Phrase",
+            "description": "Insert preset text phrase"
+          },
+          "multiModel": {
+            "label": "Multi-Model",
+            "description": "Send to multiple AI models"
+          },
+          "send": {
+            "label": "Send",
+            "description": "Send message button"
+          },
+          "voice": {
+            "label": "Voice",
+            "description": "Voice input button"
+          }
+        },
+        "draggableButtonConfig": {
+          "leftButtons": "Left Buttons",
+          "rightButtons": "Right Buttons",
+          "availableButtons": "Available Buttons",
+          "count": "",
+          "dragHere": "Drag buttons here",
+          "dragToUse": "Drag buttons to left/right areas above to use, or drag used buttons back here to remove",
+          "releaseToRemove": "Release to remove button",
+          "allUsed": "All buttons used, drag here to remove"
+        }
+      },
+      "themeStyle": {
+        "title": "Theme Style",
+        "description": "Choose your preferred interface design style, each style has unique color combinations and visual effects",
+        "navigationDescription": "Choose the overall design style and color theme of the app",
+        "tip": "💡 Tip: Theme style affects the color scheme, button styles and visual effects of the entire application. You can change the theme style in settings at any time, and changes will take effect immediately.",
+        "current": "Current",
+        "themes": {
+          "default": {
+            "name": "Default Theme",
+            "description": "Simple and modern default design style"
+          },
+          "claude": {
+            "name": "Claude Style",
+            "description": "Warm and elegant Claude AI design style"
+          },
+          "nature": {
+            "name": "Nature Style",
+            "description": "Popular 2025 natural earth-tone design"
+          },
+          "tech": {
+            "name": "Future Tech",
+            "description": "Popular 2025 tech-inspired design with cool tones and glassmorphism effects"
+          },
+          "soft": {
+            "name": "Soft Gradient",
+            "description": "Popular 2025 soft gradient design with warm and comfortable visual experience"
+          }
+        }
+      }
+    }
+  },
+  "errors": {
+    "networkError": "Network Error",
+    "unknownError": "Unknown Error",
+    "loadFailed": "Failed to load",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete"
+  },
+  "notifications": {
+    "copied": "Copied to clipboard",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "error": "Operation failed"
+  }
+}
+

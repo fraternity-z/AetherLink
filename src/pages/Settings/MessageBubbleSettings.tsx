@@ -25,8 +25,10 @@ import CustomSwitch from '../../components/CustomSwitch';
 import { updateSettings } from '../../shared/store/settingsSlice';
 import MessageBubblePreview from '../../components/preview/MessageBubblePreview';
 import ColorPicker from '../../components/common/ColorPicker';
+import { useTranslation } from '../../i18n';
 
 const MessageBubbleSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
@@ -195,7 +197,7 @@ const MessageBubbleSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            信息气泡管理
+            {t('settings.appearance.messageBubble.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -237,9 +239,9 @@ const MessageBubbleSettings: React.FC = () => {
                   fontSize: { xs: '1rem', sm: '1.1rem' }
                 }}
               >
-                气泡功能设置
+                {t('settings.appearance.messageBubble.function.title')}
               </Typography>
-              <Tooltip title="设置信息气泡的功能和显示方式">
+              <Tooltip title={t('settings.appearance.messageBubble.function.tooltip')}>
                 <IconButton size="small" sx={{ ml: 1 }}>
                   <Info />
                 </IconButton>
@@ -250,7 +252,7 @@ const MessageBubbleSettings: React.FC = () => {
               color="text.secondary"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
             >
-              自定义消息版本历史和功能气泡的显示方式
+              {t('settings.appearance.messageBubble.function.description')}
             </Typography>
           </Box>
 
@@ -259,14 +261,14 @@ const MessageBubbleSettings: React.FC = () => {
           <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
             {/* 消息操作显示模式设置 */}
             <FormControl fullWidth variant="outlined" sx={{ mb: 3 }}>
-              <InputLabel>消息操作显示模式</InputLabel>
+              <InputLabel>{t('settings.appearance.messageBubble.function.actionMode.label')}</InputLabel>
               <Select
                 value={messageActionMode}
                 onChange={handleMessageActionModeChange}
-                label="消息操作显示模式"
+                label={t('settings.appearance.messageBubble.function.actionMode.label')}
               >
-                <MenuItem value="bubbles">功能气泡模式（默认）</MenuItem>
-                <MenuItem value="toolbar">底部工具栏模式</MenuItem>
+                <MenuItem value="bubbles">{t('settings.appearance.messageBubble.function.actionMode.bubbles')}</MenuItem>
+                <MenuItem value="toolbar">{t('settings.appearance.messageBubble.function.actionMode.toolbar')}</MenuItem>
               </Select>
             </FormControl>
 
@@ -279,9 +281,9 @@ const MessageBubbleSettings: React.FC = () => {
                 lineHeight: 1.5
               }}
             >
-              选择消息操作功能的显示方式：
-              <br />• 功能气泡模式：在消息气泡上方显示小功能气泡和右上角三点菜单（默认方式）
-              <br />• 底部工具栏模式：在消息气泡底部显示完整的操作工具栏，包含所有功能按钮
+              {t('settings.appearance.messageBubble.function.actionMode.description')}
+              <br />{t('settings.appearance.messageBubble.function.actionMode.bubblesDesc')}
+              <br />{t('settings.appearance.messageBubble.function.actionMode.toolbarDesc')}
             </Typography>
 
             {/* 分隔线 */}
@@ -300,10 +302,10 @@ const MessageBubbleSettings: React.FC = () => {
                   label={
                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        显示功能气泡
+                        {t('settings.appearance.messageBubble.function.showMicroBubbles.label')}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                        在消息气泡上方显示播放和版本切换的小功能气泡
+                        {t('settings.appearance.messageBubble.function.showMicroBubbles.description')}
                       </Typography>
                     </Box>
                   }
@@ -324,14 +326,14 @@ const MessageBubbleSettings: React.FC = () => {
             {messageActionMode === 'bubbles' && showMicroBubbles && (
               <>
                 <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                  <InputLabel>版本切换样式</InputLabel>
+                  <InputLabel>{t('settings.appearance.messageBubble.function.versionSwitch.label')}</InputLabel>
                   <Select
                     value={versionSwitchStyle}
                     onChange={handleVersionSwitchStyleChange}
-                    label="版本切换样式"
+                    label={t('settings.appearance.messageBubble.function.versionSwitch.label')}
                   >
-                    <MenuItem value="popup">弹出列表（默认）</MenuItem>
-                    <MenuItem value="arrows">箭头式切换 &lt; 2 &gt;</MenuItem>
+                    <MenuItem value="popup">{t('settings.appearance.messageBubble.function.versionSwitch.popup')}</MenuItem>
+                    <MenuItem value="arrows">{t('settings.appearance.messageBubble.function.versionSwitch.arrows')}</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -344,9 +346,9 @@ const MessageBubbleSettings: React.FC = () => {
                     lineHeight: 1.5
                   }}
                 >
-                  设置版本历史的显示和切换方式：
-                  <br />• 弹出列表：点击版本历史按钮，弹出所有版本列表（默认方式）
-                  <br />• 箭头式切换：使用左右箭头在版本间切换，类似 &lt; 2 &gt; 的形式
+                  {t('settings.appearance.messageBubble.function.versionSwitch.description')}
+                  <br />{t('settings.appearance.messageBubble.function.versionSwitch.popupDesc')}
+                  <br />{t('settings.appearance.messageBubble.function.versionSwitch.arrowsDesc')}
                 </Typography>
               </>
             )}
@@ -375,9 +377,9 @@ const MessageBubbleSettings: React.FC = () => {
                   fontSize: { xs: '1rem', sm: '1.1rem' }
                 }}
               >
-                消息气泡宽度设置
+                {t('settings.appearance.messageBubble.width.title')}
               </Typography>
-              <Tooltip title="自定义聊天界面中消息气泡的宽度范围，适配不同设备屏幕">
+              <Tooltip title={t('settings.appearance.messageBubble.width.tooltip')}>
                 <IconButton size="small" sx={{ ml: 1 }}>
                   <Info />
                 </IconButton>
@@ -388,7 +390,7 @@ const MessageBubbleSettings: React.FC = () => {
               color="text.secondary"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
             >
-              调整消息气泡的宽度范围以适配不同设备屏幕
+              {t('settings.appearance.messageBubble.width.description')}
             </Typography>
           </Box>
 
@@ -398,7 +400,7 @@ const MessageBubbleSettings: React.FC = () => {
             {/* AI消息最大宽度 */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                AI消息最大宽度: {messageBubbleMaxWidth}%
+                {t('settings.appearance.messageBubble.width.aiMaxWidth')}: {messageBubbleMaxWidth}%
               </Typography>
               <Slider
                 value={messageBubbleMaxWidth}
@@ -430,7 +432,7 @@ const MessageBubbleSettings: React.FC = () => {
             {/* 用户消息最大宽度 */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                用户消息最大宽度: {userMessageMaxWidth}%
+                {t('settings.appearance.messageBubble.width.userMaxWidth')}: {userMessageMaxWidth}%
               </Typography>
               <Slider
                 value={userMessageMaxWidth}
@@ -462,7 +464,7 @@ const MessageBubbleSettings: React.FC = () => {
             {/* 消息最小宽度 */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                消息最小宽度: {messageBubbleMinWidth}%
+                {t('settings.appearance.messageBubble.width.minWidth')}: {messageBubbleMinWidth}%
               </Typography>
               <Slider
                 value={messageBubbleMinWidth}
@@ -507,11 +509,11 @@ const MessageBubbleSettings: React.FC = () => {
                 borderColor: 'divider'
               }}
             >
-              <strong>宽度设置说明：</strong>
-              <br />• <strong>AI消息最大宽度</strong>：控制AI回复的最大显示宽度
-              <br />• <strong>用户消息最大宽度</strong>：控制用户消息的最大显示宽度
-              <br />• <strong>消息最小宽度</strong>：所有消息的最小显示宽度，避免过窄影响阅读
-              <br />• 较小的宽度适合手机等窄屏设备，较大的宽度适合平板和电脑
+              <strong>{t('settings.appearance.messageBubble.width.instructions.title')}</strong>
+              <br />{t('settings.appearance.messageBubble.width.instructions.aiMaxWidth')}
+              <br />{t('settings.appearance.messageBubble.width.instructions.userMaxWidth')}
+              <br />{t('settings.appearance.messageBubble.width.instructions.minWidth')}
+              <br />{t('settings.appearance.messageBubble.width.instructions.note')}
             </Typography>
           </Box>
         </Paper>
@@ -538,9 +540,9 @@ const MessageBubbleSettings: React.FC = () => {
                   fontSize: { xs: '1rem', sm: '1.1rem' }
                 }}
               >
-                头像和名称显示
+                {t('settings.appearance.messageBubble.avatar.title')}
               </Typography>
-              <Tooltip title="自定义聊天界面中用户和模型的头像及名称显示">
+              <Tooltip title={t('settings.appearance.messageBubble.avatar.tooltip')}>
                 <IconButton size="small" sx={{ ml: 1 }}>
                   <Info />
                 </IconButton>
@@ -551,7 +553,7 @@ const MessageBubbleSettings: React.FC = () => {
               color="text.secondary"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
             >
-              控制消息气泡中用户和AI模型的头像及名称显示
+              {t('settings.appearance.messageBubble.avatar.description')}
             </Typography>
           </Box>
 
@@ -566,7 +568,7 @@ const MessageBubbleSettings: React.FC = () => {
                     onChange={handleShowUserAvatarChange}
                   />
                 }
-                label="显示用户头像"
+                label={t('settings.appearance.messageBubble.avatar.showUserAvatar')}
               />
               <FormControlLabel
                 control={
@@ -575,7 +577,7 @@ const MessageBubbleSettings: React.FC = () => {
                     onChange={handleShowUserNameChange}
                   />
                 }
-                label="显示用户名称"
+                label={t('settings.appearance.messageBubble.avatar.showUserName')}
               />
               <FormControlLabel
                 control={
@@ -584,7 +586,7 @@ const MessageBubbleSettings: React.FC = () => {
                     onChange={handleShowModelAvatarChange}
                   />
                 }
-                label="显示模型头像"
+                label={t('settings.appearance.messageBubble.avatar.showModelAvatar')}
               />
               <FormControlLabel
                 control={
@@ -593,12 +595,12 @@ const MessageBubbleSettings: React.FC = () => {
                     onChange={handleShowModelNameChange}
                   />
                 }
-                label="显示模型名称"
+                label={t('settings.appearance.messageBubble.avatar.showModelName')}
               />
             </FormGroup>
 
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              控制聊天界面中用户和AI模型的头像及名称显示。可以根据个人喜好选择性隐藏这些元素，获得更简洁的聊天体验。
+              {t('settings.appearance.messageBubble.avatar.hint')}
             </Typography>
           </Box>
         </Paper>
@@ -626,9 +628,9 @@ const MessageBubbleSettings: React.FC = () => {
                     fontSize: { xs: '1rem', sm: '1.1rem' }
                   }}
                 >
-                  自定义气泡颜色
+                  {t('settings.appearance.messageBubble.colors.title')}
                 </Typography>
-                <Tooltip title="自定义用户和AI消息气泡的背景色和字体颜色">
+                <Tooltip title={t('settings.appearance.messageBubble.colors.tooltip')}>
                   <IconButton size="small" sx={{ ml: 1 }}>
                     <Info />
                   </IconButton>
@@ -640,7 +642,7 @@ const MessageBubbleSettings: React.FC = () => {
                 variant="outlined"
                 sx={{ fontSize: '0.8rem' }}
               >
-                重置默认
+                {t('settings.appearance.messageBubble.colors.reset')}
               </Button>
             </Box>
             <Typography
@@ -648,7 +650,7 @@ const MessageBubbleSettings: React.FC = () => {
               color="text.secondary"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
             >
-              自定义消息气泡的背景色和字体颜色，留空则使用系统默认颜色
+              {t('settings.appearance.messageBubble.colors.description')}
             </Typography>
           </Box>
 
@@ -664,17 +666,17 @@ const MessageBubbleSettings: React.FC = () => {
                     {/* 空白占位 */}
                   </Typography>
                   <Typography variant="body2" sx={{ fontSize: '0.85rem', minWidth: '80px', textAlign: 'center', fontWeight: 500 }}>
-                    背景色
+                    {t('settings.appearance.messageBubble.colors.backgroundColor')}
                   </Typography>
                   <Typography variant="body2" sx={{ fontSize: '0.85rem', minWidth: '80px', textAlign: 'center', fontWeight: 500 }}>
-                    字体色
+                    {t('settings.appearance.messageBubble.colors.textColor')}
                   </Typography>
                 </Box>
 
                 {/* 用户消息颜色设置 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
                   <Typography variant="body1" sx={{ fontWeight: 600, minWidth: '80px' }}>
-                    用户消息
+                    {t('settings.appearance.messageBubble.colors.userMessage')}
                   </Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: '80px' }}>
                     <ColorPicker
@@ -695,7 +697,7 @@ const MessageBubbleSettings: React.FC = () => {
                 {/* AI消息颜色设置 */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                   <Typography variant="body1" sx={{ fontWeight: 600, minWidth: '80px' }}>
-                    AI回复
+                    {t('settings.appearance.messageBubble.colors.aiReply')}
                   </Typography>
                   <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: '80px' }}>
                     <ColorPicker
@@ -722,7 +724,7 @@ const MessageBubbleSettings: React.FC = () => {
                     lineHeight: 1.4
                   }}
                 >
-                  提示：字体颜色同时控制气泡内文字和工具栏按钮的颜色
+                  {t('settings.appearance.messageBubble.colors.hint')}
                 </Typography>
               </Box>
 

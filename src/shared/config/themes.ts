@@ -3,7 +3,7 @@ import type { Theme } from '@mui/material/styles';
 import { getFontFamilyString } from './fonts';
 
 // 主题风格类型
-export type ThemeStyle = 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk';
+export type ThemeStyle = 'default' | 'claude' | 'nature' | 'tech' | 'soft';
 
 // 主题配置接口
 export interface ThemeConfig {
@@ -106,68 +106,6 @@ export const themeConfigs: Record<ThemeStyle, ThemeConfig> = {
     },
   },
 
-  minimal: {
-    name: '极简风格',
-    description: '纯净简约的极简主义设计',
-    colors: {
-      primary: '#000000',
-      secondary: '#6B7280',
-      background: {
-        light: '#FFFFFF',
-        dark: '#1A1A1A', // 改为稍微柔和的深灰色，避免纯黑色过于刺眼
-      },
-      paper: {
-        light: '#FAFAFA',
-        dark: '#2A2A2A', // 改为更柔和的深灰色
-      },
-      text: {
-        primary: {
-          light: '#000000',
-          dark: '#F0F0F0', // 改为稍微柔和的白色，避免纯白色过于刺眼
-        },
-        secondary: {
-          light: '#6B7280',
-          dark: '#A0A0A0', // 调整次要文字颜色，提高可读性
-        },
-      },
-    },
-    gradients: {
-      primary: 'linear-gradient(90deg, #000000, #374151)',
-    },
-  },
-
-  vibrant: {
-    name: '活力风格',
-    description: '充满活力的彩色设计风格',
-    colors: {
-      primary: '#8B5CF6',
-      secondary: '#06B6D4',
-      accent: '#F59E0B',
-      background: {
-        light: '#FAFBFF', // 改为更中性的浅色背景，提高文字对比度
-        dark: '#0F172A',
-      },
-      paper: {
-        light: '#FFFFFF',
-        dark: '#1E293B',
-      },
-      text: {
-        primary: {
-          light: '#1E293B', // 改为更深的颜色，提高在浅色背景上的对比度
-          dark: '#F1F5F9',
-        },
-        secondary: {
-          light: '#334155', // 改为更深的颜色，提高可读性
-          dark: '#CBD5E1',
-        },
-      },
-    },
-    gradients: {
-      primary: 'linear-gradient(135deg, #8B5CF6, #06B6D4)',
-      secondary: 'linear-gradient(135deg, #F59E0B, #EF4444)',
-    },
-  },
-
   nature: {
     name: '自然风格',
     description: '2025年流行的自然系大地色调设计',
@@ -200,131 +138,67 @@ export const themeConfigs: Record<ThemeStyle, ThemeConfig> = {
     },
   },
 
-  ocean: {
-    name: '海洋风格',
-    description: '深邃宁静的海洋蓝色调设计',
+  tech: {
+    name: '未来科技',
+    description: '2025年流行的科技感设计，冷色调与玻璃态效果',
     colors: {
-      primary: '#0F4C75', // 深海蓝
-      secondary: '#3282B8', // 海洋蓝
-      accent: '#BBE1FA', // 浅海蓝
+      primary: '#3B82F6', // 科技蓝
+      secondary: '#8B5CF6', // 紫色
+      accent: '#06B6D4', // 青色
       background: {
-        light: '#F0F8FF', // 爱丽丝蓝背景
-        dark: '#0A1929', // 深海夜色
+        light: '#F8FAFC', // 淡蓝白色
+        dark: '#0F172A', // 深蓝黑色
       },
       paper: {
-        light: '#FFFFFF', // 纯白纸张
-        dark: '#1E293B', // 深蓝灰色
+        light: '#F8FAFC', // 与背景色一致的淡蓝白色
+        dark: '#1E293B', // 深灰蓝色
       },
       text: {
         primary: {
-          light: '#0F172A', // 深蓝黑色文字
-          dark: '#F1F5F9', // 浅色文字
+          light: '#0F172A', // 深蓝黑色
+          dark: '#F1F5F9', // 淡蓝白色
         },
         secondary: {
-          light: '#475569', // 蓝灰色次要文字
-          dark: '#CBD5E1', // 浅蓝灰色次要文字
+          light: '#64748B', // 灰蓝色
+          dark: '#94A3B8', // 浅灰蓝色
         },
       },
     },
     gradients: {
-      primary: 'linear-gradient(135deg, #0F4C75, #3282B8)', // 海洋蓝渐变
-      secondary: 'linear-gradient(135deg, #3282B8, #BBE1FA)', // 浅海蓝渐变
+      primary: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', // 蓝紫渐变
+      secondary: 'linear-gradient(135deg, #06B6D4, #3B82F6)', // 青蓝渐变
     },
   },
 
-  sunset: {
-    name: '日落风格',
-    description: '温暖浪漫的日落橙色调设计',
+  soft: {
+    name: '柔和渐变',
+    description: '2025年流行的柔和渐变设计，温暖舒适的视觉体验',
     colors: {
-      primary: '#FF6B35', // 日落橙
-      secondary: '#F7931E', // 金橙色
-      accent: '#FFD23F', // 金黄色
+      primary: '#EC4899', // 粉红色
+      secondary: '#14B8A6', // 青绿色
+      accent: '#F59E0B', // 暖橙色
       background: {
-        light: '#FFF8F0', // 温暖的奶白色背景
-        dark: '#2D1B0E', // 深棕色夜晚
+        light: '#FDF2F8', // 淡粉色背景
+        dark: '#1F1626', // 深紫黑色
       },
       paper: {
-        light: '#FFFFFF', // 纯白纸张
-        dark: '#3C2415', // 深棕色
+        light: '#FDF2F8', // 与背景色一致的淡粉色
+        dark: '#2D1B3D', // 深紫色
       },
       text: {
         primary: {
-          light: '#2D1B0E', // 深棕色文字
-          dark: '#F5E6D3', // 温暖的浅色文字
+          light: '#1F1626', // 深紫黑色
+          dark: '#FCE7F3', // 淡粉色
         },
         secondary: {
-          light: '#8B4513', // 棕色次要文字
-          dark: '#D2B48C', // 浅棕色次要文字
+          light: '#9F1239', // 深粉红色
+          dark: '#F9A8D4', // 浅粉红色
         },
       },
     },
     gradients: {
-      primary: 'linear-gradient(135deg, #FF6B35, #F7931E)', // 日落渐变
-      secondary: 'linear-gradient(135deg, #F7931E, #FFD23F)', // 金色渐变
-    },
-  },
-
-  monochrome: {
-    name: '单色风格',
-    description: '极简高级的黑白灰色调设计',
-    colors: {
-      primary: '#000000', // 纯黑
-      secondary: '#6B7280', // 中性灰
-      accent: '#9CA3AF', // 浅灰
-      background: {
-        light: '#FFFFFF', // 纯白背景
-        dark: '#000000', // 纯黑背景
-      },
-      paper: {
-        light: '#F9FAFB', // 极浅灰纸张
-        dark: '#111111', // 深黑纸张
-      },
-      text: {
-        primary: {
-          light: '#000000', // 纯黑文字
-          dark: '#FFFFFF', // 纯白文字
-        },
-        secondary: {
-          light: '#6B7280', // 中性灰次要文字
-          dark: '#9CA3AF', // 浅灰次要文字
-        },
-      },
-    },
-    gradients: {
-      primary: 'linear-gradient(135deg, #000000, #374151)', // 黑灰渐变
-      secondary: 'linear-gradient(135deg, #6B7280, #D1D5DB)', // 灰色渐变
-    },
-  },
-
-  cyberpunk: {
-    name: '赛博朋克',
-    description: '未来科技感的霓虹色调设计',
-    colors: {
-      primary: '#00FFFF', // 霓虹青色
-      secondary: '#FF00FF', // 霓虹紫色
-      accent: '#FFFF00', // 霓虹黄色
-      background: {
-        light: '#F0F0F0', // 浅灰背景
-        dark: '#0A0A0A', // 深黑背景
-      },
-      paper: {
-        light: '#FFFFFF', // 纯白纸张
-        dark: '#1A1A1A', // 深灰纸张
-      },
-      text: {
-        primary: {
-          light: '#000000', // 黑色文字
-          dark: '#00FFFF', // 霓虹青色文字
-        },
-        secondary: {
-          light: '#666666', // 深灰次要文字
-          dark: '#FF00FF', // 霓虹紫色次要文字
-        },
-      },
-    },
-    gradients: {
-      primary: 'linear-gradient(135deg, #00FFFF, #FF00FF)', // 霓虹渐变
-      secondary: 'linear-gradient(135deg, #FF00FF, #FFFF00)', // 彩虹霓虹渐变
+      primary: 'linear-gradient(135deg, #EC4899, #F472B6)', // 粉红渐变
+      secondary: 'linear-gradient(135deg, #14B8A6, #06B6D4)', // 青绿渐变
     },
   },
 };
@@ -389,7 +263,7 @@ export const createCustomTheme = (
       caption: { fontSize: `${0.75 * fontScale}rem` },
     },
     shape: {
-      borderRadius: themeStyle === 'minimal' ? 4 : 8,
+      borderRadius: 8,
     },
     components: {
       MuiPaper: {
@@ -406,25 +280,15 @@ export const createCustomTheme = (
                 ? '0 2px 4px rgba(45, 80, 22, 0.08), 0 1px 2px rgba(45, 80, 22, 0.04)'
                 : '0 4px 8px rgba(0, 0, 0, 0.4)',
             }),
-            ...(themeStyle === 'ocean' && {
+            ...(themeStyle === 'tech' && {
               boxShadow: mode === 'light'
-                ? '0 2px 4px rgba(15, 76, 117, 0.08), 0 1px 2px rgba(15, 76, 117, 0.04)'
-                : '0 4px 8px rgba(0, 0, 0, 0.4)',
+                ? '0 4px 6px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(59, 130, 246, 0.06)'
+                : '0 8px 16px rgba(59, 130, 246, 0.2), 0 4px 8px rgba(0, 0, 0, 0.3)',
             }),
-            ...(themeStyle === 'sunset' && {
+            ...(themeStyle === 'soft' && {
               boxShadow: mode === 'light'
-                ? '0 2px 4px rgba(255, 107, 53, 0.08), 0 1px 2px rgba(255, 107, 53, 0.04)'
-                : '0 4px 8px rgba(0, 0, 0, 0.4)',
-            }),
-            ...(themeStyle === 'monochrome' && {
-              boxShadow: mode === 'light'
-                ? '0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)'
-                : '0 4px 8px rgba(255, 255, 255, 0.1)',
-            }),
-            ...(themeStyle === 'cyberpunk' && {
-              boxShadow: mode === 'light'
-                ? '0 2px 4px rgba(0, 255, 255, 0.2), 0 1px 2px rgba(255, 0, 255, 0.1)'
-                : '0 4px 8px rgba(0, 255, 255, 0.3), 0 2px 4px rgba(255, 0, 255, 0.2)',
+                ? '0 2px 8px rgba(236, 72, 153, 0.12), 0 1px 4px rgba(236, 72, 153, 0.08)'
+                : '0 4px 12px rgba(236, 72, 153, 0.15), 0 2px 6px rgba(0, 0, 0, 0.3)',
             }),
           },
         },
@@ -461,28 +325,16 @@ export const createCustomTheme = (
                 : 'rgba(26, 31, 22, 0.95)',
               backdropFilter: 'blur(12px)',
             }),
-            ...(themeStyle === 'ocean' && {
+            ...(themeStyle === 'tech' && {
               background: mode === 'light'
-                ? `rgba(240, 248, 255, 0.95)` // 使用海洋主题的浅蓝背景
-                : 'rgba(10, 25, 41, 0.95)',
+                ? `rgba(248, 250, 252, 0.95)` // 使用科技主题的淡蓝白色背景
+                : 'rgba(15, 23, 42, 0.95)',
               backdropFilter: 'blur(12px)',
             }),
-            ...(themeStyle === 'sunset' && {
+            ...(themeStyle === 'soft' && {
               background: mode === 'light'
-                ? `rgba(255, 248, 240, 0.95)` // 使用日落主题的温暖背景
-                : 'rgba(45, 27, 14, 0.95)',
-              backdropFilter: 'blur(12px)',
-            }),
-            ...(themeStyle === 'monochrome' && {
-              background: mode === 'light'
-                ? `rgba(255, 255, 255, 0.95)` // 使用单色主题的纯白背景
-                : 'rgba(0, 0, 0, 0.95)',
-              backdropFilter: 'blur(12px)',
-            }),
-            ...(themeStyle === 'cyberpunk' && {
-              background: mode === 'light'
-                ? `rgba(240, 240, 240, 0.95)` // 使用赛博朋克主题的浅灰背景
-                : 'rgba(10, 10, 10, 0.95)',
+                ? `rgba(253, 242, 248, 0.95)` // 使用柔和主题的淡粉色背景
+                : 'rgba(31, 22, 38, 0.95)',
               backdropFilter: 'blur(12px)',
             }),
           },
@@ -507,37 +359,21 @@ export const createCustomTheme = (
                 ? '1px solid rgba(45, 80, 22, 0.1)'
                 : '1px solid rgba(45, 80, 22, 0.2)',
             }),
-            ...(themeStyle === 'ocean' && {
+            ...(themeStyle === 'tech' && {
               background: mode === 'light'
                 ? config.colors.background.light
                 : config.colors.background.dark,
               borderRight: mode === 'light'
-                ? '1px solid rgba(15, 76, 117, 0.1)'
-                : '1px solid rgba(15, 76, 117, 0.2)',
+                ? '1px solid rgba(59, 130, 246, 0.1)'
+                : '1px solid rgba(59, 130, 246, 0.2)',
             }),
-            ...(themeStyle === 'sunset' && {
+            ...(themeStyle === 'soft' && {
               background: mode === 'light'
                 ? config.colors.background.light
                 : config.colors.background.dark,
               borderRight: mode === 'light'
-                ? '1px solid rgba(255, 107, 53, 0.1)'
-                : '1px solid rgba(255, 107, 53, 0.2)',
-            }),
-            ...(themeStyle === 'monochrome' && {
-              background: mode === 'light'
-                ? config.colors.background.light
-                : config.colors.background.dark,
-              borderRight: mode === 'light'
-                ? '1px solid rgba(0, 0, 0, 0.1)'
-                : '1px solid rgba(255, 255, 255, 0.1)',
-            }),
-            ...(themeStyle === 'cyberpunk' && {
-              background: mode === 'light'
-                ? config.colors.background.light
-                : config.colors.background.dark,
-              borderRight: mode === 'light'
-                ? '1px solid rgba(0, 255, 255, 0.2)'
-                : '1px solid rgba(0, 255, 255, 0.3)',
+                ? '1px solid rgba(236, 72, 153, 0.1)'
+                : '1px solid rgba(236, 72, 153, 0.2)',
             }),
           },
         },
@@ -579,71 +415,37 @@ export const createCustomTheme = (
                 },
               },
             }),
-            ...(themeStyle === 'ocean' && {
+            ...(themeStyle === 'tech' && {
               '&:hover': {
                 backgroundColor: mode === 'light'
-                  ? 'rgba(15, 76, 117, 0.08)'
-                  : 'rgba(15, 76, 117, 0.12)',
+                  ? 'rgba(59, 130, 246, 0.08)'
+                  : 'rgba(59, 130, 246, 0.12)',
               },
               '&.Mui-selected': {
                 backgroundColor: mode === 'light'
-                  ? 'rgba(15, 76, 117, 0.12)'
-                  : 'rgba(15, 76, 117, 0.16)',
+                  ? 'rgba(59, 130, 246, 0.12)'
+                  : 'rgba(59, 130, 246, 0.16)',
                 '&:hover': {
                   backgroundColor: mode === 'light'
-                    ? 'rgba(15, 76, 117, 0.16)'
-                    : 'rgba(15, 76, 117, 0.20)',
+                    ? 'rgba(59, 130, 246, 0.16)'
+                    : 'rgba(59, 130, 246, 0.20)',
                 },
               },
             }),
-            ...(themeStyle === 'sunset' && {
+            ...(themeStyle === 'soft' && {
               '&:hover': {
                 backgroundColor: mode === 'light'
-                  ? 'rgba(255, 107, 53, 0.08)'
-                  : 'rgba(255, 107, 53, 0.12)',
+                  ? 'rgba(236, 72, 153, 0.08)'
+                  : 'rgba(236, 72, 153, 0.12)',
               },
               '&.Mui-selected': {
                 backgroundColor: mode === 'light'
-                  ? 'rgba(255, 107, 53, 0.12)'
-                  : 'rgba(255, 107, 53, 0.16)',
+                  ? 'rgba(236, 72, 153, 0.12)'
+                  : 'rgba(236, 72, 153, 0.16)',
                 '&:hover': {
                   backgroundColor: mode === 'light'
-                    ? 'rgba(255, 107, 53, 0.16)'
-                    : 'rgba(255, 107, 53, 0.20)',
-                },
-              },
-            }),
-            ...(themeStyle === 'monochrome' && {
-              '&:hover': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(0, 0, 0, 0.04)'
-                  : 'rgba(255, 255, 255, 0.08)',
-              },
-              '&.Mui-selected': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(0, 0, 0, 0.08)'
-                  : 'rgba(255, 255, 255, 0.12)',
-                '&:hover': {
-                  backgroundColor: mode === 'light'
-                    ? 'rgba(0, 0, 0, 0.12)'
-                    : 'rgba(255, 255, 255, 0.16)',
-                },
-              },
-            }),
-            ...(themeStyle === 'cyberpunk' && {
-              '&:hover': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(0, 255, 255, 0.08)'
-                  : 'rgba(0, 255, 255, 0.12)',
-              },
-              '&.Mui-selected': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(0, 255, 255, 0.12)'
-                  : 'rgba(0, 255, 255, 0.16)',
-                '&:hover': {
-                  backgroundColor: mode === 'light'
-                    ? 'rgba(0, 255, 255, 0.16)'
-                    : 'rgba(0, 255, 255, 0.20)',
+                    ? 'rgba(236, 72, 153, 0.16)'
+                    : 'rgba(236, 72, 153, 0.20)',
                 },
               },
             }),
@@ -677,48 +479,24 @@ export const createCustomTheme = (
                 },
               },
             }),
-            ...(themeStyle === 'ocean' && {
+            ...(themeStyle === 'tech' && {
               '& .MuiOutlinedInput-root': {
                 '&:hover .MuiOutlinedInput-notchedOutline': {
                   borderColor: mode === 'light'
-                    ? 'rgba(15, 76, 117, 0.5)'
-                    : 'rgba(15, 76, 117, 0.7)',
+                    ? 'rgba(59, 130, 246, 0.5)'
+                    : 'rgba(59, 130, 246, 0.7)',
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: config.colors.primary,
                 },
               },
             }),
-            ...(themeStyle === 'sunset' && {
+            ...(themeStyle === 'soft' && {
               '& .MuiOutlinedInput-root': {
                 '&:hover .MuiOutlinedInput-notchedOutline': {
                   borderColor: mode === 'light'
-                    ? 'rgba(255, 107, 53, 0.5)'
-                    : 'rgba(255, 107, 53, 0.7)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: config.colors.primary,
-                },
-              },
-            }),
-            ...(themeStyle === 'monochrome' && {
-              '& .MuiOutlinedInput-root': {
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: mode === 'light'
-                    ? 'rgba(0, 0, 0, 0.5)'
-                    : 'rgba(255, 255, 255, 0.5)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: config.colors.primary,
-                },
-              },
-            }),
-            ...(themeStyle === 'cyberpunk' && {
-              '& .MuiOutlinedInput-root': {
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: mode === 'light'
-                    ? 'rgba(0, 255, 255, 0.5)'
-                    : 'rgba(0, 255, 255, 0.7)',
+                    ? 'rgba(236, 72, 153, 0.5)'
+                    : 'rgba(236, 72, 153, 0.7)',
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                   borderColor: config.colors.primary,
@@ -748,7 +526,7 @@ export const createCustomTheme = (
               backgroundColor: config.colors.background[mode],
             },
           }),
-          ...(themeStyle === 'ocean' && {
+          ...(themeStyle === 'tech' && {
             body: {
               backgroundColor: config.colors.background[mode],
             },
@@ -756,23 +534,7 @@ export const createCustomTheme = (
               backgroundColor: config.colors.background[mode],
             },
           }),
-          ...(themeStyle === 'sunset' && {
-            body: {
-              backgroundColor: config.colors.background[mode],
-            },
-            '#root': {
-              backgroundColor: config.colors.background[mode],
-            },
-          }),
-          ...(themeStyle === 'monochrome' && {
-            body: {
-              backgroundColor: config.colors.background[mode],
-            },
-            '#root': {
-              backgroundColor: config.colors.background[mode],
-            },
-          }),
-          ...(themeStyle === 'cyberpunk' && {
+          ...(themeStyle === 'soft' && {
             body: {
               backgroundColor: config.colors.background[mode],
             },

@@ -9,10 +9,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { setStorageItem } from '../shared/utils/storage';
+import { useTranslation } from '../i18n';
 
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,10 +27,10 @@ const WelcomePage: React.FC = () => {
       await setStorageItem('first-time-user', 'false');
       navigate('/chat');
     } catch (error) {
-      console.error('保存用户状态失败:', error);
+      console.error(t('welcome.savingError'), error);
       navigate('/chat');
     }
-  }, [navigate]);
+  }, [navigate, t]);
 
   return (
     <Box
@@ -80,7 +82,7 @@ const WelcomePage: React.FC = () => {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          AetherLink
+          {t('welcome.title')}
         </Typography>
 
         <Typography
@@ -91,7 +93,7 @@ const WelcomePage: React.FC = () => {
             mb: 5,
           }}
         >
-          开始您的 AI 对话之旅
+          {t('welcome.subtitle')}
         </Typography>
 
         {/* 开始按钮 */}
@@ -116,7 +118,7 @@ const WelcomePage: React.FC = () => {
             },
           }}
         >
-          开始使用
+          {t('welcome.startButton')}
         </Button>
       </Box>
     </Box>

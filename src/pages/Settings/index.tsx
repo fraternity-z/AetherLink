@@ -29,9 +29,11 @@ import {
 } from '../../components/settings/SettingComponents';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useSwipeGesture } from '../../hooks/useSwipeGesture';
+import { useTranslation } from '../../i18n';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // 使用滚动位置保存功能
   const {
@@ -53,7 +55,7 @@ const SettingsPage: React.FC = () => {
         }
       });
     } catch (error) {
-      console.error('清理滚动位置缓存失败:', error);
+      console.error(t('settings.scrollCacheError'), error);
     }
 
     navigate('/chat');
@@ -88,20 +90,20 @@ const SettingsPage: React.FC = () => {
   // 定义设置菜单组
   const settingsGroups = [
     {
-      title: '基本设置',
+      title: t('settings.groups.basic'),
       items: [
         {
           id: 'appearance',
-          title: '外观',
-          description: '主题、字体大小和语言设置',
+          title: t('settings.items.appearance.title'),
+          description: t('settings.items.appearance.description'),
           icon: <FormatColorFillIcon size={24} />,
           path: '/settings/appearance',
           onClick: () => navigateTo('/settings/appearance'),
         },
         {
           id: 'behavior',
-          title: '行为',
-          description: '消息发送和通知设置',
+          title: t('settings.items.behavior.title'),
+          description: t('settings.items.behavior.description'),
           icon: <SettingsApplicationsIcon size={24} />,
           path: '/settings/behavior',
           onClick: () => navigateTo('/settings/behavior'),
@@ -109,60 +111,60 @@ const SettingsPage: React.FC = () => {
       ],
     },
     {
-      title: '模型服务',
+      title: t('settings.groups.modelService'),
       items: [
         {
           id: 'default-model',
-          title: '配置模型',
-          description: '管理AI模型和API密钥',
+          title: t('settings.items.defaultModel.title'),
+          description: t('settings.items.defaultModel.description'),
           icon: <SmartToyIcon size={24} />,
           path: '/settings/default-model',
           onClick: () => navigateTo('/settings/default-model'),
         },
         {
           id: 'topic-naming-settings',
-          title: '话题命名设置',
-          description: '配置话题自动命名功能',
+          title: t('settings.items.topicNaming.title'),
+          description: t('settings.items.topicNaming.description'),
           icon: <TuneIcon size={24} />,
           path: '/settings/topic-naming-settings',
           onClick: () => navigateTo('/settings/topic-naming-settings'),
         },
         {
           id: 'agent-prompts',
-          title: '智能体提示词集合',
-          description: '浏览和使用内置的丰富提示词模板',
+          title: t('settings.items.agentPrompts.title'),
+          description: t('settings.items.agentPrompts.description'),
           icon: <AutoFixHighIcon size={24} />,
           path: '/settings/agent-prompts',
           onClick: () => navigateTo('/settings/agent-prompts'),
         },
         {
           id: 'ai-debate',
-          title: 'AI辩论设置',
-          description: '配置AI互相辩论讨论功能',
+          title: t('settings.items.aiDebate.title'),
+          description: t('settings.items.aiDebate.description'),
           icon: <ForumIcon size={24} />,
           path: '/settings/ai-debate',
           onClick: () => navigateTo('/settings/ai-debate'),
         },
         {
           id: 'model-combo',
-          title: '模型组合',
-          description: '创建和管理多模型组合',
+          title: t('settings.items.modelCombo.title'),
+          description: t('settings.items.modelCombo.description'),
           icon: <GitBranch size={24} />,
           path: '/settings/model-combo',
           onClick: () => navigateTo('/settings/model-combo'),
         },
         {
           id: 'web-search',
-          title: '网络搜索',
-          description: '配置网络搜索和相关服务',
+          title: t('settings.items.webSearch.title'),
+          description: t('settings.items.webSearch.description'),
           icon: <LanguageIcon size={24} />,
           path: '/settings/web-search',
           onClick: () => navigateTo('/settings/web-search'),
         },
         {
           id: 'mcp-server',
-          title: 'MCP 服务器',
-          description: '高级服务器配置',
+          title: t('settings.items.mcpServer.title'),
+          description: t('settings.items.mcpServer.description'),
           icon: <SettingsIcon size={24} />,
           path: '/settings/mcp-server',
           onClick: () => navigateTo('/settings/mcp-server'),
@@ -170,12 +172,12 @@ const SettingsPage: React.FC = () => {
       ],
     },
     {
-      title: '快捷方式',
+      title: t('settings.groups.shortcuts'),
       items: [
         {
           id: 'shortcuts',
-          title: '快捷助手',
-          description: '自定义键盘快捷键',
+          title: t('settings.items.shortcuts.title'),
+          description: t('settings.items.shortcuts.description'),
           icon: <KeyboardIcon size={24} />,
           path: '/settings/shortcuts',
           onClick: () => navigateTo('/settings/shortcuts'),
@@ -183,8 +185,8 @@ const SettingsPage: React.FC = () => {
         },
         {
           id: 'quick-phrases',
-          title: '快捷短语',
-          description: '创建常用短语模板',
+          title: t('settings.items.quickPhrases.title'),
+          description: t('settings.items.quickPhrases.description'),
           icon: <KeyboardIcon size={24} />,
           path: '/settings/quick-phrases',
           onClick: () => navigateTo('/settings/quick-phrases'),
@@ -192,52 +194,52 @@ const SettingsPage: React.FC = () => {
       ],
     },
     {
-      title: '其他设置',
+      title: t('settings.groups.other'),
       items: [
         {
           id: 'workspace-settings',
-          title: '工作区管理',
-          description: '创建和管理文件工作区',
+          title: t('settings.items.workspace.title'),
+          description: t('settings.items.workspace.description'),
           icon: <WorkspaceIcon size={24} />,
           path: '/settings/workspace',
           onClick: () => navigateTo('/settings/workspace'),
         },
         {
           id: 'knowledge-settings',
-          title: '知识库设置',
-          description: '管理知识库配置和嵌入模型',
+          title: t('settings.items.knowledge.title'),
+          description: t('settings.items.knowledge.description'),
           icon: <MenuBookIcon size={24} />,
           path: '/settings/knowledge',
           onClick: () => navigateTo('/settings/knowledge'),
         },
         {
           id: 'data-settings',
-          title: '数据设置',
-          description: '管理数据存储和隐私选项',
+          title: t('settings.items.data.title'),
+          description: t('settings.items.data.description'),
           icon: <StorageIcon size={24} />,
           path: '/settings/data',
           onClick: () => navigateTo('/settings/data'),
         },
         {
           id: 'notion-settings',
-          title: 'Notion 集成',
-          description: '配置Notion数据库导出设置',
+          title: t('settings.items.notion.title'),
+          description: t('settings.items.notion.description'),
           icon: <DatabaseIcon size={24} />,
           path: '/settings/notion',
           onClick: () => navigateTo('/settings/notion'),
         },
         {
           id: 'voice-settings',
-          title: '语音功能',
-          description: '语音识别和文本转语音设置',
+          title: t('settings.items.voice.title'),
+          description: t('settings.items.voice.description'),
           icon: <RecordVoiceOverIcon size={24} />,
           path: '/settings/voice',
           onClick: () => navigateTo('/settings/voice'),
         },
         {
           id: 'features',
-          title: '功能模块',
-          description: '启用或禁用应用功能',
+          title: t('settings.items.features.title'),
+          description: t('settings.items.features.description'),
           icon: <ExtensionIcon size={24} />,
           path: '/settings/features',
           onClick: () => navigateTo('/settings/features'),
@@ -245,8 +247,8 @@ const SettingsPage: React.FC = () => {
         },
         {
           id: 'about',
-          title: '关于我们',
-          description: '应用信息和技术支持',
+          title: t('settings.items.about.title'),
+          description: t('settings.items.about.description'),
           icon: <InfoIcon size={24} />,
           path: '/settings/about',
           onClick: () => navigateTo('/settings/about'),
@@ -257,7 +259,7 @@ const SettingsPage: React.FC = () => {
 
   return (
     <SafeAreaContainer {...swipeHandlers}>
-      <HeaderBar title="设置" onBackPress={handleBack} />
+      <HeaderBar title={t('settings.title')} onBackPress={handleBack} />
       <Container
         ref={containerRef}
         onScroll={handleScroll}

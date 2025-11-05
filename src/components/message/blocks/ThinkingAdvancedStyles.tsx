@@ -25,6 +25,7 @@ import Markdown from '../Markdown';
 import { formatThinkingTimeSeconds } from '../../../shared/utils/thinkingUtils';
 import { removeTrailingDoubleSpaces } from '../../../utils/markdown';
 import { getThinkingScrollbarStyles } from '../../../shared/utils/scrollbarStyles';
+import { useTranslation } from '../../../i18n';
 
 interface AdvancedStylesProps {
   displayStyle: string;
@@ -71,6 +72,7 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
   expanded,
   onToggleExpanded,
 }) => {
+  const { t } = useTranslation();
   const currentIndexRef = useRef(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const lastContentRef = useRef('');
@@ -140,7 +142,7 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
         }}>
         <Brain size={16} color={theme.palette.primary.main} style={{ marginRight: 8 }} />
         <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
-          {isThinking ? '正在思考...' : '思考完成'} ({formattedThinkingTime}s)
+          {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingStream') : t('settings.appearance.thinkingProcess.preview.texts.thinkingStreamComplete')} ({formattedThinkingTime}s)
         </Typography>
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
           <ChevronDown
@@ -213,6 +215,7 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
   copied,
   theme,
 }) => {
+  const { t } = useTranslation();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
@@ -235,7 +238,7 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
       >
         <Brain size={18} color={theme.palette.primary.main} />
         <Typography variant="body2" sx={{ fontWeight: 500, flexGrow: 1 }}>
-          {isThinking ? '查看思考过程...' : '查看思考详情'}
+          {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.viewThinkingProcess') : t('settings.appearance.thinkingProcess.preview.texts.viewThinkingDetails')}
         </Typography>
         <Chip
           label={`${formattedThinkingTime}s`}
@@ -290,7 +293,7 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-              思考过程详情
+              {t('settings.appearance.thinkingProcess.preview.texts.thinkingProcessDetails')}
             </Typography>
             <IconButton
               onClick={() => onSetSidebarOpen(false)}
@@ -307,7 +310,7 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
             flexWrap: { xs: 'wrap', sm: 'nowrap' }
           }}>
             <Chip
-              label={`耗时 ${formattedThinkingTime}s`}
+              label={t('settings.appearance.thinkingProcess.preview.texts.timeSpentChip', { time: formattedThinkingTime })}
               size="small"
               color={isThinking ? "warning" : "primary"}
             />
@@ -374,6 +377,7 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
   content,
   theme,
 }) => {
+  const { t } = useTranslation();
   const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = React.useState(false);
   const [showTooltip, setShowTooltip] = React.useState(false);
@@ -432,7 +436,7 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
       >
         <Sparkles size={20} color={theme.palette.primary.main} style={{ marginRight: 12 }} />
         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          {isThinking ? '💫 思维粒子活跃中...' : '✨ 悬浮查看思考过程'}
+          {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingParticlesActive') : t('settings.appearance.thinkingProcess.preview.texts.hoverToViewThinking')}
         </Typography>
         <Chip
           label={`${formattedThinkingTime}s`}
@@ -512,7 +516,7 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
           }}
         >
           <Typography variant="caption" color="primary" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
-            💭 完整思考过程
+            {t('settings.appearance.thinkingProcess.preview.texts.fullThinkingProcess')}
           </Typography>
           <Box sx={{
             fontSize: '0.8rem',
@@ -552,6 +556,7 @@ const TerminalRenderer: React.FC<TerminalRendererProps> = React.memo(({
   onToggleExpanded,
   theme,
 }) => {
+  const { t } = useTranslation();
   const lines = React.useMemo(() => content.split('\n').filter(line => line.trim()), [content]);
   const [displayedLines, setDisplayedLines] = React.useState<string[]>([]);
   const [currentLineIndex, setCurrentLineIndex] = React.useState(0);
@@ -622,7 +627,7 @@ const TerminalRenderer: React.FC<TerminalRendererProps> = React.memo(({
             <Box sx={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: '#27ca3f' }} />
           </Box>
           <Typography variant="caption" sx={{ color: '#ccc', ml: 1 }}>
-            AI-思考进程 - {isThinking ? '运行中' : '已完成'} ({formattedThinkingTime}s)
+            {t('settings.appearance.thinkingProcess.preview.texts.aiThinkingProcessTerminal')} - {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.running') : t('settings.appearance.thinkingProcess.preview.texts.completed')} ({formattedThinkingTime}s)
           </Typography>
           <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
             <ChevronDown
@@ -804,6 +809,7 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
   copied,
   formattedThinkingTime,
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
 
   const extractKeySteps = (text: string) => {
@@ -844,7 +850,7 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
       }}>
         <BarChart size={18} color={theme.palette.primary.main} style={{ marginRight: 8 }} />
         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          思考路径
+          {t('settings.appearance.thinkingProcess.preview.texts.thinkingPath')}
         </Typography>
         <Chip
           label={`${formattedThinkingTime}s`}
@@ -936,7 +942,7 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
                 border: `1px dashed ${theme.palette.warning.main}40`
               }}>
                 <Typography variant="caption" sx={{ color: theme.palette.warning.main, fontWeight: 600 }}>
-                  思考中
+                  {t('settings.appearance.thinkingProcess.preview.texts.thinkingInProgressBreadcrumb')}
                 </Typography>
                 {[0, 1, 2].map((i) => (
                   <Box
@@ -970,7 +976,7 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
           boxShadow: theme.shadows[1]
         }}>
           <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-            💭 完整思考过程：
+            {t('settings.appearance.thinkingProcess.preview.texts.thinkingCompleteBreadcrumb')}
           </Typography>
           <Box sx={{
             ...getThinkingScrollbarStyles(theme),
@@ -1010,7 +1016,9 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
   const formattedThinkingTime = formatThinkingTimeSeconds(thinkingTime).toFixed(1);
 
   // 波浪形思维流动可视化
-  const renderWaveStyle = () => (
+  const renderWaveStyle = () => {
+    const { t } = useTranslation();
+    return (
     <Box sx={{ mb: 2, position: 'relative' }}>
       <Box sx={{
         height: 60,
@@ -1042,7 +1050,7 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }}>
           <Sparkles size={20} color={theme.palette.primary.main} />
           <Typography variant="body2">
-            {isThinking ? '思维波动中...' : '思考完成'} ({formattedThinkingTime}s)
+            {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingWave') : t('settings.appearance.thinkingProcess.preview.texts.thinkingWaveComplete')} ({formattedThinkingTime}s)
           </Typography>
           <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
             <IconButton size="small" onClick={onToggleExpanded}>
@@ -1073,10 +1081,13 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
         </Box>
       </Collapse>
     </Box>
-  );
+    );
+  };
 
   // 全屏半透明覆盖层
-  const renderOverlayStyle = () => (
+  const renderOverlayStyle = () => {
+    const { t } = useTranslation();
+    return (
     <Box sx={{ mb: 2 }}>
       <Box
         onClick={() => onSetOverlayOpen(!overlayOpen)}
@@ -1096,7 +1107,7 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
       >
         <Brain size={18} color={theme.palette.primary.main} />
         <Typography variant="body2" sx={{ fontWeight: 500, flexGrow: 1 }}>
-          {isThinking ? '沉浸式思考体验' : '查看完整思考'}
+          {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.immersiveThinking') : t('settings.appearance.thinkingProcess.preview.texts.viewFullThinking')}
         </Typography>
         <Chip
           label={`${formattedThinkingTime}s`}
@@ -1120,10 +1131,10 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
       >
         <DialogContent>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h5">AI思考过程</Typography>
+            <Typography variant="h5">{t('settings.appearance.thinkingProcess.preview.texts.aiThinkingProcess')}</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Chip
-                label={`耗时 ${formattedThinkingTime}s`}
+                label={t('settings.appearance.thinkingProcess.preview.texts.timeSpentChip', { time: formattedThinkingTime })}
                 color={isThinking ? "warning" : "primary"}
               />
               <IconButton
@@ -1146,7 +1157,8 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
         </DialogContent>
       </Dialog>
     </Box>
-  );
+    );
+  };
 
   // 根据样式选择渲染方法
   switch (displayStyle) {

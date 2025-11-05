@@ -6,6 +6,8 @@ import App from './App';
 import './index.css';
 import { initStorageService, dexieStorage } from './shared/services/storage/storageService';
 import { initializeServices } from './shared/services';
+// 初始化i18n
+import './i18n/config';
 // 移除旧的系统提示词slice引用
 // import { loadSystemPrompts } from './shared/store/slices/systemPromptsSlice';
 

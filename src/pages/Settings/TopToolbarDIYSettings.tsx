@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
+import { useTranslation } from '../../i18n';
 import {
   Box,
   Typography,
@@ -51,6 +52,7 @@ interface DragState {
 }
 
 const TopToolbarDIYSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
@@ -93,14 +95,14 @@ const TopToolbarDIYSettings: React.FC = () => {
 
   // 组件配置
   const componentConfig = {
-    menuButton: { name: '菜单按钮', icon: <CustomIcon name="documentPanel" size={20} />, key: 'showMenuButton' },
-    chatTitle: { name: '对话标题', icon: <Type size={20} />, key: 'showChatTitle' },
-    topicName: { name: '话题名称', icon: <MessageSquare size={20} />, key: 'showTopicName' },
-    newTopicButton: { name: '新建话题', icon: <Plus size={20} />, key: 'showNewTopicButton' },
-    clearButton: { name: '清空按钮', icon: <Trash2 size={20} />, key: 'showClearButton' },
-    searchButton: { name: '搜索按钮', icon: <CustomIcon name="search" size={20} />, key: 'showSearchButton' },
-    modelSelector: { name: '模型选择器', icon: <Bot size={20} />, key: 'showModelSelector' },
-    settingsButton: { name: '设置按钮', icon: <Settings size={20} />, key: 'showSettingsButton' },
+    menuButton: { name: t('settings.appearance.topToolbarDIY.components.menuButton'), icon: <CustomIcon name="documentPanel" size={20} />, key: 'showMenuButton' },
+    chatTitle: { name: t('settings.appearance.topToolbarDIY.components.chatTitle'), icon: <Type size={20} />, key: 'showChatTitle' },
+    topicName: { name: t('settings.appearance.topToolbarDIY.components.topicName'), icon: <MessageSquare size={20} />, key: 'showTopicName' },
+    newTopicButton: { name: t('settings.appearance.topToolbarDIY.components.newTopicButton'), icon: <Plus size={20} />, key: 'showNewTopicButton' },
+    clearButton: { name: t('settings.appearance.topToolbarDIY.components.clearButton'), icon: <Trash2 size={20} />, key: 'showClearButton' },
+    searchButton: { name: t('settings.appearance.topToolbarDIY.components.searchButton'), icon: <CustomIcon name="search" size={20} />, key: 'showSearchButton' },
+    modelSelector: { name: t('settings.appearance.topToolbarDIY.components.modelSelector'), icon: <Bot size={20} />, key: 'showModelSelector' },
+    settingsButton: { name: t('settings.appearance.topToolbarDIY.components.settingsButton'), icon: <Settings size={20} />, key: 'showSettingsButton' },
   };
 
   const handleBack = () => {
@@ -291,13 +293,13 @@ const TopToolbarDIYSettings: React.FC = () => {
       case 'chatTitle':
         return (
           <Typography key={componentId} variant="h6" noWrap component="div" sx={style}>
-            对话
+            {t('settings.appearance.topToolbarDIY.preview.chatTitleExample')}
           </Typography>
         );
       case 'topicName':
         return (
           <Typography key={componentId} variant="body1" noWrap sx={{ ...style, color: 'text.secondary' }}>
-            示例话题
+            {t('settings.appearance.topToolbarDIY.preview.topicNameExample')}
           </Typography>
         );
       case 'newTopicButton':
@@ -421,7 +423,7 @@ const TopToolbarDIYSettings: React.FC = () => {
           onClick={handleBack}
         />
         <Typography variant="h6" color="primary" sx={{ flexGrow: 1 }}>
-          顶部工具栏 DIY 设置
+          {t('settings.appearance.topToolbarDIY.title')}
         </Typography>
         <Button
           startIcon={<RotateCcw size={16} />}
@@ -429,7 +431,7 @@ const TopToolbarDIYSettings: React.FC = () => {
           size="small"
           variant="outlined"
         >
-          重置布局
+          {t('settings.appearance.topToolbarDIY.resetButton')}
         </Button>
       </Box>
 
@@ -444,9 +446,9 @@ const TopToolbarDIYSettings: React.FC = () => {
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
             <Wand2 size={20} color="primary" />
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              DIY 布局预览
+              {t('settings.appearance.topToolbarDIY.preview.title')}
             </Typography>
-            <Tooltip title="拖拽下方组件到此区域进行自由布局">
+            <Tooltip title={t('settings.appearance.topToolbarDIY.preview.tooltip')}>
               <IconButton size="small">
                 <Info size={16} />
               </IconButton>
@@ -507,7 +509,7 @@ const TopToolbarDIYSettings: React.FC = () => {
                   }}>
                     <Hand size={24} style={{ marginBottom: 4, opacity: 0.5 }} />
                     <Typography variant="body2">
-                      拖拽下方组件到此区域
+                      {t('settings.appearance.topToolbarDIY.preview.emptyHint')}
                     </Typography>
                   </Box>
                 )}
@@ -537,8 +539,8 @@ const TopToolbarDIYSettings: React.FC = () => {
             bgcolor: 'background.default' // 稍微不同的背景色区分
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1">可用组件</Typography>
-              <Tooltip title="长按组件拖拽到上方预览区域进行布局">
+              <Typography variant="subtitle1">{t('settings.appearance.topToolbarDIY.componentPanel.title')}</Typography>
+              <Tooltip title={t('settings.appearance.topToolbarDIY.componentPanel.tooltip')}>
                 <IconButton size="small" sx={{ ml: 1 }}>
                   <Info size={16} />
                 </IconButton>
@@ -603,7 +605,7 @@ const TopToolbarDIYSettings: React.FC = () => {
                       </Typography>
                       {isPlaced && (
                         <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.1, fontSize: '0.55rem' }}>
-                          已放置
+                          {t('settings.appearance.topToolbarDIY.componentPanel.placed')}
                         </Typography>
                       )}
                     </Card>
@@ -636,7 +638,7 @@ const TopToolbarDIYSettings: React.FC = () => {
             </Grid>
 
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              💡 提示：长按组件0.3秒后开始拖拽到上方预览区域。长按时卡片会变黄色提示。已放置的组件下方有小眼睛按钮，点击可隐藏。
+              {t('settings.appearance.topToolbarDIY.componentPanel.hint')}
             </Typography>
           </Box>
 
@@ -672,7 +674,7 @@ const TopToolbarDIYSettings: React.FC = () => {
                 color: 'primary.main'
               }}
             >
-              矫正对齐
+              {t('settings.appearance.topToolbarDIY.alignButton')}
             </Button>
           </Box>
 
@@ -683,8 +685,8 @@ const TopToolbarDIYSettings: React.FC = () => {
             bgcolor: 'background.default'
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1">模型选择器显示样式</Typography>
-              <Tooltip title="选择模型选择器在DIY布局中的显示样式">
+              <Typography variant="subtitle1">{t('settings.appearance.topToolbarDIY.modelSelector.title')}</Typography>
+              <Tooltip title={t('settings.appearance.topToolbarDIY.modelSelector.tooltip')}>
                 <IconButton size="small" sx={{ ml: 1 }}>
                   <Info size={16} />
                 </IconButton>
@@ -705,17 +707,17 @@ const TopToolbarDIYSettings: React.FC = () => {
               <FormControlLabel
                 value="icon"
                 control={<Radio size="small" />}
-                label="图标模式（只显示机器人图标）"
+                label={t('settings.appearance.topToolbarDIY.modelSelector.iconMode')}
               />
               <FormControlLabel
                 value="text"
                 control={<Radio size="small" />}
-                label="文字模式（显示模型名+供应商名）"
+                label={t('settings.appearance.topToolbarDIY.modelSelector.textMode')}
               />
             </RadioGroup>
 
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              图标模式更紧凑，文字模式更直观显示当前模型。
+              {t('settings.appearance.topToolbarDIY.modelSelector.hint')}
             </Typography>
           </Box>
         </Paper>
@@ -729,26 +731,26 @@ const TopToolbarDIYSettings: React.FC = () => {
         {/* 使用说明 */}
         <Paper elevation={0} sx={{ p: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            🎨 DIY 布局使用说明
+            {t('settings.appearance.topToolbarDIY.instructions.title')}
           </Typography>
           <Box component="ul" sx={{ pl: 2, m: 0 }}>
             <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-              首先在"组件显示设置"中开启需要的组件
+              {t('settings.appearance.topToolbarDIY.instructions.step1')}
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-              长按"可用组件"中的组件并拖拽到预览区域
+              {t('settings.appearance.topToolbarDIY.instructions.step2')}
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-              可以将组件放置在工具栏的任意位置
+              {t('settings.appearance.topToolbarDIY.instructions.step3')}
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-              点击已放置组件右上角的红色关闭按钮可移除单个组件
+              {t('settings.appearance.topToolbarDIY.instructions.step4')}
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.5 }}>
-              点击"重置布局"可以清除所有自定义位置
+              {t('settings.appearance.topToolbarDIY.instructions.step5')}
             </Typography>
             <Typography component="li" variant="body2">
-              设置会实时保存并应用到聊天页面
+              {t('settings.appearance.topToolbarDIY.instructions.step6')}
             </Typography>
           </Box>
         </Paper>

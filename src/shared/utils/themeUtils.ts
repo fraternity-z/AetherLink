@@ -29,10 +29,12 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
         case 'claude':
           // 修复：使用不透明的背景色，避免"双层"效果
           return isDark ? '#2A1F1A' : '#FEF3E2'; // 深色：深棕色，浅色：浅米色
-        case 'minimal':
-          return isDark ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)';
-        case 'vibrant':
-          return isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.25)';
+        case 'nature':
+          return isDark ? '#252B20' : '#F7F5F3'; // 深色：深绿灰色，浅色：温暖米白色
+        case 'tech':
+          return isDark ? '#1E293B' : '#F0F4F8'; // 深色：深灰蓝色，浅色：淡蓝白色
+        case 'soft':
+          return isDark ? '#2D1B3D' : '#FDF2F8'; // 深色：深紫色，浅色：淡粉色
         default:
           return isDark ? 'rgba(26, 59, 97, 0.9)' : 'rgba(230, 244, 255, 0.9)';
       }
@@ -43,10 +45,12 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
         case 'claude':
           // 修复：使用不透明的悬停背景色
           return isDark ? '#3A2B20' : '#FDE8C7'; // 深色：稍亮的深棕色，浅色：稍深的米色
-        case 'minimal':
-          return isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)';
-        case 'vibrant':
-          return isDark ? 'rgba(139, 92, 246, 0.25)' : 'rgba(139, 92, 246, 0.2)';
+        case 'nature':
+          return isDark ? '#2F3725' : '#EFEBE6'; // 深色：稍亮的深绿灰色，浅色：稍深的米白色
+        case 'tech':
+          return isDark ? '#273548' : '#E0E8F0'; // 深色：稍亮的深灰蓝色，浅色：稍深的淡蓝白色
+        case 'soft':
+          return isDark ? '#3A2748' : '#FCE7F3'; // 深色：稍亮的深紫色，浅色：稍深的淡粉色
         default:
           return isDark ? '#234b79' : '#d3e9ff';
       }
@@ -58,10 +62,12 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
         case 'claude':
           // 修复：使用不透明的背景色，避免"双层"效果
           return isDark ? '#1A2E26' : '#E6F7F1'; // 深色：深绿色，浅色：浅绿色
-        case 'minimal':
-          return isDark ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-        case 'vibrant':
-          return isDark ? 'rgba(6, 182, 212, 0.4)' : 'rgba(6, 182, 212, 0.35)';
+        case 'nature':
+          return isDark ? '#1F2A1E' : '#E8F5E3'; // 深色：深绿黑色，浅色：浅绿色
+        case 'tech':
+          return isDark ? '#1A2438' : '#E0E8F5'; // 深色：深蓝黑色，浅色：淡蓝色
+        case 'soft':
+          return isDark ? '#2A1F3D' : '#FCE7F3'; // 深色：深紫黑色，浅色：淡粉色
         default:
           return isDark ? 'rgba(51, 51, 51, 0.95)' : 'rgba(227, 242, 253, 0.95)';
       }
@@ -71,8 +77,9 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
     buttonPrimary: (() => {
       switch (themeStyle) {
         case 'claude': return '#D97706';
-        case 'minimal': return '#000000';
-        case 'vibrant': return '#8B5CF6';
+        case 'nature': return '#2D5016';
+        case 'tech': return '#3B82F6';
+        case 'soft': return '#EC4899';
         default: return theme.palette.primary.main;
       }
     })(),
@@ -80,8 +87,9 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
     buttonSecondary: (() => {
       switch (themeStyle) {
         case 'claude': return '#059669';
-        case 'minimal': return '#6B7280';
-        case 'vibrant': return '#06B6D4';
+        case 'nature': return '#8B7355';
+        case 'tech': return '#8B5CF6';
+        case 'soft': return '#14B8A6';
         default: return theme.palette.secondary.main;
       }
     })(),
@@ -98,10 +106,12 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
       switch (themeStyle) {
         case 'claude':
           return isDark ? alpha('#D97706', 0.12) : alpha('#D97706', 0.08);
-        case 'minimal':
-          return isDark ? alpha('#FFFFFF', 0.08) : alpha('#000000', 0.04);
-        case 'vibrant':
-          return isDark ? alpha('#8B5CF6', 0.12) : alpha('#8B5CF6', 0.08);
+        case 'nature':
+          return isDark ? alpha('#2D5016', 0.12) : alpha('#2D5016', 0.08);
+        case 'tech':
+          return isDark ? alpha('#3B82F6', 0.12) : alpha('#3B82F6', 0.08);
+        case 'soft':
+          return isDark ? alpha('#EC4899', 0.12) : alpha('#EC4899', 0.08);
         default:
           return isDark ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.08);
       }
@@ -111,10 +121,12 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
       switch (themeStyle) {
         case 'claude':
           return isDark ? alpha('#D97706', 0.16) : alpha('#D97706', 0.12);
-        case 'minimal':
-          return isDark ? alpha('#FFFFFF', 0.12) : alpha('#000000', 0.06);
-        case 'vibrant':
-          return isDark ? alpha('#8B5CF6', 0.16) : alpha('#8B5CF6', 0.12);
+        case 'nature':
+          return isDark ? alpha('#2D5016', 0.16) : alpha('#2D5016', 0.12);
+        case 'tech':
+          return isDark ? alpha('#3B82F6', 0.16) : alpha('#3B82F6', 0.12);
+        case 'soft':
+          return isDark ? alpha('#EC4899', 0.16) : alpha('#EC4899', 0.12);
         default:
           return isDark ? alpha(theme.palette.primary.main, 0.16) : alpha(theme.palette.primary.main, 0.12);
       }
@@ -125,10 +137,12 @@ export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
       switch (themeStyle) {
         case 'claude':
           return isDark ? alpha('#D97706', 0.2) : alpha('#D97706', 0.1);
-        case 'minimal':
-          return isDark ? alpha('#FFFFFF', 0.15) : alpha('#000000', 0.1);
-        case 'vibrant':
-          return isDark ? alpha('#8B5CF6', 0.2) : alpha('#8B5CF6', 0.1);
+        case 'nature':
+          return isDark ? alpha('#2D5016', 0.2) : alpha('#2D5016', 0.1);
+        case 'tech':
+          return isDark ? alpha('#3B82F6', 0.2) : alpha('#3B82F6', 0.1);
+        case 'soft':
+          return isDark ? alpha('#EC4899', 0.2) : alpha('#EC4899', 0.1);
         default:
           return theme.palette.divider;
       }

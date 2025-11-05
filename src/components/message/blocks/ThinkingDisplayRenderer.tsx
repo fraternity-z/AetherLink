@@ -26,6 +26,7 @@ import { formatThinkingTimeSeconds } from '../../../shared/utils/thinkingUtils';
 import { getThinkingScrollbarStyles, getCompactScrollbarStyles } from '../../../shared/utils/scrollbarStyles';
 import type { ThinkingDisplayStyle } from './ThinkingBlock';
 import ThinkingAdvancedStyles from './ThinkingAdvancedStyles';
+import { useTranslation } from '../../../i18n';
 // Motion variants are now defined inline for better type safety
 
 interface ThinkingDisplayRendererProps {
@@ -83,6 +84,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   onSetStreamText
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   
   // 格式化思考时间（毫秒转为秒，保留1位小数）
   const formattedThinkingTime = formatThinkingTimeSeconds(thinkingTime).toFixed(1);
@@ -147,10 +149,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
 
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
           <Typography variant="subtitle2" component="span">
-            思考过程
+            {t('settings.appearance.thinkingProcess.preview.texts.thinkingProcess')}
           </Typography>
           <Chip
-            label={isThinking ? `思考中... ${formattedThinkingTime}s` : `思考完成 ${formattedThinkingTime}s`}
+            label={isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingInProgress', { time: formattedThinkingTime }) : t('settings.appearance.thinkingProcess.preview.texts.thinkingCompleteTime', { time: formattedThinkingTime })}
             size="small"
             color={isThinking ? "warning" : "default"}
             variant="outlined"
@@ -240,7 +242,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
 
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
           <Typography variant="subtitle2" component="span">
-            {isThinking ? '正在深度思考...' : '深度思考过程'}
+            {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.deepThinking') : t('settings.appearance.thinkingProcess.preview.texts.deepThinkingProcess')}
           </Typography>
           <Chip
             label={`${formattedThinkingTime}s`}
@@ -275,7 +277,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   // 极简模式 - 只显示一个小图标
   const renderMinimalStyle = () => (
     <Box sx={{ position: 'relative', display: 'inline-block', mb: 1 }}>
-      <Tooltip title={`思考过程 (${formattedThinkingTime}s)`} placement="top">
+      <Tooltip title={t('settings.appearance.thinkingProcess.preview.texts.thinkingProcessWithTime', { time: formattedThinkingTime })} placement="top">
         <Box
           onClick={onToggleExpanded}
           sx={{
@@ -339,7 +341,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="body2" color="text.secondary">
-                  思考过程 ({formattedThinkingTime}s)
+                  {t('settings.appearance.thinkingProcess.preview.texts.thinkingProcessWithTime', { time: formattedThinkingTime })}
                 </Typography>
                 <IconButton
                   size="small"
@@ -396,7 +398,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', mb: expanded ? 1 : 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 500 }} component="span">
-              💭 {isThinking ? '思考中...' : '思考完成'}
+              💭 {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinking') : t('settings.appearance.thinkingProcess.preview.texts.thinkingComplete')}
             </Typography>
             <Chip
               label={`${formattedThinkingTime}s`}
@@ -483,7 +485,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             <BarChart size={20} color={theme.palette.text.secondary} style={{ marginRight: theme.spacing(1) }} />
             <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
               <Typography variant="subtitle2" component="span">
-                {isThinking ? '正在思考...' : '思考过程'}
+                {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingStream') : t('settings.appearance.thinkingProcess.preview.texts.thinkingProcess')}
               </Typography>
               <Chip
                 label={`${formattedThinkingTime}s`}
@@ -575,10 +577,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           </motion.div>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-              {isThinking ? '🧠 AI 正在深度思考' : '✨ 思考过程完成'}
+              {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.aiDeepThinking') : t('settings.appearance.thinkingProcess.preview.texts.thinkingProcessComplete')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              耗时 {formattedThinkingTime} 秒
+              {t('settings.appearance.thinkingProcess.preview.texts.timeSpent', { time: formattedThinkingTime })}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -665,7 +667,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           />
         </motion.div>
         <Typography variant="caption" sx={{ mr: 0.5 }}>
-          {isThinking ? '思考中' : '思考'}
+          {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingInProgressSimple') : t('settings.appearance.thinkingProcess.preview.texts.thinkingSimple')}
         </Typography>
         <Chip
           label={`${formattedThinkingTime}s`}
@@ -708,7 +710,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           >
             <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
               <Typography variant="caption" color="text.secondary">
-                思考内容:
+                {t('settings.appearance.thinkingProcess.preview.texts.thinkingContent')}
               </Typography>
             </Box>
             <Box sx={{
@@ -739,7 +741,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         <Brain size={18} color={theme.palette.primary.main} />
         {isThinking ? (
           <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ mr: 1 }}>AI正在思考</Typography>
+            <Typography variant="body2" sx={{ mr: 1 }}>{t('settings.appearance.thinkingProcess.preview.texts.aiThinking')}</Typography>
             {[0, 1, 2].map((i) => (
               <motion.div
                 key={i}
@@ -763,7 +765,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           </Box>
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2">思考完成</Typography>
+            <Typography variant="body2">{t('settings.appearance.thinkingProcess.preview.texts.thinkingComplete')}</Typography>
             <Chip label={`${formattedThinkingTime}s`} size="small" />
             <IconButton size="small" onClick={onToggleExpanded}>
               <ChevronDown

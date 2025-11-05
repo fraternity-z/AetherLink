@@ -58,6 +58,8 @@ const FilePermissionPage = lazy(() => import('../pages/Settings/FilePermissionPa
 const ThinkingProcessSettings = lazy(() => import('../pages/Settings/ThinkingProcessSettings'));
 // 导入输入框管理设置页面
 const InputBoxSettings = lazy(() => import('../pages/Settings/InputBoxSettings'));
+// 导入主题风格设置页面
+const ThemeStyleSettings = lazy(() => import('../pages/Settings/ThemeStyleSettings'));
 // 导入Notion设置页面
 const NotionSettings = lazy(() => import('../pages/Settings/NotionSettings'));
 
@@ -130,6 +132,7 @@ const AppRouter: React.FC = () => {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/appearance" element={<AppearanceSettings />} />
+        <Route path="/settings/appearance/theme-style" element={<ThemeStyleSettings />} />
         <Route path="/settings/appearance/chat-interface" element={<ChatInterfaceSettings />} />
         <Route path="/settings/appearance/message-bubble" element={<MessageBubbleSettings />} />
         <Route path="/settings/appearance/toolbar-customization" element={<ToolbarCustomization />} />

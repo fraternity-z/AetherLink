@@ -6,6 +6,7 @@ import {
   useTheme
 } from '@mui/material';
 import { getThemeColors } from '../../shared/utils/themeUtils';
+import { useTranslation } from '../../i18n';
 
 interface MessageBubblePreviewProps {
   customBubbleColors: {
@@ -41,6 +42,7 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
 }) => {
   const theme = useTheme();
   const themeColors = getThemeColors(theme);
+  const { t } = useTranslation();
 
   // 计算实际使用的颜色
   const actualUserBubbleColor = customBubbleColors.userBubbleColor || themeColors.userBubbleColor;
@@ -62,45 +64,90 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
       }}
     >
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-        实时预览
+        {t('settings.appearance.messageBubble.preview.title')}
       </Typography>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* 用户消息预览 */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1.5 }}>
           <Box sx={{
+            display: 'flex',
+            flexDirection: 'row-reverse',
+            alignItems: 'flex-start',
+            gap: 1,
+            width: '100%',
+            maxWidth: `${userMessageMaxWidth}%`
+          }}>
+            {showUserAvatar && (
+              <Box sx={{
+                width: 24,
+                height: 24,
+                borderRadius: '25%',
+                backgroundColor: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Typography variant="caption" sx={{ color: 'white', fontWeight: 600, fontSize: '0.7rem' }}>
+                  {t('settings.appearance.messageBubble.preview.userInitial')}
+                </Typography>
+              </Box>
+            )}
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              {showUserName && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.85rem',
+                    color: theme.palette.text.primary,
+                    fontWeight: 600,
+                    lineHeight: 1.2
+                  }}
+                >
+                  {t('settings.appearance.messageBubble.preview.userName')}
+                </Typography>
+              )}
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: '0.7rem',
+                  color: theme.palette.text.secondary,
+                  lineHeight: 1,
+                  marginTop: showUserName ? '2px' : 0
+                }}
+              >
+                {t('settings.appearance.messageBubble.preview.userSampleTime')}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{
+            position: 'relative',
             maxWidth: `${userMessageMaxWidth}%`,
             minWidth: `${messageBubbleMinWidth}%`,
-            position: 'relative'
+            alignSelf: 'flex-end'
           }}>
-            {/* 用户名称 */}
-            {showUserName && (
-              <Typography variant="caption" sx={{
-                display: 'block',
-                textAlign: 'right',
-                mb: 0.5,
-                color: 'text.secondary',
-                fontSize: '0.75rem'
-              }}>
-                用户
-              </Typography>
-            )}
             <Paper
               sx={{
-                padding: 1.5,
+                paddingTop: 1.5,
+                paddingBottom: 1.5,
+                paddingLeft: 1.5,
+                paddingRight: messageActionMode === 'bubbles' ? 3 : 1.5,
                 backgroundColor: actualUserBubbleColor,
                 color: actualUserTextColor,
                 borderRadius: '12px',
                 border: 'none',
                 boxShadow: 'none',
-                position: 'relative'
+                position: 'relative',
+                maxWidth: '100%'
               }}
             >
-              <Typography variant="body1" sx={{ fontSize: '0.9rem' }}>
-                你好！有什么可以帮助你的吗？
+              <Typography variant="body1" sx={{ fontSize: '0.9rem', lineHeight: 1.6 }}>
+                {t('settings.appearance.messageBubble.preview.userSampleText')}
               </Typography>
 
-              {/* 工具栏模式预览 */}
               {messageActionMode === 'toolbar' && (
                 <Box sx={{
                   display: 'flex',
@@ -112,24 +159,23 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                   opacity: 0.8
                 }}>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {/* 模拟工具栏按钮 */}
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualUserTextColor,
                       opacity: 0.6
                     }} />
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualUserTextColor,
                       opacity: 0.6
                     }} />
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualUserTextColor,
                       opacity: 0.6
@@ -139,117 +185,101 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
               )}
             </Paper>
 
-            {/* 气泡模式预览 */}
             {messageActionMode === 'bubbles' && (
-              <>
-                {/* 三点菜单 */}
-                <Box sx={{
-                  position: 'absolute',
-                  top: 5,
-                  right: 5,
-                  width: 14,
-                  height: 14,
-                  borderRadius: '2px',
-                  backgroundColor: actualUserTextColor,
-                  opacity: 0.6
-                }} />
-
-                {/* 小功能气泡 */}
-                {showMicroBubbles && (
-                  <Box sx={{
-                    position: 'absolute',
-                    top: -18,
-                    right: 0,
-                    display: 'flex',
-                    gap: '3px'
-                  }}>
-                    <Box sx={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: '6px',
-                      backgroundColor: themeColors.userBubbleColor,
-                      opacity: 0.8
-                    }} />
-                  </Box>
-                )}
-              </>
+              <Box sx={{
+                position: 'absolute',
+                top: 5,
+                right: 5,
+                width: 14,
+                height: 14,
+                borderRadius: '2px',
+                backgroundColor: actualUserTextColor,
+                opacity: 0.6
+              }} />
             )}
           </Box>
-
-          {/* 用户头像 */}
-          {showUserAvatar && (
-            <Box sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: 'primary.main',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              mt: showUserName ? 2.5 : 0
-            }}>
-              <Typography variant="caption" sx={{ color: 'white', fontWeight: 600, fontSize: '0.7rem' }}>
-                U
-              </Typography>
-            </Box>
-          )}
         </Box>
 
         {/* AI消息预览 */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', gap: 1 }}>
-          {/* AI头像 */}
-          {showModelAvatar && (
-            <Box sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              backgroundColor: 'secondary.main',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              mt: showModelName ? 2.5 : 0
-            }}>
-              <Typography variant="caption" sx={{ color: 'white', fontWeight: 600, fontSize: '0.7rem' }}>
-                AI
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1.5 }}>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 1,
+            width: '100%',
+            maxWidth: `${messageBubbleMaxWidth}%`
+          }}>
+            {showModelAvatar && (
+              <Box sx={{
+                width: 24,
+                height: 24,
+                borderRadius: '25%',
+                backgroundColor: 'secondary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: 'white'
+              }}>
+                {t('settings.appearance.messageBubble.preview.aiInitial')}
+              </Box>
+            )}
+
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {showModelName && (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.85rem',
+                    color: theme.palette.text.primary,
+                    fontWeight: 600,
+                    lineHeight: 1.2
+                  }}
+                >
+                  {t('settings.appearance.messageBubble.preview.aiName')}
+                </Typography>
+              )}
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: '0.7rem',
+                  color: theme.palette.text.secondary,
+                  lineHeight: 1,
+                  marginTop: showModelName ? '2px' : 0
+                }}
+              >
+                {t('settings.appearance.messageBubble.preview.aiSampleTime')}
               </Typography>
             </Box>
-          )}
+          </Box>
 
           <Box sx={{
+            position: 'relative',
             maxWidth: `${messageBubbleMaxWidth}%`,
             minWidth: `${messageBubbleMinWidth}%`,
-            position: 'relative'
+            alignSelf: 'flex-start'
           }}>
-            {/* AI名称 */}
-            {showModelName && (
-              <Typography variant="caption" sx={{
-                display: 'block',
-                textAlign: 'left',
-                mb: 0.5,
-                color: 'text.secondary',
-                fontSize: '0.75rem'
-              }}>
-                AI助手
-              </Typography>
-            )}
             <Paper
               sx={{
-                padding: 1.5,
+                paddingTop: 1.5,
+                paddingBottom: 1.5,
+                paddingLeft: 1.5,
+                paddingRight: messageActionMode === 'bubbles' ? 3 : 1.5,
                 backgroundColor: actualAiBubbleColor,
                 color: actualAiTextColor,
                 borderRadius: '12px',
                 border: 'none',
                 boxShadow: 'none',
-                position: 'relative'
+                position: 'relative',
+                maxWidth: '100%'
               }}
             >
-              <Typography variant="body1" sx={{ fontSize: '0.9rem' }}>
-                我是AI助手，很高兴为您服务！我可以帮助您解答问题、提供信息和协助完成各种任务。
+              <Typography variant="body1" sx={{ fontSize: '0.9rem', lineHeight: 1.6 }}>
+                {t('settings.appearance.messageBubble.preview.aiSampleText')}
               </Typography>
 
-              {/* 工具栏模式预览 */}
               {messageActionMode === 'toolbar' && (
                 <Box sx={{
                   display: 'flex',
@@ -261,31 +291,30 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                   opacity: 0.8
                 }}>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {/* 模拟工具栏按钮 */}
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualAiTextColor,
                       opacity: 0.6
                     }} />
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualAiTextColor,
                       opacity: 0.6
                     }} />
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualAiTextColor,
                       opacity: 0.6
                     }} />
-                    <Box sx={{ 
-                      width: 16, 
-                      height: 16, 
+                    <Box sx={{
+                      width: 16,
+                      height: 16,
                       borderRadius: '2px',
                       backgroundColor: actualAiTextColor,
                       opacity: 0.6
@@ -295,10 +324,8 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
               )}
             </Paper>
 
-            {/* 气泡模式预览 */}
             {messageActionMode === 'bubbles' && (
               <>
-                {/* 三点菜单 */}
                 <Box sx={{
                   position: 'absolute',
                   top: 5,
@@ -310,14 +337,13 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                   opacity: 0.6
                 }} />
 
-                {/* 小功能气泡 */}
                 {showMicroBubbles && (
                   <Box sx={{
                     position: 'absolute',
-                    top: -18,
+                    top: -22,
                     right: 0,
                     display: 'flex',
-                    gap: '3px'
+                    gap: '5px'
                   }}>
                     <Box sx={{
                       width: 20,
@@ -340,11 +366,14 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
           </Box>
         </Box>
 
-        {/* 模式说明 */}
         <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-            当前模式：{messageActionMode === 'bubbles' ? '功能气泡模式' : '底部工具栏模式'}
-            {messageActionMode === 'bubbles' && !showMicroBubbles && ' (功能气泡已隐藏)'}
+            {t('settings.appearance.messageBubble.preview.modeLabel', {
+              mode: messageActionMode === 'bubbles'
+                ? t('settings.appearance.messageBubble.preview.mode.bubbles')
+                : t('settings.appearance.messageBubble.preview.mode.toolbar')
+            })}
+            {messageActionMode === 'bubbles' && !showMicroBubbles && ` ${t('settings.appearance.messageBubble.preview.microBubblesHidden')}`}
           </Typography>
         </Box>
       </Box>

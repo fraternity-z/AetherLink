@@ -17,26 +17,19 @@ import {
   CheckCircle as CheckCircleIcon,
   Palette as PaletteIcon,
   Sparkles as AutoAwesomeIcon,
-  Minus as MinimizeIcon,
-  Palette as ColorLensIcon,
   Leaf as LeafIcon,
-  Waves as WavesIcon,
-  Sunset as SunsetIcon,
-  Square as SquareIcon,
-  Zap as ZapIcon
+  Zap as ZapIcon,
+  Heart as HeartIcon,
 } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 // 主题图标映射
 const themeIcons: Record<ThemeStyle, React.ReactNode> = {
   default: <PaletteIcon />,
   claude: <AutoAwesomeIcon />,
-  minimal: <MinimizeIcon />,
-  vibrant: <ColorLensIcon />,
   nature: <LeafIcon />,
-  ocean: <WavesIcon />,
-  sunset: <SunsetIcon />,
-  monochrome: <SquareIcon />,
-  cyberpunk: <ZapIcon />,
+  tech: <ZapIcon />,
+  soft: <HeartIcon />,
 };
 
 interface ThemeStyleSelectorProps {
@@ -47,15 +40,19 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
   const dispatch = useDispatch();
   const currentTheme = useTheme();
   const currentThemeStyle = useSelector((state: any) => state.settings.themeStyle) || 'default';
+  const { t } = useTranslation();
 
   const handleThemeStyleChange = (themeStyle: ThemeStyle) => {
-    dispatch(setThemeStyle(themeStyle as 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk'));
+    dispatch(setThemeStyle(themeStyle));
   };
 
   const ThemePreviewCard: React.FC<{ themeStyle: ThemeStyle }> = ({ themeStyle }) => {
     const config = themeConfigs[themeStyle];
     const previewColors = getThemePreviewColors(themeStyle);
     const isSelected = currentThemeStyle === themeStyle;
+    // 获取翻译的主题名称和描述
+    const themeName = t(`settings.appearance.themeStyle.themes.${themeStyle}.name`);
+    const themeDescription = t(`settings.appearance.themeStyle.themes.${themeStyle}.description`);
 
     return (
       <Card
@@ -67,9 +64,9 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
           borderRadius: 2,
           overflow: 'hidden',
           transition: 'all 0.2s ease-in-out',
-          aspectRatio: compact ? '1.2/1' : '1.1/1', // 设置宽高比
-          minHeight: compact ? '120px' : '140px', // 设置最小高度
-          maxWidth: '200px', // 限制最大宽度
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           '&:hover': {
             borderColor: isSelected ? currentTheme.palette.primary.main : alpha(currentTheme.palette.primary.main, 0.5),
             transform: 'translateY(-2px)',
@@ -77,8 +74,20 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
           },
         }}
       >
-        <CardActionArea onClick={() => handleThemeStyleChange(themeStyle)}>
-          <CardContent sx={{ p: compact ? 1.5 : 2 }}>
+        <CardActionArea 
+          onClick={() => handleThemeStyleChange(themeStyle)}
+          sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+        >
+          <CardContent sx={{ 
+            p: compact ? 1.5 : 2,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            '&:last-child': {
+              pb: compact ? 1.5 : 2,
+            }
+          }}>
             {/* 选中状态指示器 */}
             {isSelected && (
               <Box
@@ -101,12 +110,13 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
             {/* 主题预览区域 */}
             <Box
               sx={{
-                height: compact ? 60 : 80,
-                borderRadius: 1,
-                mb: 1.5,
+                height: compact ? 50 : 70,
+                borderRadius: 1.5,
+                mb: 1.2,
                 position: 'relative',
                 overflow: 'hidden',
                 background: config.gradients?.primary || previewColors.primary,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
             >
               {/* 模拟界面元素 */}
@@ -178,13 +188,17 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
             </Box>
 
             {/* 主题信息 */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.8 }}>
               <Box
                 sx={{
                   color: previewColors.primary,
                   mr: 1,
                   display: 'flex',
                   alignItems: 'center',
+                  '& svg': {
+                    width: compact ? 18 : 20,
+                    height: compact ? 18 : 20,
+                  }
                 }}
               >
                 {themeIcons[themeStyle]}
@@ -194,9 +208,10 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
                 sx={{
                   fontWeight: 600,
                   color: 'text.primary',
+                  fontSize: compact ? '0.875rem' : '0.95rem',
                 }}
               >
-                {config.name}
+                {themeName}
               </Typography>
             </Box>
 
@@ -205,63 +220,80 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
                 variant="caption"
                 color="text.secondary"
                 sx={{
-                  display: 'block',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                   mb: 1,
-                  lineHeight: 1.3,
+                  lineHeight: 1.35,
+                  minHeight: '2.7em',
+                  flex: 1,
+                  fontSize: '0.8rem',
                 }}
               >
-                {config.description}
+                {themeDescription}
               </Typography>
             )}
 
             {/* 颜色预览 */}
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 0.5, 
+              alignItems: 'center',
+              mt: 'auto',
+              flexWrap: 'wrap'
+            }}>
               <Box
                 sx={{
-                  width: 16,
-                  height: 16,
+                  width: 12,
+                  height: 12,
                   borderRadius: '50%',
                   bgcolor: previewColors.primary,
-                  border: '2px solid',
+                  border: '1.5px solid',
                   borderColor: 'background.paper',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
                 }}
               />
               <Box
                 sx={{
-                  width: 16,
-                  height: 16,
+                  width: 12,
+                  height: 12,
                   borderRadius: '50%',
                   bgcolor: previewColors.secondary,
-                  border: '2px solid',
+                  border: '1.5px solid',
                   borderColor: 'background.paper',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
                 }}
               />
               {config.colors.accent && (
                 <Box
                   sx={{
-                    width: 16,
-                    height: 16,
+                    width: 12,
+                    height: 12,
                     borderRadius: '50%',
                     bgcolor: config.colors.accent,
-                    border: '2px solid',
+                    border: '1.5px solid',
                     borderColor: 'background.paper',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
                   }}
                 />
               )}
               {isSelected && (
                 <Chip
-                  label="当前"
+                  label={t('settings.appearance.themeStyle.current')}
                   size="small"
                   sx={{
                     ml: 'auto',
-                    height: 20,
-                    fontSize: '0.7rem',
+                    height: 18,
+                    fontSize: '0.65rem',
                     bgcolor: alpha(currentTheme.palette.primary.main, 0.1),
                     color: currentTheme.palette.primary.main,
                     fontWeight: 600,
+                    '& .MuiChip-label': {
+                      px: 0.75,
+                      py: 0,
+                    }
                   }}
                 />
               )}
@@ -282,41 +314,41 @@ const ThemeStyleSelector: React.FC<ThemeStyleSelectorProps> = ({ compact = false
           color: 'text.primary',
         }}
       >
-        主题风格
+        {t('settings.appearance.themeStyle.title')}
       </Typography>
       <Typography
         variant="body2"
         color="text.secondary"
         sx={{ mb: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
       >
-        选择您喜欢的界面设计风格，每种风格都有独特的色彩搭配和视觉效果
+        {t('settings.appearance.themeStyle.description')}
       </Typography>
 
       <Box
         sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: compact ? 1 : 2,
-          justifyContent: compact ? 'flex-start' : 'center',
-          '& > *': {
-            flex: compact ? '1 1 calc(50% - 8px)' : '0 0 auto',
-            minWidth: compact ? '140px' : '160px',
-            maxWidth: compact ? '180px' : '200px',
-          }
+          display: 'grid',
+          gridTemplateColumns: compact 
+            ? 'repeat(auto-fill, minmax(140px, 1fr))' 
+            : {
+                xs: 'repeat(auto-fill, minmax(160px, 1fr))',
+                sm: 'repeat(auto-fill, minmax(180px, 1fr))',
+                md: 'repeat(auto-fill, minmax(200px, 1fr))',
+                lg: 'repeat(auto-fill, minmax(220px, 1fr))',
+              },
+          gap: compact ? 1.5 : 2,
+          justifyContent: 'center',
+          alignItems: 'stretch',
         }}
       >
         {(Object.keys(themeConfigs) as ThemeStyle[]).map((themeStyle) => (
-          <Box key={themeStyle}>
-            <ThemePreviewCard themeStyle={themeStyle} />
-          </Box>
+          <ThemePreviewCard key={themeStyle} themeStyle={themeStyle} />
         ))}
       </Box>
 
       {/* 主题特性说明 */}
       <Box sx={{ mt: 3, p: 2, bgcolor: alpha(currentTheme.palette.primary.main, 0.05), borderRadius: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-          💡 <strong>提示：</strong>主题风格会影响整个应用的色彩搭配、按钮样式和视觉效果。
-          您可以随时在设置中更改主题风格，更改会立即生效。
+          {t('settings.appearance.themeStyle.tip')}
         </Typography>
       </Box>
     </Box>

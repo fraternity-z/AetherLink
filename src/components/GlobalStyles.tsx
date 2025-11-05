@@ -1,5 +1,7 @@
 import React from 'react';
 import { Global, css } from '@emotion/react';
+import { useSelector } from 'react-redux';
+import type { ThemeStyle } from '../shared/config/themes';
 
 interface GlobalStylesProps {
   fontSize: number;
@@ -7,6 +9,7 @@ interface GlobalStylesProps {
 }
 
 const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
+  const themeStyle = useSelector((state: any) => state.settings.themeStyle) || 'default';
   const globalStyles = css`
     :root {
       --global-font-size: ${fontSize}px;
@@ -26,28 +29,9 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
       background-color: var(--theme-background) !important;
     }
 
-    /* 强制应用Claude主题背景色到所有主要容器 */
-    ${theme.palette.mode === 'claude' ? `
-      #root,
-      .MuiBox-root:not([style*="background"]):not(.message-content):not(.code-block) {
-        background-color: ${theme.palette.background.default} !important;
-      }
-
-      /* 确保AppBar使用Claude主题色 */
-      .MuiAppBar-root {
-        background-color: ${theme.palette.mode === 'light'
-          ? 'rgba(254, 247, 237, 0.95)'
-          : 'rgba(41, 37, 36, 0.95)'} !important;
-        backdrop-filter: blur(12px) !important;
-      }
-
-      /* 确保主要容器使用Claude背景 */
-      .css-fha6rj,
-      .css-120w7cc,
-      .css-17guv08,
-      .css-kyhwyq,
-      .css-1x2616z,
-      .css-1ttaoha {
+    /* 强制应用主题背景色到根容器 - 支持所有主题风格 */
+    ${['claude', 'nature', 'tech', 'soft'].includes(themeStyle) ? `
+      #root {
         background-color: ${theme.palette.background.default} !important;
       }
     ` : ''}

@@ -8,7 +8,7 @@ import { getDefaultModelProviders, getDefaultModelId, type ModelProvider } from 
 
 interface SettingsState {
   theme: 'light' | 'dark' | 'system';
-  themeStyle: 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk'; // 新增主题风格
+  themeStyle: 'default' | 'claude' | 'nature' | 'tech' | 'soft'; // 主题风格
   fontSize: number;
   fontFamily: string; // 新增字体家族设置
   language: string;
@@ -169,7 +169,7 @@ const getInitialState = (): SettingsState => {
   // 默认状态
   const defaultState: SettingsState = {
     theme: 'system' as 'light' | 'dark' | 'system',
-    themeStyle: 'default' as 'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk',
+    themeStyle: 'default' as 'default' | 'claude' | 'nature' | 'tech' | 'soft',
     fontSize: 16,
     fontFamily: 'system', // 默认使用系统字体
     language: 'zh-CN',
@@ -506,7 +506,7 @@ const settingsSlice = createSlice({
       state.theme = action.payload;
       // 异步操作将通过 extraReducers 处理
     },
-    setThemeStyle: (state, action: PayloadAction<'default' | 'claude' | 'minimal' | 'vibrant' | 'nature' | 'ocean' | 'sunset' | 'monochrome' | 'cyberpunk'>) => {
+    setThemeStyle: (state, action: PayloadAction<'default' | 'claude' | 'nature' | 'tech' | 'soft'>) => {
       state.themeStyle = action.payload;
     },
     setFontSize: (state, action: PayloadAction<number>) => {

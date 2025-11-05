@@ -22,128 +22,14 @@ import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
 import DraggableButtonConfig from '../../components/DraggableButtonConfig';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../components/input';
-
-// 可用的自定义按钮配置
-const AVAILABLE_BUTTONS = [
-  {
-    id: 'tools',
-    label: '扩展',
-    icon: () => <CustomIcon name="settingsPanel" size={20} />,
-    description: '启用/禁用扩展功能',
-    color: '#4CAF50'
-  },
-  {
-    id: 'mcp-tools',
-    label: '工具',
-    icon: Wrench,
-    description: '启用/禁用MCP工具功能',
-    color: '#4CAF50'
-  },
-  {
-    id: 'clear',
-    label: '清空内容',
-    icon: Trash2,
-    description: '清空当前话题内容',
-    color: 'currentColor' // 使用主题适配的颜色
-  },
-  {
-    id: 'image',
-    label: '生成图片',
-    icon: Camera,
-    description: '切换图片生成模式',
-    color: '#9C27B0'
-  },
-  {
-    id: 'video',
-    label: '生成视频',
-    icon: Video,
-    description: '切换视频生成模式',
-    color: '#E91E63'
-  },
-  {
-    id: 'knowledge',
-    label: '知识库',
-    icon: BookOpen,
-    description: '访问知识库功能',
-    color: '#059669'
-  },
-  {
-    id: 'search',
-    label: '网络搜索',
-    icon: Search,
-    description: '启用网络搜索功能',
-    color: '#3B82F6'
-  },
-  {
-    id: 'upload',
-    label: '添加内容',
-    icon: Plus,
-    description: '添加图片、文件或使用其他功能',
-    color: '#F59E0B'
-  },
-  {
-    id: 'camera',
-    label: '拍摄照片',
-    icon: Camera,
-    description: '使用相机拍摄照片',
-    color: '#9C27B0'
-  },
-  {
-    id: 'photo-select',
-    label: '选择图片',
-    icon: Image,
-    description: '从相册选择图片',
-    color: '#1976D2'
-  },
-  {
-    id: 'file-upload',
-    label: '上传文件',
-    icon: FileText,
-    description: '上传文档或其他文件',
-    color: '#4CAF50'
-  },
-  {
-    id: 'ai-debate',
-    label: 'AI辩论',
-    icon: () => <CustomIcon name="aiDebate" size={20} />,
-    description: '开始多AI角色辩论',
-    color: '#2196F3'
-  },
-  {
-    id: 'quick-phrase',
-    label: '快捷短语',
-    icon: () => <CustomIcon name="quickPhrase" size={20} />,
-    description: '插入预设的文本短语',
-    color: '#9C27B0'
-  },
-  {
-    id: 'multi-model',
-    label: '多模型发送',
-    icon: ArrowLeftRight,
-    description: '同时向多个AI模型发送消息',
-    color: 'currentColor' // 使用主题适配的颜色
-  },
-  {
-    id: 'send',
-    label: '发送按钮',
-    icon: Send,
-    description: '发送消息按钮',
-    color: 'currentColor'
-  },
-  {
-    id: 'voice',
-    label: '语音按钮',
-    icon: Mic,
-    description: '语音输入按钮',
-    color: 'currentColor'
-  }
-];
+import { useTranslation } from '../../i18n';
 
 // 输入框预览组件
 const InputBoxPreview: React.FC<{
   inputBoxStyle: string;
   inputLayoutStyle: string;
 }> = ({ inputLayoutStyle }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -221,7 +107,7 @@ const InputBoxPreview: React.FC<{
       }}
     >
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        实时预览效果
+        {t('settings.appearance.inputBox.preview.label')}
       </Typography>
       <Box
         sx={{
@@ -238,9 +124,128 @@ const InputBoxPreview: React.FC<{
 };
 
 const InputBoxSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
+  
+  // 获取可用的自定义按钮配置
+  const getAvailableButtons = () => [
+    {
+      id: 'tools',
+      label: t('settings.appearance.inputBox.buttons.tools.label'),
+      icon: () => <CustomIcon name="settingsPanel" size={20} />,
+      description: t('settings.appearance.inputBox.buttons.tools.description'),
+      color: '#4CAF50'
+    },
+    {
+      id: 'mcp-tools',
+      label: t('settings.appearance.inputBox.buttons.mcpTools.label'),
+      icon: Wrench,
+      description: t('settings.appearance.inputBox.buttons.mcpTools.description'),
+      color: '#4CAF50'
+    },
+    {
+      id: 'clear',
+      label: t('settings.appearance.inputBox.buttons.clear.label'),
+      icon: Trash2,
+      description: t('settings.appearance.inputBox.buttons.clear.description'),
+      color: 'currentColor'
+    },
+    {
+      id: 'image',
+      label: t('settings.appearance.inputBox.buttons.image.label'),
+      icon: Camera,
+      description: t('settings.appearance.inputBox.buttons.image.description'),
+      color: '#9C27B0'
+    },
+    {
+      id: 'video',
+      label: t('settings.appearance.inputBox.buttons.video.label'),
+      icon: Video,
+      description: t('settings.appearance.inputBox.buttons.video.description'),
+      color: '#E91E63'
+    },
+    {
+      id: 'knowledge',
+      label: t('settings.appearance.inputBox.buttons.knowledge.label'),
+      icon: BookOpen,
+      description: t('settings.appearance.inputBox.buttons.knowledge.description'),
+      color: '#059669'
+    },
+    {
+      id: 'search',
+      label: t('settings.appearance.inputBox.buttons.search.label'),
+      icon: Search,
+      description: t('settings.appearance.inputBox.buttons.search.description'),
+      color: '#3B82F6'
+    },
+    {
+      id: 'upload',
+      label: t('settings.appearance.inputBox.buttons.upload.label'),
+      icon: Plus,
+      description: t('settings.appearance.inputBox.buttons.upload.description'),
+      color: '#F59E0B'
+    },
+    {
+      id: 'camera',
+      label: t('settings.appearance.inputBox.buttons.camera.label'),
+      icon: Camera,
+      description: t('settings.appearance.inputBox.buttons.camera.description'),
+      color: '#9C27B0'
+    },
+    {
+      id: 'photo-select',
+      label: t('settings.appearance.inputBox.buttons.photoSelect.label'),
+      icon: Image,
+      description: t('settings.appearance.inputBox.buttons.photoSelect.description'),
+      color: '#1976D2'
+    },
+    {
+      id: 'file-upload',
+      label: t('settings.appearance.inputBox.buttons.fileUpload.label'),
+      icon: FileText,
+      description: t('settings.appearance.inputBox.buttons.fileUpload.description'),
+      color: '#4CAF50'
+    },
+    {
+      id: 'ai-debate',
+      label: t('settings.appearance.inputBox.buttons.aiDebate.label'),
+      icon: () => <CustomIcon name="aiDebate" size={20} />,
+      description: t('settings.appearance.inputBox.buttons.aiDebate.description'),
+      color: '#2196F3'
+    },
+    {
+      id: 'quick-phrase',
+      label: t('settings.appearance.inputBox.buttons.quickPhrase.label'),
+      icon: () => <CustomIcon name="quickPhrase" size={20} />,
+      description: t('settings.appearance.inputBox.buttons.quickPhrase.description'),
+      color: '#9C27B0'
+    },
+    {
+      id: 'multi-model',
+      label: t('settings.appearance.inputBox.buttons.multiModel.label'),
+      icon: ArrowLeftRight,
+      description: t('settings.appearance.inputBox.buttons.multiModel.description'),
+      color: 'currentColor'
+    },
+    {
+      id: 'send',
+      label: t('settings.appearance.inputBox.buttons.send.label'),
+      icon: Send,
+      description: t('settings.appearance.inputBox.buttons.send.description'),
+      color: 'currentColor'
+    },
+    {
+      id: 'voice',
+      label: t('settings.appearance.inputBox.buttons.voice.label'),
+      icon: Mic,
+      description: t('settings.appearance.inputBox.buttons.voice.description'),
+      color: 'currentColor'
+    }
+  ];
+  
+  const AVAILABLE_BUTTONS = getAvailableButtons();
 
   // 获取输入框相关设置
   const inputBoxStyle = settings.inputBoxStyle || 'default';
@@ -324,7 +329,7 @@ const InputBoxSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            输入框管理设置
+            {t('settings.appearance.inputBox.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -347,25 +352,25 @@ const InputBoxSettings: React.FC = () => {
         {/* 实时预览区域 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            实时预览
+            {t('settings.appearance.inputBox.preview.title')}
           </Typography>
           <InputBoxPreview
             inputBoxStyle={inputBoxStyle}
             inputLayoutStyle={inputLayoutStyle}
           />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-            当前配置：{inputBoxStyle === 'default' ? '默认风格' : inputBoxStyle === 'modern' ? '现代风格' : '简约风格'} + {inputLayoutStyle === 'default' ? '默认样式' : inputLayoutStyle === 'compact' ? '聚合样式' : '集成样式'}
+            {t('settings.appearance.inputBox.preview.currentConfig')} {t(`settings.appearance.inputBox.preview.styles.${inputBoxStyle}`)} + {t(`settings.appearance.inputBox.preview.layouts.${inputLayoutStyle}`)}
           </Typography>
 
           {/* 集成样式自定义按钮配置 - 新的拖拽式配置 */}
           {inputLayoutStyle === 'integrated' && (
             <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #eee' }}>
               <Typography variant="subtitle1" sx={{ mb: 2 }}>
-                自定义输入框按钮布局
+                {t('settings.appearance.inputBox.preview.buttonLayout.title')}
               </Typography>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                拖拽按钮来自定义左右布局，点击眼睛图标来显示/隐藏按钮。配置后可在上方预览中查看效果：
+                {t('settings.appearance.inputBox.preview.buttonLayout.description')}
               </Typography>
 
               <DraggableButtonConfig
@@ -376,8 +381,7 @@ const InputBoxSettings: React.FC = () => {
               />
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                左侧 {leftButtons.length} 个按钮，右侧 {rightButtons.length} 个按钮。
-                按钮将按配置的左右布局显示在输入框底部。
+                {t('settings.appearance.inputBox.preview.buttonLayout.summary', { left: leftButtons.length, right: rightButtons.length })}
               </Typography>
             </Box>
           )}
@@ -388,62 +392,62 @@ const InputBoxSettings: React.FC = () => {
         {/* 输入框风格设置 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            输入框风格
+            {t('settings.appearance.inputBox.style.title')}
           </Typography>
 
           <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-            <InputLabel>输入框风格</InputLabel>
+            <InputLabel>{t('settings.appearance.inputBox.style.label')}</InputLabel>
             <Select
               value={inputBoxStyle}
               onChange={handleInputBoxStyleChange}
-              label="输入框风格"
+              label={t('settings.appearance.inputBox.style.label')}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="default">默认风格</MenuItem>
-              <MenuItem value="modern">现代风格</MenuItem>
-              <MenuItem value="minimal">简约风格</MenuItem>
+              <MenuItem value="default">{t('settings.appearance.inputBox.style.default')}</MenuItem>
+              <MenuItem value="modern">{t('settings.appearance.inputBox.style.modern')}</MenuItem>
+              <MenuItem value="minimal">{t('settings.appearance.inputBox.style.minimal')}</MenuItem>
             </Select>
           </FormControl>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            选择聊天输入框和工具栏的视觉风格：
-            <br />• <strong>默认风格</strong>：标准圆角，适中阴影，经典外观
-            <br />• <strong>现代风格</strong>：更圆润的边角，立体阴影，毛玻璃背景效果
-            <br />• <strong>简约风格</strong>：尖锐边角，无阴影，清爽简洁
+            {t('settings.appearance.inputBox.style.description')}
+            <br />{t('settings.appearance.inputBox.style.defaultDesc')}
+            <br />{t('settings.appearance.inputBox.style.modernDesc')}
+            <br />{t('settings.appearance.inputBox.style.minimalDesc')}
           </Typography>
         </Paper>
 
         {/* 输入框布局样式设置 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            输入框布局样式
+            {t('settings.appearance.inputBox.layout.title')}
           </Typography>
 
           <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-            <InputLabel>布局样式</InputLabel>
+            <InputLabel>{t('settings.appearance.inputBox.layout.label')}</InputLabel>
             <Select
               value={inputLayoutStyle}
               onChange={handleInputLayoutStyleChange}
-              label="布局样式"
+              label={t('settings.appearance.inputBox.layout.label')}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="default">默认样式（工具栏+输入框分离）</MenuItem>
-              <MenuItem value="compact">聚合样式（输入框+功能图标集成）</MenuItem>
-              <MenuItem value="integrated">集成样式（工具菜单+垂直布局）</MenuItem>
+              <MenuItem value="default">{t('settings.appearance.inputBox.layout.default')}</MenuItem>
+              <MenuItem value="compact">{t('settings.appearance.inputBox.layout.compact')}</MenuItem>
+              <MenuItem value="integrated">{t('settings.appearance.inputBox.layout.integrated')}</MenuItem>
             </Select>
           </FormControl>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            选择聊天输入区域的布局方式：
-            <br />• 默认样式：工具栏和输入框分别显示，功能清晰分离
-            <br />• 聚合样式：输入框上方，下方为功能图标行，点击+号可展开更多功能
-            <br />• 集成样式：工具菜单集成到输入框，采用垂直布局和现代化设计
+            {t('settings.appearance.inputBox.layout.description')}
+            <br />{t('settings.appearance.inputBox.layout.defaultDesc')}
+            <br />{t('settings.appearance.inputBox.layout.compactDesc')}
+            <br />{t('settings.appearance.inputBox.layout.integratedDesc')}
           </Typography>
         </Paper>
 

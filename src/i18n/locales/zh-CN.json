@@ -1,0 +1,739 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "submit": "提交",
+    "reset": "重置",
+    "search": "搜索",
+    "filter": "筛选",
+    "refresh": "刷新",
+    "more": "更多",
+    "less": "收起",
+    "expand": "展开",
+    "collapse": "收起",
+    "copy": "复制",
+    "paste": "粘贴",
+    "cut": "剪切",
+    "select": "选择",
+    "selectAll": "全选",
+    "deselect": "取消选择",
+    "yes": "是",
+    "no": "否",
+    "ok": "确定",
+    "apply": "应用",
+    "discard": "丢弃"
+  },
+  "welcome": {
+    "title": "AetherLink",
+    "subtitle": "开始您的 AI 对话之旅",
+    "startButton": "开始使用",
+    "savingError": "保存用户状态失败"
+  },
+  "chat": {
+    "title": "聊天",
+    "sendMessage": "发送消息",
+    "inputPlaceholder": "输入消息...",
+    "thinking": "思考中...",
+    "streaming": "生成中...",
+    "error": "发生错误",
+    "retry": "重试",
+    "regenerate": "重新生成",
+    "copy": "复制",
+    "delete": "删除",
+    "edit": "编辑",
+    "stop": "停止",
+    "clear": "清空"
+  },
+  "settings": {
+    "title": "设置",
+    "behavior": "行为",
+    "language": "语言",
+    "theme": "主题",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统",
+    "fontSize": "字体大小",
+    "chinese": "简体中文",
+    "english": "English",
+    "groups": {
+      "basic": "基本设置",
+      "modelService": "模型服务",
+      "shortcuts": "快捷方式",
+      "other": "其他设置"
+    },
+    "items": {
+      "appearance": {
+        "title": "外观",
+        "description": "主题、字体大小和语言设置"
+      },
+      "behavior": {
+        "title": "行为",
+        "description": "消息发送和通知设置"
+      },
+      "defaultModel": {
+        "title": "配置模型",
+        "description": "管理AI模型和API密钥"
+      },
+      "topicNaming": {
+        "title": "话题命名设置",
+        "description": "配置话题自动命名功能"
+      },
+      "agentPrompts": {
+        "title": "智能体提示词集合",
+        "description": "浏览和使用内置的丰富提示词模板"
+      },
+      "aiDebate": {
+        "title": "AI辩论设置",
+        "description": "配置AI互相辩论讨论功能"
+      },
+      "modelCombo": {
+        "title": "模型组合",
+        "description": "创建和管理多模型组合"
+      },
+      "webSearch": {
+        "title": "网络搜索",
+        "description": "配置网络搜索和相关服务"
+      },
+      "mcpServer": {
+        "title": "MCP 服务器",
+        "description": "高级服务器配置"
+      },
+      "shortcuts": {
+        "title": "快捷助手",
+        "description": "自定义键盘快捷键"
+      },
+      "quickPhrases": {
+        "title": "快捷短语",
+        "description": "创建常用短语模板"
+      },
+      "workspace": {
+        "title": "工作区管理",
+        "description": "创建和管理文件工作区"
+      },
+      "knowledge": {
+        "title": "知识库设置",
+        "description": "管理知识库配置和嵌入模型"
+      },
+      "data": {
+        "title": "数据设置",
+        "description": "管理数据存储和隐私选项"
+      },
+      "notion": {
+        "title": "Notion 集成",
+        "description": "配置Notion数据库导出设置"
+      },
+      "voice": {
+        "title": "语音功能",
+        "description": "语音识别和文本转语音设置"
+      },
+      "features": {
+        "title": "功能模块",
+        "description": "启用或禁用应用功能"
+      },
+      "about": {
+        "title": "关于我们",
+        "description": "应用信息和技术支持"
+      }
+    },
+    "scrollCacheError": "清理滚动位置缓存失败",
+    "appearance": {
+      "title": "外观设置",
+      "themeAndFont": {
+        "title": "主题和字体",
+        "description": "自定义应用的外观主题和全局字体大小设置"
+      },
+      "theme": {
+        "label": "主题",
+        "helperText": "选择应用的外观主题，跟随系统将自动适配设备的深色/浅色模式"
+      },
+      "language": {
+        "label": "语言",
+        "helperText": "选择应用的显示语言，更改后界面将立即更新"
+      },
+      "fontSize": {
+        "label": "全局字体大小",
+        "presets": {
+          "12": "极小",
+          "14": "小",
+          "16": "标准",
+          "18": "大",
+          "20": "极大",
+          "24": "超大"
+        },
+        "custom": "自定义",
+        "helperText": "调整应用中所有文本的基础字体大小，影响聊天消息、界面文字等全局显示效果"
+      },
+      "fontFamily": {
+        "label": "全局字体",
+        "systemDefault": "系统默认",
+        "helperText": "选择应用的全局字体，将影响所有界面文字的显示效果"
+      },
+      "fontCategory": {
+        "system": "系统字体",
+        "chinese": "中文字体",
+        "english": "英文字体",
+        "monospace": "等宽字体"
+      },
+      "customization": {
+        "title": "界面定制",
+        "description": "自定义聊天界面、消息气泡和工具栏的外观设置"
+      },
+      "topToolbar": {
+        "title": "顶部工具栏设置",
+        "description": "自定义顶部工具栏的组件和布局，支持拖拽DIY布局"
+      },
+      "developerTools": {
+        "title": "开发者工具",
+        "description": "用于调试和性能监控的开发者工具设置",
+        "performanceMonitor": {
+          "title": "显示性能监控",
+          "description": "在聊天界面显示实时性能监控面板，包括FPS、滚动事件、渲染时间和内存使用情况"
+        }
+      },
+      "topToolbarDIY": {
+        "title": "顶部工具栏 DIY 设置",
+        "resetButton": "重置布局",
+        "alignButton": "矫正对齐",
+        "components": {
+          "menuButton": "菜单按钮",
+          "chatTitle": "对话标题",
+          "topicName": "话题名称",
+          "newTopicButton": "新建话题",
+          "clearButton": "清空按钮",
+          "searchButton": "搜索按钮",
+          "modelSelector": "模型选择器",
+          "settingsButton": "设置按钮"
+        },
+        "preview": {
+          "title": "DIY 布局预览",
+          "tooltip": "拖拽下方组件到此区域进行自由布局",
+          "chatTitleExample": "对话",
+          "topicNameExample": "示例话题",
+          "emptyHint": "拖拽下方组件到此区域"
+        },
+        "componentPanel": {
+          "title": "可用组件",
+          "tooltip": "长按组件拖拽到上方预览区域进行布局",
+          "placed": "已放置",
+          "hint": "💡 提示：长按组件0.3秒后开始拖拽到上方预览区域。长按时卡片会变黄色提示。已放置的组件下方有小眼睛按钮，点击可隐藏。"
+        },
+        "modelSelector": {
+          "title": "模型选择器显示样式",
+          "tooltip": "选择模型选择器在DIY布局中的显示样式",
+          "iconMode": "图标模式（只显示机器人图标）",
+          "textMode": "文字模式（显示模型名+供应商名）",
+          "hint": "图标模式更紧凑，文字模式更直观显示当前模型。"
+        },
+        "instructions": {
+          "title": "🎨 DIY 布局使用说明",
+          "step1": "首先在「组件显示设置」中开启需要的组件",
+          "step2": "长按「可用组件」中的组件并拖拽到预览区域",
+          "step3": "可以将组件放置在工具栏的任意位置",
+          "step4": "点击已放置组件右上角的红色关闭按钮可移除单个组件",
+          "step5": "点击「重置布局」可以清除所有自定义位置",
+          "step6": "设置会实时保存并应用到聊天页面"
+        }
+      },
+      "chatInterface": {
+        "title": "聊天界面设置",
+        "description": "自定义聊天界面布局和显示选项",
+        "multiModel": {
+          "title": "多模型对比显示",
+          "tooltip": "配置多模型对比时的布局方式",
+          "layoutLabel": "布局方式",
+          "horizontal": "水平布局（默认）",
+          "vertical": "垂直布局（并排显示）",
+          "single": "单独布局（堆叠显示）",
+          "description": "设置多模型对比时的布局方式。水平布局将模型响应并排显示，垂直布局将模型响应上下排列，单独布局将模型响应堆叠显示。"
+        },
+        "toolCall": {
+          "title": "工具调用设置",
+          "tooltip": "配置工具调用的显示详情",
+          "showDetails": "显示工具调用详情",
+          "description": "控制是否显示工具调用的详细信息，包括调用参数和返回结果。"
+        },
+        "citation": {
+          "title": "引用设置",
+          "tooltip": "配置引用的显示详情",
+          "showDetails": "显示引用详情",
+          "description": "控制是否显示引用的详细信息，包括引用来源和相关内容。"
+        },
+        "systemPrompt": {
+          "title": "系统提示词气泡设置",
+          "label": "系统提示词气泡显示",
+          "show": "显示",
+          "hide": "隐藏",
+          "description": "控制是否在聊天界面顶部显示系统提示词气泡。系统提示词气泡可以帮助您查看和编辑当前会话的系统提示词。"
+        },
+        "background": {
+          "title": "聊天背景设置",
+          "enable": "启用自定义聊天背景",
+          "imageLabel": "背景图片",
+          "previewAlt": "聊天背景预览",
+          "remove": "移除",
+          "uploadHint": "点击上传背景图片",
+          "uploadFormat": "支持 JPG、PNG、GIF、WebP 格式，最大 5MB",
+          "selectImage": "选择图片",
+          "uploading": "上传中...",
+          "opacityLabel": "背景透明度",
+          "sizeLabel": "背景尺寸",
+          "positionLabel": "背景位置",
+          "repeatLabel": "背景重复",
+          "description": "自定义聊天界面背景图片。背景只会显示在聊天消息区域，不会影响顶部工具栏和侧边栏。消息气泡和其他界面元素会显示在背景之上。",
+          "presets": {
+            "cover": {
+              "label": "覆盖",
+              "description": "图片覆盖整个区域，可能会裁剪"
+            },
+            "contain": {
+              "label": "包含",
+              "description": "图片完整显示，可能有空白区域"
+            },
+            "auto": {
+              "label": "原始大小",
+              "description": "图片按原始大小显示"
+            }
+          },
+          "positions": {
+            "center": "居中",
+            "top": "顶部",
+            "bottom": "底部",
+            "left": "左侧",
+            "right": "右侧"
+          },
+          "repeats": {
+            "noRepeat": "不重复",
+            "repeat": "重复",
+            "repeatX": "水平重复",
+            "repeatY": "垂直重复"
+          },
+          "errors": {
+            "invalidFormat": "不支持的图片格式。请上传 JPG、PNG、GIF 或 WebP 格式的图片。",
+            "fileTooLarge": "图片文件过大。请上传小于 5MB 的图片。",
+            "uploadFailed": "图片上传失败，请重试",
+            "validationFailed": "文件验证失败"
+          }
+        }
+      },
+      "thinkingProcess": {
+        "title": "思考过程设置",
+        "description": "自定义AI思考过程的显示方式和自动折叠行为",
+        "display": {
+          "title": "思考过程显示",
+          "tooltip": "配置AI思考过程的显示方式和行为",
+          "description": "自定义AI思考过程的显示方式和自动折叠行为",
+          "styleLabel": "显示样式",
+          "autoCollapse": "思考完成后自动折叠",
+          "styles": {
+            "compact": "紧凑模式（可折叠）",
+            "full": "完整模式（始终展开）",
+            "minimal": "极简模式（小图标）",
+            "bubble": "气泡模式（聊天气泡）",
+            "timeline": "时间线模式（左侧指示器）",
+            "card": "卡片模式（突出显示）",
+            "inline": "内联模式（嵌入消息）",
+            "hidden": "隐藏（不显示思考过程）",
+            "stream": "🌊 流式文字（逐字显示）",
+            "dots": "💫 思考点动画（输入指示器）",
+            "wave": "🌀 波浪流动（思维可视化）",
+            "sidebar": "📋 侧边栏（滑出显示）",
+            "overlay": "🔍 全屏覆盖（沉浸体验）",
+            "breadcrumb": "🔗 面包屑（步骤展示）",
+            "floating": "✨ 悬浮气泡（跟随鼠标）",
+            "terminal": "💻 终端模式（命令行风格）"
+          },
+          "instructions": {
+            "intro": "设置AI助手思考过程的显示方式：",
+            "compact": "• 紧凑模式：标准卡片样式，可折叠展开",
+            "full": "• 完整模式：始终展开显示全部内容",
+            "minimal": "• 极简模式：只显示小图标，悬停查看内容",
+            "bubble": "• 气泡模式：类似聊天气泡的圆润设计",
+            "timeline": "• 时间线模式：左侧带时间线指示器",
+            "card": "• 卡片模式：突出的渐变卡片设计",
+            "inline": "• 内联模式：嵌入在消息中的紧凑显示",
+            "hidden": "• 隐藏：完全不显示思考过程",
+            "newStylesTitle": "🚀 2025年新增先进样式：",
+            "stream": "• 流式文字：打字机效果，逐字显示思考内容",
+            "dots": "• 思考点动画：类似聊天应用的「正在输入」指示器",
+            "wave": "• 波浪流动：动态波浪效果，可视化思维流动",
+            "sidebar": "• 侧边栏：从右侧滑出的全屏思考面板",
+            "overlay": "• 全屏覆盖：沉浸式全屏思考内容展示",
+            "breadcrumb": "• 面包屑：步骤化展示思考过程的关键节点",
+            "floating": "• 悬浮气泡：跟随鼠标的动态悬浮预览",
+            "terminal": "• 终端模式：程序员风格的命令行界面显示"
+          }
+        },
+        "preview": {
+          "title": "实时预览",
+          "tooltip": "预览当前选择的思考过程显示样式",
+          "description": "实时查看当前设置下的思考过程显示效果",
+          "currentStyle": "当前样式：",
+          "texts": {
+            "thinkingProcess": "思考过程",
+            "thinking": "思考中...",
+            "thinkingComplete": "思考完成",
+            "deepThinking": "正在深度思考...",
+            "deepThinkingProcess": "深度思考过程",
+            "thinkingContent": "思考内容:",
+            "thinkingCompleteTime": "思考完成 {time}s",
+            "thinkingInProgress": "思考中... {time}s",
+            "thinkingInProgressSimple": "思考中",
+            "thinkingSimple": "思考",
+            "aiThinking": "AI正在思考",
+            "aiDeepThinking": "🧠 AI 正在深度思考",
+            "thinkingProcessComplete": "✨ 思考过程完成",
+            "timeSpent": "耗时 {time} 秒",
+            "thinkingProcessWithTime": "思考过程 ({time}s)",
+            "viewThinkingProcess": "查看思考过程...",
+            "viewThinkingDetails": "查看思考详情",
+            "thinkingProcessDetails": "思考过程详情",
+            "timeSpentChip": "耗时 {time}s",
+            "fullThinkingProcess": "💭 完整思考过程",
+            "thinkingPath": "思考路径",
+            "thinkingCompleteBreadcrumb": "💭 完整思考过程：",
+            "thinkingInProgressBreadcrumb": "思考中",
+            "thinkingStream": "正在思考...",
+            "thinkingStreamComplete": "思考完成",
+            "thinkingWave": "思维波动中...",
+            "thinkingWaveComplete": "思考完成",
+            "immersiveThinking": "沉浸式思考体验",
+            "viewFullThinking": "查看完整思考",
+            "aiThinkingProcess": "AI思考过程",
+            "aiThinkingProcessComplete": "思考过程完成",
+            "thinkingParticlesActive": "💫 思维粒子活跃中...",
+            "hoverToViewThinking": "✨ 悬浮查看思考过程",
+            "aiThinkingProcessTerminal": "AI-思考进程",
+            "running": "运行中",
+            "completed": "已完成",
+            "copySuccess": "已复制思考内容",
+            "previewContent": "用户询问了关于\"如何提高工作效率\"的问题。我需要从多个角度来分析这个问题：\n\n首先，我应该考虑工作效率的定义。工作效率通常指在单位时间内完成的工作量和质量。提高工作效率可以从以下几个方面入手：\n\n1. 时间管理\n- 使用番茄工作法，将工作分解为25分钟的专注时段\n- 制定优先级清单，先处理重要且紧急的任务\n- 避免多任务处理，专注于一件事情\n\n2. 工作环境优化\n- 保持工作区域整洁有序\n- 减少干扰因素，如关闭不必要的通知\n- 确保有良好的照明和舒适的座椅\n\n3. 技能提升\n- 学习使用效率工具和软件\n- 提高专业技能，减少完成任务所需时间\n- 培养良好的沟通能力\n\n4. 身心健康\n- 保证充足的睡眠\n- 定期运动，保持身体健康\n- 学会放松和减压\n\n我觉得这个回答涵盖了工作效率的主要方面，既实用又全面。用户应该能够从中找到适合自己的方法。"
+          }
+        }
+      },
+      "messageBubble": {
+        "title": "信息气泡管理",
+        "description": "调整消息气泡的样式和宽度设置",
+        "function": {
+          "title": "气泡功能设置",
+          "tooltip": "设置信息气泡的功能和显示方式",
+          "description": "自定义消息版本历史和功能气泡的显示方式",
+          "actionMode": {
+            "label": "消息操作显示模式",
+            "bubbles": "功能气泡模式（默认）",
+            "toolbar": "底部工具栏模式",
+            "description": "选择消息操作功能的显示方式：",
+            "bubblesDesc": "• 功能气泡模式：在消息气泡上方显示小功能气泡和右上角三点菜单（默认方式）",
+            "toolbarDesc": "• 底部工具栏模式：在消息气泡底部显示完整的操作工具栏，包含所有功能按钮"
+          },
+          "showMicroBubbles": {
+            "label": "显示功能气泡",
+            "description": "在消息气泡上方显示播放和版本切换的小功能气泡"
+          },
+          "versionSwitch": {
+            "label": "版本切换样式",
+            "popup": "弹出列表（默认）",
+            "arrows": "箭头式切换 < 2 >",
+            "description": "设置版本历史的显示和切换方式：",
+            "popupDesc": "• 弹出列表：点击版本历史按钮，弹出所有版本列表（默认方式）",
+            "arrowsDesc": "• 箭头式切换：使用左右箭头在版本间切换，类似 < 2 > 的形式"
+          }
+        },
+        "width": {
+          "title": "消息气泡宽度设置",
+          "tooltip": "自定义聊天界面中消息气泡的宽度范围，适配不同设备屏幕",
+          "description": "调整消息气泡的宽度范围以适配不同设备屏幕",
+          "aiMaxWidth": "AI消息最大宽度",
+          "userMaxWidth": "用户消息最大宽度",
+          "minWidth": "消息最小宽度",
+          "instructions": {
+            "title": "宽度设置说明：",
+            "aiMaxWidth": "• AI消息最大宽度：控制AI回复的最大显示宽度",
+            "userMaxWidth": "• 用户消息最大宽度：控制用户消息的最大显示宽度",
+            "minWidth": "• 消息最小宽度：所有消息的最小显示宽度，避免过窄影响阅读",
+            "note": "• 较小的宽度适合手机等窄屏设备，较大的宽度适合平板和电脑"
+          }
+        },
+        "avatar": {
+          "title": "头像和名称显示",
+          "tooltip": "自定义聊天界面中用户和模型的头像及名称显示",
+          "description": "控制消息气泡中用户和AI模型的头像及名称显示",
+          "showUserAvatar": "显示用户头像",
+          "showUserName": "显示用户名称",
+          "showModelAvatar": "显示模型头像",
+          "showModelName": "显示模型名称",
+          "hint": "控制聊天界面中用户和AI模型的头像及名称显示。可以根据个人喜好选择性隐藏这些元素，获得更简洁的聊天体验。"
+        },
+        "colors": {
+          "title": "自定义气泡颜色",
+          "tooltip": "自定义用户和AI消息气泡的背景色和字体颜色",
+          "description": "自定义消息气泡的背景色和字体颜色，留空则使用系统默认颜色",
+          "reset": "重置默认",
+          "backgroundColor": "背景色",
+          "textColor": "字体色",
+          "userMessage": "用户消息",
+          "aiReply": "AI回复",
+          "hint": "提示：字体颜色同时控制气泡内文字和工具栏按钮的颜色"
+        },
+        "preview": {
+          "title": "实时预览",
+          "userInitial": "U",
+          "userName": "用户",
+          "userSampleTime": "12:30",
+          "userSampleText": "你好！有什么可以帮助你的吗？",
+          "aiInitial": "AI",
+          "aiName": "AI助手",
+          "aiSampleTime": "12:32",
+          "aiSampleText": "我是AI助手，很高兴为您服务！我可以帮助您解答问题、提供信息和协助完成各种任务。",
+          "modeLabel": "当前模式：{{mode}}",
+          "mode": {
+            "bubbles": "功能气泡模式",
+            "toolbar": "底部工具栏模式"
+          },
+          "microBubblesHidden": "(功能气泡已隐藏)"
+        }
+      },
+      "toolbarCustomization": {
+        "title": "输入框工具栏定制",
+        "description": "自定义输入框工具栏的背景样式和外观效果",
+        "backgroundStyle": {
+          "title": "工具栏背景样式",
+          "description": "选择输入框工具栏的背景效果，影响新建话题、清空内容等按钮的外观",
+          "glassmorphism": {
+            "label": "毛玻璃效果 (推荐)",
+            "description": "现代玻璃UI设计，具有模糊背景和立体阴影效果"
+          },
+          "transparent": {
+            "label": "透明效果",
+            "description": "简约透明设计，悬停时显示淡色背景"
+          },
+          "current": "当前",
+          "preview": {
+            "newTopic": "新建话题",
+            "clearContent": "清空内容",
+            "tools": "工具"
+          }
+        },
+        "displayStyle": {
+          "title": "工具栏显示方式",
+          "description": "设置工具栏按钮的显示方式，可以选择同时显示图标和文字，或仅显示图标，或仅显示文字",
+          "label": "工具栏显示样式",
+          "both": "图标+文字（默认）",
+          "icon": "仅图标",
+          "text": "仅文字",
+          "hint": "设置聊天界面工具栏的显示方式。可以选择同时显示图标和文字，或仅显示图标，或仅显示文字。",
+          "preview": "预览效果："
+        },
+        "buttonCustomization": {
+          "title": "工具栏按钮自定义",
+          "description": "拖拽调整按钮顺序，点击眼睛图标控制按钮显示/隐藏",
+          "livePreview": "实时预览：",
+          "buttons": {
+            "mcpTools": {
+              "label": "MCP工具",
+              "description": "启用/禁用MCP工具调用功能"
+            },
+            "newTopic": {
+              "label": "新建话题",
+              "description": "创建新的对话话题"
+            },
+            "clearTopic": {
+              "label": "清空内容",
+              "description": "清空当前话题的所有消息"
+            },
+            "generateImage": {
+              "label": "生成图片",
+              "description": "切换到图像生成模式"
+            },
+            "generateVideo": {
+              "label": "生成视频",
+              "description": "切换到视频生成模式"
+            },
+            "knowledge": {
+              "label": "知识库",
+              "description": "选择知识库进行搜索"
+            },
+            "webSearch": {
+              "label": "网络搜索",
+              "description": "启用网络搜索功能"
+            }
+          }
+        }
+      },
+      "inputBox": {
+        "title": "输入框管理设置",
+        "description": "自定义输入框的风格和布局样式",
+        "preview": {
+          "title": "实时预览",
+          "label": "实时预览效果",
+          "currentConfig": "当前配置：",
+          "styles": {
+            "default": "默认风格",
+            "modern": "现代风格",
+            "minimal": "简约风格"
+          },
+          "layouts": {
+            "default": "默认样式",
+            "compact": "聚合样式",
+            "integrated": "集成样式"
+          },
+          "buttonLayout": {
+            "title": "自定义输入框按钮布局",
+            "description": "拖拽按钮来自定义左右布局，点击眼睛图标来显示/隐藏按钮。配置后可在上方预览中查看效果：",
+            "summary": "左侧 {{left}} 个按钮，右侧 {{right}} 个按钮。按钮将按配置的左右布局显示在输入框底部。"
+          }
+        },
+        "style": {
+          "title": "输入框风格",
+          "label": "输入框风格",
+          "default": "默认风格",
+          "modern": "现代风格",
+          "minimal": "简约风格",
+          "description": "选择聊天输入框和工具栏的视觉风格：",
+          "defaultDesc": "• 默认风格：标准圆角，适中阴影，经典外观",
+          "modernDesc": "• 现代风格：更圆润的边角，立体阴影，毛玻璃背景效果",
+          "minimalDesc": "• 简约风格：尖锐边角，无阴影，清爽简洁"
+        },
+        "layout": {
+          "title": "输入框布局样式",
+          "label": "布局样式",
+          "default": "默认样式（工具栏+输入框分离）",
+          "compact": "聚合样式（输入框+功能图标集成）",
+          "integrated": "集成样式（工具菜单+垂直布局）",
+          "description": "选择聊天输入区域的布局方式：",
+          "defaultDesc": "• 默认样式：工具栏和输入框分别显示，功能清晰分离",
+          "compactDesc": "• 聚合样式：输入框上方，下方为功能图标行，点击+号可展开更多功能",
+          "integratedDesc": "• 集成样式：工具菜单集成到输入框，采用垂直布局和现代化设计"
+        },
+        "buttons": {
+          "tools": {
+            "label": "扩展",
+            "description": "启用/禁用扩展功能"
+          },
+          "mcpTools": {
+            "label": "工具",
+            "description": "启用/禁用MCP工具功能"
+          },
+          "clear": {
+            "label": "清空内容",
+            "description": "清空当前话题内容"
+          },
+          "image": {
+            "label": "生成图片",
+            "description": "切换图片生成模式"
+          },
+          "video": {
+            "label": "生成视频",
+            "description": "切换视频生成模式"
+          },
+          "knowledge": {
+            "label": "知识库",
+            "description": "访问知识库功能"
+          },
+          "search": {
+            "label": "网络搜索",
+            "description": "启用网络搜索功能"
+          },
+          "upload": {
+            "label": "添加内容",
+            "description": "添加图片、文件或使用其他功能"
+          },
+          "camera": {
+            "label": "拍摄照片",
+            "description": "使用相机拍摄照片"
+          },
+          "photoSelect": {
+            "label": "选择图片",
+            "description": "从相册选择图片"
+          },
+          "fileUpload": {
+            "label": "上传文件",
+            "description": "上传文档或其他文件"
+          },
+          "aiDebate": {
+            "label": "AI辩论",
+            "description": "开始多AI角色辩论"
+          },
+          "quickPhrase": {
+            "label": "快捷短语",
+            "description": "插入预设的文本短语"
+          },
+          "multiModel": {
+            "label": "多模型发送",
+            "description": "同时向多个AI模型发送消息"
+          },
+          "send": {
+            "label": "发送按钮",
+            "description": "发送消息按钮"
+          },
+          "voice": {
+            "label": "语音按钮",
+            "description": "语音输入按钮"
+          }
+        },
+        "draggableButtonConfig": {
+          "leftButtons": "左侧按钮",
+          "rightButtons": "右侧按钮",
+          "availableButtons": "可用按钮",
+          "count": "个",
+          "dragHere": "拖拽按钮到这里",
+          "dragToUse": "拖拽按钮到上方左右区域来使用，或拖拽已使用的按钮回到这里来移除",
+          "releaseToRemove": "松开鼠标移除按钮",
+          "allUsed": "所有按钮都已使用，拖拽按钮到这里可以移除"
+        }
+      },
+      "themeStyle": {
+        "title": "主题风格",
+        "description": "选择您喜欢的界面设计风格，每种风格都有独特的色彩搭配和视觉效果",
+        "navigationDescription": "选择应用的整体设计风格和色彩主题",
+        "tip": "💡 提示：主题风格会影响整个应用的色彩搭配、按钮样式和视觉效果。您可以随时在设置中更改主题风格，更改会立即生效。",
+        "current": "当前",
+        "themes": {
+          "default": {
+            "name": "默认主题",
+            "description": "简洁现代的默认设计风格"
+          },
+          "claude": {
+            "name": "Claude 风格",
+            "description": "温暖优雅的 Claude AI 设计风格"
+          },
+          "nature": {
+            "name": "自然风格",
+            "description": "2025年流行的自然系大地色调设计"
+          },
+          "tech": {
+            "name": "未来科技",
+            "description": "2025年流行的科技感设计，冷色调与玻璃态效果"
+          },
+          "soft": {
+            "name": "柔和渐变",
+            "description": "2025年流行的柔和渐变设计，温暖舒适的视觉体验"
+          }
+        }
+      }
+    }
+  },
+  "errors": {
+    "networkError": "网络错误",
+    "unknownError": "未知错误",
+    "loadFailed": "加载失败",
+    "saveFailed": "保存失败",
+    "deleteFailed": "删除失败"
+  },
+  "notifications": {
+    "copied": "已复制到剪贴板",
+    "saved": "保存成功",
+    "deleted": "删除成功",
+    "error": "操作失败"
+  }
+}
+

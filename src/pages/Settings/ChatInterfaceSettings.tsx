@@ -29,15 +29,14 @@ import { updateSettings } from '../../shared/store/settingsSlice';
 import {
   validateImageFile,
   compressImage,
-  cleanupBackgroundImage,
-  getBackgroundPresets,
-  getBackgroundPositions,
-  getBackgroundRepeats
+  cleanupBackgroundImage
 } from '../../shared/utils/backgroundUtils';
 import useScrollPosition from '../../hooks/useScrollPosition';
+import { useTranslation } from '../../i18n';
 
 
 const ChatInterfaceSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
@@ -165,9 +164,9 @@ const ChatInterfaceSettings: React.FC = () => {
 
     try {
       // 验证文件
-      const validation = validateImageFile(file);
+      const validation = validateImageFile(file, t);
       if (!validation.valid) {
-        setUploadError(validation.error || '文件验证失败');
+        setUploadError(validation.error || t('settings.appearance.chatInterface.background.errors.validationFailed'));
         return;
       }
 
@@ -189,7 +188,7 @@ const ChatInterfaceSettings: React.FC = () => {
       }));
 
     } catch (error) {
-      setUploadError('图片上传失败，请重试');
+      setUploadError(t('settings.appearance.chatInterface.background.errors.uploadFailed'));
       console.error('Background upload error:', error);
     } finally {
       setIsUploading(false);
@@ -263,7 +262,7 @@ const ChatInterfaceSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            聊天界面设置
+            {t('settings.appearance.chatInterface.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -301,8 +300,8 @@ const ChatInterfaceSettings: React.FC = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1">多模型对比显示</Typography>
-            <Tooltip title="配置多模型对比时的布局方式">
+            <Typography variant="subtitle1">{t('settings.appearance.chatInterface.multiModel.title')}</Typography>
+            <Tooltip title={t('settings.appearance.chatInterface.multiModel.tooltip')}>
               <IconButton size="small" sx={{ ml: 1 }}>
                 <Info size={16} />
               </IconButton>
@@ -310,24 +309,24 @@ const ChatInterfaceSettings: React.FC = () => {
           </Box>
 
           <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-            <InputLabel>布局方式</InputLabel>
+            <InputLabel>{t('settings.appearance.chatInterface.multiModel.layoutLabel')}</InputLabel>
             <Select
               value={multiModelDisplayStyle}
               onChange={handleMultiModelDisplayStyleChange}
-              label="布局方式"
+              label={t('settings.appearance.chatInterface.multiModel.layoutLabel')}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="horizontal">水平布局（默认）</MenuItem>
-              <MenuItem value="vertical">垂直布局（并排显示）</MenuItem>
-              <MenuItem value="single">单独布局（堆叠显示）</MenuItem>
+              <MenuItem value="horizontal">{t('settings.appearance.chatInterface.multiModel.horizontal')}</MenuItem>
+              <MenuItem value="vertical">{t('settings.appearance.chatInterface.multiModel.vertical')}</MenuItem>
+              <MenuItem value="single">{t('settings.appearance.chatInterface.multiModel.single')}</MenuItem>
             </Select>
           </FormControl>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            设置多模型对比时的布局方式。水平布局将模型响应并排显示，垂直布局将模型响应上下排列，单独布局将模型响应堆叠显示。
+            {t('settings.appearance.chatInterface.multiModel.description')}
           </Typography>
         </Paper>
 
@@ -338,8 +337,8 @@ const ChatInterfaceSettings: React.FC = () => {
         {/* 工具调用设置 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1">工具调用设置</Typography>
-            <Tooltip title="配置工具调用的显示详情">
+            <Typography variant="subtitle1">{t('settings.appearance.chatInterface.toolCall.title')}</Typography>
+            <Tooltip title={t('settings.appearance.chatInterface.toolCall.tooltip')}>
               <IconButton size="small" sx={{ ml: 1 }}>
                 <Info size={16} />
               </IconButton>
@@ -354,20 +353,20 @@ const ChatInterfaceSettings: React.FC = () => {
                   onChange={handleShowToolDetailsChange}
                 />
               }
-              label="显示工具调用详情"
+              label={t('settings.appearance.chatInterface.toolCall.showDetails')}
             />
           </FormGroup>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            控制是否显示工具调用的详细信息，包括调用参数和返回结果。
+            {t('settings.appearance.chatInterface.toolCall.description')}
           </Typography>
         </Paper>
 
         {/* 引用设置 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1">引用设置</Typography>
-            <Tooltip title="配置引用的显示详情">
+            <Typography variant="subtitle1">{t('settings.appearance.chatInterface.citation.title')}</Typography>
+            <Tooltip title={t('settings.appearance.chatInterface.citation.tooltip')}>
               <IconButton size="small" sx={{ ml: 1 }}>
                 <Info size={16} />
               </IconButton>
@@ -382,12 +381,12 @@ const ChatInterfaceSettings: React.FC = () => {
                   onChange={handleShowCitationDetailsChange}
                 />
               }
-              label="显示引用详情"
+              label={t('settings.appearance.chatInterface.citation.showDetails')}
             />
           </FormGroup>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            控制是否显示引用的详细信息，包括引用来源和相关内容。
+            {t('settings.appearance.chatInterface.citation.description')}
           </Typography>
         </Paper>
 
@@ -395,35 +394,35 @@ const ChatInterfaceSettings: React.FC = () => {
 
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            系统提示词气泡设置
+            {t('settings.appearance.chatInterface.systemPrompt.title')}
           </Typography>
 
           <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-            <InputLabel id="prompt-bubble-style-label">系统提示词气泡显示</InputLabel>
+            <InputLabel id="prompt-bubble-style-label">{t('settings.appearance.chatInterface.systemPrompt.label')}</InputLabel>
             <Select
               labelId="prompt-bubble-style-label"
               value={showSystemPromptBubble ? 'show' : 'hide'}
               onChange={handleSystemPromptBubbleChange}
-              label="系统提示词气泡显示"
+              label={t('settings.appearance.chatInterface.systemPrompt.label')}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="show">显示</MenuItem>
-              <MenuItem value="hide">隐藏</MenuItem>
+              <MenuItem value="show">{t('settings.appearance.chatInterface.systemPrompt.show')}</MenuItem>
+              <MenuItem value="hide">{t('settings.appearance.chatInterface.systemPrompt.hide')}</MenuItem>
             </Select>
           </FormControl>
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            控制是否在聊天界面顶部显示系统提示词气泡。系统提示词气泡可以帮助您查看和编辑当前会话的系统提示词。
+            {t('settings.appearance.chatInterface.systemPrompt.description')}
           </Typography>
         </Paper>
 
         {/* 聊天背景设置 */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
           <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            聊天背景设置
+            {t('settings.appearance.chatInterface.background.title')}
           </Typography>
 
           {/* 启用背景开关 */}
@@ -435,14 +434,14 @@ const ChatInterfaceSettings: React.FC = () => {
                   onChange={handleBackgroundEnabledChange}
                 />
               }
-              label="启用自定义聊天背景"
+              label={t('settings.appearance.chatInterface.background.enable')}
             />
           </FormGroup>
 
           {/* 背景图片上传 */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              背景图片
+              {t('settings.appearance.chatInterface.background.imageLabel')}
             </Typography>
 
             {chatBackground.imageUrl ? (
@@ -451,7 +450,7 @@ const ChatInterfaceSettings: React.FC = () => {
                   component="img"
                   height="120"
                   image={chatBackground.imageUrl}
-                  alt="聊天背景预览"
+                  alt={t('settings.appearance.chatInterface.background.previewAlt')}
                   sx={{ objectFit: 'cover' }}
                 />
                 <CardActions sx={{ p: 1 }}>
@@ -461,7 +460,7 @@ const ChatInterfaceSettings: React.FC = () => {
                     onClick={handleRemoveBackground}
                     color="error"
                   >
-                    移除
+                    {t('settings.appearance.chatInterface.background.remove')}
                   </Button>
                 </CardActions>
               </Card>
@@ -482,10 +481,10 @@ const ChatInterfaceSettings: React.FC = () => {
               >
                 <ImageIcon size={32} style={{ color: '#ccc', marginBottom: 8 }} />
                 <Typography variant="body2" color="text.secondary">
-                  点击上传背景图片
+                  {t('settings.appearance.chatInterface.background.uploadHint')}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  支持 JPG、PNG、GIF、WebP 格式，最大 5MB
+                  {t('settings.appearance.chatInterface.background.uploadFormat')}
                 </Typography>
               </Box>
             )}
@@ -506,7 +505,7 @@ const ChatInterfaceSettings: React.FC = () => {
                 disabled={isUploading}
                 sx={{ mt: 1 }}
               >
-                {isUploading ? '上传中...' : '选择图片'}
+                {isUploading ? t('settings.appearance.chatInterface.background.uploading') : t('settings.appearance.chatInterface.background.selectImage')}
               </Button>
             )}
 
@@ -523,7 +522,7 @@ const ChatInterfaceSettings: React.FC = () => {
               {/* 透明度设置 */}
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  背景透明度: {Math.round(chatBackground.opacity * 100)}%
+                  {t('settings.appearance.chatInterface.background.opacityLabel')}: {Math.round(chatBackground.opacity * 100)}%
                 </Typography>
                 <Slider
                   value={chatBackground.opacity}
@@ -542,22 +541,22 @@ const ChatInterfaceSettings: React.FC = () => {
 
               {/* 背景尺寸 */}
               <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                <InputLabel>背景尺寸</InputLabel>
+                <InputLabel>{t('settings.appearance.chatInterface.background.sizeLabel')}</InputLabel>
                 <Select
                   value={chatBackground.size}
                   onChange={handleBackgroundSizeChange}
-                  label="背景尺寸"
+                  label={t('settings.appearance.chatInterface.background.sizeLabel')}
                   MenuProps={{
                     disableAutoFocus: true,
                     disableRestoreFocus: true
                   }}
                 >
-                  {getBackgroundPresets().map((preset) => (
-                    <MenuItem key={preset.value} value={preset.value}>
+                  {['cover', 'contain', 'auto'].map((value) => (
+                    <MenuItem key={value} value={value}>
                       <Box>
-                        <Typography variant="body2">{preset.label}</Typography>
+                        <Typography variant="body2">{t(`settings.appearance.chatInterface.background.presets.${value}.label`)}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {preset.description}
+                          {t(`settings.appearance.chatInterface.background.presets.${value}.description`)}
                         </Typography>
                       </Box>
                     </MenuItem>
@@ -567,19 +566,19 @@ const ChatInterfaceSettings: React.FC = () => {
 
               {/* 背景位置 */}
               <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                <InputLabel>背景位置</InputLabel>
+                <InputLabel>{t('settings.appearance.chatInterface.background.positionLabel')}</InputLabel>
                 <Select
                   value={chatBackground.position}
                   onChange={handleBackgroundPositionChange}
-                  label="背景位置"
+                  label={t('settings.appearance.chatInterface.background.positionLabel')}
                   MenuProps={{
                     disableAutoFocus: true,
                     disableRestoreFocus: true
                   }}
                 >
-                  {getBackgroundPositions().map((position) => (
-                    <MenuItem key={position.value} value={position.value}>
-                      {position.label}
+                  {['center', 'top', 'bottom', 'left', 'right'].map((value) => (
+                    <MenuItem key={value} value={value}>
+                      {t(`settings.appearance.chatInterface.background.positions.${value}`)}
                     </MenuItem>
                   ))}
                 </Select>
@@ -587,28 +586,27 @@ const ChatInterfaceSettings: React.FC = () => {
 
               {/* 背景重复 */}
               <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                <InputLabel>背景重复</InputLabel>
+                <InputLabel>{t('settings.appearance.chatInterface.background.repeatLabel')}</InputLabel>
                 <Select
                   value={chatBackground.repeat}
                   onChange={handleBackgroundRepeatChange}
-                  label="背景重复"
+                  label={t('settings.appearance.chatInterface.background.repeatLabel')}
                   MenuProps={{
                     disableAutoFocus: true,
                     disableRestoreFocus: true
                   }}
                 >
-                  {getBackgroundRepeats().map((repeat) => (
-                    <MenuItem key={repeat.value} value={repeat.value}>
-                      {repeat.label}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="no-repeat">{t('settings.appearance.chatInterface.background.repeats.noRepeat')}</MenuItem>
+                  <MenuItem value="repeat">{t('settings.appearance.chatInterface.background.repeats.repeat')}</MenuItem>
+                  <MenuItem value="repeat-x">{t('settings.appearance.chatInterface.background.repeats.repeatX')}</MenuItem>
+                  <MenuItem value="repeat-y">{t('settings.appearance.chatInterface.background.repeats.repeatY')}</MenuItem>
                 </Select>
               </FormControl>
             </>
           )}
 
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            自定义聊天界面背景图片。背景只会显示在聊天消息区域，不会影响顶部工具栏和侧边栏。消息气泡和其他界面元素会显示在背景之上。
+            {t('settings.appearance.chatInterface.background.description')}
           </Typography>
         </Paper>
 
