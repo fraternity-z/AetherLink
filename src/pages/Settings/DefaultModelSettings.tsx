@@ -36,11 +36,13 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { reorderArray } from '../../shared/utils/dragUtils';
 import { Bot as SmartToyIcon, AlignLeft as FormattedAlignLeftIcon, List as ViewAgendaIcon, GripVertical as DragIndicatorIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * 默认模型设置组件
  */
 const DefaultModelSettings: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const providers = useAppSelector(state => state.settings.providers);
@@ -230,7 +232,7 @@ const DefaultModelSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            模型设置
+            {t('modelSettings.modelList.title')}
           </Typography>
           {isMultiSelectMode ? (
             <>
@@ -247,7 +249,7 @@ const DefaultModelSettings: React.FC = () => {
                   borderRadius: 2,
                 }}
               >
-                取消
+                {t('modelSettings.modelList.cancel')}
               </Button>
               <Button
                 startIcon={<DeleteIcon />}
@@ -266,7 +268,7 @@ const DefaultModelSettings: React.FC = () => {
                   borderRadius: 2,
                 }}
               >
-                删除 ({selectedProviders.size})
+                {t('modelSettings.modelList.deleteCount', { count: selectedProviders.size })}
               </Button>
             </>
           ) : (
@@ -284,7 +286,7 @@ const DefaultModelSettings: React.FC = () => {
                   borderRadius: 2,
                 }}
               >
-                批量删除
+                {t('modelSettings.modelList.batchDelete')}
               </Button>
               <Button
                 startIcon={<AddIcon />}
@@ -298,7 +300,7 @@ const DefaultModelSettings: React.FC = () => {
                   borderRadius: 2,
                 }}
               >
-                添加
+                {t('modelSettings.modelList.add')}
               </Button>
             </>
           )}
@@ -335,10 +337,10 @@ const DefaultModelSettings: React.FC = () => {
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                模型服务商
+                {t('modelSettings.modelList.providers')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {isMultiSelectMode ? '选择要删除的服务商' : '您可以配置多个模型服务商，点击对应的服务商进行设置和管理'}
+                {isMultiSelectMode ? t('modelSettings.modelList.selectToDelete') : t('modelSettings.modelList.providersDesc')}
               </Typography>
             </Box>
             {isMultiSelectMode && (
@@ -352,7 +354,7 @@ const DefaultModelSettings: React.FC = () => {
                   },
                 }}
               >
-                {selectedProviders.size === providers.length ? '取消全选' : '全选'}
+                {selectedProviders.size === providers.length ? t('modelSettings.modelList.unselectAll') : t('modelSettings.modelList.selectAll')}
               </Button>
             )}
           </Box>
@@ -444,11 +446,11 @@ const DefaultModelSettings: React.FC = () => {
                                     fontWeight: 500
                                   }}
                                 >
-                                  {provider.isEnabled ? '已启用' : '已禁用'}
+                                  {provider.isEnabled ? t('modelSettings.modelList.enabled') : t('modelSettings.modelList.disabled')}
                                 </Typography>
                                 {provider.models.length > 0 && (
                                   <Typography component="span" variant="body2" color="text.secondary">
-                                    {provider.models.length} 个模型
+                                    {t('modelSettings.modelList.modelCount', { count: provider.models.length })}
                                   </Typography>
                                 )}
                               </span>
@@ -507,7 +509,7 @@ const DefaultModelSettings: React.FC = () => {
                   color: 'text.primary'
                 }}
               >
-                推荐操作
+                {t('modelSettings.modelList.recommendedActions')}
               </ListSubheader>
             }
           >
@@ -531,8 +533,8 @@ const DefaultModelSettings: React.FC = () => {
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>话题命名设置</Typography>}
-                  secondary="设置话题自动命名的模型和选项"
+                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('modelSettings.modelList.topicNamingSettings')}</Typography>}
+                  secondary={t('modelSettings.modelList.topicNamingSettingsDesc')}
                 />
                 <ChevronRightIcon size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -560,8 +562,8 @@ const DefaultModelSettings: React.FC = () => {
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>模型选择器样式</Typography>}
-                  secondary={modelSelectorStyle === 'dialog' ? "当前：弹窗式选择器（点击切换为下拉式）" : "当前：下拉式选择器（点击切换为弹窗式）"}
+                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('modelSettings.modelList.modelSelectorStyle')}</Typography>}
+                  secondary={modelSelectorStyle === 'dialog' ? t('modelSettings.modelList.modelSelectorDialog') : t('modelSettings.modelList.modelSelectorDropdown')}
                 />
               </ListItemButton>
             </ListItem>
@@ -588,8 +590,8 @@ const DefaultModelSettings: React.FC = () => {
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>添加模型服务商</Typography>}
-                  secondary="设置新的模型服务商"
+                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('modelSettings.modelList.addProvider')}</Typography>}
+                  secondary={t('modelSettings.modelList.addProviderDesc')}
                 />
                 <ChevronRightIcon size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -616,14 +618,14 @@ const DefaultModelSettings: React.FC = () => {
           backgroundClip: 'text',
           color: 'transparent',
         }}>
-          编辑供应商
+          {t('modelSettings.modelList.editProvider')}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <TextField
             autoFocus
             margin="dense"
-            label="供应商名称"
-            placeholder="例如: 我的智谱AI"
+            label={t('modelSettings.modelList.providerName')}
+            placeholder={t('modelSettings.modelList.providerNamePlaceholder')}
             type="text"
             fullWidth
             variant="outlined"
@@ -632,11 +634,11 @@ const DefaultModelSettings: React.FC = () => {
             sx={{ mb: 2 }}
           />
           <FormControl fullWidth variant="outlined">
-            <InputLabel>供应商类型</InputLabel>
+            <InputLabel>{t('modelSettings.modelList.providerType')}</InputLabel>
             <Select
               value={editProviderType}
               onChange={(e) => setEditProviderType(e.target.value)}
-              label="供应商类型"
+              label={t('modelSettings.modelList.providerType')}
             >
               {providerTypeOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
@@ -647,7 +649,7 @@ const DefaultModelSettings: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseEditDialog}>取消</Button>
+          <Button onClick={handleCloseEditDialog}>{t('common.cancel')}</Button>
           <Button
             onClick={handleSaveProvider}
             disabled={!editProviderName.trim()}
@@ -660,7 +662,7 @@ const DefaultModelSettings: React.FC = () => {
               borderRadius: 2,
             }}
           >
-            保存
+            {t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -681,18 +683,18 @@ const DefaultModelSettings: React.FC = () => {
           fontWeight: 600,
           color: 'error.main',
         }}>
-          确认删除
+          {t('modelSettings.modelList.confirmDelete')}
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            您确定要删除选中的 <strong>{selectedProviders.size}</strong> 个供应商吗？
-          </Typography>
+          <Typography variant="body1" sx={{ mb: 2 }} dangerouslySetInnerHTML={{
+            __html: t('modelSettings.modelList.deleteConfirmMessage', { count: selectedProviders.size })
+          }} />
           <Typography variant="body2" color="text.secondary">
-            此操作将删除这些供应商及其所有配置信息，且无法恢复。
+            {t('modelSettings.modelList.deleteConfirmWarning')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCancelDelete}>取消</Button>
+          <Button onClick={handleCancelDelete}>{t('common.cancel')}</Button>
           <Button
             onClick={handleConfirmDelete}
             sx={{
@@ -704,7 +706,7 @@ const DefaultModelSettings: React.FC = () => {
               borderRadius: 2,
             }}
           >
-            确认删除
+            {t('modelSettings.modelList.confirmDeleteButton')}
           </Button>
         </DialogActions>
       </Dialog>

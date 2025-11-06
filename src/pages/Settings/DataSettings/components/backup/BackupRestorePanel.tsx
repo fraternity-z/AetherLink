@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LinearProgress, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import { useTranslation } from '../../../../../i18n';
 import {
   Save,
   Folder,
@@ -43,6 +44,7 @@ import { getWebDavConfig, saveWebDavConfig } from '../../../../../shared/utils/w
  * 备份恢复面板组件
  */
 const BackupRestorePanel: React.FC = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [restoreProgress, setRestoreProgress] = useState({
     active: false,
@@ -144,7 +146,7 @@ const BackupRestorePanel: React.FC = () => {
       );
     } catch (error) {
       console.error('创建备份失败:', error);
-      showMessage('创建备份失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
+      showMessage(t('dataSettings.messages.backupFailed') + ': ' + (error instanceof Error ? error.message : t('dataSettings.errors.unknown')), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +174,7 @@ const BackupRestorePanel: React.FC = () => {
       );
     } catch (error) {
       console.error('创建自定义位置备份失败:', error);
-      showMessage('创建备份失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
+      showMessage(t('dataSettings.messages.backupFailed') + ': ' + (error instanceof Error ? error.message : t('dataSettings.errors.unknown')), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -206,11 +208,11 @@ const BackupRestorePanel: React.FC = () => {
           showMessage(message, 'success');
           refreshBackupFilesList();
         },
-        (error) => showMessage('创建选择性备份失败: ' + error.message, 'error')
+        (error) => showMessage(t('dataSettings.messages.selectiveBackupFailed') + ': ' + error.message, 'error')
       );
     } catch (error) {
       console.error('创建选择性备份失败:', error);
-      showMessage('创建备份失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
+      showMessage(t('dataSettings.messages.backupFailed') + ': ' + (error instanceof Error ? error.message : t('dataSettings.errors.unknown')), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -244,7 +246,7 @@ const BackupRestorePanel: React.FC = () => {
         setIsLoading(true);
         setRestoreProgress({
           active: true,
-          stage: '读取文件中...',
+          stage: t('dataSettings.restoreProgress.readingFile'),
           progress: 0.05
         });
 
@@ -253,7 +255,7 @@ const BackupRestorePanel: React.FC = () => {
           const backupData = await readJSONFromFile(file);
           setRestoreProgress({
             active: true,
-            stage: '验证备份数据...',
+            stage: t('dataSettings.restoreProgress.validating'),
             progress: 0.1
           });
 
@@ -273,50 +275,50 @@ const BackupRestorePanel: React.FC = () => {
 
             // 根据备份类型显示不同的消息
             if (result.backupType === 'selective') {
-              restoreMessage += `选择性备份恢复完成！\n`;
+              restoreMessage += t('dataSettings.restoreProgress.success.selective') + '\n';
 
               if (result.modelConfigRestored) {
-                restoreMessage += `• 已恢复模型配置\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredSettings')}\n`;
               }
 
               if (result.topicsCount > 0) {
-                restoreMessage += `• 已恢复 ${result.topicsCount} 个对话话题\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredTopics', { count: result.topicsCount })}\n`;
               }
 
               if (result.assistantsCount > 0) {
-                restoreMessage += `• 已恢复 ${result.assistantsCount} 个助手\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredAssistants', { count: result.assistantsCount })}\n`;
               }
             } else {
               // 完整备份恢复消息
               if (result.topicsCount > 0) {
-                restoreMessage += `• 已恢复 ${result.topicsCount} 个对话话题\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredTopics', { count: result.topicsCount })}\n`;
               }
 
               if (result.assistantsCount > 0) {
-                restoreMessage += `• 已恢复 ${result.assistantsCount} 个助手\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredAssistants', { count: result.assistantsCount })}\n`;
               }
 
               if (result.settingsRestored) {
-                restoreMessage += `• 已恢复应用设置\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredSettings')}\n`;
               }
 
               if (result.localStorageCount > 0) {
-                restoreMessage += `• 已恢复 ${result.localStorageCount} 项其他应用数据\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredLocalStorage', { count: result.localStorageCount })}\n`;
               }
             }
 
             const finalMessage = result.backupType === 'selective'
               ? restoreMessage
-              : `备份恢复成功：\n${restoreMessage}\n请重启应用以应用所有更改`;
+              : `${t('dataSettings.restoreProgress.success.full')}\n${restoreMessage}\n${t('dataSettings.restoreProgress.restartRequired')}`;
 
             showMessage(finalMessage, 'success');
           } else {
             // 显示错误信息
-            showMessage(`恢复备份失败: ${result.error || '未知错误'}`, 'error');
+            showMessage(`${t('dataSettings.messages.restoreFailed')}: ${result.error || t('dataSettings.errors.unknown')}`, 'error');
           }
         } catch (error) {
           console.error('恢复备份失败:', error);
-          showMessage('恢复备份失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
+          showMessage(t('dataSettings.messages.restoreFailed') + ': ' + (error instanceof Error ? error.message : t('dataSettings.errors.unknown')), 'error');
         } finally {
           setIsLoading(false);
           // 恢复完成后重置进度条
@@ -333,7 +335,7 @@ const BackupRestorePanel: React.FC = () => {
       input.click();
     } catch (error) {
       console.error('打开文件选择器失败:', error);
-      showMessage('打开文件选择器失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
+      showMessage(t('dataSettings.messages.fileSelectorFailed') + ': ' + (error instanceof Error ? error.message : t('dataSettings.errors.unknown')), 'error');
       setIsLoading(false);
       setRestoreProgress({
         active: false,
@@ -359,11 +361,11 @@ const BackupRestorePanel: React.FC = () => {
       await dexieStorage.clearDatabase();
 
       // 显示成功消息
-      showMessage('所有数据已彻底清除', 'success');
+      showMessage(t('dataSettings.dataManagement.clearAll.success'), 'success');
       refreshBackupFilesList(); // 刷新备份文件列表
     } catch (error) {
       console.error('确认清理所有数据时出错:', error);
-      showMessage('清理数据时发生错误: ' + (error instanceof Error ? error.message : String(error)), 'error');
+      showMessage(t('dataSettings.messages.clearFailed') + ': ' + (error instanceof Error ? error.message : String(error)), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -396,7 +398,7 @@ const BackupRestorePanel: React.FC = () => {
 
   // 处理备份文件删除
   const handleFileDeleted = () => {
-    showMessage('备份文件已删除', 'info');
+      showMessage(t('dataSettings.backupFilesList.deleted'), 'info');
     // 刷新备份文件列表
     refreshBackupFilesList();
   };
@@ -422,12 +424,12 @@ const BackupRestorePanel: React.FC = () => {
       const result = await webdavService.backupToWebDav(backupData);
 
       if (result.success) {
-        showMessage('完整备份已成功上传到 WebDAV 服务器', 'success');
+        showMessage(t('dataSettings.messages.webdavBackupSuccess'), 'success');
       } else {
-        showMessage(`WebDAV 备份失败: ${result.error}`, 'error');
+        showMessage(`${t('dataSettings.messages.webdavBackupFailed')}: ${result.error}`, 'error');
       }
     } catch (error) {
-      showMessage(`WebDAV 备份失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
+      showMessage(`${t('dataSettings.messages.webdavBackupFailed')}: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -445,9 +447,9 @@ const BackupRestorePanel: React.FC = () => {
     try {
       await saveWebDavConfig(config);
       setWebdavConfig(config);
-      showMessage('WebDAV 配置已保存', 'success');
+      showMessage(t('dataSettings.messages.webdavConfigSaved'), 'success');
     } catch (error) {
-      showMessage(`保存配置失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
+      showMessage(`${t('dataSettings.messages.configSaveFailed')}: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 
@@ -465,12 +467,12 @@ const BackupRestorePanel: React.FC = () => {
       });
 
       if (result.success) {
-        showMessage('从 WebDAV 恢复成功', 'success');
+        showMessage(t('dataSettings.messages.webdavRestoreSuccess'), 'success');
       } else {
-        showMessage(`恢复失败: ${result.error}`, 'error');
+        showMessage(`${t('dataSettings.messages.webdavRestoreFailed')}: ${result.error}`, 'error');
       }
     } catch (error) {
-      showMessage(`恢复失败: ${error instanceof Error ? error.message : String(error)}`, 'error');
+      showMessage(`${t('dataSettings.messages.webdavRestoreFailed')}: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsLoading(false);
       setRestoreProgress({
@@ -504,42 +506,42 @@ const BackupRestorePanel: React.FC = () => {
       )}
 
       {/* 备份与恢复分组 */}
-      <SettingGroup title="备份与恢复">
+      <SettingGroup title={t('dataSettings.backupAndRestore.title')}>
         <SettingItem
-          title="备份聊天和助手"
-          description="备份当前所有对话话题和助手配置"
+          title={t('dataSettings.backupAndRestore.basicBackup.title')}
+          description={t('dataSettings.backupAndRestore.basicBackup.description')}
           icon={<Save size={24} />}
           onClick={handleBasicBackup}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title="完整系统备份"
-          description="备份所有数据，包括设置和本地存储"
+          title={t('dataSettings.backupAndRestore.fullBackup.title')}
+          description={t('dataSettings.backupAndRestore.fullBackup.description')}
           icon={<Save size={24} />}
           onClick={handleFullBackup}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title="选择性备份"
-          description="自定义选择要备份的数据类型"
+          title={t('dataSettings.backupAndRestore.selectiveBackup.title')}
+          description={t('dataSettings.backupAndRestore.selectiveBackup.description')}
           icon={<Settings size={24} />}
           onClick={openSelectiveBackupDialog}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title="导入备份文件并恢复"
-          description="从本地文件恢复备份数据"
+          title={t('dataSettings.backupAndRestore.restore.title')}
+          description={t('dataSettings.backupAndRestore.restore.description')}
           icon={<Folder size={24} />}
           onClick={handleRestore}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title="导入其他AI助手备份"
-          description="导入来自其他AI助手应用的备份文件"
+          title={t('dataSettings.backupAndRestore.importExternal.title')}
+          description={t('dataSettings.backupAndRestore.importExternal.description')}
           icon={<CloudDownload size={24} />}
           onClick={openImportExternalDialog}
           disabled={isLoading}
@@ -548,26 +550,26 @@ const BackupRestorePanel: React.FC = () => {
       </SettingGroup>
 
       {/* 云备份分组 */}
-      <SettingGroup title="云备份">
+      <SettingGroup title={t('dataSettings.cloudBackup.title')}>
         <SettingItem
-          title="WebDAV 云备份设置"
-          description="配置 WebDAV 服务器连接"
+          title={t('dataSettings.cloudBackup.webdavSettings.title')}
+          description={t('dataSettings.cloudBackup.webdavSettings.description')}
           icon={<Cloud size={24} />}
           onClick={handleWebDavSettings}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title="备份到 WebDAV"
-          description="将备份上传到已配置的 WebDAV 服务器"
+          title={t('dataSettings.cloudBackup.backupToWebdav.title')}
+          description={t('dataSettings.cloudBackup.backupToWebdav.description')}
           icon={<CloudUpload size={24} />}
           onClick={handleWebDavBackup}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title="从 WebDAV 恢复"
-          description="从 WebDAV 服务器下载并恢复备份"
+          title={t('dataSettings.cloudBackup.restoreFromWebdav.title')}
+          description={t('dataSettings.cloudBackup.restoreFromWebdav.description')}
           icon={<CloudDownload size={24} />}
           onClick={handleWebDavRestoreOpen}
           disabled={isLoading}
@@ -576,18 +578,18 @@ const BackupRestorePanel: React.FC = () => {
       </SettingGroup>
 
       {/* 数据管理分组 */}
-      <SettingGroup title="数据管理">
+      <SettingGroup title={t('dataSettings.dataManagement.title')}>
         <SettingItem
-          title="数据库诊断与修复"
-          description="检查并修复数据库问题"
+          title={t('dataSettings.dataManagement.diagnostic.title')}
+          description={t('dataSettings.dataManagement.diagnostic.description')}
           icon={<Database size={24} />}
           onClick={openDatabaseDiagnosticDialog}
           disabled={isLoading}
           showArrow={false}
         />
         <SettingItem
-          title={isLoading ? '清理中...' : '清理全部助手和话题'}
-          description="永久删除所有对话话题和助手数据"
+          title={isLoading ? t('dataSettings.dataManagement.clearAll.clearing') : t('dataSettings.dataManagement.clearAll.title')}
+          description={t('dataSettings.dataManagement.clearAll.description')}
           icon={<RotateCcw size={24} />}
           onClick={handleClearAll}
           disabled={isLoading}
@@ -622,27 +624,19 @@ const BackupRestorePanel: React.FC = () => {
         aria-describedby="clear-dialog-description"
       >
         <DialogTitle id="clear-dialog-title" color="error">
-          确认彻底清理所有应用数据
+          {t('dataSettings.dataManagement.clearAll.confirm.title')}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="clear-dialog-description">
-            <strong>警告：这是一个彻底清理操作！</strong><br/><br/>
-            此操作将永久删除以下所有数据：<br/>
-            • 所有对话话题及其消息<br/>
-            • 所有助手及其配置<br/>
-            • 助手与话题的关联关系<br/>
-            • 相关缓存和暂存数据<br/><br/>
-            清理后数据无法恢复，强烈建议在清理前进行完整备份。<br/><br/>
-            清理完成后，应用将恢复到初始状态，请重启应用以确保更改生效。<br/><br/>
-            是否确认继续？
-          </DialogContentText>
+          <DialogContentText id="clear-dialog-description" dangerouslySetInnerHTML={{
+            __html: `<strong>${t('dataSettings.dataManagement.clearAll.confirm.warning')}</strong><br/><br/>${t('dataSettings.dataManagement.clearAll.confirm.message')}`
+          }} />
         </DialogContent>
         <DialogActions>
           <Button onClick={cancelClearAll} color="primary">
-            取消
+            {t('dataSettings.dataManagement.clearAll.confirm.cancel')}
           </Button>
           <Button onClick={confirmClearAll} color="error" variant="contained">
-            确认彻底清理
+            {t('dataSettings.dataManagement.clearAll.confirm.confirm')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -675,13 +669,13 @@ const BackupRestorePanel: React.FC = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>WebDAV 云备份设置</DialogTitle>
+        <DialogTitle>{t('dataSettings.webdav.settings.title')}</DialogTitle>
         <DialogContent>
           <WebDavSettings onConfigChange={setWebdavConfig} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setWebdavSettingsOpen(false)}>
-            关闭
+            {t('common.close', { defaultValue: '关闭' })}
           </Button>
         </DialogActions>
       </Dialog>

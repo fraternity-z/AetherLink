@@ -1,0 +1,408 @@
+{
+  "title": "Data Management",
+  "description": "Backup your conversations and assistant data to restore them after device changes or app reinstallation",
+  "advancedBackup": {
+    "title": "Advanced Backup",
+    "fullBackup": {
+      "title": "Full Application Backup",
+      "description": "Customize backup content and export to your chosen location",
+      "info": "Advanced backup allows you to select data types to backup and save all data to a custom location. This feature is ideal for use before app updates or when migrating between devices.",
+      "selectData": "Select data to backup:",
+      "chats": {
+        "label": "Chat History",
+        "description": "Includes all conversation history and messages"
+      },
+      "assistants": {
+        "label": "Assistant Data",
+        "description": "Includes all custom assistants and their associated topics"
+      },
+      "settings": {
+        "label": "App Settings",
+        "description": "Includes theme, models, API keys, and other settings"
+      },
+      "localStorage": {
+        "label": "Local Storage Data",
+        "description": "Includes all other app data (preferences, history, etc.)"
+      },
+      "indexedDB": {
+        "label": "Database Data",
+        "description": "Includes structured data in IndexedDB"
+      },
+      "createButton": "Create Full Backup",
+      "creating": "Creating backup...",
+      "instructions": {
+        "title": "Backup Instructions",
+        "jsonFile": {
+          "primary": "Backups will be saved as JSON files",
+          "secondary": "You can choose the save location for easy migration between devices"
+        },
+        "cloud": {
+          "primary": "Recommended: Save to Cloud",
+          "secondary": "Such as Google Drive, Dropbox, or other cloud storage services"
+        },
+        "regular": {
+          "primary": "Regular Backups",
+          "secondary": "It's recommended to create backups before important updates or changes"
+        }
+      }
+    }
+  },
+  "backupAndRestore": {
+    "title": "Backup & Restore",
+    "basicBackup": {
+      "title": "Backup Chats & Assistants",
+      "description": "Backup all current conversation topics and assistant configurations"
+    },
+    "fullBackup": {
+      "title": "Full System Backup",
+      "description": "Backup all data, including settings and local storage"
+    },
+    "selectiveBackup": {
+      "title": "Selective Backup",
+      "description": "Customize which data types to backup"
+    },
+    "restore": {
+      "title": "Import Backup File & Restore",
+      "description": "Restore backup data from local files"
+    },
+    "importExternal": {
+      "title": "Import External AI Assistant Backup",
+      "description": "Import backup files from other AI assistant applications"
+    }
+  },
+  "cloudBackup": {
+    "title": "Cloud Backup",
+    "webdavSettings": {
+      "title": "WebDAV Cloud Backup Settings",
+      "description": "Configure WebDAV server connection"
+    },
+    "backupToWebdav": {
+      "title": "Backup to WebDAV",
+      "description": "Upload backup to the configured WebDAV server"
+    },
+    "restoreFromWebdav": {
+      "title": "Restore from WebDAV",
+      "description": "Download and restore backup from WebDAV server"
+    }
+  },
+  "dataManagement": {
+    "title": "Data Management",
+    "diagnostic": {
+      "title": "Database Diagnostic & Repair",
+      "description": "Check and repair database issues"
+    },
+    "clearAll": {
+      "title": "Clear All Assistants & Topics",
+      "clearing": "Clearing...",
+      "description": "Permanently delete all conversation topics and assistant data",
+      "confirm": {
+        "title": "Confirm Complete Data Clearance",
+        "warning": "Warning: This is a complete clearance operation!",
+        "message": "This operation will permanently delete all of the following data:<br/>• All conversation topics and their messages<br/>• All assistants and their configurations<br/>• Assistant-topic associations<br/>• Related cache and temporary data<br/><br/>Data cannot be recovered after clearance. It's strongly recommended to create a full backup before clearing.<br/><br/>After clearance, the app will return to its initial state. Please restart the app to ensure changes take effect.<br/><br/>Do you want to continue?",
+        "cancel": "Cancel",
+        "confirm": "Confirm Complete Clearance"
+      },
+      "success": "All data has been completely cleared"
+    }
+  },
+  "selectiveBackupDialog": {
+    "title": "Selective Backup",
+    "description": "Select content to backup:",
+    "modelConfig": {
+      "label": "Model Configuration",
+      "recommended": "Recommended",
+      "description": "Model configuration includes:<br/>• All model provider settings<br/>• API key configuration<br/>• Default model selection<br/>• Web search settings"
+    },
+    "comingSoon": {
+      "title": "Coming Soon",
+      "message": "More backup options are under development, including chat history, assistant configurations, etc."
+    },
+    "cancel": "Cancel",
+    "createBackup": "Create Backup",
+    "backingUp": "Backing up..."
+  },
+  "backupFilesList": {
+    "title": "Local Backup Files",
+    "refresh": "Refresh",
+    "noFiles": "No local backup files found",
+    "noFilesHint": "Backup files may be saved in your device's Download folder, app backup directory, or other locations",
+    "types": {
+      "full": "Full Backup",
+      "custom": "Custom Backup",
+      "basic": "Basic Backup"
+    },
+    "location": "Location",
+    "actions": {
+      "restore": "Restore this backup",
+      "open": "Open file",
+      "delete": "Delete backup"
+    },
+    "deleted": "Backup file deleted"
+  },
+  "restoreProgress": {
+    "readingFile": "Reading file...",
+    "validating": "Validating backup data...",
+    "success": {
+      "selective": "Selective backup restored successfully!",
+      "full": "Backup restored successfully:"
+    },
+    "restoredTopics": "Restored {count} conversation topics",
+    "restoredAssistants": "Restored {count} assistants",
+    "restoredSettings": "Restored app settings",
+    "restoredLocalStorage": "Restored {count} other app data items",
+    "restartRequired": "Please restart the app to apply all changes"
+  },
+  "importExternal": {
+    "title": "Import External AI Assistant Chat History",
+    "supportedFormats": "Supported backup formats:",
+    "formats": {
+      "cherryStudio": "Cherry Studio JSON",
+      "chatboxaiJson": "ChatboxAI JSON",
+      "chatboxaiTxt": "ChatboxAI TXT"
+    },
+    "howToImport": {
+      "title": "How to Import",
+      "cherryStudio": "• <strong>Cherry Studio JSON</strong>: Full backup file with all conversation records and message blocks<br/>",
+      "chatboxaiJson": "• <strong>ChatboxAI JSON</strong>: JSON backup file exported from ChatboxAI, supporting multi-threaded conversations and attachments<br/>",
+      "chatboxaiTxt": "• <strong>ChatboxAI TXT</strong>: TXT text file exported from ChatboxAI, plain text conversation records<br/>",
+      "note": "• Imported data will create corresponding assistants and conversations, maintaining the original conversation structure"
+    },
+    "selectFile": "Select and Import Backup File",
+    "importing": "Importing...",
+    "selectMode": "Select import mode:",
+    "modeSelection": {
+      "title": "Import Mode Instructions",
+      "description": "ChatboxAI format detected. Please select import mode:",
+      "separate": {
+        "title": "Separate Assistant Mode (Recommended)",
+        "description": "Create an independent assistant for each conversation for easier management and use"
+      },
+      "unified": {
+        "title": "Unified Assistant Mode",
+        "description": "All conversations belong to one assistant as different topics"
+      },
+      "back": "Back",
+      "startImport": "Start Import"
+    },
+    "success": {
+      "title": "Import Successful",
+      "message": "Data imported from {source}",
+      "topicsCount": "{count} conversation topics",
+      "topicsHint": "Imported conversations will appear in your conversation list",
+      "assistantsCount": "{count} assistants",
+      "assistantsHint": "Created \"{source} Import Assistant\"",
+      "completeMessage": "Import completed. You can find the newly created assistants and their conversations in the assistant list."
+    },
+    "sources": {
+      "desktop": "Cherry Studio",
+      "chatboxai": "ChatboxAI JSON",
+      "chatboxaiTxt": "ChatboxAI TXT",
+      "default": "External AI Assistant"
+    },
+    "cancel": "Cancel",
+    "complete": "Complete"
+  },
+  "databaseDiagnostic": {
+    "title": "Database Diagnostic & Repair",
+    "diagnosing": "Diagnosing database...",
+    "databaseStatus": {
+      "title": "Database Status",
+      "currentDB": "Current Database",
+      "detectedDBs": "Detected Databases",
+      "none": "None",
+      "dataStores": "Data Storage",
+      "topicsCount": "Topics Count",
+      "assistantsCount": "Assistants Count"
+    },
+    "warnings": {
+      "multipleDatabases": "Multiple databases detected, which may cause data conflicts. It's recommended to click \"Repair Database\" to clean up old databases.",
+      "missingStores": "Database is missing the following object stores: {stores}. It's recommended to restart the app or clear browser cache and try again."
+    },
+    "repairResult": {
+      "title": "Repair Results",
+      "foundOldDBs": "Found Old Databases",
+      "cleanedDBs": "Cleaned Databases",
+      "currentDB": "Current Database in Use",
+      "success": "Successfully cleaned {count} old databases. It's recommended to restart the app to ensure changes take effect.",
+      "warning": "Found {count} old databases but cleanup failed. Please try restarting the app and repair again.",
+      "info": "No old databases found that need cleanup."
+    },
+    "topicCleanResult": {
+      "title": "Topic Cleanup Results",
+      "removed": "Removed Invalid Topics",
+      "remaining": "Remaining Topics Count",
+      "success": "Successfully cleaned {count} invalid topics.",
+      "info": "No invalid topics found that need cleanup."
+    },
+    "referenceFixResult": {
+      "title": "Assistant Topic Reference Fix Results",
+      "fixedAssistants": "Fixed Assistants Count",
+      "removedReferences": "Removed Invalid References",
+      "totalAssistants": "Total Assistants",
+      "success": "Successfully fixed topic references for {fixed} assistants, removed {removed} invalid references.",
+      "info": "All assistant topic references are valid, no repair needed."
+    },
+    "repairing": "Repairing database...",
+    "cleaningTopics": "Cleaning invalid topics...",
+    "fixingReferences": "Fixing assistant topic references...",
+    "actions": {
+      "rediagnose": "Rediagnose",
+      "cleanupTopics": "Cleanup Invalid Topics",
+      "fixReferences": "Fix Topic References",
+      "repairDB": "Repair Database",
+      "rebuildDB": "Rebuild Database",
+      "close": "Close"
+    },
+    "confirmRepair": "This operation will clean up old version databases. If you're using v6, please proceed with caution. Do you want to continue?",
+    "confirmRebuild": "This operation will delete and rebuild the database, which may cause data loss. Do you want to continue?",
+    "rebuildSuccess": "Database rebuilt successfully. Please restart the app to ensure changes take effect.",
+    "errors": {
+      "diagnosticFailed": "Database diagnostic failed",
+      "repairFailed": "Database repair failed",
+      "cleanupFailed": "Failed to cleanup invalid topics",
+      "fixReferencesFailed": "Failed to fix assistant topic references",
+      "rebuildFailed": "Database rebuild failed"
+    }
+  },
+  "webdav": {
+    "settings": {
+      "title": "WebDAV Cloud Backup Settings",
+      "description": "Configure WebDAV server for cloud backup and synchronization",
+      "serverAddress": {
+        "label": "WebDAV Server Address",
+        "placeholder": "https://your-server.com/webdav",
+        "helperText": "Example: https://cloud.example.com/remote.php/webdav"
+      },
+      "username": "Username",
+      "password": "Password",
+      "backupPath": {
+        "label": "Backup Path",
+        "helperText": "Directory path on the server to store backup files"
+      },
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "saveConfig": "Save Configuration",
+      "saving": "Saving...",
+      "connectionSuccess": "Connection successful!",
+      "connectionFailed": "Connection failed, please check configuration",
+      "configSaved": "Configuration saved successfully!",
+      "autoSync": {
+        "title": "Auto Sync Settings",
+        "interval": "Sync Interval",
+        "maxBackups": "Max Backup Count",
+        "enable": "Enable Auto Sync"
+      },
+      "syncStatus": {
+        "title": "Sync Status",
+        "syncing": "Syncing...",
+        "lastSync": "Last Sync",
+        "notSynced": "Not Synced",
+        "error": "Error"
+      }
+    },
+    "configDialog": {
+      "title": "WebDAV Server Configuration",
+      "description": "Configure your WebDAV server information for cloud backup and synchronization",
+      "serverAddress": {
+        "label": "WebDAV Server Address",
+        "placeholder": "https://your-server.com/webdav",
+        "helperText": "Full WebDAV server URL"
+      },
+      "username": "Username",
+      "password": "Password",
+      "backupPath": {
+        "label": "Backup Path",
+        "helperText": "Directory path on the server to store backup files"
+      },
+      "testConnection": "Test Connection",
+      "testing": "Testing connection...",
+      "saveConfig": "Save Configuration",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "connectionSuccess": "Connection successful! WebDAV server is accessible.",
+      "connectionFailed": "Connection failed. Please check server address, username, and password.",
+      "cannotConnect": "Unable to connect to WebDAV server, please check configuration",
+      "help": {
+        "title": "Configuration Instructions",
+        "examples": "Common WebDAV server configuration examples:",
+        "nextcloud": {
+          "title": "Nextcloud:",
+          "server": "Server Address: https://your-domain.com/remote.php/webdav",
+          "username": "Username: Your Nextcloud username",
+          "password": "Password: Your Nextcloud password or app password"
+        },
+        "owncloud": {
+          "title": "ownCloud:",
+          "server": "Server Address: https://your-domain.com/remote.php/webdav"
+        },
+        "synology": {
+          "title": "Synology NAS:",
+          "server": "Server Address: https://your-nas-ip:5006/webdav"
+        },
+        "notes": "Notes:<br/>• Ensure the server supports HTTPS connections<br/>• Path must start with /<br/>• It's recommended to use app-specific passwords instead of main passwords"
+      }
+    },
+    "backupManager": {
+      "title": "WebDAV Backup Manager",
+      "refresh": "Refresh",
+      "noFiles": "No backup files available",
+      "fileCount": "Total {count} backup files",
+      "deleteSelected": "Delete Selected ({count})",
+      "columns": {
+        "filename": "Filename",
+        "type": "Type",
+        "modifiedTime": "Modified Time",
+        "size": "Size",
+        "actions": "Actions"
+      },
+      "types": {
+        "basic": "Basic Backup",
+        "full": "Full Backup",
+        "custom": "Custom Backup",
+        "backup": "Backup",
+        "unknown": "Unknown"
+      },
+      "actions": {
+        "restore": "Restore this backup",
+        "delete": "Delete file"
+      },
+      "close": "Close",
+      "errors": {
+        "loadFailed": "Failed to load file list",
+        "deleteFailed": "Failed to delete file",
+        "restoreFailed": "Restore failed"
+      }
+    }
+  },
+  "messages": {
+    "backupSuccess": "Backup successful",
+    "backupFailed": "Failed to create backup",
+    "backupCreated": "Backup created",
+    "restoreSuccess": "Backup restored successfully",
+    "restoreFailed": "Failed to restore backup",
+    "fileSelectorFailed": "Failed to open file selector",
+    "clearSuccess": "All data has been completely cleared",
+    "clearFailed": "Error occurred while clearing data",
+    "webdavBackupSuccess": "Full backup successfully uploaded to WebDAV server",
+    "webdavBackupFailed": "WebDAV backup failed",
+    "webdavRestoreSuccess": "Successfully restored from WebDAV",
+    "webdavRestoreFailed": "Restore failed",
+    "webdavConfigSaved": "WebDAV configuration saved",
+    "configSaveFailed": "Failed to save configuration",
+    "pleaseSelectSaveLocation": "Please select \"Save to Device\" or file manager app in the system share menu",
+    "fileOpened": "File opened. Please use \"Save As\" to save to your desired location",
+    "backupSavedToDownload": "Backup saved to download directory",
+    "backupSavedToRoot": "Backup saved to internal storage root directory",
+    "copiedToClipboard": " (copied to clipboard)",
+    "selectiveBackupFailed": "Failed to create selective backup",
+    "importFailed": "Failed to import external backup",
+    "dateUnknown": "Unknown date",
+    "dateInvalid": "Date format error",
+    "fileEmpty": "File content is empty",
+    "fileNotFound": "Cannot open file. No suitable app found to handle JSON files"
+  },
+  "errors": {
+    "unknown": "Unknown error"
+  }
+}
+

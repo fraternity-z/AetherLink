@@ -32,6 +32,7 @@ import {
   Trash2 as DeleteIcon,
   ArrowLeft
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CustomIcon } from './icons';
 import { useTheme } from '@mui/material/styles';
 import QuickPhraseService from '../shared/services/QuickPhraseService';
@@ -43,6 +44,7 @@ const QuickPhraseSettings: React.FC = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleBack = () => {
     navigate('/settings');
@@ -67,11 +69,11 @@ const QuickPhraseSettings: React.FC = () => {
       const allPhrases = await QuickPhraseService.getAll();
       setPhrases(allPhrases);
     } catch (error) {
-      console.error('加载快捷短语失败:', error);
+      console.error(t('settings.quickPhraseManagement.errors.loadFailed'), error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadPhrases();
@@ -96,13 +98,13 @@ const QuickPhraseSettings: React.FC = () => {
 
   // 删除快捷短语
   const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除这个快捷短语吗？')) return;
+    if (!confirm(t('settings.quickPhraseManagement.actions.deleteConfirm'))) return;
 
     try {
       await QuickPhraseService.delete(id);
       await loadPhrases();
     } catch (error) {
-      console.error('删除快捷短语失败:', error);
+      console.error(t('settings.quickPhraseManagement.errors.deleteFailed'), error);
     }
   };
 
@@ -137,14 +139,14 @@ const QuickPhraseSettings: React.FC = () => {
       handleCloseDialog();
       await loadPhrases();
     } catch (error) {
-      console.error('保存快捷短语失败:', error);
+      console.error(t('settings.quickPhraseManagement.errors.saveFailed'), error);
     }
   };
 
   if (loading) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography>加载中...</Typography>
+        <Typography>{t('settings.quickPhraseManagement.loading')}</Typography>
       </Box>
     );
   }
@@ -191,7 +193,7 @@ const QuickPhraseSettings: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            快捷短语管理
+            {t('settings.quickPhraseManagement.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -209,13 +211,13 @@ const QuickPhraseSettings: React.FC = () => {
         },
       }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3, px: 1 }}>
-          管理您的快捷短语，在聊天时快速插入常用内容。
+          {t('settings.quickPhraseManagement.description')}
         </Typography>
 
         {/* 快捷短语按钮显示控制 */}
         <Paper sx={{ p: 2, mb: 3, border: `1px solid ${theme.palette.divider}`, borderRadius: 2 }}>
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
-            显示设置
+            {t('settings.quickPhraseManagement.displaySettings.title')}
           </Typography>
           <FormControlLabel
             control={
@@ -224,10 +226,10 @@ const QuickPhraseSettings: React.FC = () => {
                 onChange={(e) => dispatch(setShowQuickPhraseButton(e.target.checked))}
               />
             }
-            label="在输入框显示快捷短语按钮"
+            label={t('settings.quickPhraseManagement.displaySettings.showButton')}
           />
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-            控制是否在聊天输入框中显示快捷短语按钮
+            {t('settings.quickPhraseManagement.displaySettings.showButtonDescription')}
           </Typography>
         </Paper>
 
@@ -237,17 +239,17 @@ const QuickPhraseSettings: React.FC = () => {
               <CustomIcon name="quickPhrase" size={48} color="currentColor" />
             </Box>
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              还没有快捷短语
+              {t('settings.quickPhraseManagement.empty.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              创建您的第一个快捷短语，让聊天更高效
+              {t('settings.quickPhraseManagement.empty.description')}
             </Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleAdd}
             >
-              添加快捷短语
+              {t('settings.quickPhraseManagement.empty.addButton')}
             </Button>
           </Paper>
         ) : (
@@ -271,7 +273,7 @@ const QuickPhraseSettings: React.FC = () => {
                           </Typography>
                           <Chip
                             size="small"
-                            label={`${phrase.content.length} 字符`}
+                            label={`${phrase.content.length} ${t('settings.quickPhraseManagement.list.characters')}`}
                             variant="outlined"
                           />
                         </Box>
@@ -318,7 +320,7 @@ const QuickPhraseSettings: React.FC = () => {
 
             <Fab
               color="primary"
-              aria-label="添加快捷短语"
+              aria-label={t('settings.quickPhraseManagement.actions.addLabel')}
               onClick={handleAdd}
               sx={{
                 position: 'fixed',
@@ -339,45 +341,63 @@ const QuickPhraseSettings: React.FC = () => {
           fullWidth
         >
           <DialogTitle>
-            {editingPhrase ? '编辑快捷短语' : '添加快捷短语'}
+            {editingPhrase 
+              ? t('settings.quickPhraseManagement.dialog.edit.title')
+              : t('settings.quickPhraseManagement.dialog.add.title')}
           </DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
               <TextField
-                label="标题"
+                label={editingPhrase 
+                  ? t('settings.quickPhraseManagement.dialog.edit.titleLabel')
+                  : t('settings.quickPhraseManagement.dialog.add.titleLabel')}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 fullWidth
                 size="small"
-                placeholder="为您的快捷短语起个名字"
+                placeholder={editingPhrase 
+                  ? t('settings.quickPhraseManagement.dialog.edit.titlePlaceholder')
+                  : t('settings.quickPhraseManagement.dialog.add.titlePlaceholder')}
               />
               
               <TextField
-                label="内容"
+                label={editingPhrase 
+                  ? t('settings.quickPhraseManagement.dialog.edit.contentLabel')
+                  : t('settings.quickPhraseManagement.dialog.add.contentLabel')}
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 multiline
                 rows={6}
                 fullWidth
                 size="small"
-                placeholder="输入快捷短语的内容..."
+                placeholder={editingPhrase 
+                  ? t('settings.quickPhraseManagement.dialog.edit.contentPlaceholder')
+                  : t('settings.quickPhraseManagement.dialog.add.contentPlaceholder')}
               />
 
               {formData.content && (
                 <Alert severity="info" sx={{ mt: 1 }}>
-                  内容长度：{formData.content.length} 字符
+                  {editingPhrase
+                    ? t('settings.quickPhraseManagement.dialog.edit.contentLength', { count: formData.content.length })
+                    : t('settings.quickPhraseManagement.dialog.add.contentLength', { count: formData.content.length })}
                 </Alert>
               )}
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>取消</Button>
+            <Button onClick={handleCloseDialog}>
+              {editingPhrase 
+                ? t('settings.quickPhraseManagement.dialog.edit.cancel')
+                : t('settings.quickPhraseManagement.dialog.add.cancel')}
+            </Button>
             <Button
               onClick={handleSave}
               variant="contained"
               disabled={!formData.title.trim() || !formData.content.trim()}
             >
-              {editingPhrase ? '更新' : '添加'}
+              {editingPhrase 
+                ? t('settings.quickPhraseManagement.dialog.edit.submit')
+                : t('settings.quickPhraseManagement.dialog.add.submit')}
             </Button>
           </DialogActions>
         </Dialog>

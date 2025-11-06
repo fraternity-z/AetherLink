@@ -24,6 +24,7 @@ import {
 import { Play, Square, FolderOpen, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { CustomIcon } from './icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // AI辩论配置默认值常量
 const DEFAULT_CONFIG = {
@@ -83,6 +84,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
   question = ''
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [config, setConfig] = useState<DebateConfig | null>(null);
   const [debateQuestion, setDebateQuestion] = useState('');
@@ -106,63 +108,63 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
   // 预设辩论主题
   const debateTopics = [
     {
-      category: '科技与社会',
+      category: t('aiDebate.topicCategories.tech'),
       topics: [
-        '人工智能是否会取代大部分人类工作？',
-        '社交媒体对青少年的影响是利大于弊还是弊大于利？',
-        '自动驾驶汽车是否应该全面推广？',
-        '远程工作是否应该成为未来工作的主流模式？',
-        '虚拟现实技术是否会改变人类的社交方式？'
+        t('aiDebate.topics.tech.ai'),
+        t('aiDebate.topics.tech.social'),
+        t('aiDebate.topics.tech.auto'),
+        t('aiDebate.topics.tech.remote'),
+        t('aiDebate.topics.tech.vr')
       ]
     },
     {
-      category: '教育与成长',
+      category: t('aiDebate.topicCategories.education'),
       topics: [
-        '在线教育是否能够完全替代传统课堂教育？',
-        '学生是否应该从小学开始学习编程？',
-        '考试制度是否是评估学生能力的最佳方式？',
-        '家长是否应该限制孩子使用电子设备的时间？',
-        '大学教育是否对每个人都是必需的？'
+        t('aiDebate.topics.education.online'),
+        t('aiDebate.topics.education.coding'),
+        t('aiDebate.topics.education.exam'),
+        t('aiDebate.topics.education.screen'),
+        t('aiDebate.topics.education.university')
       ]
     },
     {
-      category: '环境与可持续发展',
+      category: t('aiDebate.topicCategories.environment'),
       topics: [
-        '个人行为改变是否足以应对气候变化？',
-        '核能是否是解决能源危机的最佳方案？',
-        '电动汽车是否真的比燃油汽车更环保？',
-        '是否应该禁止使用一次性塑料制品？',
-        '城市化发展是否有利于环境保护？'
+        t('aiDebate.topics.environment.individual'),
+        t('aiDebate.topics.environment.nuclear'),
+        t('aiDebate.topics.environment.ev'),
+        t('aiDebate.topics.environment.plastic'),
+        t('aiDebate.topics.environment.urban')
       ]
     },
     {
-      category: '经济与商业',
+      category: t('aiDebate.topicCategories.economy'),
       topics: [
-        '基本收入制度是否应该在全球推行？',
-        '加密货币是否会取代传统货币？',
-        '共享经济模式是否可持续发展？',
-        '企业是否应该承担更多的社会责任？',
-        '全球化是否对发展中国家有利？'
+        t('aiDebate.topics.economy.ubi'),
+        t('aiDebate.topics.economy.crypto'),
+        t('aiDebate.topics.economy.sharing'),
+        t('aiDebate.topics.economy.csr'),
+        t('aiDebate.topics.economy.globalization')
       ]
     },
     {
-      category: '健康与生活',
+      category: t('aiDebate.topicCategories.health'),
       topics: [
-        '素食主义是否比杂食更健康？',
-        '运动是否是保持健康的最重要因素？',
-        '心理健康是否应该得到与身体健康同等的重视？',
-        '基因编辑技术是否应该用于人类？',
-        '传统医学是否有科学依据？'
+        t('aiDebate.topics.health.vegan'),
+        t('aiDebate.topics.health.exercise'),
+        t('aiDebate.topics.health.mental'),
+        t('aiDebate.topics.health.gene'),
+        t('aiDebate.topics.health.traditional')
       ]
     },
     {
-      category: '社会与文化',
+      category: t('aiDebate.topicCategories.society'),
       topics: [
-        '社会应该追求绝对平等还是机会平等？',
-        '传统文化是否应该在现代社会中保持不变？',
-        '个人隐私权是否应该让位于公共安全？',
-        '言论自由是否应该有边界？',
-        '多元文化主义是否有利于社会和谐？'
+        t('aiDebate.topics.society.equality'),
+        t('aiDebate.topics.society.tradition'),
+        t('aiDebate.topics.society.privacy'),
+        t('aiDebate.topics.society.speech'),
+        t('aiDebate.topics.society.diversity')
       ]
     }
   ];
@@ -190,11 +192,11 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
           setConfigGroups(parsedGroups);
         }
       } catch (error) {
-        console.error('加载AI辩论配置失败:', error);
+        console.error(t('errors.aiDebate.loadConfigFailed'), error);
       }
     };
     loadConfig();
-  }, []);
+  }, [t]);
 
   // 当外部问题变化时更新内部状态
   useEffect(() => {
@@ -278,13 +280,13 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
       return {
         color: 'error' as const,
         icon: <Square size={20} />,
-        tooltip: '停止AI辩论'
+        tooltip: t('aiDebate.button.stop')
       };
     } else {
       return {
         color: isConfigValid ? 'primary' as const : 'default' as const,
         icon: <CustomIcon name="aiDebate" size={20} color="currentColor" />,
-        tooltip: isConfigValid ? '开始AI辩论' : 'AI辩论功能未配置'
+        tooltip: isConfigValid ? t('aiDebate.button.start') : t('aiDebate.button.notConfigured')
       };
     }
   };
@@ -309,25 +311,27 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
       {/* 辩论配置对话框 */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-          <CustomIcon name="aiDebate" size={20} color="currentColor" style={{ marginRight: 8 }} />
-          AI辩论设置
+          <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+            <CustomIcon name="aiDebate" size={20} color="currentColor" />
+          </Box>
+          {t('aiDebate.dialog.title')}
         </DialogTitle>
 
         <DialogContent>
           {!isConfigValid ? (
             <Alert severity="warning" sx={{ mb: 2 }}>
-              AI辩论功能未正确配置。请先配置至少2个辩论角色。
+              {t('aiDebate.dialog.notConfiguredWarning')}
             </Alert>
           ) : (
             <Alert severity="info" sx={{ mb: 2 }}>
-              已配置 {config?.roles.length} 个辩论角色，准备开始辩论。
+              {t('aiDebate.dialog.configuredInfo', { count: config?.roles.length })}
             </Alert>
           )}
 
           {/* 辩论问题输入 */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              辩论主题/问题
+              {t('aiDebate.dialog.topic')}
             </Typography>
             <TextField
               value={debateQuestion}
@@ -335,7 +339,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
               multiline
               rows={3}
               fullWidth
-              placeholder="请输入要辩论的主题或问题，或从下方选择预设主题..."
+              placeholder={t('aiDebate.dialog.topicPlaceholder')}
               disabled={!isConfigValid}
             />
 
@@ -355,7 +359,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
                   }
                 }}
               >
-                💡 快速选择预设主题
+                {t('aiDebate.dialog.quickTopics')}
               </Button>
               <Collapse in={topicsExpanded}>
                 <Box sx={{ mt: 1, maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, p: 1 }}>
@@ -396,16 +400,16 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
           {configGroups.length > 0 && (
             <Box sx={{ mb: 2 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>选择配置分组</InputLabel>
+                <InputLabel>{t('aiDebate.dialog.selectGroup')}</InputLabel>
                 <Select
                   value={selectedGroupId}
                   onChange={(e) => handleGroupSelect(e.target.value)}
-                  label="选择配置分组"
+                  label={t('aiDebate.dialog.selectGroup')}
                 >
                   <MenuItem value="">
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <FolderOpen size={16} style={{ marginRight: 8 }} />
-                      当前配置
+                      {t('aiDebate.dialog.currentConfig')}
                     </Box>
                   </MenuItem>
                   {configGroups.map((group) => (
@@ -414,7 +418,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
                         <FolderOpen size={16} style={{ marginRight: 8 }} />
                         {group.name}
                         <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                          ({group.config.roles.length} 个角色)
+                          ({t('aiDebate.roles.roleCount', { count: group.config.roles.length })})
                         </Typography>
                       </Box>
                     </MenuItem>
@@ -428,7 +432,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
           {isConfigValid && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                参与辩论的角色：
+                {t('aiDebate.dialog.rolesLabel')}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {config?.roles.map((role) => (
@@ -451,12 +455,12 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
 
           {/* 快速设置 */}
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            辩论设置：
+            {t('aiDebate.dialog.settingsLabel')}
           </Typography>
 
           <Box sx={{ display: 'grid', gap: 2 }}>
             <TextField
-              label="最大辩论轮数"
+              label={t('aiDebate.basicSettings.maxRounds')}
               value={customSettings.maxRounds}
               onChange={(e) => {
                 const value = e.target.value;
@@ -478,7 +482,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
               }}
               size="small"
               disabled={!isConfigValid}
-              helperText="输入数字，建议1-20轮"
+              helperText={t('aiDebate.basicSettings.maxRoundsHelper')}
             />
 
             <FormControlLabel
@@ -492,7 +496,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
                   disabled={!isConfigValid}
                 />
               }
-              label="启用主持人"
+              label={t('aiDebate.basicSettings.enableModerator')}
             />
 
             <FormControlLabel
@@ -506,17 +510,17 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
                   disabled={!isConfigValid}
                 />
               }
-              label="生成辩论总结"
+              label={t('aiDebate.basicSettings.enableSummary')}
             />
           </Box>
         </DialogContent>
 
         <DialogActions>
           <Button onClick={handleGoToSettings} startIcon={<Settings size={16} />}>
-            配置角色
+            {t('aiDebate.dialog.configureRoles')}
           </Button>
           <Button onClick={() => setDialogOpen(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleStartDebate}
@@ -524,7 +528,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
             startIcon={<Play size={16} />}
             disabled={!isConfigValid || !debateQuestion.trim()}
           >
-            开始辩论
+            {t('aiDebate.dialog.startDebate')}
           </Button>
         </DialogActions>
       </Dialog>

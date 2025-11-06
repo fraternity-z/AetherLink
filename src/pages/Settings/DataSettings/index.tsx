@@ -7,6 +7,7 @@ import {
   YStack,
 } from '../../../components/settings/SettingComponents';
 import BackupRestoreSection from './BackupRestoreSection';
+import { useTranslation } from '../../../i18n';
 
 /**
  * 数据设置页面
@@ -14,6 +15,7 @@ import BackupRestoreSection from './BackupRestoreSection';
  */
 const DataSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleBack = () => {
     navigate('/settings');
@@ -21,7 +23,7 @@ const DataSettings: React.FC = () => {
 
   return (
     <SafeAreaContainer>
-      <HeaderBar title="数据管理" onBackPress={handleBack} />
+      <HeaderBar title={t('dataSettings.title')} onBackPress={handleBack} />
       <YStack sx={{ flex: 1, overflow: 'hidden' }}>
         <Container>
           <YStack sx={{ gap: 3 }}>

@@ -29,6 +29,7 @@ import {
   CloudUpload as CloudUploadIcon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../../i18n';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { FileOpener } from '@capacitor-community/file-opener';
@@ -39,6 +40,7 @@ const DEFAULT_BACKUP_DIRECTORY = 'AetherLink/backups';
 
 const AdvancedBackupPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -202,13 +204,13 @@ const AdvancedBackupPage: React.FC = () => {
         try {
           // 尝试使用Share API调用系统的分享/保存功能
           await Share.share({
-            title: '保存完整应用备份',
-            text: '选择位置保存完整备份文件',
+            title: t('dataSettings.messages.backupCreated'),
+            text: t('dataSettings.advancedBackup.fullBackup.description'),
             url: tempFileResult.uri,
-            dialogTitle: '选择保存位置'
+            dialogTitle: t('common.selectSaveLocation', { defaultValue: '选择保存位置' })
           });
 
-          showMessage('请在系统分享菜单中选择"保存到设备"或文件管理器应用', 'info');
+          showMessage(t('dataSettings.messages.pleaseSelectSaveLocation'), 'info');
         } catch (shareError) {
           console.error('分享文件失败:', shareError);
 
@@ -219,7 +221,7 @@ const AdvancedBackupPage: React.FC = () => {
               contentType: 'application/json'
             });
 
-            showMessage('文件已打开，请使用"另存为"保存到您想要的位置', 'info');
+            showMessage(t('dataSettings.messages.fileOpened'), 'info');
           } catch (openError) {
             console.error('打开文件失败:', openError);
             // 回退到保存到下载目录
@@ -232,7 +234,7 @@ const AdvancedBackupPage: React.FC = () => {
       }
     } catch (error) {
       console.error('创建完整备份失败:', error);
-      showMessage('创建备份失败: ' + (error as Error).message, 'error');
+      showMessage(t('dataSettings.messages.backupFailed') + ': ' + (error as Error).message, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -278,19 +280,19 @@ const AdvancedBackupPage: React.FC = () => {
 
           const copied = await copyToClipboard(uriResult.uri);
           showMessage(
-            `备份已保存到下载目录: ${uriResult.uri}${copied ? ' (已复制到剪贴板)' : ''}`,
+            `${t('dataSettings.messages.backupSavedToDownload')}: ${uriResult.uri}${copied ? t('dataSettings.messages.copiedToClipboard') : ''}`,
             'success'
           );
         } catch (openError) {
           console.error('打开文件失败，但文件已保存:', openError);
           const copied = await copyToClipboard(uriResult.uri);
           showMessage(
-            `备份已保存到下载目录: ${uriResult.uri}${copied ? ' (已复制到剪贴板)' : ''}`,
+            `${t('dataSettings.messages.backupSavedToDownload')}: ${uriResult.uri}${copied ? t('dataSettings.messages.copiedToClipboard') : ''}`,
             'success'
           );
         }
       } else {
-        showMessage('备份已保存到下载目录', 'success');
+        showMessage(t('dataSettings.messages.backupSavedToDownload'), 'success');
       }
     } catch (error) {
       console.error('保存到下载目录失败:', error);
@@ -312,15 +314,15 @@ const AdvancedBackupPage: React.FC = () => {
         if (uriResult && uriResult.uri) {
           const copied = await copyToClipboard(uriResult.uri);
           showMessage(
-            `备份已保存到内部存储根目录: ${uriResult.uri}${copied ? ' (已复制到剪贴板)' : ''}`,
+            `${t('dataSettings.messages.backupSavedToRoot')}: ${uriResult.uri}${copied ? t('dataSettings.messages.copiedToClipboard') : ''}`,
             'success'
           );
         } else {
-          showMessage('备份已保存到内部存储根目录', 'success');
+          showMessage(t('dataSettings.messages.backupSavedToRoot'), 'success');
         }
       } catch (fallbackError) {
         console.error('保存到内部存储根目录也失败:', fallbackError);
-        showMessage('保存备份失败: ' + (fallbackError as Error).message, 'error');
+        showMessage(t('dataSettings.messages.backupFailed') + ': ' + (fallbackError as Error).message, 'error');
       }
     }
   };
@@ -369,7 +371,7 @@ const AdvancedBackupPage: React.FC = () => {
               color: 'transparent',
             }}
           >
-            高级备份
+            {t('dataSettings.advancedBackup.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -423,10 +425,10 @@ const AdvancedBackupPage: React.FC = () => {
                     color: 'transparent',
                   }}
                 >
-                  完整应用备份
+                  {t('dataSettings.advancedBackup.fullBackup.title')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  自定义备份内容并导出到您选择的位置
+                  {t('dataSettings.advancedBackup.fullBackup.description')}
                 </Typography>
               </Box>
             </Box>
@@ -444,8 +446,7 @@ const AdvancedBackupPage: React.FC = () => {
                 }
               }}
             >
-              高级备份功能允许您选择需要备份的数据类型，并将所有数据保存到自定义位置。
-              此功能非常适合在应用更新前或跨设备迁移时使用。
+              {t('dataSettings.advancedBackup.fullBackup.info')}
             </Alert>
 
             <Typography
@@ -456,7 +457,7 @@ const AdvancedBackupPage: React.FC = () => {
                 color: 'text.primary'
               }}
             >
-              选择要备份的数据:
+              {t('dataSettings.advancedBackup.fullBackup.selectData')}
             </Typography>
 
             <List sx={{ mb: 3 }}>
@@ -487,9 +488,9 @@ const AdvancedBackupPage: React.FC = () => {
                     }
                     label={
                       <Box sx={{ py: 1 }}>
-                        <Typography variant="body1" fontWeight={500}>聊天记录</Typography>
+                        <Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.chats.label')}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          包含所有对话历史和消息
+                          {t('dataSettings.advancedBackup.fullBackup.chats.description')}
                         </Typography>
                       </Box>
                     }
@@ -525,9 +526,9 @@ const AdvancedBackupPage: React.FC = () => {
                     }
                     label={
                       <Box sx={{ py: 1 }}>
-                        <Typography variant="body1" fontWeight={500}>助手数据</Typography>
+                        <Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.assistants.label')}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          包含所有自定义助手及其关联话题
+                          {t('dataSettings.advancedBackup.fullBackup.assistants.description')}
                         </Typography>
                       </Box>
                     }
@@ -563,9 +564,9 @@ const AdvancedBackupPage: React.FC = () => {
                     }
                     label={
                       <Box sx={{ py: 1 }}>
-                        <Typography variant="body1" fontWeight={500}>应用设置</Typography>
+                        <Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.settings.label')}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          包含主题、模型、API密钥等设置
+                          {t('dataSettings.advancedBackup.fullBackup.settings.description')}
                         </Typography>
                       </Box>
                     }
@@ -601,9 +602,9 @@ const AdvancedBackupPage: React.FC = () => {
                     }
                     label={
                       <Box sx={{ py: 1 }}>
-                        <Typography variant="body1" fontWeight={500}>本地存储数据</Typography>
+                        <Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.localStorage.label')}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          包含所有其他应用数据（偏好设置、历史记录等）
+                          {t('dataSettings.advancedBackup.fullBackup.localStorage.description')}
                         </Typography>
                       </Box>
                     }
@@ -630,7 +631,7 @@ const AdvancedBackupPage: React.FC = () => {
                 },
               }}
             >
-              {isLoading ? '正在创建备份...' : '创建完整备份'}
+              {isLoading ? t('dataSettings.advancedBackup.fullBackup.creating') : t('dataSettings.advancedBackup.fullBackup.createButton')}
             </Button>
           </Paper>
 
@@ -655,7 +656,7 @@ const AdvancedBackupPage: React.FC = () => {
                 color: 'transparent',
               }}
             >
-              备份说明
+              {t('dataSettings.advancedBackup.fullBackup.instructions.title')}
             </Typography>
             <Divider sx={{ mb: 2 }} />
 
@@ -665,8 +666,8 @@ const AdvancedBackupPage: React.FC = () => {
                   <SettingsBackupRestoreIcon style={{ color: '#9333EA' }} />
                 </ListItemIcon>
                 <ListItemText
-                  primary={<Typography variant="body1" fontWeight={500}>备份将保存为JSON文件</Typography>}
-                  secondary="您可以选择保存位置，便于跨设备迁移"
+                  primary={<Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.instructions.jsonFile.primary')}</Typography>}
+                  secondary={t('dataSettings.advancedBackup.fullBackup.instructions.jsonFile.secondary')}
                 />
               </ListItem>
 
@@ -675,8 +676,8 @@ const AdvancedBackupPage: React.FC = () => {
                   <FolderIcon style={{ color: '#9333EA' }} />
                 </ListItemIcon>
                 <ListItemText
-                  primary={<Typography variant="body1" fontWeight={500}>推荐保存到云端</Typography>}
-                  secondary="如Google Drive、Dropbox或其他云存储服务"
+                  primary={<Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.instructions.cloud.primary')}</Typography>}
+                  secondary={t('dataSettings.advancedBackup.fullBackup.instructions.cloud.secondary')}
                 />
               </ListItem>
 
@@ -685,8 +686,8 @@ const AdvancedBackupPage: React.FC = () => {
                   <DataSaverOnIcon style={{ color: '#9333EA' }} />
                 </ListItemIcon>
                 <ListItemText
-                  primary={<Typography variant="body1" fontWeight={500}>定期备份</Typography>}
-                  secondary="建议在重要更新或更改前创建备份"
+                  primary={<Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.instructions.regular.primary')}</Typography>}
+                  secondary={t('dataSettings.advancedBackup.fullBackup.instructions.regular.secondary')}
                 />
               </ListItem>
             </List>

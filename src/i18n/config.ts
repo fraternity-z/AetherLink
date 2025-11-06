@@ -2,17 +2,63 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// 导入语言资源
-import zhCN from './locales/zh-CN.json';
-import enUS from './locales/en-US.json';
+// 导入模块化的语言资源
+// 英文模块
+import enCommon from './locales/en-US/common.json';
+import enWelcome from './locales/en-US/welcome.json';
+import enChat from './locales/en-US/chat.json';
+import enNotifications from './locales/en-US/notifications.json';
+import enErrors from './locales/en-US/errors.json';
+import enSettings from './locales/en-US/settings.json';
+
+// 中文模块
+import zhCommon from './locales/zh-CN/common.json';
+import zhWelcome from './locales/zh-CN/welcome.json';
+import zhChat from './locales/zh-CN/chat.json';
+import zhNotifications from './locales/zh-CN/notifications.json';
+import zhErrors from './locales/zh-CN/errors.json';
+import zhSettings from './locales/zh-CN/settings.json';
+
+// 导入所有模块文件
+import enModelSettings from './locales/en-US/modelSettings.json';
+import enAiDebate from './locales/en-US/aiDebate.json';
+import enDataSettings from './locales/en-US/dataSettings.json';
+import zhModelSettings from './locales/zh-CN/modelSettings.json';
+import zhAiDebate from './locales/zh-CN/aiDebate.json';
+import zhDataSettings from './locales/zh-CN/dataSettings.json';
+
+// 合并所有模块
+const mergeModules = (...modules: any[]) => {
+  return Object.assign({}, ...modules);
+};
 
 // 语言资源
 const resources = {
   'zh-CN': {
-    translation: zhCN,
+    translation: mergeModules(
+      { common: zhCommon },
+      { welcome: zhWelcome },
+      { chat: zhChat },
+      { notifications: zhNotifications },
+      { errors: zhErrors },
+      { settings: zhSettings },
+      { modelSettings: zhModelSettings },
+      { aiDebate: zhAiDebate },
+      { dataSettings: zhDataSettings }
+    ),
   },
   'en-US': {
-    translation: enUS,
+    translation: mergeModules(
+      { common: enCommon },
+      { welcome: enWelcome },
+      { chat: enChat },
+      { notifications: enNotifications },
+      { errors: enErrors },
+      { settings: enSettings },
+      { modelSettings: enModelSettings },
+      { aiDebate: enAiDebate },
+      { dataSettings: enDataSettings }
+    ),
   },
 };
 

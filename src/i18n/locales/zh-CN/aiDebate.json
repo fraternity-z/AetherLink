@@ -1,0 +1,213 @@
+{
+  "title": "AI辩论设置",
+  "basicSettings": {
+    "title": "基本设置",
+    "description": "配置AI辩论功能的基础参数和选项",
+    "enable": "启用AI辩论功能",
+    "showButton": "在输入框显示AI辩论按钮",
+    "maxRounds": "最大辩论轮数",
+    "maxRoundsHelper": "输入数字，建议1-20轮",
+    "maxTokensPerRound": "每轮最大Token数",
+    "maxTokensPerRoundHelper": "输入数字，建议100-4000",
+    "enableModerator": "启用主持人角色",
+    "enableSummary": "自动生成辩论总结"
+  },
+  "quickSetup": {
+    "title": "快速配置",
+    "description": "为新手用户提供一键配置，快速创建完整的辩论场景",
+    "basic": {
+      "name": "基础辩论",
+      "description": "正方 + 反方 + 主持人（3角色）"
+    },
+    "professional": {
+      "name": "专业辩论",
+      "description": "正方 + 反方 + 中立分析师 + 主持人（4角色）"
+    },
+    "expert": {
+      "name": "专家论坛",
+      "description": "法律专家 + 经济学家 + 技术专家 + 主持人（4角色）"
+    },
+    "comprehensive": {
+      "name": "全面分析",
+      "description": "6个不同角色的全方位辩论"
+    },
+    "successMessage": "已成功配置 \"{{sceneName}}\" 场景！包含 {{roleCount}} 个角色，已自动配置默认模型：{{modelName}}",
+    "successTitle": "场景配置成功"
+  },
+  "roles": {
+    "title": "辩论角色管理",
+    "description": "创建和管理AI辩论中的各种角色",
+    "addRole": "添加角色",
+    "editRole": "编辑角色",
+    "deleteRole": "删除角色",
+    "noRoles": "还没有配置任何辩论角色。点击 \"添加角色\" 开始配置。",
+    "defaultModel": "默认模型",
+    "unknownModel": "未知模型",
+    "roleCount": "{{count}} 个角色",
+    "stance": {
+      "pro": "正方",
+      "con": "反方",
+      "neutral": "中立",
+      "moderator": "主持人",
+      "summary": "总结"
+    }
+  },
+  "roleDialog": {
+    "title": "添加新角色",
+    "editTitle": "编辑角色",
+    "templates": "快速模板：",
+    "name": "角色名称",
+    "description": "角色描述",
+    "stance": "角色立场",
+    "model": "指定模型（可选）",
+    "modelHelper": "留空则使用默认模型",
+    "systemPrompt": "系统提示词",
+    "systemPromptHelper": "定义这个AI角色的行为、立场和回应风格",
+    "color": "角色颜色"
+  },
+  "groups": {
+    "title": "配置分组管理",
+    "description": "保存和管理不同用途的辩论配置",
+    "createGroup": "新建分组",
+    "editGroup": "编辑配置分组",
+    "deleteGroup": "删除",
+    "loadGroup": "加载",
+    "saveGroup": "保存当前配置到此分组",
+    "copyGroup": "复制",
+    "noGroups": "还没有保存任何配置分组。点击 \"新建分组\" 开始创建。",
+    "confirmDelete": "确定要删除这个配置分组吗？此操作不可撤销。",
+    "updateSuccess": "分组配置已更新！",
+    "updateSuccessTitle": "更新成功"
+  },
+  "groupDialog": {
+    "title": "新建配置分组",
+    "editTitle": "编辑配置分组",
+    "name": "分组名称",
+    "namePlaceholder": "例如：学术辩论、商业分析、技术讨论",
+    "description": "分组描述",
+    "descriptionPlaceholder": "描述这个配置分组的用途和特点",
+    "saveNote": "将保存当前的所有配置（包括角色设置、轮数限制等）到这个分组中。",
+    "create": "创建分组",
+    "save": "保存修改",
+    "copySuffix": " - 副本",
+    "copyDescription": "基于 {{name}} 创建的副本"
+  },
+  "button": {
+    "start": "开始AI辩论",
+    "stop": "停止AI辩论",
+    "notConfigured": "AI辩论功能未配置"
+  },
+  "dialog": {
+    "title": "AI辩论设置",
+    "notConfiguredWarning": "AI辩论功能未正确配置。请先配置至少2个辩论角色。",
+    "configuredInfo": "已配置 {{count}} 个辩论角色，准备开始辩论。",
+    "topic": "辩论主题/问题",
+    "topicPlaceholder": "请输入要辩论的主题或问题，或从下方选择预设主题...",
+    "quickTopics": "💡 快速选择预设主题",
+    "selectGroup": "选择配置分组",
+    "currentConfig": "当前配置",
+    "rolesLabel": "参与辩论的角色：",
+    "settingsLabel": "辩论设置：",
+    "configureRoles": "配置角色",
+    "startDebate": "开始辩论"
+  },
+  "templates": {
+    "pro": {
+      "name": "正方辩手",
+      "description": "支持观点的辩论者"
+    },
+    "con": {
+      "name": "反方辩手",
+      "description": "反对观点的辩论者"
+    },
+    "neutral": {
+      "name": "中立分析师",
+      "description": "客观理性的分析者"
+    },
+    "moderator": {
+      "name": "辩论主持人",
+      "description": "控制节奏的主持人"
+    },
+    "legal": {
+      "name": "法律专家",
+      "description": "从法律角度分析问题"
+    },
+    "economist": {
+      "name": "经济学家",
+      "description": "从经济角度评估影响"
+    },
+    "tech": {
+      "name": "技术专家",
+      "description": "从技术可行性角度分析"
+    },
+    "sociologist": {
+      "name": "社会学者",
+      "description": "从社会影响角度思考"
+    },
+    "summary": {
+      "name": "总结分析师",
+      "description": "专门负责辩论总结分析"
+    },
+    "devil": {
+      "name": "魔鬼代言人",
+      "description": "专门提出反对意见"
+    },
+    "pragmatist": {
+      "name": "实用主义者",
+      "description": "关注实际操作和效果"
+    }
+  },
+  "topicCategories": {
+    "tech": "科技与社会",
+    "education": "教育与成长",
+    "environment": "环境与可持续发展",
+    "economy": "经济与商业",
+    "health": "健康与生活",
+    "society": "社会与文化"
+  },
+  "topics": {
+    "tech": {
+      "ai": "人工智能是否会取代大部分人类工作？",
+      "social": "社交媒体对青少年的影响是利大于弊还是弊大于利？",
+      "auto": "自动驾驶汽车是否应该全面推广？",
+      "remote": "远程工作是否应该成为未来工作的主流模式？",
+      "vr": "虚拟现实技术是否会改变人类的社交方式？"
+    },
+    "education": {
+      "online": "在线教育是否能够完全替代传统课堂教育？",
+      "coding": "学生是否应该从小学开始学习编程？",
+      "exam": "考试制度是否是评估学生能力的最佳方式？",
+      "screen": "家长是否应该限制孩子使用电子设备的时间？",
+      "university": "大学教育是否对每个人都是必需的？"
+    },
+    "environment": {
+      "individual": "个人行为改变是否足以应对气候变化？",
+      "nuclear": "核能是否是解决能源危机的最佳方案？",
+      "ev": "电动汽车是否真的比燃油汽车更环保？",
+      "plastic": "是否应该禁止使用一次性塑料制品？",
+      "urban": "城市化发展是否有利于环境保护？"
+    },
+    "economy": {
+      "ubi": "基本收入制度是否应该在全球推行？",
+      "crypto": "加密货币是否会取代传统货币？",
+      "sharing": "共享经济模式是否可持续发展？",
+      "csr": "企业是否应该承担更多的社会责任？",
+      "globalization": "全球化是否对发展中国家有利？"
+    },
+    "health": {
+      "vegan": "素食主义是否比杂食更健康？",
+      "exercise": "运动是否是保持健康的最重要因素？",
+      "mental": "心理健康是否应该得到与身体健康同等的重视？",
+      "gene": "基因编辑技术是否应该用于人类？",
+      "traditional": "传统医学是否有科学依据？"
+    },
+    "society": {
+      "equality": "社会应该追求绝对平等还是机会平等？",
+      "tradition": "传统文化是否应该在现代社会中保持不变？",
+      "privacy": "个人隐私权是否应该让位于公共安全？",
+      "speech": "言论自由是否应该有边界？",
+      "diversity": "多元文化主义是否有利于社会和谐？"
+    }
+  }
+}
+

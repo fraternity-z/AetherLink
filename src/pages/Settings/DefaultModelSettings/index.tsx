@@ -21,9 +21,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { updateSettings } from '../../../shared/store/settingsSlice';
 import DialogModelSelector from '../../../pages/ChatPage/components/DialogModelSelector';
+import { useTranslation } from 'react-i18next';
 
 
 const DefaultModelSettingsPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -141,7 +143,7 @@ const DefaultModelSettingsPage: React.FC = () => {
               color: 'transparent',
             }}
           >
-            话题命名设置
+            {t('modelSettings.defaultModel.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -175,10 +177,10 @@ const DefaultModelSettingsPage: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              话题命名模型
+              {t('modelSettings.defaultModel.namingModel')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              选择用于自动为话题生成标题的AI模型
+              {t('modelSettings.defaultModel.namingModelDesc')}
             </Typography>
           </Box>
 
@@ -186,10 +188,10 @@ const DefaultModelSettingsPage: React.FC = () => {
 
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Button variant="outlined" onClick={handleOpenModelSelector} size="small">
-              选择模型
+              {t('modelSettings.defaultModel.selectModel')}
             </Button>
             <Typography variant="body2" color="text.secondary">
-              当前：{selectedModel ? selectedModel.name : '未选择'}
+              {selectedModel ? t('modelSettings.defaultModel.currentModel', { model: selectedModel.name }) : t('modelSettings.defaultModel.notSelected')}
             </Typography>
             <DialogModelSelector
               selectedModel={selectedModel}
@@ -216,10 +218,10 @@ const DefaultModelSettingsPage: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              自动命名话题
+              {t('modelSettings.defaultModel.autoNaming')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              在对话进行3轮后，自动为话题生成标题
+              {t('modelSettings.defaultModel.autoNamingDesc')}
             </Typography>
           </Box>
 
@@ -227,7 +229,7 @@ const DefaultModelSettingsPage: React.FC = () => {
 
           <List disablePadding>
             <ListItem>
-              <ListItemText primary="自动命名话题" />
+              <ListItemText primary={t('modelSettings.defaultModel.autoNaming')} />
               <Switch
                 edge="end"
                 checked={enableTopicNaming}
@@ -252,10 +254,10 @@ const DefaultModelSettingsPage: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              话题命名提示词
+              {t('modelSettings.defaultModel.namingPrompt')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              自定义话题命名时使用的提示词，留空则使用默认提示词
+              {t('modelSettings.defaultModel.namingPromptDesc')}
             </Typography>
           </Box>
 
@@ -268,7 +270,7 @@ const DefaultModelSettingsPage: React.FC = () => {
               rows={4}
               value={topicNamingPrompt}
               onChange={handleTopicNamingPromptChange}
-              placeholder="你是一个话题生成专家。根据对话内容生成一个简洁、精确、具有描述性的标题。标题应简洁，不超过10个字。你只需要返回标题文本，不需要解释或扩展。"
+              placeholder={t('modelSettings.defaultModel.namingPromptPlaceholder')}
               variant="outlined"
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -283,7 +285,7 @@ const DefaultModelSettingsPage: React.FC = () => {
                 sx={{ mt: 1 }}
                 onClick={() => dispatch(updateSettings({ topicNamingPrompt: '' }))}
               >
-                重置为默认
+                {t('modelSettings.defaultModel.resetToDefault')}
               </Button>
             )}
           </Box>

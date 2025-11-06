@@ -1,0 +1,16 @@
+{
+  "title": "Chat",
+  "sendMessage": "Send Message",
+  "inputPlaceholder": "Type a message...",
+  "thinking": "Thinking...",
+  "streaming": "Generating...",
+  "error": "An error occurred",
+  "retry": "Retry",
+  "regenerate": "Regenerate",
+  "copy": "Copy",
+  "delete": "Delete",
+  "edit": "Edit",
+  "stop": "Stop",
+  "clear": "Clear"
+}
+

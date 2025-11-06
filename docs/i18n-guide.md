@@ -39,9 +39,25 @@ src/
 │   ├── config.ts                  # i18n 配置文件
 │   ├── useLanguageSettings.ts     # 语言设置 Hook
 │   ├── index.ts                   # 导出文件
-│   └── locales/                   # 语言资源文件目录
-│       ├── zh-CN.json             # 简体中文翻译
-│       └── en-US.json             # 英文翻译
+│   └── locales/                   # 语言资源文件目录（模块化）
+│       ├── zh-CN/                 # 简体中文翻译（模块化）
+│       │   ├── common.json        # 通用翻译
+│       │   ├── welcome.json       # 欢迎页
+│       │   ├── chat.json          # 聊天相关
+│       │   ├── notifications.json # 通知
+│       │   ├── errors.json        # 错误信息
+│       │   ├── settings.json      # 设置（大文件）
+│       │   ├── modelSettings.json # 模型设置
+│       │   └── aiDebate.json      # AI辩论
+│       └── en-US/                 # 英文翻译（模块化）
+│           ├── common.json
+│           ├── welcome.json
+│           ├── chat.json
+│           ├── notifications.json
+│           ├── errors.json
+│           ├── settings.json
+│           ├── modelSettings.json
+│           └── aiDebate.json
 ├── main.tsx                       # 应用入口（初始化 i18n）
 ├── pages/
 │   ├── WelcomePage.tsx           # 欢迎页面（已国际化）
@@ -101,35 +117,55 @@ changeLanguage('en-US'); // 切换到英文
 - `defaultLanguage` 默认语言
 - `i18n` 实例
 
-### 4. `src/i18n/locales/zh-CN.json`
+### 4. `src/i18n/locales/zh-CN/` 和 `src/i18n/locales/en-US/`
 
-简体中文翻译资源文件，包含所有中文文本。
+翻译资源文件采用模块化结构，按功能拆分为多个 JSON 文件：
+
+**模块文件：**
+- `common.json` - 通用翻译（按钮、操作等基础文本）
+- `welcome.json` - 欢迎页翻译
+- `chat.json` - 聊天功能翻译
+- `notifications.json` - 通知相关翻译
+- `errors.json` - 错误信息翻译
+- `settings.json` - 设置页面翻译（较大的文件）
+- `modelSettings.json` - 模型设置翻译
+- `aiDebate.json` - AI 辩论功能翻译
+
+**优势：**
+- ✅ 文件更小，易于维护
+- ✅ 便于 AI 修改特定模块
+- ✅ 结构清晰，按功能组织
+- ✅ 系统自动合并加载
 
 **结构示例：**
+
+`common.json`:
 ```json
 {
-  "common": {
-    "loading": "加载中...",
-    "error": "错误"
+  "loading": "加载中...",
+  "error": "错误",
+  "save": "保存",
+  "cancel": "取消"
+}
+```
+
+`settings.json`:
+```json
+{
+  "title": "设置",
+  "groups": {
+    "basic": "基本设置"
   },
-  "settings": {
-    "title": "设置",
-    "groups": {
-      "basic": "基本设置"
-    },
-    "items": {
-      "appearance": {
-        "title": "外观",
-        "description": "主题、字体大小和语言设置"
-      }
+  "items": {
+    "appearance": {
+      "title": "外观",
+      "description": "主题、字体大小和语言设置"
     }
   }
 }
 ```
 
-### 5. `src/i18n/locales/en-US.json`
-
-英文翻译资源文件，结构与中文文件对应。
+系统在 `config.ts` 中会自动将所有模块文件合并为完整的翻译对象，使用方式与之前完全一致。
 
 ### 6. `src/main.tsx`
 
@@ -290,33 +326,88 @@ t('chat_input_placeholder')
 
 ### 添加新语言
 
-1. **创建语言资源文件**
+1. **创建语言资源目录和模块文件**
 
-在 `src/i18n/locales/` 目录下创建新文件，例如 `ja-JP.json`：
+在 `src/i18n/locales/` 目录下创建新语言目录，例如 `ja-JP/`，并创建所有模块文件：
 
+```bash
+src/i18n/locales/ja-JP/
+├── common.json
+├── welcome.json
+├── chat.json
+├── notifications.json
+├── errors.json
+├── settings.json
+├── modelSettings.json
+└── aiDebate.json
+```
+
+**示例：`ja-JP/common.json`**
 ```json
 {
-  "common": {
-    "loading": "読み込み中...",
-    "error": "エラー"
-  },
-  "settings": {
-    "title": "設定"
+  "loading": "読み込み中...",
+  "error": "エラー",
+  "save": "保存",
+  "cancel": "キャンセル"
+}
+```
+
+**示例：`ja-JP/settings.json`**
+```json
+{
+  "title": "設定",
+  "groups": {
+    "basic": "基本設定"
   }
 }
 ```
 
 2. **更新配置文件**
 
-在 `src/i18n/config.ts` 中：
+在 `src/i18n/config.ts` 中导入并添加新语言：
 
 ```typescript
-import jaJP from './locales/ja-JP.json';
+// 导入日文模块
+import jaCommon from './locales/ja-JP/common.json';
+import jaWelcome from './locales/ja-JP/welcome.json';
+import jaChat from './locales/ja-JP/chat.json';
+import jaNotifications from './locales/ja-JP/notifications.json';
+import jaErrors from './locales/ja-JP/errors.json';
+import jaSettings from './locales/ja-JP/settings.json';
+import jaModelSettings from './locales/ja-JP/modelSettings.json';
+import jaAiDebate from './locales/ja-JP/aiDebate.json';
 
+// 合并日文模块
 const resources = {
-  'zh-CN': { translation: zhCN },
-  'en-US': { translation: enUS },
-  'ja-JP': { translation: jaJP }, // 新增
+  'zh-CN': {
+    translation: mergeModules(
+      { common: zhCommon },
+      { welcome: zhWelcome },
+      { chat: zhChat },
+      { notifications: zhNotifications },
+      { errors: zhErrors },
+      { settings: zhSettings },
+      { modelSettings: zhModelSettings },
+      { aiDebate: zhAiDebate }
+    ),
+  },
+  'en-US': {
+    translation: mergeModules(
+      // ... 英文模块
+    ),
+  },
+  'ja-JP': {
+    translation: mergeModules(
+      { common: jaCommon },
+      { welcome: jaWelcome },
+      { chat: jaChat },
+      { notifications: jaNotifications },
+      { errors: jaErrors },
+      { settings: jaSettings },
+      { modelSettings: jaModelSettings },
+      { aiDebate: jaAiDebate }
+    ),
+  },
 };
 
 export const supportedLanguages = [
@@ -330,7 +421,11 @@ export const supportedLanguages = [
 
 1. **添加翻译键值**
 
-在 `zh-CN.json` 和 `en-US.json` 中添加对应翻译：
+根据新页面所属的功能模块，在对应的模块文件中添加翻译。例如，如果是设置相关的页面，在 `settings.json` 中添加；如果是新的功能模块，可以创建新的模块文件。
+
+**方式一：添加到现有模块文件**
+
+例如在 `zh-CN/settings.json` 和 `en-US/settings.json` 中添加：
 
 ```json
 {
@@ -370,10 +465,21 @@ const NewPage: React.FC = () => {
 
 ```typescript
 // scripts/check-i18n.ts
-import zhCN from '../src/i18n/locales/zh-CN.json';
-import enUS from '../src/i18n/locales/en-US.json';
+import zhCommon from '../src/i18n/locales/zh-CN/common.json';
+import zhWelcome from '../src/i18n/locales/zh-CN/welcome.json';
+import zhChat from '../src/i18n/locales/zh-CN/chat.json';
+// ... 导入其他模块
 
-// 检查所有键值是否在两个文件中都存在
+import enCommon from '../src/i18n/locales/en-US/common.json';
+import enWelcome from '../src/i18n/locales/en-US/welcome.json';
+import enChat from '../src/i18n/locales/en-US/chat.json';
+// ... 导入其他模块
+
+// 合并模块
+const zhCN = { common: zhCommon, welcome: zhWelcome, chat: zhChat, ... };
+const enUS = { common: enCommon, welcome: enWelcome, chat: enChat, ... };
+
+// 检查所有键值是否在两个语言文件中都存在
 function checkKeys(obj1: any, obj2: any, path: string = '') {
   // 实现键值检查逻辑
 }
@@ -495,6 +601,11 @@ A: 可以将长文本拆分为多个部分：
 ## 更新日志
 
 ### 2025-01-XX（最新）
+- ✅ 完成 i18n 模块化拆分，按功能模块组织翻译文件
+- ✅ 拆分为 8 个模块文件：common, welcome, chat, notifications, errors, settings, modelSettings, aiDebate
+- ✅ 提升维护性和 AI 修改效率
+
+### 2025-01-XX（之前）
 - ✅ 完成所有外观设置子页面国际化（6个页面 + DraggableButtonConfig 子组件）
 
 ### 2025-01-XX（初始）

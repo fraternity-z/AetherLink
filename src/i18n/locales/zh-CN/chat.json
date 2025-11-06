@@ -1,0 +1,16 @@
+{
+  "title": "聊天",
+  "sendMessage": "发送消息",
+  "inputPlaceholder": "输入消息...",
+  "thinking": "思考中...",
+  "streaming": "生成中...",
+  "error": "发生错误",
+  "retry": "重试",
+  "regenerate": "重新生成",
+  "copy": "复制",
+  "delete": "删除",
+  "edit": "编辑",
+  "stop": "停止",
+  "clear": "清空"
+}
+

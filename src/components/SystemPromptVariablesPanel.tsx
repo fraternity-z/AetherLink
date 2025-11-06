@@ -14,6 +14,7 @@ import {
   alpha
 } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Clock as AccessTimeIcon, MapPin as LocationOnIcon, Info as InfoIcon, Monitor as ComputerIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector, useAppDispatch } from '../shared/store';
 import { updateSettings } from '../shared/store/slices/settingsSlice';
 import {
@@ -27,6 +28,7 @@ import {
  * 允许用户配置在系统提示词中自动注入的变量
  */
 const SystemPromptVariablesPanel: React.FC = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const settings = useAppSelector(state => state.settings);
   const [expanded, setExpanded] = useState(false);
@@ -97,10 +99,10 @@ const SystemPromptVariablesPanel: React.FC = () => {
       >
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-            🔧 系统提示词变量注入
+            🔧 {t('settings.systemPromptVariables.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            为系统提示词自动注入时间、位置等动态变量
+            {t('settings.systemPromptVariables.description')}
           </Typography>
         </Box>
 
@@ -109,7 +111,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
           {variableConfig.enableTimeVariable && (
             <Chip
               icon={<AccessTimeIcon size={13} />}
-              label="时间"
+              label={t('settings.systemPromptVariables.chips.time')}
               size="small"
               color="primary"
               variant="outlined"
@@ -119,7 +121,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
           {variableConfig.enableLocationVariable && (
             <Chip
               icon={<LocationOnIcon size={13} />}
-              label="位置"
+              label={t('settings.systemPromptVariables.chips.location')}
               size="small"
               color="primary"
               variant="outlined"
@@ -129,7 +131,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
           {variableConfig.enableOSVariable && (
             <Chip
               icon={<ComputerIcon size={13} />}
-              label="系统"
+              label={t('settings.systemPromptVariables.chips.system')}
               size="small"
               color="primary"
               variant="outlined"
@@ -138,7 +140,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
           )}
           {!variableConfig.enableTimeVariable && !variableConfig.enableLocationVariable && !variableConfig.enableOSVariable && (
             <Typography variant="caption" color="text.secondary">
-              未启用
+              {t('settings.systemPromptVariables.disabled')}
             </Typography>
           )}
         </Box>
@@ -158,7 +160,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
             icon={<InfoIcon />}
             sx={{ mb: 2, fontSize: '0.85rem' }}
           >
-            启用后，系统会在发送消息时自动在系统提示词末尾追加相应的变量信息。
+            {t('settings.systemPromptVariables.infoMessage')}
           </Alert>
 
           {/* 时间变量配置 */}
@@ -175,10 +177,10 @@ const SystemPromptVariablesPanel: React.FC = () => {
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     <AccessTimeIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                    时间变量
+                    {t('settings.systemPromptVariables.timeVariable.label')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    自动注入当前时间：{getCurrentTimeString()}
+                    {t('settings.systemPromptVariables.timeVariable.description', { time: getCurrentTimeString() })}
                   </Typography>
                 </Box>
               }
@@ -187,7 +189,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
             {variableConfig.enableTimeVariable && (
               <Box sx={{ mt: 1, ml: 4, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                 <Typography variant="caption" color="text.secondary">
-                  将在系统提示词末尾自动追加时间信息
+                  {t('settings.systemPromptVariables.timeVariable.hint')}
                 </Typography>
               </Box>
             )}
@@ -207,10 +209,10 @@ const SystemPromptVariablesPanel: React.FC = () => {
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     <LocationOnIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                    位置变量
+                    {t('settings.systemPromptVariables.locationVariable.label')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    注入位置信息：{getLocationString(variableConfig.customLocation)}
+                    {t('settings.systemPromptVariables.locationVariable.description', { location: getLocationString(variableConfig.customLocation) })}
                   </Typography>
                 </Box>
               }
@@ -221,16 +223,16 @@ const SystemPromptVariablesPanel: React.FC = () => {
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder="输入自定义位置（如：北京市朝阳区）"
+                  placeholder={t('settings.systemPromptVariables.locationVariable.placeholder')}
                   value={variableConfig.customLocation}
                   onChange={(e) => handleLocationChange(e.target.value)}
                   sx={{ mb: 1 }}
                 />
                 <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                   <Typography variant="caption" color="text.secondary">
-                    将在系统提示词末尾自动追加位置信息
+                    {t('settings.systemPromptVariables.locationVariable.hint')}
                     <br />
-                    留空将使用系统检测的位置信息
+                    {t('settings.systemPromptVariables.locationVariable.hintEmpty')}
                   </Typography>
                 </Box>
               </Box>
@@ -251,10 +253,10 @@ const SystemPromptVariablesPanel: React.FC = () => {
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     <ComputerIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                    操作系统变量
+                    {t('settings.systemPromptVariables.osVariable.label')}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    注入操作系统信息：{getOperatingSystemString()}
+                    {t('settings.systemPromptVariables.osVariable.description', { os: getOperatingSystemString() })}
                   </Typography>
                 </Box>
               }
@@ -263,7 +265,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
             {variableConfig.enableOSVariable && (
               <Box sx={{ mt: 1, ml: 4, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                 <Typography variant="caption" color="text.secondary">
-                  将在系统提示词末尾自动追加操作系统信息
+                  {t('settings.systemPromptVariables.osVariable.hint')}
                 </Typography>
               </Box>
             )}

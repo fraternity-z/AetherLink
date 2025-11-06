@@ -1,0 +1,408 @@
+{
+  "title": "数据管理",
+  "description": "备份您的对话和助手数据，以便在更换设备或重新安装应用后恢复",
+  "advancedBackup": {
+    "title": "高级备份",
+    "fullBackup": {
+      "title": "完整应用备份",
+      "description": "自定义备份内容并导出到您选择的位置",
+      "info": "高级备份功能允许您选择需要备份的数据类型，并将所有数据保存到自定义位置。此功能非常适合在应用更新前或跨设备迁移时使用。",
+      "selectData": "选择要备份的数据:",
+      "chats": {
+        "label": "聊天记录",
+        "description": "包含所有对话历史和消息"
+      },
+      "assistants": {
+        "label": "助手数据",
+        "description": "包含所有自定义助手及其关联话题"
+      },
+      "settings": {
+        "label": "应用设置",
+        "description": "包含主题、模型、API密钥等设置"
+      },
+      "localStorage": {
+        "label": "本地存储数据",
+        "description": "包含所有其他应用数据（偏好设置、历史记录等）"
+      },
+      "indexedDB": {
+        "label": "数据库数据",
+        "description": "包含IndexedDB中的结构化数据"
+      },
+      "createButton": "创建完整备份",
+      "creating": "正在创建备份...",
+      "instructions": {
+        "title": "备份说明",
+        "jsonFile": {
+          "primary": "备份将保存为JSON文件",
+          "secondary": "您可以选择保存位置，便于跨设备迁移"
+        },
+        "cloud": {
+          "primary": "推荐保存到云端",
+          "secondary": "如Google Drive、Dropbox或其他云存储服务"
+        },
+        "regular": {
+          "primary": "定期备份",
+          "secondary": "建议在重要更新或更改前创建备份"
+        }
+      }
+    }
+  },
+  "backupAndRestore": {
+    "title": "备份与恢复",
+    "basicBackup": {
+      "title": "备份聊天和助手",
+      "description": "备份当前所有对话话题和助手配置"
+    },
+    "fullBackup": {
+      "title": "完整系统备份",
+      "description": "备份所有数据，包括设置和本地存储"
+    },
+    "selectiveBackup": {
+      "title": "选择性备份",
+      "description": "自定义选择要备份的数据类型"
+    },
+    "restore": {
+      "title": "导入备份文件并恢复",
+      "description": "从本地文件恢复备份数据"
+    },
+    "importExternal": {
+      "title": "导入其他AI助手备份",
+      "description": "导入来自其他AI助手应用的备份文件"
+    }
+  },
+  "cloudBackup": {
+    "title": "云备份",
+    "webdavSettings": {
+      "title": "WebDAV 云备份设置",
+      "description": "配置 WebDAV 服务器连接"
+    },
+    "backupToWebdav": {
+      "title": "备份到 WebDAV",
+      "description": "将备份上传到已配置的 WebDAV 服务器"
+    },
+    "restoreFromWebdav": {
+      "title": "从 WebDAV 恢复",
+      "description": "从 WebDAV 服务器下载并恢复备份"
+    }
+  },
+  "dataManagement": {
+    "title": "数据管理",
+    "diagnostic": {
+      "title": "数据库诊断与修复",
+      "description": "检查并修复数据库问题"
+    },
+    "clearAll": {
+      "title": "清理全部助手和话题",
+      "clearing": "清理中...",
+      "description": "永久删除所有对话话题和助手数据",
+      "confirm": {
+        "title": "确认彻底清理所有应用数据",
+        "warning": "警告：这是一个彻底清理操作！",
+        "message": "此操作将永久删除以下所有数据：<br/>• 所有对话话题及其消息<br/>• 所有助手及其配置<br/>• 助手与话题的关联关系<br/>• 相关缓存和暂存数据<br/><br/>清理后数据无法恢复，强烈建议在清理前进行完整备份。<br/><br/>清理完成后，应用将恢复到初始状态，请重启应用以确保更改生效。<br/><br/>是否确认继续？",
+        "cancel": "取消",
+        "confirm": "确认彻底清理"
+      },
+      "success": "所有数据已彻底清除"
+    }
+  },
+  "selectiveBackupDialog": {
+    "title": "选择性备份",
+    "description": "选择需要备份的内容：",
+    "modelConfig": {
+      "label": "模型配置",
+      "recommended": "推荐",
+      "description": "模型配置包含：<br/>• 所有模型提供商设置<br/>• API密钥配置<br/>• 默认模型选择<br/>• 网络搜索设置"
+    },
+    "comingSoon": {
+      "title": "即将推出",
+      "message": "更多备份选项正在开发中，包括聊天记录、助手配置等。"
+    },
+    "cancel": "取消",
+    "createBackup": "创建备份",
+    "backingUp": "备份中..."
+  },
+  "backupFilesList": {
+    "title": "本地备份文件",
+    "refresh": "刷新",
+    "noFiles": "未找到本地备份文件",
+    "noFilesHint": "备份文件可能保存在您设备的Download文件夹、应用备份目录或其他位置",
+    "types": {
+      "full": "完整备份",
+      "custom": "自定义备份",
+      "basic": "基本备份"
+    },
+    "location": "位置",
+    "actions": {
+      "restore": "恢复此备份",
+      "open": "打开文件",
+      "delete": "删除备份"
+    },
+    "deleted": "备份文件已删除"
+  },
+  "restoreProgress": {
+    "readingFile": "读取文件中...",
+    "validating": "验证备份数据...",
+    "success": {
+      "selective": "选择性备份恢复完成！",
+      "full": "备份恢复成功："
+    },
+    "restoredTopics": "已恢复 {count} 个对话话题",
+    "restoredAssistants": "已恢复 {count} 个助手",
+    "restoredSettings": "已恢复应用设置",
+    "restoredLocalStorage": "已恢复 {count} 项其他应用数据",
+    "restartRequired": "请重启应用以应用所有更改"
+  },
+  "importExternal": {
+    "title": "导入外部AI助手的聊天记录",
+    "supportedFormats": "支持的备份格式：",
+    "formats": {
+      "cherryStudio": "Cherry Studio JSON",
+      "chatboxaiJson": "ChatboxAI JSON",
+      "chatboxaiTxt": "ChatboxAI TXT"
+    },
+    "howToImport": {
+      "title": "如何导入",
+      "cherryStudio": "• <strong>Cherry Studio JSON</strong>：支持导入的完整备份文件，包含所有对话记录和消息块数据<br/>",
+      "chatboxaiJson": "• <strong>ChatboxAI JSON</strong>：从 ChatboxAI 导出的 JSON 备份文件，支持多线程对话和附件<br/>",
+      "chatboxaiTxt": "• <strong>ChatboxAI TXT</strong>：从 ChatboxAI 导出的 TXT 文本文件，纯文本格式的对话记录<br/>",
+      "note": "• 导入的数据将创建对应的助手和对话，保持原有的对话结构"
+    },
+    "selectFile": "选择并导入备份文件",
+    "importing": "导入中...",
+    "selectMode": "选择导入方式：",
+    "modeSelection": {
+      "title": "导入方式说明",
+      "description": "检测到 ChatboxAI 格式文件，请选择导入方式：",
+      "separate": {
+        "title": "独立助手模式（推荐）",
+        "description": "每个对话创建一个独立的助手，便于管理和使用"
+      },
+      "unified": {
+        "title": "统一助手模式",
+        "description": "所有对话归到一个助手下，作为不同的话题"
+      },
+      "back": "返回",
+      "startImport": "开始导入"
+    },
+    "success": {
+      "title": "导入成功",
+      "message": "已从 {source} 导入数据",
+      "topicsCount": "{count} 个对话话题",
+      "topicsHint": "导入的对话将出现在您的对话列表中",
+      "assistantsCount": "{count} 个助手",
+      "assistantsHint": "已创建\"{source} 导入助手\"",
+      "completeMessage": "导入操作已完成，您可以在助手列表中找到新创建的助手及其对话。"
+    },
+    "sources": {
+      "desktop": "Cherry Studio",
+      "chatboxai": "ChatboxAI JSON",
+      "chatboxaiTxt": "ChatboxAI TXT",
+      "default": "外部AI助手"
+    },
+    "cancel": "取消",
+    "complete": "完成"
+  },
+  "databaseDiagnostic": {
+    "title": "数据库诊断与修复",
+    "diagnosing": "正在诊断数据库...",
+    "databaseStatus": {
+      "title": "数据库状态",
+      "currentDB": "当前数据库",
+      "detectedDBs": "检测到的数据库",
+      "none": "无",
+      "dataStores": "数据存储",
+      "topicsCount": "话题数量",
+      "assistantsCount": "助手数量"
+    },
+    "warnings": {
+      "multipleDatabases": "检测到多个数据库，可能导致数据冲突。建议点击\"修复数据库\"按钮清理旧数据库。",
+      "missingStores": "数据库缺少以下对象存储: {stores}。建议重启应用或清除浏览器缓存后重试。"
+    },
+    "repairResult": {
+      "title": "修复结果",
+      "foundOldDBs": "发现旧数据库",
+      "cleanedDBs": "已清理数据库",
+      "currentDB": "当前使用数据库",
+      "success": "成功清理 {count} 个旧数据库。建议重启应用以确保更改生效。",
+      "warning": "发现 {count} 个旧数据库，但清理失败。请尝试重启应用后再次修复。",
+      "info": "未发现需要清理的旧数据库。"
+    },
+    "topicCleanResult": {
+      "title": "话题清理结果",
+      "removed": "已清理无效话题",
+      "remaining": "剩余话题数量",
+      "success": "成功清理 {count} 个无效话题。",
+      "info": "未发现需要清理的无效话题。"
+    },
+    "referenceFixResult": {
+      "title": "助手话题引用修复结果",
+      "fixedAssistants": "已修复助手数量",
+      "removedReferences": "已移除无效引用",
+      "totalAssistants": "助手总数",
+      "success": "成功修复 {fixed} 个助手的话题引用，移除了 {removed} 个无效引用。",
+      "info": "所有助手的话题引用都是有效的，无需修复。"
+    },
+    "repairing": "正在修复数据库...",
+    "cleaningTopics": "正在清理无效话题...",
+    "fixingReferences": "正在修复助手话题引用...",
+    "actions": {
+      "rediagnose": "重新诊断",
+      "cleanupTopics": "清理无效话题",
+      "fixReferences": "修复话题引用",
+      "repairDB": "修复数据库",
+      "rebuildDB": "重建数据库",
+      "close": "关闭"
+    },
+    "confirmRepair": "此操作将清理旧版本数据库。如果您正在使用v6版本，建议谨慎操作。确定要继续吗？",
+    "confirmRebuild": "此操作将删除并重建数据库，可能导致数据丢失。确定要继续吗？",
+    "rebuildSuccess": "数据库已重建。请重启应用以确保更改生效。",
+    "errors": {
+      "diagnosticFailed": "数据库诊断失败",
+      "repairFailed": "数据库修复失败",
+      "cleanupFailed": "清理无效话题失败",
+      "fixReferencesFailed": "修复助手话题引用失败",
+      "rebuildFailed": "数据库重建失败"
+    }
+  },
+  "webdav": {
+    "settings": {
+      "title": "WebDAV 云备份设置",
+      "description": "配置 WebDAV 服务器，实现数据的云端备份和同步",
+      "serverAddress": {
+        "label": "WebDAV 服务器地址",
+        "placeholder": "https://your-server.com/webdav",
+        "helperText": "例如: https://cloud.example.com/remote.php/webdav"
+      },
+      "username": "用户名",
+      "password": "密码",
+      "backupPath": {
+        "label": "备份路径",
+        "helperText": "在服务器上存储备份文件的目录路径"
+      },
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "saveConfig": "保存配置",
+      "saving": "保存中...",
+      "connectionSuccess": "连接成功！",
+      "connectionFailed": "连接失败，请检查配置",
+      "configSaved": "配置保存成功！",
+      "autoSync": {
+        "title": "自动同步设置",
+        "interval": "同步间隔",
+        "maxBackups": "最大备份数量",
+        "enable": "启用自动同步"
+      },
+      "syncStatus": {
+        "title": "同步状态",
+        "syncing": "同步中...",
+        "lastSync": "上次同步",
+        "notSynced": "未同步",
+        "error": "错误"
+      }
+    },
+    "configDialog": {
+      "title": "WebDAV 服务器配置",
+      "description": "配置您的 WebDAV 服务器信息，用于云端备份和同步",
+      "serverAddress": {
+        "label": "WebDAV 服务器地址",
+        "placeholder": "https://your-server.com/webdav",
+        "helperText": "完整的 WebDAV 服务器 URL"
+      },
+      "username": "用户名",
+      "password": "密码",
+      "backupPath": {
+        "label": "备份路径",
+        "helperText": "在服务器上存储备份文件的目录路径"
+      },
+      "testConnection": "测试连接",
+      "testing": "测试连接中...",
+      "saveConfig": "保存配置",
+      "saving": "保存中...",
+      "cancel": "取消",
+      "connectionSuccess": "连接成功！WebDAV 服务器可以正常访问。",
+      "connectionFailed": "连接失败，请检查服务器地址、用户名和密码。",
+      "cannotConnect": "无法连接到 WebDAV 服务器，请检查配置",
+      "help": {
+        "title": "配置说明",
+        "examples": "常见 WebDAV 服务器配置示例：",
+        "nextcloud": {
+          "title": "Nextcloud:",
+          "server": "服务器地址: https://your-domain.com/remote.php/webdav",
+          "username": "用户名: 您的 Nextcloud 用户名",
+          "password": "密码: 您的 Nextcloud 密码或应用密码"
+        },
+        "owncloud": {
+          "title": "ownCloud:",
+          "server": "服务器地址: https://your-domain.com/remote.php/webdav"
+        },
+        "synology": {
+          "title": "Synology NAS:",
+          "server": "服务器地址: https://your-nas-ip:5006/webdav"
+        },
+        "notes": "注意事项：<br/>• 确保服务器支持 HTTPS 连接<br/>• 路径必须以 / 开头<br/>• 建议使用应用专用密码而非主密码"
+      }
+    },
+    "backupManager": {
+      "title": "WebDAV 备份管理",
+      "refresh": "刷新",
+      "noFiles": "暂无备份文件",
+      "fileCount": "共 {count} 个备份文件",
+      "deleteSelected": "删除选中 ({count})",
+      "columns": {
+        "filename": "文件名",
+        "type": "类型",
+        "modifiedTime": "修改时间",
+        "size": "大小",
+        "actions": "操作"
+      },
+      "types": {
+        "basic": "基础备份",
+        "full": "完整备份",
+        "custom": "自定义备份",
+        "backup": "备份",
+        "unknown": "未知"
+      },
+      "actions": {
+        "restore": "恢复此备份",
+        "delete": "删除文件"
+      },
+      "close": "关闭",
+      "errors": {
+        "loadFailed": "加载文件列表失败",
+        "deleteFailed": "删除文件失败",
+        "restoreFailed": "恢复失败"
+      }
+    }
+  },
+  "messages": {
+    "backupSuccess": "备份成功",
+    "backupFailed": "创建备份失败",
+    "backupCreated": "备份已创建",
+    "restoreSuccess": "备份恢复成功",
+    "restoreFailed": "恢复备份失败",
+    "fileSelectorFailed": "打开文件选择器失败",
+    "clearSuccess": "所有数据已彻底清除",
+    "clearFailed": "清理数据时发生错误",
+    "webdavBackupSuccess": "完整备份已成功上传到 WebDAV 服务器",
+    "webdavBackupFailed": "WebDAV 备份失败",
+    "webdavRestoreSuccess": "从 WebDAV 恢复成功",
+    "webdavRestoreFailed": "恢复失败",
+    "webdavConfigSaved": "WebDAV 配置已保存",
+    "configSaveFailed": "保存配置失败",
+    "pleaseSelectSaveLocation": "请在系统分享菜单中选择\"保存到设备\"或文件管理器应用",
+    "fileOpened": "文件已打开，请使用\"另存为\"保存到您想要的位置",
+    "backupSavedToDownload": "备份已保存到下载目录",
+    "backupSavedToRoot": "备份已保存到内部存储根目录",
+    "copiedToClipboard": " (已复制到剪贴板)",
+    "selectiveBackupFailed": "创建选择性备份失败",
+    "importFailed": "导入外部备份失败",
+    "dateUnknown": "未知日期",
+    "dateInvalid": "日期格式错误",
+    "fileEmpty": "文件内容为空",
+    "fileNotFound": "无法打开文件，没有合适的应用程序处理JSON文件"
+  },
+  "errors": {
+    "unknown": "未知错误"
+  }
+}
+

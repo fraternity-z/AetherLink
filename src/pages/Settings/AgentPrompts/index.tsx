@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft as ArrowBackIcon, Search as SearchIcon, ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Copy as ContentCopyIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getAgentPromptCategories, searchAgentPrompts } from '../../../shared/config/agentPrompts';
 import type { AgentPrompt, AgentPromptCategory } from '../../../shared/types/AgentPrompt';
 import SystemPromptVariablesPanel from '../../../components/SystemPromptVariablesPanel';
@@ -26,6 +27,7 @@ import SystemPromptVariablesPanel from '../../../components/SystemPromptVariable
  */
 const AgentPromptsSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['general']));
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
@@ -62,7 +64,7 @@ const AgentPromptsSettings: React.FC = () => {
       setCopiedPromptId(prompt.id);
       setTimeout(() => setCopiedPromptId(null), 2000);
     } catch (error) {
-      console.error('复制失败:', error);
+      console.error(t('settings.agentPromptsPage.promptCard.copyFailed') + ':', error);
     }
   };
 
@@ -103,7 +105,7 @@ const AgentPromptsSettings: React.FC = () => {
               height: '24px'
             }}
           >
-            {copiedPromptId === prompt.id ? '已复制' : '复制'}
+            {copiedPromptId === prompt.id ? t('settings.agentPromptsPage.promptCard.copied') : t('settings.agentPromptsPage.promptCard.copy')}
           </Button>
         </Box>
 
@@ -167,7 +169,7 @@ const AgentPromptsSettings: React.FC = () => {
             {category.emoji} {category.name}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-            {category.prompts.length} 个提示词
+            {category.prompts.length} {t('settings.agentPromptsPage.category.promptsCount')}
           </Typography>
           {isExpanded ? <ExpandLessIcon size={20} /> : <ExpandMoreIcon size={20} />}
         </Box>
@@ -233,7 +235,7 @@ const AgentPromptsSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            智能体提示词集合
+            {t('settings.agentPromptsPage.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -272,10 +274,10 @@ const AgentPromptsSettings: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              搜索提示词
+              {t('settings.agentPromptsPage.searchSection.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              在丰富的提示词库中快速找到您需要的模板
+              {t('settings.agentPromptsPage.searchSection.description')}
             </Typography>
           </Box>
 
@@ -284,7 +286,7 @@ const AgentPromptsSettings: React.FC = () => {
           <Box sx={{ p: 2 }}>
             <TextField
               fullWidth
-              placeholder="输入关键词搜索提示词..."
+              placeholder={t('settings.agentPromptsPage.searchSection.placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               slotProps={{
@@ -322,10 +324,10 @@ const AgentPromptsSettings: React.FC = () => {
           >
             <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                搜索结果 ({searchResults.length})
+                {t('settings.agentPromptsPage.searchResults.title')} ({searchResults.length})
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                找到 {searchResults.length} 个匹配的提示词
+                {t('settings.agentPromptsPage.searchResults.found', { count: searchResults.length })}
               </Typography>
             </Box>
 
@@ -355,7 +357,7 @@ const AgentPromptsSettings: React.FC = () => {
           >
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <Typography color="text.secondary">
-                没有找到匹配的提示词
+                {t('settings.agentPromptsPage.searchResults.noResults')}
               </Typography>
             </Box>
           </Paper>

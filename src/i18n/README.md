@@ -31,13 +31,29 @@ const LanguageSelector = () => {
 
 ## 文件说明
 
-| 文件 | 说明 |
+| 文件/目录 | 说明 |
 |------|------|
 | `config.ts` | i18n 核心配置，初始化设置 |
 | `useLanguageSettings.ts` | 语言设置 Hook，管理语言切换 |
 | `index.ts` | 统一导出文件 |
-| `locales/zh-CN.json` | 简体中文翻译资源 |
-| `locales/en-US.json` | 英文翻译资源 |
+| `locales/` | 语言资源文件目录（模块化） |
+| `locales/zh-CN/` | 简体中文翻译资源（按模块拆分） |
+| `locales/en-US/` | 英文翻译资源（按模块拆分） |
+
+### 模块化结构
+
+翻译文件已按功能模块拆分，便于维护和 AI 修改：
+
+- `common.json` - 通用翻译（按钮、操作等）
+- `welcome.json` - 欢迎页翻译
+- `chat.json` - 聊天相关翻译
+- `notifications.json` - 通知相关翻译
+- `errors.json` - 错误信息翻译
+- `settings.json` - 设置页面翻译（大文件）
+- `modelSettings.json` - 模型设置翻译
+- `aiDebate.json` - AI 辩论功能翻译
+
+每个语言目录下都有对应的模块文件，系统会自动合并加载。
 
 ## 主要功能
 

@@ -13,6 +13,7 @@ import {
   Tooltip,
   Button
 } from '@mui/material';
+import { useTranslation } from '../../../../../i18n';
 import {
   RotateCcw as RestoreIcon,
   Trash2 as DeleteIcon,
@@ -48,6 +49,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
   onFileDeleted,
   refreshTrigger = 0
 }) => {
+  const { t } = useTranslation();
   const [backupFiles, setBackupFiles] = useState<BackupFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
@@ -126,11 +128,11 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
 
   // 格式化日期
   const formatDate = (timestamp: number) => {
-    if (!timestamp) return '未知日期';
+    if (!timestamp) return t('dataSettings.messages.dateUnknown');
 
     try {
       const date = new Date(timestamp);
-      return date.toLocaleString('zh-CN', {
+      return date.toLocaleString(undefined, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -138,15 +140,15 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
         minute: '2-digit'
       });
     } catch (e) {
-      return '日期格式错误';
+      return t('dataSettings.messages.dateInvalid');
     }
   };
 
   // 从文件路径提取备份类型
   const getBackupType = (fileName: string) => {
-    if (fileName.includes('_Full_')) return '完整备份';
-    if (fileName.includes('_Custom_')) return '自定义备份';
-    return '基本备份';
+    if (fileName.includes('_Full_')) return t('dataSettings.backupFilesList.types.full');
+    if (fileName.includes('_Custom_')) return t('dataSettings.backupFilesList.types.custom');
+    return t('dataSettings.backupFilesList.types.basic');
   };
 
   // 打开文件
@@ -158,7 +160,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
       });
     } catch (error) {
       console.error('打开文件失败:', error);
-      onRestoreError('无法打开文件，没有合适的应用程序处理JSON文件');
+      onRestoreError(t('dataSettings.messages.fileNotFound'));
     }
   };
 
@@ -168,7 +170,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
       setProcessingFile(file.name);
       setRestoreProgress({
         active: true,
-        stage: '读取文件中...',
+        stage: t('dataSettings.restoreProgress.readingFile'),
         progress: 0.05
       });
 
@@ -180,7 +182,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
       });
 
       if (!fileContent.data) {
-        throw new Error('文件内容为空');
+        throw new Error(t('dataSettings.messages.fileEmpty'));
       }
 
       // 确保我们有字符串类型
@@ -193,7 +195,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
 
       setRestoreProgress({
         active: true,
-        stage: '验证备份数据...',
+        stage: t('dataSettings.restoreProgress.validating'),
         progress: 0.1
       });
 
@@ -212,29 +214,29 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
         let restoreMessage = '';
 
         if (result.topicsCount > 0) {
-          restoreMessage += `• 已恢复 ${result.topicsCount} 个对话话题\n`;
+          restoreMessage += `• ${t('dataSettings.restoreProgress.restoredTopics', { count: result.topicsCount })}\n`;
         }
 
         if (result.assistantsCount > 0) {
-          restoreMessage += `• 已恢复 ${result.assistantsCount} 个助手\n`;
+          restoreMessage += `• ${t('dataSettings.restoreProgress.restoredAssistants', { count: result.assistantsCount })}\n`;
         }
 
         if (result.settingsRestored) {
-          restoreMessage += `• 已恢复应用设置\n`;
+          restoreMessage += `• ${t('dataSettings.restoreProgress.restoredSettings')}\n`;
         }
 
         if (result.localStorageCount > 0) {
-          restoreMessage += `• 已恢复 ${result.localStorageCount} 项其他应用数据\n`;
+          restoreMessage += `• ${t('dataSettings.restoreProgress.restoredLocalStorage', { count: result.localStorageCount })}\n`;
         }
 
-        onRestoreSuccess(`备份恢复成功：\n${restoreMessage}\n重启应用以应用所有更改`);
+        onRestoreSuccess(`${t('dataSettings.restoreProgress.success.full')}\n${restoreMessage}\n${t('dataSettings.restoreProgress.restartRequired')}`);
       } else {
         // 显示错误信息
-        onRestoreError(`恢复失败: ${result.error || '未知错误'}`);
+        onRestoreError(`${t('dataSettings.messages.restoreFailed')}: ${result.error || t('dataSettings.errors.unknown')}`);
       }
     } catch (error) {
       console.error('从文件恢复失败:', error);
-      onRestoreError(`恢复失败: ${error instanceof Error ? error.message : String(error)}`);
+      onRestoreError(`${t('dataSettings.messages.restoreFailed')}: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setProcessingFile(null);
       // 恢复完成后重置进度条
@@ -263,7 +265,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
       onFileDeleted();
     } catch (error) {
       console.error('删除文件失败:', error);
-      onRestoreError(`删除文件失败: ${error instanceof Error ? error.message : String(error)}`);
+      onRestoreError(`${t('dataSettings.webdav.backupManager.errors.deleteFailed')}: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setProcessingFile(null);
     }
@@ -284,7 +286,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
-          本地备份文件
+          {t('dataSettings.backupFilesList.title')}
         </Typography>
 
         <Button
@@ -300,7 +302,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
             }
           }}
         >
-          刷新
+          {t('dataSettings.backupFilesList.refresh')}
         </Button>
       </Box>
 
@@ -339,10 +341,10 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
       ) : backupFiles.length === 0 ? (
         <Box sx={{ py: 3, textAlign: 'center' }}>
           <Typography color="text.secondary">
-            未找到本地备份文件
+            {t('dataSettings.backupFilesList.noFiles')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.75rem' }}>
-            备份文件可能保存在您设备的Download文件夹、应用备份目录或其他位置
+            {t('dataSettings.backupFilesList.noFilesHint')}
           </Typography>
         </Box>
       ) : (
@@ -394,7 +396,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
                             mt: 0.5
                           }}
                         >
-                          位置: {file.directory}
+                          {t('dataSettings.backupFilesList.location')}: {file.directory}
                         </Typography>
                       )}
                     </Box>
@@ -402,7 +404,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
                   secondaryTypographyProps={{ component: 'div' }}
                 />
                 <ListItemSecondaryAction sx={{ right: 8 }}>
-                  <Tooltip title="恢复此备份">
+                  <Tooltip title={t('dataSettings.backupFilesList.actions.restore')}>
                     <IconButton
                       size="small"
                       aria-label="restore"
@@ -420,7 +422,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
                       )}
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="打开文件">
+                  <Tooltip title={t('dataSettings.backupFilesList.actions.open')}>
                     <IconButton
                       size="small"
                       aria-label="open"
@@ -435,7 +437,7 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
                       <OpenInNewIcon size={16} />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="删除备份">
+                  <Tooltip title={t('dataSettings.backupFilesList.actions.delete')}>
                     <IconButton
                       size="small"
                       aria-label="delete"

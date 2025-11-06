@@ -51,8 +51,10 @@ import {
   TestResultDialog
 } from './ModelProviderSettings/dialogs';
 import { useProviderSettings } from './ModelProviderSettings/hooks';
+import { useTranslation } from 'react-i18next';
 
 const ModelProviderSettings: React.FC = () => {
+  const { t } = useTranslation();
   const { providerId } = useParams<{ providerId: string }>();
   const navigate = useNavigate();
 
@@ -144,8 +146,8 @@ const ModelProviderSettings: React.FC = () => {
   if (!provider) {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography>未找到该提供商，请返回设置页面</Typography>
-        <Button onClick={handleBack}>返回</Button>
+        <Typography>{t('modelSettings.provider.notFound')}</Typography>
+        <Button onClick={handleBack}>{t('common.back')}</Button>
       </Box>
     );
   }
@@ -200,7 +202,7 @@ const ModelProviderSettings: React.FC = () => {
             onClick={handleSave}
             sx={buttonStyles.primary}
           >
-            保存
+            {t('common.save')}
           </Button>
         </Toolbar>
       </AppBar>
@@ -259,7 +261,7 @@ const ModelProviderSettings: React.FC = () => {
                 {provider.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {provider.isSystem ? '系统供应商' :
+                {provider.isSystem ? t('modelSettings.provider.systemProvider') :
                  `${provider.providerType || 'Custom'} API`}
               </Typography>
             </Box>
@@ -299,11 +301,10 @@ const ModelProviderSettings: React.FC = () => {
               borderColor: (theme) => alpha(theme.palette.info.main, 0.3)
             }}>
               <Typography variant="body2" color="info.main" sx={{ fontWeight: 500 }}>
-                🧠 系统供应商说明
+                {t('modelSettings.provider.systemProviderTitle')}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                模型组合供应商是系统内置的虚拟供应商，它使用您配置的模型组合来提供服务。
-                模型组合中的各个模型会使用它们各自配置的 API 密钥和基础 URL。
+                {t('modelSettings.provider.systemProviderDesc')}
               </Typography>
             </Box>
           ) : (
@@ -319,13 +320,13 @@ const ModelProviderSettings: React.FC = () => {
                   color: 'text.primary'
                 }}
               >
-                API配置
+                {t('modelSettings.provider.apiConfig')}
               </Typography>
 
               {/* 启用状态 */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" gutterBottom color="text.secondary">
-                  启用状态
+                  {t('modelSettings.provider.enableStatus')}
                 </Typography>
                 <FormControlLabel
                   control={
@@ -334,14 +335,14 @@ const ModelProviderSettings: React.FC = () => {
                       onChange={(e) => setIsEnabled(e.target.checked)}
                     />
                   }
-                  label={isEnabled ? '已启用' : '已禁用'}
+                  label={isEnabled ? t('modelSettings.provider.enabled') : t('modelSettings.provider.disabled')}
                 />
               </Box>
 
               {/* 多 Key 模式切换 */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" gutterBottom color="text.secondary">
-                  API Key 管理模式
+                  {t('modelSettings.provider.apiKeyMode')}
                 </Typography>
                 <FormControlLabel
                   control={
@@ -350,12 +351,12 @@ const ModelProviderSettings: React.FC = () => {
                       onChange={(e) => handleToggleMultiKey(e.target.checked)}
                     />
                   }
-                  label={multiKeyEnabled ? '多 Key 负载均衡模式' : '单 Key 模式'}
+                  label={multiKeyEnabled ? t('modelSettings.provider.multiKeyMode') : t('modelSettings.provider.singleKeyMode')}
                 />
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                   {multiKeyEnabled
-                    ? '启用多个 API Key 进行负载均衡和故障转移'
-                    : '使用单个 API Key（传统模式）'
+                    ? t('modelSettings.provider.multiKeyDesc')
+                    : t('modelSettings.provider.singleKeyDesc')
                   }
                 </Typography>
               </Box>
@@ -367,8 +368,8 @@ const ModelProviderSettings: React.FC = () => {
                   onChange={(_, newValue) => setCurrentTab(newValue)}
                   sx={{ mb: 2 }}
                 >
-                  <Tab label={multiKeyEnabled ? "多 Key 管理" : "API 密钥"} />
-                  <Tab label="基础配置" />
+                  <Tab label={multiKeyEnabled ? t('modelSettings.provider.multiKeyTab') : t('modelSettings.provider.apiKeyTab')} />
+                  <Tab label={t('modelSettings.provider.basicConfigTab')} />
                 </Tabs>
 
                 {currentTab === 0 && (
@@ -387,11 +388,11 @@ const ModelProviderSettings: React.FC = () => {
                       // 单 Key 配置界面
                       <Box>
                         <Typography variant="subtitle2" gutterBottom color="text.secondary">
-                          API密钥
+                          {t('modelSettings.provider.apiKeyLabel')}
                         </Typography>
                         <TextField
                           fullWidth
-                          placeholder="输入API密钥"
+                          placeholder={t('modelSettings.provider.apiKeyPlaceholder')}
                           value={apiKey}
                           onChange={(e) => setApiKey(e.target.value)}
                           variant="outlined"
@@ -409,7 +410,7 @@ const ModelProviderSettings: React.FC = () => {
                               endAdornment: (
                                 <InputAdornment position="end">
                                   <IconButton
-                                    aria-label="切换API密钥可见性"
+                                    aria-label={t('modelSettings.provider.toggleApiKey')}
                                     onClick={toggleShowApiKey}
                                     edge="end"
                                     size="small"
@@ -441,11 +442,11 @@ const ModelProviderSettings: React.FC = () => {
                     {/* 基础URL配置 */}
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="subtitle2" gutterBottom color="text.secondary">
-                        基础URL (可选)
+                        {t('modelSettings.provider.baseUrlLabel')}
                       </Typography>
                       <TextField
                         fullWidth
-                        placeholder="输入基础URL，例如: https://tow.bt6.top"
+                        placeholder={t('modelSettings.provider.baseUrlPlaceholder')}
                         value={baseUrl}
                         onChange={(e) => {
                           setBaseUrl(e.target.value);
@@ -460,7 +461,7 @@ const ModelProviderSettings: React.FC = () => {
                               </span>
                             )}
                             <span style={{ display: 'block', color: 'text.secondary', marginBottom: '4px', fontSize: '0.75rem' }}>
-                              在URL末尾添加#可强制使用自定义格式，末尾添加/也可保持原格式
+                              {t('modelSettings.provider.baseUrlHint')}
                             </span>
                             {baseUrl && isOpenAIProvider(provider?.providerType) && (
                               <span
@@ -475,8 +476,8 @@ const ModelProviderSettings: React.FC = () => {
                                   marginTop: '4px'
                                 }}
                               >
-                                {baseUrl.endsWith('#') ? '强制使用: ' :
-                                 baseUrl.endsWith('/') ? '保持原格式: ' : '完整地址: '}
+                                {baseUrl.endsWith('#') ? t('modelSettings.provider.baseUrlForce') :
+                                 baseUrl.endsWith('/') ? t('modelSettings.provider.baseUrlKeep') : t('modelSettings.provider.baseUrlComplete')}
                                 {getCompleteApiUrl(baseUrl, provider?.providerType)}
                               </span>
                             )}
@@ -495,7 +496,7 @@ const ModelProviderSettings: React.FC = () => {
                     {/* 自定义请求头按钮 */}
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="subtitle2" gutterBottom color="text.secondary">
-                        自定义请求头 (可选)
+                        {t('modelSettings.provider.customHeaders')}
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Button
@@ -512,11 +513,11 @@ const ModelProviderSettings: React.FC = () => {
                             },
                           }}
                         >
-                          配置请求头
+                          {t('modelSettings.provider.configureHeaders')}
                         </Button>
                         {Object.keys(extraHeaders).length > 0 && (
                           <Typography variant="caption" color="text.secondary">
-                            已配置 {Object.keys(extraHeaders).length} 个请求头
+                            {t('modelSettings.provider.headersConfigured', { count: Object.keys(extraHeaders).length })}
                           </Typography>
                         )}
                       </Box>
@@ -539,7 +540,7 @@ const ModelProviderSettings: React.FC = () => {
                           },
                         }}
                       >
-                        {isTesting ? '测试中...' : '测试连接'}
+                        {isTesting ? t('modelSettings.provider.testing') : t('modelSettings.provider.testConnection')}
                       </Button>
                     </Box>
                   </Box>
@@ -569,7 +570,7 @@ const ModelProviderSettings: React.FC = () => {
                 color: 'text.primary'
               }}
             >
-              {provider.isSystem ? '模型组合' : '可用模型'}
+              {provider.isSystem ? t('modelSettings.provider.modelCombos') : t('modelSettings.provider.availableModels')}
             </Typography>
             {provider.isSystem ? (
               <Button
@@ -586,7 +587,7 @@ const ModelProviderSettings: React.FC = () => {
                   },
                 }}
               >
-                管理组合
+                {t('modelSettings.provider.manageCombos')}
               </Button>
             ) : (
               <>
@@ -595,7 +596,7 @@ const ModelProviderSettings: React.FC = () => {
                   color="text.secondary"
                   sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}
                 >
-                  点击✓测试单个模型
+                  {t('modelSettings.provider.clickToTest')}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
                   <Button
@@ -612,7 +613,7 @@ const ModelProviderSettings: React.FC = () => {
                       },
                     }}
                   >
-                    自动获取
+                    {t('modelSettings.provider.autoFetch')}
                   </Button>
                   <IconButton
                     size="small"
@@ -624,7 +625,7 @@ const ModelProviderSettings: React.FC = () => {
                         bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
                       },
                     }}
-                    title="配置自定义模型端点"
+                    title={t('modelSettings.provider.configureEndpoint')}
                   >
                     <Settings size={16} />
                   </IconButton>
@@ -641,7 +642,7 @@ const ModelProviderSettings: React.FC = () => {
                     borderRadius: 2,
                   }}
                 >
-                  手动添加
+                  {t('modelSettings.provider.manualAdd')}
                 </Button>
               </>
             )}
@@ -743,14 +744,14 @@ const ModelProviderSettings: React.FC = () => {
                               color: 'success.main',
                             }}
                           >
-                            默认
+                            {t('modelSettings.provider.defaultBadge')}
                           </Box>
                         )}
                       </Box>
                     }
                     secondary={
                       <Typography variant="body2" color="text.secondary" fontSize="0.8rem">
-                        ID: {model.id}
+                        {t('modelSettings.provider.modelId', { id: model.id })}
                       </Typography>
                     }
                   />
@@ -760,7 +761,7 @@ const ModelProviderSettings: React.FC = () => {
             {provider.models.length === 0 && (
               <Box sx={{ textAlign: 'center', py: 3 }}>
                 <Typography color="text.secondary">
-                  {provider.isSystem ? '尚未创建任何模型组合' : '尚未添加任何模型'}
+                  {provider.isSystem ? t('modelSettings.provider.noCombos') : t('modelSettings.provider.noModels')}
                 </Typography>
                 {provider.isSystem && (
                   <Button
@@ -769,7 +770,7 @@ const ModelProviderSettings: React.FC = () => {
                     onClick={() => window.location.href = '/settings/model-combo'}
                     sx={{ mt: 2 }}
                   >
-                    创建模型组合
+                    {t('modelSettings.provider.createCombo')}
                   </Button>
                 )}
               </Box>

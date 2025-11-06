@@ -15,6 +15,7 @@ import {
   Chip
 } from '@mui/material';
 import { Settings as SettingsIcon } from 'lucide-react';
+import { useTranslation } from '../../../../../i18n';
 import type { SelectiveBackupOptions } from '../../utils/selectiveBackupUtils';
 
 interface SelectiveBackupDialogProps {
@@ -37,6 +38,7 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
   onOptionChange,
   onBackup
 }) => {
+  const { t } = useTranslation();
   // 检查是否有选中的选项
   const isAnyOptionSelected = Object.values(options).some(value => value);
   
@@ -60,12 +62,12 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
         pb: 1
       }}>
         <SettingsIcon size={24} color="#9333EA" />
-        选择性备份
+        {t('dataSettings.selectiveBackupDialog.title')}
       </DialogTitle>
       
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" paragraph>
-          选择需要备份的内容：
+          {t('dataSettings.selectiveBackupDialog.description')}
         </Typography>
         
         <FormGroup>
@@ -83,10 +85,10 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography variant="body2">
-                  模型配置
+                  {t('dataSettings.selectiveBackupDialog.modelConfig.label')}
                 </Typography>
                 <Chip 
-                  label="推荐" 
+                  label={t('dataSettings.selectiveBackupDialog.modelConfig.recommended')} 
                   size="small" 
                   color="primary" 
                   sx={{ 
@@ -102,21 +104,17 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
         </FormGroup>
 
         <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            <strong>模型配置包含：</strong><br/>
-            • 所有模型提供商设置<br/>
-            • API密钥配置<br/>
-            • 默认模型选择<br/>
-            • 网络搜索设置
-          </Typography>
+          <Typography variant="caption" color="text.secondary" dangerouslySetInnerHTML={{
+            __html: `<strong>${t('dataSettings.selectiveBackupDialog.modelConfig.label')}包含：</strong><br/>${t('dataSettings.selectiveBackupDialog.modelConfig.description')}`
+          }} />
         </Box>
 
         {/* 未来扩展区域的占位符 */}
         <Box sx={{ mt: 2 }}>
           <Alert severity="info" sx={{ bgcolor: 'rgba(147, 51, 234, 0.05)' }}>
-            <AlertTitle sx={{ color: '#9333EA' }}>即将推出</AlertTitle>
+            <AlertTitle sx={{ color: '#9333EA' }}>{t('dataSettings.selectiveBackupDialog.comingSoon.title')}</AlertTitle>
             <Typography variant="body2" color="text.secondary">
-              更多备份选项正在开发中，包括聊天记录、助手配置等。
+              {t('dataSettings.selectiveBackupDialog.comingSoon.message')}
             </Typography>
           </Alert>
         </Box>
@@ -128,7 +126,7 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
           color="inherit"
           disabled={isLoading}
         >
-          取消
+          {t('dataSettings.selectiveBackupDialog.cancel')}
         </Button>
         <Button 
           onClick={onBackup} 
@@ -143,7 +141,7 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
             }
           }}
         >
-          {isLoading ? '备份中...' : '创建备份'}
+          {isLoading ? t('dataSettings.selectiveBackupDialog.backingUp') : t('dataSettings.selectiveBackupDialog.createBackup')}
         </Button>
       </DialogActions>
     </Dialog>

@@ -40,6 +40,7 @@ import type { RootState } from '../../shared/store';
 import { DropdownModelSelector } from '../ChatPage/components/DropdownModelSelector';
 import { setShowAIDebateButton } from '../../shared/store/settingsSlice';
 import { toastManager } from '../../components/EnhancedToast';
+import { useTranslation } from 'react-i18next';
 
 // AI辩论配置默认值常量
 const DEFAULT_CONFIG = {
@@ -88,6 +89,7 @@ interface DebateConfigGroup {
 const AIDebateSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   // 从Redux获取提供商和模型
   const providers = useSelector((state: RootState) => state.settings.providers || []);
@@ -144,8 +146,8 @@ const AIDebateSettings: React.FC = () => {
   const roleTemplates = [
     // 基础辩论角色
     {
-      name: '正方辩手',
-      description: '支持观点的辩论者',
+      name: t('aiDebate.templates.pro.name'),
+      description: t('aiDebate.templates.pro.description'),
       systemPrompt: `你是一位专业的正方辩论者，具有以下特点：
 
 🎯 **核心职责**
@@ -170,8 +172,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#4caf50'
     },
     {
-      name: '反方辩手',
-      description: '反对观点的辩论者',
+      name: t('aiDebate.templates.con.name'),
+      description: t('aiDebate.templates.con.description'),
       systemPrompt: `你是一位犀利的反方辩论者，具有以下特点：
 
 🎯 **核心职责**
@@ -196,8 +198,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#f44336'
     },
     {
-      name: '中立分析师',
-      description: '客观理性的分析者',
+      name: t('aiDebate.templates.neutral.name'),
+      description: t('aiDebate.templates.neutral.description'),
       systemPrompt: `你是一位客观中立的分析师，具有以下特点：
 
 🎯 **核心职责**
@@ -222,8 +224,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#ff9800'
     },
     {
-      name: '辩论主持人',
-      description: '控制节奏的主持人',
+      name: t('aiDebate.templates.moderator.name'),
+      description: t('aiDebate.templates.moderator.description'),
       systemPrompt: `你是一位专业的辩论主持人，具有以下职责：
 
 🎯 **核心职责**
@@ -257,8 +259,8 @@ const AIDebateSettings: React.FC = () => {
     },
     // 专业领域角色
     {
-      name: '法律专家',
-      description: '从法律角度分析问题',
+      name: t('aiDebate.templates.legal.name'),
+      description: t('aiDebate.templates.legal.description'),
       systemPrompt: `你是一位资深法律专家，从法律角度参与辩论：
 
 🎯 **专业视角**
@@ -284,8 +286,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#795548'
     },
     {
-      name: '经济学家',
-      description: '从经济角度评估影响',
+      name: t('aiDebate.templates.economist.name'),
+      description: t('aiDebate.templates.economist.description'),
       systemPrompt: `你是一位经济学专家，从经济角度参与辩论：
 
 🎯 **专业视角**
@@ -311,8 +313,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#607d8b'
     },
     {
-      name: '技术专家',
-      description: '从技术可行性角度分析',
+      name: t('aiDebate.templates.tech.name'),
+      description: t('aiDebate.templates.tech.description'),
       systemPrompt: `你是一位技术专家，从技术角度参与辩论：
 
 🎯 **专业视角**
@@ -338,8 +340,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#3f51b5'
     },
     {
-      name: '社会学者',
-      description: '从社会影响角度思考',
+      name: t('aiDebate.templates.sociologist.name'),
+      description: t('aiDebate.templates.sociologist.description'),
       systemPrompt: `你是一位社会学专家，从社会角度参与辩论：
 
 🎯 **专业视角**
@@ -366,8 +368,8 @@ const AIDebateSettings: React.FC = () => {
     },
     // 特殊角色
     {
-      name: '总结分析师',
-      description: '专门负责辩论总结分析',
+      name: t('aiDebate.templates.summary.name'),
+      description: t('aiDebate.templates.summary.description'),
       systemPrompt: `你是一位专业的辞论总结分析师，具有以下特点：
 
 🎯 **核心职责**
@@ -394,8 +396,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#607d8b'
     },
     {
-      name: '魔鬼代言人',
-      description: '专门提出反对意见',
+      name: t('aiDebate.templates.devil.name'),
+      description: t('aiDebate.templates.devil.description'),
       systemPrompt: `你是"魔鬼代言人"，专门提出反对和质疑：
 
 🎯 **核心职责**
@@ -421,8 +423,8 @@ const AIDebateSettings: React.FC = () => {
       color: '#424242'
     },
     {
-      name: '实用主义者',
-      description: '关注实际操作和效果',
+      name: t('aiDebate.templates.pragmatist.name'),
+      description: t('aiDebate.templates.pragmatist.description'),
       systemPrompt: `你是一位实用主义者，关注实际可操作性：
 
 🎯 **核心关注**
@@ -467,11 +469,11 @@ const AIDebateSettings: React.FC = () => {
           setConfigGroups(parsedGroups);
         }
       } catch (error) {
-        console.error('加载AI辩论配置失败:', error);
+        console.error(t('errors.aiDebate.loadConfigFailed'), error);
       }
     };
     loadConfig();
-  }, []);
+  }, [t]);
 
   // 简化的保存配置
   const saveConfig = (newConfig: DebateConfig) => {
@@ -479,7 +481,7 @@ const AIDebateSettings: React.FC = () => {
       localStorage.setItem('aiDebateConfig', JSON.stringify(newConfig));
       setConfig(newConfig);
     } catch (error) {
-      console.error('保存AI辩论配置失败:', error);
+      console.error(t('errors.aiDebate.saveConfigFailed'), error);
     }
   };
 
@@ -489,7 +491,7 @@ const AIDebateSettings: React.FC = () => {
       localStorage.setItem('aiDebateConfigGroups', JSON.stringify(groups));
       setConfigGroups(groups);
     } catch (error) {
-      console.error('保存分组配置失败:', error);
+      console.error(t('errors.aiDebate.saveGroupsFailed'), error);
     }
   };
 
@@ -542,7 +544,7 @@ const AIDebateSettings: React.FC = () => {
 
   // 删除分组
   const handleDeleteGroup = (groupId: string) => {
-    if (window.confirm('确定要删除这个配置分组吗？此操作不可撤销。')) {
+    if (window.confirm(t('aiDebate.groups.confirmDelete'))) {
       const updatedGroups = configGroups.filter(group => group.id !== groupId);
       saveConfigGroups(updatedGroups);
     }
@@ -562,7 +564,7 @@ const AIDebateSettings: React.FC = () => {
         : group
     );
     saveConfigGroups(updatedGroups);
-    toastManager.success('分组配置已更新！', '更新成功');
+    toastManager.success(t('aiDebate.groups.updateSuccess'), t('aiDebate.groups.updateSuccessTitle'));
   };
 
   // 处理返回
@@ -702,15 +704,16 @@ const AIDebateSettings: React.FC = () => {
     saveConfig(newConfig);
 
     // 显示成功提示
-    const sceneName = setupType === 'basic' ? '基础辩论' :
-                     setupType === 'professional' ? '专业辩论' :
-                     setupType === 'expert' ? '专家论坛' : '全面分析';
-
-    const defaultModelName = availableModels.length > 0 ? availableModels[0].name : '无可用模型';
+    const sceneName = t(`aiDebate.quickSetup.${setupType}.name`);
+    const defaultModelName = availableModels.length > 0 ? availableModels[0].name : t('aiDebate.roles.unknownModel');
 
     toastManager.success(
-      `已成功配置"${sceneName}"场景！包含 ${newRoles.length} 个角色，已自动配置默认模型：${defaultModelName}`,
-      '场景配置成功',
+      t('aiDebate.quickSetup.successMessage', { 
+        sceneName, 
+        roleCount: newRoles.length, 
+        modelName: defaultModelName 
+      }),
+      t('aiDebate.quickSetup.successTitle'),
       { duration: 8000 }
     );
   };
@@ -761,7 +764,7 @@ const AIDebateSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            AI辩论设置
+            {t('aiDebate.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -808,14 +811,14 @@ const AIDebateSettings: React.FC = () => {
               }}
             >
               <Bot size={20} color="#06b6d4" />
-              基本设置
+              {t('aiDebate.basicSettings.title')}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
             >
-              配置AI辩论功能的基础参数和选项
+              {t('aiDebate.basicSettings.description')}
             </Typography>
           </Box>
 
@@ -829,7 +832,7 @@ const AIDebateSettings: React.FC = () => {
                 onChange={(e) => saveConfig({ ...config, enabled: e.target.checked })}
               />
             }
-            label="启用AI辩论功能"
+            label={t('aiDebate.basicSettings.enable')}
             sx={{ mb: 2 }}
           />
 
@@ -840,13 +843,13 @@ const AIDebateSettings: React.FC = () => {
                 onChange={(e) => dispatch(setShowAIDebateButton(e.target.checked))}
               />
             }
-            label="在输入框显示AI辩论按钮"
+            label={t('aiDebate.basicSettings.showButton')}
             sx={{ mb: 2 }}
           />
 
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
             <TextField
-              label="最大辩论轮数"
+              label={t('aiDebate.basicSettings.maxRounds')}
               value={config.maxRounds}
               onChange={(e) => {
                 const value = e.target.value;
@@ -860,10 +863,10 @@ const AIDebateSettings: React.FC = () => {
                   }
                 }
               }}
-              helperText="输入数字，建议1-20轮"
+              helperText={t('aiDebate.basicSettings.maxRoundsHelper')}
             />
             <TextField
-              label="每轮最大Token数"
+              label={t('aiDebate.basicSettings.maxTokensPerRound')}
               value={config.autoEndConditions.maxTokensPerRound}
               onChange={(e) => {
                 const value = e.target.value;
@@ -889,7 +892,7 @@ const AIDebateSettings: React.FC = () => {
                   }
                 }
               }}
-              helperText="输入数字，建议100-4000"
+              helperText={t('aiDebate.basicSettings.maxTokensPerRoundHelper')}
             />
           </Box>
 
@@ -901,7 +904,7 @@ const AIDebateSettings: React.FC = () => {
                   onChange={(e) => saveConfig({ ...config, moderatorEnabled: e.target.checked })}
                 />
               }
-              label="启用主持人角色"
+              label={t('aiDebate.basicSettings.enableModerator')}
             />
             <FormControlLabel
               control={
@@ -910,7 +913,7 @@ const AIDebateSettings: React.FC = () => {
                   onChange={(e) => saveConfig({ ...config, summaryEnabled: e.target.checked })}
                 />
               }
-              label="自动生成辩论总结"
+              label={t('aiDebate.basicSettings.enableSummary')}
               sx={{ ml: 2 }}
             />
             </Box>
@@ -941,14 +944,14 @@ const AIDebateSettings: React.FC = () => {
               }}
             >
               <Bot size={20} color="#8b5cf6" />
-              快速配置
+              {t('aiDebate.quickSetup.title')}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
             >
-              为新手用户提供一键配置，快速创建完整的辩论场景
+              {t('aiDebate.quickSetup.description')}
             </Typography>
           </Box>
 
@@ -962,10 +965,10 @@ const AIDebateSettings: React.FC = () => {
               sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🎯 基础辩论
+                🎯 {t('aiDebate.quickSetup.basic.name')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                正方 + 反方 + 主持人（3角色）
+                {t('aiDebate.quickSetup.basic.description')}
               </Typography>
             </Button>
 
@@ -975,10 +978,10 @@ const AIDebateSettings: React.FC = () => {
               sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🏛️ 专业辩论
+                🏛️ {t('aiDebate.quickSetup.professional.name')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                正方 + 反方 + 中立分析师 + 主持人（4角色）
+                {t('aiDebate.quickSetup.professional.description')}
               </Typography>
             </Button>
 
@@ -988,10 +991,10 @@ const AIDebateSettings: React.FC = () => {
               sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🎓 专家论坛
+                🎓 {t('aiDebate.quickSetup.expert.name')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                法律专家 + 经济学家 + 技术专家 + 主持人（4角色）
+                {t('aiDebate.quickSetup.expert.description')}
               </Typography>
             </Button>
 
@@ -1001,10 +1004,10 @@ const AIDebateSettings: React.FC = () => {
               sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🌟 全面分析
+                🌟 {t('aiDebate.quickSetup.comprehensive.name')}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                6个不同角色的全方位辩论
+                {t('aiDebate.quickSetup.comprehensive.description')}
               </Typography>
             </Button>
             </Box>
@@ -1034,14 +1037,14 @@ const AIDebateSettings: React.FC = () => {
                     fontSize: { xs: '1rem', sm: '1.1rem' }
                   }}
                 >
-                  辩论角色管理
+                  {t('aiDebate.roles.title')}
                 </Typography>
                 <Typography
                   variant="body2"
                   color="text.secondary"
                   sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                 >
-                  创建和管理AI辩论中的各种角色
+                  {t('aiDebate.roles.description')}
                 </Typography>
               </Box>
               <Button
@@ -1056,7 +1059,7 @@ const AIDebateSettings: React.FC = () => {
                   },
                 }}
               >
-                添加角色
+                {t('aiDebate.roles.addRole')}
               </Button>
             </Box>
           </Box>
@@ -1067,7 +1070,7 @@ const AIDebateSettings: React.FC = () => {
 
           {config.roles.length === 0 ? (
             <Alert severity="info" sx={{ mb: 2 }}>
-              还没有配置任何辩论角色。点击"添加角色"开始配置。
+              {t('aiDebate.roles.noRoles')}
             </Alert>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1099,12 +1102,7 @@ const AIDebateSettings: React.FC = () => {
                           {role.name}
                         </Typography>
                         <Chip
-                          label={
-                            role.stance === 'pro' ? '正方' :
-                            role.stance === 'con' ? '反方' :
-                            role.stance === 'neutral' ? '中立' :
-                            role.stance === 'moderator' ? '主持人' : '总结'
-                          }
+                          label={t(`aiDebate.roles.stance.${role.stance}`)}
                           size="small"
                           sx={{
                             bgcolor: role.color || '#2196f3',
@@ -1116,16 +1114,16 @@ const AIDebateSettings: React.FC = () => {
                         />
                       </Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                        {role.description} • {role.modelId ? availableModels.find(m => m.id === role.modelId)?.name || '未知模型' : '默认模型'}
+                        {role.description} • {role.modelId ? availableModels.find(m => m.id === role.modelId)?.name || t('aiDebate.roles.unknownModel') : t('aiDebate.roles.defaultModel')}
                       </Typography>
                     </Box>
                   </Box>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 2 }}>
-                    <IconButton size="small" onClick={() => handleEditRole(role)} title="编辑角色">
+                    <IconButton size="small" onClick={() => handleEditRole(role)} title={t('aiDebate.roles.editRole')}>
                       <Edit size={16} />
                     </IconButton>
-                    <IconButton size="small" onClick={() => handleDeleteRole(role.id)} color="error" title="删除角色">
+                    <IconButton size="small" onClick={() => handleDeleteRole(role.id)} color="error" title={t('aiDebate.roles.deleteRole')}>
                       <Trash2 size={16} />
                     </IconButton>
                   </Box>
@@ -1159,14 +1157,14 @@ const AIDebateSettings: React.FC = () => {
                     fontSize: { xs: '1rem', sm: '1.1rem' }
                   }}
                 >
-                  配置分组管理
+                  {t('aiDebate.groups.title')}
                 </Typography>
                 <Typography
                   variant="body2"
                   color="text.secondary"
                   sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                 >
-                  保存和管理不同用途的辩论配置
+                  {t('aiDebate.groups.description')}
                 </Typography>
               </Box>
               <Button
@@ -1181,7 +1179,7 @@ const AIDebateSettings: React.FC = () => {
                   },
                 }}
               >
-                新建分组
+                {t('aiDebate.groups.createGroup')}
               </Button>
             </Box>
           </Box>
@@ -1191,7 +1189,7 @@ const AIDebateSettings: React.FC = () => {
           <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
             {configGroups.length === 0 ? (
               <Alert severity="info">
-                还没有保存任何配置分组。点击"新建分组"开始创建。
+                {t('aiDebate.groups.noGroups')}
               </Alert>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -1221,7 +1219,7 @@ const AIDebateSettings: React.FC = () => {
                           {group.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          {group.config.roles.length} 个角色 • {new Date(group.updatedAt).toLocaleDateString()}
+                          {t('aiDebate.roles.roleCount', { count: group.config.roles.length })} • {new Date(group.updatedAt).toLocaleDateString()}
                         </Typography>
                       </Box>
                     </Box>
@@ -1233,32 +1231,32 @@ const AIDebateSettings: React.FC = () => {
                         variant="outlined"
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
-                        加载
+                        {t('aiDebate.groups.loadGroup')}
                       </Button>
-                      <IconButton size="small" onClick={() => handleEditGroup(group)} title="编辑">
+                      <IconButton size="small" onClick={() => handleEditGroup(group)} title={t('common.edit')}>
                         <Edit size={16} />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => handleUpdateGroup(group.id)}
-                        title="保存当前配置到此分组"
+                        title={t('aiDebate.groups.saveGroup')}
                         color="primary"
                       >
                         <Save size={16} />
                       </IconButton>
                       <IconButton size="small" onClick={() => {
                         setEditingGroup(null);
-                        setNewGroupName(`${group.name} - 副本`);
-                        setNewGroupDescription(`基于 ${group.name} 创建的副本`);
+                        setNewGroupName(`${group.name}${t('aiDebate.groupDialog.copySuffix')}`);
+                        setNewGroupDescription(t('aiDebate.groupDialog.copyDescription', { name: group.name }));
                         setGroupDialogOpen(true);
-                      }} title="复制">
+                      }} title={t('aiDebate.groups.copyGroup')}>
                         <Copy size={16} />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteGroup(group.id)}
                         color="error"
-                        title="删除"
+                        title={t('aiDebate.groups.deleteGroup')}
                       >
                         <Trash2 size={16} />
                       </IconButton>
@@ -1274,14 +1272,14 @@ const AIDebateSettings: React.FC = () => {
       {/* 角色编辑对话框 */}
       <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingRole ? '编辑角色' : '添加新角色'}
+          {editingRole ? t('aiDebate.roleDialog.editTitle') : t('aiDebate.roleDialog.title')}
         </DialogTitle>
         <DialogContent>
           {/* 预设模板 */}
           {!editingRole && (
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                快速模板：
+                {t('aiDebate.roleDialog.templates')}
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {roleTemplates.map((template, index) => (
@@ -1299,14 +1297,14 @@ const AIDebateSettings: React.FC = () => {
 
           <Box sx={{ display: 'grid', gap: 2 }}>
             <TextField
-              label="角色名称"
+              label={t('aiDebate.roleDialog.name')}
               value={newRole.name || ''}
               onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
               required
             />
 
             <TextField
-              label="角色描述"
+              label={t('aiDebate.roleDialog.description')}
               value={newRole.description || ''}
               onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
               multiline
@@ -1314,22 +1312,22 @@ const AIDebateSettings: React.FC = () => {
             />
 
             <FormControl sx={{ mb: 2 }}>
-              <InputLabel>角色立场</InputLabel>
+              <InputLabel>{t('aiDebate.roleDialog.stance')}</InputLabel>
               <Select
                 value={newRole.stance || 'pro'}
                 onChange={(e) => setNewRole({ ...newRole, stance: e.target.value as any })}
               >
-                <MenuItem value="pro">正方</MenuItem>
-                <MenuItem value="con">反方</MenuItem>
-                <MenuItem value="neutral">中立</MenuItem>
-                <MenuItem value="moderator">主持人</MenuItem>
-                <MenuItem value="summary">总结</MenuItem>
+                <MenuItem value="pro">{t('aiDebate.roles.stance.pro')}</MenuItem>
+                <MenuItem value="con">{t('aiDebate.roles.stance.con')}</MenuItem>
+                <MenuItem value="neutral">{t('aiDebate.roles.stance.neutral')}</MenuItem>
+                <MenuItem value="moderator">{t('aiDebate.roles.stance.moderator')}</MenuItem>
+                <MenuItem value="summary">{t('aiDebate.roles.stance.summary')}</MenuItem>
               </Select>
             </FormControl>
 
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                指定模型（可选）
+                {t('aiDebate.roleDialog.model')}
               </Typography>
               <DropdownModelSelector
                 selectedModel={availableModels.find(m => m.id === newRole.modelId) || null}
@@ -1337,23 +1335,23 @@ const AIDebateSettings: React.FC = () => {
                 handleModelSelect={(model) => setNewRole({ ...newRole, modelId: model?.id || '' })}
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                留空则使用默认模型
+                {t('aiDebate.roleDialog.modelHelper')}
               </Typography>
             </Box>
 
             <TextField
-              label="系统提示词"
+              label={t('aiDebate.roleDialog.systemPrompt')}
               value={newRole.systemPrompt || ''}
               onChange={(e) => setNewRole({ ...newRole, systemPrompt: e.target.value })}
               multiline
               rows={6}
               required
-              helperText="定义这个AI角色的行为、立场和回应风格"
+              helperText={t('aiDebate.roleDialog.systemPromptHelper')}
             />
 
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                角色颜色
+                {t('aiDebate.roleDialog.color')}
               </Typography>
               <input
                 type="color"
@@ -1366,10 +1364,10 @@ const AIDebateSettings: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoleDialogOpen(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSaveRole} variant="contained" disabled={!newRole.name || !newRole.systemPrompt}>
-            保存
+            {t('common.save')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1377,37 +1375,37 @@ const AIDebateSettings: React.FC = () => {
       {/* 分组编辑对话框 */}
       <Dialog open={groupDialogOpen} onClose={() => setGroupDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {editingGroup ? '编辑配置分组' : '新建配置分组'}
+          {editingGroup ? t('aiDebate.groupDialog.editTitle') : t('aiDebate.groupDialog.title')}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'grid', gap: 2, mt: 1 }}>
             <TextField
-              label="分组名称"
+              label={t('aiDebate.groupDialog.name')}
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               required
-              placeholder="例如：学术辩论、商业分析、技术讨论"
+              placeholder={t('aiDebate.groupDialog.namePlaceholder')}
             />
 
             <TextField
-              label="分组描述"
+              label={t('aiDebate.groupDialog.description')}
               value={newGroupDescription}
               onChange={(e) => setNewGroupDescription(e.target.value)}
               multiline
               rows={3}
-              placeholder="描述这个配置分组的用途和特点"
+              placeholder={t('aiDebate.groupDialog.descriptionPlaceholder')}
             />
 
             {!editingGroup && (
               <Alert severity="info">
-                将保存当前的所有配置（包括角色设置、轮数限制等）到这个分组中。
+                {t('aiDebate.groupDialog.saveNote')}
               </Alert>
             )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setGroupDialogOpen(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSaveGroup}
@@ -1415,7 +1413,7 @@ const AIDebateSettings: React.FC = () => {
             disabled={!newGroupName.trim()}
             startIcon={<Save size={20} />}
           >
-            {editingGroup ? '保存修改' : '创建分组'}
+            {editingGroup ? t('aiDebate.groupDialog.save') : t('aiDebate.groupDialog.create')}
           </Button>
         </DialogActions>
       </Dialog>

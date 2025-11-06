@@ -43,8 +43,10 @@ import {
 } from 'lucide-react';
 import type { MCPServer, MCPServerType, MCPTool, MCPPrompt, MCPResource } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
+import { useTranslation } from '../../i18n';
 
 const MCPServerDetail: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { serverId } = useParams<{ serverId: string }>();
   const location = useLocation();
@@ -88,7 +90,7 @@ const MCPServerDetail: React.FC = () => {
       setPrompts(promptsList);
       setResources(resourcesList);
     } catch (error) {
-      console.error('加载服务器数据失败:', error);
+      console.error(t('settings.mcpServer.messages.loadDataFailed'), error);
     } finally {
       setLoading(false);
     }
@@ -105,13 +107,13 @@ const MCPServerDetail: React.FC = () => {
       await mcpService.updateServer(server);
       setSnackbar({
         open: true,
-        message: '保存成功',
+        message: t('settings.mcpServer.messages.saveSuccess'),
         severity: 'success'
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: '保存失败',
+        message: t('settings.mcpServer.messages.saveFailed'),
         severity: 'error'
       });
     }
@@ -125,7 +127,7 @@ const MCPServerDetail: React.FC = () => {
       const result = await mcpService.testConnection(server);
       setSnackbar({
         open: true,
-        message: result ? '连接测试成功' : '连接测试失败',
+        message: result ? t('settings.mcpServer.messages.testSuccess') : t('settings.mcpServer.messages.testFailed'),
         severity: result ? 'success' : 'error'
       });
 
@@ -135,7 +137,7 @@ const MCPServerDetail: React.FC = () => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: '连接测试失败',
+        message: t('settings.mcpServer.messages.testFailed'),
         severity: 'error'
       });
     } finally {
@@ -160,13 +162,13 @@ const MCPServerDetail: React.FC = () => {
 
       setSnackbar({
         open: true,
-        message: isActive ? '服务器已启用' : '服务器已停用',
+        message: isActive ? t('settings.mcpServer.messages.serverEnabled') : t('settings.mcpServer.messages.serverDisabled'),
         severity: 'success'
       });
     } catch (error) {
       setSnackbar({
         open: true,
-        message: '操作失败',
+        message: t('settings.mcpServer.messages.operationFailed'),
         severity: 'error'
       });
     }
@@ -258,7 +260,7 @@ const MCPServerDetail: React.FC = () => {
             size="small"
             sx={{ mr: 1 }}
           >
-            测试
+            {t('settings.mcpServer.detail.buttons.test')}
           </Button>
           <Button
             startIcon={<SaveIcon />}
@@ -266,7 +268,7 @@ const MCPServerDetail: React.FC = () => {
             variant="contained"
             size="small"
           >
-            保存
+            {t('settings.mcpServer.detail.buttons.save')}
           </Button>
         </Toolbar>
       </AppBar>
@@ -284,7 +286,7 @@ const MCPServerDetail: React.FC = () => {
         <Paper sx={{ p: 3, mb: 2 }}>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SettingsIcon />
-            基本信息
+            {t('settings.mcpServer.detail.basicInfo.title')}
           </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -295,11 +297,11 @@ const MCPServerDetail: React.FC = () => {
                   onChange={(e) => handleToggleActive(e.target.checked)}
                 />
               }
-              label="启用服务器"
+              label={t('settings.mcpServer.detail.basicInfo.enableServer')}
             />
             {server.isActive && (
               <Chip
-                label="运行中"
+                label={t('settings.mcpServer.status.active')}
                 size="small"
                 color="success"
                 variant="outlined"
@@ -310,38 +312,38 @@ const MCPServerDetail: React.FC = () => {
 
           <TextField
             fullWidth
-            label="服务器名称"
+            label={t('settings.mcpServer.detail.basicInfo.serverName')}
             value={server.name}
             onChange={(e) => setServer({ ...server, name: e.target.value })}
             sx={{ mb: 2 }}
           />
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>服务器类型</InputLabel>
+            <InputLabel>{t('settings.mcpServer.detail.basicInfo.serverType')}</InputLabel>
             <Select
               value={server.type}
-              label="服务器类型"
+              label={t('settings.mcpServer.detail.basicInfo.serverType')}
               onChange={(e) => setServer({ ...server, type: e.target.value as MCPServerType })}
             >
-              <MenuItem value="httpStream">HTTP Stream (支持SSE+HTTP)</MenuItem>
-              <MenuItem value="inMemory">内存服务器</MenuItem>
+              <MenuItem value="httpStream">{t('settings.mcpServer.detail.basicInfo.types.httpStream')}</MenuItem>
+              <MenuItem value="inMemory">{t('settings.mcpServer.detail.basicInfo.types.inMemory')}</MenuItem>
             </Select>
           </FormControl>
 
           {server.type === 'httpStream' && (
             <TextField
               fullWidth
-              label="服务器 URL"
+              label={t('settings.mcpServer.detail.basicInfo.serverUrl')}
               value={server.baseUrl || ''}
               onChange={(e) => setServer({ ...server, baseUrl: e.target.value })}
-              placeholder="https://example.com/mcp"
+              placeholder={t('settings.mcpServer.detail.basicInfo.placeholders.url')}
               sx={{ mb: 2 }}
             />
           )}
 
           <TextField
             fullWidth
-            label="描述"
+            label={t('settings.mcpServer.detail.basicInfo.description')}
             value={server.description || ''}
             onChange={(e) => setServer({ ...server, description: e.target.value })}
             multiline
@@ -351,7 +353,7 @@ const MCPServerDetail: React.FC = () => {
 
           <TextField
             fullWidth
-            label="超时时间（秒）"
+            label={t('settings.mcpServer.detail.basicInfo.timeout')}
             type="number"
             value={server.timeout || 60}
             onChange={(e) => setServer({ ...server, timeout: parseInt(e.target.value) || 60 })}
@@ -367,7 +369,7 @@ const MCPServerDetail: React.FC = () => {
                   onChange={(e) => setServer({ ...server, enableSSE: e.target.checked })}
                 />
               }
-              label="启用SSE流（Server-Sent Events）"
+              label={t('settings.mcpServer.detail.basicInfo.enableSSE')}
             />
           )}
         </Paper>
@@ -377,13 +379,13 @@ const MCPServerDetail: React.FC = () => {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <BuildIcon />
-              高级设置
+              {t('settings.mcpServer.detail.advanced.title')}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <TextField
               fullWidth
-              label="请求头（JSON 格式）"
+              label={t('settings.mcpServer.detail.advanced.headers')}
               value={JSON.stringify(server.headers || {}, null, 2)}
               onChange={(e) => {
                 try {
@@ -396,12 +398,12 @@ const MCPServerDetail: React.FC = () => {
               multiline
               rows={4}
               sx={{ mb: 2 }}
-              placeholder='{\n  "Authorization": "Bearer token",\n  "Content-Type": "application/json"\n}'
+              placeholder={t('settings.mcpServer.detail.advanced.placeholders.headers')}
             />
 
             <TextField
               fullWidth
-              label="环境变量（JSON 格式）"
+              label={t('settings.mcpServer.detail.advanced.env')}
               value={JSON.stringify(server.env || {}, null, 2)}
               onChange={(e) => {
                 try {
@@ -414,12 +416,12 @@ const MCPServerDetail: React.FC = () => {
               multiline
               rows={4}
               sx={{ mb: 2 }}
-              placeholder='{\n  "API_KEY": "your-api-key",\n  "DEBUG": "true"\n}'
+              placeholder={t('settings.mcpServer.detail.advanced.placeholders.env')}
             />
 
             <TextField
               fullWidth
-              label="参数（每行一个）"
+              label={t('settings.mcpServer.detail.advanced.args')}
               value={(server.args || []).join('\n')}
               onChange={(e) => {
                 const value = e.target.value || '';
@@ -428,7 +430,7 @@ const MCPServerDetail: React.FC = () => {
               }}
               multiline
               rows={3}
-              placeholder="--verbose\n--config=/path/to/config"
+              placeholder={t('settings.mcpServer.detail.advanced.placeholders.args')}
             />
           </AccordionDetails>
         </Accordion>
@@ -439,7 +441,7 @@ const MCPServerDetail: React.FC = () => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <BuildIcon />
-                可用工具 ({tools.length})
+                {t('settings.mcpServer.detail.tools.title')} ({tools.length})
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -449,7 +451,7 @@ const MCPServerDetail: React.FC = () => {
                 </Box>
               ) : tools.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                  暂无可用工具
+                  {t('settings.mcpServer.detail.tools.empty')}
                 </Typography>
               ) : (
                 <List>
@@ -457,7 +459,7 @@ const MCPServerDetail: React.FC = () => {
                     <ListItem key={index} divider>
                       <ListItemText
                         primary={tool.name}
-                        secondary={tool.description || '无描述'}
+                        secondary={tool.description || t('settings.mcpServer.detail.tools.noDescription')}
                       />
                     </ListItem>
                   ))}
@@ -473,7 +475,7 @@ const MCPServerDetail: React.FC = () => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <DescriptionIcon />
-                可用提示词 ({prompts.length})
+                {t('settings.mcpServer.detail.prompts.title')} ({prompts.length})
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -483,7 +485,7 @@ const MCPServerDetail: React.FC = () => {
                 </Box>
               ) : prompts.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                  暂无可用提示词
+                  {t('settings.mcpServer.detail.prompts.empty')}
                 </Typography>
               ) : (
                 <List>
@@ -491,7 +493,7 @@ const MCPServerDetail: React.FC = () => {
                     <ListItem key={index} divider>
                       <ListItemText
                         primary={prompt.name}
-                        secondary={prompt.description || '无描述'}
+                        secondary={prompt.description || t('settings.mcpServer.detail.prompts.noDescription')}
                       />
                     </ListItem>
                   ))}
@@ -507,7 +509,7 @@ const MCPServerDetail: React.FC = () => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <FolderIcon />
-                可用资源 ({resources.length})
+                {t('settings.mcpServer.detail.resources.title')} ({resources.length})
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -517,7 +519,7 @@ const MCPServerDetail: React.FC = () => {
                 </Box>
               ) : resources.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                  暂无可用资源
+                  {t('settings.mcpServer.detail.resources.empty')}
                 </Typography>
               ) : (
                 <List>
@@ -528,10 +530,10 @@ const MCPServerDetail: React.FC = () => {
                         secondary={
                           <Box>
                             <Typography variant="body2" color="text.secondary">
-                              {resource.description || '无描述'}
+                              {resource.description || t('settings.mcpServer.detail.resources.noDescription')}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              URI: {resource.uri}
+                              {t('settings.mcpServer.detail.resources.uri')}: {resource.uri}
                             </Typography>
                           </Box>
                         }

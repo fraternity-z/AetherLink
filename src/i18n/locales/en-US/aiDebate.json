@@ -1,0 +1,213 @@
+{
+  "title": "AI Debate Settings",
+  "basicSettings": {
+    "title": "Basic Settings",
+    "description": "Configure basic parameters and options for AI debate function",
+    "enable": "Enable AI Debate Function",
+    "showButton": "Show AI Debate Button in Input Box",
+    "maxRounds": "Maximum Debate Rounds",
+    "maxRoundsHelper": "Enter a number, recommended 1-20 rounds",
+    "maxTokensPerRound": "Max Tokens Per Round",
+    "maxTokensPerRoundHelper": "Enter a number, recommended 100-4000",
+    "enableModerator": "Enable Moderator Role",
+    "enableSummary": "Auto Generate Debate Summary"
+  },
+  "quickSetup": {
+    "title": "Quick Setup",
+    "description": "One-click setup for beginners to quickly create a complete debate scenario",
+    "basic": {
+      "name": "Basic Debate",
+      "description": "Pro + Con + Moderator (3 roles)"
+    },
+    "professional": {
+      "name": "Professional Debate",
+      "description": "Pro + Con + Neutral Analyst + Moderator (4 roles)"
+    },
+    "expert": {
+      "name": "Expert Forum",
+      "description": "Legal Expert + Economist + Tech Expert + Moderator (4 roles)"
+    },
+    "comprehensive": {
+      "name": "Comprehensive Analysis",
+      "description": "Comprehensive debate with 6 different roles"
+    },
+    "successMessage": "Successfully configured \"{{sceneName}}\" scenario! Contains {{roleCount}} roles, default model auto-configured: {{modelName}}",
+    "successTitle": "Scenario Configuration Successful"
+  },
+  "roles": {
+    "title": "Debate Roles Management",
+    "description": "Create and manage various roles in AI debate",
+    "addRole": "Add Role",
+    "editRole": "Edit Role",
+    "deleteRole": "Delete Role",
+    "noRoles": "No debate roles configured yet. Click \"Add Role\" to start configuration.",
+    "defaultModel": "Default Model",
+    "unknownModel": "Unknown Model",
+    "roleCount": "{{count}} roles",
+    "stance": {
+      "pro": "Pro",
+      "con": "Con",
+      "neutral": "Neutral",
+      "moderator": "Moderator",
+      "summary": "Summary"
+    }
+  },
+  "roleDialog": {
+    "title": "Add New Role",
+    "editTitle": "Edit Role",
+    "templates": "Quick Templates:",
+    "name": "Role Name",
+    "description": "Role Description",
+    "stance": "Role Stance",
+    "model": "Specify Model (Optional)",
+    "modelHelper": "Leave empty to use default model",
+    "systemPrompt": "System Prompt",
+    "systemPromptHelper": "Define the behavior, stance, and response style of this AI role",
+    "color": "Role Color"
+  },
+  "groups": {
+    "title": "Configuration Groups Management",
+    "description": "Save and manage debate configurations for different purposes",
+    "createGroup": "Create Group",
+    "editGroup": "Edit Configuration Group",
+    "deleteGroup": "Delete",
+    "loadGroup": "Load",
+    "saveGroup": "Save Current Config to This Group",
+    "copyGroup": "Copy",
+    "noGroups": "No configuration groups saved yet. Click \"Create Group\" to start creating.",
+    "confirmDelete": "Are you sure you want to delete this configuration group? This action cannot be undone.",
+    "updateSuccess": "Group configuration updated!",
+    "updateSuccessTitle": "Update Successful"
+  },
+  "groupDialog": {
+    "title": "Create Configuration Group",
+    "editTitle": "Edit Configuration Group",
+    "name": "Group Name",
+    "namePlaceholder": "e.g., Academic Debate, Business Analysis, Technical Discussion",
+    "description": "Group Description",
+    "descriptionPlaceholder": "Describe the purpose and characteristics of this configuration group",
+    "saveNote": "Will save all current configurations (including role settings, round limits, etc.) to this group.",
+    "create": "Create Group",
+    "save": "Save Changes",
+    "copySuffix": " - Copy",
+    "copyDescription": "Copy created from {{name}}"
+  },
+  "button": {
+    "start": "Start AI Debate",
+    "stop": "Stop AI Debate",
+    "notConfigured": "AI Debate Function Not Configured"
+  },
+  "dialog": {
+    "title": "AI Debate Settings",
+    "notConfiguredWarning": "AI debate function is not properly configured. Please configure at least 2 debate roles first.",
+    "configuredInfo": "Configured {{count}} debate roles, ready to start debate.",
+    "topic": "Debate Topic/Question",
+    "topicPlaceholder": "Enter the topic or question to debate, or select from preset topics below...",
+    "quickTopics": "💡 Quick Select Preset Topics",
+    "selectGroup": "Select Configuration Group",
+    "currentConfig": "Current Configuration",
+    "rolesLabel": "Participating Roles:",
+    "settingsLabel": "Debate Settings:",
+    "configureRoles": "Configure Roles",
+    "startDebate": "Start Debate"
+  },
+  "templates": {
+    "pro": {
+      "name": "Pro Debater",
+      "description": "Supporter of the viewpoint"
+    },
+    "con": {
+      "name": "Con Debater",
+      "description": "Opponent of the viewpoint"
+    },
+    "neutral": {
+      "name": "Neutral Analyst",
+      "description": "Objective and rational analyst"
+    },
+    "moderator": {
+      "name": "Debate Moderator",
+      "description": "Pace controller"
+    },
+    "legal": {
+      "name": "Legal Expert",
+      "description": "Analyze from legal perspective"
+    },
+    "economist": {
+      "name": "Economist",
+      "description": "Evaluate from economic perspective"
+    },
+    "tech": {
+      "name": "Tech Expert",
+      "description": "Analyze from technical feasibility perspective"
+    },
+    "sociologist": {
+      "name": "Sociologist",
+      "description": "Think from social impact perspective"
+    },
+    "summary": {
+      "name": "Summary Analyst",
+      "description": "Specialized in debate summary analysis"
+    },
+    "devil": {
+      "name": "Devil's Advocate",
+      "description": "Specialized in raising objections"
+    },
+    "pragmatist": {
+      "name": "Pragmatist",
+      "description": "Focus on practical operations and effects"
+    }
+  },
+  "topicCategories": {
+    "tech": "Technology & Society",
+    "education": "Education & Growth",
+    "environment": "Environment & Sustainable Development",
+    "economy": "Economy & Business",
+    "health": "Health & Lifestyle",
+    "society": "Society & Culture"
+  },
+  "topics": {
+    "tech": {
+      "ai": "Will artificial intelligence replace most human jobs?",
+      "social": "Do social media's effects on teenagers do more good than harm or more harm than good?",
+      "auto": "Should autonomous vehicles be fully promoted?",
+      "remote": "Should remote work become the mainstream work model in the future?",
+      "vr": "Will virtual reality technology change human social interaction?"
+    },
+    "education": {
+      "online": "Can online education completely replace traditional classroom education?",
+      "coding": "Should students start learning programming from elementary school?",
+      "exam": "Is the exam system the best way to assess student abilities?",
+      "screen": "Should parents limit their children's screen time?",
+      "university": "Is university education necessary for everyone?"
+    },
+    "environment": {
+      "individual": "Is individual behavioral change sufficient to address climate change?",
+      "nuclear": "Is nuclear energy the best solution to the energy crisis?",
+      "ev": "Are electric vehicles really more environmentally friendly than fuel vehicles?",
+      "plastic": "Should single-use plastic products be banned?",
+      "urban": "Is urbanization beneficial to environmental protection?"
+    },
+    "economy": {
+      "ubi": "Should universal basic income be implemented globally?",
+      "crypto": "Will cryptocurrency replace traditional currency?",
+      "sharing": "Is the sharing economy model sustainable?",
+      "csr": "Should companies bear more social responsibility?",
+      "globalization": "Is globalization beneficial to developing countries?"
+    },
+    "health": {
+      "vegan": "Is vegetarianism healthier than an omnivorous diet?",
+      "exercise": "Is exercise the most important factor in maintaining health?",
+      "mental": "Should mental health receive the same attention as physical health?",
+      "gene": "Should gene editing technology be used on humans?",
+      "traditional": "Is traditional medicine scientifically based?"
+    },
+    "society": {
+      "equality": "Should society pursue absolute equality or equality of opportunity?",
+      "tradition": "Should traditional culture remain unchanged in modern society?",
+      "privacy": "Should personal privacy give way to public safety?",
+      "speech": "Should freedom of speech have boundaries?",
+      "diversity": "Is multiculturalism beneficial to social harmony?"
+    }
+  }
+}
+

@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft, Send, Bell, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setSendWithEnter, setEnableNotifications, setMobileInputMethodEnterAsNewline } from '../../shared/store/settingsSlice';
 import useScrollPosition from '../../hooks/useScrollPosition';
@@ -25,6 +26,7 @@ import useScrollPosition from '../../hooks/useScrollPosition';
 const BehaviorSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const settings = useAppSelector((state) => state.settings);
 
   // 使用滚动位置保存功能
@@ -85,7 +87,7 @@ const BehaviorSettings: React.FC = () => {
               color: 'transparent',
             }}
           >
-            行为设置
+            {t('settings.behavior.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -122,10 +124,10 @@ const BehaviorSettings: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              交互行为
+              {t('settings.behavior.interaction.title')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              自定义应用的交互方式和通知设置
+              {t('settings.behavior.interaction.description')}
             </Typography>
           </Box>
 
@@ -167,8 +169,8 @@ const BehaviorSettings: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>使用Enter键发送消息</Typography>}
-                        secondary="按Enter键快速发送消息，使用Shift+Enter添加换行"
+                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.sendWithEnter.label')}</Typography>}
+                        secondary={t('settings.behavior.sendWithEnter.description')}
                       />
                     </Box>
                   }
@@ -213,8 +215,8 @@ const BehaviorSettings: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>启用通知</Typography>}
-                        secondary="当AI助手回复完成时，显示系统通知"
+                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.enableNotifications.label')}</Typography>}
+                        secondary={t('settings.behavior.enableNotifications.description')}
                       />
                     </Box>
                   }
@@ -259,8 +261,8 @@ const BehaviorSettings: React.FC = () => {
                         </Avatar>
                       </ListItemAvatar>
                       <ListItemText
-                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>移动端输入法换行模式</Typography>}
-                        secondary="开启后，移动端输入法的发送按钮将变为换行功能，需要点击输入框的发送按钮来发送消息"
+                        primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.mobileInputMethodEnterAsNewline.label')}</Typography>}
+                        secondary={t('settings.behavior.mobileInputMethodEnterAsNewline.description')}
                       />
                     </Box>
                   }

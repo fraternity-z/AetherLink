@@ -331,35 +331,41 @@ export const themeTokens: Record<string, { light: ThemeTokens; dark: ThemeTokens
 
 为新主题添加显示名称和描述。
 
-**文件：** `src/i18n/locales/zh-CN.json`
+**文件：** `src/i18n/locales/zh-CN/settings.json`（在 `appearance.themeStyle.themes` 部分添加）
 
 ```json
 {
-  "settings": {
-    "theme": {
-      "styles": {
-        "ocean": "海洋主题",
-        "oceanDesc": "清新的海洋蓝色系设计"
+  "appearance": {
+    "themeStyle": {
+      "themes": {
+        "ocean": {
+          "name": "海洋风格",
+          "description": "2025年流行的海洋蓝绿色系，清新舒适的视觉体验"
+        }
       }
     }
   }
 }
 ```
 
-**文件：** `src/i18n/locales/en-US.json`
+**文件：** `src/i18n/locales/en-US/settings.json`（在 `appearance.themeStyle.themes` 部分添加）
 
 ```json
 {
-  "settings": {
-    "theme": {
-      "styles": {
-        "ocean": "Ocean Theme",
-        "oceanDesc": "Fresh ocean blue design"
+  "appearance": {
+    "themeStyle": {
+      "themes": {
+        "ocean": {
+          "name": "Ocean Style",
+          "description": "Popular 2025 ocean blue-green color scheme with fresh and comfortable visual experience"
+        }
       }
     }
   }
 }
 ```
+
+**注意：** 翻译文件已模块化拆分，主题相关的翻译都在 `settings.json` 文件中。
 
 ---
 
@@ -595,19 +601,25 @@ export const themeTokens: Record<string, { light: ThemeTokens; dark: ThemeTokens
 
 ### 4. 更新国际化
 
+在 `src/i18n/locales/zh-CN/settings.json` 和 `src/i18n/locales/en-US/settings.json` 的 `appearance.themeStyle.themes` 部分添加：
+
 ```json
-// src/i18n/locales/zh-CN.json
+// src/i18n/locales/zh-CN/settings.json
 {
-  "settings": {
-    "theme": {
-      "styles": {
-        "sunset": "日落主题",
-        "sunsetDesc": "温暖的日落色调设计"
+  "appearance": {
+    "themeStyle": {
+      "themes": {
+        "sunset": {
+          "name": "日落风格",
+          "description": "2025年流行的日落色系，温暖浪漫的视觉氛围"
+        }
       }
     }
   }
 }
 ```
+
+**注意：** 翻译文件已模块化拆分，请修改对应的模块文件（本例为 `settings.json`）。
 
 ---
 

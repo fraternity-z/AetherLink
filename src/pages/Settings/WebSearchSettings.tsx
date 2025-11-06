@@ -31,6 +31,7 @@ import { ArrowLeft as ArrowBackIcon, Plus as AddIcon, Trash2 as DeleteIcon, Edit
 import { useDispatch, useSelector } from 'react-redux';
 import type { WebSearchProvider, WebSearchCustomProvider } from '../../shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { useTranslation } from '../../i18n';
 import {
   toggleWebSearchEnabled,
   setWebSearchProvider,
@@ -67,6 +68,7 @@ import type { RootState } from '../../shared/store';
 const WebSearchSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
 
   // 从Redux获取设置
   const webSearchSettings = useSelector((state: RootState) => state.webSearch) || {
@@ -130,7 +132,7 @@ const WebSearchSettings: React.FC = () => {
   const handleAddCustomProvider = () => {
     const newProvider: WebSearchCustomProvider = {
       id: uuidv4(),
-      name: '新搜索服务',
+      name: t('settings.webSearch.basic.customProviders.newName'),
       apiKey: '',
       baseUrl: '',
       enabled: true
@@ -248,7 +250,7 @@ const WebSearchSettings: React.FC = () => {
               color: (theme) => theme.palette.text.primary,
             }}
           >
-            <LanguageIcon size={24} color="#3b82f6" style={{ marginRight: 8 }} /> 网络搜索设置
+            <LanguageIcon size={24} color="#3b82f6" style={{ marginRight: 8 }} /> {t('settings.webSearch.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -289,7 +291,7 @@ const WebSearchSettings: React.FC = () => {
               mb: 2,
             }}
           >
-            基本设置
+            {t('settings.webSearch.basic.title')}
           </Typography>
 
           <FormGroup>
@@ -302,8 +304,8 @@ const WebSearchSettings: React.FC = () => {
               }
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography sx={{ mr: 1 }}>启用网络搜索</Typography>
-                  <Tooltip title="开启后，AI可以通过网络搜索获取最新信息">
+                  <Typography sx={{ mr: 1 }}>{t('settings.webSearch.basic.enable.label')}</Typography>
+                  <Tooltip title={t('settings.webSearch.basic.enable.tooltip')}>
                     <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                   </Tooltip>
                 </Box>
@@ -314,24 +316,24 @@ const WebSearchSettings: React.FC = () => {
           <Divider sx={{ my: 2 }} />
 
           <FormControl fullWidth margin="normal">
-            <InputLabel id="search-provider-label">搜索服务商</InputLabel>
+            <InputLabel id="search-provider-label">{t('settings.webSearch.basic.provider.label')}</InputLabel>
             <Select
               labelId="search-provider-label"
               value={webSearchSettings.provider}
               onChange={handleProviderChange}
-              input={<OutlinedInput label="搜索服务商" />}
+              input={<OutlinedInput label={t('settings.webSearch.basic.provider.label')} />}
               disabled={!webSearchSettings.enabled}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="bing-free">🆓 Bing 免费搜索 (推荐)</MenuItem>
-              <MenuItem value="tavily">💎 Tavily (付费)</MenuItem>
-              <MenuItem value="exa">🧠 Exa (神经搜索)</MenuItem>
-              <MenuItem value="bocha">🤖 Bocha (AI搜索)</MenuItem>
-              <MenuItem value="firecrawl"> Firecrawl (网页抓取)</MenuItem>
-              <MenuItem value="custom">⚙️ 自定义服务</MenuItem>
+              <MenuItem value="bing-free">{t('settings.webSearch.basic.provider.options.bingFree')}</MenuItem>
+              <MenuItem value="tavily">{t('settings.webSearch.basic.provider.options.tavily')}</MenuItem>
+              <MenuItem value="exa">{t('settings.webSearch.basic.provider.options.exa')}</MenuItem>
+              <MenuItem value="bocha">{t('settings.webSearch.basic.provider.options.bocha')}</MenuItem>
+              <MenuItem value="firecrawl">{t('settings.webSearch.basic.provider.options.firecrawl')}</MenuItem>
+              <MenuItem value="custom">{t('settings.webSearch.basic.provider.options.custom')}</MenuItem>
             </Select>
           </FormControl>
 
@@ -340,23 +342,23 @@ const WebSearchSettings: React.FC = () => {
               {/* 🚀 新增：搜索引擎选择器（仅在bing-free时显示） */}
               {webSearchSettings.provider === 'bing-free' && (
                 <FormControl fullWidth margin="normal">
-                  <InputLabel id="search-engine-label">搜索引擎</InputLabel>
+                  <InputLabel id="search-engine-label">{t('settings.webSearch.basic.searchEngine.label')}</InputLabel>
                   <Select
                     labelId="search-engine-label"
                     value={webSearchSettings.selectedSearchEngine || 'bing'}
                     onChange={handleSearchEngineChange}
-                    input={<OutlinedInput label="搜索引擎" />}
+                    input={<OutlinedInput label={t('settings.webSearch.basic.searchEngine.label')} />}
                     disabled={!webSearchSettings.enabled}
                     MenuProps={{
                       disableAutoFocus: true,
                       disableRestoreFocus: true
                     }}
                   >
-                    <MenuItem value="bing">🔍 Bing</MenuItem>
-                    <MenuItem value="google">🌐 Google</MenuItem>
-                    <MenuItem value="baidu">🔍 百度</MenuItem>
-                    <MenuItem value="sogou">🔍 搜狗</MenuItem>
-                    <MenuItem value="yandex">🔍 Yandex</MenuItem>
+                    <MenuItem value="bing">{t('settings.webSearch.basic.searchEngine.options.bing')}</MenuItem>
+                    <MenuItem value="google">{t('settings.webSearch.basic.searchEngine.options.google')}</MenuItem>
+                    <MenuItem value="baidu">{t('settings.webSearch.basic.searchEngine.options.baidu')}</MenuItem>
+                    <MenuItem value="sogou">{t('settings.webSearch.basic.searchEngine.options.sogou')}</MenuItem>
+                    <MenuItem value="yandex">{t('settings.webSearch.basic.searchEngine.options.yandex')}</MenuItem>
                   </Select>
                 </FormControl>
               )}
@@ -364,7 +366,7 @@ const WebSearchSettings: React.FC = () => {
               <TextField
                 fullWidth
                 margin="normal"
-                label="API 密钥"
+                label={t('settings.webSearch.basic.apiKey.label')}
                 type="password"
                 value={
                   // 🚀 优先使用当前提供商的独立API密钥，如果没有则使用通用密钥
@@ -375,67 +377,69 @@ const WebSearchSettings: React.FC = () => {
                 onChange={handleApiKeyChange}
                 disabled={!webSearchSettings.enabled}
                 variant="outlined"
-                placeholder={`请输入 ${webSearchSettings.provider} API 密钥`}
+                placeholder={t('settings.webSearch.basic.apiKey.placeholder', { provider: webSearchSettings.provider })}
               />
 
               {/* 🚀 调试信息：显示当前存储的API密钥状态 */}
               {process.env.NODE_ENV === 'development' && (
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  调试信息: 当前提供商({webSearchSettings.provider})的API密钥: {
-                    webSearchSettings.apiKeys && webSearchSettings.apiKeys[webSearchSettings.provider]
-                      ? '已设置'
-                      : '未设置'
-                  }
+                  {t('settings.webSearch.basic.debug.currentProvider', {
+                    provider: webSearchSettings.provider,
+                    status: webSearchSettings.apiKeys && webSearchSettings.apiKeys[webSearchSettings.provider]
+                      ? t('settings.webSearch.basic.debug.set')
+                      : t('settings.webSearch.basic.debug.notSet')
+                  })}
                   {webSearchSettings.apiKeys && Object.keys(webSearchSettings.apiKeys).length > 0 && (
-                    <span> | 已保存的提供商: {Object.keys(webSearchSettings.apiKeys).join(', ')}</span>
+                    <span>{t('settings.webSearch.basic.debug.savedProviders', {
+                      providers: Object.keys(webSearchSettings.apiKeys).join(', ')
+                    })}</span>
                   )}
                 </Typography>
               )}
 
               {webSearchSettings.provider === 'tavily' && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Tavily 是专为AI设计的搜索API，提供高质量的搜索结果。现在使用移动端兼容的 SDK，完全避免了 CORS 限制问题。访问
+                  {t('settings.webSearch.basic.alerts.tavily.text')}{' '}
                   <a href="https://app.tavily.com" target="_blank" rel="noopener noreferrer" style={{ marginLeft: 5 }}>
-                    app.tavily.com
-                  </a>
-                  获取 API 密钥。
+                    {t('settings.webSearch.basic.alerts.tavily.link')}
+                  </a>{' '}
+                  {t('settings.webSearch.basic.alerts.tavily.linkText')}
                 </Alert>
               )}
 
               {webSearchSettings.provider === 'exa' && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Exa 是基于神经网络的搜索引擎，提供语义搜索功能。访问
+                  {t('settings.webSearch.basic.alerts.exa.text')}{' '}
                   <a href="https://exa.ai" target="_blank" rel="noopener noreferrer" style={{ marginLeft: 5 }}>
-                    exa.ai
-                  </a>
-                  获取 API 密钥。
+                    {t('settings.webSearch.basic.alerts.exa.link')}
+                  </a>{' '}
+                  {t('settings.webSearch.basic.alerts.exa.linkText')}
                 </Alert>
               )}
 
               {webSearchSettings.provider === 'bocha' && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Bocha 是AI驱动的搜索引擎，提供智能搜索结果。访问
+                  {t('settings.webSearch.basic.alerts.bocha.text')}{' '}
                   <a href="https://bochaai.com" target="_blank" rel="noopener noreferrer" style={{ marginLeft: 5 }}>
-                    bochaai.com
-                  </a>
-                  获取 API 密钥。
+                    {t('settings.webSearch.basic.alerts.bocha.link')}
+                  </a>{' '}
+                  {t('settings.webSearch.basic.alerts.bocha.linkText')}
                 </Alert>
               )}
 
               {webSearchSettings.provider === 'bing-free' && (
                 <Alert severity="success" sx={{ mt: 2 }}>
-                  免费搜索服务，无需API密钥。您可以选择不同的搜索引擎来获取搜索结果，包括Bing、Google、百度、搜狗等。
-                  使用 capacitor-cors-bypass-enhanced 插件解决移动端CORS问题。
+                  {t('settings.webSearch.basic.alerts.bingFree.text')}
                 </Alert>
               )}
 
               {webSearchSettings.provider === 'firecrawl' && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Firecrawl 提供强大的网络爬取和搜索功能。访问
+                  {t('settings.webSearch.basic.alerts.firecrawl.text')}{' '}
                   <a href="https://firecrawl.dev" target="_blank" rel="noopener noreferrer" style={{ marginLeft: 5 }}>
-                    firecrawl.dev
-                  </a>
-                  获取 API 密钥。
+                    {t('settings.webSearch.basic.alerts.firecrawl.link')}
+                  </a>{' '}
+                  {t('settings.webSearch.basic.alerts.firecrawl.linkText')}
                 </Alert>
               )}
             </>
@@ -446,7 +450,7 @@ const WebSearchSettings: React.FC = () => {
           {webSearchSettings.provider === 'custom' && webSearchSettings.customProviders && webSearchSettings.customProviders.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle1" gutterBottom>
-                自定义搜索服务列表
+                {t('settings.webSearch.basic.customProviders.title')}
               </Typography>
 
               {webSearchSettings.customProviders.map((provider) => (
@@ -468,11 +472,11 @@ const WebSearchSettings: React.FC = () => {
                             onChange={() => dispatch(toggleCustomProviderEnabled(provider.id))}
                           />
                         }
-                        label="启用"
+                        label={t('settings.webSearch.basic.customProviders.enable')}
                       />
                     </Box>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      API URL: {provider.baseUrl}
+                      {t('settings.webSearch.basic.customProviders.apiUrl', { url: provider.baseUrl })}
                     </Typography>
                   </CardContent>
                   <CardActions>
@@ -481,7 +485,7 @@ const WebSearchSettings: React.FC = () => {
                       startIcon={<EditIcon size={16} />}
                       onClick={() => handleEditProvider(provider)}
                     >
-                      编辑
+                      {t('settings.webSearch.basic.customProviders.edit')}
                     </Button>
                     <Button
                       size="small"
@@ -489,7 +493,7 @@ const WebSearchSettings: React.FC = () => {
                       color="error"
                       onClick={() => handleDeleteProvider(provider.id)}
                     >
-                      删除
+                      {t('settings.webSearch.basic.customProviders.delete')}
                     </Button>
                   </CardActions>
                 </Card>
@@ -505,7 +509,7 @@ const WebSearchSettings: React.FC = () => {
               onClick={handleAddCustomProvider}
               disabled={!webSearchSettings.enabled}
             >
-              添加自定义搜索服务
+              {t('settings.webSearch.basic.customProviders.add')}
             </Button>
           )}
         </Paper>
@@ -529,30 +533,30 @@ const WebSearchSettings: React.FC = () => {
               mb: 2,
             }}
           >
-            搜索选项
+            {t('settings.webSearch.searchOptions.title')}
           </Typography>
 
           <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id="search-mode-label">搜索模式</InputLabel>
+            <InputLabel id="search-mode-label">{t('settings.webSearch.searchOptions.searchMode.label')}</InputLabel>
             <Select
               labelId="search-mode-label"
               value={webSearchSettings.searchMode}
               onChange={handleSearchModeChange}
-              input={<OutlinedInput label="搜索模式" />}
+              input={<OutlinedInput label={t('settings.webSearch.searchOptions.searchMode.label')} />}
               disabled={!webSearchSettings.enabled}
               MenuProps={{
                 disableAutoFocus: true,
                 disableRestoreFocus: true
               }}
             >
-              <MenuItem value="auto">自动搜索 (AI 自动判断何时搜索)</MenuItem>
-              <MenuItem value="manual">手动搜索 (点击搜索按钮启动)</MenuItem>
+              <MenuItem value="auto">{t('settings.webSearch.searchOptions.searchMode.auto')}</MenuItem>
+              <MenuItem value="manual">{t('settings.webSearch.searchOptions.searchMode.manual')}</MenuItem>
             </Select>
           </FormControl>
 
           <Box sx={{ mb: 3 }}>
             <Typography id="max-results-slider" gutterBottom>
-              最大结果数量: {webSearchSettings.maxResults}
+              {t('settings.webSearch.searchOptions.maxResults.label', { count: webSearchSettings.maxResults })}
             </Typography>
             <Slider
               aria-labelledby="max-results-slider"
@@ -580,7 +584,7 @@ const WebSearchSettings: React.FC = () => {
                   disabled={!webSearchSettings.enabled}
                 />
               }
-              label="将搜索结果包含在上下文中"
+              label={t('settings.webSearch.searchOptions.includeInContext.label')}
             />
 
             <FormControlLabel
@@ -591,7 +595,7 @@ const WebSearchSettings: React.FC = () => {
                   disabled={!webSearchSettings.enabled}
                 />
               }
-              label="显示搜索结果时间戳"
+              label={t('settings.webSearch.searchOptions.showTimestamp.label')}
             />
 
             <FormControlLabel
@@ -602,7 +606,7 @@ const WebSearchSettings: React.FC = () => {
                   disabled={!webSearchSettings.enabled}
                 />
               }
-              label="启用安全搜索过滤"
+              label={t('settings.webSearch.searchOptions.filterSafeSearch.label')}
             />
 
             <FormControlLabel
@@ -613,7 +617,7 @@ const WebSearchSettings: React.FC = () => {
                   disabled={!webSearchSettings.enabled}
                 />
               }
-              label="在搜索查询中添加当前日期"
+              label={t('settings.webSearch.searchOptions.searchWithTime.label')}
             />
           </FormGroup>
         </Paper>
@@ -639,11 +643,11 @@ const WebSearchSettings: React.FC = () => {
                 mb: 2,
               }}
             >
-              🚀 Tavily 最佳实践设置
+              {t('settings.webSearch.tavily.title')}
             </Typography>
 
             <Alert severity="info" sx={{ mb: 3 }}>
-              这些设置基于 Tavily 官方最佳实践，可以显著提升搜索质量和相关性。
+              {t('settings.webSearch.tavily.description')}
             </Alert>
 
             {/* 智能搜索开关 */}
@@ -657,8 +661,8 @@ const WebSearchSettings: React.FC = () => {
               }
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography sx={{ mr: 1 }}>启用智能搜索</Typography>
-                  <Tooltip title="自动应用最佳实践设置，包括高级搜索深度、内容块优化等">
+                  <Typography sx={{ mr: 1 }}>{t('settings.webSearch.tavily.smartSearch.label')}</Typography>
+                  <Tooltip title={t('settings.webSearch.tavily.smartSearch.tooltip')}>
                     <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                   </Tooltip>
                 </Box>
@@ -668,27 +672,27 @@ const WebSearchSettings: React.FC = () => {
 
             {/* 搜索深度 */}
             <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel id="search-depth-label">搜索深度</InputLabel>
+              <InputLabel id="search-depth-label">{t('settings.webSearch.tavily.searchDepth.label')}</InputLabel>
               <Select
                 labelId="search-depth-label"
                 value={webSearchSettings.searchDepth || 'basic'}
                 onChange={handleSearchDepthChange}
-                input={<OutlinedInput label="搜索深度" />}
+                input={<OutlinedInput label={t('settings.webSearch.tavily.searchDepth.label')} />}
                 disabled={!webSearchSettings.enabled || webSearchSettings.enableSmartSearch}
                 MenuProps={{
                   disableAutoFocus: true,
                   disableRestoreFocus: true
                 }}
               >
-                <MenuItem value="basic">基础搜索 (更快)</MenuItem>
-                <MenuItem value="advanced">高级搜索 (更准确，推荐)</MenuItem>
+                <MenuItem value="basic">{t('settings.webSearch.tavily.searchDepth.basic')}</MenuItem>
+                <MenuItem value="advanced">{t('settings.webSearch.tavily.searchDepth.advanced')}</MenuItem>
               </Select>
             </FormControl>
 
             {/* 每个来源的内容块数量 */}
             <Box sx={{ mb: 3 }}>
               <Typography id="chunks-per-source-slider" gutterBottom>
-                每个来源的内容块数量: {webSearchSettings.chunksPerSource || 3}
+                {t('settings.webSearch.tavily.chunksPerSource.label', { count: webSearchSettings.chunksPerSource || 3 })}
               </Typography>
               <Slider
                 aria-labelledby="chunks-per-source-slider"
@@ -709,7 +713,7 @@ const WebSearchSettings: React.FC = () => {
             {/* 最小相关性分数 */}
             <Box sx={{ mb: 3 }}>
               <Typography id="min-score-slider" gutterBottom>
-                最小相关性分数: {Math.round((webSearchSettings.minScore || 0.3) * 100)}%
+                {t('settings.webSearch.tavily.minScore.label', { score: Math.round((webSearchSettings.minScore || 0.3) * 100) })}
               </Typography>
               <Slider
                 aria-labelledby="min-score-slider"
@@ -727,35 +731,35 @@ const WebSearchSettings: React.FC = () => {
                 disabled={!webSearchSettings.enabled || webSearchSettings.enableSmartSearch}
               />
               <Typography variant="body2" color="text.secondary">
-                过滤掉相关性分数低于此阈值的搜索结果
+                {t('settings.webSearch.tavily.minScore.description')}
               </Typography>
             </Box>
 
             {/* 时间范围过滤 */}
             <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel id="time-range-label">时间范围过滤</InputLabel>
+              <InputLabel id="time-range-label">{t('settings.webSearch.tavily.timeRange.label')}</InputLabel>
               <Select
                 labelId="time-range-label"
                 value={webSearchSettings.timeRange || 'week'}
                 onChange={handleTimeRangeChange}
-                input={<OutlinedInput label="时间范围过滤" />}
+                input={<OutlinedInput label={t('settings.webSearch.tavily.timeRange.label')} />}
                 disabled={!webSearchSettings.enabled}
                 MenuProps={{
                   disableAutoFocus: true,
                   disableRestoreFocus: true
                 }}
               >
-                <MenuItem value="day">最近一天</MenuItem>
-                <MenuItem value="week">最近一周</MenuItem>
-                <MenuItem value="month">最近一个月</MenuItem>
-                <MenuItem value="year">最近一年</MenuItem>
+                <MenuItem value="day">{t('settings.webSearch.tavily.timeRange.day')}</MenuItem>
+                <MenuItem value="week">{t('settings.webSearch.tavily.timeRange.week')}</MenuItem>
+                <MenuItem value="month">{t('settings.webSearch.tavily.timeRange.month')}</MenuItem>
+                <MenuItem value="year">{t('settings.webSearch.tavily.timeRange.year')}</MenuItem>
               </Select>
             </FormControl>
 
             {/* 新闻搜索天数 */}
             <Box sx={{ mb: 3 }}>
               <Typography id="news-search-days-slider" gutterBottom>
-                新闻搜索天数范围: {webSearchSettings.newsSearchDays || 7} 天
+                {t('settings.webSearch.tavily.newsSearchDays.label', { days: webSearchSettings.newsSearchDays || 7 })}
               </Typography>
               <Slider
                 aria-labelledby="news-search-days-slider"
@@ -765,15 +769,15 @@ const WebSearchSettings: React.FC = () => {
                 max={30}
                 step={1}
                 marks={[
-                  { value: 1, label: '1天' },
-                  { value: 7, label: '1周' },
-                  { value: 14, label: '2周' },
-                  { value: 30, label: '1月' },
+                  { value: 1, label: t('settings.webSearch.tavily.newsSearchDays.marks.1day') },
+                  { value: 7, label: t('settings.webSearch.tavily.newsSearchDays.marks.1week') },
+                  { value: 14, label: t('settings.webSearch.tavily.newsSearchDays.marks.2weeks') },
+                  { value: 30, label: t('settings.webSearch.tavily.newsSearchDays.marks.1month') },
                 ]}
                 disabled={!webSearchSettings.enabled}
               />
               <Typography variant="body2" color="text.secondary">
-                当搜索主题设置为"新闻"时使用
+                {t('settings.webSearch.tavily.newsSearchDays.description')}
               </Typography>
             </Box>
 
@@ -789,8 +793,8 @@ const WebSearchSettings: React.FC = () => {
                 }
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography sx={{ mr: 1 }}>包含原始内容</Typography>
-                    <Tooltip title="获取完整的网页内容，用于深度分析">
+                    <Typography sx={{ mr: 1 }}>{t('settings.webSearch.tavily.includeRawContent.label')}</Typography>
+                    <Tooltip title={t('settings.webSearch.tavily.includeRawContent.tooltip')}>
                       <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                     </Tooltip>
                   </Box>
@@ -807,8 +811,8 @@ const WebSearchSettings: React.FC = () => {
                 }
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography sx={{ mr: 1 }}>包含AI答案摘要</Typography>
-                    <Tooltip title="Tavily生成的基于搜索结果的答案摘要">
+                    <Typography sx={{ mr: 1 }}>{t('settings.webSearch.tavily.includeAnswer.label')}</Typography>
+                    <Tooltip title={t('settings.webSearch.tavily.includeAnswer.tooltip')}>
                       <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                     </Tooltip>
                   </Box>
@@ -825,8 +829,8 @@ const WebSearchSettings: React.FC = () => {
                 }
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography sx={{ mr: 1 }}>启用查询验证</Typography>
-                    <Tooltip title="验证查询长度和格式，提供优化建议">
+                    <Typography sx={{ mr: 1 }}>{t('settings.webSearch.tavily.enableQueryValidation.label')}</Typography>
+                    <Tooltip title={t('settings.webSearch.tavily.enableQueryValidation.tooltip')}>
                       <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                     </Tooltip>
                   </Box>
@@ -843,8 +847,8 @@ const WebSearchSettings: React.FC = () => {
                 }
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography sx={{ mr: 1 }}>启用结果后处理</Typography>
-                    <Tooltip title="基于相关性分数过滤和排序搜索结果">
+                    <Typography sx={{ mr: 1 }}>{t('settings.webSearch.tavily.enablePostProcessing.label')}</Typography>
+                    <Tooltip title={t('settings.webSearch.tavily.enablePostProcessing.tooltip')}>
                       <InfoOutlinedIcon size={16} color="var(--mui-palette-text-secondary)" />
                     </Tooltip>
                   </Box>
@@ -874,11 +878,11 @@ const WebSearchSettings: React.FC = () => {
               mb: 2,
             }}
           >
-            高级设置
+            {t('settings.webSearch.advanced.title')}
           </Typography>
 
           <Typography variant="subtitle2" gutterBottom>
-            排除域名 (每行一个)
+            {t('settings.webSearch.advanced.excludeDomains.label')}
           </Typography>
           <TextField
             fullWidth
@@ -889,14 +893,14 @@ const WebSearchSettings: React.FC = () => {
               const domains = e.target.value.split('\n').filter(d => d.trim());
               dispatch(setExcludeDomains(domains));
             }}
-            placeholder="example.com&#10;spam-site.com"
+            placeholder={t('settings.webSearch.advanced.excludeDomains.placeholder')}
             disabled={!webSearchSettings.enabled}
             variant="outlined"
             sx={{ mb: 2 }}
           />
 
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            这些域名将从搜索结果中排除
+            {t('settings.webSearch.advanced.excludeDomains.description')}
           </Typography>
         </Paper>
       </Box>
@@ -928,13 +932,13 @@ const WebSearchSettings: React.FC = () => {
             }}
           >
             <Typography variant="h6" gutterBottom>
-              {editingProvider.id ? '编辑搜索服务' : '添加搜索服务'}
+              {editingProvider.id ? t('settings.webSearch.basic.editDialog.editTitle') : t('settings.webSearch.basic.editDialog.addTitle')}
             </Typography>
 
             <TextField
               fullWidth
               margin="normal"
-              label="服务名称"
+              label={t('settings.webSearch.basic.editDialog.name')}
               value={editingProvider.name}
               onChange={(e) => handleProviderFieldChange('name', e.target.value)}
               variant="outlined"
@@ -943,17 +947,17 @@ const WebSearchSettings: React.FC = () => {
             <TextField
               fullWidth
               margin="normal"
-              label="基础 URL"
+              label={t('settings.webSearch.basic.editDialog.baseUrl')}
               value={editingProvider.baseUrl}
               onChange={(e) => handleProviderFieldChange('baseUrl', e.target.value)}
               variant="outlined"
-              placeholder="https://api.example.com"
+              placeholder={t('settings.webSearch.basic.editDialog.baseUrlPlaceholder')}
             />
 
             <TextField
               fullWidth
               margin="normal"
-              label="API 密钥"
+              label={t('settings.webSearch.basic.editDialog.apiKey')}
               type="password"
               value={editingProvider.apiKey}
               onChange={(e) => handleProviderFieldChange('apiKey', e.target.value)}
@@ -967,11 +971,11 @@ const WebSearchSettings: React.FC = () => {
                   onChange={(e) => handleProviderFieldChange('enabled', e.target.checked)}
                 />
               }
-              label="启用此服务"
+              label={t('settings.webSearch.basic.editDialog.enable')}
             />
 
             <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-              <Button onClick={handleCancelEdit}>取消</Button>
+              <Button onClick={handleCancelEdit}>{t('settings.webSearch.basic.editDialog.cancel')}</Button>
               <Button
                 variant="contained"
                 onClick={handleSaveProvider}
@@ -982,7 +986,7 @@ const WebSearchSettings: React.FC = () => {
                   }
                 }}
               >
-                保存
+                {t('settings.webSearch.basic.editDialog.save')}
               </Button>
             </Box>
           </Paper>

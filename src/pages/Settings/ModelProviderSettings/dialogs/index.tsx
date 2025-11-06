@@ -19,6 +19,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { providerTypeOptions } from '../constants';
+import { useTranslation } from 'react-i18next';
 
 // ============================================================================
 // 类型定义
@@ -100,6 +101,8 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
   onModelValueChange,
   onAddModel
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle sx={{
@@ -108,14 +111,14 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
         backgroundClip: 'text',
         color: 'transparent',
       }}>
-        添加模型
+        {t('modelSettings.dialogs.addModel.title')}
       </DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
-          label="模型名称"
-          placeholder="例如: GPT-4o"
+          label={t('modelSettings.dialogs.addModel.modelName')}
+          placeholder={t('modelSettings.dialogs.addModel.modelNamePlaceholder')}
           type="text"
           fullWidth
           variant="outlined"
@@ -125,8 +128,8 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
         />
         <TextField
           margin="dense"
-          label="模型ID"
-          placeholder="例如: gpt-4o"
+          label={t('modelSettings.dialogs.addModel.modelId')}
+          placeholder={t('modelSettings.dialogs.addModel.modelIdPlaceholder')}
           type="text"
           fullWidth
           variant="outlined"
@@ -135,7 +138,7 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
         />
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           onClick={onAddModel}
           disabled={!newModelName || !newModelValue}
@@ -148,7 +151,7 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
             borderRadius: 2,
           }}
         >
-          添加
+          {t('modelSettings.dialogs.addModel.add')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -165,16 +168,22 @@ export const DeleteDialog: React.FC<DeleteDialogProps> = ({
   providerName,
   onDelete
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle fontWeight={600}>删除提供商</DialogTitle>
+      <DialogTitle fontWeight={600}>{t('modelSettings.dialogs.deleteProvider.title')}</DialogTitle>
       <DialogContent>
         <Typography>
-          确定要删除 <b>{providerName}</b> 提供商吗？这将同时删除所有相关的模型配置。
+          {t('modelSettings.dialogs.deleteProvider.message', { name: providerName }).split('<bold>').map((part, i) => {
+            if (i === 0) return part;
+            const [boldText, ...rest] = part.split('</bold>');
+            return <React.Fragment key={i}><b>{boldText}</b>{rest.join('</bold>')}</React.Fragment>;
+          })}
         </Typography>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           onClick={onDelete}
           color="error"
@@ -186,7 +195,7 @@ export const DeleteDialog: React.FC<DeleteDialogProps> = ({
             borderRadius: 2,
           }}
         >
-          删除
+          {t('common.delete')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -206,6 +215,8 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
   onProviderTypeChange,
   onSave
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle sx={{
@@ -214,14 +225,14 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
         backgroundClip: 'text',
         color: 'transparent',
       }}>
-        编辑供应商
+        {t('modelSettings.dialogs.editProvider.title')}
       </DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         <TextField
           autoFocus
           margin="dense"
-          label="供应商名称"
-          placeholder="例如: 我的智谱AI"
+          label={t('modelSettings.dialogs.editProvider.providerName')}
+          placeholder={t('modelSettings.dialogs.editProvider.providerNamePlaceholder')}
           type="text"
           fullWidth
           variant="outlined"
@@ -230,11 +241,11 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
           sx={{ mb: 2 }}
         />
         <FormControl fullWidth variant="outlined">
-          <InputLabel>供应商类型</InputLabel>
+          <InputLabel>{t('modelSettings.dialogs.editProvider.providerType')}</InputLabel>
           <Select
             value={providerType}
             onChange={(e) => onProviderTypeChange(e.target.value)}
-            label="供应商类型"
+            label={t('modelSettings.dialogs.editProvider.providerType')}
           >
             {providerTypeOptions.map((option) => (
               <MenuItem key={option.value} value={option.value}>
@@ -245,7 +256,7 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
         </FormControl>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           onClick={onSave}
           disabled={!providerName.trim()}
@@ -258,7 +269,7 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
             borderRadius: 2,
           }}
         >
-          保存
+          {t('common.save')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -282,6 +293,8 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
   onUpdateHeader,
   onSetExtraHeaders
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog
       open={open}
@@ -295,17 +308,17 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
         backgroundClip: 'text',
         color: 'transparent',
       }}>
-        配置自定义请求头
+        {t('modelSettings.dialogs.headers.title')}
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          用于解决 CORS 问题或添加特殊认证头
+          {t('modelSettings.dialogs.headers.description')}
         </Typography>
 
         {/* 快速操作按钮 */}
         <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
           <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-            快速操作
+            {t('modelSettings.dialogs.headers.quickActions')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Button
@@ -319,7 +332,7 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
               }}
               sx={{ fontSize: '0.75rem' }}
             >
-              禁用 x-stainless-timeout
+              {t('modelSettings.dialogs.headers.disableTimeout')}
             </Button>
             <Button
               size="small"
@@ -332,7 +345,7 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
               }}
               sx={{ fontSize: '0.75rem' }}
             >
-              禁用 x-stainless-retry-count
+              {t('modelSettings.dialogs.headers.disableRetry')}
             </Button>
             <Button
               size="small"
@@ -353,11 +366,11 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
               }}
               sx={{ fontSize: '0.75rem' }}
             >
-              禁用所有 stainless 头部
+              {t('modelSettings.dialogs.headers.disableAll')}
             </Button>
           </Box>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            设置值为 "REMOVE" 可以禁用默认的请求头
+            {t('modelSettings.dialogs.headers.removeHint')}
           </Typography>
         </Box>
 
@@ -366,14 +379,14 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
           <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
             <TextField
               size="small"
-              label="请求头名称"
+              label={t('modelSettings.dialogs.headers.headerName')}
               value={key}
               onChange={(e) => onUpdateHeader(key, e.target.value, value)}
               sx={{ flex: 1 }}
             />
             <TextField
               size="small"
-              label="请求头值"
+              label={t('modelSettings.dialogs.headers.headerValue')}
               value={value}
               onChange={(e) => onUpdateHeader(key, key, e.target.value)}
               sx={{
@@ -382,7 +395,7 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
                   color: value === 'REMOVE' ? 'error.main' : 'inherit'
                 }
               }}
-              helperText={value === 'REMOVE' ? '此头部将被禁用' : ''}
+              helperText={value === 'REMOVE' ? t('modelSettings.dialogs.headers.willBeDisabled') : ''}
               slotProps={{
                 formHelperText: {
                   sx: { color: 'error.main', fontSize: '0.7rem' }
@@ -407,16 +420,16 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
           <TextField
             size="small"
-            label="新请求头名称"
-            placeholder="例如: x-stainless-timeout"
+            label={t('modelSettings.dialogs.headers.newHeaderName')}
+            placeholder={t('modelSettings.dialogs.headers.newHeaderNamePlaceholder')}
             value={newHeaderKey}
             onChange={(e) => onNewHeaderKeyChange(e.target.value)}
             sx={{ flex: 1 }}
           />
           <TextField
             size="small"
-            label="新请求头值"
-            placeholder="例如: 30000"
+            label={t('modelSettings.dialogs.headers.newHeaderValue')}
+            placeholder={t('modelSettings.dialogs.headers.newHeaderValuePlaceholder')}
             value={newHeaderValue}
             onChange={(e) => onNewHeaderValueChange(e.target.value)}
             sx={{ flex: 1 }}
@@ -434,12 +447,12 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
               borderRadius: 2,
             }}
           >
-            添加
+            {t('common.submit')}
           </Button>
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           onClick={onClose}
           sx={{
@@ -451,7 +464,7 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
             borderRadius: 2,
           }}
         >
-          确定
+          {t('common.ok')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -470,6 +483,8 @@ export const CustomEndpointDialog: React.FC<CustomEndpointDialogProps> = ({
   onCustomEndpointChange,
   onSave
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog
       open={open}
@@ -483,32 +498,32 @@ export const CustomEndpointDialog: React.FC<CustomEndpointDialogProps> = ({
         backgroundClip: 'text',
         color: 'transparent',
       }}>
-        配置自定义模型端点
+        {t('modelSettings.dialogs.customEndpoint.title')}
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          输入完整的模型端点URL，系统将同时从默认端点和自定义端点获取模型列表并合并。
+          {t('modelSettings.dialogs.customEndpoint.description')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
-          示例：https://api.example.com/v1/models
+          {t('modelSettings.dialogs.customEndpoint.example')}
         </Typography>
         <TextField
           autoFocus
           margin="dense"
-          label="自定义端点URL"
-          placeholder="https://api.example.com/v1/models"
+          label={t('modelSettings.dialogs.customEndpoint.endpointLabel')}
+          placeholder={t('modelSettings.dialogs.customEndpoint.endpointPlaceholder')}
           type="url"
           fullWidth
           variant="outlined"
           value={customEndpoint}
           onChange={(e) => onCustomEndpointChange(e.target.value)}
           error={!!customEndpointError}
-          helperText={customEndpointError || '请输入完整的URL，包括协议（http://或https://）'}
+          helperText={customEndpointError || t('modelSettings.dialogs.customEndpoint.helperText')}
           sx={{ mt: 2 }}
         />
       </DialogContent>
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>取消</Button>
+        <Button onClick={onClose}>{t('common.cancel')}</Button>
         <Button
           onClick={onSave}
           disabled={!customEndpoint.trim()}
@@ -521,7 +536,7 @@ export const CustomEndpointDialog: React.FC<CustomEndpointDialogProps> = ({
             borderRadius: 2,
           }}
         >
-          确定
+          {t('common.ok')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -538,6 +553,8 @@ export const TestResultSnackbar: React.FC<TestResultSnackbarProps> = ({
   onClose,
   onOpenDialog
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Snackbar
       open={testResult !== null && !testResultDialogOpen}
@@ -546,7 +563,7 @@ export const TestResultSnackbar: React.FC<TestResultSnackbarProps> = ({
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       action={
         <Button color="inherit" size="small" onClick={onOpenDialog}>
-          查看详情
+          {t('modelSettings.provider.viewDetails')}
         </Button>
       }
     >
@@ -556,7 +573,7 @@ export const TestResultSnackbar: React.FC<TestResultSnackbarProps> = ({
         variant="filled"
         sx={{ width: '100%' }}
       >
-        {testResult?.success ? '连接测试成功!' : '连接测试失败'}
+        {testResult?.success ? t('modelSettings.provider.testSuccess') : t('modelSettings.provider.testFailed')}
       </Alert>
     </Snackbar>
   );
@@ -571,6 +588,8 @@ export const TestResultDialog: React.FC<TestResultDialogProps> = ({
   onClose,
   testResult
 }) => {
+  const { t } = useTranslation();
+  
   return (
     <Dialog
       open={open}
@@ -593,7 +612,7 @@ export const TestResultDialog: React.FC<TestResultDialogProps> = ({
         alignItems: 'center'
       }}>
         {testResult?.success ? <CheckCircle size={20} style={{marginRight: 8}} color="#2e7d32" /> : null}
-        API测试结果
+        {t('modelSettings.dialogs.testResult.title')}
       </DialogTitle>
       <DialogContent>
         <Typography sx={{ whiteSpace: 'pre-wrap' }}>
@@ -607,7 +626,7 @@ export const TestResultDialog: React.FC<TestResultDialogProps> = ({
           color={testResult?.success ? 'success' : 'primary'}
           sx={{ borderRadius: 2 }}
         >
-          确定
+          {t('common.ok')}
         </Button>
       </DialogActions>
     </Dialog>

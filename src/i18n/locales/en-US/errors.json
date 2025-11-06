@@ -1,0 +1,13 @@
+{
+  "networkError": "Network error",
+  "unknownError": "Unknown error",
+  "loadFailed": "Load failed",
+  "saveFailed": "Save failed",
+  "deleteFailed": "Delete failed",
+  "aiDebate": {
+    "loadConfigFailed": "Failed to load AI debate configuration",
+    "saveConfigFailed": "Failed to save AI debate configuration",
+    "saveGroupsFailed": "Failed to save group configuration"
+  }
+}
+
