@@ -1,0 +1,13 @@
+# Cargo configuration for cross-platform builds
+
+# macOS: Use system default linker (no custom flags needed)
+[target.x86_64-apple-darwin]
+
+[target.aarch64-apple-darwin]
+
+# Windows: Use default MSVC linker
+[target.x86_64-pc-windows-msvc]
+
+# Linux: Use default linker
+[target.x86_64-unknown-linux-gnu]
+

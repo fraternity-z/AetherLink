@@ -46,8 +46,8 @@ opt-level = 3
 [profile.release]
 # 优化大小而不是速度
 opt-level = "s"
-# 启用链接时优化
-lto = true
+# 链接时优化 (macOS universal build may have issues with lto=true)
+lto = "thin"
 # 减少代码生成单元以优化大小
 codegen-units = 1
 # 启用 panic = abort 以减少大小
