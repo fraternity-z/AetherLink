@@ -58,6 +58,13 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Install macOS Dependencies
+        if: matrix.platform == 'macos-latest'
+        run: |
+          # Xcode Command Line Tools are usually pre-installed on GitHub Actions
+          # But we can verify and ensure they're available
+          xcode-select --print-path || sudo xcode-select --install
+
       - name: Install Linux Dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -93,22 +100,12 @@ jobs:
             npm install --no-package-lock || npm install --legacy-peer-deps
           }
 
-      - name: Build Frontend
-        run: npm run build
-
       - name: Build Tauri App (Release)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_SIGNING_IDENTITY: "-"
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tauriScript: npm run tauri
           args: ${{ matrix.args }}
 
       - name: Upload Build Artifacts (Windows)
