@@ -1,6 +1,18 @@
-[build]
+# 针对不同平台使用不同的链接器配置
+# macOS 使用默认的 ld 链接器
+# Linux 和 Windows 使用 lld 链接器以加速构建
+
+[target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
-# 使用 sccache 进行编译缓存
-[env]
-RUSTC_WRAPPER = "sccache"
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# macOS 目标不指定链接器，使用系统默认
+# [target.x86_64-apple-darwin]
+# [target.aarch64-apple-darwin]
+
+# 使用 sccache 进行编译缓存（可选）
+# 如果 CI 环境没有安装 sccache，这个配置会被忽略
+# [env]
+# RUSTC_WRAPPER = "sccache"
