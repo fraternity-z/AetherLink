@@ -13,8 +13,8 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin --bundles app,dmg'
-            target: 'x86_64-apple-darwin'
+            args: '--target universal-apple-darwin --bundles app,dmg'
+            target: 'aarch64-apple-darwin,x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
             target: 'x86_64-unknown-linux-gnu'
@@ -58,13 +58,6 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Install macOS Dependencies
-        if: matrix.platform == 'macos-latest'
-        run: |
-          # Xcode Command Line Tools are usually pre-installed on GitHub Actions
-          # But we can verify and ensure they're available
-          xcode-select --print-path || sudo xcode-select --install
-
       - name: Install Linux Dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -100,21 +93,26 @@ jobs:
             npm install --no-package-lock || npm install --legacy-peer-deps
           }
 
-      - name: Build Tauri App (Release - Windows/Linux)
-        if: matrix.platform != 'macos-latest'
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Disable macOS Code Signing
+        if: matrix.platform == 'macos-latest'
+        run: |
+          echo "Disabling macOS code signing for unsigned build..."
+          export APPLE_SIGNING_IDENTITY="-"
+          export APPLE_CERTIFICATE=""
+          export APPLE_CERTIFICATE_PASSWORD=""
+
+      - name: Build Tauri App (Release)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_SIGNING_IDENTITY: '-'
+          APPLE_CERTIFICATE: ''
+          APPLE_CERTIFICATE_PASSWORD: ''
         with:
           args: ${{ matrix.args }}
-
-      - name: Build Tauri App (Release - macOS)
-        if: matrix.platform == 'macos-latest'
-        run: npm run tauri build -- --target x86_64-apple-darwin --bundles app,dmg
-        env:
-          APPLE_SIGNING_IDENTITY: "-"
-          TAURI_PRIVATE_KEY: ""
-          TAURI_KEY_PASSWORD: ""
 
       - name: Upload Build Artifacts (Windows)
         if: matrix.platform == 'windows-latest'
@@ -131,8 +129,8 @@ jobs:
         with:
           name: macos-release-build
           path: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
 
       - name: Upload Build Artifacts (Linux)
         if: matrix.platform == 'ubuntu-22.04'
