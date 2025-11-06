@@ -39,9 +39,7 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: |
-          rm -f package-lock.json
-          npm install --legacy-peer-deps
+        run: npm ci || npm install --legacy-peer-deps
       
       - name: Build frontend
         run: npm run build
