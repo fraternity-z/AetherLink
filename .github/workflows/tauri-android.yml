@@ -50,7 +50,7 @@ jobs:
       - name: Build Android APK (Release)
         run: |
           cd src-tauri
-          tauri android build --apk --split-per-abi
+          tauri android build --apk true --split-per-abi
         env:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
           NDK_HOME: ${{ env.NDK_HOME }}
