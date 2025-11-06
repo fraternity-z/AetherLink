@@ -47,6 +47,11 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
       
+      - name: Update Cargo dependencies
+        run: |
+          cd src-tauri
+          cargo update
+      
       - name: Build Android APK (Release)
         run: |
           cd src-tauri
