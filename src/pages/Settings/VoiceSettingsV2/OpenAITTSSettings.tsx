@@ -24,9 +24,11 @@ import {
 } from '../../../components/TTS';
 import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
+import { useTranslation } from '../../../i18n';
 
 const OpenAITTSSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const ttsService = useMemo(() => TTSService.getInstance(), []);
   
   // 定时器引用
@@ -51,7 +53,7 @@ const OpenAITTSSettings: React.FC = () => {
     isTestPlaying: false,
   });
 
-  const [testText, setTestText] = useState('你好，我是OpenAI语音合成服务，感谢你的使用！');
+  const [testText, setTestText] = useState('');
   const [enableTTS, setEnableTTS] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
 
@@ -88,13 +90,16 @@ const OpenAITTSSettings: React.FC = () => {
         ttsService.setOpenAIResponseFormat(storedOpenaiFormat);
         ttsService.setOpenAISpeed(storedOpenaiSpeed);
         ttsService.setUseOpenAIStream(storedUseOpenaiStream);
+        // 加载测试文本
+        const defaultTestText = t('settings.voice.openai.testText');
+        setTestText(defaultTestText);
       } catch (error) {
-        console.error('加载OpenAI TTS设置失败:', error);
+        console.error(t('settings.voice.common.loadingError', { service: 'OpenAI TTS' }), error);
       }
     };
 
     loadSettings();
-  }, [ttsService]);
+  }, [ttsService, t]);
 
   // 保存设置
   const handleSave = useCallback(async () => {
@@ -143,13 +148,13 @@ const OpenAITTSSettings: React.FC = () => {
 
 
     } catch (error) {
-      console.error('保存OpenAI TTS设置失败:', error);
+      console.error(t('settings.voice.common.saveErrorText', { service: 'OpenAI TTS' }), error);
       setUIState(prev => ({
         ...prev,
-        saveError: '保存设置失败，请重试',
+        saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [settings, enableTTS, isEnabled, ttsService]);
+  }, [settings, enableTTS, isEnabled, ttsService, navigate, t]);
 
   // 处理启用状态变化
   const handleEnableChange = useCallback((enabled: boolean) => {
@@ -257,7 +262,7 @@ const OpenAITTSSettings: React.FC = () => {
           <IconButton
             edge="start"
             onClick={handleBack}
-            aria-label="返回"
+            aria-label={t('settings.voice.back')}
             size="large"
             sx={{
               color: 'primary.main',
@@ -283,8 +288,8 @@ const OpenAITTSSettings: React.FC = () => {
               WebkitBackgroundClip: 'text',
               color: 'transparent',
             }}
-          >
-            OpenAI TTS 设置
+            >
+            {t('settings.voice.openai.title')}
           </Typography>
           <Button
             onClick={handleSave}
@@ -299,7 +304,7 @@ const OpenAITTSSettings: React.FC = () => {
               px: 3,
             }}
           >
-            保存
+            {t('settings.voice.common.save')}
           </Button>
         </Toolbar>
       </AppBar>
@@ -337,7 +342,7 @@ const OpenAITTSSettings: React.FC = () => {
                 borderRadius: { xs: 1, sm: 2 },
               }}
             >
-              设置已保存成功
+              {t('settings.voice.common.saveSuccess')}
             </Alert>
           )}
 
@@ -367,7 +372,7 @@ const OpenAITTSSettings: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              API配置
+              {t('settings.voice.common.apiConfig')}
             </Typography>
 
             {/* 启用开关 */}
@@ -379,10 +384,10 @@ const OpenAITTSSettings: React.FC = () => {
                     onChange={(e) => handleEnableChange(e.target.checked)}
                   />
                 }
-                label="启用 OpenAI TTS 服务"
+                label={t('settings.voice.common.enableService', { name: t('settings.voice.services.openai.name') })}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, ml: 4 }}>
-                启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。
+                {t('settings.voice.openai.enableDesc')}
               </Typography>
             </Box>
 

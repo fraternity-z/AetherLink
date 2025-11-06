@@ -11,6 +11,7 @@ import {
 import { Mic as MicIcon, Square as StopIcon, RotateCcw as ReplayIcon } from 'lucide-react';
 import { openAIWhisperService } from '../../shared/services/OpenAIWhisperService';
 import type { OpenAIWhisperSettings, WhisperTranscriptionResponse } from '../../shared/types/voice';
+import { useTranslation } from '../../i18n';
 
 interface WhisperTestSectionProps {
   settings: OpenAIWhisperSettings;
@@ -18,6 +19,7 @@ interface WhisperTestSectionProps {
 }
 
 const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabled }) => {
+  const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<WhisperTranscriptionResponse | null>(null);
@@ -34,7 +36,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
 
       // 检查API密钥
       if (!settings.apiKey) {
-        setError('请先设置OpenAI API密钥');
+        setError(t('settings.voice.test.whisper.apiKeyError'));
         return;
       }
 
@@ -71,7 +73,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
           const result = await openAIWhisperService.transcribeAudio(audioBlob);
           setTranscription(result);
         } catch (err: any) {
-          setError(err.message || '转录失败');
+          setError(err.message || t('settings.voice.test.whisper.transcribeError'));
         } finally {
           setIsProcessing(false);
           // 停止所有轨道
@@ -93,7 +95,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
         }
       }, 5000);
     } catch (err: any) {
-      setError(err.message || '无法访问麦克风');
+      setError(err.message || t('settings.voice.test.whisper.micError'));
       setIsRecording(false);
     }
   };
@@ -114,12 +116,12 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
   return (
     <Box sx={{ mt: 4, mb: 2 }}>
       <Typography variant="h6" gutterBottom>
-        测试OpenAI Whisper语音识别
+        {t('settings.voice.test.whisper.title')}
       </Typography>
 
       {!enabled && (
         <Alert severity="warning" sx={{ mb: 3 }}>
-          请先启用语音识别功能
+          {t('settings.voice.test.whisper.enableWarning')}
         </Alert>
       )}
 
@@ -137,7 +139,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
           onClick={isRecording ? stopRecording : startRecording}
           disabled={!enabled || isProcessing || !settings.apiKey}
         >
-          {isRecording ? "停止录制" : "开始录制"}
+          {isRecording ? t('settings.voice.test.whisper.stopRecording') : t('settings.voice.test.whisper.startRecording')}
         </Button>
 
         <Button
@@ -146,14 +148,14 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
           onClick={clearResults}
           disabled={isRecording || isProcessing || (!transcription && !error)}
         >
-          清除结果
+          {t('settings.voice.test.whisper.clearResults')}
         </Button>
       </Box>
 
       {isProcessing && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 3 }}>
           <CircularProgress size={24} />
-          <Typography>正在处理音频...</Typography>
+          <Typography>{t('settings.voice.test.whisper.processing')}</Typography>
         </Box>
       )}
 
@@ -170,7 +172,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
           }}
         >
           <Typography variant="subtitle1" gutterBottom fontWeight={500}>
-            识别结果:
+            {t('settings.voice.test.whisper.result')}
           </Typography>
 
           <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
@@ -179,7 +181,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
 
           {transcription.language && (
             <Chip
-              label={`检测到语言: ${transcription.language}`}
+              label={t('settings.voice.test.whisper.detectedLanguage', { language: transcription.language })}
               color="primary"
               size="small"
               sx={{ mt: 2, mr: 1 }}
@@ -188,7 +190,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
 
           {transcription.duration && (
             <Chip
-              label={`音频时长: ${transcription.duration.toFixed(2)}秒`}
+              label={t('settings.voice.test.whisper.audioDuration', { duration: transcription.duration.toFixed(2) })}
               color="secondary"
               size="small"
               sx={{ mt: 2 }}
@@ -198,7 +200,7 @@ const WhisperTestSection: React.FC<WhisperTestSectionProps> = ({ settings, enabl
       )}
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        提示: 点击"开始录制"按钮，系统将录制5秒的音频，然后自动使用OpenAI Whisper API进行转录。
+        {t('settings.voice.test.whisper.hint')}
       </Alert>
     </Box>
   );

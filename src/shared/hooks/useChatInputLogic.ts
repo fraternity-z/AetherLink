@@ -74,7 +74,7 @@ export const useChatInputLogic = ({
   // 防抖定时器引用
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 优化的文本区域高度自适应（ChatInput 特有）- 添加防抖机制
+  // 优化的文本区域高度自适应（ChatInput 特有）- 使用requestAnimationFrame优化DOM操作
   const adjustTextareaHeight = useCallback((textarea: HTMLTextAreaElement) => {
     if (!enableTextareaResize) return;
 
@@ -85,17 +85,26 @@ export const useChatInputLogic = ({
 
     // 使用防抖机制，避免频繁计算
     debounceTimerRef.current = setTimeout(() => {
-      // 重置高度以获取正确的scrollHeight
-      textarea.style.height = 'auto';
+      // 使用requestAnimationFrame确保与浏览器重绘周期同步，避免掉帧
+      requestAnimationFrame(() => {
+        if (!textarea) return;
+        
+        // 批量读取DOM属性（避免强制重排）
+        const scrollHeight = textarea.scrollHeight;
+        
+        // 计算新高度
+        const newHeight = Math.max(
+          isMobile ? 32 : isTablet ? 36 : 34, // 最小高度
+          Math.min(scrollHeight, 120) // 最大高度120px
+        );
 
-      // 计算新高度
-      const newHeight = Math.max(
-        isMobile ? 32 : isTablet ? 36 : 34, // 最小高度
-        Math.min(textarea.scrollHeight, 120) // 最大高度120px
-      );
-
-      setTextareaHeight(newHeight);
-      textarea.style.height = `${newHeight}px`;
+        // 批量写入DOM属性（减少重排次数）
+        textarea.style.height = 'auto'; // 先重置
+        textarea.style.height = `${newHeight}px`; // 再设置新高度
+        
+        // 只在高度真正变化时才更新状态，避免不必要的重渲染
+        setTextareaHeight(prev => prev !== newHeight ? newHeight : prev);
+      });
     }, 16); // 16ms防抖，约60fps
   }, [enableTextareaResize, isMobile, isTablet]);
 
@@ -272,7 +281,7 @@ export const useChatInputLogic = ({
     }
   }, [enableCompositionHandling, adjustTextareaHeight]);
 
-  // 处理输入变化 - 使用useCallback和startTransition优化性能
+  // 处理输入变化 - 使用useCallback和startTransition优化性能，减少状态更新
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     const textLength = newValue.length;
@@ -280,31 +289,41 @@ export const useChatInputLogic = ({
     // 紧急更新：立即更新消息内容，保证输入响应性
     setMessage(newValue);
 
-    // 大文本处理性能优化
-    startTransition(() => {
-      // 检测大文本（超过5000字符）
-      const isLarge = textLength > 5000;
-      setIsLargeText(isLarge);
+    // 性能优化：对于大文本，使用requestIdleCallback延迟非关键更新
+    if (textLength > 1000 && window.requestIdleCallback) {
+      // 大文本时延迟非关键更新，避免阻塞输入
+      window.requestIdleCallback(() => {
+        startTransition(() => {
+          // 检测大文本（超过5000字符）
+          setIsLargeText(textLength > 5000);
+          // 性能警告（超过10000字符）
+          setPerformanceWarning(textLength > 10000);
+          // 字符计数显示控制（ChatInput 特有）
+          if (enableCharacterCount) {
+            setShowCharCount(textLength > 500);
+          }
+        });
+      }, { timeout: 100 });
+    } else {
+      // 小文本时立即更新（使用startTransition不阻塞）
+      startTransition(() => {
+        // 检测大文本（超过5000字符）
+        setIsLargeText(textLength > 5000);
+        // 性能警告（超过10000字符）
+        setPerformanceWarning(textLength > 10000);
+        // 字符计数显示控制（ChatInput 特有）
+        if (enableCharacterCount) {
+          setShowCharCount(textLength > 500);
+        }
+      });
+    }
 
-      // 性能警告（超过10000字符）
-      const shouldWarn = textLength > 10000;
-      setPerformanceWarning(shouldWarn);
-
-      // 字符计数显示控制（ChatInput 特有）
-      if (enableCharacterCount) {
-        setShowCharCount(textLength > 500);
-      }
-    });
-
-    // 高度调整：对于大文本使用防抖，小文本立即调整
+    // 高度调整：使用requestAnimationFrame优化DOM操作
     if (enableTextareaResize) {
-      if (textLength > 5000) {
-        // 大文本使用现有的防抖机制
+      // 对于大文本和小文本都使用requestAnimationFrame，确保流畅性
+      requestAnimationFrame(() => {
         adjustTextareaHeight(e.target);
-      } else {
-        // 小文本立即调整，提供更好的响应性
-        adjustTextareaHeight(e.target);
-      }
+      });
     }
   }, [enableCharacterCount, enableTextareaResize, adjustTextareaHeight]);
 

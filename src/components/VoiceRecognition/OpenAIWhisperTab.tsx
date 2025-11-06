@@ -16,6 +16,7 @@ import {
 import { Eye as Visibility, EyeOff as VisibilityOff } from 'lucide-react';
 import type { OpenAIWhisperSettings } from '../../shared/types/voice';
 import { openAIWhisperService } from '../../shared/services/OpenAIWhisperService';
+import { useTranslation } from '../../i18n';
 
 interface OpenAIWhisperTabProps {
   settings: OpenAIWhisperSettings;
@@ -23,6 +24,7 @@ interface OpenAIWhisperTabProps {
 }
 
 const OpenAIWhisperTab: React.FC<OpenAIWhisperTabProps> = ({ settings, onSettingsChange }) => {
+  const { t } = useTranslation();
 
   const handleChange = <K extends keyof OpenAIWhisperSettings>(key: K, value: OpenAIWhisperSettings[K]) => {
     onSettingsChange({
@@ -38,28 +40,28 @@ const OpenAIWhisperTab: React.FC<OpenAIWhisperTabProps> = ({ settings, onSetting
   return (
     <Box sx={{ py: 1 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
-        OpenAI Whisper 语音识别设置
+        {t('settings.voice.tabSettings.whisper.title')}
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        OpenAI Whisper是一个强大的语音识别模型，支持多种语言。您需要有OpenAI的API密钥才能使用此功能。
+        {t('settings.voice.tabSettings.whisper.info')}
       </Alert>
 
       {/* API密钥输入 */}
       <TextField
         fullWidth
-        label="OpenAI API密钥"
+        label={t('settings.voice.tabSettings.whisper.apiKey')}
         value={settings.apiKey}
         onChange={(e) => handleChange('apiKey', e.target.value)}
         type={settings.showApiKey ? 'text' : 'password'}
         margin="normal"
         sx={{ mb: 3 }}
-        helperText="请输入您的OpenAI API密钥"
+        helperText={t('settings.voice.tabSettings.whisper.apiKeyHelper')}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
               <IconButton
-                aria-label="切换API密钥可见性"
+                aria-label={t('settings.voice.tabSettings.whisper.toggleApiKeyVisibility')}
                 onClick={toggleShowApiKey}
                 edge="end"
               >
@@ -72,11 +74,11 @@ const OpenAIWhisperTab: React.FC<OpenAIWhisperTabProps> = ({ settings, onSetting
 
       {/* 模型选择 */}
       <FormControl fullWidth margin="normal" sx={{ mb: 3 }}>
-        <InputLabel>Whisper模型</InputLabel>
+        <InputLabel>{t('settings.voice.tabSettings.whisper.model')}</InputLabel>
         <Select
           value={settings.model}
           onChange={(e) => handleChange('model', e.target.value)}
-          label="Whisper模型"
+          label={t('settings.voice.tabSettings.whisper.model')}
         >
           {openAIWhisperService.getAvailableModels().map((model) => (
             <MenuItem key={model} value={model}>
@@ -85,37 +87,37 @@ const OpenAIWhisperTab: React.FC<OpenAIWhisperTabProps> = ({ settings, onSetting
           ))}
         </Select>
         <FormHelperText>
-          目前只有whisper-1一个模型可用
+          {t('settings.voice.tabSettings.whisper.modelHelper')}
         </FormHelperText>
       </FormControl>
 
       {/* 语言选择 */}
       <FormControl fullWidth margin="normal" sx={{ mb: 3 }}>
-        <InputLabel>语言</InputLabel>
+        <InputLabel>{t('settings.voice.tabSettings.whisper.language')}</InputLabel>
         <Select
           value={settings.language || ''}
           onChange={(e) => handleChange('language', e.target.value || undefined)}
-          label="语言"
+          label={t('settings.voice.tabSettings.whisper.language')}
         >
-          <MenuItem value="">自动检测</MenuItem>
-          <MenuItem value="zh">中文</MenuItem>
-          <MenuItem value="en">英语</MenuItem>
-          <MenuItem value="ja">日语</MenuItem>
-          <MenuItem value="ko">韩语</MenuItem>
-          <MenuItem value="fr">法语</MenuItem>
-          <MenuItem value="de">德语</MenuItem>
-          <MenuItem value="es">西班牙语</MenuItem>
-          <MenuItem value="ru">俄语</MenuItem>
+          <MenuItem value="">{t('settings.voice.tabSettings.whisper.languageAuto')}</MenuItem>
+          <MenuItem value="zh">{t('settings.voice.tabSettings.whisper.languageZh')}</MenuItem>
+          <MenuItem value="en">{t('settings.voice.tabSettings.whisper.languageEn')}</MenuItem>
+          <MenuItem value="ja">{t('settings.voice.tabSettings.whisper.languageJa')}</MenuItem>
+          <MenuItem value="ko">{t('settings.voice.tabSettings.whisper.languageKo')}</MenuItem>
+          <MenuItem value="fr">{t('settings.voice.tabSettings.whisper.languageFr')}</MenuItem>
+          <MenuItem value="de">{t('settings.voice.tabSettings.whisper.languageDe')}</MenuItem>
+          <MenuItem value="es">{t('settings.voice.tabSettings.whisper.languageEs')}</MenuItem>
+          <MenuItem value="ru">{t('settings.voice.tabSettings.whisper.languageRu')}</MenuItem>
         </Select>
         <FormHelperText>
-          指定音频的语言可以提高转录准确性，留空则自动检测
+          {t('settings.voice.tabSettings.whisper.languageHelper')}
         </FormHelperText>
       </FormControl>
 
       {/* 温度参数 */}
       <Box sx={{ mb: 3 }}>
         <Typography id="temperature-slider" gutterBottom>
-          温度: {settings.temperature}
+          {t('settings.voice.tabSettings.whisper.temperature')}: {settings.temperature}
         </Typography>
         <Slider
           aria-labelledby="temperature-slider"
@@ -128,26 +130,26 @@ const OpenAIWhisperTab: React.FC<OpenAIWhisperTabProps> = ({ settings, onSetting
           valueLabelDisplay="auto"
         />
         <FormHelperText>
-          较高的值会使输出更加随机，较低的值则使输出更加确定。建议设置为0以获得最准确的结果。
+          {t('settings.voice.tabSettings.whisper.temperatureHelper')}
         </FormHelperText>
       </Box>
 
       {/* 响应格式 */}
       <FormControl fullWidth margin="normal" sx={{ mb: 3 }}>
-        <InputLabel>响应格式</InputLabel>
+        <InputLabel>{t('settings.voice.tabSettings.whisper.responseFormat')}</InputLabel>
         <Select
           value={settings.responseFormat || 'json'}
           onChange={(e) => handleChange('responseFormat', e.target.value as any)}
-          label="响应格式"
+          label={t('settings.voice.tabSettings.whisper.responseFormat')}
         >
           <MenuItem value="json">JSON</MenuItem>
-          <MenuItem value="text">纯文本</MenuItem>
+          <MenuItem value="text">Plain Text</MenuItem>
           <MenuItem value="srt">SRT</MenuItem>
-          <MenuItem value="verbose_json">详细JSON</MenuItem>
+          <MenuItem value="verbose_json">Verbose JSON</MenuItem>
           <MenuItem value="vtt">VTT</MenuItem>
         </Select>
         <FormHelperText>
-          选择API返回的响应格式，一般使用默认的JSON格式即可
+          {t('settings.voice.tabSettings.whisper.responseFormatHelper')}
         </FormHelperText>
       </FormControl>
     </Box>

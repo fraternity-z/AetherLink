@@ -1,0 +1,174 @@
+{
+  "webSearch": {
+    "title": "Web Search Settings",
+    "basic": {
+      "title": "Basic Settings",
+      "enable": {
+        "label": "Enable Web Search",
+        "tooltip": "When enabled, AI can get the latest information through web search"
+      },
+      "provider": {
+        "label": "Search Provider",
+        "options": {
+          "bingFree": "🆓 Bing Free Search (Recommended)",
+          "tavily": "💎 Tavily (Paid)",
+          "exa": "🧠 Exa (Neural Search)",
+          "bocha": "🤖 Bocha (AI Search)",
+          "firecrawl": "🕷️ Firecrawl (Web Scraping)",
+          "custom": "⚙️ Custom Service"
+        }
+      },
+      "searchEngine": {
+        "label": "Search Engine",
+        "options": {
+          "bing": "🔍 Bing",
+          "google": "🌐 Google",
+          "baidu": "🔍 Baidu",
+          "sogou": "🔍 Sogou",
+          "yandex": "🔍 Yandex"
+        }
+      },
+      "apiKey": {
+        "label": "API Key",
+        "placeholder": "Enter {{provider}} API key"
+      },
+      "debug": {
+        "currentProvider": "Debug Info: Current provider ({{provider}}) API key: {{status}}",
+        "savedProviders": " | Saved providers: {{providers}}",
+        "set": "Set",
+        "notSet": "Not Set"
+      },
+      "alerts": {
+        "tavily": {
+          "text": "Tavily is a search API designed for AI, providing high-quality search results. Now using a mobile-compatible SDK that completely avoids CORS limitations. Visit",
+          "link": "app.tavily.com",
+          "linkText": "to get an API key."
+        },
+        "exa": {
+          "text": "Exa is a neural network-based search engine that provides semantic search. Visit",
+          "link": "exa.ai",
+          "linkText": "to get an API key."
+        },
+        "bocha": {
+          "text": "Bocha is an AI-powered search engine that provides intelligent search results. Visit",
+          "link": "bochaai.com",
+          "linkText": "to get an API key."
+        },
+        "bingFree": {
+          "text": "Free search service, no API key required. You can choose different search engines to get search results, including Bing, Google, Baidu, Sogou, etc. Uses capacitor-cors-bypass-enhanced plugin to solve mobile CORS issues."
+        },
+        "firecrawl": {
+          "text": "Firecrawl provides powerful web scraping and search capabilities. Visit",
+          "link": "firecrawl.dev",
+          "linkText": "to get an API key."
+        }
+      },
+      "customProviders": {
+        "title": "Custom Search Service List",
+        "name": "Service Name",
+        "apiUrl": "API URL: {{url}}",
+        "enable": "Enable",
+        "edit": "Edit",
+        "delete": "Delete",
+        "add": "Add Custom Search Service",
+        "newName": "New Search Service"
+      },
+      "editDialog": {
+        "editTitle": "Edit Search Service",
+        "addTitle": "Add Search Service",
+        "name": "Service Name",
+        "baseUrl": "Base URL",
+        "baseUrlPlaceholder": "https://api.example.com",
+        "apiKey": "API Key",
+        "enable": "Enable this service",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "searchOptions": {
+      "title": "Search Options",
+      "searchMode": {
+        "label": "Search Mode",
+        "auto": "Auto Search (AI automatically determines when to search)",
+        "manual": "Manual Search (Click search button to start)"
+      },
+      "maxResults": {
+        "label": "Maximum Results: {{count}}"
+      },
+      "includeInContext": {
+        "label": "Include search results in context"
+      },
+      "showTimestamp": {
+        "label": "Show search result timestamps"
+      },
+      "filterSafeSearch": {
+        "label": "Enable safe search filtering"
+      },
+      "searchWithTime": {
+        "label": "Add current date to search query"
+      }
+    },
+    "tavily": {
+      "title": "🚀 Tavily Best Practices Settings",
+      "description": "These settings are based on Tavily's official best practices and can significantly improve search quality and relevance.",
+      "smartSearch": {
+        "label": "Enable Smart Search",
+        "tooltip": "Automatically apply best practice settings, including advanced search depth, content chunk optimization, etc."
+      },
+      "searchDepth": {
+        "label": "Search Depth",
+        "basic": "Basic Search (Faster)",
+        "advanced": "Advanced Search (More Accurate, Recommended)"
+      },
+      "chunksPerSource": {
+        "label": "Content Chunks per Source: {{count}}"
+      },
+      "minScore": {
+        "label": "Minimum Relevance Score: {{score}}%",
+        "description": "Filter out search results with relevance scores below this threshold"
+      },
+      "timeRange": {
+        "label": "Time Range Filter",
+        "day": "Last Day",
+        "week": "Last Week",
+        "month": "Last Month",
+        "year": "Last Year"
+      },
+      "newsSearchDays": {
+        "label": "News Search Day Range: {{days}} days",
+        "description": "Used when search topic is set to \"News\"",
+        "marks": {
+          "1day": "1 Day",
+          "1week": "1 Week",
+          "2weeks": "2 Weeks",
+          "1month": "1 Month"
+        }
+      },
+      "includeRawContent": {
+        "label": "Include Raw Content",
+        "tooltip": "Get complete webpage content for deep analysis"
+      },
+      "includeAnswer": {
+        "label": "Include AI Answer Summary",
+        "tooltip": "Tavily-generated answer summary based on search results"
+      },
+      "enableQueryValidation": {
+        "label": "Enable Query Validation",
+        "tooltip": "Validate query length and format, provide optimization suggestions"
+      },
+      "enablePostProcessing": {
+        "label": "Enable Result Post-Processing",
+        "tooltip": "Filter and sort search results based on relevance scores"
+      }
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "excludeDomains": {
+        "label": "Exclude Domains (One per line)",
+        "placeholder": "example.com\\nspam-site.com",
+        "description": "These domains will be excluded from search results"
+      }
+    }
+  }
+}
+

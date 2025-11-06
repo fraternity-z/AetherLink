@@ -1,0 +1,55 @@
+{
+  "title": "开发者工具",
+  "back": "返回",
+  "settings": "设置",
+  "clear": "清除",
+  "tabs": {
+    "console": "控制台",
+    "network": "网络"
+  },
+  "settingsDialog": {
+    "title": "开发者工具设置",
+    "autoScroll": {
+      "label": "自动滚动到底部",
+      "description": "新日志出现时自动滚动到控制台底部"
+    },
+    "preserveLog": {
+      "label": "保留日志",
+      "description": "页面刷新后保留日志记录"
+    },
+    "close": "关闭"
+  },
+  "clearDialog": {
+    "title": "确认清除",
+    "consoleMessage": "确定要清除所有控制台日志吗？",
+    "networkMessage": "确定要清除所有网络记录吗？",
+    "warning": "此操作无法撤销，请谨慎操作。",
+    "cancel": "取消",
+    "clear": "清除"
+  },
+  "console": {
+    "searchPlaceholder": "搜索控制台输出...",
+    "level": "级别:",
+    "empty": "暂无控制台输出",
+    "noResults": "没有找到匹配的日志",
+    "commandPlaceholder": "输入 JavaScript 命令并按 Enter 执行...",
+    "executeTooltip": "执行命令 (Enter)"
+  },
+  "network": {
+    "detailsTitle": "网络请求详情",
+    "url": "请求 URL",
+    "method": "请求方法",
+    "status": "状态",
+    "duration": "耗时",
+    "responseSize": "响应大小",
+    "requestHeaders": "请求头",
+    "requestBody": "请求体",
+    "responseHeaders": "响应头",
+    "responseBody": "响应体",
+    "searchPlaceholder": "搜索网络请求...",
+    "onlyErrors": "仅显示错误",
+    "showDataUrls": "显示 Data URLs",
+    "empty": "暂无网络请求记录",
+    "noResults": "没有找到匹配的网络请求"
+  }
+}

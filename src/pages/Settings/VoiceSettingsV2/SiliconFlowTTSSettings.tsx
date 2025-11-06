@@ -26,9 +26,11 @@ import {
 } from '../../../components/TTS';
 import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
+import { useTranslation } from '../../../i18n';
 
 const SiliconFlowTTSSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const ttsService = useMemo(() => TTSService.getInstance(), []);
   
   // 定时器引用
@@ -50,7 +52,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
     isTestPlaying: false,
   });
 
-  const [testText, setTestText] = useState('你好，我是硅基流动语音合成服务，感谢你的使用！');
+  const [testText, setTestText] = useState('');
   const [enableTTS, setEnableTTS] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false); // 是否启用此TTS服务
 
@@ -82,13 +84,16 @@ const SiliconFlowTTSSettings: React.FC = () => {
         if (storedModel && storedVoice) {
           ttsService.setDefaultVoice(storedModel, `${storedModel}:${storedVoice}`);
         }
+        // 加载测试文本
+        const defaultTestText = t('settings.voice.siliconflow.testText');
+        setTestText(defaultTestText);
       } catch (error) {
-        console.error('加载硅基流动TTS设置失败:', error);
+        console.error(t('settings.voice.common.loadingError', { service: 'SiliconFlow TTS' }), error);
       }
     };
 
     loadSettings();
-  }, [ttsService]);
+  }, [ttsService, t]);
 
   // 保存配置
   const saveConfig = useCallback((): boolean => {
@@ -97,7 +102,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
       if (isEnabled && !settings.apiKey.trim()) {
         setUIState(prev => ({
           ...prev,
-          saveError: '启用服务时API密钥不能为空',
+          saveError: t('settings.voice.siliconflow.apiKeyRequired'),
         }));
         return false;
       }
@@ -135,14 +140,14 @@ const SiliconFlowTTSSettings: React.FC = () => {
 
       return true;
     } catch (error) {
-      console.error('保存硅基流动TTS设置失败:', error);
+      console.error(t('settings.voice.common.saveErrorText', { service: 'SiliconFlow TTS' }), error);
       setUIState(prev => ({
         ...prev,
-        saveError: '保存设置失败，请重试',
+        saveError: t('settings.voice.common.saveError'),
       }));
       return false;
     }
-  }, [settings, enableTTS, isEnabled, ttsService]);
+  }, [settings, enableTTS, isEnabled, ttsService, t]);
 
   // 手动保存
   const handleSave = useCallback(() => {
@@ -257,7 +262,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
           <IconButton
             edge="start"
             onClick={handleBack}
-            aria-label="返回"
+            aria-label={t('settings.voice.back')}
             size="large"
             sx={{
               color: 'primary.main',
@@ -283,8 +288,8 @@ const SiliconFlowTTSSettings: React.FC = () => {
               WebkitBackgroundClip: 'text',
               color: 'transparent',
             }}
-          >
-            硅基流动 TTS 设置
+            >
+            {t('settings.voice.siliconflow.title')}
           </Typography>
           <Button
             onClick={handleSave}
@@ -299,7 +304,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
               px: 3,
             }}
           >
-            保存
+            {t('settings.voice.common.save')}
           </Button>
         </Toolbar>
       </AppBar>
@@ -355,7 +360,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              API配置
+              {t('settings.voice.common.apiConfig')}
             </Typography>
 
             {/* 启用开关 */}
@@ -367,10 +372,10 @@ const SiliconFlowTTSSettings: React.FC = () => {
                     onChange={(e) => handleEnableChange(e.target.checked)}
                   />
                 }
-                label="启用硅基流动 TTS 服务"
+                label={t('settings.voice.common.enableService', { name: t('settings.voice.services.siliconflow.name') })}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, ml: 4 }}>
-                启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。
+                {t('settings.voice.siliconflow.enableDesc')}
               </Typography>
             </Box>
 

@@ -16,19 +16,29 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Paper,
+  Divider,
+  alpha,
+  Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Globe as HttpIcon,
   X as ClearIcon,
   ChevronDown as ExpandMoreIcon,
+  AlertCircle as ErrorIcon,
+  CheckCircle2 as SuccessIcon,
+  Clock as PendingIcon,
+  XCircle as CancelledIcon,
 } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
+import { useTranslation } from '../../i18n';
 import EnhancedNetworkService from '../../shared/services/network/EnhancedNetworkService';
 import type { NetworkEntry, NetworkFilter } from '../../shared/services/network/EnhancedNetworkService';
 
 const NetworkPanel: React.FC = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [, setEntries] = useState<NetworkEntry[]>([]);
@@ -60,6 +70,21 @@ const NetworkPanel: React.FC = () => {
     setShowDetails(true);
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <SuccessIcon size={16} />;
+      case 'error':
+        return <ErrorIcon size={16} />;
+      case 'pending':
+        return <PendingIcon size={16} />;
+      case 'cancelled':
+        return <CancelledIcon size={16} />;
+      default:
+        return null;
+    }
+  };
+
   const renderDetailsDialog = () => (
     <Dialog
       open={showDetails}
@@ -67,106 +92,349 @@ const NetworkPanel: React.FC = () => {
       maxWidth="md"
       fullWidth
       fullScreen={isMobile}
+      PaperProps={{
+        sx: {
+          borderRadius: isMobile ? 0 : 2,
+        },
+      }}
     >
-      <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <HttpIcon size={20} />
-          网络请求详情
+      <DialogTitle sx={{ pb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: 1,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+            }}
+          >
+            <HttpIcon size={20} />
+          </Box>
+          <Typography variant="h6" component="span" sx={{ fontWeight: 600, flexGrow: 1 }}>
+            {t('devtools.network.detailsTitle')}
+          </Typography>
           <IconButton
             size="small"
             onClick={() => setShowDetails(false)}
-            sx={{ ml: 'auto' }}
+            sx={{
+              color: 'text.secondary',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.error.main, 0.08),
+                color: 'error.main',
+              },
+            }}
           >
-            <ClearIcon size={16} />
+            <ClearIcon size={18} />
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent>
+      <Divider />
+      <DialogContent sx={{ pt: 3 }}>
         {selectedEntry && (
           <Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
-              <Box>
-                <Typography variant="subtitle2">请求URL:</Typography>
-                <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  bgcolor: theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.common.white, 0.03)
+                    : alpha(theme.palette.common.black, 0.02),
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600, color: 'text.secondary' }}>
+                  {t('devtools.network.url')}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    wordBreak: 'break-all',
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                    color: 'text.primary',
+                  }}
+                >
                   {selectedEntry.url}
                 </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              </Paper>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <Box>
-                  <Typography variant="subtitle2">请求方法:</Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontWeight: 500 }}>
+                    {t('devtools.network.method')}
+                  </Typography>
                   <Chip
                     label={selectedEntry.method}
                     size="small"
-                    sx={{ bgcolor: networkService.getMethodColor(selectedEntry.method), color: 'white' }}
+                    sx={{ 
+                      bgcolor: networkService.getMethodColor(selectedEntry.method), 
+                      color: 'white',
+                      fontWeight: 600,
+                      height: '28px',
+                    }}
                   />
                 </Box>
                 <Box>
-                  <Typography variant="subtitle2">状态:</Typography>
-                  <Chip
-                    label={selectedEntry.statusCode || selectedEntry.status}
-                    size="small"
-                    color={selectedEntry.status === 'success' ? 'success' : selectedEntry.status === 'error' ? 'error' : 'default'}
-                  />
+                  <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontWeight: 500 }}>
+                    {t('devtools.network.status')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {getStatusIcon(selectedEntry.status)}
+                    <Chip
+                      label={selectedEntry.statusCode || selectedEntry.status}
+                      size="small"
+                      color={selectedEntry.status === 'success' ? 'success' : selectedEntry.status === 'error' ? 'error' : 'default'}
+                      sx={{ height: '28px' }}
+                    />
+                  </Box>
                 </Box>
                 {selectedEntry.duration && (
                   <Box>
-                    <Typography variant="subtitle2">耗时:</Typography>
-                    <Typography variant="body2">
+                    <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontWeight: 500 }}>
+                      {t('devtools.network.duration')}
+                    </Typography>
+                    <Typography 
+                      variant="body2"
+                      sx={{ 
+                        fontFamily: 'monospace',
+                        fontWeight: 500,
+                      }}
+                    >
                       {networkService.formatDuration(selectedEntry.duration)}
+                    </Typography>
+                  </Box>
+                )}
+                {selectedEntry.responseSize && (
+                  <Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontWeight: 500 }}>
+                      {t('devtools.network.responseSize')}
+                    </Typography>
+                    <Typography 
+                      variant="body2"
+                      sx={{ 
+                        fontFamily: 'monospace',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {networkService.formatSize(selectedEntry.responseSize)}
                     </Typography>
                   </Box>
                 )}
               </Box>
             </Box>
 
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon size={16} />}>
-                <Typography>请求头</Typography>
+            <Accordion 
+              defaultExpanded
+              sx={{
+                '&:before': { display: 'none' },
+                boxShadow: 'none',
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+                mb: 1,
+              }}
+            >
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon size={18} />}
+                sx={{
+                  bgcolor: theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.common.white, 0.03)
+                    : alpha(theme.palette.common.black, 0.01),
+                  borderRadius: '8px 8px 0 0',
+                  '&:hover': {
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.05)
+                      : alpha(theme.palette.common.black, 0.02),
+                  },
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {t('devtools.network.requestHeaders')}
+                </Typography>
               </AccordionSummary>
-              <AccordionDetails>
-                <pre style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>
+              <AccordionDetails sx={{ bgcolor: 'transparent', p: 2 }}>
+                <Box
+                  component="pre"
+                  sx={{
+                    fontSize: '0.8125rem',
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontFamily: 'monospace',
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.black, 0.3)
+                      : alpha(theme.palette.common.black, 0.02),
+                    p: 2,
+                    borderRadius: 1,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                    maxHeight: '300px',
+                    overflow: 'auto',
+                  }}
+                >
                   {JSON.stringify(selectedEntry.requestHeaders, null, 2)}
-                </pre>
+                </Box>
               </AccordionDetails>
             </Accordion>
 
             {selectedEntry.requestPayload && (
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon size={16} />}>
-                  <Typography>请求体</Typography>
+              <Accordion
+                sx={{
+                  '&:before': { display: 'none' },
+                  boxShadow: 'none',
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 1,
+                  mb: 1,
+                }}
+              >
+                <AccordionSummary 
+                  expandIcon={<ExpandMoreIcon size={18} />}
+                  sx={{
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.03)
+                      : alpha(theme.palette.common.black, 0.01),
+                    borderRadius: '8px 8px 0 0',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.05)
+                        : alpha(theme.palette.common.black, 0.02),
+                    },
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {t('devtools.network.requestBody')}
+                  </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
-                  <pre style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>
+                <AccordionDetails sx={{ bgcolor: 'transparent', p: 2 }}>
+                  <Box
+                    component="pre"
+                    sx={{
+                      fontSize: '0.8125rem',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontFamily: 'monospace',
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.black, 0.3)
+                        : alpha(theme.palette.common.black, 0.02),
+                      p: 2,
+                      borderRadius: 1,
+                      border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                      maxHeight: '300px',
+                      overflow: 'auto',
+                    }}
+                  >
                     {typeof selectedEntry.requestPayload === 'string'
                       ? selectedEntry.requestPayload
                       : JSON.stringify(selectedEntry.requestPayload, null, 2)}
-                  </pre>
+                  </Box>
                 </AccordionDetails>
               </Accordion>
             )}
 
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMoreIcon size={16} />}>
-                <Typography>响应头</Typography>
+            <Accordion
+              sx={{
+                '&:before': { display: 'none' },
+                boxShadow: 'none',
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+                mb: 1,
+              }}
+            >
+              <AccordionSummary 
+                expandIcon={<ExpandMoreIcon size={18} />}
+                sx={{
+                  bgcolor: theme.palette.mode === 'dark'
+                    ? alpha(theme.palette.common.white, 0.03)
+                    : alpha(theme.palette.common.black, 0.01),
+                  borderRadius: '8px 8px 0 0',
+                  '&:hover': {
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.05)
+                      : alpha(theme.palette.common.black, 0.02),
+                  },
+                }}
+              >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {t('devtools.network.responseHeaders')}
+                  </Typography>
               </AccordionSummary>
-              <AccordionDetails>
-                <pre style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>
+              <AccordionDetails sx={{ bgcolor: 'transparent', p: 2 }}>
+                <Box
+                  component="pre"
+                  sx={{
+                    fontSize: '0.8125rem',
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontFamily: 'monospace',
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.black, 0.3)
+                      : alpha(theme.palette.common.black, 0.02),
+                    p: 2,
+                    borderRadius: 1,
+                    border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                    maxHeight: '300px',
+                    overflow: 'auto',
+                  }}
+                >
                   {JSON.stringify(selectedEntry.responseHeaders, null, 2)}
-                </pre>
+                </Box>
               </AccordionDetails>
             </Accordion>
 
             {selectedEntry.responseData && (
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon size={16} />}>
-                  <Typography>响应体</Typography>
+              <Accordion
+                sx={{
+                  '&:before': { display: 'none' },
+                  boxShadow: 'none',
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 1,
+                }}
+              >
+                <AccordionSummary 
+                  expandIcon={<ExpandMoreIcon size={18} />}
+                  sx={{
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.03)
+                      : alpha(theme.palette.common.black, 0.01),
+                    borderRadius: '8px 8px 0 0',
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.05)
+                        : alpha(theme.palette.common.black, 0.02),
+                    },
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {t('devtools.network.responseBody')}
+                  </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
-                  <pre style={{ fontSize: '0.875rem', margin: 0, whiteSpace: 'pre-wrap' }}>
+                <AccordionDetails sx={{ bgcolor: 'transparent', p: 2 }}>
+                  <Box
+                    component="pre"
+                    sx={{
+                      fontSize: '0.8125rem',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontFamily: 'monospace',
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.black, 0.3)
+                        : alpha(theme.palette.common.black, 0.02),
+                      p: 2,
+                      borderRadius: 1,
+                      border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                      maxHeight: '300px',
+                      overflow: 'auto',
+                    }}
+                  >
                     {typeof selectedEntry.responseData === 'string'
                       ? selectedEntry.responseData
                       : JSON.stringify(selectedEntry.responseData, null, 2)}
-                  </pre>
+                  </Box>
                 </AccordionDetails>
               </Accordion>
             )}
@@ -177,25 +445,63 @@ const NetworkPanel: React.FC = () => {
   );
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* 过滤器 */}
-      <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'transparent' }}>
+      {/* 过滤器 - 优化设计 */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          bgcolor: theme.palette.mode === 'dark'
+            ? alpha(theme.palette.background.paper, 0.4)
+            : theme.palette.background.paper,
+          borderRadius: 0,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             size="small"
-            placeholder="过滤网络请求..."
+            placeholder={t('devtools.network.searchPlaceholder')}
             value={filter.searchText}
             onChange={(e) => setFilter(prev => ({ ...prev, searchText: e.target.value }))}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon size={16} />
+                  <SearchIcon size={18} style={{ color: theme.palette.text.secondary }} />
+                </InputAdornment>
+              ),
+              endAdornment: filter.searchText && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setFilter(prev => ({ ...prev, searchText: '' }))}
+                    sx={{ p: 0.5 }}
+                  >
+                    <ClearIcon size={14} />
+                  </IconButton>
                 </InputAdornment>
               ),
             }}
             fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.common.white, 0.05)
+                  : alpha(theme.palette.common.black, 0.02),
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.common.white, 0.08)
+                    : alpha(theme.palette.common.black, 0.04),
+                },
+                '&.Mui-focused': {
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.common.white, 0.08)
+                    : alpha(theme.palette.common.black, 0.04),
+                },
+              },
+            }}
           />
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <FormControlLabel
               control={
                 <Switch
@@ -204,7 +510,8 @@ const NetworkPanel: React.FC = () => {
                   onChange={(e) => setFilter(prev => ({ ...prev, onlyErrors: e.target.checked }))}
                 />
               }
-              label="仅错误"
+              label={<Typography variant="body2">{t('devtools.network.onlyErrors')}</Typography>}
+              sx={{ m: 0 }}
             />
             <FormControlLabel
               control={
@@ -214,67 +521,155 @@ const NetworkPanel: React.FC = () => {
                   onChange={(e) => setFilter(prev => ({ ...prev, hideDataUrls: !e.target.checked }))}
                 />
               }
-              label="Data URLs"
+              label={<Typography variant="body2">{t('devtools.network.showDataUrls')}</Typography>}
+              sx={{ m: 0 }}
             />
           </Box>
         </Box>
-      </Box>
+      </Paper>
 
-      {/* 网络请求列表 */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      {/* 网络请求列表 - 优化设计 */}
+      <Box 
+        sx={{ 
+          flexGrow: 1, 
+          overflow: 'auto',
+          bgcolor: theme.palette.mode === 'dark' 
+            ? alpha(theme.palette.common.black, 0.3)
+            : alpha(theme.palette.common.black, 0.02),
+        }}
+      >
         <List dense sx={{ p: 0 }}>
-          {filteredEntries.map((entry) => (
-            <ListItem
-              key={entry.id}
+          {filteredEntries.length === 0 ? (
+            <Box
               sx={{
-                py: 1,
-                px: 2,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                '&:hover': { bgcolor: 'action.hover' },
-                cursor: 'pointer'
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 8,
+                color: 'text.secondary',
               }}
-              onClick={() => handleEntryClick(entry)}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-                <Chip
-                  label={entry.method}
-                  size="small"
-                  sx={{
-                    bgcolor: networkService.getMethodColor(entry.method),
-                    color: 'white',
-                    fontWeight: 'bold',
-                    minWidth: '60px'
-                  }}
-                />
-                <Chip
-                  label={entry.statusCode || entry.status}
-                  size="small"
-                  color={entry.status === 'success' ? 'success' : entry.status === 'error' ? 'error' : 'default'}
-                />
-                <Box sx={{ flexGrow: 1, minWidth: 0, mx: 1 }}>
-                  <Typography
-                    variant="body2"
+              <HttpIcon size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
+              <Typography variant="body2" color="text.secondary">
+                {filter.searchText ? t('devtools.network.noResults') : t('devtools.network.empty')}
+              </Typography>
+            </Box>
+          ) : (
+            filteredEntries.map((entry, index) => (
+              <ListItem
+                key={entry.id}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  borderBottom: index < filteredEntries.length - 1 
+                    ? `1px solid ${alpha(theme.palette.divider, 0.5)}` 
+                    : 'none',
+                  '&:hover': { 
+                    bgcolor: theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.05)
+                      : alpha(theme.palette.common.black, 0.02),
+                  },
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                }}
+                onClick={() => handleEntryClick(entry)}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1.5 }}>
+                  <Chip
+                    label={entry.method}
+                    size="small"
                     sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
+                      bgcolor: networkService.getMethodColor(entry.method),
+                      color: 'white',
+                      fontWeight: 600,
+                      minWidth: '64px',
+                      height: '24px',
+                      fontSize: '0.75rem',
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
                     }}
                   >
-                    {entry.url}
-                  </Typography>
+                    {getStatusIcon(entry.status)}
+                    <Chip
+                      label={entry.statusCode || entry.status}
+                      size="small"
+                      color={
+                        entry.status === 'success' 
+                          ? 'success' 
+                          : entry.status === 'error' 
+                          ? 'error' 
+                          : 'default'
+                      }
+                      sx={{
+                        height: '24px',
+                        fontSize: '0.75rem',
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ flexGrow: 1, minWidth: 0, mx: 1 }}>
+                    <Tooltip title={entry.url} arrow>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontFamily: 'monospace',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        {entry.url}
+                      </Typography>
+                    </Tooltip>
+                  </Box>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      gap: 2, 
+                      minWidth: 'fit-content',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {entry.duration && (
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{ 
+                          fontFamily: 'monospace',
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        {networkService.formatDuration(entry.duration)}
+                      </Typography>
+                    )}
+                    {entry.responseSize && (
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{ 
+                          fontFamily: 'monospace',
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        {networkService.formatSize(entry.responseSize)}
+                      </Typography>
+                    )}
+                    {!entry.duration && !entry.responseSize && (
+                      <Typography variant="caption" color="text.secondary">
+                        -
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2, minWidth: 'fit-content' }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {entry.duration ? networkService.formatDuration(entry.duration) : '-'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {entry.responseSize ? networkService.formatSize(entry.responseSize) : '-'}
-                  </Typography>
-                </Box>
-              </Box>
-            </ListItem>
-          ))}
+              </ListItem>
+            ))
+          )}
         </List>
       </Box>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Box, IconButton, Typography, Collapse, Chip } from '@mui/material';
 import MCPToolsButton from '../chat/MCPToolsButton';
 import WebSearchProviderSelector from '../WebSearchProviderSelector';
@@ -260,6 +260,24 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     setShowKnowledgeSelector(false);
   };
 
+  // 修复折叠时高度异常：只在textareaExpanded变化时执行，避免每次输入都触发
+  const prevTextareaExpandedRef = useRef(textareaExpanded);
+  useEffect(() => {
+    // 只处理从展开到折叠的状态变化
+    if (prevTextareaExpandedRef.current && !textareaExpanded && textareaRef.current) {
+      // 使用requestAnimationFrame确保DOM更新完成
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          // 重置高度以触发重新计算
+          textareaRef.current.style.height = 'auto';
+          // 下面的自动调整高度useEffect会处理实际的高度设置
+        }
+      });
+    }
+    // 更新上一次的textareaExpanded状态
+    prevTextareaExpandedRef.current = textareaExpanded;
+  }, [textareaExpanded, textareaRef]); // 移除message和isActivated依赖，避免每次输入都触发
+
   // 自动调整文本框和容器高度
   useEffect(() => {
     if (textareaRef.current) {
@@ -352,49 +370,69 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     setIsActivated(true);
   };
 
-  // 检测是否需要显示展开按钮 - 基于字数判断
-  const checkShowExpandButton = useCallback(() => {
+  // 性能优化：使用useMemo缓存按钮可见性计算结果，避免重复计算
+  const buttonVisibility = useMemo(() => {
     if (!textareaExpanded) {
-      // 计算文本行数：根据字符数估算行数
       const textLength = message.length;
       const containerWidth = 280; // CompactChatInput 的估算容器宽度
       const charsPerLine = Math.floor(containerWidth / 14); // 根据字体大小估算每行字符数
-
-      // 计算换行符数量
-      const newlineCount = (message.match(/\n/g) || []).length;
-
-      // 估算总行数：字符行数 + 换行符行数
+      
+      // 性能优化：使用字符串操作替代正则表达式（大文本时更快）
+      let newlineCount = 0;
+      if (textLength < 1000) {
+        // 小文本使用split（快速）
+        newlineCount = message.split('\n').length - 1;
+      } else {
+        // 大文本时使用循环（避免创建大量数组）
+        for (let i = 0; i < Math.min(textLength, 10000); i++) {
+          if (message[i] === '\n') newlineCount++;
+        }
+      }
+      
       const estimatedLines = Math.ceil(textLength / charsPerLine) + newlineCount;
-
-      // 当文本超过4行时显示展开按钮
-      setShowExpandButton(estimatedLines > 4);
+      return {
+        showExpandButton: estimatedLines > 4
+      };
     } else {
       // 展开状态下始终显示按钮（用于收起）
-      setShowExpandButton(true);
+      return {
+        showExpandButton: true
+      };
     }
   }, [textareaExpanded, message]);
 
-  // 监听消息内容变化，检测按钮显示状态
+  // 使用防抖更新按钮可见性状态，避免频繁setState
+  const buttonVisibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    checkShowExpandButton();
-  }, [message, checkShowExpandButton]);
+    // 清除之前的定时器
+    if (buttonVisibilityTimeoutRef.current) {
+      clearTimeout(buttonVisibilityTimeoutRef.current);
+    }
+    
+    // 使用requestAnimationFrame + 防抖优化
+    buttonVisibilityTimeoutRef.current = setTimeout(() => {
+      requestAnimationFrame(() => {
+        setShowExpandButton(buttonVisibility.showExpandButton);
+      });
+    }, 100); // 防抖延迟
+    
+    return () => {
+      if (buttonVisibilityTimeoutRef.current) {
+        clearTimeout(buttonVisibilityTimeoutRef.current);
+      }
+    };
+  }, [buttonVisibility]);
 
-  // 监听展开状态变化
-  useEffect(() => {
-    // 延迟检测，确保DOM更新完成
-    setTimeout(checkShowExpandButton, 100);
-  }, [textareaExpanded, checkShowExpandButton]);
-
-  // 优化的输入变化处理 - 移除URL检测，添加防抖
+  // 优化的输入变化处理 - 移除重复调用，只保留核心逻辑
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     handleChange(e);
     // 有内容时保持激活状态
     if (e.target.value.trim()) {
       setIsActivated(true);
     }
-    // 使用防抖延迟检测展开按钮显示，避免频繁计算
-    setTimeout(checkShowExpandButton, 100);
-  }, [handleChange, checkShowExpandButton]);
+    // 移除重复的checkShowExpandButton调用，由useEffect统一处理
+  }, [handleChange]);
 
   // 处理键盘事件，包含全展开功能
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

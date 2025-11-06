@@ -27,9 +27,11 @@ import { useVoiceRecognition } from '../../../shared/hooks/useVoiceRecognition';
 import { voiceRecognitionService } from '../../../shared/services/VoiceRecognitionService';
 import CustomSwitch from '../../../components/CustomSwitch';
 import type { VoiceRecognitionSettings } from '../../../shared/types/voice';
+import { useTranslation } from '../../../i18n';
 
 const CapacitorASRSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // 状态管理
   const [settings, setSettings] = useState<VoiceRecognitionSettings>({
@@ -81,12 +83,12 @@ const CapacitorASRSettings: React.FC = () => {
           provider: 'capacitor',
         });
       } catch (error) {
-        console.error('加载Capacitor ASR设置失败:', error);
+        console.error(t('settings.voice.common.loadingError', { service: 'Capacitor ASR' }), error);
       }
     };
 
     loadSettings();
-  }, []);
+  }, [t]);
 
   // 保存设置
   const handleSave = useCallback(async () => {
@@ -105,13 +107,13 @@ const CapacitorASRSettings: React.FC = () => {
       }, 0);
 
     } catch (error) {
-      console.error('保存Capacitor ASR设置失败:', error);
+      console.error(t('settings.voice.common.saveErrorText', { service: 'Capacitor ASR' }), error);
       setUIState(prev => ({
         ...prev,
-        saveError: '保存设置失败，请重试',
+        saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [settings, navigate]);
+  }, [settings, navigate, t]);
 
 
 
@@ -167,7 +169,7 @@ const CapacitorASRSettings: React.FC = () => {
           <IconButton
             edge="start"
             onClick={handleBack}
-            aria-label="返回"
+            aria-label={t('settings.voice.back')}
             size="large"
             sx={{
               color: 'primary.main',
@@ -193,8 +195,8 @@ const CapacitorASRSettings: React.FC = () => {
               WebkitBackgroundClip: 'text',
               color: 'transparent',
             }}
-          >
-            Capacitor 语音识别设置
+            >
+            {t('settings.voice.capacitor.title')}
           </Typography>
           <Button
             onClick={handleSave}
@@ -209,7 +211,7 @@ const CapacitorASRSettings: React.FC = () => {
               px: 3,
             }}
           >
-            保存
+            {t('settings.voice.common.save')}
           </Button>
         </Toolbar>
       </AppBar>
@@ -265,7 +267,7 @@ const CapacitorASRSettings: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              语音识别配置
+              {t('settings.voice.capacitor.config')}
             </Typography>
 
             {/* 启用开关 */}
@@ -277,31 +279,31 @@ const CapacitorASRSettings: React.FC = () => {
                     onChange={(e) => handleSettingsChange('enabled', e.target.checked)}
                   />
                 }
-                label="启用语音识别功能"
+                label={t('settings.voice.capacitor.enable')}
               />
             </Box>
 
             {/* 语言选择 */}
             <FormControl fullWidth sx={{ mb: 3 }}>
-              <InputLabel>默认语言</InputLabel>
+              <InputLabel>{t('settings.voice.capacitor.language.label')}</InputLabel>
               <Select
                 value={settings.language}
                 onChange={(e) => handleSettingsChange('language', e.target.value)}
-                label="默认语言"
+                label={t('settings.voice.capacitor.language.label')}
                 MenuProps={{
                   disableAutoFocus: true,
                   disableRestoreFocus: true
                 }}
               >
-                <MenuItem value="zh-CN">中文 (普通话)</MenuItem>
-                <MenuItem value="en-US">English (US)</MenuItem>
-                <MenuItem value="ja-JP">日本語</MenuItem>
-                <MenuItem value="ko-KR">한국어</MenuItem>
-                <MenuItem value="fr-FR">Français</MenuItem>
-                <MenuItem value="de-DE">Deutsch</MenuItem>
-                <MenuItem value="es-ES">Español</MenuItem>
+                <MenuItem value="zh-CN">{t('settings.voice.capacitor.language.zhCN')}</MenuItem>
+                <MenuItem value="en-US">{t('settings.voice.capacitor.language.enUS')}</MenuItem>
+                <MenuItem value="ja-JP">{t('settings.voice.capacitor.language.jaJP')}</MenuItem>
+                <MenuItem value="ko-KR">{t('settings.voice.capacitor.language.koKR')}</MenuItem>
+                <MenuItem value="fr-FR">{t('settings.voice.capacitor.language.frFR')}</MenuItem>
+                <MenuItem value="de-DE">{t('settings.voice.capacitor.language.deDE')}</MenuItem>
+                <MenuItem value="es-ES">{t('settings.voice.capacitor.language.esES')}</MenuItem>
               </Select>
-              <FormHelperText>选择语音识别的默认语言。</FormHelperText>
+              <FormHelperText>{t('settings.voice.capacitor.language.helper')}</FormHelperText>
             </FormControl>
 
             {/* 自动开始 */}
@@ -313,9 +315,9 @@ const CapacitorASRSettings: React.FC = () => {
                     onChange={(e) => handleSettingsChange('autoStart', e.target.checked)}
                   />
                 }
-                label="自动开始识别"
+                label={t('settings.voice.capacitor.autoStart.label')}
               />
-              <FormHelperText>启用后，打开聊天页面时会自动开始语音识别。</FormHelperText>
+              <FormHelperText>{t('settings.voice.capacitor.autoStart.helper')}</FormHelperText>
             </Box>
 
             {/* 部分结果 */}
@@ -327,14 +329,14 @@ const CapacitorASRSettings: React.FC = () => {
                     onChange={(e) => handleSettingsChange('partialResults', e.target.checked)}
                   />
                 }
-                label="显示部分识别结果"
+                label={t('settings.voice.capacitor.partialResults.label')}
               />
-              <FormHelperText>启用后，会实时显示语音识别的中间结果。</FormHelperText>
+              <FormHelperText>{t('settings.voice.capacitor.partialResults.helper')}</FormHelperText>
             </Box>
 
             {/* 权限状态 */}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              权限状态: {permissionStatus}
+              {t('settings.voice.capacitor.permission.status', { status: permissionStatus })}
             </Typography>
 
             {/* 权限请求按钮 */}
@@ -343,7 +345,7 @@ const CapacitorASRSettings: React.FC = () => {
               onClick={checkAndRequestPermissions}
               sx={{ mb: 3 }}
             >
-              检查并请求麦克风权限
+              {t('settings.voice.capacitor.permission.checkAndRequest')}
             </Button>
           </Paper>
 
@@ -361,7 +363,7 @@ const CapacitorASRSettings: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              语音识别测试
+              {t('settings.voice.capacitor.test.title')}
             </Typography>
 
             {/* 测试按钮 */}
@@ -373,26 +375,26 @@ const CapacitorASRSettings: React.FC = () => {
                 disabled={!settings.enabled}
                 color={isListening ? "error" : "primary"}
               >
-                {isListening ? '停止识别' : '开始识别'}
+                {isListening ? t('settings.voice.capacitor.test.stop') : t('settings.voice.capacitor.test.start')}
               </Button>
             </Box>
 
             {/* 识别结果 */}
             {recognitionText && (
               <Alert severity="info" sx={{ mb: 3 }}>
-                实时识别结果: {recognitionText}
+                {t('settings.voice.capacitor.test.result', { text: recognitionText })}
               </Alert>
             )}
 
             {/* 错误信息 */}
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
-                语音识别错误: {error.message || '未知错误'}
+                {t('settings.voice.capacitor.test.error', { message: error.message || t('common.unknownError') || 'Unknown error' })}
               </Alert>
             )}
 
             <Typography variant="body2" color="text.secondary">
-              点击"开始识别"按钮测试语音识别功能。请确保已授予麦克风权限。
+              {t('settings.voice.capacitor.test.hint')}
             </Typography>
           </Paper>
         </Box>

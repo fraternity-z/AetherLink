@@ -1,0 +1,269 @@
+{
+  "title": "设置",
+  "language": "语言",
+  "theme": "主题",
+  "light": "浅色",
+  "dark": "深色",
+  "system": "跟随系统",
+  "fontSize": "字体大小",
+  "chinese": "简体中文",
+  "english": "English",
+  "groups": {
+    "basic": "基本设置",
+    "modelService": "模型服务",
+    "shortcuts": "快捷方式",
+    "other": "其他设置"
+  },
+  "items": {
+    "appearance": {
+      "title": "外观",
+      "description": "主题、字体大小和语言设置"
+    },
+    "behavior": {
+      "title": "行为",
+      "description": "消息发送和通知设置"
+    },
+    "defaultModel": {
+      "title": "配置模型",
+      "description": "管理AI模型和API密钥"
+    },
+    "topicNaming": {
+      "title": "话题命名设置",
+      "description": "配置话题自动命名功能"
+    },
+    "agentPrompts": {
+      "title": "智能体提示词集合",
+      "description": "浏览和使用内置的丰富提示词模板"
+    },
+    "aiDebate": {
+      "title": "AI辩论设置",
+      "description": "配置AI互相辩论讨论功能"
+    },
+    "modelCombo": {
+      "title": "模型组合",
+      "description": "创建和管理多模型组合"
+    },
+    "webSearch": {
+      "title": "网络搜索",
+      "description": "配置网络搜索和相关服务"
+    },
+    "mcpServer": {
+      "title": "MCP 服务器",
+      "description": "高级服务器配置"
+    },
+    "shortcuts": {
+      "title": "快捷助手",
+      "description": "自定义键盘快捷键"
+    },
+    "quickPhrases": {
+      "title": "快捷短语",
+      "description": "创建常用短语模板"
+    },
+    "workspace": {
+      "title": "工作区管理",
+      "description": "创建和管理文件工作区"
+    },
+    "knowledge": {
+      "title": "知识库设置",
+      "description": "管理知识库配置和嵌入模型"
+    },
+    "data": {
+      "title": "数据设置",
+      "description": "管理数据存储和隐私选项"
+    },
+    "notion": {
+      "title": "Notion 集成",
+      "description": "配置Notion数据库导出设置"
+    },
+    "voice": {
+      "title": "语音功能",
+      "description": "语音识别和文本转语音设置"
+    },
+    "features": {
+      "title": "功能模块",
+      "description": "启用或禁用应用功能"
+    },
+    "about": {
+      "title": "关于我们",
+      "description": "应用信息和技术支持"
+    }
+  },
+  "scrollCacheError": "清理滚动位置缓存失败",
+  "behavior": {
+    "title": "行为设置",
+    "interaction": {
+      "title": "交互行为",
+      "description": "自定义应用的交互方式和通知设置"
+    },
+    "sendWithEnter": {
+      "label": "使用Enter键发送消息",
+      "description": "按Enter键快速发送消息，使用Shift+Enter添加换行"
+    },
+    "enableNotifications": {
+      "label": "启用通知",
+      "description": "当AI助手回复完成时，显示系统通知"
+    },
+    "mobileInputMethodEnterAsNewline": {
+      "label": "移动端输入法换行模式",
+      "description": "开启后，移动端输入法的发送按钮将变为换行功能，需要点击输入框的发送按钮来发送消息"
+    }
+  },
+  "agentPromptsPage": {
+    "title": "智能体提示词集合",
+    "searchSection": {
+      "title": "搜索提示词",
+      "description": "在丰富的提示词库中快速找到您需要的模板",
+      "placeholder": "输入关键词搜索提示词..."
+    },
+    "searchResults": {
+      "title": "搜索结果",
+      "found": "找到 {{count}} 个匹配的提示词",
+      "noResults": "没有找到匹配的提示词"
+    },
+    "category": {
+      "promptsCount": "个提示词"
+    },
+    "promptCard": {
+      "copy": "复制",
+      "copied": "已复制",
+      "copyFailed": "复制失败"
+    }
+  },
+  "systemPromptVariables": {
+    "title": "系统提示词变量注入",
+    "description": "为系统提示词自动注入时间、位置等动态变量",
+    "disabled": "未启用",
+    "infoMessage": "启用后，系统会在发送消息时自动在系统提示词末尾追加相应的变量信息。",
+    "timeVariable": {
+      "label": "时间变量",
+      "description": "自动注入当前时间：{{time}}",
+      "hint": "将在系统提示词末尾自动追加时间信息"
+    },
+    "locationVariable": {
+      "label": "位置变量",
+      "description": "注入位置信息：{{location}}",
+      "placeholder": "输入自定义位置（如：北京市朝阳区）",
+      "hint": "将在系统提示词末尾自动追加位置信息",
+      "hintEmpty": "留空将使用系统检测的位置信息"
+    },
+    "osVariable": {
+      "label": "操作系统变量",
+      "description": "注入操作系统信息：{{os}}",
+      "hint": "将在系统提示词末尾自动追加操作系统信息"
+    },
+    "chips": {
+      "time": "时间",
+      "location": "位置",
+      "system": "系统"
+    }
+  },
+  "quickPhraseManagement": {
+    "title": "快捷短语管理",
+    "description": "管理您的快捷短语，在聊天时快速插入常用内容。",
+    "displaySettings": {
+      "title": "显示设置",
+      "showButton": "在输入框显示快捷短语按钮",
+      "showButtonDescription": "控制是否在聊天输入框中显示快捷短语按钮"
+    },
+    "empty": {
+      "title": "还没有快捷短语",
+      "description": "创建您的第一个快捷短语，让聊天更高效",
+      "addButton": "添加快捷短语"
+    },
+    "list": {
+      "characters": "字符"
+    },
+    "dialog": {
+      "add": {
+        "title": "添加快捷短语",
+        "titleLabel": "标题",
+        "titlePlaceholder": "为您的快捷短语起个名字",
+        "contentLabel": "内容",
+        "contentPlaceholder": "输入快捷短语的内容...",
+        "contentLength": "内容长度：{{count}} 字符",
+        "cancel": "取消",
+        "submit": "添加"
+      },
+      "edit": {
+        "title": "编辑快捷短语",
+        "titleLabel": "标题",
+        "titlePlaceholder": "为您的快捷短语起个名字",
+        "contentLabel": "内容",
+        "contentPlaceholder": "输入快捷短语的内容...",
+        "contentLength": "内容长度：{{count}} 字符",
+        "cancel": "取消",
+        "submit": "更新"
+      }
+    },
+    "actions": {
+      "addLabel": "添加快捷短语",
+      "deleteConfirm": "确定要删除这个快捷短语吗？"
+    },
+    "loading": "加载中...",
+    "errors": {
+      "loadFailed": "加载快捷短语失败",
+      "saveFailed": "保存快捷短语失败",
+      "deleteFailed": "删除快捷短语失败"
+    }
+  },
+  "notion": {
+    "title": "Notion 集成设置",
+    "pageTitle": "Notion 集成设置",
+    "configTitle": "Notion 集成配置",
+    "description": "配置Notion集成，将对话导出到您的Notion数据库。",
+    "viewTutorial": "查看配置教程",
+    "enableExport": "启用Notion导出",
+    "fields": {
+      "apiKey": {
+        "label": "Notion API 密钥",
+        "placeholder": "secret_xxxxxxxxxxxxxxxxxxxxx",
+        "helperText": "在 https://www.notion.so/my-integrations 创建集成并获取API密钥"
+      },
+      "databaseId": {
+        "label": "数据库 ID",
+        "placeholder": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "helperText": "从Notion数据库URL中提取的ID部分"
+      },
+      "pageTitleField": {
+        "label": "页面标题字段名",
+        "placeholder": "Name",
+        "helperText": "数据库中用作标题的字段名称，通常是 'Name' 或 '名称'"
+      },
+      "dateField": {
+        "label": "创建日期字段名（可选）",
+        "placeholder": "创建日期",
+        "helperText": "如果数据库中有日期字段，填入字段名称；留空则不添加日期信息"
+      }
+    },
+    "testConnection": {
+      "button": "测试连接",
+      "testing": "测试中...",
+      "success": "连接成功！数据库\"{{name}}\"已就绪",
+      "successUnknown": "连接成功！数据库\"未命名\"已就绪",
+      "error": "连接失败: {{message}}",
+      "errorMissingFields": "请先填写API密钥和数据库ID",
+      "errorTitleFieldNotFound": "数据库中未找到标题字段\"{{field}}\"，请检查字段名称是否正确"
+    },
+    "corsInfo": {
+      "title": "关于跨域问题：",
+      "webDev": "Web端开发环境下已配置代理，可直接使用。移动端应用已配置 CORS 绕过插件。",
+      "production": "生产环境下如遇到跨域错误，建议：",
+      "suggestion1": "使用移动应用版本（自动绕过CORS）",
+      "suggestion2": "部署时配置服务器代理",
+      "suggestion3": "使用支持CORS的环境",
+      "note": "注意：请重启开发服务器以使代理配置生效。"
+    },
+    "setupSteps": {
+      "title": "配置步骤：",
+      "step1": "访问",
+      "step1Link": "Notion Integrations",
+      "step1Suffix": "创建一个新的集成",
+      "step2": "复制生成的API密钥并填入上方的\"Notion API 密钥\"字段",
+      "step3": "在Notion中创建一个数据库，并将集成连接到该数据库",
+      "step4": "从数据库URL中复制数据库ID并填入\"数据库 ID\"字段",
+      "step5": "确认数据库中标题字段的名称，通常是\"Name\"或\"名称\"",
+      "step6": "（可选）如果需要添加创建日期，请填入数据库中日期字段的名称",
+      "step7": "点击\"测试连接\"按钮验证配置是否正确"
+    }
+  }
+}

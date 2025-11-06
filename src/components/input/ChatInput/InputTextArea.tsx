@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { useTheme } from '@mui/material/styles';
@@ -100,6 +100,25 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   useEffect(() => {
     addCustomScrollbarStyles(isDarkMode);
   }, [isDarkMode]);
+
+  // 修复折叠时高度异常：只在expanded变化时执行，避免每次输入都触发
+  // 注意：这个组件中不需要额外处理，因为父组件已经处理了
+  // 这里保留是为了确保IntegratedChatInput也能正确工作
+  const prevExpandedRef = useRef(expanded);
+  useEffect(() => {
+    // 只处理从展开到折叠的状态变化
+    if (prevExpandedRef.current && !expanded && textareaRef.current) {
+      // 使用requestAnimationFrame确保DOM更新完成
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          // 重置高度，让CSS的height属性重新生效
+          textareaRef.current.style.height = 'auto';
+        }
+      });
+    }
+    // 更新上一次的expanded状态
+    prevExpandedRef.current = expanded;
+  }, [expanded, textareaRef]); // 移除message依赖，避免每次输入都触发
 
   // 增强的 handleKeyDown 以支持展开功能 - 使用 useCallback 避免重复创建
   const enhancedHandleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {

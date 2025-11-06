@@ -6,6 +6,7 @@ import {
   Button,
 } from '@mui/material';
 import { Volume2 as VolumeUpIcon } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 interface TTSTestSectionProps {
   testText: string;
@@ -30,6 +31,8 @@ const TTSTestSection: React.FC<TTSTestSectionProps> = ({
   azureApiKey,
   siliconFlowApiKey,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Box sx={{ mt: { xs: 2, sm: 3 } }}>
       <Typography
@@ -41,14 +44,14 @@ const TTSTestSection: React.FC<TTSTestSectionProps> = ({
           color: 'text.primary',
         }}
       >
-        测试语音效果
+        {t('settings.voice.test.tts.title')}
       </Typography>
 
       <TextField
         fullWidth
         multiline
         rows={3} // 固定行数
-        label="测试文本"
+        label={t('settings.voice.test.tts.textLabel')}
         value={testText}
         onChange={(e) => setTestText(e.target.value)}
         variant="outlined"
@@ -98,7 +101,7 @@ const TTSTestSection: React.FC<TTSTestSectionProps> = ({
             transition: 'all 0.2s ease-in-out',
           }}
         >
-          {isTestPlaying ? "停止播放" : "播放测试"}
+          {isTestPlaying ? t('settings.voice.test.tts.stop') : t('settings.voice.test.tts.play')}
         </Button>
       </Box>
     </Box>

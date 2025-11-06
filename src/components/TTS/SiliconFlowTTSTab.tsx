@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import CustomSwitch from '../CustomSwitch';
+import { useTranslation } from '../../i18n';
 
 // 硅基流动TTS配置接口
 export interface SiliconFlowTTSSettings {
@@ -57,6 +58,7 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
   settings,
   onSettingsChange,
 }) => {
+  const { t } = useTranslation();
   // 🚀 性能优化：使用函数式更新避免依赖整个settings对象
   const handleApiKeyChange = useCallback((value: string) => {
     onSettingsChange(prev => ({ ...prev, apiKey: value }));
@@ -103,20 +105,20 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
           color: 'text.primary',
         }}
       >
-        硅基流动 TTS API 设置
+        {t('settings.voice.tabSettings.siliconflow.title')}
       </Typography>
 
       <form onSubmit={handleSubmit}>
         <Stack spacing={{ xs: 2, sm: 3 }}>
         <FormControl fullWidth variant="outlined">
           <TextField
-            label="API密钥"
+            label={t('settings.voice.tabSettings.siliconflow.apiKey')}
             variant="outlined"
             value={settings.apiKey}
             onChange={(e) => handleApiKeyChange(e.target.value)}
             type={settings.showApiKey ? 'text' : 'password'}
-            placeholder="请输入硅基流动API密钥"
-            helperText="获取API密钥请访问：https://siliconflow.cn/"
+            placeholder={t('settings.voice.tabSettings.siliconflow.apiKeyPlaceholder')}
+            helperText={t('settings.voice.tabSettings.siliconflow.apiKeyHelper')}
             slotProps={{
               input: {
                 endAdornment: (
@@ -157,11 +159,11 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>TTS模型</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.siliconflow.model')}</InputLabel>
           <Select
             value={settings.selectedModel}
             onChange={(e) => handleModelChange(e.target.value)}
-            label="TTS模型"
+            label={t('settings.voice.tabSettings.siliconflow.model')}
           >
             {SILICONFLOW_MODELS.map((model) => (
               <MenuItem key={model.value} value={model.value}>
@@ -170,16 +172,16 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            选择适合的TTS模型，不同模型有不同的语音特色
+            {t('settings.voice.tabSettings.siliconflow.modelHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>语音选择</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.siliconflow.voice')}</InputLabel>
           <Select
             value={settings.selectedVoice}
             onChange={(e) => handleVoiceChange(e.target.value)}
-            label="语音选择"
+            label={t('settings.voice.tabSettings.siliconflow.voice')}
             disabled={!settings.selectedModel}
           >
             {currentVoices.map((voice) => (
@@ -190,8 +192,8 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
           </Select>
           <FormHelperText>
             {settings.selectedModel
-              ? '选择您喜欢的语音风格'
-              : '请先选择TTS模型'
+              ? t('settings.voice.tabSettings.siliconflow.voiceHelper')
+              : t('settings.voice.tabSettings.siliconflow.voiceHelperNoModel')
             }
           </FormHelperText>
         </FormControl>
@@ -203,7 +205,7 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
               onChange={(e) => handleStreamToggle(e.target.checked)}
             />
           }
-          label="启用流式输出"
+          label={t('settings.voice.tabSettings.siliconflow.useStream')}
           sx={{
             '& .MuiFormControlLabel-label': {
               fontSize: { xs: '0.9rem', sm: '1rem' },
@@ -212,7 +214,7 @@ export const SiliconFlowTTSTab: React.FC<SiliconFlowTTSTabProps> = ({
           }}
         />
         <FormHelperText sx={{ mt: -1, ml: 0 }}>
-          流式输出可以实现更快的语音响应，音频将边生成边播放
+          {t('settings.voice.tabSettings.siliconflow.useStreamHelper')}
         </FormHelperText>
         </Stack>
       </form>

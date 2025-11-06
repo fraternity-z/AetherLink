@@ -1,0 +1,176 @@
+{
+  "mcpServer": {
+    "pageTitle": "MCP Server",
+    "addButton": "Add",
+    "emptyState": {
+      "title": "No MCP Servers",
+      "description": "MCP servers provide extra tools & features",
+      "addServer": "Add Server",
+      "importConfig": "Import Config",
+      "builtinServers": "Built-in Servers"
+    },
+    "serverList": {
+      "title": "MCP Servers",
+      "description": "Manage server configs & status"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "description": "Add & manage servers quickly",
+      "import": {
+        "title": "Import Config",
+        "description": "Import from JSON file"
+      },
+      "builtin": {
+        "title": "Built-in Servers",
+        "description": "Add pre-configured servers"
+      }
+    },
+    "serverTypes": {
+      "httpStream": "HTTP Stream",
+      "inMemory": "Memory",
+      "unknown": "Unknown"
+    },
+    "status": {
+      "active": "Active"
+    },
+    "addDialog": {
+      "title": "Add MCP Server",
+      "serverName": "Server Name",
+      "serverType": "Server Type",
+      "serverUrl": "Server URL",
+      "description": "Description (Optional)",
+      "enableSSE": "Enable SSE Stream",
+      "cancel": "Cancel",
+      "add": "Add",
+      "placeholders": {
+        "url": "https://example.com/mcp"
+      },
+      "types": {
+        "httpStream": "HTTP Stream (SSE+HTTP)",
+        "inMemory": "Memory Server"
+      }
+    },
+    "importDialog": {
+      "title": "Import MCP Config",
+      "description": "Paste JSON config. Example format:",
+      "label": "JSON Config",
+      "placeholder": "Paste JSON config here...",
+      "cancel": "Cancel",
+      "import": "Import"
+    },
+    "builtinDialog": {
+      "title": "Add Built-in Servers",
+      "description": "Select servers to add. Provided by Cherry Studio, ready to use.",
+      "added": "Added",
+      "add": "Add",
+      "close": "Close",
+      "servers": {
+        "@aether/time": {
+          "description": "Get current time & date. Supports multiple formats (localized, ISO 8601, timestamp) & timezone settings",
+          "tags": {
+            "时间": "Time",
+            "日期": "Date",
+            "工具": "Tool"
+          }
+        },
+        "@aether/fetch": {
+          "description": "Fetch web content. Supports HTML, JSON & plain text with custom headers",
+          "tags": {
+            "网页": "Web",
+            "抓取": "Fetch",
+            "HTTP": "HTTP",
+            "API": "API"
+          }
+        },
+        "@aether/calculator": {
+          "description": "Advanced calculator. Supports basic math, scientific calc, base conversion, unit conversion & statistics",
+          "tags": {
+            "计算": "Calc",
+            "数学": "Math",
+            "转换": "Convert",
+            "统计": "Stats",
+            "工具": "Tool"
+          }
+        }
+      }
+    },
+    "messages": {
+      "serverEnabled": "Server enabled",
+      "serverDisabled": "Server disabled",
+      "operationFailed": "Operation failed",
+      "fillRequiredInfo": "Please fill required fields",
+      "urlRequired": "HTTP Stream server requires URL",
+      "serverAdded": "Server added",
+      "addFailed": "Add failed",
+      "serverExists": "Server {{name}} exists",
+      "builtinServerAdded": "Server {{name}} added",
+      "builtinAddFailed": "Failed to add built-in server",
+      "serverDeleted": "Server \"{{name}}\" deleted",
+      "deleteFailed": "Delete failed",
+      "importSuccess": "Imported {{count}} servers",
+      "importPartial": "Imported {{count}}, {{errors}} failed",
+      "importFailed": "Import failed: {{errors}}",
+      "jsonParseError": "JSON parse error: {{error}}",
+      "jsonFormatError": "Invalid JSON: missing mcpServers",
+      "importFromJson": "Imported from JSON: {{name}}",
+      "loadBuiltinFailed": "Failed to load built-in servers",
+      "saveSuccess": "Saved successfully",
+      "saveFailed": "Save failed",
+      "testSuccess": "Connection test successful",
+      "testFailed": "Connection test failed",
+      "loadDataFailed": "Failed to load server data"
+    },
+    "detail": {
+      "pageTitle": "MCP Server Details",
+      "buttons": {
+        "test": "Test",
+        "save": "Save"
+      },
+      "basicInfo": {
+        "title": "Basic Info",
+        "enableServer": "Enable Server",
+        "serverName": "Server Name",
+        "serverType": "Server Type",
+        "serverUrl": "Server URL",
+        "description": "Description",
+        "timeout": "Timeout (seconds)",
+        "enableSSE": "Enable SSE Stream",
+        "types": {
+          "httpStream": "HTTP Stream (SSE+HTTP)",
+          "inMemory": "Memory Server"
+        },
+        "placeholders": {
+          "url": "https://example.com/mcp"
+        }
+      },
+      "advanced": {
+        "title": "Advanced",
+        "headers": "Headers (JSON)",
+        "env": "Env Variables (JSON)",
+        "args": "Arguments (one per line)",
+        "placeholders": {
+          "headers": "{\n  \"Authorization\": \"Bearer token\",\n  \"Content-Type\": \"application/json\"\n}",
+          "env": "{\n  \"API_KEY\": \"your-api-key\",\n  \"DEBUG\": \"true\"\n}",
+          "args": "--verbose\n--config=/path/to/config"
+        }
+      },
+      "tools": {
+        "title": "Tools",
+        "empty": "No tools available",
+        "noDescription": "No description"
+      },
+      "prompts": {
+        "title": "Prompts",
+        "empty": "No prompts available",
+        "noDescription": "No description"
+      },
+      "resources": {
+        "title": "Resources",
+        "empty": "No resources available",
+        "noDescription": "No description",
+        "uri": "URI"
+      }
+    }
+  }
+}
+

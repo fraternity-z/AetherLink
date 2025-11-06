@@ -119,6 +119,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     showCharCount,
     handleCompositionStart,
     handleCompositionEnd,
+    adjustTextareaHeight, // 添加这个，用于重置高度
     isMobile,
     isTablet
   } = useChatInputLogic({
@@ -272,51 +273,83 @@ const ChatInput: React.FC<ChatInputProps> = ({
     return () => window.removeEventListener('resize', updateExpandedHeight);
   }, []);
 
-  // 检测是否需要显示展开按钮和隐藏语音按钮 - 改为基于字数判断
-  const checkButtonVisibility = useCallback(() => {
-    // 计算文本行数：根据字符数估算行数
+  // 性能优化：使用useMemo缓存按钮可见性计算结果，避免重复计算
+  const buttonVisibility = React.useMemo(() => {
     const textLength = message.length;
-    const containerWidth = isMobile ? 280 : isTablet ? 400 : 500; // 估算容器宽度
-    const charsPerLine = Math.floor(containerWidth / (isTablet ? 17 : 16)); // 根据字体大小估算每行字符数
-
-    // 计算换行符数量
-    const newlineCount = (message.match(/\n/g) || []).length;
-
-    // 估算总行数：字符行数 + 换行符行数
-    const estimatedLines = Math.ceil(textLength / charsPerLine) + newlineCount;
-
-    // 当文本超过3行时隐藏语音按钮，为输入区域让出空间
-    setShouldHideVoiceButton(estimatedLines > 3);
-
-    if (!expanded) {
-      // 当文本超过4行时显示展开按钮
-      setShowExpandButton(estimatedLines > 4);
+    
+    // 性能优化：使用字符串操作替代正则表达式（大文本时更快）
+    let newlineCount = 0;
+    if (textLength < 1000) {
+      // 小文本使用split（快速）
+      newlineCount = message.split('\n').length - 1;
     } else {
-      // 展开状态下始终显示展开按钮（用于收起）
-      setShowExpandButton(true);
+      // 大文本时使用循环（避免创建大量数组）
+      for (let i = 0; i < Math.min(textLength, 10000); i++) {
+        if (message[i] === '\n') newlineCount++;
+      }
     }
+    
+    const containerWidth = isMobile ? 280 : isTablet ? 400 : 500;
+    const charsPerLine = Math.floor(containerWidth / (isTablet ? 17 : 16));
+    const estimatedLines = Math.ceil(textLength / charsPerLine) + newlineCount;
+    
+    return {
+      shouldHideVoiceButton: estimatedLines > 3,
+      showExpandButton: expanded ? true : estimatedLines > 4
+    };
   }, [message, isMobile, isTablet, expanded]);
 
-  // 监听消息内容变化，检测按钮显示状态
+  // 使用防抖更新按钮可见性状态，避免频繁setState
+  const buttonVisibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    checkButtonVisibility();
-  }, [message, checkButtonVisibility]);
+    // 清除之前的定时器
+    if (buttonVisibilityTimeoutRef.current) {
+      clearTimeout(buttonVisibilityTimeoutRef.current);
+    }
+    
+    // 使用requestAnimationFrame + 防抖优化
+    buttonVisibilityTimeoutRef.current = setTimeout(() => {
+      requestAnimationFrame(() => {
+        setShouldHideVoiceButton(buttonVisibility.shouldHideVoiceButton);
+        setShowExpandButton(buttonVisibility.showExpandButton);
+      });
+    }, 100); // 防抖延迟
+    
+    return () => {
+      if (buttonVisibilityTimeoutRef.current) {
+        clearTimeout(buttonVisibilityTimeoutRef.current);
+      }
+    };
+  }, [buttonVisibility]);
 
-  // 监听展开状态变化
-  useEffect(() => {
-    // 延迟检测，确保DOM更新完成
-    setTimeout(checkButtonVisibility, 100);
-  }, [expanded, checkButtonVisibility]);
-
-  // 优化的 handleChange - 移除URL检测，添加防抖机制
+  // 优化的 handleChange - 移除重复调用，只保留核心逻辑
   const enhancedHandleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // 调用 hook 提供的 handleChange
     handleChange(e);
-    // 使用防抖延迟检测按钮显示状态，避免频繁计算
-    setTimeout(checkButtonVisibility, 100);
-  }, [handleChange, checkButtonVisibility]);
+    // 移除重复的checkButtonVisibility调用，由useEffect统一处理
+  }, [handleChange]);
 
-  // 展开切换函数
+  // 修复折叠时高度异常：只在expanded变化时执行，避免每次输入都触发
+  const prevExpandedRef = useRef(expanded);
+  useEffect(() => {
+    // 只处理从展开到折叠的状态变化
+    if (prevExpandedRef.current && !expanded && textareaRef.current) {
+      // 使用requestAnimationFrame确保DOM更新完成后再重置
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          // 折叠时重新计算高度（无论是否有内容）
+          // 因为handleChange中的adjustTextareaHeight会处理正常的高度调整
+          // 这里只需要触发一次重新计算即可
+          adjustTextareaHeight(textareaRef.current);
+        }
+      });
+    }
+    // 更新上一次的expanded状态
+    prevExpandedRef.current = expanded;
+  }, [expanded, textareaRef, adjustTextareaHeight]); // 移除message依赖，避免每次输入都触发
+
+  // 展开切换函数 - 修复折叠时高度异常问题
   const handleExpandToggle = useCallback(() => {
     setExpanded(!expanded);
   }, [expanded]);

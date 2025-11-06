@@ -97,4 +97,17 @@ declare var webkitSpeechRecognition: {
 interface Window {
   SpeechRecognition?: typeof SpeechRecognition;
   webkitSpeechRecognition?: typeof webkitSpeechRecognition;
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+}
+
+interface IdleRequestOptions {
+  timeout?: number;
+}
+
+type IdleRequestCallback = (deadline: IdleDeadline) => void;
+
+interface IdleDeadline {
+  readonly didTimeout: boolean;
+  timeRemaining(): number;
 }

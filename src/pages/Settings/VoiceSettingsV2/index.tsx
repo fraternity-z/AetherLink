@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -21,78 +21,85 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import { getStorageItem } from '../../../shared/utils/storage';
+import { useTranslation } from '../../../i18n';
 
-// TTS服务配置
-const TTS_SERVICES = [
+// TTS服务配置 - 将在组件内使用 i18n
+const getTTSServices = (t: any) => [
   {
     id: 'siliconflow',
-    name: '硅基流动 TTS',
-    description: '国产化TTS服务，支持多语言语音合成',
+    name: t('settings.voice.services.siliconflow.name'),
+    description: t('settings.voice.services.siliconflow.description'),
     icon: '🚀',
     color: '#9333EA',
-    features: ['CosyVoice2-0.5B', '多语言支持', '情感控制', '高性价比'],
+    features: t('settings.voice.services.siliconflow.features', { returnObjects: true }),
     status: 'recommended',
     path: '/settings/voice/tts/siliconflow'
   },
   {
     id: 'openai',
-    name: 'OpenAI TTS',
-    description: 'OpenAI官方TTS服务，音质优秀',
+    name: t('settings.voice.services.openai.name'),
+    description: t('settings.voice.services.openai.description'),
     icon: '🤖',
     color: '#10B981',
-    features: ['TTS-1', 'TTS-1-HD', '6种语音', '流式传输'],
+    features: t('settings.voice.services.openai.features', { returnObjects: true }),
     status: 'premium',
     path: '/settings/voice/tts/openai'
   },
   {
     id: 'azure',
-    name: '微软Azure TTS',
-    description: '企业级TTS服务，功能丰富',
+    name: t('settings.voice.services.azure.name'),
+    description: t('settings.voice.services.azure.description'),
     icon: '☁️',
     color: '#3B82F6',
-    features: ['Neural语音', 'SSML支持', '多种风格', '角色扮演'],
+    features: t('settings.voice.services.azure.features', { returnObjects: true }),
     status: 'enterprise',
     path: '/settings/voice/tts/azure'
   }
 ];
 
-// ASR服务配置
-const ASR_SERVICES = [
+// ASR服务配置 - 将在组件内使用 i18n
+const getASRServices = (t: any) => [
   {
     id: 'capacitor',
-    name: 'Capacitor 语音识别',
-    description: '基于设备的本地语音识别服务',
+    name: t('settings.voice.services.capacitor.name'),
+    description: t('settings.voice.services.capacitor.description'),
     icon: '📱',
     color: '#F59E0B',
-    features: ['本地处理', '实时识别', '多语言', '隐私保护'],
+    features: t('settings.voice.services.capacitor.features', { returnObjects: true }),
     status: 'free',
     path: '/settings/voice/asr/capacitor'
   },
   {
     id: 'openai-whisper',
-    name: 'OpenAI Whisper',
-    description: '强大的云端语音识别模型',
+    name: t('settings.voice.services.openaiWhisper.name'),
+    description: t('settings.voice.services.openaiWhisper.description'),
     icon: '🎯',
     color: '#EF4444',
-    features: ['高精度', '多语言', '噪音抑制', '云端处理'],
+    features: t('settings.voice.services.openaiWhisper.features', { returnObjects: true }),
     status: 'premium',
     path: '/settings/voice/asr/openai-whisper'
   }
 ];
 
-// 状态标签配置
-const STATUS_CONFIG = {
-  recommended: { label: '推荐', color: 'primary' as const },
-  premium: { label: '付费', color: 'warning' as const },
-  enterprise: { label: '企业级', color: 'info' as const },
-  free: { label: '免费', color: 'success' as const }
-};
+// 状态标签配置 - 将在组件内使用 i18n
+const getStatusConfig = (t: any) => ({
+  recommended: { label: t('settings.voice.status.recommended'), color: 'primary' as const },
+  premium: { label: t('settings.voice.status.premium'), color: 'warning' as const },
+  enterprise: { label: t('settings.voice.status.enterprise'), color: 'info' as const },
+  free: { label: t('settings.voice.status.free'), color: 'success' as const }
+});
 
 const VoiceSettingsV2: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0); // 0: TTS, 1: ASR
   const [currentTTSService, setCurrentTTSService] = useState<string>('siliconflow');
   const [currentASRService, setCurrentASRService] = useState<string>('capacitor');
+
+  // 使用 useMemo 缓存服务配置，避免每次渲染重新计算
+  const ttsServices = useMemo(() => getTTSServices(t), [t]);
+  const asrServices = useMemo(() => getASRServices(t), [t]);
+  const statusConfig = useMemo(() => getStatusConfig(t), [t]);
 
   // 提取 loadCurrentServices 到 useEffect 外部
   const loadCurrentServices = useCallback(async () => {
@@ -103,9 +110,9 @@ const VoiceSettingsV2: React.FC = () => {
       setCurrentTTSService(selectedTTSService);
       setCurrentASRService(selectedASRService);
     } catch (error) {
-      console.error('加载当前服务状态失败:', error);
+      console.error(t('settings.voice.common.loadingError', { service: 'current service status' }), error);
     }
-  }, []);
+  }, [t]);
 
   // 加载当前服务状态
   useEffect(() => {
@@ -141,7 +148,7 @@ const VoiceSettingsV2: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [loadCurrentServices]);
 
-  const currentServices = activeTab === 0 ? TTS_SERVICES : ASR_SERVICES;
+  const currentServices = activeTab === 0 ? ttsServices : asrServices;
 
   return (
     <Box sx={{
@@ -174,7 +181,7 @@ const VoiceSettingsV2: React.FC = () => {
           <IconButton
             edge="start"
             onClick={handleBack}
-            aria-label="返回"
+            aria-label={t('settings.voice.back')}
             size="large"
             sx={{
               color: 'primary.main',
@@ -200,8 +207,8 @@ const VoiceSettingsV2: React.FC = () => {
               WebkitBackgroundClip: 'text',
               color: 'transparent',
             }}
-          >
-            语音功能设置
+            >
+            {t('settings.voice.title')}
           </Typography>
         </Toolbar>
       </AppBar>
@@ -261,8 +268,8 @@ const VoiceSettingsV2: React.FC = () => {
               },
             }}
           >
-            <Tab label="文本转语音 (TTS)" icon={<Volume2 size={20} />} iconPosition="start" />
-            <Tab label="语音识别 (ASR)" icon={<Mic size={20} />} iconPosition="start" />
+            <Tab label={t('settings.voice.tabs.tts')} icon={<Volume2 size={20} />} iconPosition="start" />
+            <Tab label={t('settings.voice.tabs.asr')} icon={<Mic size={20} />} iconPosition="start" />
           </Tabs>
 
           {/* 服务卡片网格 */}
@@ -347,7 +354,7 @@ const VoiceSettingsV2: React.FC = () => {
                             (activeTab === 1 && currentASRService === service.id)) && (
                             <Chip
                               size="small"
-                              label="当前启用"
+                              label={t('settings.voice.status.active')}
                               color="success"
                               variant="filled"
                               sx={{
@@ -362,8 +369,8 @@ const VoiceSettingsV2: React.FC = () => {
                           {/* 服务状态标签 */}
                           <Chip
                             size="small"
-                            label={STATUS_CONFIG[service.status as keyof typeof STATUS_CONFIG].label}
-                            color={STATUS_CONFIG[service.status as keyof typeof STATUS_CONFIG].color}
+                            label={statusConfig[service.status as keyof typeof statusConfig].label}
+                            color={statusConfig[service.status as keyof typeof statusConfig].color}
                             variant="outlined"
                             sx={{
                               fontSize: '0.7rem',

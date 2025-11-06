@@ -1,0 +1,55 @@
+{
+  "title": "Developer Tools",
+  "back": "Back",
+  "settings": "Settings",
+  "clear": "Clear",
+  "tabs": {
+    "console": "Console",
+    "network": "Network"
+  },
+  "settingsDialog": {
+    "title": "Developer Tools Settings",
+    "autoScroll": {
+      "label": "Auto Scroll to Bottom",
+      "description": "Automatically scroll to the bottom of the console when new logs appear"
+    },
+    "preserveLog": {
+      "label": "Preserve Log",
+      "description": "Preserve log records after page refresh"
+    },
+    "close": "Close"
+  },
+  "clearDialog": {
+    "title": "Confirm Clear",
+    "consoleMessage": "Are you sure you want to clear all console logs?",
+    "networkMessage": "Are you sure you want to clear all network records?",
+    "warning": "This action cannot be undone. Please proceed with caution.",
+    "cancel": "Cancel",
+    "clear": "Clear"
+  },
+  "console": {
+    "searchPlaceholder": "Search console output...",
+    "level": "Level:",
+    "empty": "No console output",
+    "noResults": "No matching logs found",
+    "commandPlaceholder": "Enter JavaScript command and press Enter to execute...",
+    "executeTooltip": "Execute command (Enter)"
+  },
+  "network": {
+    "detailsTitle": "Network Request Details",
+    "url": "Request URL",
+    "method": "Request Method",
+    "status": "Status",
+    "duration": "Duration",
+    "responseSize": "Response Size",
+    "requestHeaders": "Request Headers",
+    "requestBody": "Request Body",
+    "responseHeaders": "Response Headers",
+    "responseBody": "Response Body",
+    "searchPlaceholder": "Search network requests...",
+    "onlyErrors": "Errors Only",
+    "showDataUrls": "Show Data URLs",
+    "empty": "No network request records",
+    "noResults": "No matching network requests found"
+  }
+}

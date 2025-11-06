@@ -14,6 +14,7 @@ import {
   Switch,
 } from '@mui/material';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 // OpenAI TTS配置接口
 export interface OpenAITTSSettings {
@@ -65,6 +66,7 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
   settings,
   onSettingsChange,
 }) => {
+  const { t } = useTranslation();
   // 🚀 性能优化：使用useCallback缓存事件处理函数
   const handleApiKeyChange = useCallback((value: string) => {
     onSettingsChange({ ...settings, apiKey: value });
@@ -102,20 +104,20 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
   return (
     <>
       <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-        OpenAI TTS API 设置
+        {t('settings.voice.tabSettings.openai.title')}
       </Typography>
 
       <form onSubmit={handleSubmit}>
         <Stack spacing={3}>
         <FormControl fullWidth variant="outlined">
           <TextField
-            label="OpenAI API密钥"
+            label={t('settings.voice.tabSettings.openai.apiKey')}
             variant="outlined"
             value={settings.apiKey}
             onChange={(e) => handleApiKeyChange(e.target.value)}
             type={settings.showApiKey ? 'text' : 'password'}
-            placeholder="请输入OpenAI API密钥"
-            helperText="获取API密钥请访问：https://platform.openai.com/api-keys"
+            placeholder={t('settings.voice.tabSettings.openai.apiKeyPlaceholder')}
+            helperText={t('settings.voice.tabSettings.openai.apiKeyHelper')}
             slotProps={{
               input: {
                 endAdornment: (
@@ -133,11 +135,11 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>TTS模型</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.openai.model')}</InputLabel>
           <Select
             value={settings.selectedModel}
             onChange={(e) => handleModelChange(e.target.value)}
-            label="TTS模型"
+            label={t('settings.voice.tabSettings.openai.model')}
             MenuProps={{
               disableAutoFocus: true,
               disableRestoreFocus: true
@@ -150,16 +152,16 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            TTS-1适合快速生成，TTS-1-HD质量更高但速度较慢
+            {t('settings.voice.tabSettings.openai.modelHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>语音选择</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.openai.voice')}</InputLabel>
           <Select
             value={settings.selectedVoice}
             onChange={(e) => handleVoiceChange(e.target.value)}
-            label="语音选择"
+            label={t('settings.voice.tabSettings.openai.voice')}
             MenuProps={{
               disableAutoFocus: true,
               disableRestoreFocus: true
@@ -172,16 +174,16 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            选择您喜欢的语音风格，每种语音都有独特的特色
+            {t('settings.voice.tabSettings.openai.voiceHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>输出格式</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.openai.format')}</InputLabel>
           <Select
             value={settings.selectedFormat}
             onChange={(e) => handleFormatChange(e.target.value)}
-            label="输出格式"
+            label={t('settings.voice.tabSettings.openai.format')}
             MenuProps={{
               disableAutoFocus: true,
               disableRestoreFocus: true
@@ -194,12 +196,12 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            推荐使用MP3格式，兼容性最好
+            {t('settings.voice.tabSettings.openai.formatHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <Typography gutterBottom>语速控制</Typography>
+          <Typography gutterBottom>{t('settings.voice.tabSettings.openai.speed')}</Typography>
           <Slider
             value={settings.speed}
             min={0.25}
@@ -214,7 +216,7 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
             ]}
           />
           <FormHelperText>
-            调整语音播放速度 (0.25x - 4.0x，默认1.0x)
+            {t('settings.voice.tabSettings.openai.speedHelper')}
           </FormHelperText>
         </FormControl>
 
@@ -226,10 +228,10 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
               color="primary"
             />
           }
-          label="启用流式传输"
+          label={t('settings.voice.tabSettings.openai.useStream')}
         />
         <FormHelperText>
-          流式传输可以更快地开始播放，但可能影响音质
+          {t('settings.voice.tabSettings.openai.useStreamHelper')}
         </FormHelperText>
         </Stack>
       </form>

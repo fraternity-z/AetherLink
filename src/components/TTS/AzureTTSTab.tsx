@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import CustomSwitch from '../CustomSwitch';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
+import { useTranslation } from '../../i18n';
 
 // Azure TTS配置接口
 export interface AzureTTSSettings {
@@ -130,6 +131,7 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
   settings,
   onSettingsChange,
 }) => {
+  const { t } = useTranslation();
   // 🚀 性能优化：使用useCallback缓存事件处理函数
   const handleApiKeyChange = useCallback((value: string) => {
     onSettingsChange({ ...settings, apiKey: value });
@@ -187,20 +189,20 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
   return (
     <>
       <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-        微软Azure TTS API 设置
+        {t('settings.voice.tabSettings.azure.title')}
       </Typography>
 
       <form onSubmit={handleSubmit}>
         <Stack spacing={3}>
         <FormControl fullWidth variant="outlined">
           <TextField
-            label="Azure API密钥"
+            label={t('settings.voice.tabSettings.azure.apiKey')}
             variant="outlined"
             value={settings.apiKey}
             onChange={(e) => handleApiKeyChange(e.target.value)}
             type={settings.showApiKey ? 'text' : 'password'}
-            placeholder="请输入Azure Speech Services API密钥"
-            helperText="获取API密钥请访问：https://portal.azure.com/"
+            placeholder={t('settings.voice.tabSettings.azure.apiKeyPlaceholder')}
+            helperText={t('settings.voice.tabSettings.azure.apiKeyHelper')}
             slotProps={{
               input: {
                 endAdornment: (
@@ -218,11 +220,11 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>服务区域</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.azure.region')}</InputLabel>
           <Select
             value={settings.region}
             onChange={(e) => handleRegionChange(e.target.value)}
-            label="服务区域"
+            label={t('settings.voice.tabSettings.azure.region')}
             MenuProps={{
               disableAutoFocus: true,
               disableRestoreFocus: true
@@ -235,16 +237,16 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            选择离您最近的Azure服务区域以获得最佳性能
+            {t('settings.voice.tabSettings.azure.regionHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>语音选择</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.azure.voice')}</InputLabel>
           <Select
             value={settings.voiceName}
             onChange={(e) => handleVoiceChange(e.target.value)}
-            label="语音选择"
+            label={t('settings.voice.tabSettings.azure.voice')}
             MenuProps={{
               disableAutoFocus: true,
               disableRestoreFocus: true
@@ -257,16 +259,16 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            选择您喜欢的语音风格，Neural语音支持更多表达风格
+            {t('settings.voice.tabSettings.azure.voiceHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>输出格式</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.azure.outputFormat')}</InputLabel>
           <Select
             value={settings.outputFormat}
             onChange={(e) => handleOutputFormatChange(e.target.value)}
-            label="输出格式"
+            label={t('settings.voice.tabSettings.azure.outputFormat')}
           >
             {AZURE_OUTPUT_FORMATS.map((format) => (
               <MenuItem key={format.value} value={format.value}>
@@ -275,65 +277,65 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            推荐使用MP3格式，兼容性最好
+            {t('settings.voice.tabSettings.azure.outputFormatHelper')}
           </FormHelperText>
         </FormControl>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <FormControl fullWidth>
-            <InputLabel>语速</InputLabel>
+            <InputLabel>{t('settings.voice.tabSettings.azure.rate')}</InputLabel>
             <Select
               value={settings.rate}
               onChange={(e) => handleRateChange(e.target.value)}
-              label="语速"
+              label={t('settings.voice.tabSettings.azure.rate')}
             >
-              <MenuItem value="x-slow">很慢</MenuItem>
-              <MenuItem value="slow">慢</MenuItem>
-              <MenuItem value="medium">正常</MenuItem>
-              <MenuItem value="fast">快</MenuItem>
-              <MenuItem value="x-fast">很快</MenuItem>
+              <MenuItem value="x-slow">{t('settings.voice.tabSettings.azure.rateOptions.xSlow')}</MenuItem>
+              <MenuItem value="slow">{t('settings.voice.tabSettings.azure.rateOptions.slow')}</MenuItem>
+              <MenuItem value="medium">{t('settings.voice.tabSettings.azure.rateOptions.medium')}</MenuItem>
+              <MenuItem value="fast">{t('settings.voice.tabSettings.azure.rateOptions.fast')}</MenuItem>
+              <MenuItem value="x-fast">{t('settings.voice.tabSettings.azure.rateOptions.xFast')}</MenuItem>
             </Select>
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel>音调</InputLabel>
+            <InputLabel>{t('settings.voice.tabSettings.azure.pitch')}</InputLabel>
             <Select
               value={settings.pitch}
               onChange={(e) => handlePitchChange(e.target.value)}
-              label="音调"
+              label={t('settings.voice.tabSettings.azure.pitch')}
             >
-              <MenuItem value="x-low">很低</MenuItem>
-              <MenuItem value="low">低</MenuItem>
-              <MenuItem value="medium">正常</MenuItem>
-              <MenuItem value="high">高</MenuItem>
-              <MenuItem value="x-high">很高</MenuItem>
+              <MenuItem value="x-low">{t('settings.voice.tabSettings.azure.pitchOptions.xLow')}</MenuItem>
+              <MenuItem value="low">{t('settings.voice.tabSettings.azure.pitchOptions.low')}</MenuItem>
+              <MenuItem value="medium">{t('settings.voice.tabSettings.azure.pitchOptions.medium')}</MenuItem>
+              <MenuItem value="high">{t('settings.voice.tabSettings.azure.pitchOptions.high')}</MenuItem>
+              <MenuItem value="x-high">{t('settings.voice.tabSettings.azure.pitchOptions.xHigh')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <FormControl fullWidth>
-            <InputLabel>音量</InputLabel>
+            <InputLabel>{t('settings.voice.tabSettings.azure.volume')}</InputLabel>
             <Select
               value={settings.volume}
               onChange={(e) => handleVolumeChange(e.target.value)}
-              label="音量"
+              label={t('settings.voice.tabSettings.azure.volume')}
             >
-              <MenuItem value="silent">静音</MenuItem>
-              <MenuItem value="x-soft">很轻</MenuItem>
-              <MenuItem value="soft">轻</MenuItem>
-              <MenuItem value="medium">正常</MenuItem>
-              <MenuItem value="loud">响</MenuItem>
-              <MenuItem value="x-loud">很响</MenuItem>
+              <MenuItem value="silent">{t('settings.voice.tabSettings.azure.volumeOptions.silent')}</MenuItem>
+              <MenuItem value="x-soft">{t('settings.voice.tabSettings.azure.volumeOptions.xSoft')}</MenuItem>
+              <MenuItem value="soft">{t('settings.voice.tabSettings.azure.volumeOptions.soft')}</MenuItem>
+              <MenuItem value="medium">{t('settings.voice.tabSettings.azure.volumeOptions.medium')}</MenuItem>
+              <MenuItem value="loud">{t('settings.voice.tabSettings.azure.volumeOptions.loud')}</MenuItem>
+              <MenuItem value="x-loud">{t('settings.voice.tabSettings.azure.volumeOptions.xLoud')}</MenuItem>
             </Select>
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel>说话风格</InputLabel>
+            <InputLabel>{t('settings.voice.tabSettings.azure.style')}</InputLabel>
             <Select
               value={settings.style}
               onChange={(e) => handleStyleChange(e.target.value)}
-              label="说话风格"
+              label={t('settings.voice.tabSettings.azure.style')}
             >
               {AZURE_STYLES.map((style) => (
                 <MenuItem key={style.value} value={style.value}>
@@ -345,7 +347,7 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
         </Box>
 
         <FormControl fullWidth>
-          <Typography gutterBottom>风格强度</Typography>
+          <Typography gutterBottom>{t('settings.voice.tabSettings.azure.styleDegree')}</Typography>
           <Slider
             value={settings.styleDegree}
             min={0.01}
@@ -360,16 +362,16 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             ]}
           />
           <FormHelperText>
-            调整说话风格的强度 (0.01-2.0，默认1.0)
+            {t('settings.voice.tabSettings.azure.styleDegreeHelper')}
           </FormHelperText>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>角色扮演</InputLabel>
+          <InputLabel>{t('settings.voice.tabSettings.azure.role')}</InputLabel>
           <Select
             value={settings.role}
             onChange={(e) => handleRoleChange(e.target.value)}
-            label="角色扮演"
+            label={t('settings.voice.tabSettings.azure.role')}
           >
             {AZURE_ROLES.map((role) => (
               <MenuItem key={role.value} value={role.value}>
@@ -378,7 +380,7 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             ))}
           </Select>
           <FormHelperText>
-            选择语音的角色扮演风格
+            {t('settings.voice.tabSettings.azure.roleHelper')}
           </FormHelperText>
         </FormControl>
 
@@ -389,10 +391,10 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
               onChange={(e) => handleUseSSMLToggle(e.target.checked)}
             />
           }
-          label="使用SSML标记语言"
+          label={t('settings.voice.tabSettings.azure.useSSML')}
         />
         <FormHelperText>
-          启用SSML可以获得更精细的语音控制，包括语速、音调、停顿等效果
+          {t('settings.voice.tabSettings.azure.useSSMLHelper')}
         </FormHelperText>
         </Stack>
       </form>

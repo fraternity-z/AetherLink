@@ -9,7 +9,7 @@ import enWelcome from './locales/en-US/welcome.json';
 import enChat from './locales/en-US/chat.json';
 import enNotifications from './locales/en-US/notifications.json';
 import enErrors from './locales/en-US/errors.json';
-import enSettings from './locales/en-US/settings.json';
+import enSettings from './locales/en-US/settings/settings.json';
 
 // 中文模块
 import zhCommon from './locales/zh-CN/common.json';
@@ -17,15 +17,43 @@ import zhWelcome from './locales/zh-CN/welcome.json';
 import zhChat from './locales/zh-CN/chat.json';
 import zhNotifications from './locales/zh-CN/notifications.json';
 import zhErrors from './locales/zh-CN/errors.json';
-import zhSettings from './locales/zh-CN/settings.json';
+import zhSettings from './locales/zh-CN/settings/settings.json';
 
 // 导入所有模块文件
 import enModelSettings from './locales/en-US/modelSettings.json';
 import enAiDebate from './locales/en-US/aiDebate.json';
 import enDataSettings from './locales/en-US/dataSettings.json';
+import enDevtools from './locales/en-US/devtools.json';
+import enAppearanceSettings from './locales/en-US/settings/appearanceSettings.json';
+import enVoiceSettings from './locales/en-US/settings/voiceSettings.json';
+import enWebSearchSettings from './locales/en-US/settings/webSearchSettings.json';
+import enMcpServerSettings from './locales/en-US/settings/mcpServerSettings.json';
 import zhModelSettings from './locales/zh-CN/modelSettings.json';
 import zhAiDebate from './locales/zh-CN/aiDebate.json';
 import zhDataSettings from './locales/zh-CN/dataSettings.json';
+import zhDevtools from './locales/zh-CN/devtools.json';
+import zhAppearanceSettings from './locales/zh-CN/settings/appearanceSettings.json';
+import zhVoiceSettings from './locales/zh-CN/settings/voiceSettings.json';
+import zhWebSearchSettings from './locales/zh-CN/settings/webSearchSettings.json';
+import zhMcpServerSettings from './locales/zh-CN/settings/mcpServerSettings.json';
+
+// 深度合并函数，用于合并 settings 相关模块
+const deepMerge = (target: any, source: any) => {
+  const result = { ...target };
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      result[key] = deepMerge(result[key] || {}, source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+};
+
+// 合并多个 settings 模块
+const mergeSettingsModules = (...modules: any[]) => {
+  return modules.reduce((acc, module) => deepMerge(acc, module), {});
+};
 
 // 合并所有模块
 const mergeModules = (...modules: any[]) => {
@@ -41,10 +69,11 @@ const resources = {
       { chat: zhChat },
       { notifications: zhNotifications },
       { errors: zhErrors },
-      { settings: zhSettings },
+      { settings: mergeSettingsModules(zhSettings, zhAppearanceSettings, zhVoiceSettings, zhWebSearchSettings, zhMcpServerSettings) },
       { modelSettings: zhModelSettings },
       { aiDebate: zhAiDebate },
-      { dataSettings: zhDataSettings }
+      { dataSettings: zhDataSettings },
+      { devtools: zhDevtools }
     ),
   },
   'en-US': {
@@ -54,10 +83,11 @@ const resources = {
       { chat: enChat },
       { notifications: enNotifications },
       { errors: enErrors },
-      { settings: enSettings },
+      { settings: mergeSettingsModules(enSettings, enAppearanceSettings, enVoiceSettings, enWebSearchSettings, enMcpServerSettings) },
       { modelSettings: enModelSettings },
       { aiDebate: enAiDebate },
-      { dataSettings: enDataSettings }
+      { dataSettings: enDataSettings },
+      { devtools: enDevtools }
     ),
   },
 };

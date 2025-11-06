@@ -24,9 +24,11 @@ import {
 } from '../../../components/TTS';
 import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
+import { useTranslation } from '../../../i18n';
 
 const AzureTTSSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const ttsService = useMemo(() => TTSService.getInstance(), []);
   
   // 定时器引用
@@ -112,12 +114,12 @@ const AzureTTSSettings: React.FC = () => {
         ttsService.setAzureRole(storedAzureRole);
         ttsService.setAzureUseSSML(storedAzureUseSSML);
       } catch (error) {
-        console.error('加载Azure TTS设置失败:', error);
+        console.error(t('settings.voice.common.loadingError', { service: 'Azure TTS' }), error);
       }
     };
 
     loadSettings();
-  }, [ttsService]);
+  }, [ttsService, t]);
 
   // 保存设置
   const handleSave = useCallback(async () => {
@@ -178,13 +180,13 @@ const AzureTTSSettings: React.FC = () => {
 
 
     } catch (error) {
-      console.error('保存Azure TTS设置失败:', error);
+      console.error(t('settings.voice.common.saveErrorText', { service: 'Azure TTS' }), error);
       setUIState(prev => ({
         ...prev,
-        saveError: '保存设置失败，请重试',
+        saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [settings, enableTTS, isEnabled, ttsService]);
+  }, [settings, enableTTS, isEnabled, ttsService, navigate, t]);
 
   // 处理启用状态变化
   const handleEnableChange = useCallback((enabled: boolean) => {
@@ -298,7 +300,7 @@ const AzureTTSSettings: React.FC = () => {
           <IconButton
             edge="start"
             onClick={handleBack}
-            aria-label="返回"
+            aria-label={t('settings.voice.back')}
             size="large"
             sx={{
               color: 'primary.main',
@@ -324,8 +326,8 @@ const AzureTTSSettings: React.FC = () => {
               WebkitBackgroundClip: 'text',
               color: 'transparent',
             }}
-          >
-            微软Azure TTS 设置
+            >
+            {t('settings.voice.azure.title')}
           </Typography>
           <Button
             onClick={handleSave}
@@ -340,7 +342,7 @@ const AzureTTSSettings: React.FC = () => {
               px: 3,
             }}
           >
-            保存
+            {t('settings.voice.common.save')}
           </Button>
         </Toolbar>
       </AppBar>
@@ -396,7 +398,7 @@ const AzureTTSSettings: React.FC = () => {
             }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-              API配置
+              {t('settings.voice.common.apiConfig')}
             </Typography>
 
             {/* 启用开关 */}
@@ -408,10 +410,10 @@ const AzureTTSSettings: React.FC = () => {
                     onChange={(e) => handleEnableChange(e.target.checked)}
                   />
                 }
-                label="启用微软Azure TTS 服务"
+                label={t('settings.voice.common.enableService', { name: t('settings.voice.services.azure.name') })}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, ml: 4 }}>
-                启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。
+                {t('settings.voice.azure.enableDesc')}
               </Typography>
             </Box>
 

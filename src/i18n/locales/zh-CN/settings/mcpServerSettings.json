@@ -1,0 +1,176 @@
+{
+  "mcpServer": {
+    "pageTitle": "MCP 服务器",
+    "addButton": "添加",
+    "emptyState": {
+      "title": "还没有配置 MCP 服务器",
+      "description": "MCP 服务器可以为 AI 提供额外的工具和功能",
+      "addServer": "添加服务器",
+      "importConfig": "导入配置",
+      "builtinServers": "内置服务器"
+    },
+    "serverList": {
+      "title": "MCP 服务器列表",
+      "description": "管理您的 MCP 服务器配置和状态"
+    },
+    "quickActions": {
+      "title": "快捷操作",
+      "description": "快速添加和管理 MCP 服务器",
+      "import": {
+        "title": "导入配置",
+        "description": "从 JSON 文件导入 MCP 服务器配置"
+      },
+      "builtin": {
+        "title": "内置服务器",
+        "description": "添加预配置的内置 MCP 服务器"
+      }
+    },
+    "serverTypes": {
+      "httpStream": "HTTP Stream",
+      "inMemory": "内存",
+      "unknown": "未知"
+    },
+    "status": {
+      "active": "运行中"
+    },
+    "addDialog": {
+      "title": "添加 MCP 服务器",
+      "serverName": "服务器名称",
+      "serverType": "服务器类型",
+      "serverUrl": "服务器 URL",
+      "description": "描述（可选）",
+      "enableSSE": "启用SSE流（Server-Sent Events）",
+      "cancel": "取消",
+      "add": "添加",
+      "placeholders": {
+        "url": "https://example.com/mcp"
+      },
+      "types": {
+        "httpStream": "HTTP Stream (支持SSE+HTTP)",
+        "inMemory": "内存服务器"
+      }
+    },
+    "importDialog": {
+      "title": "导入 MCP 服务器配置",
+      "description": "粘贴包含 MCP 服务器配置的 JSON 文件内容。支持的格式示例：",
+      "label": "JSON 配置",
+      "placeholder": "在此粘贴 JSON 配置...",
+      "cancel": "取消",
+      "import": "导入"
+    },
+    "builtinDialog": {
+      "title": "添加内置 MCP 服务器",
+      "description": "选择要添加的内置 MCP 服务器。这些服务器由 Cherry Studio 提供，无需额外配置即可使用。",
+      "added": "已添加",
+      "add": "添加",
+      "close": "关闭",
+      "servers": {
+        "@aether/time": {
+          "description": "获取当前时间和日期，支持多种格式（本地化、ISO 8601、时间戳）和时区设置",
+          "tags": {
+            "时间": "时间",
+            "日期": "日期",
+            "工具": "工具"
+          }
+        },
+        "@aether/fetch": {
+          "description": "获取网页内容，支持 HTML、JSON 和纯文本格式，可自定义请求头",
+          "tags": {
+            "网页": "网页",
+            "抓取": "抓取",
+            "HTTP": "HTTP",
+            "API": "API"
+          }
+        },
+        "@aether/calculator": {
+          "description": "高级计算器，支持基本运算、科学计算、进制转换、单位转换和统计计算",
+          "tags": {
+            "计算": "计算",
+            "数学": "数学",
+            "转换": "转换",
+            "统计": "统计",
+            "工具": "工具"
+          }
+        }
+      }
+    },
+    "messages": {
+      "serverEnabled": "服务器已启用",
+      "serverDisabled": "服务器已停用",
+      "operationFailed": "操作失败",
+      "fillRequiredInfo": "请填写必要信息",
+      "urlRequired": "HTTP Stream 服务器需要提供 URL",
+      "serverAdded": "服务器添加成功",
+      "addFailed": "添加失败",
+      "serverExists": "服务器 {{name}} 已存在",
+      "builtinServerAdded": "内置服务器 {{name}} 添加成功",
+      "builtinAddFailed": "添加内置服务器失败",
+      "serverDeleted": "服务器 \"{{name}}\" 已删除",
+      "deleteFailed": "删除失败",
+      "importSuccess": "成功导入 {{count}} 个服务器",
+      "importPartial": "成功导入 {{count}} 个服务器，{{errors}} 个失败",
+      "importFailed": "导入失败：{{errors}}",
+      "jsonParseError": "JSON 解析失败: {{error}}",
+      "jsonFormatError": "JSON 格式不正确：缺少 mcpServers 字段",
+      "importFromJson": "从 JSON 导入的服务器: {{name}}",
+      "loadBuiltinFailed": "加载内置服务器失败",
+      "saveSuccess": "保存成功",
+      "saveFailed": "保存失败",
+      "testSuccess": "连接测试成功",
+      "testFailed": "连接测试失败",
+      "loadDataFailed": "加载服务器数据失败"
+    },
+    "detail": {
+      "pageTitle": "MCP 服务器详情",
+      "buttons": {
+        "test": "测试",
+        "save": "保存"
+      },
+      "basicInfo": {
+        "title": "基本信息",
+        "enableServer": "启用服务器",
+        "serverName": "服务器名称",
+        "serverType": "服务器类型",
+        "serverUrl": "服务器 URL",
+        "description": "描述",
+        "timeout": "超时时间（秒）",
+        "enableSSE": "启用SSE流（Server-Sent Events）",
+        "types": {
+          "httpStream": "HTTP Stream (支持SSE+HTTP)",
+          "inMemory": "内存服务器"
+        },
+        "placeholders": {
+          "url": "https://example.com/mcp"
+        }
+      },
+      "advanced": {
+        "title": "高级设置",
+        "headers": "请求头（JSON 格式）",
+        "env": "环境变量（JSON 格式）",
+        "args": "参数（每行一个）",
+        "placeholders": {
+          "headers": "{\n  \"Authorization\": \"Bearer token\",\n  \"Content-Type\": \"application/json\"\n}",
+          "env": "{\n  \"API_KEY\": \"your-api-key\",\n  \"DEBUG\": \"true\"\n}",
+          "args": "--verbose\n--config=/path/to/config"
+        }
+      },
+      "tools": {
+        "title": "可用工具",
+        "empty": "暂无可用工具",
+        "noDescription": "无描述"
+      },
+      "prompts": {
+        "title": "可用提示词",
+        "empty": "暂无可用提示词",
+        "noDescription": "无描述"
+      },
+      "resources": {
+        "title": "可用资源",
+        "empty": "暂无可用资源",
+        "noDescription": "无描述",
+        "uri": "URI"
+      }
+    }
+  }
+}
+

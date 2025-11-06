@@ -1,0 +1,231 @@
+{
+  "voice": {
+    "title": "Voice Settings",
+    "back": "Back",
+    "tabs": {
+      "tts": "Text-to-Speech (TTS)",
+      "asr": "Speech Recognition (ASR)"
+    },
+    "status": {
+      "recommended": "Recommended",
+      "premium": "Paid",
+      "enterprise": "Enterprise",
+      "free": "Free",
+      "active": "Active"
+    },
+    "services": {
+      "siliconflow": {
+        "name": "SiliconFlow TTS",
+        "description": "Localized TTS service with multi-language support",
+        "features": ["CosyVoice2-0.5B", "Multi-language", "Emotion Control", "Cost-effective"]
+      },
+      "openai": {
+        "name": "OpenAI TTS",
+        "description": "Official OpenAI TTS service with excellent audio quality",
+        "features": ["TTS-1", "TTS-1-HD", "6 Voices", "Streaming"]
+      },
+      "azure": {
+        "name": "Azure TTS",
+        "description": "Enterprise-grade TTS service with rich features",
+        "features": ["Neural Voices", "SSML Support", "Multiple Styles", "Role Play"]
+      },
+      "capacitor": {
+        "name": "Capacitor Speech Recognition",
+        "description": "Device-based local speech recognition service",
+        "features": ["Local Processing", "Real-time", "Multi-language", "Privacy-focused"]
+      },
+      "openaiWhisper": {
+        "name": "OpenAI Whisper",
+        "description": "Powerful cloud-based speech recognition model",
+        "features": ["High Accuracy", "Multi-language", "Noise Suppression", "Cloud Processing"]
+      }
+    },
+    "common": {
+      "save": "Save",
+      "saveSuccess": "Settings saved successfully",
+      "saveError": "Failed to save settings, please try again",
+      "apiConfig": "API Configuration",
+      "enableService": "Enable {{name}} Service",
+      "enableServiceDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
+      "loadingError": "Failed to load {{service}} settings",
+      "saveErrorText": "Failed to save {{service}} settings"
+    },
+    "azure": {
+      "title": "Azure TTS Settings",
+      "enableDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one."
+    },
+    "openai": {
+      "title": "OpenAI TTS Settings",
+      "enableDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
+      "testText": "Hello, I am OpenAI text-to-speech service. Thank you for using me!"
+    },
+    "siliconflow": {
+      "title": "SiliconFlow TTS Settings",
+      "enableDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
+      "testText": "Hello, I am SiliconFlow text-to-speech service. Thank you for using me!",
+      "apiKeyRequired": "API key cannot be empty when service is enabled"
+    },
+    "capacitor": {
+      "title": "Capacitor Speech Recognition Settings",
+      "config": "Speech Recognition Configuration",
+      "enable": "Enable Speech Recognition",
+      "language": {
+        "label": "Default Language",
+        "helper": "Select the default language for speech recognition.",
+        "zhCN": "Chinese (Mandarin)",
+        "enUS": "English (US)",
+        "jaJP": "Japanese",
+        "koKR": "Korean",
+        "frFR": "French",
+        "deDE": "German",
+        "esES": "Spanish"
+      },
+      "autoStart": {
+        "label": "Auto Start Recognition",
+        "helper": "When enabled, speech recognition will start automatically when opening the chat page."
+      },
+      "partialResults": {
+        "label": "Show Partial Results",
+        "helper": "When enabled, intermediate recognition results will be displayed in real-time."
+      },
+      "permission": {
+        "status": "Permission Status: {{status}}",
+        "checkAndRequest": "Check and Request Microphone Permission"
+      },
+      "test": {
+        "title": "Speech Recognition Test",
+        "start": "Start Recognition",
+        "stop": "Stop Recognition",
+        "result": "Real-time Result: {{text}}",
+        "error": "Recognition Error: {{message}}",
+        "hint": "Click \"Start Recognition\" to test the speech recognition feature. Please ensure microphone permission is granted."
+      }
+    },
+    "whisper": {
+      "title": "OpenAI Whisper Settings"
+    },
+    "tabSettings": {
+      "azure": {
+        "title": "Azure TTS API Settings",
+        "apiKey": "Azure API Key",
+        "apiKeyPlaceholder": "Enter Azure Speech Services API key",
+        "apiKeyHelper": "Get API key at: https://portal.azure.com/",
+        "region": "Service Region",
+        "regionHelper": "Select the Azure region closest to you for best performance",
+        "voice": "Voice Selection",
+        "voiceHelper": "Choose your preferred voice style. Neural voices support more expressive styles",
+        "outputFormat": "Output Format",
+        "outputFormatHelper": "MP3 format is recommended for best compatibility",
+        "rate": "Speech Rate",
+        "pitch": "Pitch",
+        "volume": "Volume",
+        "style": "Speaking Style",
+        "styleDegree": "Style Strength",
+        "styleDegreeHelper": "Adjust speaking style strength (0.01-2.0, default 1.0)",
+        "role": "Role Play",
+        "roleHelper": "Select voice role play style",
+        "useSSML": "Use SSML Markup",
+        "useSSMLHelper": "Enable SSML for finer voice control, including rate, pitch, pauses, etc.",
+        "rateOptions": {
+          "xSlow": "Very Slow",
+          "slow": "Slow",
+          "medium": "Normal",
+          "fast": "Fast",
+          "xFast": "Very Fast"
+        },
+        "pitchOptions": {
+          "xLow": "Very Low",
+          "low": "Low",
+          "medium": "Normal",
+          "high": "High",
+          "xHigh": "Very High"
+        },
+        "volumeOptions": {
+          "silent": "Silent",
+          "xSoft": "Very Soft",
+          "soft": "Soft",
+          "medium": "Normal",
+          "loud": "Loud",
+          "xLoud": "Very Loud"
+        }
+      },
+      "openai": {
+        "title": "OpenAI TTS API Settings",
+        "apiKey": "OpenAI API Key",
+        "apiKeyPlaceholder": "Enter OpenAI API key",
+        "apiKeyHelper": "Get API key at: https://platform.openai.com/api-keys",
+        "model": "TTS Model",
+        "modelHelper": "TTS-1 is suitable for fast generation, TTS-1-HD has higher quality but slower speed",
+        "voice": "Voice Selection",
+        "voiceHelper": "Choose your preferred voice style. Each voice has unique characteristics",
+        "format": "Output Format",
+        "formatHelper": "MP3 format is recommended for best compatibility",
+        "speed": "Speed Control",
+        "speedHelper": "Adjust speech playback speed (0.25x - 4.0x, default 1.0x)",
+        "useStream": "Enable Streaming",
+        "useStreamHelper": "Streaming allows faster playback start, but may affect audio quality"
+      },
+      "siliconflow": {
+        "title": "SiliconFlow TTS API Settings",
+        "apiKey": "API Key",
+        "apiKeyPlaceholder": "Enter SiliconFlow API key",
+        "apiKeyHelper": "Get API key at: https://siliconflow.cn/",
+        "model": "TTS Model",
+        "modelHelper": "Select an appropriate TTS model. Different models have different voice characteristics",
+        "voice": "Voice Selection",
+        "voiceHelper": "Choose your preferred voice style",
+        "voiceHelperNoModel": "Please select a TTS model first",
+        "useStream": "Enable Streaming Output",
+        "useStreamHelper": "Streaming output enables faster voice response, audio will play as it's generated"
+      },
+      "whisper": {
+        "title": "OpenAI Whisper Speech Recognition Settings",
+        "info": "OpenAI Whisper is a powerful speech recognition model supporting multiple languages. You need an OpenAI API key to use this feature.",
+        "apiKey": "OpenAI API Key",
+        "apiKeyHelper": "Enter your OpenAI API key",
+        "toggleApiKeyVisibility": "Toggle API key visibility",
+        "model": "Whisper Model",
+        "modelHelper": "Currently only whisper-1 model is available",
+        "language": "Language",
+        "languageAuto": "Auto Detect",
+        "languageZh": "Chinese",
+        "languageEn": "English",
+        "languageJa": "Japanese",
+        "languageKo": "Korean",
+        "languageFr": "French",
+        "languageDe": "German",
+        "languageEs": "Spanish",
+        "languageRu": "Russian",
+        "languageHelper": "Specifying the audio language can improve transcription accuracy. Leave empty for auto detection",
+        "temperature": "Temperature",
+        "temperatureHelper": "Higher values make output more random, lower values make it more deterministic. Recommended to set to 0 for most accurate results.",
+        "responseFormat": "Response Format",
+        "responseFormatHelper": "Select the API response format. Default JSON format is usually sufficient"
+      }
+    },
+    "test": {
+      "tts": {
+        "title": "Test Voice Effect",
+        "textLabel": "Test Text",
+        "play": "Play Test",
+        "stop": "Stop Playing"
+      },
+      "whisper": {
+        "title": "Test OpenAI Whisper Speech Recognition",
+        "enableWarning": "Please enable speech recognition first",
+        "apiKeyError": "Please set OpenAI API key first",
+        "micError": "Cannot access microphone",
+        "transcribeError": "Transcription failed",
+        "startRecording": "Start Recording",
+        "stopRecording": "Stop Recording",
+        "clearResults": "Clear Results",
+        "processing": "Processing audio...",
+        "result": "Recognition Result:",
+        "detectedLanguage": "Detected Language: {{language}}",
+        "audioDuration": "Audio Duration: {{duration}}s",
+        "hint": "Tip: Click \"Start Recording\" to record 5 seconds of audio, then automatically transcribe using OpenAI Whisper API."
+      }
+    }
+  }
+}
+

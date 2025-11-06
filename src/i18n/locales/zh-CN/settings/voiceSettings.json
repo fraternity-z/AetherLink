@@ -1,0 +1,231 @@
+{
+  "voice": {
+    "title": "语音功能设置",
+    "back": "返回",
+    "tabs": {
+      "tts": "文本转语音 (TTS)",
+      "asr": "语音识别 (ASR)"
+    },
+    "status": {
+      "recommended": "推荐",
+      "premium": "付费",
+      "enterprise": "企业级",
+      "free": "免费",
+      "active": "当前启用"
+    },
+    "services": {
+      "siliconflow": {
+        "name": "硅基流动 TTS",
+        "description": "国产化TTS服务，支持多语言语音合成",
+        "features": ["CosyVoice2-0.5B", "多语言支持", "情感控制", "高性价比"]
+      },
+      "openai": {
+        "name": "OpenAI TTS",
+        "description": "OpenAI官方TTS服务，音质优秀",
+        "features": ["TTS-1", "TTS-1-HD", "6种语音", "流式传输"]
+      },
+      "azure": {
+        "name": "微软Azure TTS",
+        "description": "企业级TTS服务，功能丰富",
+        "features": ["Neural语音", "SSML支持", "多种风格", "角色扮演"]
+      },
+      "capacitor": {
+        "name": "Capacitor 语音识别",
+        "description": "基于设备的本地语音识别服务",
+        "features": ["本地处理", "实时识别", "多语言", "隐私保护"]
+      },
+      "openaiWhisper": {
+        "name": "OpenAI Whisper",
+        "description": "强大的云端语音识别模型",
+        "features": ["高精度", "多语言", "噪音抑制", "云端处理"]
+      }
+    },
+    "common": {
+      "save": "保存",
+      "saveSuccess": "设置已保存成功",
+      "saveError": "保存设置失败，请重试",
+      "apiConfig": "API配置",
+      "enableService": "启用 {{name}} 服务",
+      "enableServiceDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
+      "loadingError": "加载{{service}}设置失败",
+      "saveErrorText": "保存{{service}}设置失败"
+    },
+    "azure": {
+      "title": "微软Azure TTS 设置",
+      "enableDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。"
+    },
+    "openai": {
+      "title": "OpenAI TTS 设置",
+      "enableDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
+      "testText": "你好，我是OpenAI语音合成服务，感谢你的使用！"
+    },
+    "siliconflow": {
+      "title": "硅基流动 TTS 设置",
+      "enableDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
+      "testText": "你好，我是硅基流动语音合成服务，感谢你的使用！",
+      "apiKeyRequired": "启用服务时API密钥不能为空"
+    },
+    "capacitor": {
+      "title": "Capacitor 语音识别设置",
+      "config": "语音识别配置",
+      "enable": "启用语音识别功能",
+      "language": {
+        "label": "默认语言",
+        "helper": "选择语音识别的默认语言。",
+        "zhCN": "中文 (普通话)",
+        "enUS": "English (US)",
+        "jaJP": "日本語",
+        "koKR": "한국어",
+        "frFR": "Français",
+        "deDE": "Deutsch",
+        "esES": "Español"
+      },
+      "autoStart": {
+        "label": "自动开始识别",
+        "helper": "启用后，打开聊天页面时会自动开始语音识别。"
+      },
+      "partialResults": {
+        "label": "显示部分识别结果",
+        "helper": "启用后，会实时显示语音识别的中间结果。"
+      },
+      "permission": {
+        "status": "权限状态: {{status}}",
+        "checkAndRequest": "检查并请求麦克风权限"
+      },
+      "test": {
+        "title": "语音识别测试",
+        "start": "开始识别",
+        "stop": "停止识别",
+        "result": "实时识别结果: {{text}}",
+        "error": "语音识别错误: {{message}}",
+        "hint": "点击\"开始识别\"按钮测试语音识别功能。请确保已授予麦克风权限。"
+      }
+    },
+    "whisper": {
+      "title": "OpenAI Whisper 设置"
+    },
+    "tabSettings": {
+      "azure": {
+        "title": "微软Azure TTS API 设置",
+        "apiKey": "Azure API密钥",
+        "apiKeyPlaceholder": "请输入Azure Speech Services API密钥",
+        "apiKeyHelper": "获取API密钥请访问：https://portal.azure.com/",
+        "region": "服务区域",
+        "regionHelper": "选择离您最近的Azure服务区域以获得最佳性能",
+        "voice": "语音选择",
+        "voiceHelper": "选择您喜欢的语音风格，Neural语音支持更多表达风格",
+        "outputFormat": "输出格式",
+        "outputFormatHelper": "推荐使用MP3格式，兼容性最好",
+        "rate": "语速",
+        "pitch": "音调",
+        "volume": "音量",
+        "style": "说话风格",
+        "styleDegree": "风格强度",
+        "styleDegreeHelper": "调整说话风格的强度 (0.01-2.0，默认1.0)",
+        "role": "角色扮演",
+        "roleHelper": "选择语音的角色扮演风格",
+        "useSSML": "使用SSML标记语言",
+        "useSSMLHelper": "启用SSML可以获得更精细的语音控制，包括语速、音调、停顿等效果",
+        "rateOptions": {
+          "xSlow": "很慢",
+          "slow": "慢",
+          "medium": "正常",
+          "fast": "快",
+          "xFast": "很快"
+        },
+        "pitchOptions": {
+          "xLow": "很低",
+          "low": "低",
+          "medium": "正常",
+          "high": "高",
+          "xHigh": "很高"
+        },
+        "volumeOptions": {
+          "silent": "静音",
+          "xSoft": "很轻",
+          "soft": "轻",
+          "medium": "正常",
+          "loud": "响",
+          "xLoud": "很响"
+        }
+      },
+      "openai": {
+        "title": "OpenAI TTS API 设置",
+        "apiKey": "OpenAI API密钥",
+        "apiKeyPlaceholder": "请输入OpenAI API密钥",
+        "apiKeyHelper": "获取API密钥请访问：https://platform.openai.com/api-keys",
+        "model": "TTS模型",
+        "modelHelper": "TTS-1适合快速生成，TTS-1-HD质量更高但速度较慢",
+        "voice": "语音选择",
+        "voiceHelper": "选择您喜欢的语音风格，每种语音都有独特的特色",
+        "format": "输出格式",
+        "formatHelper": "推荐使用MP3格式，兼容性最好",
+        "speed": "语速控制",
+        "speedHelper": "调整语音播放速度 (0.25x - 4.0x，默认1.0x)",
+        "useStream": "启用流式传输",
+        "useStreamHelper": "流式传输可以更快地开始播放，但可能影响音质"
+      },
+      "siliconflow": {
+        "title": "硅基流动 TTS API 设置",
+        "apiKey": "API密钥",
+        "apiKeyPlaceholder": "请输入硅基流动API密钥",
+        "apiKeyHelper": "获取API密钥请访问：https://siliconflow.cn/",
+        "model": "TTS模型",
+        "modelHelper": "选择适合的TTS模型，不同模型有不同的语音特色",
+        "voice": "语音选择",
+        "voiceHelper": "选择您喜欢的语音风格",
+        "voiceHelperNoModel": "请先选择TTS模型",
+        "useStream": "启用流式输出",
+        "useStreamHelper": "流式输出可以实现更快的语音响应，音频将边生成边播放"
+      },
+      "whisper": {
+        "title": "OpenAI Whisper 语音识别设置",
+        "info": "OpenAI Whisper是一个强大的语音识别模型，支持多种语言。您需要有OpenAI的API密钥才能使用此功能。",
+        "apiKey": "OpenAI API密钥",
+        "apiKeyHelper": "请输入您的OpenAI API密钥",
+        "toggleApiKeyVisibility": "切换API密钥可见性",
+        "model": "Whisper模型",
+        "modelHelper": "目前只有whisper-1一个模型可用",
+        "language": "语言",
+        "languageAuto": "自动检测",
+        "languageZh": "中文",
+        "languageEn": "英语",
+        "languageJa": "日语",
+        "languageKo": "韩语",
+        "languageFr": "法语",
+        "languageDe": "德语",
+        "languageEs": "西班牙语",
+        "languageRu": "俄语",
+        "languageHelper": "指定音频的语言可以提高转录准确性，留空则自动检测",
+        "temperature": "温度",
+        "temperatureHelper": "较高的值会使输出更加随机，较低的值则使输出更加确定。建议设置为0以获得最准确的结果。",
+        "responseFormat": "响应格式",
+        "responseFormatHelper": "选择API返回的响应格式，一般使用默认的JSON格式即可"
+      }
+    },
+    "test": {
+      "tts": {
+        "title": "测试语音效果",
+        "textLabel": "测试文本",
+        "play": "播放测试",
+        "stop": "停止播放"
+      },
+      "whisper": {
+        "title": "测试OpenAI Whisper语音识别",
+        "enableWarning": "请先启用语音识别功能",
+        "apiKeyError": "请先设置OpenAI API密钥",
+        "micError": "无法访问麦克风",
+        "transcribeError": "转录失败",
+        "startRecording": "开始录制",
+        "stopRecording": "停止录制",
+        "clearResults": "清除结果",
+        "processing": "正在处理音频...",
+        "result": "识别结果:",
+        "detectedLanguage": "检测到语言: {{language}}",
+        "audioDuration": "音频时长: {{duration}}秒",
+        "hint": "提示: 点击\"开始录制\"按钮，系统将录制5秒的音频，然后自动使用OpenAI Whisper API进行转录。"
+      }
+    }
+  }
+}
+

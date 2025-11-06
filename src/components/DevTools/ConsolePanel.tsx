@@ -9,6 +9,10 @@ import {
   IconButton,
   Chip,
   Collapse,
+  Paper,
+  Divider,
+  alpha,
+  Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -18,8 +22,10 @@ import {
   Info as InfoIcon,
   Bug as BugReportIcon,
   Terminal as TerminalIcon,
+  X as ClearIcon,
 } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
+import { useTranslation } from '../../i18n';
 import EnhancedConsoleService from '../../shared/services/EnhancedConsoleService';
 import type { ConsoleEntry, ConsoleLevel, ConsoleFilter } from '../../shared/services/EnhancedConsoleService';
 
@@ -28,6 +34,7 @@ interface ConsolePanelProps {
 }
 
 const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const [entries, setEntries] = useState<ConsoleEntry[]>([]);
   const [filter, setFilter] = useState<ConsoleFilter>({
@@ -124,25 +131,60 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
   const filteredEntries = consoleService.getFilteredEntries(filter);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* 过滤器 */}
-      <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'transparent' }}>
+      {/* 过滤器 - 优化设计 */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          bgcolor: theme.palette.mode === 'dark'
+            ? alpha(theme.palette.background.paper, 0.4)
+            : theme.palette.background.paper,
+          borderRadius: 0,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             size="small"
-            placeholder="过滤控制台输出..."
+            placeholder={t('devtools.console.searchPlaceholder')}
             value={filter.searchText}
             onChange={(e) => setFilter(prev => ({ ...prev, searchText: e.target.value }))}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon size={16} />
+                  <SearchIcon size={18} style={{ color: theme.palette.text.secondary }} />
+                </InputAdornment>
+              ),
+              endAdornment: filter.searchText && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setFilter(prev => ({ ...prev, searchText: '' }))}
+                    sx={{ p: 0.5 }}
+                  >
+                    <ClearIcon size={14} />
+                  </IconButton>
                 </InputAdornment>
               ),
             }}
             fullWidth
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.05) : alpha(theme.palette.common.black, 0.02),
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.08) : alpha(theme.palette.common.black, 0.04),
+                },
+                '&.Mui-focused': {
+                  bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.08) : alpha(theme.palette.common.black, 0.04),
+                },
+              },
+            }}
           />
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5, fontWeight: 500 }}>
+              {t('devtools.console.level')}
+            </Typography>
             {(['error', 'warn', 'info', 'log', 'debug'] as ConsoleLevel[]).map(level => (
               <Chip
                 key={level}
@@ -159,159 +201,289 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
                   }
                   setFilter(prev => ({ ...prev, levels: newLevels }));
                 }}
+                sx={{
+                  fontWeight: filter.levels.has(level) ? 600 : 400,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: theme.shadows[2],
+                  },
+                }}
               />
             ))}
           </Box>
         </Box>
-      </Box>
+      </Paper>
 
-      {/* 控制台输出 */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto', bgcolor: theme.palette.mode === 'dark' ? '#1e1e1e' : '#fafafa' }}>
-        <List dense sx={{ p: 0, fontFamily: 'monospace' }}>
-          {filteredEntries.map((entry) => (
-            <ListItem
-              key={entry.id}
+      {/* 控制台输出 - 优化设计 */}
+      <Box 
+        sx={{ 
+          flexGrow: 1, 
+          overflow: 'auto',
+          bgcolor: theme.palette.mode === 'dark' 
+            ? alpha(theme.palette.common.black, 0.3)
+            : alpha(theme.palette.common.black, 0.02),
+          position: 'relative',
+        }}
+      >
+        <List 
+          dense 
+          sx={{ 
+            p: 0, 
+            fontFamily: 'monospace',
+            fontSize: '0.8125rem',
+          }}
+        >
+          {filteredEntries.length === 0 ? (
+            <Box
               sx={{
-                py: 0.25,
-                px: 1,
-                borderBottom: '1px solid',
-                borderColor: 'divider',
-                '&:hover': { bgcolor: 'action.hover' },
-                alignItems: 'flex-start'
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 8,
+                color: 'text.secondary',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', gap: 1 }}>
-                <Box sx={{ color: getConsoleColor(entry.level), mt: 0.5 }}>
-                  {getConsoleIcon(entry.level)}
-                </Box>
-                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                  {filter.showTimestamps && (
-                    <Typography variant="caption" sx={{ color: 'text.secondary', mr: 1 }}>
-                      {new Date(entry.timestamp).toLocaleTimeString()}
-                    </Typography>
-                  )}
-                  <Box
-                    sx={{
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
-                      maxHeight: '300px',
-                      overflow: 'auto',
-                      border: entry.args.some(arg => {
-                        const formatted = consoleService.formatArg(arg);
-                        return formatted.length > 200 || formatted.split('\n').length > 5;
-                      }) ? '1px solid' : 'none',
-                      borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                      borderRadius: '4px',
-                      padding: entry.args.some(arg => {
-                        const formatted = consoleService.formatArg(arg);
-                        return formatted.length > 200 || formatted.split('\n').length > 5;
-                      }) ? '8px' : '0',
-                      backgroundColor: entry.args.some(arg => {
-                        const formatted = consoleService.formatArg(arg);
-                        return formatted.length > 200 || formatted.split('\n').length > 5;
-                      }) ? (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)') : 'transparent',
-                      '&::-webkit-scrollbar': {
-                        width: '6px',
-                        height: '6px',
-                      },
-                      '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-                        borderRadius: '3px',
-                        '&:hover': {
-                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
-                        }
-                      },
-                      '&::-webkit-scrollbar-track': {
-                        backgroundColor: 'transparent',
-                      },
-                      '&::-webkit-scrollbar-corner': {
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
-                    {entry.args.map((arg, argIndex) => (
-                      <span key={argIndex} style={{ marginRight: '8px' }}>
-                        {consoleService.formatArg(arg)}
-                      </span>
-                    ))}
-                  </Box>
-                  {entry.stack && (
-                    <Collapse in={true}>
-                      <Typography
-                        variant="caption"
-                        component="pre"
+              <TerminalIcon size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
+              <Typography variant="body2" color="text.secondary">
+                {filter.searchText ? t('devtools.console.noResults') : t('devtools.console.empty')}
+              </Typography>
+            </Box>
+          ) : (
+            filteredEntries.map((entry, index) => {
+              const hasLongContent = entry.args.some(arg => {
+                const formatted = consoleService.formatArg(arg);
+                return formatted.length > 200 || formatted.split('\n').length > 5;
+              });
+              
+              return (
+                <ListItem
+                  key={entry.id}
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    borderBottom: index < filteredEntries.length - 1 ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 'none',
+                    '&:hover': { 
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.05)
+                        : alpha(theme.palette.common.black, 0.02),
+                    },
+                    alignItems: 'flex-start',
+                    transition: 'background-color 0.2s',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', gap: 1.5 }}>
+                    <Box 
+                      sx={{ 
+                        color: getConsoleColor(entry.level), 
+                        mt: 0.25,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 20,
+                        height: 20,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {getConsoleIcon(entry.level)}
+                    </Box>
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        {filter.showTimestamps && (
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: 'text.secondary',
+                              fontSize: '0.75rem',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {new Date(entry.timestamp).toLocaleTimeString()}
+                          </Typography>
+                        )}
+                        <Chip
+                          label={entry.level.toUpperCase()}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.65rem',
+                            fontWeight: 600,
+                            bgcolor: alpha(getConsoleColor(entry.level), 0.15),
+                            color: getConsoleColor(entry.level),
+                            border: `1px solid ${alpha(getConsoleColor(entry.level), 0.3)}`,
+                          }}
+                        />
+                      </Box>
+                      <Box
                         sx={{
-                          color: 'text.secondary',
-                          fontSize: '0.75rem',
-                          mt: 0.5,
-                          whiteSpace: 'pre-wrap',
                           wordBreak: 'break-word',
-                          maxHeight: '200px',
-                          overflow: 'auto',
-                          border: '1px solid',
-                          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                          borderRadius: '4px',
-                          padding: '8px',
-                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                          whiteSpace: 'pre-wrap',
+                          maxHeight: hasLongContent ? '300px' : 'none',
+                          overflow: hasLongContent ? 'auto' : 'visible',
+                          border: hasLongContent ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 'none',
+                          borderRadius: hasLongContent ? '6px' : 0,
+                          padding: hasLongContent ? '10px' : '0',
+                          backgroundColor: hasLongContent
+                            ? (theme.palette.mode === 'dark' 
+                                ? alpha(theme.palette.common.white, 0.03)
+                                : alpha(theme.palette.common.black, 0.015))
+                            : 'transparent',
                           '&::-webkit-scrollbar': {
-                            width: '6px',
-                            height: '6px',
+                            width: '8px',
+                            height: '8px',
                           },
                           '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-                            borderRadius: '3px',
+                            backgroundColor: alpha(theme.palette.text.secondary, 0.3),
+                            borderRadius: '4px',
                             '&:hover': {
-                              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)',
+                              backgroundColor: alpha(theme.palette.text.secondary, 0.5),
                             }
                           },
                           '&::-webkit-scrollbar-track': {
                             backgroundColor: 'transparent',
                           },
-                          '&::-webkit-scrollbar-corner': {
-                            backgroundColor: 'transparent',
-                          },
                         }}
                       >
-                        {entry.stack}
-                      </Typography>
-                    </Collapse>
-                  )}
-                </Box>
-              </Box>
-            </ListItem>
-          ))}
+                        {entry.args.map((arg, argIndex) => (
+                          <span 
+                            key={argIndex} 
+                            style={{ 
+                              marginRight: '8px',
+                              color: theme.palette.text.primary,
+                            }}
+                          >
+                            {consoleService.formatArg(arg)}
+                          </span>
+                        ))}
+                      </Box>
+                      {entry.stack && (
+                        <Collapse in={true}>
+                          <Typography
+                            variant="caption"
+                            component="pre"
+                            sx={{
+                              color: theme.palette.error.main,
+                              fontSize: '0.75rem',
+                              mt: 1,
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              maxHeight: '200px',
+                              overflow: 'auto',
+                              border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
+                              borderRadius: '6px',
+                              padding: '10px',
+                              backgroundColor: alpha(theme.palette.error.main, 0.05),
+                              fontFamily: 'monospace',
+                              '&::-webkit-scrollbar': {
+                                width: '8px',
+                                height: '8px',
+                              },
+                              '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: alpha(theme.palette.text.secondary, 0.3),
+                                borderRadius: '4px',
+                                '&:hover': {
+                                  backgroundColor: alpha(theme.palette.text.secondary, 0.5),
+                                }
+                              },
+                              '&::-webkit-scrollbar-track': {
+                                backgroundColor: 'transparent',
+                              },
+                            }}
+                          >
+                            {entry.stack}
+                          </Typography>
+                        </Collapse>
+                      )}
+                    </Box>
+                  </Box>
+                </ListItem>
+              );
+            })
+          )}
           <div ref={consoleEndRef} />
         </List>
       </Box>
 
-      {/* 命令输入 */}
-      <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider' }}>
+      {/* 命令输入 - 优化设计 */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          bgcolor: theme.palette.mode === 'dark'
+            ? alpha(theme.palette.background.paper, 0.4)
+            : theme.palette.background.paper,
+          borderRadius: 0,
+        }}
+      >
         <TextField
           size="small"
-          placeholder="输入 JavaScript 命令..."
+          placeholder={t('devtools.console.commandPlaceholder')}
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={handleCommandKeyDown}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Typography variant="body2" sx={{ color: 'primary.main' }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: 'primary.main',
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                  }}
+                >
                   &gt;
                 </Typography>
               </InputAdornment>
             ),
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={executeCommand} disabled={!command.trim()}>
-                  <PlayArrowIcon size={16} />
-                </IconButton>
+                <Tooltip title={t('devtools.console.executeTooltip')}>
+                  <span>
+                    <IconButton 
+                      size="small" 
+                      onClick={executeCommand} 
+                      disabled={!command.trim()}
+                      sx={{
+                        color: command.trim() ? 'primary.main' : 'action.disabled',
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      <PlayArrowIcon size={18} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
               </InputAdornment>
             ),
           }}
           fullWidth
-          sx={{ fontFamily: 'monospace' }}
+          sx={{
+            fontFamily: 'monospace',
+            fontSize: '0.875rem',
+            '& .MuiOutlinedInput-root': {
+              bgcolor: theme.palette.mode === 'dark' 
+                ? alpha(theme.palette.common.white, 0.05)
+                : alpha(theme.palette.common.black, 0.02),
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.common.white, 0.08)
+                  : alpha(theme.palette.common.black, 0.04),
+              },
+              '&.Mui-focused': {
+                bgcolor: theme.palette.mode === 'dark' 
+                  ? alpha(theme.palette.common.white, 0.08)
+                  : alpha(theme.palette.common.black, 0.04),
+                borderColor: 'primary.main',
+              },
+            },
+          }}
         />
-      </Box>
+      </Paper>
     </Box>
   );
 };

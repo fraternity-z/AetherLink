@@ -17,9 +17,11 @@ import { alpha } from '@mui/material/styles';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { OpenAIWhisperTab, WhisperTestSection } from '../../../components/VoiceRecognition';
 import type { VoiceRecognitionSettings, OpenAIWhisperSettings as OpenAIWhisperSettingsType } from '../../../shared/types/voice';
+import { useTranslation } from '../../../i18n';
 
 const OpenAIWhisperSettings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // 状态管理
   const [whisperSettings, setWhisperSettings] = useState<OpenAIWhisperSettingsType>({
@@ -85,12 +87,12 @@ const OpenAIWhisperSettings: React.FC = () => {
           provider: 'openai',
         });
       } catch (error) {
-        console.error('加载OpenAI Whisper设置失败:', error);
+        console.error(t('settings.voice.common.loadingError', { service: 'OpenAI Whisper' }), error);
       }
     };
 
     loadSettings();
-  }, []);
+  }, [t]);
 
   // 保存设置
   const handleSave = useCallback(async () => {
@@ -118,13 +120,13 @@ const OpenAIWhisperSettings: React.FC = () => {
 
 
     } catch (error) {
-      console.error('保存OpenAI Whisper设置失败:', error);
+      console.error(t('settings.voice.common.saveErrorText', { service: 'OpenAI Whisper' }), error);
       setUIState(prev => ({
         ...prev,
-        saveError: '保存设置失败，请重试',
+        saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [whisperSettings, speechRecognitionSettings]);
+  }, [whisperSettings, speechRecognitionSettings, navigate, t]);
 
 
 
@@ -163,7 +165,7 @@ const OpenAIWhisperSettings: React.FC = () => {
           <IconButton
             edge="start"
             onClick={handleBack}
-            aria-label="返回"
+            aria-label={t('settings.voice.back')}
             size="large"
             sx={{
               color: 'primary.main',
@@ -189,8 +191,8 @@ const OpenAIWhisperSettings: React.FC = () => {
               WebkitBackgroundClip: 'text',
               color: 'transparent',
             }}
-          >
-            OpenAI Whisper 设置
+            >
+            {t('settings.voice.whisper.title')}
           </Typography>
           <Button
             onClick={handleSave}
@@ -205,7 +207,7 @@ const OpenAIWhisperSettings: React.FC = () => {
               px: 3,
             }}
           >
-            保存
+            {t('settings.voice.common.save')}
           </Button>
         </Toolbar>
       </AppBar>
