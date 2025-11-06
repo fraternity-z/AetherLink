@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Avatar } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import {
   Github,
   MessageCircle,
@@ -32,6 +32,7 @@ const AboutPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const appVersion = APP_VERSION;
+  const [iconError, setIconError] = useState(false);
 
   const openLink = async (url: string) => {
     try {
@@ -39,6 +40,10 @@ const AboutPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to open link:', error);
     }
+  };
+
+  const handleIconError = () => {
+    setIconError(true);
   };
 
   return (
@@ -53,17 +58,19 @@ const AboutPage: React.FC = () => {
           <Group>
             <Box sx={{ p: 2 }}>
               <XStack sx={{ gap: 2 }}>
-                <Avatar
-                  src="/resources/icon.png"
+                <Box
+                  component="img"
+                  src={iconError ? '/icon-192.png' : '/app-icon.png'}
                   alt="AetherLink Logo"
+                  onError={handleIconError}
                   sx={{
                     width: 70,
                     height: 70,
                     borderRadius: '50%',
+                    objectFit: 'cover',
+                    flexShrink: 0,
                   }}
-                >
-                  A
-                </Avatar>
+                />
                 <YStack sx={{ gap: 0.5, py: 0.5, flex: 1 }}>
                   <Typography
                     variant="h6"
