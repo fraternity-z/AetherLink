@@ -2,38 +2,27 @@
 # 阶段1: 构建阶段
 FROM node:22-alpine AS builder
 
-# 安装构建依赖
-RUN apk add --no-cache python3 make g++ cairo-dev jpeg-dev pango-dev giflib-dev
-
 # 设置工作目录
 WORKDIR /app
 
-# 设置环境变量
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=4096"
-ENV VITE_CJS_IGNORE_WARNING=true
-ENV DISABLE_ESLINT_PLUGIN=true
-ENV TSC_COMPILE_ON_ERROR=true
-ENV CI=false
+# 启用 Corepack 以使用 Yarn
+RUN corepack enable
 
-# 设置npm镜像源（可选，提高国内下载速度）
-RUN npm config set registry https://registry.npmmirror.com
+# 设置yarn镜像源（可选，提高国内下载速度）
+RUN yarn config set registry https://registry.npmmirror.com
 
 # 复制package文件
 COPY package*.json ./
+COPY yarn.lock ./
 
-# 安装所有依赖（包括开发依赖，构建时需要）
-RUN npm ci --legacy-peer-deps --ignore-scripts || npm install --legacy-peer-deps --ignore-scripts
+# 安装依赖（使用yarn获得更快、更可靠的构建）
+RUN yarn install --frozen-lockfile
 
-# 复制源代码和配置文件
+# 复制源代码
 COPY . .
 
-# 构建应用（带详细日志）
-RUN echo "开始构建..." && \
-    npm run build --verbose || \
-    (echo "构建失败，尝试清理缓存..." && \
-     rm -rf node_modules/.vite && \
-     npm run build --verbose)
+# 构建应用
+RUN yarn build
 
 # 阶段2: 生产阶段
 FROM nginx:alpine AS production
