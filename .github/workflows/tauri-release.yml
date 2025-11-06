@@ -96,23 +96,21 @@ jobs:
       - name: Build Frontend
         run: npm run build
 
-      - name: Disable macOS Code Signing
-        if: matrix.platform == 'macos-latest'
-        run: |
-          echo "Disabling macOS code signing for unsigned build..."
-          export APPLE_SIGNING_IDENTITY="-"
-          export APPLE_CERTIFICATE=""
-          export APPLE_CERTIFICATE_PASSWORD=""
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
 
       - name: Build Tauri App (Release)
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_SIGNING_IDENTITY: '-'
-          APPLE_CERTIFICATE: ''
-          APPLE_CERTIFICATE_PASSWORD: ''
-        with:
-          args: ${{ matrix.args }}
+        run: |
+          cd src-tauri
+          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+            echo "Building for macOS (unsigned)..."
+            export APPLE_SIGNING_IDENTITY="-"
+            tauri build ${{ matrix.args }}
+          else
+            echo "Building for ${{ matrix.platform }}..."
+            tauri build ${{ matrix.args }}
+          fi
+        shell: bash
 
       - name: Upload Build Artifacts (Windows)
         if: matrix.platform == 'windows-latest'
