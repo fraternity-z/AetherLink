@@ -18,8 +18,6 @@ import useVoiceInputManager from './IntegratedChatInput/VoiceInputManager';
 import useMenuManager from './IntegratedChatInput/MenuManager';
 import useButtonToolbar from './IntegratedChatInput/ButtonToolbar';
 import useExpandableContainer from './IntegratedChatInput/ExpandableContainer';
-import { getThemeColors } from '../../shared/utils/themeUtils';
-import { useTheme } from '@mui/material/styles';
 
 interface IntegratedChatInputProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
@@ -102,11 +100,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 使用共享的 hooks
   const { styles, isDarkMode, inputBoxStyle } = useInputStyles();
 
-  // 获取主题和主题工具
-  const theme = useTheme();
-  const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
-  const themeColors = getThemeColors(theme, themeStyle);
-
   // 获取AI辩论按钮显示设置
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
 
@@ -172,8 +165,8 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   // 从 useInputStyles hook 获取样式
   const { border, borderRadius, boxShadow } = styles;
-  const iconColor = themeColors.isDark ? '#ffffff' : '#000000'; // 深色主题用白色，浅色主题用黑色
-  const disabledColor = themeColors.isDark ? '#555' : '#ccc';
+  const iconColor = isDarkMode ? '#ffffff' : '#000000'; // 深色主题用白色，浅色主题用黑色
+  const disabledColor = isDarkMode ? '#555' : '#ccc';
 
   // 检测iOS设备
   useEffect(() => {
@@ -363,7 +356,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     isKeyboardVisible,
     isDarkMode,
     iconColor,
-    themeColors,
     inputBoxStyle,
     border,
     borderRadius,

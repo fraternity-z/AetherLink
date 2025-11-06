@@ -13,15 +13,11 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   marginBottom: theme.spacing(1),
   borderRadius: theme.spacing(1),
   border: `1px solid ${theme.palette.divider}`,
-  backgroundColor: theme.palette.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.02)'
-    : 'rgba(0, 0, 0, 0.02)',
+  backgroundColor: 'var(--theme-msg-block-bg)',
   position: 'relative',
   transition: 'all 0.2s ease-in-out',
   '&:hover': {
-    backgroundColor: theme.palette.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.04)'
-      : 'rgba(0, 0, 0, 0.04)',
+    backgroundColor: 'var(--theme-msg-block-bg-hover)',
     borderColor: theme.palette.primary.main,
     transform: 'translateY(-1px)',
     boxShadow: theme.shadows[3],
@@ -63,9 +59,7 @@ const KnowledgeIcon = styled(Box)(({ theme }) => ({
 const ResultItem = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(1.5),
   padding: theme.spacing(1.5),
-  backgroundColor: theme.palette.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.03)'
-    : 'rgba(0, 0, 0, 0.03)',
+  backgroundColor: 'var(--theme-msg-block-bg-content)',
   borderRadius: theme.spacing(0.75),
   border: `1px solid ${theme.palette.divider}`,
   '&:last-child': {
@@ -84,21 +78,15 @@ const ScrollableContent = styled(Box)(({ theme }) => ({
     backgroundColor: 'transparent',
   },
   '&::-webkit-scrollbar-thumb': {
-    backgroundColor: theme.palette.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.2)'
-      : 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
     borderRadius: '2px',
     '&:hover': {
-      backgroundColor: theme.palette.mode === 'dark'
-        ? 'rgba(255, 255, 255, 0.3)'
-        : 'rgba(0, 0, 0, 0.3)',
+      opacity: 0.8,
     }
   },
   // Firefox滚动条样式
   scrollbarWidth: 'thin',
-  scrollbarColor: theme.palette.mode === 'dark'
-    ? 'rgba(255, 255, 255, 0.2) transparent'
-    : 'rgba(0, 0, 0, 0.2) transparent',
+  scrollbarColor: 'var(--theme-msg-block-scrollbar-thumb) transparent',
 }));
 
 const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block }) => {

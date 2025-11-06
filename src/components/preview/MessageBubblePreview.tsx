@@ -5,7 +5,6 @@ import {
   Paper,
   useTheme
 } from '@mui/material';
-import { getThemeColors } from '../../shared/utils/themeUtils';
 import { useTranslation } from '../../i18n';
 
 interface MessageBubblePreviewProps {
@@ -41,14 +40,17 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
   showModelName = true
 }) => {
   const theme = useTheme();
-  const themeColors = getThemeColors(theme);
   const { t } = useTranslation();
 
-  // 计算实际使用的颜色
-  const actualUserBubbleColor = customBubbleColors.userBubbleColor || themeColors.userBubbleColor;
-  const actualUserTextColor = customBubbleColors.userTextColor || themeColors.textPrimary;
-  const actualAiBubbleColor = customBubbleColors.aiBubbleColor || themeColors.aiBubbleColor;
-  const actualAiTextColor = customBubbleColors.aiTextColor || themeColors.textPrimary;
+  // 计算实际使用的颜色 - 使用 CSS Variables 作为默认值
+  const actualUserBubbleColor = customBubbleColors.userBubbleColor || 
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-user-bubble-color').trim();
+  const actualUserTextColor = customBubbleColors.userTextColor || 
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-text-primary').trim();
+  const actualAiBubbleColor = customBubbleColors.aiBubbleColor || 
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-ai-bubble-color').trim();
+  const actualAiTextColor = customBubbleColors.aiTextColor || 
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-text-primary').trim();
 
   return (
     <Paper
@@ -349,14 +351,14 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                       width: 20,
                       height: 12,
                       borderRadius: '6px',
-                      backgroundColor: themeColors.aiBubbleColor,
+                      backgroundColor: 'var(--theme-ai-bubble-color)',
                       opacity: 0.8
                     }} />
                     <Box sx={{
                       width: 16,
                       height: 12,
                       borderRadius: '6px',
-                      backgroundColor: themeColors.aiBubbleColor,
+                      backgroundColor: 'var(--theme-ai-bubble-color)',
                       opacity: 0.8
                     }} />
                   </Box>

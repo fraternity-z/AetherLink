@@ -14,7 +14,6 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat, ChatTopic, Message, Model } from '../../../shared/types';
 import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
-import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { generateBackgroundStyle } from '../../../shared/utils/backgroundUtils';
 import { useTheme } from '@mui/material/styles';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
@@ -226,8 +225,6 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   const settings = useSelector(selectChatPageSettings);
 
   // ==================== 计算属性和样式 ====================
-  const themeColors = getThemeColors(theme, settings.themeStyle);
-
   const mergedTopToolbarSettings = {
     ...DEFAULT_TOP_TOOLBAR_SETTINGS,
     ...settings.topToolbar
@@ -241,19 +238,19 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     [settings.chatBackground]
   );
 
-  // 优化：将样式分离，减少重新计算
+  // 优化：将样式分离，减少重新计算，使用 CSS Variables
   const baseStyles = useMemo(() => ({
     mainContainer: {
       display: 'flex',
       flexDirection: { xs: 'column', sm: 'row' },
       height: '100vh',
-      bgcolor: themeColors.background
+      bgcolor: 'var(--theme-bg-default)'
     },
     appBar: {
-      bgcolor: themeColors.paper,
-      color: themeColors.textPrimary,
+      bgcolor: 'var(--theme-bg-paper)',
+      color: 'var(--theme-text-primary)',
       borderBottom: '1px solid',
-      borderColor: themeColors.borderColor,
+      borderColor: 'var(--theme-border-default)',
     },
     messageContainer: {
       flexGrow: 1,
@@ -262,7 +259,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       flexDirection: 'column',
       width: '100%',
       maxWidth: '100%',
-      backgroundColor: themeColors.background,
+      backgroundColor: 'var(--theme-bg-default)',
     },
     welcomeContainer: {
       display: 'flex',
@@ -272,14 +269,14 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       height: '80%',
       p: 3,
       textAlign: 'center',
-      bgcolor: themeColors.background,
+      bgcolor: 'var(--theme-bg-default)',
     },
     welcomeText: {
       fontWeight: 400,
-      color: themeColors.textPrimary,
+      color: 'var(--theme-text-primary)',
       mb: 1,
     }
-  }), [themeColors]);
+  }), []);
 
   // contentContainerStyle已移除，样式直接在motion.div中定义
 
@@ -645,7 +642,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           flexDirection: 'column',
           height: '100vh',
           overflow: 'hidden',
-          backgroundColor: themeColors.background,
+          backgroundColor: 'var(--theme-bg-default)',
           // 🔧 固定定位，避免被Drawer推开
           position: 'fixed',
           top: 0,

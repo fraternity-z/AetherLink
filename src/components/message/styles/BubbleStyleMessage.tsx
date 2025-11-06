@@ -52,14 +52,14 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
   // 获取自定义气泡颜色设置
   const customBubbleColors = settings?.customBubbleColors || {};
 
-  // 计算实际使用的颜色
+  // 计算实际使用的颜色 - 使用 CSS Variables 作为回退值
   const actualBubbleColor = isUserMessage
-    ? (customBubbleColors.userBubbleColor || themeColors?.userBubbleColor)
-    : (customBubbleColors.aiBubbleColor || themeColors?.aiBubbleColor);
+    ? (customBubbleColors.userBubbleColor || 'var(--theme-msg-user-bg)')
+    : (customBubbleColors.aiBubbleColor || 'var(--theme-msg-ai-bg)');
 
   const actualTextColor = isUserMessage
-    ? (customBubbleColors.userTextColor || themeColors?.textPrimary)
-    : (customBubbleColors.aiTextColor || themeColors?.textPrimary);
+    ? (customBubbleColors.userTextColor || 'var(--theme-text-primary)')
+    : (customBubbleColors.aiTextColor || 'var(--theme-text-primary)');
 
   return (
     <Box
@@ -104,7 +104,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                 ) : (
                   <Avatar
                     sx={{
-                      bgcolor: themeColors?.buttonSecondary,
+                      bgcolor: 'var(--theme-btn-secondary-bg)',
                       width: 24,
                       height: 24,
                       borderRadius: '25%',

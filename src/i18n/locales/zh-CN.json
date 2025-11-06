@@ -717,6 +717,26 @@
           "soft": {
             "name": "柔和渐变",
             "description": "2025年流行的柔和渐变设计，温暖舒适的视觉体验"
+          },
+          "ocean": {
+            "name": "海洋风格",
+            "description": "2025年流行的海洋蓝绿色系，清新舒适的视觉体验"
+          },
+          "sunset": {
+            "name": "日落风格",
+            "description": "2025年流行的日落色系，温暖浪漫的视觉氛围"
+          },
+          "cinnamonSlate": {
+            "name": "肉桂板岩",
+            "description": "2025年流行趋势：深邃温暖的色调，带来内心的平静"
+          },
+          "horizonGreen": {
+            "name": "地平线绿",
+            "description": "2025年日本代表色：带蓝调的绿色，象征希望与自然"
+          },
+          "cherryCoded": {
+            "name": "樱桃编码",
+            "description": "2025年流行趋势：深樱桃红色，传达热情与活力"
           }
         }
       }

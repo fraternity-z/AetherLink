@@ -1,13 +1,10 @@
 import React, { useMemo, startTransition, useDeferredValue } from 'react';
-import { Box, Tabs, Tab, CircularProgress, useTheme } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import { useSidebarContext } from './SidebarContext';
 import TabPanel, { a11yProps } from './TabPanel';
 import AssistantTab from './AssistantTab/index';
 import TopicTab from './TopicTab/index';
 import SettingsTab from './SettingsTab/index';
-import { getThemeColors } from '../../shared/utils/themeUtils';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../shared/store';
 import { Bot, MessageSquare, Settings } from 'lucide-react';
 
 /**
@@ -45,11 +42,7 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
     refreshTopics
   } = useSidebarContext();
 
-  // 获取主题和主题工具 - 使用useMemo优化性能
-  const theme = useTheme();
-  // 使用更精确的选择器，避免不必要的重新渲染
-  const themeStyle = useSelector((state: RootState) => state.settings.themeStyle, (prev, next) => prev === next);
-  const themeColors = useMemo(() => getThemeColors(theme, themeStyle), [theme, themeStyle]);
+  // 移除 getThemeColors，直接使用 CSS Variables
 
   // 使用useDeferredValue延迟非关键状态更新，提升切换性能
   const deferredValue = useDeferredValue(value);
@@ -120,10 +113,10 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                   // 移除transition，减少动画计算开销
                   transition: 'none',
                   '&.Mui-selected': {
-                    backgroundColor: themeColors.selectedColor,
+                    backgroundColor: 'var(--theme-selected-color)',
                   },
                   '&:hover': {
-                    backgroundColor: themeColors.hoverColor,
+                    backgroundColor: 'var(--theme-hover-color)',
                   },
                 },
               }}
@@ -135,15 +128,15 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                 sx={{
                   minHeight: '32px',
                   borderRadius: '8px',
-                  color: themeColors.textPrimary, // 使用主题文字颜色
+                  color: 'var(--theme-text-primary)', // 使用 CSS Variables
                   '& .MuiTab-iconWrapper': {
                     marginBottom: '2px',
                   },
                   '&.Mui-selected': {
-                    color: themeColors.textPrimary, // 选中状态保持文字颜色
+                    color: 'var(--theme-text-primary)', // 选中状态保持文字颜色
                   },
                   '&:hover': {
-                    color: themeColors.textPrimary, // 悬停状态保持文字颜色
+                    color: 'var(--theme-text-primary)', // 悬停状态保持文字颜色
                   },
                 }}
               />
@@ -154,15 +147,15 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                 sx={{
                   minHeight: '32px',
                   borderRadius: '8px',
-                  color: themeColors.textPrimary, // 使用主题文字颜色
+                  color: 'var(--theme-text-primary)', // 使用 CSS Variables
                   '& .MuiTab-iconWrapper': {
                     marginBottom: '2px',
                   },
                   '&.Mui-selected': {
-                    color: themeColors.textPrimary, // 选中状态保持文字颜色
+                    color: 'var(--theme-text-primary)', // 选中状态保持文字颜色
                   },
                   '&:hover': {
-                    color: themeColors.textPrimary, // 悬停状态保持文字颜色
+                    color: 'var(--theme-text-primary)', // 悬停状态保持文字颜色
                   },
                 }}
               />
@@ -173,15 +166,15 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                 sx={{
                   minHeight: '32px',
                   borderRadius: '8px',
-                  color: themeColors.textPrimary, // 使用主题文字颜色
+                  color: 'var(--theme-text-primary)', // 使用 CSS Variables
                   '& .MuiTab-iconWrapper': {
                     marginBottom: '2px',
                   },
                   '&.Mui-selected': {
-                    color: themeColors.textPrimary, // 选中状态保持文字颜色
+                    color: 'var(--theme-text-primary)', // 选中状态保持文字颜色
                   },
                   '&:hover': {
-                    color: themeColors.textPrimary, // 悬停状态保持文字颜色
+                    color: 'var(--theme-text-primary)', // 悬停状态保持文字颜色
                   },
                 }}
               />

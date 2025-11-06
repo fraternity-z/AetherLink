@@ -717,6 +717,26 @@
           "soft": {
             "name": "Soft Gradient",
             "description": "Popular 2025 soft gradient design with warm and comfortable visual experience"
+          },
+          "ocean": {
+            "name": "Ocean Style",
+            "description": "Popular 2025 ocean blue-green color scheme with fresh and comfortable visual experience"
+          },
+          "sunset": {
+            "name": "Sunset Style",
+            "description": "Popular 2025 sunset color scheme with warm and romantic visual atmosphere"
+          },
+          "cinnamonSlate": {
+            "name": "Cinnamon Slate",
+            "description": "2025 Trend: Deep and warm tones that bring inner peace"
+          },
+          "horizonGreen": {
+            "name": "Horizon Green",
+            "description": "2025 Japan Representative Color: Blue-toned green symbolizing hope and nature"
+          },
+          "cherryCoded": {
+            "name": "Cherry Coded",
+            "description": "2025 Trend: Deep cherry red conveying passion and vitality"
           }
         }
       }

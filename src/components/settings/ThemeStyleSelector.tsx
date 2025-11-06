@@ -20,6 +20,11 @@ import {
   Leaf as LeafIcon,
   Zap as ZapIcon,
   Heart as HeartIcon,
+  Waves as WavesIcon,
+  Sunrise as SunriseIcon,
+  Coffee as CoffeeIcon,
+  Mountain as MountainIcon,
+  Cherry as CherryIcon,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
@@ -30,6 +35,11 @@ const themeIcons: Record<ThemeStyle, React.ReactNode> = {
   nature: <LeafIcon />,
   tech: <ZapIcon />,
   soft: <HeartIcon />,
+  ocean: <WavesIcon />,
+  sunset: <SunriseIcon />,
+  cinnamonSlate: <CoffeeIcon />,
+  horizonGreen: <MountainIcon />,
+  cherryCoded: <CherryIcon />,
 };
 
 interface ThemeStyleSelectorProps {

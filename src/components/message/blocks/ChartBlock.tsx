@@ -79,7 +79,7 @@ const ChartBlock: React.FC<Props> = ({ block }) => {
         variant="outlined"
         sx={{
           p: 2,
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.02)',
+          backgroundColor: 'var(--theme-msg-block-bg)',
           width: '100%',
           height: '300px',
           display: 'flex',

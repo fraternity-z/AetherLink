@@ -24,8 +24,6 @@ import QuickPhraseButton from '../QuickPhraseButton';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition';
 import { useKeyboardManager } from '../../shared/hooks/useKeyboardManager';
 import { EnhancedVoiceInput } from '../VoiceRecognition';
-import { getThemeColors } from '../../shared/utils/themeUtils';
-import { useTheme } from '@mui/material/styles';
 
 interface ChatInputProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
@@ -102,11 +100,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // 使用共享的 hooks
   const { styles, isDarkMode, inputBoxStyle } = useInputStyles();
 
-  // 获取主题和主题工具
-  const theme = useTheme();
-  const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
-  const themeColors = getThemeColors(theme, themeStyle);
-
   // 获取AI辩论按钮显示设置
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
 
@@ -171,8 +164,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // 从 useInputStyles hook 获取样式
   const { border, borderRadius, boxShadow } = styles;
-  const iconColor = themeColors.iconColor;
-  const disabledColor = themeColors.isDark ? '#555' : '#ccc';
+  const iconColor = isDarkMode ? '#ffffff' : '#000000';
+  const disabledColor = isDarkMode ? '#555' : '#ccc';
 
   // 检测iOS设备
   useEffect(() => {
@@ -586,7 +579,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         padding: isTablet ? '6px 12px' : isMobile ? '5px 8px' : '5px 8px',
         borderRadius: borderRadius,
         /* 使用主题颜色作为背景，防止输入框与底部消息重叠或产生视觉干扰 */
-        background: themeColors.paper,
+        background: 'var(--theme-bg-paper)',
         border: border,
         minHeight: isTablet ? '56px' : isMobile ? '48px' : '50px', // 增加容器最小高度以适应新的textarea高度
         boxShadow: boxShadow,

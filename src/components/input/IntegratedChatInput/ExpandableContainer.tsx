@@ -13,7 +13,6 @@ interface ExpandableContainerProps {
   // 样式相关
   isDarkMode: boolean;
   iconColor: string;
-  themeColors: any;
   inputBoxStyle: string;
   border: string;
   borderRadius: string;
@@ -34,7 +33,6 @@ const useExpandableContainer = ({
   isKeyboardVisible,
   isDarkMode,
   iconColor,
-  themeColors,
   inputBoxStyle,
   border,
   borderRadius,
@@ -203,7 +201,7 @@ const useExpandableContainer = ({
           flexDirection: 'column',
           padding: isTablet ? '8px 12px' : isMobile ? '6px 8px' : '7px 10px',
           borderRadius: borderRadius,
-          background: themeColors.paper,
+          background: 'var(--theme-bg-paper)',
           border: border,
           minHeight: isTablet ? '72px' : isMobile ? '64px' : '68px',
           boxShadow: boxShadow,
@@ -226,8 +224,8 @@ const useExpandableContainer = ({
       </div>
     );
   }, [
-    getResponsiveStyles, isKeyboardVisible, isMobile, isTablet, isIOS, themeColors.paper,
-    border, boxShadow, inputBoxStyle, renderExpandButton
+    getResponsiveStyles, isKeyboardVisible, isMobile, isTablet, isIOS,
+    border, boxShadow, inputBoxStyle, borderRadius, renderExpandButton
   ]);
 
   return {

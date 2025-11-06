@@ -131,13 +131,13 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
           alignItems: 'center',
           mb: 1,
           p: 1,
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+          backgroundColor: 'var(--theme-msg-block-bg)',
           borderRadius: 1,
           border: `1px solid ${theme.palette.divider}`,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           '&:hover': {
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }
         }}>
         <Brain size={16} color={theme.palette.primary.main} style={{ marginRight: 8 }} />
@@ -333,24 +333,18 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
           '&::-webkit-scrollbar': {
             width: '6px',
           },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: theme.palette.mode === 'dark'
-              ? theme.palette.grey[800]
-              : theme.palette.grey[100],
-            borderRadius: '3px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: theme.palette.mode === 'dark'
-              ? theme.palette.grey[600]
-              : theme.palette.grey[400],
-            borderRadius: '3px',
-            '&:hover': {
-              backgroundColor: theme.palette.mode === 'dark'
-                ? theme.palette.grey[500]
-                : theme.palette.grey[600],
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'var(--theme-msg-block-scrollbar-track)',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
+              borderRadius: '3px',
+              '&:hover': {
+                opacity: 0.8,
+              }
             }
-          }
-        }}>
+          }}>
           <Markdown content={content} allowHtml={false} />
         </Box>
       </Drawer>
@@ -419,7 +413,7 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
           display: 'flex',
           alignItems: 'center',
           p: 1.5,
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+          backgroundColor: 'var(--theme-msg-block-bg)',
           borderRadius: '20px',
           cursor: 'default',
           border: `2px solid ${theme.palette.primary.main}30`,
@@ -427,7 +421,7 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
           overflow: 'visible',
           transition: 'all 0.3s ease',
           '&:hover': {
-            backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+            backgroundColor: 'var(--theme-msg-block-bg-hover)',
             borderColor: theme.palette.primary.main + '60',
             transform: 'translateY(-2px)',
             boxShadow: `0 8px 25px ${theme.palette.primary.main}20`,
@@ -489,13 +483,12 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
             left: mousePosition.x + (containerRef.current?.getBoundingClientRect().left || 0) + 20,
             top: mousePosition.y + (containerRef.current?.getBoundingClientRect().top || 0) - 10,
             maxWidth: 350,
-            backgroundColor: theme.palette.mode === 'dark'
-              ? 'rgba(0, 0, 0, 0.95)'
-              : 'rgba(255, 255, 255, 0.98)',
+            backgroundColor: 'var(--theme-bg-elevated)',
             backdropFilter: 'blur(12px)',
+            opacity: 0.98,
             border: `1px solid ${theme.palette.primary.main}40`,
             borderRadius: '12px',
-            boxShadow: `0 8px 32px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.15)'}`,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             zIndex: 9999,
             p: 2,
             pointerEvents: 'none',

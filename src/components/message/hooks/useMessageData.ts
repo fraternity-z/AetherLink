@@ -5,7 +5,6 @@ import { useTheme } from '@mui/material';
 import type { RootState } from '../../../shared/store';
 import type { Message, MessageBlock } from '../../../shared/types/newMessage';
 import { getMessageDividerSetting } from '../../../shared/utils/settingsUtils';
-import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { getUserAvatar, getAssistantAvatar, getModelAvatar } from '../../../shared/utils/avatarUtils';
 
 export const useMessageData = (message: Message) => {
@@ -22,9 +21,8 @@ export const useMessageData = (message: Message) => {
   const settings = useSelector((state: RootState) => state.settings);
   const providers = useSelector((state: RootState) => state.settings.providers || []);
 
-  // 获取主题和主题工具
+  // 获取主题样式（仅用于传递，不再需要 getThemeColors）
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
-  const themeColors = getThemeColors(theme, themeStyle);
 
   // 获取头像和名称显示设置
   const showUserAvatar = settings.showUserAvatar !== false;
@@ -127,7 +125,7 @@ export const useMessageData = (message: Message) => {
     userAvatar,
     showMessageDivider,
     settings,
-    themeColors,
+    // themeColors 已移除，组件应该直接使用 CSS Variables
     themeStyle,
     showUserAvatar,
     showUserName,

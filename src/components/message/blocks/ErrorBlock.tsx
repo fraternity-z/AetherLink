@@ -99,7 +99,7 @@ const ErrorBlock: React.FC<Props> = ({ block }) => {
               sx={{
                 fontSize: '10px',
                 fontFamily: 'monospace',
-                backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                backgroundColor: 'var(--theme-msg-block-code-bg)',
                 padding: '8px',
                 borderRadius: '4px',
                 overflow: 'auto',

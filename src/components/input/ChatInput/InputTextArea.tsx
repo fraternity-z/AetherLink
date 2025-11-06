@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
-import { getThemeColors } from '../../../shared/utils/themeUtils';
 import { useTheme } from '@mui/material/styles';
 
 // 添加自定义滚动条样式
@@ -89,11 +88,6 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   shouldHandleFocus
 }) => {
   const [isIOS, setIsIOS] = useState(false);
-
-  // 获取主题和主题工具
-  const theme = useTheme();
-  const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
-  const themeColors = getThemeColors(theme, themeStyle);
 
   // 检测iOS设备
   useEffect(() => {
@@ -209,8 +203,6 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
     };
   }, []); // 移除所有依赖，只在组件挂载时执行一次
 
-  const textColor = themeColors.textPrimary;
-
   // 缓存样式对象避免重复创建
   const containerStyle = useMemo(() => ({
     flexGrow: 1,
@@ -250,7 +242,7 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
           minHeight: expanded ? `${expandedHeight}px` : `${isMobile ? 32 : isTablet ? 36 : 34}px`,
           height: expanded ? `${expandedHeight}px` : `${textareaHeight}px`,
           maxHeight: expanded ? `${expandedHeight}px` : `${isMobile ? 200 : 250}px`,
-          color: textColor,
+          color: 'var(--theme-text-primary)',
           transition: 'height 0.3s ease-out, min-height 0.3s ease-out, max-height 0.3s ease',
           // Firefox 滚动条样式
           scrollbarWidth: 'thin',

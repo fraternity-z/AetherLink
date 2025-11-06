@@ -110,9 +110,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         maxWidth: '100%', // 确保不超出屏幕
         minWidth: 0, // 允许收缩
         '&:hover': {
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(0, 0, 0, 0.02)',
+          backgroundColor: 'var(--theme-msg-block-bg-hover)',
         }
       }}
     >
@@ -380,18 +378,14 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
       <Box
         onClick={onToggleExpanded}
         sx={{
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.08)'
-            : 'rgba(0, 0, 0, 0.04)',
+          backgroundColor: 'var(--theme-msg-block-bg)',
           borderRadius: '18px 18px 18px 4px',
           p: 1.5,
           cursor: 'pointer',
           maxWidth: '80%',
           transition: 'all 0.2s ease',
           '&:hover': {
-            backgroundColor: theme.palette.mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.12)'
-              : 'rgba(0, 0, 0, 0.08)',
+            backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }
         }}
       >
@@ -629,18 +623,14 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         sx={{
           display: 'inline-flex',
           alignItems: 'center',
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(0, 0, 0, 0.03)',
+          backgroundColor: 'var(--theme-msg-block-bg)',
           borderRadius: 1,
           p: 0.5,
           border: `1px dashed ${theme.palette.divider}`,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           '&:hover': {
-            backgroundColor: theme.palette.mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.08)'
-              : 'rgba(0, 0, 0, 0.06)',
+            backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }
         }}
         onClick={onToggleExpanded}
@@ -699,20 +689,19 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           <Paper
             elevation={6}
             sx={{
-              borderRadius: '18px 18px 18px 4px',
-              overflow: 'hidden',
-              backgroundColor: theme.palette.mode === 'dark'
-                ? 'rgba(30, 30, 30, 0.95)'
-                : 'rgba(255, 255, 255, 0.98)',
-              backdropFilter: 'blur(10px)',
-              width: '100%' // 确保Paper也占满宽度
-            }}
-          >
-            <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
-              <Typography variant="caption" color="text.secondary">
-                {t('settings.appearance.thinkingProcess.preview.texts.thinkingContent')}
-              </Typography>
-            </Box>
+            borderRadius: '18px 18px 18px 4px',
+            overflow: 'hidden',
+            backgroundColor: 'var(--theme-bg-elevated)',
+            backdropFilter: 'blur(10px)',
+            opacity: 0.98,
+            width: '100%' // 确保Paper也占满宽度
+          }}
+        >
+          <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <Typography variant="caption" color="text.secondary">
+              {t('settings.appearance.thinkingProcess.preview.texts.thinkingContent')}
+            </Typography>
+          </Box>
             <Box sx={{
               p: 1.5,
               ...getCompactScrollbarStyles(theme)

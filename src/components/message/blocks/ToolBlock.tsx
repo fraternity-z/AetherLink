@@ -205,9 +205,7 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
           cursor: 'pointer',
           borderBottom: expanded ? `1px solid ${theme.palette.divider}` : 'none',
           '&:hover': {
-            backgroundColor: theme.palette.mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.05)'
-              : 'rgba(0, 0, 0, 0.02)',
+            backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }
         }}
       >
@@ -283,9 +281,7 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
                 p: 1.5,
                 maxHeight: '200px', // 限制参数显示区域的最大高度
                 overflowY: 'auto', // 超出部分可滚动
-                backgroundColor: theme.palette.mode === 'dark'
-                  ? 'rgba(0, 0, 0, 0.2)'
-                  : 'rgba(0, 0, 0, 0.03)',
+                backgroundColor: 'var(--theme-msg-block-code-bg)',
                 fontFamily: 'monospace',
                 fontSize: '0.85rem',
                 overflowX: 'auto',
@@ -296,14 +292,15 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
                   width: '6px',
                 },
                 '&::-webkit-scrollbar-track': {
-                  backgroundColor: 'transparent',
+                  backgroundColor: 'var(--theme-msg-block-scrollbar-track)',
                 },
                 '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                  backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
                   borderRadius: '3px',
                 },
                 '&::-webkit-scrollbar-thumb:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
+                  opacity: 0.8,
                 },
               }}
             >
@@ -351,14 +348,15 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
                       width: '6px',
                     },
                     '&::-webkit-scrollbar-track': {
-                      backgroundColor: 'transparent',
+                      backgroundColor: 'var(--theme-msg-block-scrollbar-track)',
                     },
                     '&::-webkit-scrollbar-thumb': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
                       borderRadius: '3px',
                     },
                     '&::-webkit-scrollbar-thumb:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                      backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
+                      opacity: 0.8,
                     },
                   }}
                 >

@@ -1,294 +1,337 @@
 import { alpha } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import type { ThemeStyle } from '../config/themes';
+import { getCSSVariable } from './cssVariables';
 
 /**
- * 主题工具函数，帮助组件获取主题相关的颜色和样式
+ * 主题工具函数
+ * 
+ * 这个文件提供了主题相关的工具函数，主要功能是：
+ * 1. 从 CSS Variables 读取颜色值
+ * 2. 提供回退机制（fallback）以确保在 CSS Variables 未正确注入时也能正常工作
+ * 
+ * **注意：**
+ * - 优先推荐组件直接使用 CSS Variables (如 var(--primary))
+ * - 这里的函数主要用于需要在 JavaScript 中访问颜色值的特殊场景
+ * - 回退逻辑（switch-case）是安全措施，确保在 CSS Variables 注入失败时有默认值
+ * 
+ * **迁移状态：**
+ * - ✅ 组件层已完全迁移到 CSS Variables
+ * - ✅ getThemeColors 保留用于特殊场景和服务层
+ * - ✅ 所有颜色值优先从 CSS Variables 读取
  */
+
+/**
+ * 从 CSS Variables 获取基础颜色
+ * 优先使用 CSS Variables，如果不存在则回退到 theme.palette
+ */
+const getBaseColorsFromCSSVars = (theme: Theme) => {
+  // 尝试从 CSS Variables 读取
+  const cssVarPrimary = getCSSVariable('primary');
+  const cssVarSecondary = getCSSVariable('secondary');
+  const cssVarBgDefault = getCSSVariable('bg-default');
+  const cssVarBgPaper = getCSSVariable('bg-paper');
+  const cssVarTextPrimary = getCSSVariable('text-primary');
+  const cssVarTextSecondary = getCSSVariable('text-secondary');
+  const cssVarBorderDefault = getCSSVariable('border-default');
+  
+  return {
+    primary: cssVarPrimary || theme.palette.primary.main,
+    secondary: cssVarSecondary || theme.palette.secondary.main,
+    background: cssVarBgDefault || theme.palette.background.default,
+    paper: cssVarBgPaper || theme.palette.background.paper,
+    textPrimary: cssVarTextPrimary || theme.palette.text.primary,
+    textSecondary: cssVarTextSecondary || theme.palette.text.secondary,
+    divider: cssVarBorderDefault || theme.palette.divider,
+  };
+};
+
+/**
+ * 从 CSS Variables 获取按钮颜色
+ * 优先使用 CSS Variables，如果不存在则回退到硬编码的颜色值
+ */
+const getButtonColorsFromCSSVars = (theme: Theme, themeStyle?: ThemeStyle) => {
+  // 从 CSS Variables 读取
+  const cssVarBtnPrimaryBg = getCSSVariable('btn-primary-bg');
+  const cssVarBtnSecondaryBg = getCSSVariable('btn-secondary-bg');
+  
+  // 回退颜色值（如果 CSS Variables 不存在）
+  const getButtonPrimaryFallback = () => {
+    switch (themeStyle) {
+      case 'claude': return '#D97706';
+      case 'nature': return '#2D5016';
+      case 'tech': return '#3B82F6';
+      case 'soft': return '#EC4899';
+      case 'ocean': return '#0EA5E9';
+      case 'sunset': return '#F97316';
+      default: return theme.palette.primary.main;
+    }
+  };
+  
+  const getButtonSecondaryFallback = () => {
+    switch (themeStyle) {
+      case 'claude': return '#059669';
+      case 'nature': return '#8B7355';
+      case 'tech': return '#8B5CF6';
+      case 'soft': return '#14B8A6';
+      case 'ocean': return '#06B6D4';
+      case 'sunset': return '#FB923C';
+      default: return theme.palette.secondary.main;
+    }
+  };
+  
+  return {
+    buttonPrimary: cssVarBtnPrimaryBg || getButtonPrimaryFallback(),
+    buttonSecondary: cssVarBtnSecondaryBg || getButtonSecondaryFallback(),
+  };
+};
+
+/**
+ * 从 CSS Variables 获取交互状态颜色
+ * 优先使用 CSS Variables，如果不存在则回退到计算的颜色值
+ */
+const getInteractionColorsFromCSSVars = (theme: Theme, themeStyle?: ThemeStyle) => {
+  const isDark = theme.palette.mode === 'dark';
+  
+  // 从 CSS Variables 读取
+  const cssVarHoverBg = getCSSVariable('hover-bg');
+  const cssVarSelectedBg = getCSSVariable('selected-bg');
+  const cssVarBorderDefault = getCSSVariable('border-default');
+  
+  // 回退颜色值（如果 CSS Variables 不存在）
+  const getHoverColorFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? alpha('#D97706', 0.12) : alpha('#D97706', 0.08);
+      case 'nature':
+        return isDark ? alpha('#2D5016', 0.12) : alpha('#2D5016', 0.08);
+      case 'tech':
+        return isDark ? alpha('#3B82F6', 0.12) : alpha('#3B82F6', 0.08);
+      case 'soft':
+        return isDark ? alpha('#EC4899', 0.12) : alpha('#EC4899', 0.08);
+      case 'ocean':
+        return isDark ? alpha('#0EA5E9', 0.12) : alpha('#0EA5E9', 0.08);
+      case 'sunset':
+        return isDark ? alpha('#F97316', 0.12) : alpha('#F97316', 0.08);
+      default:
+        return isDark ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.08);
+    }
+  };
+  
+  const getSelectedColorFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? alpha('#D97706', 0.16) : alpha('#D97706', 0.12);
+      case 'nature':
+        return isDark ? alpha('#2D5016', 0.16) : alpha('#2D5016', 0.12);
+      case 'tech':
+        return isDark ? alpha('#3B82F6', 0.16) : alpha('#3B82F6', 0.12);
+      case 'soft':
+        return isDark ? alpha('#EC4899', 0.16) : alpha('#EC4899', 0.12);
+      case 'ocean':
+        return isDark ? alpha('#0EA5E9', 0.16) : alpha('#0EA5E9', 0.12);
+      case 'sunset':
+        return isDark ? alpha('#F97316', 0.16) : alpha('#F97316', 0.12);
+      default:
+        return isDark ? alpha(theme.palette.primary.main, 0.16) : alpha(theme.palette.primary.main, 0.12);
+    }
+  };
+  
+  const getBorderColorFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? alpha('#D97706', 0.2) : alpha('#D97706', 0.1);
+      case 'nature':
+        return isDark ? alpha('#2D5016', 0.2) : alpha('#2D5016', 0.1);
+      case 'tech':
+        return isDark ? alpha('#3B82F6', 0.2) : alpha('#3B82F6', 0.1);
+      case 'soft':
+        return isDark ? alpha('#EC4899', 0.2) : alpha('#EC4899', 0.1);
+      case 'ocean':
+        return isDark ? alpha('#0EA5E9', 0.2) : alpha('#0EA5E9', 0.1);
+      case 'sunset':
+        return isDark ? alpha('#F97316', 0.2) : alpha('#F97316', 0.1);
+      default:
+        return theme.palette.divider;
+    }
+  };
+  
+  return {
+    hoverColor: cssVarHoverBg || getHoverColorFallback(),
+    selectedColor: cssVarSelectedBg || getSelectedColorFallback(),
+    borderColor: cssVarBorderDefault || getBorderColorFallback(),
+  };
+};
+
+/**
+ * 从 CSS Variables 获取图标颜色
+ * 优先使用 CSS Variables，如果不存在则回退到硬编码的颜色值
+ */
+const getIconColorsFromCSSVars = (theme: Theme) => {
+  const isDark = theme.palette.mode === 'dark';
+  
+  // 从 CSS Variables 读取
+  const cssVarIconDefault = getCSSVariable('icon-default');
+  const cssVarIconSuccess = getCSSVariable('icon-success');
+  const cssVarIconWarning = getCSSVariable('icon-warning');
+  const cssVarIconError = getCSSVariable('icon-error');
+  const cssVarIconInfo = getCSSVariable('icon-info');
+  
+  return {
+    iconColor: cssVarIconDefault || (isDark ? '#64B5F6' : '#1976D2'),
+    iconColorSuccess: cssVarIconSuccess || '#4CAF50',
+    iconColorWarning: cssVarIconWarning || '#FF9800',
+    iconColorError: cssVarIconError || '#f44336',
+    iconColorInfo: cssVarIconInfo || '#2196F3',
+  };
+};
+
+/**
+ * 从 CSS Variables 获取工具栏颜色
+ * 优先使用 CSS Variables，如果不存在则回退到硬编码的颜色值
+ */
+const getToolbarColorsFromCSSVars = (theme: Theme) => {
+  const isDark = theme.palette.mode === 'dark';
+  
+  // 从 CSS Variables 读取
+  const cssVarToolbarBg = getCSSVariable('toolbar-bg');
+  const cssVarToolbarBorder = getCSSVariable('toolbar-border');
+  const cssVarToolbarShadow = getCSSVariable('toolbar-shadow');
+  
+  return {
+    toolbarBg: cssVarToolbarBg || (isDark ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.85)'),
+    toolbarBorder: cssVarToolbarBorder || (isDark ? 'rgba(60, 60, 60, 0.8)' : 'rgba(230, 230, 230, 0.8)'),
+    toolbarShadow: cssVarToolbarShadow || (isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.07)'),
+  };
+};
+
+/**
+ * 从 CSS Variables 获取消息气泡颜色
+ * 优先使用 CSS Variables，如果不存在则回退到硬编码的颜色值
+ */
+const getMessageColorsFromCSSVars = (theme: Theme, themeStyle?: ThemeStyle) => {
+  const isDark = theme.palette.mode === 'dark';
+  
+  // 从 CSS Variables 读取
+  const cssVarAiBg = getCSSVariable('msg-ai-bg');
+  const cssVarAiBgActive = getCSSVariable('msg-ai-bg-active');
+  const cssVarUserBg = getCSSVariable('msg-user-bg');
+  const cssVarUserBgActive = getCSSVariable('msg-user-bg-active');
+  
+  // 回退颜色值（如果 CSS Variables 不存在）
+  const getAiBubbleFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? '#2A1F1A' : '#FEF3E2';
+      case 'nature':
+        return isDark ? '#252B20' : '#F7F5F3';
+      case 'tech':
+        return isDark ? '#1E293B' : '#F0F4F8';
+      case 'soft':
+        return isDark ? '#2D1B3D' : '#FDF2F8';
+      case 'ocean':
+        return isDark ? '#1E3A5F' : '#E0F2FE';
+      case 'sunset':
+        return isDark ? '#292524' : '#FFEDD5';
+      default:
+        return isDark ? 'rgba(26, 59, 97, 0.9)' : 'rgba(230, 244, 255, 0.9)';
+    }
+  };
+  
+  const getAiBubbleActiveFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? '#3A2B20' : '#FDE8C7';
+      case 'nature':
+        return isDark ? '#2F3725' : '#EFEBE6';
+      case 'tech':
+        return isDark ? '#273548' : '#E0E8F0';
+      case 'soft':
+        return isDark ? '#3A2748' : '#FCE7F3';
+      case 'ocean':
+        return isDark ? '#2C5282' : '#BAE6FD';
+      case 'sunset':
+        return isDark ? '#3F3F46' : '#FED7AA';
+      default:
+        return isDark ? '#234b79' : '#d3e9ff';
+    }
+  };
+  
+  const getUserBubbleFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? '#1A2E26' : '#E6F7F1';
+      case 'nature':
+        return isDark ? '#1F2A1E' : '#E8F5E3';
+      case 'tech':
+        return isDark ? '#1A2438' : '#E0E8F5';
+      case 'soft':
+        return isDark ? '#2A1F3D' : '#FCE7F3';
+      case 'ocean':
+        return isDark ? '#164E63' : '#CFFAFE';
+      case 'sunset':
+        return isDark ? '#713F12' : '#FEF3C7';
+      default:
+        return isDark ? 'rgba(51, 51, 51, 0.95)' : 'rgba(227, 242, 253, 0.95)';
+    }
+  };
+  
+  const getUserBubbleActiveFallback = () => {
+    switch (themeStyle) {
+      case 'claude':
+        return isDark ? '#234A3D' : '#CCEEE2';
+      case 'nature':
+        return isDark ? '#2A3828' : '#D6EECE';
+      case 'tech':
+        return isDark ? '#243450' : '#C8D8EB';
+      case 'soft':
+        return isDark ? '#382D52' : '#FBDCF1';
+      case 'ocean':
+        return isDark ? '#22D3EE' : '#A5F3FC';
+      case 'sunset':
+        return isDark ? '#A16207' : '#FDE68A';
+      default:
+        return isDark ? alpha('rgba(51, 51, 51, 0.95)', 0.8) : alpha('rgba(227, 242, 253, 0.95)', 0.8);
+    }
+  };
+  
+  return {
+    aiBubbleColor: cssVarAiBg || getAiBubbleFallback(),
+    aiBubbleActiveColor: cssVarAiBgActive || getAiBubbleActiveFallback(),
+    userBubbleColor: cssVarUserBg || getUserBubbleFallback(),
+    userBubbleActiveColor: cssVarUserBgActive || getUserBubbleActiveFallback(),
+  };
+};
 
 // 获取主题适配的颜色
 export const getThemeColors = (theme: Theme, themeStyle?: ThemeStyle) => {
   const isDark = theme.palette.mode === 'dark';
   
-  // 基础颜色
-  const baseColors = {
-    primary: theme.palette.primary.main,
-    secondary: theme.palette.secondary.main,
-    background: theme.palette.background.default,
-    paper: theme.palette.background.paper,
-    textPrimary: theme.palette.text.primary,
-    textSecondary: theme.palette.text.secondary,
-    divider: theme.palette.divider,
-  };
+  // 基础颜色 - 从 CSS Variables 读取
+  const baseColors = getBaseColorsFromCSSVars(theme);
 
-  // 根据主题风格调整特定颜色
-  const styleSpecificColors = {
-    // AI消息气泡颜色 - 根据不同主题风格配置
-    aiBubbleColor: (() => {
-      switch (themeStyle) {
-        case 'claude':
-          // 修复：使用不透明的背景色，避免"双层"效果
-          return isDark ? '#2A1F1A' : '#FEF3E2'; // 深色：深棕色，浅色：浅米色
-        case 'nature':
-          return isDark ? '#252B20' : '#F7F5F3'; // 深色：深绿灰色，浅色：温暖米白色
-        case 'tech':
-          return isDark ? '#1E293B' : '#F0F4F8'; // 深色：深灰蓝色，浅色：淡蓝白色
-        case 'soft':
-          return isDark ? '#2D1B3D' : '#FDF2F8'; // 深色：深紫色，浅色：淡粉色
-        default:
-          return isDark ? 'rgba(26, 59, 97, 0.9)' : 'rgba(230, 244, 255, 0.9)';
-      }
-    })(),
+  // 消息气泡颜色 - 从 CSS Variables 读取
+  const messageColors = getMessageColorsFromCSSVars(theme, themeStyle);
 
-    aiBubbleActiveColor: (() => {
-      switch (themeStyle) {
-        case 'claude':
-          // 修复：使用不透明的悬停背景色
-          return isDark ? '#3A2B20' : '#FDE8C7'; // 深色：稍亮的深棕色，浅色：稍深的米色
-        case 'nature':
-          return isDark ? '#2F3725' : '#EFEBE6'; // 深色：稍亮的深绿灰色，浅色：稍深的米白色
-        case 'tech':
-          return isDark ? '#273548' : '#E0E8F0'; // 深色：稍亮的深灰蓝色，浅色：稍深的淡蓝白色
-        case 'soft':
-          return isDark ? '#3A2748' : '#FCE7F3'; // 深色：稍亮的深紫色，浅色：稍深的淡粉色
-        default:
-          return isDark ? '#234b79' : '#d3e9ff';
-      }
-    })(),
+  // 按钮颜色 - 从 CSS Variables 读取
+  const buttonColors = getButtonColorsFromCSSVars(theme, themeStyle);
 
-    // 用户消息气泡颜色 - 根据不同主题风格配置
-    userBubbleColor: (() => {
-      switch (themeStyle) {
-        case 'claude':
-          // 修复：使用不透明的背景色，避免"双层"效果
-          return isDark ? '#1A2E26' : '#E6F7F1'; // 深色：深绿色，浅色：浅绿色
-        case 'nature':
-          return isDark ? '#1F2A1E' : '#E8F5E3'; // 深色：深绿黑色，浅色：浅绿色
-        case 'tech':
-          return isDark ? '#1A2438' : '#E0E8F5'; // 深色：深蓝黑色，浅色：淡蓝色
-        case 'soft':
-          return isDark ? '#2A1F3D' : '#FCE7F3'; // 深色：深紫黑色，浅色：淡粉色
-        default:
-          return isDark ? 'rgba(51, 51, 51, 0.95)' : 'rgba(227, 242, 253, 0.95)';
-      }
-    })(),
+  // 交互状态颜色 - 从 CSS Variables 读取
+  const interactionColors = getInteractionColorsFromCSSVars(theme, themeStyle);
 
-    // 按钮和交互元素颜色 - 根据主题风格配置
-    buttonPrimary: (() => {
-      switch (themeStyle) {
-        case 'claude': return '#D97706';
-        case 'nature': return '#2D5016';
-        case 'tech': return '#3B82F6';
-        case 'soft': return '#EC4899';
-        default: return theme.palette.primary.main;
-      }
-    })(),
+  // 图标颜色 - 从 CSS Variables 读取
+  const iconColors = getIconColorsFromCSSVars(theme);
 
-    buttonSecondary: (() => {
-      switch (themeStyle) {
-        case 'claude': return '#059669';
-        case 'nature': return '#8B7355';
-        case 'tech': return '#8B5CF6';
-        case 'soft': return '#14B8A6';
-        default: return theme.palette.secondary.main;
-      }
-    })(),
-
-    // 图标颜色
-    iconColor: isDark ? '#64B5F6' : '#1976D2',
-    iconColorSuccess: '#4CAF50',
-    iconColorWarning: '#FF9800',
-    iconColorError: '#f44336',
-    iconColorInfo: '#2196F3',
-
-    // 悬停和选中状态 - 根据主题风格配置
-    hoverColor: (() => {
-      switch (themeStyle) {
-        case 'claude':
-          return isDark ? alpha('#D97706', 0.12) : alpha('#D97706', 0.08);
-        case 'nature':
-          return isDark ? alpha('#2D5016', 0.12) : alpha('#2D5016', 0.08);
-        case 'tech':
-          return isDark ? alpha('#3B82F6', 0.12) : alpha('#3B82F6', 0.08);
-        case 'soft':
-          return isDark ? alpha('#EC4899', 0.12) : alpha('#EC4899', 0.08);
-        default:
-          return isDark ? alpha(theme.palette.primary.main, 0.12) : alpha(theme.palette.primary.main, 0.08);
-      }
-    })(),
-
-    selectedColor: (() => {
-      switch (themeStyle) {
-        case 'claude':
-          return isDark ? alpha('#D97706', 0.16) : alpha('#D97706', 0.12);
-        case 'nature':
-          return isDark ? alpha('#2D5016', 0.16) : alpha('#2D5016', 0.12);
-        case 'tech':
-          return isDark ? alpha('#3B82F6', 0.16) : alpha('#3B82F6', 0.12);
-        case 'soft':
-          return isDark ? alpha('#EC4899', 0.16) : alpha('#EC4899', 0.12);
-        default:
-          return isDark ? alpha(theme.palette.primary.main, 0.16) : alpha(theme.palette.primary.main, 0.12);
-      }
-    })(),
-
-    // 边框颜色 - 根据主题风格配置
-    borderColor: (() => {
-      switch (themeStyle) {
-        case 'claude':
-          return isDark ? alpha('#D97706', 0.2) : alpha('#D97706', 0.1);
-        case 'nature':
-          return isDark ? alpha('#2D5016', 0.2) : alpha('#2D5016', 0.1);
-        case 'tech':
-          return isDark ? alpha('#3B82F6', 0.2) : alpha('#3B82F6', 0.1);
-        case 'soft':
-          return isDark ? alpha('#EC4899', 0.2) : alpha('#EC4899', 0.1);
-        default:
-          return theme.palette.divider;
-      }
-    })(),
-
-    // 工具栏样式
-    toolbarBg: isDark ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-    toolbarBorder: isDark ? 'rgba(60, 60, 60, 0.8)' : 'rgba(230, 230, 230, 0.8)',
-    toolbarShadow: isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.07)',
-  };
+  // 工具栏颜色 - 从 CSS Variables 读取
+  const toolbarColors = getToolbarColorsFromCSSVars(theme);
 
   return {
     ...baseColors,
-    ...styleSpecificColors,
+    ...messageColors,
+    ...buttonColors,
+    ...interactionColors,
+    ...iconColors,
+    ...toolbarColors,
     isDark,
   };
-};
-
-// 获取消息样式
-export const getMessageStyles = (theme: Theme, themeStyle?: ThemeStyle, isUserMessage: boolean = false) => {
-  const colors = getThemeColors(theme, themeStyle);
-  
-  return {
-    backgroundColor: isUserMessage ? colors.userBubbleColor : colors.aiBubbleColor,
-    color: colors.textPrimary,
-    borderColor: colors.borderColor,
-    '&:hover': {
-      backgroundColor: isUserMessage 
-        ? alpha(colors.userBubbleColor, 0.8)
-        : colors.aiBubbleActiveColor,
-    },
-  };
-};
-
-// 获取按钮样式
-export const getButtonStyles = (theme: Theme, themeStyle?: ThemeStyle, variant: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' = 'primary') => {
-  const colors = getThemeColors(theme, themeStyle);
-  
-  const colorMap = {
-    primary: colors.buttonPrimary,
-    secondary: colors.buttonSecondary,
-    success: colors.iconColorSuccess,
-    warning: colors.iconColorWarning,
-    error: colors.iconColorError,
-    info: colors.iconColorInfo,
-  };
-
-  const baseColor = colorMap[variant];
-
-  return {
-    color: baseColor,
-    borderColor: alpha(baseColor, 0.5),
-    backgroundColor: alpha(baseColor, 0.08),
-    '&:hover': {
-      backgroundColor: alpha(baseColor, 0.12),
-      borderColor: alpha(baseColor, 0.7),
-    },
-    '&:active': {
-      backgroundColor: alpha(baseColor, 0.16),
-    },
-  };
-};
-
-// 获取列表项样式
-export const getListItemStyles = (theme: Theme, themeStyle?: ThemeStyle, isSelected: boolean = false) => {
-  const colors = getThemeColors(theme, themeStyle);
-  
-  return {
-    backgroundColor: isSelected ? colors.selectedColor : 'transparent',
-    '&:hover': {
-      backgroundColor: isSelected ? alpha(colors.selectedColor, 1.2) : colors.hoverColor,
-    },
-    borderRadius: theme.shape.borderRadius,
-    marginBottom: 0.5,
-  };
-};
-
-// 获取输入框样式
-export const getInputStyles = (theme: Theme, themeStyle?: ThemeStyle) => {
-  const colors = getThemeColors(theme, themeStyle);
-  
-  return {
-    '& .MuiOutlinedInput-root': {
-      backgroundColor: colors.paper,
-      '& fieldset': {
-        borderColor: colors.borderColor,
-      },
-      '&:hover fieldset': {
-        borderColor: alpha(colors.primary, 0.5),
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: colors.primary,
-      },
-    },
-  };
-};
-
-// 获取工具栏样式
-export const getToolbarStyles = (theme: Theme, themeStyle?: ThemeStyle) => {
-  const colors = getThemeColors(theme, themeStyle);
-  
-  return {
-    buttonBg: colors.toolbarBg,
-    buttonBorder: colors.toolbarBorder,
-    buttonShadow: colors.toolbarShadow,
-    hoverBg: colors.isDark ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-    hoverShadow: colors.isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.1)',
-    borderRadius: '50px',
-    backdropFilter: 'blur(5px)',
-  };
-};
-
-// 获取侧边栏样式
-export const getSidebarStyles = (theme: Theme, themeStyle?: ThemeStyle) => {
-  const colors = getThemeColors(theme, themeStyle);
-  
-  return {
-    backgroundColor: colors.background,
-    borderColor: colors.borderColor,
-    itemHoverColor: colors.hoverColor,
-    itemSelectedColor: colors.selectedColor,
-  };
-};
-
-// 检查是否为Claude主题
-export const isClaudeTheme = (themeStyle?: ThemeStyle): boolean => {
-  return themeStyle === 'claude';
-};
-
-// 获取Claude主题特定的样式
-export const getClaudeThemeStyles = (theme: Theme) => {
-  if (theme.palette.mode === 'dark') {
-    return {
-      background: '#1C1917',
-      paper: '#292524',
-      primary: '#D97706',
-      secondary: '#059669',
-      accent: '#DC2626',
-    };
-  } else {
-    return {
-      background: '#FEF7ED',
-      paper: '#FFFFFF',
-      primary: '#D97706',
-      secondary: '#059669',
-      accent: '#DC2626',
-    };
-  }
 };

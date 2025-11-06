@@ -61,11 +61,8 @@ interface MessageActionsProps {
 }
 
 // 优化：将样式常量移到组件外部，避免每次渲染重新计算
-const getThemeColors = (isDark: boolean) => ({
-  aiBubbleColor: isDark ? '#1a3b61' : '#e6f4ff',
-  aiBubbleActiveColor: isDark ? '#234b79' : '#d3e9ff',
-  textColor: isDark ? '#ffffff' : '#333333'
-});
+// 注意：原本的 getThemeColors 函数已迁移到 CSS Variables
+// AI 气泡颜色现在通过 CSS Variables 管理
 
 // 优化：将重复的样式对象移到组件外部
 const getToolbarIconButtonStyle = (customColor?: string) => ({
@@ -151,12 +148,6 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 
   // 检查是否显示小功能气泡
   const showMicroBubbles = settings.showMicroBubbles !== false;
-
-  // 优化：使用useMemo缓存主题颜色计算
-  const themeColors = useMemo(() =>
-    getThemeColors(theme.palette.mode === 'dark'),
-    [theme.palette.mode]
-  );
 
   // 菜单状态 - 内存泄漏防护：避免存储DOM引用
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -674,7 +665,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 <Box sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: themeColors.aiBubbleColor,
+                  backgroundColor: 'var(--theme-msg-ai-bg)',
                   borderRadius: '10px',
                   padding: '0 2px',
                   height: '20px',
@@ -682,7 +673,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                   border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)'}`,
                   marginRight: '2px',
                   '&:hover': {
-                    backgroundColor: themeColors.aiBubbleActiveColor,
+                    backgroundColor: 'var(--theme-msg-ai-bg-active)',
                     borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'
                   }
                 }}>
@@ -694,7 +685,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                       padding: 0,
                       opacity: currentVersionIndex <= 0 && message.currentVersionId !== undefined ? 0.3 : 0.7,
                       '&:hover': { opacity: 1 },
-                      color: themeColors.textColor
+                      color: 'var(--theme-text-primary)'
                     }}
                   >
                     <ChevronLeft size={12} />
@@ -705,7 +696,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                     sx={{
                       fontSize: '10px',
                       fontWeight: 'medium',
-                      color: themeColors.textColor,
+                      color: 'var(--theme-text-primary)',
                       mx: 0.5,
                       userSelect: 'none'
                     }}
@@ -721,7 +712,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                       padding: 0,
                       opacity: currentVersionIndex === -1 ? 0.3 : 0.7,
                       '&:hover': { opacity: 1 },
-                      color: themeColors.textColor
+                      color: 'var(--theme-text-primary)'
                     }}
                   >
                     <ChevronRight size={12} />
@@ -743,8 +734,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                     fontSize: '10px',
                     fontWeight: 'medium',
                     opacity: 0.95,
-                    backgroundColor: themeColors.aiBubbleColor,
-                    color: themeColors.textColor,
+                    backgroundColor: 'var(--theme-msg-ai-bg)',
+                    color: 'var(--theme-text-primary)',
                     boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                     borderRadius: '10px',
                     border: 'none',
@@ -752,13 +743,13 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                     '&:hover': {
                       opacity: 1,
                       cursor: 'pointer',
-                      backgroundColor: themeColors.aiBubbleActiveColor
+                      backgroundColor: 'var(--theme-msg-ai-bg-active)'
                     },
                     '& .MuiChip-icon': {
                       ml: 0.3,
                       mr: -0.3,
                       fontSize: '10px',
-                      color: themeColors.textColor
+                      color: 'var(--theme-text-primary)'
                     },
                     '& .MuiChip-label': {
                       padding: '0 4px',
@@ -785,8 +776,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 fontSize: '10px',
                 fontWeight: 'medium',
                 opacity: 0.95,
-                backgroundColor: isPlaying ? themeColors.aiBubbleActiveColor : themeColors.aiBubbleColor,
-                color: themeColors.textColor,
+                backgroundColor: isPlaying ? 'var(--theme-msg-ai-bg-active)' : 'var(--theme-msg-ai-bg)',
+                color: 'var(--theme-text-primary)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                 borderRadius: '10px',
                 border: versionSwitchStyle === 'arrows' ?
@@ -794,7 +785,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 '&:hover': {
                   opacity: 1,
                   cursor: 'pointer',
-                  backgroundColor: themeColors.aiBubbleActiveColor,
+                  backgroundColor: 'var(--theme-msg-ai-bg-active)',
                   borderColor: versionSwitchStyle === 'arrows' ?
                     (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)') : undefined
                 },
@@ -802,7 +793,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                   ml: 0.3,
                   mr: -0.3,
                   fontSize: '10px',
-                  color: themeColors.textColor
+                  color: 'var(--theme-text-primary)'
                 },
                 '& .MuiChip-label': {
                   padding: '0 4px',

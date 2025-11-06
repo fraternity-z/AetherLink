@@ -1,9 +1,10 @@
-import { createTheme, alpha } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { getFontFamilyString } from './fonts';
+import { cssVar } from '../utils/cssVariables';
 
 // 主题风格类型
-export type ThemeStyle = 'default' | 'claude' | 'nature' | 'tech' | 'soft';
+export type ThemeStyle = 'default' | 'claude' | 'nature' | 'tech' | 'soft' | 'ocean' | 'sunset' | 'cinnamonSlate' | 'horizonGreen' | 'cherryCoded';
 
 // 主题配置接口
 export interface ThemeConfig {
@@ -201,6 +202,166 @@ export const themeConfigs: Record<ThemeStyle, ThemeConfig> = {
       secondary: 'linear-gradient(135deg, #14B8A6, #06B6D4)', // 青绿渐变
     },
   },
+
+  ocean: {
+    name: '海洋风格',
+    description: '2025年流行的海洋蓝绿色系，清新舒适的视觉体验',
+    colors: {
+      primary: '#0EA5E9', // 天空蓝
+      secondary: '#06B6D4', // 青色
+      accent: '#14B8A6', // 青绿色
+      background: {
+        light: '#F0F9FF', // 淡蓝白色
+        dark: '#0C1A2E', // 深蓝黑色
+      },
+      paper: {
+        light: '#F0F9FF', // 与背景色一致的淡蓝白色
+        dark: '#1E3A5F', // 深蓝色
+      },
+      text: {
+        primary: {
+          light: '#0C4A6E', // 深蓝色
+          dark: '#E0F2FE', // 淡蓝色
+        },
+        secondary: {
+          light: '#0369A1', // 蓝色
+          dark: '#7DD3FC', // 浅蓝色
+        },
+      },
+    },
+    gradients: {
+      primary: 'linear-gradient(135deg, #0EA5E9, #06B6D4)', // 蓝青渐变
+      secondary: 'linear-gradient(135deg, #06B6D4, #14B8A6)', // 青绿渐变
+    },
+  },
+
+  sunset: {
+    name: '日落风格',
+    description: '2025年流行的日落色系，温暖浪漫的视觉氛围',
+    colors: {
+      primary: '#F97316', // 橙色
+      secondary: '#FB923C', // 亮橙色
+      accent: '#FDE047', // 黄色
+      background: {
+        light: '#FFF7ED', // 淡橙白色
+        dark: '#1C1917', // 深棕黑色
+      },
+      paper: {
+        light: '#FFF7ED', // 与背景色一致的淡橙白色
+        dark: '#292524', // 深棕色
+      },
+      text: {
+        primary: {
+          light: '#7C2D12', // 深橙棕色
+          dark: '#FED7AA', // 淡橙色
+        },
+        secondary: {
+          light: '#C2410C', // 橙棕色
+          dark: '#FDBA74', // 浅橙色
+        },
+      },
+    },
+    gradients: {
+      primary: 'linear-gradient(135deg, #F97316, #FB923C)', // 橙色渐变
+      secondary: 'linear-gradient(135deg, #FB923C, #FDE047)', // 橙黄渐变
+    },
+  },
+
+  cinnamonSlate: {
+    name: '肉桂板岩',
+    description: '2025年流行趋势：深邃温暖的色调，带来内心的平静',
+    colors: {
+      primary: '#8B6F5C', // 肉桂棕
+      secondary: '#5D4E4A', // 板岩灰
+      accent: '#B08968', // 温暖金棕
+      background: {
+        light: '#F5F1ED', // 淡米白色
+        dark: '#1A1614', // 深棕黑色
+      },
+      paper: {
+        light: '#F5F1ED', // 与背景色一致的淡米白色
+        dark: '#2B2420', // 深棕灰色
+      },
+      text: {
+        primary: {
+          light: '#2B2420', // 深棕色
+          dark: '#F0EBE3', // 温暖的浅米色
+        },
+        secondary: {
+          light: '#5D4E4A', // 板岩灰
+          dark: '#C4B5A8', // 浅棕灰色
+        },
+      },
+    },
+    gradients: {
+      primary: 'linear-gradient(135deg, #8B6F5C, #B08968)', // 肉桂渐变
+      secondary: 'linear-gradient(135deg, #5D4E4A, #8B7B75)', // 板岩渐变
+    },
+  },
+
+  horizonGreen: {
+    name: '地平线绿',
+    description: '2025年日本代表色：带蓝调的绿色，象征希望与自然',
+    colors: {
+      primary: '#4A9B8E', // 地平线绿
+      secondary: '#70B8A8', // 浅绿松石
+      accent: '#95D5C8', // 淡薄荷绿
+      background: {
+        light: '#F5FAF8', // 淡绿白色
+        dark: '#0F1B18', // 深绿黑色
+      },
+      paper: {
+        light: '#F5FAF8', // 与背景色一致的淡绿白色
+        dark: '#1A2B26', // 深绿灰色
+      },
+      text: {
+        primary: {
+          light: '#0F3D34', // 深绿色
+          dark: '#E8F5F1', // 淡绿白色
+        },
+        secondary: {
+          light: '#2D6B5E', // 青绿色
+          dark: '#A8D5C8', // 浅薄荷绿
+        },
+      },
+    },
+    gradients: {
+      primary: 'linear-gradient(135deg, #4A9B8E, #70B8A8)', // 绿松石渐变
+      secondary: 'linear-gradient(135deg, #70B8A8, #95D5C8)', // 薄荷渐变
+    },
+  },
+
+  cherryCoded: {
+    name: '樱桃编码',
+    description: '2025年流行趋势：深樱桃红色，传达热情与活力',
+    colors: {
+      primary: '#C41E3A', // 樱桃红
+      secondary: '#E63E6D', // 玫瑰红
+      accent: '#FF6B9D', // 粉红色
+      background: {
+        light: '#FFF5F7', // 淡粉白色
+        dark: '#1A0C0F', // 深红黑色
+      },
+      paper: {
+        light: '#FFF5F7', // 与背景色一致的淡粉白色
+        dark: '#2B1418', // 深红棕色
+      },
+      text: {
+        primary: {
+          light: '#450A0F', // 深红棕色
+          dark: '#FFE8ED', // 淡粉色
+        },
+        secondary: {
+          light: '#78121C', // 深樱桃红
+          dark: '#FFB3C6', // 浅粉红色
+        },
+      },
+    },
+    gradients: {
+      primary: 'linear-gradient(135deg, #C41E3A, #E63E6D)', // 樱桃渐变
+      secondary: 'linear-gradient(135deg, #E63E6D, #FF6B9D)', // 玫瑰渐变
+    },
+  },
 };
 
 // 创建主题函数
@@ -210,22 +371,28 @@ export const createCustomTheme = (
   fontSize: number = 16,
   fontFamily: string = 'system'
 ): Theme => {
-  const config = themeConfigs[themeStyle];
+  // 容错处理：如果主题配置不存在，使用默认主题
+  const config = themeConfigs[themeStyle] || themeConfigs['default'];
+  
+  // 如果传入的 themeStyle 不存在，输出警告
+  if (!themeConfigs[themeStyle]) {
+    console.warn(`主题配置不存在: ${themeStyle}，使用默认主题`);
+  }
+  
   const fontScale = fontSize / 16;
   const fontFamilyString = getFontFamilyString(fontFamily);
 
+  // 注意：Material-UI 的 palette 不支持 CSS Variables
+  // 因为 MUI 需要在 JS 中解析颜色来生成变体
+  // 所以这里使用实际的颜色值，而在 components styleOverrides 中使用 CSS Variables
   return createTheme({
     palette: {
       mode,
       primary: {
         main: config.colors.primary,
-        light: alpha(config.colors.primary, 0.7),
-        dark: alpha(config.colors.primary, 0.9),
       },
       secondary: {
         main: config.colors.secondary,
-        light: alpha(config.colors.secondary, 0.7),
-        dark: alpha(config.colors.secondary, 0.9),
       },
       background: {
         default: config.colors.background[mode],
@@ -270,6 +437,8 @@ export const createCustomTheme = (
         styleOverrides: {
           root: {
             backgroundImage: 'none',
+            backgroundColor: cssVar('bg-paper'),
+            // 保留主题特定的阴影样式
             ...(themeStyle === 'claude' && {
               boxShadow: mode === 'light'
                 ? '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)'
@@ -298,44 +467,25 @@ export const createCustomTheme = (
           root: {
             textTransform: 'none',
             fontWeight: 600,
-            ...(config.gradients && {
-              '&.MuiButton-contained': {
-                background: config.gradients.primary,
-                '&:hover': {
-                  background: config.gradients.primary,
-                  filter: 'brightness(0.9)',
-                },
+            '&.MuiButton-contained': {
+              background: cssVar('gradient-primary'),
+              '&:hover': {
+                background: cssVar('gradient-primary'),
+                filter: 'brightness(0.9)',
               },
-            }),
+            },
           },
         },
       },
       MuiAppBar: {
         styleOverrides: {
           root: {
-            ...(themeStyle === 'claude' && {
-              background: mode === 'light'
-                ? `rgba(254, 247, 237, 0.95)` // 使用Claude主题的米色背景
-                : 'rgba(41, 37, 36, 0.95)',
-              backdropFilter: 'blur(12px)',
-            }),
-            ...(themeStyle === 'nature' && {
-              background: mode === 'light'
-                ? `rgba(247, 245, 243, 0.95)` // 使用自然主题的温暖米色背景
-                : 'rgba(26, 31, 22, 0.95)',
-              backdropFilter: 'blur(12px)',
-            }),
-            ...(themeStyle === 'tech' && {
-              background: mode === 'light'
-                ? `rgba(248, 250, 252, 0.95)` // 使用科技主题的淡蓝白色背景
-                : 'rgba(15, 23, 42, 0.95)',
-              backdropFilter: 'blur(12px)',
-            }),
-            ...(themeStyle === 'soft' && {
-              background: mode === 'light'
-                ? `rgba(253, 242, 248, 0.95)` // 使用柔和主题的淡粉色背景
-                : 'rgba(31, 22, 38, 0.95)',
-              backdropFilter: 'blur(12px)',
+            // 使用 CSS Variables 定义的背景色，添加透明度和模糊效果
+            backgroundColor: cssVar('bg-default'),
+            backdropFilter: 'blur(12px)',
+            // 为特定主题添加半透明效果
+            ...(themeStyle !== 'default' && {
+              opacity: 0.95,
             }),
           },
         },
@@ -343,166 +493,48 @@ export const createCustomTheme = (
       MuiDrawer: {
         styleOverrides: {
           paper: {
-            ...(themeStyle === 'claude' && {
-              background: mode === 'light'
-                ? config.colors.background.light
-                : config.colors.background.dark,
-              borderRight: mode === 'light'
-                ? '1px solid rgba(217, 119, 6, 0.1)'
-                : '1px solid rgba(217, 119, 6, 0.2)',
-            }),
-            ...(themeStyle === 'nature' && {
-              background: mode === 'light'
-                ? config.colors.background.light
-                : config.colors.background.dark,
-              borderRight: mode === 'light'
-                ? '1px solid rgba(45, 80, 22, 0.1)'
-                : '1px solid rgba(45, 80, 22, 0.2)',
-            }),
-            ...(themeStyle === 'tech' && {
-              background: mode === 'light'
-                ? config.colors.background.light
-                : config.colors.background.dark,
-              borderRight: mode === 'light'
-                ? '1px solid rgba(59, 130, 246, 0.1)'
-                : '1px solid rgba(59, 130, 246, 0.2)',
-            }),
-            ...(themeStyle === 'soft' && {
-              background: mode === 'light'
-                ? config.colors.background.light
-                : config.colors.background.dark,
-              borderRight: mode === 'light'
-                ? '1px solid rgba(236, 72, 153, 0.1)'
-                : '1px solid rgba(236, 72, 153, 0.2)',
-            }),
+            backgroundColor: cssVar('sidebar-bg'),
+            borderRight: `1px solid ${cssVar('sidebar-border')}`,
           },
         },
       },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            ...(themeStyle === 'claude' && {
+            '&:hover': {
+              backgroundColor: cssVar('sidebar-item-hover'),
+            },
+            '&.Mui-selected': {
+              backgroundColor: cssVar('sidebar-item-selected'),
               '&:hover': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(217, 119, 6, 0.08)'
-                  : 'rgba(217, 119, 6, 0.12)',
+                backgroundColor: cssVar('sidebar-item-selected-hover'),
               },
-              '&.Mui-selected': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(217, 119, 6, 0.12)'
-                  : 'rgba(217, 119, 6, 0.16)',
-                '&:hover': {
-                  backgroundColor: mode === 'light'
-                    ? 'rgba(217, 119, 6, 0.16)'
-                    : 'rgba(217, 119, 6, 0.20)',
-                },
-              },
-            }),
-            ...(themeStyle === 'nature' && {
-              '&:hover': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(45, 80, 22, 0.08)'
-                  : 'rgba(45, 80, 22, 0.12)',
-              },
-              '&.Mui-selected': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(45, 80, 22, 0.12)'
-                  : 'rgba(45, 80, 22, 0.16)',
-                '&:hover': {
-                  backgroundColor: mode === 'light'
-                    ? 'rgba(45, 80, 22, 0.16)'
-                    : 'rgba(45, 80, 22, 0.20)',
-                },
-              },
-            }),
-            ...(themeStyle === 'tech' && {
-              '&:hover': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(59, 130, 246, 0.08)'
-                  : 'rgba(59, 130, 246, 0.12)',
-              },
-              '&.Mui-selected': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(59, 130, 246, 0.12)'
-                  : 'rgba(59, 130, 246, 0.16)',
-                '&:hover': {
-                  backgroundColor: mode === 'light'
-                    ? 'rgba(59, 130, 246, 0.16)'
-                    : 'rgba(59, 130, 246, 0.20)',
-                },
-              },
-            }),
-            ...(themeStyle === 'soft' && {
-              '&:hover': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(236, 72, 153, 0.08)'
-                  : 'rgba(236, 72, 153, 0.12)',
-              },
-              '&.Mui-selected': {
-                backgroundColor: mode === 'light'
-                  ? 'rgba(236, 72, 153, 0.12)'
-                  : 'rgba(236, 72, 153, 0.16)',
-                '&:hover': {
-                  backgroundColor: mode === 'light'
-                    ? 'rgba(236, 72, 153, 0.16)'
-                    : 'rgba(236, 72, 153, 0.20)',
-                },
-              },
-            }),
+            },
           },
         },
       },
       MuiTextField: {
         styleOverrides: {
           root: {
-            ...(themeStyle === 'claude' && {
-              '& .MuiOutlinedInput-root': {
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: mode === 'light'
-                    ? 'rgba(217, 119, 6, 0.5)'
-                    : 'rgba(217, 119, 6, 0.7)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: config.colors.primary,
-                },
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: cssVar('input-bg'),
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: cssVar('input-border'),
               },
-            }),
-            ...(themeStyle === 'nature' && {
-              '& .MuiOutlinedInput-root': {
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: mode === 'light'
-                    ? 'rgba(45, 80, 22, 0.5)'
-                    : 'rgba(45, 80, 22, 0.7)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: config.colors.primary,
-                },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: cssVar('input-border-hover'),
               },
-            }),
-            ...(themeStyle === 'tech' && {
-              '& .MuiOutlinedInput-root': {
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: mode === 'light'
-                    ? 'rgba(59, 130, 246, 0.5)'
-                    : 'rgba(59, 130, 246, 0.7)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: config.colors.primary,
-                },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: cssVar('input-border-focus'),
               },
-            }),
-            ...(themeStyle === 'soft' && {
-              '& .MuiOutlinedInput-root': {
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: mode === 'light'
-                    ? 'rgba(236, 72, 153, 0.5)'
-                    : 'rgba(236, 72, 153, 0.7)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: config.colors.primary,
-                },
+            },
+            '& .MuiInputBase-input': {
+              color: cssVar('input-text'),
+              '&::placeholder': {
+                color: cssVar('input-placeholder'),
+                opacity: 0.7,
               },
-            }),
+            },
           },
         },
       },
@@ -510,38 +542,13 @@ export const createCustomTheme = (
       // 添加全局CssBaseline样式覆盖
       MuiCssBaseline: {
         styleOverrides: {
-          ...(themeStyle === 'claude' && {
-            body: {
-              backgroundColor: config.colors.background[mode],
-            },
-            '#root': {
-              backgroundColor: config.colors.background[mode],
-            },
-          }),
-          ...(themeStyle === 'nature' && {
-            body: {
-              backgroundColor: config.colors.background[mode],
-            },
-            '#root': {
-              backgroundColor: config.colors.background[mode],
-            },
-          }),
-          ...(themeStyle === 'tech' && {
-            body: {
-              backgroundColor: config.colors.background[mode],
-            },
-            '#root': {
-              backgroundColor: config.colors.background[mode],
-            },
-          }),
-          ...(themeStyle === 'soft' && {
-            body: {
-              backgroundColor: config.colors.background[mode],
-            },
-            '#root': {
-              backgroundColor: config.colors.background[mode],
-            },
-          }),
+          body: {
+            backgroundColor: cssVar('bg-default'),
+            color: cssVar('text-primary'),
+          },
+          '#root': {
+            backgroundColor: cssVar('bg-default'),
+          },
         },
       },
     },
@@ -557,4 +564,17 @@ export const getThemePreviewColors = (themeStyle: ThemeStyle) => {
     background: config.colors.background.light,
     paper: config.colors.paper.light,
   };
+};
+
+// 验证主题风格是否有效
+export const isValidThemeStyle = (themeStyle: string): themeStyle is ThemeStyle => {
+  return themeStyle in themeConfigs;
+};
+
+// 获取有效的主题风格（如果无效则返回默认值）
+export const getValidThemeStyle = (themeStyle: string | undefined | null): ThemeStyle => {
+  if (!themeStyle || !isValidThemeStyle(themeStyle)) {
+    return 'default';
+  }
+  return themeStyle;
 };

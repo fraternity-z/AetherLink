@@ -1,7 +1,5 @@
 import React from 'react';
 import { Global, css } from '@emotion/react';
-import { useSelector } from 'react-redux';
-import type { ThemeStyle } from '../shared/config/themes';
 
 interface GlobalStylesProps {
   fontSize: number;
@@ -9,32 +7,25 @@ interface GlobalStylesProps {
 }
 
 const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
-  const themeStyle = useSelector((state: any) => state.settings.themeStyle) || 'default';
   const globalStyles = css`
     :root {
       --global-font-size: ${fontSize}px;
       --global-font-scale: ${fontSize / 16};
       --global-font-family: ${theme.typography.fontFamily};
-      --theme-primary: ${theme.palette.primary.main};
-      --theme-secondary: ${theme.palette.secondary.main};
-      --theme-background: ${theme.palette.background.default};
-      --theme-paper: ${theme.palette.background.paper};
-      --theme-text-primary: ${theme.palette.text.primary};
-      --theme-text-secondary: ${theme.palette.text.secondary};
+      /* 主题颜色变量已通过 applyCSSVariables() 注入，不再重复定义 */
     }
 
     body {
       font-size: var(--global-font-size) !important;
       font-family: var(--global-font-family) !important;
-      background-color: var(--theme-background) !important;
+      /* 背景色使用 CSS Variable，已在 useTheme 中注入 */
+      background-color: var(--theme-bg-default) !important;
     }
 
-    /* 强制应用主题背景色到根容器 - 支持所有主题风格 */
-    ${['claude', 'nature', 'tech', 'soft'].includes(themeStyle) ? `
-      #root {
-        background-color: ${theme.palette.background.default} !important;
-      }
-    ` : ''}
+    /* 强制应用主题背景色到根容器 */
+    #root {
+      background-color: var(--theme-bg-default) !important;
+    }
 
     /* 全局字体设置 - 排除数学公式元素 */
     *:not(.katex):not(.katex *):not(mjx-container):not(mjx-container *) {

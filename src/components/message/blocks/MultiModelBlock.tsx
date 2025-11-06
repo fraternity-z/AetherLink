@@ -287,7 +287,7 @@ const MultiModelBlock: React.FC<Props> = ({ block }) => {
             sx={{
               p: 1.5,
               borderTop: `1px solid ${theme.palette.divider}`,
-              backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.03)',
+              backgroundColor: 'var(--theme-msg-block-bg-header)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'

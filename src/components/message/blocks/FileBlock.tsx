@@ -198,16 +198,12 @@ const FileBlock: React.FC<Props> = ({ block }) => {
           p: 2,
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: 1,
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(0, 0, 0, 0.02)',
+          backgroundColor: 'var(--theme-msg-block-bg)',
           maxWidth: '400px',
           gap: 2,
           cursor: isEditableFile() ? 'pointer' : 'default',
           '&:hover': isEditableFile() ? {
-            backgroundColor: theme.palette.mode === 'dark'
-              ? 'rgba(255, 255, 255, 0.08)'
-              : 'rgba(0, 0, 0, 0.04)',
+            backgroundColor: 'var(--theme-msg-block-bg-hover)',
             borderColor: theme.palette.primary.main
           } : {}
         }}
@@ -222,9 +218,7 @@ const FileBlock: React.FC<Props> = ({ block }) => {
           width: 40,
           height: 40,
           borderRadius: 1,
-          backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(33, 150, 243, 0.15)'
-            : 'rgba(33, 150, 243, 0.1)',
+          backgroundColor: 'var(--theme-msg-block-bg-header)',
           color: theme.palette.primary.main
         }}
       >
@@ -280,9 +274,7 @@ const FileBlock: React.FC<Props> = ({ block }) => {
             sx={{
               color: theme.palette.primary.main,
               '&:hover': {
-                backgroundColor: theme.palette.mode === 'dark'
-                  ? 'rgba(33, 150, 243, 0.15)'
-                  : 'rgba(33, 150, 243, 0.1)'
+                backgroundColor: 'var(--theme-msg-block-bg-hover)'
               }
             }}
             title="查看/编辑文件"
@@ -302,9 +294,7 @@ const FileBlock: React.FC<Props> = ({ block }) => {
             sx={{
               color: theme.palette.primary.main,
               '&:hover': {
-                backgroundColor: theme.palette.mode === 'dark'
-                  ? 'rgba(33, 150, 243, 0.15)'
-                  : 'rgba(33, 150, 243, 0.1)'
+                backgroundColor: 'var(--theme-msg-block-bg-hover)'
               }
             }}
             title="下载文件"

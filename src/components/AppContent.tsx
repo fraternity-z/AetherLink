@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { CssBaseline, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 
 import { useAppInitialization } from '../hooks/useAppInitialization';
@@ -16,6 +16,13 @@ import ErrorBoundary from './ErrorBoundary';
 
 const AppContent = memo(() => {
   const { theme, fontSize } = useTheme();
+  
+  // CSS Variables 初始化日志（仅在开发环境）
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ CSS Variables 系统已初始化');
+    }
+  }, []);
   const {
     appInitialized,
     initializationProgress,
