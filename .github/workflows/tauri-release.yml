@@ -100,13 +100,21 @@ jobs:
             npm install --no-package-lock || npm install --legacy-peer-deps
           }
 
-      - name: Build Tauri App (Release)
+      - name: Build Tauri App (Release - Windows/Linux)
+        if: matrix.platform != 'macos-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_SIGNING_IDENTITY: "-"
         with:
           args: ${{ matrix.args }}
+
+      - name: Build Tauri App (Release - macOS)
+        if: matrix.platform == 'macos-latest'
+        run: npm run tauri build -- --target universal-apple-darwin --bundles app,dmg
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
+          TAURI_PRIVATE_KEY: ""
+          TAURI_KEY_PASSWORD: ""
 
       - name: Upload Build Artifacts (Windows)
         if: matrix.platform == 'windows-latest'
