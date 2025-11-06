@@ -39,18 +39,15 @@ jobs:
           echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          rm -f package-lock.json
+          npm install --legacy-peer-deps
       
       - name: Build frontend
         run: npm run build
       
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
-      
-      - name: Update Cargo dependencies
-        run: |
-          cd src-tauri
-          cargo update
       
       - name: Build Android APK (Release)
         run: |
