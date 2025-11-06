@@ -88,6 +88,23 @@
       "description": "应用信息和技术支持"
     }
   },
+  "about": {
+    "header": "关于我们",
+    "appName": "AetherLink",
+    "appDescription": "一个强大的AI助手应用，支持多种大语言模型，帮助您更高效地完成工作。",
+    "github": {
+      "title": "GitHub"
+    },
+    "qqGroup": {
+      "title": "官方群组"
+    },
+    "feedback": {
+      "title": "反馈"
+    },
+    "devTools": {
+      "title": "开发者工具"
+    }
+  },
   "scrollCacheError": "清理滚动位置缓存失败",
   "behavior": {
     "title": "行为设置",

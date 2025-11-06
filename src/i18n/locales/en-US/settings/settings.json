@@ -88,6 +88,23 @@
       "description": "Application information and technical support"
     }
   },
+  "about": {
+    "header": "About Us",
+    "appName": "AetherLink",
+    "appDescription": "A powerful AI assistant application supporting multiple large language models to help you work more efficiently.",
+    "github": {
+      "title": "GitHub"
+    },
+    "qqGroup": {
+      "title": "Official Group"
+    },
+    "feedback": {
+      "title": "Feedback"
+    },
+    "devTools": {
+      "title": "Developer Tools"
+    }
+  },
   "scrollCacheError": "Failed to clear scroll position cache",
   "behavior": {
     "title": "Behavior Settings",
