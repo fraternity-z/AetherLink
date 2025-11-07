@@ -163,6 +163,8 @@ export class ResponseChunkProcessor {
   private readonly thinkingAccumulator = new ThinkingAccumulator();
   private readonly blockStateManager: BlockStateManager;
   private readonly blockUpdater: BlockUpdater;
+  private reasoningStartTime: number | null = null;
+  private lastThinkingMilliseconds?: number;
 
   constructor(
     private readonly messageId: string,
@@ -238,7 +240,34 @@ export class ResponseChunkProcessor {
 
   private async processThinkingContent(thinkingMillsec?: number): Promise<void> {
     const { blockId } = this.blockStateManager.transitionToThinking();
-    await this.updateThinkingBlock(blockId, thinkingMillsec);
+    const computedThinkingMillis = this.updateThinkingTimer(thinkingMillsec);
+    await this.updateThinkingBlock(blockId, computedThinkingMillis);
+  }
+
+  private updateThinkingTimer(thinkingMillsec?: number): number | undefined {
+    const now = Date.now();
+
+    // 如果提供了有效的思考时间，优先使用它
+    if (typeof thinkingMillsec === 'number' && thinkingMillsec > 0) {
+      this.lastThinkingMilliseconds = thinkingMillsec;
+
+      // 同步起始时间，确保后续增量计算一致
+      const inferredStartTime = now - thinkingMillsec;
+      if (this.reasoningStartTime === null || inferredStartTime < this.reasoningStartTime) {
+        this.reasoningStartTime = inferredStartTime;
+      }
+
+      return this.lastThinkingMilliseconds;
+    }
+
+    if (this.reasoningStartTime === null) {
+      this.reasoningStartTime = now;
+    }
+
+    const elapsed = now - this.reasoningStartTime;
+    this.lastThinkingMilliseconds = Math.max(this.lastThinkingMilliseconds ?? 0, elapsed);
+
+    return this.lastThinkingMilliseconds;
   }
 
   private async createTextBlock(blockId: string): Promise<void> {
@@ -263,14 +292,16 @@ export class ResponseChunkProcessor {
     await this.blockUpdater.updateBlock(blockId, changes);
   }
 
-  private async updateThinkingBlock(blockId: string, thinkingMillsec?: number): Promise<void> {
-    const changes = {
+  private async updateThinkingBlock(blockId: string, thinkingMillis?: number): Promise<void> {
+    const changes: any = {
       type: MessageBlockType.THINKING,
       content: this.thinkingAccumulator.getContent(),
       status: MessageBlockStatus.STREAMING,
-      thinking_millsec: thinkingMillsec || 0,
       updatedAt: new Date().toISOString()
     };
+    if (typeof thinkingMillis === 'number') {
+      changes.thinking_millsec = thinkingMillis;
+    }
     await this.blockUpdater.updateBlock(blockId, changes);
   }
 
@@ -280,6 +311,7 @@ export class ResponseChunkProcessor {
   get textBlockId(): string | null { return this.blockStateManager.getTextBlockId(); }
   get thinkingId(): string | null { return this.blockStateManager.getThinkingBlockId(); }
   get currentBlockId(): string { return this.blockStateManager.getInitialBlockId(); }
+  get thinkingDurationMs(): number | undefined { return this.lastThinkingMilliseconds; }
   get blockType(): string {
     const state = this.blockStateManager.getCurrentState();
     switch (state) {

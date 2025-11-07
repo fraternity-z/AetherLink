@@ -38,7 +38,7 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     : (enabled || forceShow);
 
   // 悬浮窗展开/收起状态
-  const [isExpanded, setIsExpanded] = useState(true); // 默认展开
+  const [isExpanded, setIsExpanded] = useState(false); // 默认收起
 
   // 拖拽相关状态
   const [position, setPosition] = useState(() => {

@@ -10,7 +10,7 @@ const storage: WebStorage = {
 };
 // 移除旧的 messagesReducer 导入
 import messagesReducer from './slices/newMessagesSlice'; // 使用 normalizedMessagesReducer 作为唯一的消息状态管理
-import settingsReducer, { settingsMiddleware, loadSettings } from './settingsSlice';
+import settingsReducer from './settingsSlice';
 import groupsReducer, { saveGroups } from './slices/groupsSlice';
 import webSearchReducer, { initializeWebSearchSettings } from './slices/webSearchSlice';
 
@@ -78,14 +78,11 @@ const store = configureStore({
     getDefaultMiddleware({
       // 完全禁用序列化检查，避免非序列化值警告
       serializableCheck: false
-    }).concat(settingsMiddleware, eventMiddleware, groupsAutoSaveMiddleware)
+    }).concat(eventMiddleware, groupsAutoSaveMiddleware)
 });
 
 // 创建persistor
 export const persistor = persistStore(store);
-
-// 加载设置
-store.dispatch(loadSettings());
 
 // 初始化网络搜索设置
 initializeWebSearchSettings().then(settings => {

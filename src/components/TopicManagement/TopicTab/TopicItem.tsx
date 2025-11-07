@@ -12,7 +12,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { getMainTextContent } from '../../../shared/utils/blockUtils';
 import type { ChatTopic } from '../../../shared/types';
 import type { RootState } from '../../../shared/store';
-import { selectMessagesForTopic } from '../../../shared/store/selectors/messageSelectors';
+import { selectMessagesForTopic, selectTopicStreaming } from '../../../shared/store/selectors/messageSelectors';
 
 interface TopicItemProps {
   topic: ChatTopic;
@@ -103,6 +103,13 @@ const TopicItem = React.memo(function TopicItem({
   // 从Redux状态获取该话题的最新消息
   const messages = useSelector(selectTopicMessages);
 
+  const selectTopicStreamingState = useMemo(
+    () => (state: RootState) => Boolean(selectTopicStreaming(state, topic.id)),
+    [topic.id]
+  );
+
+  const isStreaming = useSelector(selectTopicStreamingState);
+
   // 获取话题的显示名称
   const displayName = topic.name || topic.title || '无标题话题';
 
@@ -184,7 +191,20 @@ const TopicItem = React.memo(function TopicItem({
     >
       <ListItemText
         primary={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            {isStreaming && (
+              <Box
+                component="span"
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: 'success.main',
+                  boxShadow: '0 0 0 1px rgba(76, 175, 80, 0.35)',
+                  flexShrink: 0
+                }}
+              />
+            )}
             <Typography
               variant="body2"
               sx={{

@@ -6,7 +6,12 @@ import type {
   ChartMessageBlock,
   MathMessageBlock
 } from '../../types/newMessage';
-import { MessageBlockType } from '../../types/newMessage';
+import {
+  MessageBlockType,
+  AssistantMessageStatus,
+  MessageBlockStatus,
+  UserMessageStatus
+} from '../../types/newMessage';
 import store from '../../store';
 import { messageBlocksSelectors } from '../../store/slices/messageBlocksSlice';
 import { CACHE_TTL, DEFAULT_EMPTY_CONTENT } from './constants';
@@ -16,6 +21,20 @@ const loggedWarnings = new Set<string>();
 
 // 内容缓存，避免重复计算
 const contentCache = new Map<string, { content: string; timestamp: number }>();
+
+const IN_PROGRESS_MESSAGE_STATUSES = new Set<string>([
+  AssistantMessageStatus.PENDING,
+  AssistantMessageStatus.PROCESSING,
+  AssistantMessageStatus.SEARCHING,
+  AssistantMessageStatus.STREAMING,
+  UserMessageStatus.SENDING
+]);
+
+const IN_PROGRESS_BLOCK_STATUSES = new Set<string>([
+  MessageBlockStatus.PENDING,
+  MessageBlockStatus.PROCESSING,
+  MessageBlockStatus.STREAMING
+]);
 
 /**
  * 获取缓存的内容
@@ -199,6 +218,18 @@ export function getMainTextContent(message: Message): string {
       return '';
     }
 
+    const messageStatus = typeof message.status === 'string' ? message.status : '';
+    const isMessageInProgress = IN_PROGRESS_MESSAGE_STATUSES.has(messageStatus);
+
+    let hasInProgressBlock = false;
+    for (const blockId of message.blocks) {
+      const block = messageBlocksSelectors.selectById(state, blockId);
+      if (block && typeof block.status === 'string' && IN_PROGRESS_BLOCK_STATUSES.has(block.status)) {
+        hasInProgressBlock = true;
+        break;
+      }
+    }
+
     // 首先检查是否有模型对比块，并且有选中的内容
     const comparisonContent = extractContentFromComparisonBlock(message);
     if (comparisonContent) {
@@ -211,6 +242,11 @@ export function getMainTextContent(message: Message): string {
     if (blocksContent) {
       setCachedContent(cacheKey, blocksContent);
       return blocksContent;
+    }
+
+    if (isMessageInProgress || hasInProgressBlock) {
+      setCachedContent(cacheKey, DEFAULT_EMPTY_CONTENT);
+      return DEFAULT_EMPTY_CONTENT;
     }
 
     // 没有有效内容

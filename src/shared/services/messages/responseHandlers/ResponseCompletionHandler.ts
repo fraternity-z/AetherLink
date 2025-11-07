@@ -153,15 +153,14 @@ export class ResponseCompletionHandler {
    */
   private async updateBlocksInDatabase(chunkProcessor: any, content: string, now: string): Promise<void> {
     const updateOperations: Promise<any>[] = [];
+    const finalThinkingMillis = chunkProcessor.thinkingDurationMs;
 
     // 更新块数据
     if (chunkProcessor.blockType === MessageBlockType.THINKING) {
-      updateOperations.push(dexieStorage.updateMessageBlock(this.blockId, {
-        type: MessageBlockType.THINKING,
-        content: chunkProcessor.thinking,
-        status: MessageBlockStatus.SUCCESS,
-        updatedAt: now
-      }));
+      updateOperations.push(dexieStorage.updateMessageBlock(
+        this.blockId,
+        this.buildThinkingSuccessUpdate(chunkProcessor.thinking, now, finalThinkingMillis)
+      ));
     } else {
       updateOperations.push(dexieStorage.updateMessageBlock(this.blockId, {
         type: MessageBlockType.MAIN_TEXT,
@@ -181,7 +180,44 @@ export class ResponseCompletionHandler {
       }));
     }
 
+    this.ensureAdditionalThinkingBlockUpdated(updateOperations, chunkProcessor, now, finalThinkingMillis);
+
     await Promise.all(updateOperations);
+  }
+
+  private buildThinkingSuccessUpdate(content: string, now: string, thinkingMillis?: number): Partial<MessageBlock> {
+    const update: Partial<MessageBlock> = {
+      type: MessageBlockType.THINKING,
+      content,
+      status: MessageBlockStatus.SUCCESS,
+      updatedAt: now
+    };
+
+    if (typeof thinkingMillis === 'number') {
+      update.thinking_millsec = thinkingMillis;
+    }
+
+    return update;
+  }
+
+  private getThinkingAdditionalChanges(thinkingMillis?: number): Partial<MessageBlock> | undefined {
+    return typeof thinkingMillis === 'number' ? { thinking_millsec: thinkingMillis } : undefined;
+  }
+
+  private ensureAdditionalThinkingBlockUpdated(
+    updateOperations: Promise<any>[],
+    chunkProcessor: any,
+    now: string,
+    thinkingMillis?: number
+  ): void {
+    if (chunkProcessor.thinkingId && chunkProcessor.thinkingId !== this.blockId) {
+      updateOperations.push(
+        dexieStorage.updateMessageBlock(
+          chunkProcessor.thinkingId,
+          this.buildThinkingSuccessUpdate(chunkProcessor.thinking, now, thinkingMillis)
+        )
+      );
+    }
   }
 
   // ===== 私有辅助方法 =====
@@ -313,7 +349,8 @@ export class ResponseCompletionHandler {
     content: string,
     updatedAt: string,
     blockType?: MessageBlockType,
-    metadata?: any
+    metadata?: any,
+    additionalChanges?: Partial<MessageBlock>
   ): void {
     const changes: any = {
       content,
@@ -332,6 +369,10 @@ export class ResponseCompletionHandler {
       };
     }
 
+    if (additionalChanges) {
+      Object.assign(changes, additionalChanges);
+    }
+
     console.log(`[ResponseCompletionHandler] 更新块 ${blockId} 状态为 SUCCESS`);
     store.dispatch(updateOneBlock({ id: blockId, changes }));
   }
@@ -341,6 +382,8 @@ export class ResponseCompletionHandler {
    */
   private updateAllBlockStates(chunkProcessor: any, accumulatedContent: string, now: string): void {
     console.log(`[ResponseCompletionHandler] 更新块状态 - blockType: ${chunkProcessor.blockType}, blockId: ${this.blockId}, textBlockId: ${chunkProcessor.textBlockId}`);
+    const finalThinkingMillis = chunkProcessor.thinkingDurationMs;
+    const thinkingAdditionalChanges = this.getThinkingAdditionalChanges(finalThinkingMillis);
 
     // 根据块类型更新相应的块
     switch (chunkProcessor.blockType) {
@@ -350,7 +393,14 @@ export class ResponseCompletionHandler {
 
       case MessageBlockType.THINKING:
         // 更新思考块
-        this.updateSingleBlock(this.blockId, chunkProcessor.thinking, now, MessageBlockType.THINKING);
+        this.updateSingleBlock(
+          this.blockId,
+          chunkProcessor.thinking,
+          now,
+          MessageBlockType.THINKING,
+          undefined,
+          thinkingAdditionalChanges
+        );
 
         // 更新关联的主文本块（如果存在）
         if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
@@ -368,7 +418,14 @@ export class ResponseCompletionHandler {
     if (chunkProcessor.thinkingId && chunkProcessor.thinkingId !== this.blockId) {
       const thinkingBlock = store.getState().messageBlocks.entities[chunkProcessor.thinkingId];
       if (thinkingBlock && thinkingBlock.type === MessageBlockType.THINKING) {
-        this.updateSingleBlock(chunkProcessor.thinkingId, thinkingBlock.content || '', now, MessageBlockType.THINKING);
+        this.updateSingleBlock(
+          chunkProcessor.thinkingId,
+          chunkProcessor.thinking || thinkingBlock.content || '',
+          now,
+          MessageBlockType.THINKING,
+          undefined,
+          thinkingAdditionalChanges
+        );
         console.log(`[ResponseCompletionHandler] 更新额外思考块 ${chunkProcessor.thinkingId}`);
       }
     }

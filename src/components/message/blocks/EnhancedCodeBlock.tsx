@@ -603,3 +603,4 @@ const EnhancedCodeBlock: React.FC<EnhancedCodeBlockProps> = ({ block, onSave }) 
 };
 
 export default React.memo(EnhancedCodeBlock);
+

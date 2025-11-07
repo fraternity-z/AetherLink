@@ -5,6 +5,7 @@ import { EventEmitter, EVENT_NAMES } from '../services/EventService';
 import { addTopic, removeTopic, updateTopic } from '../store/slices/assistantsSlice';
 import type { RootState } from '../store';
 import type { Assistant, ChatTopic } from '../types/Assistant';
+import { TopicService } from '../services/topics/TopicService';
 
 /**
  * 助手钩子 - 加载助手及其关联的话题
@@ -80,7 +81,7 @@ export function useAssistant(assistantId: string | null) {
     if (!assistantId) return false;
 
     try {
-      await dexieStorage.deleteTopic(topicId);
+      await TopicService.deleteTopic(topicId);
 
       dispatch(removeTopic({ assistantId, topicId }));
       return true;

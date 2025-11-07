@@ -120,6 +120,12 @@ export default function TopicTab({
     []
   );
 
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
   // 获取所有助手列表（用于移动功能）
   const allAssistants = useSelector((state: RootState) => state.assistants.assistants);
 
@@ -128,12 +134,14 @@ export default function TopicTab({
     state.assistants.assistants.find(a => a.id === currentAssistant?.id)
   );
 
+  const assistantWithTopics = reduxCurrentAssistant || currentAssistant;
+
   // 简化的话题排序逻辑 - 🌟 使用Redux数据而不是props数据
   const sortedTopics = useMemo(() => {
-    const assistantToUse = reduxCurrentAssistant || currentAssistant;
-    if (!assistantToUse?.topics) return [];
+    const topicsSource = assistantWithTopics?.topics;
+    if (!topicsSource || topicsSource.length === 0) return [];
 
-    return [...assistantToUse.topics].sort((a, b) => {
+    return [...topicsSource].sort((a, b) => {
       // 固定话题优先
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
 
@@ -142,19 +150,23 @@ export default function TopicTab({
       const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
-  }, [reduxCurrentAssistant?.topics, currentAssistant?.topics]); // 🔧 依赖Redux数据
+  }, [assistantWithTopics?.topics]); // 🔧 依赖Redux数据
 
   // 简化的自动选择逻辑 - 只处理初始化场景，避免创建话题时的循环
   useEffect(() => {
-    // 只在没有选中话题且有话题可选时自动选择第一个
-    // 添加防护：如果当前话题存在于话题列表中，不要重新选择
-    if (sortedTopics.length > 0 && !currentTopic) {
-      console.log('[TopicTab] 初始化自动选择话题:', sortedTopics[0].name || sortedTopics[0].id);
+    if (sortedTopics.length === 0) return;
+
+    const currentTopicExists = currentTopic
+      ? sortedTopics.some(topic => topic.id === currentTopic.id)
+      : false;
+
+    if (!currentTopicExists) {
+      console.log('[TopicTab] 自动选择话题:', sortedTopics[0].name || sortedTopics[0].id);
       startTransition(() => {
         onSelectTopic(sortedTopics[0]);
       });
     }
-  }, [sortedTopics.length, currentTopic?.id, onSelectTopic]); // 使用更稳定的依赖
+  }, [sortedTopics, currentTopic?.id, onSelectTopic]);
 
   // 筛选话题 - 使用防抖搜索查询
   const filteredTopics = useMemo(() => {
@@ -434,11 +446,27 @@ export default function TopicTab({
     if (!topic || !currentAssistant) return;
 
     try {
-      const updatedTopic = {
+      const topicFromDb = await dexieStorage.getTopic(topic.id);
+      let updatedTopic = {
+        ...topicFromDb,
         ...topic,
         assistantId: targetAssistant.id,
         updatedAt: new Date().toISOString()
-      };
+      } as ChatTopic;
+
+      if (!updatedTopic.messageIds || updatedTopic.messageIds.length === 0) {
+        try {
+          const messages = await dexieStorage.getMessagesByTopicId(topic.id);
+          if (messages && messages.length > 0) {
+            updatedTopic = {
+              ...updatedTopic,
+              messageIds: messages.map(message => message.id)
+            };
+          }
+        } catch (messageError) {
+          console.warn('[TopicTab] 获取话题消息失败，保持原有messageIds:', messageError);
+        }
+      }
 
       await dexieStorage.saveTopic(updatedTopic);
 

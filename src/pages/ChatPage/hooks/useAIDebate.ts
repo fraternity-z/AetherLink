@@ -135,30 +135,34 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
 
           // 发送AI请求
           console.log(`🤖 正在请求 ${role.name} 的回应...`);
-          const response = await sendAIRequest(role, context);
+          const response = await streamRoleResponse(role, currentRound, context);
 
-          if (response && shouldContinue) {
+          if (response) {
             // 添加到历史记录
             conversationHistory.push(`${role.name}：${response}`);
+          }
 
-            // 发送AI消息到聊天界面（作为助手消息）
-            const formattedMessage = `**第${currentRound}轮 - ${role.name}** (${getRoleStanceText(role.stance)})\n\n${response}`;
-            console.log(`💬 ${role.name} 发言完成，发送AI消息到界面`);
-            await sendAIMessage(formattedMessage, role.name, role.modelId);
+          // 如果在生成过程中被中断，直接跳出
+          shouldContinue = debateTimeoutRef.current !== null;
+          if (!shouldContinue) {
+            break;
+          }
 
-            // 检查主持人是否建议结束（但至少要进行2轮完整辩论）
-            if (role.stance === 'moderator' && currentRound >= 2 && checkEndSuggestion(response)) {
-              console.log('🏁 主持人建议结束辩论');
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              await endDebateWithSummary(question, conversationHistory, config);
-              return;
-            }
+          // 检查主持人是否建议结束（但至少要进行2轮完整辩论）
+          if (response && role.stance === 'moderator' && currentRound >= 2 && checkEndSuggestion(response)) {
+            console.log('🏁 主持人建议结束辩论');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await endDebateWithSummary(question, conversationHistory, config);
+            return;
+          }
 
-            // 等待一段时间再继续
+          // 等待一段时间再继续
+          if (shouldContinue) {
             console.log(`⏳ 等待3秒后继续...`);
             await new Promise(resolve => {
               debateTimeoutRef.current = setTimeout(resolve, 3000);
             });
+            shouldContinue = debateTimeoutRef.current !== null;
           }
         } catch (error) {
           console.error(`❌ 角色 ${role.name} 发言失败:`, error);
@@ -222,45 +226,154 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
     return context;
   };
 
-  // 发送AI请求
-  const sendAIRequest = async (role: DebateRole, context: string): Promise<string> => {
+  // 发送AI请求（支持流式输出）
+  const sendAIRequest = async (
+    role: DebateRole,
+    context: string,
+    options?: { onDelta?: (delta: string) => void }
+  ): Promise<string> => {
+    const emitDelta = (delta: string) => {
+      if (!delta) return;
+      try {
+        options?.onDelta?.(delta);
+      } catch (error) {
+        console.error(`⚠️ 推送流式增量失败 (${role.name}):`, error);
+      }
+    };
+
+    const fallback = () => {
+      const simulated = getSimulatedResponse(role.stance);
+      emitDelta(simulated);
+      return simulated;
+    };
+
     try {
       // 检查角色是否配置了模型
       if (!role.modelId) {
         console.warn(`角色 ${role.name} 未配置模型，使用模拟响应`);
-        return getSimulatedResponse(role.stance);
+        return fallback();
       }
 
       // 导入API服务
       const { sendChatRequest } = await import('../../../shared/api');
 
-      // 构建消息
-      const messages = [{
-        role: 'user' as const,
-        content: context
-      }];
-
-      console.log(`🤖 调用真实AI API - 角色: ${role.name}, 模型: ${role.modelId}`);
+      let accumulated = '';
 
       // 调用真实的AI API
       const response = await sendChatRequest({
-        messages,
+        messages: [{
+          role: 'user' as const,
+          content: context
+        }],
         modelId: role.modelId,
-        systemPrompt: role.systemPrompt
+        systemPrompt: role.systemPrompt,
+        onChunk: (chunk: string) => {
+          if (!chunk) return;
+
+          if (accumulated && chunk.startsWith(accumulated)) {
+            accumulated = chunk;
+          } else {
+            accumulated += chunk;
+          }
+
+          emitDelta(chunk);
+        }
       });
 
-      if (response.success && response.content) {
-        console.log(`✅ ${role.name} AI响应成功`);
-        return response.content;
-      } else {
-        console.error(`❌ ${role.name} AI响应失败:`, response.error || 'content为空');
-        console.log(`[DEBUG] 完整响应对象:`, response);
-        return getSimulatedResponse(role.stance);
+      const responseContent = response.content ?? '';
+      const finalContent = accumulated || responseContent;
+
+      if (!accumulated && response.success && responseContent) {
+        emitDelta(responseContent);
       }
+
+      if (response.success && finalContent) {
+        console.log(`✅ ${role.name} AI响应成功`);
+        return finalContent;
+      }
+
+      console.error(`❌ ${role.name} AI响应失败:`, response.error || 'content为空');
+      console.log(`[DEBUG] 完整响应对象:`, response);
+      return fallback();
     } catch (error) {
       console.error(`❌ ${role.name} AI请求异常:`, error);
-      return getSimulatedResponse(role.stance);
+      return fallback();
     }
+  };
+
+  // 流式发送辩论消息
+  const streamRoleResponse = async (role: DebateRole, round: number, context: string): Promise<string> => {
+    if (!currentTopic) {
+      console.warn('[AI Debate] 当前没有有效的话题，无法发送辩论消息');
+      return '';
+    }
+
+    const header = `**第${round}轮 - ${role.name}** (${getRoleStanceText(role.stance)})\n\n`;
+
+    const { message, blocks } = createAssistantMessage({
+      assistantId: currentTopic.assistantId || '',
+      topicId: currentTopic.id,
+      modelId: role.modelId || 'ai-debate',
+      initialContent: header,
+      status: AssistantMessageStatus.STREAMING
+    });
+
+    const mainTextBlock = blocks.find(block => block.type === MessageBlockType.MAIN_TEXT);
+
+    if (!mainTextBlock) {
+      console.warn(`[AI Debate] 未找到主文本块，角色: ${role.name}`);
+      return '';
+    }
+
+    // 先把空框架插入消息流
+    dispatch(newMessagesActions.addMessage({
+      topicId: currentTopic.id,
+      message
+    }));
+    dispatch(upsertManyBlocks(blocks));
+
+    let accumulatedContent = '';
+
+    const updateMessageStatus = (status: AssistantMessageStatus) => {
+      dispatch(newMessagesActions.updateMessage({
+        id: message.id,
+        changes: {
+          status,
+          updatedAt: new Date().toISOString()
+        }
+      }));
+    };
+
+    const updateBlockContent = (content: string, status: MessageBlockStatus) => {
+      dispatch(upsertManyBlocks([{
+        ...mainTextBlock,
+        content: header + content,
+        status,
+        updatedAt: new Date().toISOString()
+      }]));
+    };
+
+    updateMessageStatus(AssistantMessageStatus.STREAMING);
+
+    const handleDelta = (delta: string) => {
+      if (!delta) return;
+
+      if (accumulatedContent && delta.startsWith(accumulatedContent)) {
+        accumulatedContent = delta;
+      } else {
+        accumulatedContent += delta;
+      }
+
+      updateBlockContent(accumulatedContent, MessageBlockStatus.STREAMING);
+    };
+
+    const response = await sendAIRequest(role, context, { onDelta: handleDelta });
+    const finalContent = accumulatedContent || response || '';
+
+    updateBlockContent(finalContent, MessageBlockStatus.SUCCESS);
+    updateMessageStatus(AssistantMessageStatus.SUCCESS);
+
+    return finalContent;
   };
 
   // 获取模拟响应（作为备用）

@@ -6,6 +6,7 @@ import type { Model, FileType } from '../../../types';
 import type { RootState, AppDispatch } from '../../index';
 import { saveMessageAndBlocksToDB } from './utils';
 import { processAssistantResponse } from './assistantResponse';
+import { AssistantMessageStatus } from '../../../types/newMessage';
 
 export const sendMessage = (
   content: string,
@@ -54,7 +55,8 @@ export const sendMessage = (
       topicId,
       modelId: model.id,
       model,
-      askId: userMessage.id
+      askId: userMessage.id,
+      status: AssistantMessageStatus.STREAMING
     });
 
     // 5. 保存助手消息到数据库
@@ -62,6 +64,9 @@ export const sendMessage = (
 
     // 6. 更新Redux状态
     dispatch(newMessagesActions.addMessage({ topicId, message: assistantMessage }));
+    if (assistantBlocks.length > 0) {
+      dispatch(upsertManyBlocks(assistantBlocks));
+    }
 
     // 7. 设置加载状态
     dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));

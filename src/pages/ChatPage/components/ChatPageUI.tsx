@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, startTransition } from 'react';
+import React, { useMemo, useCallback, startTransition } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -15,7 +15,6 @@ import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat, ChatTopic, Message, Model } from '../../../shared/types';
 import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
 import { generateBackgroundStyle } from '../../../shared/utils/backgroundUtils';
-import { useTheme } from '@mui/material/styles';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
@@ -184,14 +183,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   showSearch,
   onSearchToggle
 }) => {
-  // 🔧 渲染计数器，监控重复渲染
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log(`🎬 ChatPageUI渲染 #${renderCount.current}`, { drawerOpen, isMobile });
-
   // ==================== Hooks 和基础状态 ====================
-  const theme = useTheme();
-
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
 
@@ -230,6 +222,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     ...settings.topToolbar
   };
 
+  const isDIYLayout = Boolean(mergedTopToolbarSettings.componentPositions?.length);
   const shouldShowToolbar = settings.inputLayoutStyle === 'default';
 
   // 生成背景样式
@@ -293,10 +286,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
   // 简化的工具栏组件渲染函数
   const renderToolbarComponent = useCallback((componentId: string) => {
-    const isDIYMode = mergedTopToolbarSettings.componentPositions?.length > 0;
-
     const shouldShow = (settingKey: keyof typeof mergedTopToolbarSettings) =>
-      isDIYMode || mergedTopToolbarSettings[settingKey];
+      isDIYLayout || mergedTopToolbarSettings[settingKey];
 
     switch (componentId) {
       case 'menuButton':
@@ -312,7 +303,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               edge="start"
               color="inherit"
               onClick={handleToggleDrawer}
-              sx={{ mr: isDIYMode ? 0 : 1 }}
+              sx={{ mr: isDIYLayout ? 0 : 1 }}
             >
               <CustomIcon name="documentPanel" size={20} />
             </IconButton>
@@ -328,7 +319,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
       case 'topicName':
         return shouldShow('showTopicName') && currentTopic ? (
-          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: isDIYMode ? 0 : 1 }}>
+          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: isDIYLayout ? 0 : 1 }}>
             {currentTopic.name}
           </Typography>
         ) : null;
@@ -346,7 +337,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               color="inherit"
               onClick={handleCreateTopic}
               size="small"
-              sx={{ ml: isDIYMode ? 0 : 1 }}
+              sx={{ ml: isDIYLayout ? 0 : 1 }}
             >
               <Plus size={20} />
             </IconButton>
@@ -366,7 +357,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               color="inherit"
               onClick={handleClearTopic}
               size="small"
-              sx={{ ml: isDIYMode ? 0 : 1 }}
+              sx={{ ml: isDIYLayout ? 0 : 1 }}
             >
               <Trash2 size={20} />
             </IconButton>
@@ -453,7 +444,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   }, [
     mergedTopToolbarSettings,
     settings.modelSelectorStyle,
-    drawerOpen,
+    isDIYLayout,
     currentTopic,
     selectedModel,
     availableModels,
@@ -660,11 +651,11 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           <Toolbar sx={{
             position: 'relative',
             minHeight: '56px !important',
-            justifyContent: mergedTopToolbarSettings.componentPositions?.length > 0 ? 'center' : 'space-between',
+            justifyContent: isDIYLayout ? 'center' : 'space-between',
             userSelect: 'none', // 禁止工具栏文本选择
           }}>
             {/* 如果有DIY布局，使用绝对定位渲染组件 */}
-            {mergedTopToolbarSettings.componentPositions?.length > 0 ? (
+            {isDIYLayout ? (
               <>
                 {mergedTopToolbarSettings.componentPositions.map((position: any) => {
                   const component = renderToolbarComponent(position.id);

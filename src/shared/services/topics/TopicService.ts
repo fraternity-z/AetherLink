@@ -197,7 +197,7 @@ export class TopicService {
   /**
    * 创建话题
    */
-  static async createTopic(title: string, initialMessage?: string): Promise<ChatTopic> {
+  static async createTopic(title: string, initialMessage?: string, assistantId?: string): Promise<ChatTopic> {
     try {
       const now = new Date().toISOString();
       const messages: Message[] = [];
@@ -218,10 +218,9 @@ export class TopicService {
       const formattedDate = formatDateForTopicTitle(new Date(now));
 
       // 尝试获取当前助手ID
-      let currentAssistantId = await this.getCurrentAssistantId();
-      if (!currentAssistantId) {
-        console.warn('[TopicService.createTopic] 未找到当前助手ID，将使用占位符。此话题可能未正确关联助手。');
-        currentAssistantId = 'unassociated_topic_assistant'; // 占位符
+      const resolvedAssistantId = assistantId ?? await this.getCurrentAssistantId();
+      if (!resolvedAssistantId) {
+        throw new Error('[TopicService.createTopic] 无法确定助手 ID，创建话题失败');
       }
 
       // 使用事务确保数据一致性
@@ -234,7 +233,7 @@ export class TopicService {
         // 创建新的主题对象
         newTopic = {
           id: topicId,
-          assistantId: currentAssistantId,
+          assistantId: resolvedAssistantId,
           name: title || `新的对话 ${formattedDate}`,
           title: title || `新的对话 ${formattedDate}`,
           createdAt: now,
@@ -252,7 +251,7 @@ export class TopicService {
         if (messages.length > 0) {
           for (const msg of messages) {
             msg.topicId = topicId;
-            msg.assistantId = currentAssistantId;
+            msg.assistantId = resolvedAssistantId;
             await dexieStorage.messages.put(msg);
           }
 
@@ -270,6 +269,54 @@ export class TopicService {
     } catch (error) {
       console.error('[TopicService] 创建独立话题失败:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 为指定助手创建一个默认话题，确保持久化并同步Redux状态
+   */
+  static async createDefaultTopicForAssistant(assistantId: string, options?: { previousTopicId?: string }): Promise<ChatTopic | null> {
+    if (!assistantId) {
+      console.error('[TopicService.createDefaultTopicForAssistant] 助手ID不能为空');
+      return null;
+    }
+
+    try {
+      const assistant = await dexieStorage.getAssistant(assistantId);
+      if (!assistant) {
+        console.warn(`[TopicService.createDefaultTopicForAssistant] 未找到助手 ${assistantId}`);
+        return null;
+      }
+
+      const topic = getDefaultTopic(assistantId);
+
+      await dexieStorage.saveTopic(topic);
+      await AssistantService.addTopicToAssistant(assistantId, topic.id);
+
+      store.dispatch(addTopic({ assistantId, topic }));
+
+      const state = store.getState();
+      const currentAssistantId = state.assistants.currentAssistant?.id;
+      const currentTopicId = state.messages?.currentTopicId ?? null;
+
+      const shouldSwitch =
+        currentAssistantId === assistantId &&
+        (!currentTopicId || currentTopicId === options?.previousTopicId);
+
+      if (shouldSwitch) {
+        store.dispatch(newMessagesActions.setCurrentTopicId(topic.id));
+      }
+
+      EventEmitter.emit(EVENT_NAMES.TOPIC_CREATED, {
+        topic,
+        assistantId,
+        type: 'auto-default'
+      });
+
+      return topic;
+    } catch (error) {
+      console.error('[TopicService.createDefaultTopicForAssistant] 创建默认话题失败:', error);
+      return null;
     }
   }
 
@@ -318,10 +365,21 @@ export class TopicService {
         Promise.resolve().then(async () => {
           try {
             const assistant = await dexieStorage.assistants.get(assistantId);
-            if (assistant && assistant.topicIds) {
-              assistant.topicIds = assistant.topicIds.filter(topicId => topicId !== id);
+            if (assistant) {
+              const remainingTopicIds = (assistant.topicIds || []).filter(topicId => topicId !== id);
+              assistant.topicIds = remainingTopicIds;
+
+              if (assistant.topics) {
+                assistant.topics = assistant.topics.filter(topicItem => topicItem.id !== id);
+              }
+
               await dexieStorage.assistants.put(assistant);
               console.log(`[TopicService] 助手 ${assistantId} 的topicIds已更新`);
+
+              if (remainingTopicIds.length === 0) {
+                console.log(`[TopicService] 助手 ${assistantId} 没有话题了，自动创建默认话题`);
+                await TopicService.createDefaultTopicForAssistant(assistantId, { previousTopicId: id });
+              }
             }
           } catch (error) {
             console.error(`[TopicService] 更新助手topicIds失败:`, error);
@@ -747,8 +805,13 @@ export class TopicService {
         return null;
       }
 
+      if (!sourceTopic.assistantId) {
+        console.error(`[TopicService] 源主题 ${sourceTopicId} 缺少助手ID，无法创建分支`);
+        return null;
+      }
+
       // 创建新主题
-      const newTopic = await this.createTopic(`${sourceTopic.name} (分支)`);
+      const newTopic = await this.createTopic(`${sourceTopic.name} (分支)`, undefined, sourceTopic.assistantId);
       if (!newTopic) {
         console.error('[TopicService] 创建分支主题失败');
         return null;

@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../../shared/store';
 import { useChatPageLayout } from './hooks/useChatPageLayout.ts';
 import { useModelSelection } from './hooks/useModelSelection.ts';
@@ -23,6 +22,8 @@ import { addTopic } from '../../shared/store/slices/assistantsSlice';
 import { useActiveTopic } from '../../hooks/useActiveTopic';
 import ChatSearchInterface from '../../components/search/ChatSearchInterface';
 
+
+const EMPTY_MESSAGES_ARRAY: any[] = [];
 
 const ChatPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -60,70 +61,32 @@ const ChatPage: React.FC = () => {
 
   // ：话题加载由useActiveTopic Hook自动处理，无需手动加载
 
-  // 创建稳定的空数组引用
-  const EMPTY_MESSAGES_ARRAY = useMemo(() => [], []);
-
-  // 创建记忆化的消息选择器
-  const selectCurrentMessages = useMemo(
-    () => {
-      if (!currentTopic?.id) {
-        return () => EMPTY_MESSAGES_ARRAY;
-      }
-      return createSelector(
-        [(state: RootState) => selectMessagesForTopic(state, currentTopic.id)],
-        (messages) => {
-          // 确保返回数组，使用稳定的空数组引用
-          return Array.isArray(messages) ? messages : EMPTY_MESSAGES_ARRAY;
-        }
-      );
-    },
-    [currentTopic?.id, EMPTY_MESSAGES_ARRAY]
-  );
-
-  // 使用记忆化的选择器获取当前主题的消息
-  const currentMessages = useSelector(selectCurrentMessages);
+  const currentMessages = useSelector((state: RootState) => {
+    if (!currentTopic?.id) {
+      return EMPTY_MESSAGES_ARRAY;
+    }
+    const messages = selectMessagesForTopic(state, currentTopic.id);
+    return Array.isArray(messages) ? messages : EMPTY_MESSAGES_ARRAY;
+  });
 
   // 更新消息引用
   useEffect(() => {
     messagesRef.current = currentMessages;
   }, [currentMessages]);
 
-  // 创建记忆化的状态选择器
-  const selectCurrentTopicStreaming = useMemo(
-    () => {
-      if (!currentTopic?.id) {
-        return () => false;
-      }
-      return createSelector(
-        [(state: RootState) => selectTopicStreaming(state, currentTopic.id)],
-        (streaming) => {
-          // 转换为布尔值，确保有转换逻辑
-          return Boolean(streaming);
-        }
-      );
-    },
-    [currentTopic?.id]
-  );
+  const isStreaming = useSelector((state: RootState) => {
+    if (!currentTopic?.id) {
+      return false;
+    }
+    return Boolean(selectTopicStreaming(state, currentTopic.id));
+  });
 
-  const selectCurrentTopicLoading = useMemo(
-    () => {
-      if (!currentTopic?.id) {
-        return () => false;
-      }
-      return createSelector(
-        [(state: RootState) => selectTopicLoading(state, currentTopic.id)],
-        (loading) => {
-          // 转换为布尔值，确保有转换逻辑
-          return Boolean(loading);
-        }
-      );
-    },
-    [currentTopic?.id]
-  );
-
-  // 使用记忆化的选择器获取状态
-  const isStreaming = useSelector(selectCurrentTopicStreaming);
-  const reduxLoading = useSelector(selectCurrentTopicLoading);
+  const reduxLoading = useSelector((state: RootState) => {
+    if (!currentTopic?.id) {
+      return false;
+    }
+    return Boolean(selectTopicLoading(state, currentTopic.id));
+  });
 
   // ：使用Redux的loading状态
   const isLoading = reduxLoading;
@@ -236,7 +199,7 @@ const ChatPage: React.FC = () => {
 
       try {
         // 创建新话题
-        const newTopic = await TopicService.createTopic(`${currentTopic.name} (分支)`);
+        const newTopic = await TopicService.createTopic(`${currentTopic.name} (分支)`, undefined, currentAssistant.id);
         if (!newTopic) {
           console.error('[ChatPage] 创建分支话题失败');
           return;

@@ -139,6 +139,11 @@ export class TopicManager {
 
       if (success) {
         console.log(`成功从助手 ${assistantId} 移除话题 ${topicId}`);
+
+        if (updatedAssistant.topicIds.length === 0) {
+          console.log(`[TopicManager] 助手 ${assistantId} 没有话题了，自动创建默认话题`);
+          await TopicService.createDefaultTopicForAssistant(assistantId, { previousTopicId: topicId });
+        }
       } else {
         console.error(`无法从助手 ${assistantId} 移除话题 ${topicId}`);
       }
@@ -251,6 +256,10 @@ export class TopicManager {
 
       if (success) {
         console.log(`[TopicManager] 成功清空助手 ${assistantId} 的所有话题，共删除 ${originalTopicIds.length} 个话题`);
+
+        await TopicService.createDefaultTopicForAssistant(assistantId, {
+          previousTopicId: originalTopicIds[0]
+        });
 
         // 发送事件通知其他组件更新
         const event = new CustomEvent('topicsCleared', {

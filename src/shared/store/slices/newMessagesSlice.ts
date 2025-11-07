@@ -350,18 +350,44 @@ export const {
 // 创建稳定的空数组引用
 const EMPTY_MESSAGES_ARRAY: any[] = [];
 
+const selectMessageEntities = (state: RootState) => {
+  const messagesState = state.messages;
+  return messagesState ? messagesState.entities : {};
+};
+
+const selectMessageIdsForTopic = (state: RootState, topicId: string) => {
+  const messagesState = state.messages;
+  if (!messagesState) {
+    return EMPTY_MESSAGES_ARRAY;
+  }
+  return messagesState.messageIdsByTopic[topicId] || EMPTY_MESSAGES_ARRAY;
+};
+
 // 自定义选择器 - 使用 createSelector 进行记忆化
 export const selectMessagesByTopicId = createSelector(
   [
-    (state: RootState) => state.messages,
-    (_state: RootState, topicId: string) => topicId
+    selectMessageIdsForTopic,
+    selectMessageEntities
   ],
-  (messagesState, topicId) => {
-    if (!messagesState) {
+  (messageIds, entities) => {
+    if (!messageIds.length) {
       return EMPTY_MESSAGES_ARRAY;
     }
-    const messageIds = messagesState.messageIdsByTopic[topicId] || EMPTY_MESSAGES_ARRAY;
-    return messageIds.map((id: string) => messagesState.entities[id]).filter(Boolean);
+    return messageIds.map((id: string) => entities[id]).filter(Boolean);
+  }
+);
+
+export const selectLastMessageForTopic = createSelector(
+  [
+    selectMessageIdsForTopic,
+    selectMessageEntities
+  ],
+  (messageIds, entities) => {
+    if (!messageIds.length) {
+      return null;
+    }
+    const lastId = messageIds[messageIds.length - 1];
+    return entities[lastId] || null;
   }
 );
 

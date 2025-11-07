@@ -4,7 +4,8 @@ import {
   selectMessagesByTopicId,
   selectCurrentTopicId as selectNormalizedCurrentTopicId,
   selectTopicLoading as selectNormalizedTopicLoading,
-  selectTopicStreaming as selectNormalizedTopicStreaming
+  selectTopicStreaming as selectNormalizedTopicStreaming,
+  selectLastMessageForTopic as selectNormalizedLastMessageForTopic
 } from '../slices/newMessagesSlice';
 
 // 基础选择器
@@ -13,6 +14,9 @@ export const selectMessageBlocksState = (state: RootState) => state.messageBlock
 
 // 选择特定主题的消息 - 使用 newMessagesSlice 中的选择器
 export const selectMessagesForTopic = selectMessagesByTopicId;
+
+// 选择话题的最后一条消息
+export const selectLastMessageForTopic = selectNormalizedLastMessageForTopic;
 
 // 选择消息块实体 - 使用记忆化避免不必要的重新渲染
 export const selectMessageBlockEntities = createSelector(

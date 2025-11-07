@@ -85,6 +85,14 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
     const compositeValue = event.target.value;
     if (!compositeValue || typeof compositeValue !== 'string') return;
 
+    setOpen(false);
+    requestAnimationFrame(() => {
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (activeElement?.getAttribute('role') === 'option') {
+        activeElement.blur();
+      }
+    });
+
     try {
       // 从复合值中提取模型ID和提供商
       const [modelId, providerId] = compositeValue.split('---');
@@ -184,9 +192,6 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           }
         }}
         MenuProps={{
-          disableAutoFocus: true,
-          disableRestoreFocus: true,
-          disableEnforceFocus: true,
           anchorOrigin: {
             vertical: 'bottom',
             horizontal: 'left',

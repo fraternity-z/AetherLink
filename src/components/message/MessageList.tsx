@@ -24,7 +24,9 @@ const LOAD_MORE_COUNT = 20;
 
 // 修复：简化消息显示逻辑，支持正确的无限滚动
 const computeDisplayMessages = (messages: Message[], startIndex: number, displayCount: number) => {
-  console.log(`[computeDisplayMessages] 输入 ${messages.length} 条消息，从索引 ${startIndex} 开始，显示 ${displayCount} 条`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[computeDisplayMessages] 输入 ${messages.length} 条消息，从索引 ${startIndex} 开始，显示 ${displayCount} 条`);
+  }
 
   const totalMessages = messages.length;
 
@@ -39,7 +41,9 @@ const computeDisplayMessages = (messages: Message[], startIndex: number, display
 
   const displayMessages = messages.slice(actualStartIndex, actualEndIndex);
 
-  console.log(`[computeDisplayMessages] 返回 ${displayMessages.length} 条消息，索引范围: ${actualStartIndex}-${actualEndIndex}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[computeDisplayMessages] 返回 ${displayMessages.length} 条消息，索引范围: ${actualStartIndex}-${actualEndIndex}`);
+  }
   return displayMessages;
 };
 
@@ -56,10 +60,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   const theme = useTheme();
   const dispatch = useDispatch();
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
+  const isDevMode = process.env.NODE_ENV === 'development';
 
   // 修复：添加错误状态管理
   const [error, setError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
+  const loadMoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 修复：统一的错误处理函数
   const handleError = useCallback((error: any, context: string, options: { showToUser?: boolean; canRecover?: boolean } = {}) => {
@@ -126,6 +132,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   // 从数据库获取当前话题和助手信息
   const [currentTopic, setCurrentTopic] = useState<ChatTopic | null>(null);
   const [currentAssistant, setCurrentAssistant] = useState<Assistant | null>(null);
+  const loadedBlockIdsRef = useRef<Set<string>>(new Set());
 
   // 当话题ID变化时，从数据库获取话题和助手信息
   useEffect(() => {
@@ -357,41 +364,68 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
 
   // 简化的块加载逻辑
   useEffect(() => {
+    let isActive = true;
+
     const loadMissingBlocks = async () => {
-      const blocksToLoad = [];
+      const pendingBlockIds: string[] = [];
 
       for (const message of messages) {
-        if (message.blocks && message.blocks.length > 0) {
-          for (const blockId of message.blocks) {
-            // 如果这个块已经在Redux中，跳过
-            if (messageBlocks[blockId]) continue;
+        if (!message.blocks || message.blocks.length === 0) continue;
 
-            try {
-              const block = await dexieStorage.getMessageBlock(blockId);
-              if (block) {
-                blocksToLoad.push(block);
-              }
-            } catch (error) {
-              handleError(error, `加载块 ${blockId} 失败`, { showToUser: false });
-            }
-          }
+        for (const blockId of message.blocks) {
+          if (messageBlocks[blockId]) continue;
+          if (loadedBlockIdsRef.current.has(blockId)) continue;
+
+          pendingBlockIds.push(blockId);
+          loadedBlockIdsRef.current.add(blockId);
         }
       }
 
-      if (blocksToLoad.length > 0) {
-        dispatch(upsertManyBlocks(blocksToLoad as any));
+      if (pendingBlockIds.length === 0) {
+        return;
+      }
+
+      const blocks = await Promise.all(
+        pendingBlockIds.map(async blockId => {
+          try {
+            const block = await dexieStorage.getMessageBlock(blockId);
+            if (!block) {
+              loadedBlockIdsRef.current.delete(blockId);
+            }
+            return block;
+          } catch (error) {
+            loadedBlockIdsRef.current.delete(blockId);
+            handleError(error, `加载块 ${blockId} 失败`, { showToUser: false });
+            return null;
+          }
+        })
+      );
+
+      if (!isActive) {
+        return;
+      }
+
+      const validBlocks = blocks.filter(Boolean) as any[];
+      if (validBlocks.length > 0) {
+        dispatch(upsertManyBlocks(validBlocks as any));
       }
     };
 
     loadMissingBlocks();
-  }, [messages, messageBlocks, dispatch]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [messages, messageBlocks, dispatch, handleError]);
 
   // 改造为：直接使用有序消息，无需去重
   const filteredMessages = useMemo(() => {
-    console.log(`[MessageList] 使用，直接使用 ${messages.length} 条有序消息，无需去重`);
+    if (isDevMode) {
+      console.log(`[MessageList] 使用，直接使用 ${messages.length} 条有序消息，无需去重`);
+    }
     // ：假设消息已经按时间顺序存储且无重复，直接使用
     return messages;
-  }, [messages]);
+  }, [messages, isDevMode]);
 
   // 修复：计算显示的消息 - 使用记忆化避免重复计算
   const memoizedDisplayMessages = useMemo(() => {
@@ -420,7 +454,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     if (!hasMore || isLoadingMore) return;
 
     setIsLoadingMore(true);
-    setTimeout(() => {
+    if (loadMoreTimeoutRef.current) {
+      clearTimeout(loadMoreTimeoutRef.current);
+    }
+    loadMoreTimeoutRef.current = setTimeout(() => {
       const currentLength = displayMessages.length;
       // 修复：向前加载更多历史消息
       const newStartIndex = Math.max(0, filteredMessages.length - currentLength - LOAD_MORE_COUNT);
@@ -429,6 +466,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
       setDisplayMessages(newMessages);
       setHasMore(newStartIndex > 0);
       setIsLoadingMore(false);
+      loadMoreTimeoutRef.current = null;
     }, 300);
   }, []); // 空依赖数组，避免重建
 
@@ -456,10 +494,16 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
       unifiedScrollManager.scrollToBottom.cancel();
       unifiedScrollManager.cleanup();
       throttledMessageLengthScroll.cancel();
-
-      console.log('[MessageList] 组件卸载，已清理所有节流函数');
+      if (loadMoreTimeoutRef.current) {
+        clearTimeout(loadMoreTimeoutRef.current);
+        loadMoreTimeoutRef.current = null;
+      }
+      loadedBlockIdsRef.current.clear();
+      if (isDevMode) {
+        console.log('[MessageList] 组件卸载，已清理所有节流函数');
+      }
     };
-  }, [unifiedScrollManager, throttledMessageLengthScroll]);
+  }, [unifiedScrollManager, throttledMessageLengthScroll, isDevMode]);
 
   return (
     <Box

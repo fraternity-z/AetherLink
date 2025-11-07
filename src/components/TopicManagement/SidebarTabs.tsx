@@ -84,57 +84,51 @@ const SidebarTabs = React.memo(function SidebarTabs({
 
     console.log('[SidebarTabs] 开始删除话题:', topicId);
 
-    // 🚀 Cherry Studio模式：乐观更新，立即从UI中移除话题
-    const topicToDelete = assistantWithTopics?.topics?.find(t => t.id === topicId);
+    const topics = assistantWithTopics?.topics ?? [];
+    const topicToDelete = topics.find(t => t.id === topicId);
     if (!topicToDelete || !currentAssistant) {
       console.warn('[SidebarTabs] 找不到要删除的话题或当前助手');
       return;
     }
 
-    // 🎯 如果删除的是当前话题，先切换到其他话题
-    if (currentTopicId === topicId && assistantWithTopics?.topics && assistantWithTopics.topics.length > 1) {
-      const remainingTopics = assistantWithTopics.topics.filter(t => t.id !== topicId);
-      if (remainingTopics.length > 0) {
-        // 🌟 智能选择下一个话题：优先选择后面的，如果是最后一个则选择前面的
-        const currentIndex = assistantWithTopics.topics.findIndex(t => t.id === topicId);
-        const nextTopic = currentIndex < assistantWithTopics.topics.length - 1
-          ? assistantWithTopics.topics[currentIndex + 1]
-          : assistantWithTopics.topics[currentIndex - 1];
+    const isDeletingLastTopic = topics.length <= 1;
+    const deletingCurrentTopic = currentTopicId === topicId;
 
-        console.log('[SidebarTabs] 删除当前话题，立即切换到:', nextTopic.name);
-        startTransition(() => {
-          dispatch(newMessagesActions.setCurrentTopicId(nextTopic.id));
-        });
+    let nextTopicAfterDeletion: ChatTopic | null = null;
+    if (!isDeletingLastTopic && deletingCurrentTopic) {
+      const currentIndex = topics.findIndex(t => t.id === topicId);
+      if (currentIndex !== -1) {
+        nextTopicAfterDeletion = currentIndex < topics.length - 1
+          ? topics[currentIndex + 1]
+          : topics[currentIndex - 1];
       }
     }
 
-    // 立即从Redux中移除话题，UI立即响应
     startTransition(() => {
-      // 🔥 关键修复：如果删除的是最后一个话题，先清空currentTopicId
-      // 这样TopicTab的自动选择逻辑就会生效
-      if (assistantWithTopics?.topics && assistantWithTopics.topics.length === 1) {
-        console.log('[SidebarTabs] 删除最后一个话题，先清空currentTopicId');
-        dispatch(newMessagesActions.setCurrentTopicId(''));
+      if (deletingCurrentTopic) {
+        if (nextTopicAfterDeletion) {
+          dispatch(newMessagesActions.setCurrentTopicId(nextTopicAfterDeletion.id));
+        } else if (isDeletingLastTopic) {
+          dispatch(newMessagesActions.setCurrentTopicId(''));
+        }
       }
 
       dispatch(removeTopic({
         assistantId: currentAssistant.id,
-        topicId: topicId
+        topicId
       }));
     });
 
-    // 🔄 异步删除数据库数据，不阻塞UI
     Promise.resolve().then(async () => {
       try {
         await TopicService.deleteTopic(topicId);
         console.log('[SidebarTabs] 话题数据库删除完成:', topicId);
       } catch (error) {
         console.error('[SidebarTabs] 删除话题失败，需要回滚UI状态:', error);
-        // TODO: 实现错误回滚逻辑
-        refreshTopics(); // 重新加载数据以恢复状态
+        refreshTopics();
       }
     });
-  }, [dispatch, assistantWithTopics, currentAssistant, currentTopicId, refreshTopics]);
+  }, [assistantWithTopics, currentAssistant, currentTopicId, dispatch, refreshTopics]);
 
   const handleUpdateTopic = (topic: ChatTopic) => {
     updateAssistantTopic(topic);
