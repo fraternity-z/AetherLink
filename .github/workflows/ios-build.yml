@@ -2,85 +2,280 @@ name: iOS Build
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
-  build-ios:
-    name: Build iOS App
-    runs-on: macos-14  # 使用 macOS 14（配备 Xcode 15.x）
-    
+  build:
+    runs-on: macos-latest
     steps:
-      - name: Checkout代码
+      - name: Checkout Repository
         uses: actions/checkout@v4
-      
-      - name: 设置Node.js环境
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-      
-      - name: 选择正确的Xcode版本
+
+      - name: Clear npm cache
+        run: npm cache clean --force
+
+      - name: Install Dependencies with retry
         run: |
-          # 列出所有可用的Xcode版本
-          sudo ls -1 /Applications | grep "Xcode"
-          
-          # 选择Xcode 15.2（或其他合适版本）
-          sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
-          
-          # 验证Xcode版本
-          xcodebuild -version
-      
-      - name: 安装依赖
-        run: npm ci
-      
-      - name: 构建Web项目
+          # 尝试多种方法安装依赖
+          echo "Attempting npm ci..."
+          npm ci || {
+            echo "npm ci failed, trying alternative approaches..."
+            echo "Cleaning up and retrying..."
+            rm -rf node_modules package-lock.json
+            npm cache clean --force
+
+            echo "Trying npm install with --no-package-lock..."
+            npm install --no-package-lock || {
+              echo "npm install failed, trying with --legacy-peer-deps..."
+              npm install --legacy-peer-deps || {
+                echo "All npm methods failed, trying yarn as fallback..."
+                npm install -g yarn
+                yarn install --ignore-engines
+              }
+            }
+          }
+
+      - name: Build Web App
         run: npm run build
-      
-      - name: 同步Capacitor
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: Sync Capacitor iOS
         run: npx cap sync ios
-      
-      - name: 安装CocoaPods依赖
+
+      - name: Install CocoaPods dependencies
         run: |
           cd ios/App
           pod install --repo-update
-      
-      - name: 清理构建缓存
+
+      - name: Update iOS project settings
         run: |
           cd ios/App
-          xcodebuild clean -workspace App.xcworkspace -scheme App
-      
-      - name: 构建iOS应用
+
+          # 创建一个更安全的项目配置脚本
+          cat > update_project.py << 'EOF'
+          import re
+          import sys
+
+          def update_pbxproj(file_path):
+              try:
+                  with open(file_path, 'r') as f:
+                      content = f.read()
+
+                  # 更安全的替换方式
+                  # 禁用代码签名
+                  content = re.sub(r'CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;', content)
+                  content = re.sub(r'DEVELOPMENT_TEAM = [^;]*;', 'DEVELOPMENT_TEAM = "";', content)
+                  content = re.sub(r'CODE_SIGN_IDENTITY = [^;]*;', 'CODE_SIGN_IDENTITY = "";', content)
+                  content = re.sub(r'PROVISIONING_PROFILE_SPECIFIER = [^;]*;', 'PROVISIONING_PROFILE_SPECIFIER = "";', content)
+
+                  # 添加禁用代码签名的设置
+                  if 'CODE_SIGNING_ALLOWED' not in content:
+                      # 在构建设置部分添加
+                      content = re.sub(
+                          r'(buildSettings = \{[^}]*)',
+                          r'\1\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;',
+                          content
+                      )
+
+                  with open(file_path, 'w') as f:
+                      f.write(content)
+
+                  print("Project file updated successfully")
+                  return True
+              except Exception as e:
+                  print(f"Error updating project file: {e}")
+                  return False
+
+          if __name__ == "__main__":
+              success = update_pbxproj("App.xcodeproj/project.pbxproj")
+              sys.exit(0 if success else 1)
+          EOF
+
+          # 运行 Python 脚本更新项目
+          python3 update_project.py
+
+      - name: List available schemes and verify setup
         run: |
           cd ios/App
-          xcodebuild \
+          echo "=== Available schemes ==="
+          xcodebuild -workspace App.xcworkspace -list
+          echo ""
+          echo "=== Workspace structure ==="
+          ls -la
+          echo ""
+          echo "=== Pod installation status ==="
+          ls -la Pods/ || echo "Pods directory not found"
+
+      - name: Build iOS App (Archive)
+        run: |
+          cd ios/App
+
+          # 创建构建目录
+          mkdir -p build
+
+          # 构建归档，添加Swift优化设置以消除警告
+          xcodebuild archive \
             -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$PWD/build/App.xcarchive" \
-            archive \
+            -archivePath ./build/App.xcarchive \
+            -destination generic/platform=iOS \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
-      
-      - name: 导出IPA（可选）
-        if: success()
+            PROVISIONING_PROFILE="" \
+            DEVELOPMENT_TEAM="" \
+            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+            -quiet
+
+      - name: Export IPA (Unsigned)
         run: |
           cd ios/App
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$PWD/build/App.xcarchive" \
-            -exportPath "$PWD/build" \
-            -exportOptionsPlist exportOptions.plist
-        continue-on-error: true
-      
-      - name: 上传构建产物
-        if: success()
+
+          # 检查归档是否存在
+          if [ ! -d "./build/App.xcarchive" ]; then
+            echo "Archive not found, cannot export IPA"
+            exit 1
+          fi
+
+          # 直接从归档中提取应用，避免复杂的导出过程
+          echo "Extracting app from archive..."
+          if [ -d "./build/App.xcarchive/Products/Applications" ]; then
+            mkdir -p ./build/Payload
+            cp -r ./build/App.xcarchive/Products/Applications/*.app ./build/Payload/
+            cd ./build
+            zip -r App.ipa Payload/
+            echo "IPA created successfully from archive"
+          else
+            echo "Cannot find app in archive"
+            ls -la ./build/App.xcarchive/
+            exit 1
+          fi
+
+      - name: Rename and prepare IPA
+        run: |
+          cd ios/App/build
+
+          # 查找并重命名IPA文件
+          if [ -f "App.ipa" ]; then
+            mv App.ipa AetherLink-unsigned.ipa
+            echo "Renamed App.ipa to AetherLink-unsigned.ipa"
+          elif [ -f "*.ipa" ]; then
+            # 如果有其他名称的IPA文件
+            for ipa in *.ipa; do
+              if [ -f "$ipa" ]; then
+                mv "$ipa" AetherLink-unsigned.ipa
+                echo "Renamed $ipa to AetherLink-unsigned.ipa"
+                break
+              fi
+            done
+          else
+            echo "No IPA file found, creating placeholder"
+            echo "IPA build failed" > AetherLink-unsigned.ipa.txt
+          fi
+
+          # 创建安装说明文件
+          cat > INSTALL_INSTRUCTIONS.md << EOF
+          # AetherLink iOS 安装说明
+
+          ## 方法一：使用 AltStore / SideStore
+          1. 在设备上安装 AltStore 或 SideStore
+          2. 将 AetherLink-unsigned.ipa 文件传输到设备
+          3. 使用 AltStore/SideStore 安装 IPA 文件
+
+          ## 方法二：使用 Xcode (需要开发者账号)
+          1. 在 Mac 上打开 Xcode
+          2. 连接 iOS 设备
+          3. 将 IPA 文件拖拽到 Xcode 的 Devices and Simulators 窗口
+
+          ## 方法三：使用 3uTools / iMazing
+          1. 在电脑上安装 3uTools 或 iMazing
+          2. 连接 iOS 设备
+          3. 使用工具安装 IPA 文件
+
+          ## 方法四：使用 iOS App Signer (重新签名)
+          1. 下载 iOS App Signer
+          2. 使用您的开发者证书重新签名 IPA
+          3. 安装签名后的 IPA
+
+          ## 注意事项
+          - 此 IPA 文件未签名，需要使用第三方工具或重新签名才能安装
+          - 安装后可能需要在设置中信任开发者
+          - 某些方法可能需要 iOS 设备越狱或开发者账号
+          EOF
+
+      - name: Upload IPA and Instructions
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build
-          path: ios/App/build/
+          name: ios-app-unsigned
+          path: |
+            ios/App/build/AetherLink-unsigned.ipa
+            ios/App/build/INSTALL_INSTRUCTIONS.md
+          retention-days: 30
+
+      - name: Upload Archive (for debugging)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive
+          path: ios/App/build/App.xcarchive
           retention-days: 7
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      # 注释掉自动发布功能，避免产生过多的 releases
+      # - name: Create Release
+      #   if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ios-v${{ steps.date.outputs.date }}
+      #     name: iOS Build ${{ steps.date.outputs.date }}
+      #     body: |
+      #       🍎 自动构建的 iOS IPA 文件
+      #
+      #       📱 **构建信息**：
+      #       - 构建时间：${{ steps.date.outputs.date }}
+      #       - 提交：${{ github.sha }}
+      #       - 分支：${{ github.ref_name }}
+      #
+      #       📦 **下载文件**：
+      #       - `AetherLink-iOS-${{ steps.date.outputs.date }}.ipa` - iOS 应用安装包（未签名）
+      #       - `iOS-安装说明-${{ steps.date.outputs.date }}.md` - 详细安装说明
+      #
+      #       ⚠️ **重要提示**：
+      #       - 此 IPA 文件未签名，需要使用第三方工具安装
+      #       - 推荐使用 AltStore、SideStore 或重新签名后安装
+      #       - 详细安装方法请查看说明文件
+      #
+      #       🔧 **安装方法**：
+      #       1. **AltStore/SideStore**：最简单的安装方式
+      #       2. **Xcode**：需要开发者账号
+      #       3. **3uTools/iMazing**：第三方工具
+      #       4. **重新签名**：使用 iOS App Signer
+      #     files: |
+      #       ios/App/build/AetherLink-unsigned.ipa
+      #       ios/App/build/INSTALL_INSTRUCTIONS.md
+      #     draft: false
+      #     prerelease: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
