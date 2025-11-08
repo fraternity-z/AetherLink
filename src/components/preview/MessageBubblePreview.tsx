@@ -25,6 +25,9 @@ interface MessageBubblePreviewProps {
   showUserName?: boolean;
   showModelAvatar?: boolean;
   showModelName?: boolean;
+  // 新增隐藏气泡props
+  hideUserBubble?: boolean;
+  hideAIBubble?: boolean;
 }
 
 const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
@@ -37,20 +40,26 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
   showUserAvatar = true,
   showUserName = true,
   showModelAvatar = true,
-  showModelName = true
+  showModelName = true,
+  hideUserBubble = false,
+  hideAIBubble = false
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
 
   // 计算实际使用的颜色 - 使用 CSS Variables 作为默认值
   const actualUserBubbleColor = customBubbleColors.userBubbleColor || 
-    getComputedStyle(document.documentElement).getPropertyValue('--theme-user-bubble-color').trim();
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-msg-user-bg').trim() ||
+    '#1976d2';
   const actualUserTextColor = customBubbleColors.userTextColor || 
-    getComputedStyle(document.documentElement).getPropertyValue('--theme-text-primary').trim();
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-text-primary').trim() ||
+    '#ffffff';
   const actualAiBubbleColor = customBubbleColors.aiBubbleColor || 
-    getComputedStyle(document.documentElement).getPropertyValue('--theme-ai-bubble-color').trim();
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-msg-ai-bg').trim() ||
+    '#f5f5f5';
   const actualAiTextColor = customBubbleColors.aiTextColor || 
-    getComputedStyle(document.documentElement).getPropertyValue('--theme-text-primary').trim();
+    getComputedStyle(document.documentElement).getPropertyValue('--theme-text-primary').trim() ||
+    '#333333';
 
   return (
     <Paper
@@ -137,9 +146,9 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                 paddingBottom: 1.5,
                 paddingLeft: 1.5,
                 paddingRight: messageActionMode === 'bubbles' ? 3 : 1.5,
-                backgroundColor: actualUserBubbleColor,
+                backgroundColor: hideUserBubble ? 'transparent' : actualUserBubbleColor,
                 color: actualUserTextColor,
-                borderRadius: '12px',
+                borderRadius: hideUserBubble ? 0 : '12px',
                 border: 'none',
                 boxShadow: 'none',
                 position: 'relative',
@@ -269,9 +278,9 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                 paddingBottom: 1.5,
                 paddingLeft: 1.5,
                 paddingRight: messageActionMode === 'bubbles' ? 3 : 1.5,
-                backgroundColor: actualAiBubbleColor,
+                backgroundColor: hideAIBubble ? 'transparent' : actualAiBubbleColor,
                 color: actualAiTextColor,
-                borderRadius: '12px',
+                borderRadius: hideAIBubble ? 0 : '12px',
                 border: 'none',
                 boxShadow: 'none',
                 position: 'relative',
@@ -351,14 +360,14 @@ const MessageBubblePreview: React.FC<MessageBubblePreviewProps> = ({
                       width: 20,
                       height: 12,
                       borderRadius: '6px',
-                      backgroundColor: 'var(--theme-ai-bubble-color)',
+                      backgroundColor: actualAiBubbleColor,
                       opacity: 0.8
                     }} />
                     <Box sx={{
                       width: 16,
                       height: 12,
                       borderRadius: '6px',
-                      backgroundColor: 'var(--theme-ai-bubble-color)',
+                      backgroundColor: actualAiBubbleColor,
                       opacity: 0.8
                     }} />
                   </Box>

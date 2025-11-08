@@ -8,9 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import { updateSettings } from '../../shared/store/settingsSlice';
-import WebSearchProviderSelector from '../WebSearchProviderSelector';
-import MCPToolsButton from '../chat/MCPToolsButton';
-import KnowledgeSelector from '../chat/KnowledgeSelector';
+import { WebSearchButton, KnowledgeButton, MCPToolsButton } from './buttons';
 
 // iOS 26 液体玻璃UI工具栏样式 - 2025年设计趋势
 // 导出供其他组件使用
@@ -213,9 +211,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [showProviderSelector, setShowProviderSelector] = useState(false);
   const [clearConfirmMode, setClearConfirmMode] = useState(false);
-  const [showKnowledgeSelector, setShowKnowledgeSelector] = useState(false);
 
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -463,54 +459,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   };
 
   // ---------- 功能切换相关 ----------
-  // 处理知识库按钮点击
-  const handleKnowledgeClick = () => {
-    setShowKnowledgeSelector(true);
-  };
-
-  // 处理知识库选择
-  const handleKnowledgeSelect = (knowledgeBase: any, searchResults: any[]) => {
-    console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
-
-    // 存储选中的知识库信息到sessionStorage（风格：新模式）
-    const knowledgeData = {
-      knowledgeBase: {
-        id: knowledgeBase.id,
-        name: knowledgeBase.name
-      },
-      isSelected: true,
-      searchOnSend: true // 标记需要在发送时搜索
-    };
-
-    console.log('[ChatToolbar] 保存知识库选择到sessionStorage:', knowledgeData);
-    window.sessionStorage.setItem('selectedKnowledgeBase', JSON.stringify(knowledgeData));
-
-    // 验证保存是否成功
-    const saved = window.sessionStorage.getItem('selectedKnowledgeBase');
-    console.log('[ChatToolbar] sessionStorage保存验证:', saved);
-
-    // 关闭选择器
-    setShowKnowledgeSelector(false);
-  };
-
-  // 处理网络搜索按钮点击
-  const handleWebSearchClick = () => {
-    if (webSearchActive) {
-      // 如果当前处于搜索模式，则关闭搜索
-      toggleWebSearch?.();
-    } else {
-      // 如果当前不在搜索模式，显示提供商选择器
-      setShowProviderSelector(true);
-    }
-  };
-
-  // 处理提供商选择
-  const handleProviderSelect = (providerId: string) => {
-    if (providerId && toggleWebSearch) {
-      // 选择了提供商，激活搜索模式
-      toggleWebSearch();
-    }
-  };
+  // 注意：知识库和网络搜索功能已集成到独立按钮组件中
 
   // ==================== 按钮配置区域 ====================
   // 定义所有可用的按钮配置
@@ -574,26 +523,12 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
     },
     'knowledge': {
       id: 'knowledge',
-      icon: <BookOpen
-        size={16}
-        color={isDarkMode ? 'rgba(5, 150, 105, 0.8)' : 'rgba(5, 150, 105, 0.7)'}
-      />,
-      label: '知识库',
-      onClick: handleKnowledgeClick,
+      component: 'KnowledgeButton', // 标记这是一个特殊组件
       isActive: false
     },
     'web-search': webSearchEnabled && toggleWebSearch ? {
       id: 'web-search',
-      icon: <CustomIcon
-        name="search"
-        size={16}
-        color={webSearchActive
-          ? (isDarkMode ? 'rgba(59, 130, 246, 0.9)' : 'rgba(59, 130, 246, 0.8)')
-          : (isDarkMode ? 'rgba(59, 130, 246, 0.6)' : 'rgba(59, 130, 246, 0.5)')
-        }
-      />,
-      label: webSearchActive ? '关闭搜索' : (webSearchSettings?.providers?.find(p => p.id === currentProvider)?.name || '搜索'),
-      onClick: handleWebSearchClick,
+      component: 'WebSearchButton', // 标记这是一个特殊组件
       isActive: webSearchActive
     } : null
   };
@@ -762,7 +697,30 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                   <MCPToolsButton
                     toolsEnabled={toolsEnabled}
                     onToolsEnabledChange={onToolsEnabledChange}
+                    variant="toolbar"
                   />
+                </Box>
+              );
+            }
+
+            // 特殊处理网络搜索按钮
+            if ('component' in button && button.component === 'WebSearchButton') {
+              return (
+                <Box key={button.id} sx={{ mr: 1 }}>
+                  <WebSearchButton
+                    webSearchActive={webSearchActive}
+                    toggleWebSearch={toggleWebSearch}
+                    variant="toolbar"
+                  />
+                </Box>
+              );
+            }
+
+            // 特殊处理知识库按钮
+            if ('component' in button && button.component === 'KnowledgeButton') {
+              return (
+                <Box key={button.id} sx={{ mr: 1 }}>
+                  <KnowledgeButton variant="toolbar" />
                 </Box>
               );
             }
@@ -809,19 +767,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         </Box>
       </Box>
 
-      {/* 网络搜索提供商选择器 */}
-      <WebSearchProviderSelector
-        open={showProviderSelector}
-        onClose={() => setShowProviderSelector(false)}
-        onProviderSelect={handleProviderSelect}
-      />
-
-      {/* 知识库选择器 */}
-      <KnowledgeSelector
-        open={showKnowledgeSelector}
-        onClose={() => setShowKnowledgeSelector(false)}
-        onSelect={handleKnowledgeSelect}
-      />
+      {/* 注意：网络搜索和知识库选择器已集成到独立按钮组件中 */}
     </Box>
   );
 };

@@ -1,12 +1,27 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'  // 使用 SWC 处理 React，兼容 rolldown-vite
+import react from '@vitejs/plugin-react-oxc'  // 使用 OXC 处理 React，更适配 rolldown-vite
 
-// Rolldown-Vite + SWC 配置
-// SWC 处理 React (高性能且兼容)
+// Rolldown-Vite + OXC 配置
+// OXC 处理 React（高性能且与 rolldown 深度集成）
 export default defineConfig({
   plugins: [
-    // 使用 SWC 处理 React - 兼容 rolldown-vite
-    react()
+    // 使用 OXC 处理 React - rolldown-vite 推荐方案
+    react(),
+    {
+      name: 'rolldown-clean-optimize-deps',
+      enforce: 'post',
+      config: () => ({
+        optimizeDeps: {
+          // 删除已废弃的 esbuildOptions，避免 rolldown-vite 警告
+          esbuildOptions: undefined
+        }
+      }),
+      configResolved(resolvedConfig) {
+        if (resolvedConfig.optimizeDeps?.esbuildOptions) {
+          delete resolvedConfig.optimizeDeps.esbuildOptions
+        }
+      }
+    }
     // 注意：Rolldown-Vite 内置了类型检查，不需要额外的 checker 插件
   ],
 

@@ -72,8 +72,7 @@ const TopToolbarDIYSettings: React.FC = () => {
     showSettingsButton: true,
     showModelSelector: true,
     modelSelectorStyle: 'dialog',
-    showChatTitle: true,
-    showTopicName: false,
+    showTopicName: true,
     showNewTopicButton: false,
     showClearButton: false,
     showSearchButton: false,
@@ -96,7 +95,6 @@ const TopToolbarDIYSettings: React.FC = () => {
   // 组件配置
   const componentConfig = {
     menuButton: { name: t('settings.appearance.topToolbarDIY.components.menuButton'), icon: <CustomIcon name="documentPanel" size={20} />, key: 'showMenuButton' },
-    chatTitle: { name: t('settings.appearance.topToolbarDIY.components.chatTitle'), icon: <Type size={20} />, key: 'showChatTitle' },
     topicName: { name: t('settings.appearance.topToolbarDIY.components.topicName'), icon: <MessageSquare size={20} />, key: 'showTopicName' },
     newTopicButton: { name: t('settings.appearance.topToolbarDIY.components.newTopicButton'), icon: <Plus size={20} />, key: 'showNewTopicButton' },
     clearButton: { name: t('settings.appearance.topToolbarDIY.components.clearButton'), icon: <Trash2 size={20} />, key: 'showClearButton' },
@@ -290,15 +288,9 @@ const TopToolbarDIYSettings: React.FC = () => {
             <CustomIcon name="documentPanel" size={20} />
           </IconButton>
         );
-      case 'chatTitle':
-        return (
-          <Typography key={componentId} variant="h6" noWrap component="div" sx={style}>
-            {t('settings.appearance.topToolbarDIY.preview.chatTitleExample')}
-          </Typography>
-        );
       case 'topicName':
         return (
-          <Typography key={componentId} variant="body1" noWrap sx={{ ...style, color: 'text.secondary' }}>
+          <Typography key={componentId} variant="h6" noWrap component="div" sx={style}>
             {t('settings.appearance.topToolbarDIY.preview.topicNameExample')}
           </Typography>
         );

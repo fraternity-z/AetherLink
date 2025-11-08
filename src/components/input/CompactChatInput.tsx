@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Box, IconButton, Typography, Collapse, Chip } from '@mui/material';
-import MCPToolsButton from '../chat/MCPToolsButton';
-import WebSearchProviderSelector from '../WebSearchProviderSelector';
-import KnowledgeSelector from '../chat/KnowledgeSelector';
+import { MCPToolsButton, WebSearchButton, KnowledgeButton } from './buttons';
 import AIDebateButton from '../AIDebateButton';
 import QuickPhraseButton from '../QuickPhraseButton';
 import MultiModelSelector from './MultiModelSelector';
@@ -70,8 +68,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   toggleToolsEnabled
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const [showProviderSelector, setShowProviderSelector] = useState(false);
-  const [showKnowledgeSelector, setShowKnowledgeSelector] = useState(false);
+  // 注意：网络搜索和知识库选择器已集成到独立按钮组件中
   const [showExpandButton, setShowExpandButton] = useState(false); // 是否显示展开按钮
   const [textareaExpanded, setTextareaExpanded] = useState(false); // 文本区域展开状态
   const [expandedHeight, setExpandedHeight] = useState(Math.floor(window.innerHeight * 0.7)); // 展开时的高度
@@ -209,56 +206,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     return () => window.removeEventListener('resize', updateExpandedHeight);
   }, []);
 
-  // 处理网络搜索按钮点击
-  const handleWebSearchClick = () => {
-    if (webSearchActive) {
-      // 如果当前处于搜索模式，则关闭搜索
-      toggleWebSearch?.();
-    } else {
-      // 如果当前不在搜索模式，显示提供商选择器
-      setShowProviderSelector(true);
-    }
-  };
-
-  // 处理提供商选择
-  const handleProviderSelect = (providerId: string) => {
-    if (providerId && toggleWebSearch) {
-      // 选择了提供商，激活搜索模式
-      toggleWebSearch();
-    }
-  };
-
-  // 处理知识库按钮点击
-  const handleKnowledgeClick = () => {
-    setShowKnowledgeSelector(true);
-  };
-
-  // 处理知识库选择（风格：只选择，不搜索）
-  const handleKnowledgeSelect = (knowledgeBase: any, searchResults?: any[]) => {
-    console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
-
-    // 存储选中的知识库信息，等待用户输入问题后再搜索
-    const knowledgeData = {
-      knowledgeBase: {
-        id: knowledgeBase.id,
-        name: knowledgeBase.name
-      },
-      isSelected: true,
-      searchOnSend: true // 标记需要在发送时搜索
-    };
-
-    console.log('[知识库选择] 准备保存到sessionStorage:', knowledgeData);
-    window.sessionStorage.setItem('selectedKnowledgeBase', JSON.stringify(knowledgeData));
-
-    // 验证保存是否成功
-    const saved = window.sessionStorage.getItem('selectedKnowledgeBase');
-    console.log('[知识库选择] sessionStorage保存验证:', saved);
-
-    console.log(`[知识库选择] 已选择知识库: ${knowledgeBase.name}，将在发送消息时自动搜索相关内容`);
-
-    // 关闭知识库选择器
-    setShowKnowledgeSelector(false);
-  };
+  // 注意：网络搜索和知识库功能已集成到独立按钮组件中
 
   // 修复折叠时高度异常：只在textareaExpanded变化时执行，避免每次输入都触发
   const prevTextareaExpandedRef = useRef(textareaExpanded);
@@ -669,13 +617,14 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
 
 
   // 使用配置文件获取图标
+  // 注意：网络搜索和知识库按钮已替换为独立组件
   const basicIcons = getBasicIcons({
     toolsEnabled,
     webSearchActive,
     imageGenerationMode,
     onNewTopic,
     onClearTopic,
-    handleWebSearchClick,
+    handleWebSearchClick: () => {}, // 占位，实际由 WebSearchButton 处理
     toggleImageGenerationMode
   });
 
@@ -685,7 +634,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     toggleToolsEnabled,
     handleImageUpload,
     handleFileUpload,
-    handleKnowledgeClick
+    handleKnowledgeClick: () => {} // 占位，实际由 KnowledgeButton 处理
   });
 
 
@@ -1078,7 +1027,24 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
           if (item.label === '工具') {
             return (
               <Box key={index} sx={{ display: 'flex', alignItems: 'center' }}>
-                <MCPToolsButton />
+                <MCPToolsButton
+                  toolsEnabled={toolsEnabled}
+                  onToolsEnabledChange={toggleToolsEnabled ? () => toggleToolsEnabled() : undefined}
+                  variant="icon-button-compact"
+                />
+              </Box>
+            );
+          }
+
+          // 如果是网络搜索按钮，使用 WebSearchButton 组件
+          if (item.label === '网络搜索') {
+            return (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center' }}>
+                <WebSearchButton
+                  webSearchActive={webSearchActive}
+                  toggleWebSearch={toggleWebSearch}
+                  variant="icon-button-compact"
+                />
               </Box>
             );
           }
@@ -1184,7 +1150,17 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
               flexWrap: 'wrap' // 允许换行
             }}
           >
-            {expandedIcons.map((item, index) => (
+            {expandedIcons.map((item, index) => {
+              // 如果是知识库按钮，使用 KnowledgeButton 组件
+              if (item.label === '知识库') {
+                return (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <KnowledgeButton variant="icon-button-compact" />
+                  </Box>
+                );
+              }
+
+              return (
               <Box
                 key={index}
                 onClick={item.disabled ? undefined : item.onClick}
@@ -1239,7 +1215,8 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
                   {item.label}
                 </Typography>
               </Box>
-            ))}
+              );
+            })}
 
             {/* 多模型选择按钮 */}
             {onSendMultiModelMessage && availableModels.length > 1 && (
@@ -1309,20 +1286,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
         </Box>
       </Collapse>
 
-      {/* 网络搜索提供商选择器 */}
-      <WebSearchProviderSelector
-        open={showProviderSelector}
-        onClose={() => setShowProviderSelector(false)}
-        onProviderSelect={handleProviderSelect}
-      />
-
-      {/* 知识库选择器 */}
-      <KnowledgeSelector
-        open={showKnowledgeSelector}
-        onClose={() => setShowKnowledgeSelector(false)}
-        onSelect={handleKnowledgeSelect}
-        searchQuery={message}
-      />
+      {/* 注意：网络搜索和知识库选择器已集成到独立按钮组件中 */}
 
       {/* 多模型选择器 */}
       <MultiModelSelector

@@ -12,6 +12,7 @@ import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { removeTopic } from '../../shared/store/slices/assistantsSlice';
 import type { ChatTopic } from '../../shared/types/Assistant';
 import SidebarTabsContent from './SidebarTabsContent';
+import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 
 interface SidebarTabsProps {
   mcpMode?: 'prompt' | 'function';
@@ -70,6 +71,8 @@ const SidebarTabs = React.memo(function SidebarTabs({
   // 本地话题管理功能 - Cherry Studio极简模式
   const handleSelectTopic = useCallback((topic: ChatTopic) => {
     console.log('[SidebarTabs] handleSelectTopic被调用:', topic.id, topic.name);
+
+    topicCacheManager.updateTopic(topic.id, topic);
 
     // 🚀 Cherry Studio模式：只设置Redux状态，让useActiveTopic处理其余逻辑
     startTransition(() => {

@@ -29,8 +29,14 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
   // 安全的setState函数，检查组件是否已卸载
   const safeSetActiveTopic = useCallback((topic: ChatTopic | null) => {
-    if (isMountedRef.current) {
-      setActiveTopic(topic);
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    setActiveTopic(topic);
+
+    if (topic) {
+      topicCacheManager.updateTopic(topic.id, topic);
     }
   }, []);
 
@@ -153,10 +159,28 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
         // 检查是否已取消
         if (abortController.signal.aborted) return;
 
-        if (firstTopic && isMountedRef.current) {
-          console.log(`[useActiveTopic] 设置助手的第一个话题: ${firstTopic.name}`);
-          safeSetActiveTopic(firstTopic);
+        if (!firstTopic || !isMountedRef.current) {
+          return;
         }
+
+        const currentActiveId = activeTopicIdRef.current;
+        if (currentActiveId && currentActiveId !== firstTopic.id) {
+          console.log(
+            `[useActiveTopic] 已有活动话题 ${currentActiveId}，跳过默认话题`
+          );
+          return;
+        }
+
+        const requestedTopicId = requestedTopicIdRef.current;
+        if (requestedTopicId && requestedTopicId !== firstTopic.id) {
+          console.log(
+            `[useActiveTopic] 检测到目标话题 ${requestedTopicId}，跳过默认话题`
+          );
+          return;
+        }
+
+        console.log(`[useActiveTopic] 设置助手的第一个话题: ${firstTopic.name}`);
+        safeSetActiveTopic(firstTopic);
       } catch (error) {
         if (!abortController.signal.aborted) {
           console.error(`[useActiveTopic] 加载助手话题失败:`, error);
@@ -174,6 +198,11 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
 
   // 🚀 优化：使用ref追踪上次的话题ID，避免重复加载
   const previousTopicIdRef = useRef<string | null>(null);
+  const requestedTopicIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    requestedTopicIdRef.current = currentTopicId ?? null;
+  }, [currentTopicId]);
 
   // Effect 3: 响应外部话题ID变化
   useEffect(() => {
@@ -220,6 +249,16 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
       abortController.abort();
     };
   }, [currentTopicId, assistant?.id, activeTopic?.id, findTopicById, safeSetActiveTopic]);
+
+  // Effect 4: 监听 Redux 中话题的变化，同步更新当前话题状态
+  useEffect(() => {
+    if (!activeTopic?.id || !reduxTopics.length) return;
+
+    const updatedTopic = reduxTopics.find(t => t.id === activeTopic.id);
+    if (updatedTopic && updatedTopic !== activeTopic) {
+      safeSetActiveTopic(updatedTopic);
+    }
+  }, [reduxTopics, activeTopic?.id, safeSetActiveTopic]);
 
   // 提供即时切换话题的方法
   const switchToTopic = useCallback((topic: ChatTopic) => {

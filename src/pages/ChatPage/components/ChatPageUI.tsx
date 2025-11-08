@@ -29,13 +29,12 @@ const DEFAULT_TOP_TOOLBAR_SETTINGS = {
   showSettingsButton: true,
   showModelSelector: true,
   modelSelectorStyle: 'full',
-  showChatTitle: true,
-  showTopicName: false,
+  showTopicName: true,
   showNewTopicButton: false,
   showClearButton: false,
   showSearchButton: false,
   showMenuButton: true,
-  leftComponents: ['menuButton', 'chatTitle', 'topicName', 'newTopicButton', 'clearButton'],
+  leftComponents: ['menuButton', 'topicName', 'newTopicButton', 'clearButton'],
   rightComponents: ['searchButton', 'modelSelector', 'settingsButton'],
   componentPositions: [],
 } as const;
@@ -310,16 +309,9 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           </motion.div>
         ) : null;
 
-      case 'chatTitle':
-        return shouldShow('showChatTitle') ? (
-          <Typography key={componentId} variant="h6" noWrap component="div">
-            {currentTopic?.name || '对话'}
-          </Typography>
-        ) : null;
-
       case 'topicName':
         return shouldShow('showTopicName') && currentTopic ? (
-          <Typography key={componentId} variant="body1" noWrap sx={{ color: 'text.secondary', ml: isDIYLayout ? 0 : 1 }}>
+          <Typography key={componentId} variant="h6" noWrap component="div" sx={{ ml: isDIYLayout ? 0 : 1 }}>
             {currentTopic.name}
           </Typography>
         ) : null;

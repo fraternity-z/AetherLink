@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { IconButton, Tooltip, CircularProgress, Badge } from '@mui/material';
-import { Send, Plus, Square, Trash2, Camera, Video, BookOpen, Wrench, Image, FileText, ArrowLeftRight, AlertTriangle } from 'lucide-react';
+import { IconButton, Tooltip, CircularProgress, Badge, Box } from '@mui/material';
+import { Send, Plus, Square, Trash2, Camera, Video, BookOpen, Image, FileText, ArrowLeftRight, AlertTriangle } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { CustomIcon } from '../../icons';
 import type { ImageContent, FileContent } from '../../../shared/types';
+import { MCPToolsButton, WebSearchButton, KnowledgeButton } from '../buttons';
 
 interface ButtonToolbarProps {
   // 基础状态
@@ -108,10 +109,7 @@ const useButtonToolbar = ({
     }
   }, [clearConfirmMode, onClearTopic]);
 
-  // 处理知识库按钮点击
-  const handleKnowledgeClick = useCallback(() => {
-    console.log('知识库功能待实现');
-  }, []);
+  // 注意：知识库功能已集成到独立按钮组件中
 
   // 自定义按钮配置映射
   const buttonConfigs = {
@@ -126,9 +124,9 @@ const useButtonToolbar = ({
     },
     'mcp-tools': {
       id: 'mcp-tools',
-      icon: <Wrench size={20} />,
-      tooltip: toolsEnabled ? '禁用MCP工具' : '启用MCP工具',
-      onClick: () => onToolsEnabledChange?.(!toolsEnabled),
+      component: 'MCPToolsButton', // 标记这是一个特殊组件
+      tooltip: 'MCP工具',
+      onClick: () => {}, // 占位，实际由组件内部处理
       color: toolsEnabled ? '#4CAF50' : iconColor,
       disabled: false,
       isActive: toolsEnabled
@@ -162,18 +160,18 @@ const useButtonToolbar = ({
     },
     knowledge: {
       id: 'knowledge',
-      icon: <BookOpen size={20} />,
+      component: 'KnowledgeButton', // 标记这是一个特殊组件
       tooltip: '知识库',
-      onClick: handleKnowledgeClick,
+      onClick: () => {}, // 占位，实际由组件内部处理
       color: iconColor,
       disabled: false,
       isActive: false
     },
     search: {
       id: 'search',
-      icon: <CustomIcon name="search" size={20} />,
+      component: 'WebSearchButton', // 标记这是一个特殊组件
       tooltip: webSearchActive ? '退出网络搜索模式' : '网络搜索',
-      onClick: handleQuickWebSearchToggle || (() => console.log('网络搜索功能')),
+      onClick: () => {}, // 占位，实际由组件内部处理
       color: webSearchActive ? '#3b82f6' : iconColor,
       disabled: false,
       isActive: webSearchActive
@@ -279,6 +277,41 @@ const useButtonToolbar = ({
             const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
             if (!config) return null;
 
+            // 特殊处理知识库按钮，使用 KnowledgeButton 组件
+            if ('component' in config && config.component === 'KnowledgeButton') {
+              return (
+                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+                  <KnowledgeButton variant="icon-button-integrated" />
+                </Box>
+              );
+            }
+
+            // 特殊处理网络搜索按钮，使用 WebSearchButton 组件
+            if ('component' in config && config.component === 'WebSearchButton') {
+              return (
+                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+                  <WebSearchButton
+                    webSearchActive={webSearchActive}
+                    toggleWebSearch={handleQuickWebSearchToggle}
+                    variant="icon-button-integrated"
+                  />
+                </Box>
+              );
+            }
+
+            // 特殊处理MCP工具按钮，使用 MCPToolsButton 组件
+            if ('component' in config && config.component === 'MCPToolsButton') {
+              return (
+                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+                  <MCPToolsButton
+                    toolsEnabled={toolsEnabled}
+                    onToolsEnabledChange={onToolsEnabledChange}
+                    variant="icon-button-integrated"
+                  />
+                </Box>
+              );
+            }
+
             return (
               <Tooltip key={buttonId} title={config.tooltip}>
                 <span>
@@ -311,6 +344,41 @@ const useButtonToolbar = ({
             const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
             if (!config) return null;
 
+            // 特殊处理知识库按钮，使用 KnowledgeButton 组件
+            if ('component' in config && config.component === 'KnowledgeButton') {
+              return (
+                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+                  <KnowledgeButton variant="icon-button-integrated" />
+                </Box>
+              );
+            }
+
+            // 特殊处理网络搜索按钮，使用 WebSearchButton 组件
+            if ('component' in config && config.component === 'WebSearchButton') {
+              return (
+                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+                  <WebSearchButton
+                    webSearchActive={webSearchActive}
+                    toggleWebSearch={handleQuickWebSearchToggle}
+                    variant="icon-button-integrated"
+                  />
+                </Box>
+              );
+            }
+
+            // 特殊处理MCP工具按钮，使用 MCPToolsButton 组件
+            if ('component' in config && config.component === 'MCPToolsButton') {
+              return (
+                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+                  <MCPToolsButton
+                    toolsEnabled={toolsEnabled}
+                    onToolsEnabledChange={onToolsEnabledChange}
+                    variant="icon-button-integrated"
+                  />
+                </Box>
+              );
+            }
+
             return (
               <Tooltip key={buttonId} title={config.tooltip}>
                 <span>
@@ -334,7 +402,7 @@ const useButtonToolbar = ({
         </div>
       </div>
     );
-  }, [leftButtons, rightButtons, buttonConfigs, isLoading, allowConsecutiveMessages]);
+  }, [leftButtons, rightButtons, buttonConfigs, isLoading, allowConsecutiveMessages, toolsEnabled, onToolsEnabledChange]);
 
   return {
     renderButtonToolbar

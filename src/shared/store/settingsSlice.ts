@@ -1,8 +1,9 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { Model } from '../types';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { GeneratedImage } from '../types';
 import { ThinkingDisplayStyle } from '../../components/message/blocks/ThinkingBlock';
+import { getStorageItem, setStorageItem } from '../utils/storage';
 import { getDefaultModelProviders, getDefaultModelId, type ModelProvider } from '../config/defaultModels';
 import type { ThemeStyle } from '../config/themes';
 
@@ -54,7 +55,6 @@ interface SettingsState {
     showModelSelector: boolean; // 是否显示模型选择器
     modelSelectorStyle: 'dialog' | 'dropdown'; // 模型选择器样式：弹窗式或下拉式
     modelSelectorDisplayStyle?: 'icon' | 'text'; // 模型选择器在DIY布局中的显示样式：图标或文字
-    showChatTitle: boolean; // 是否显示"对话"标题
     showTopicName: boolean; // 是否显示话题名称
     showNewTopicButton: boolean; // 是否显示新建话题按钮
     showClearButton: boolean; // 是否显示清空按钮
@@ -115,6 +115,10 @@ interface SettingsState {
     aiBubbleColor?: string; // AI气泡背景色
     aiTextColor?: string; // AI气泡字体颜色
   };
+
+  // 隐藏气泡设置（只隐藏气泡背景，保留内容）
+  hideUserBubble?: boolean; // 是否隐藏用户气泡背景
+  hideAIBubble?: boolean; // 是否隐藏AI气泡背景
 
   // 系统提示词变量注入设置
   systemPromptVariables?: {
@@ -210,13 +214,12 @@ const getInitialState = (): SettingsState => {
       showModelSelector: true, // 默认显示模型选择器
       modelSelectorStyle: 'dialog', // 默认弹窗式模型选择器
       modelSelectorDisplayStyle: 'icon', // 默认在DIY布局中显示图标
-      showChatTitle: true, // 默认显示"对话"标题
-      showTopicName: false, // 默认不显示话题名称
+      showTopicName: true, // 默认显示话题名称
       showNewTopicButton: false, // 默认不显示新建话题按钮
       showClearButton: false, // 默认不显示清空按钮
       showMenuButton: true, // 默认显示菜单按钮
       // 默认组件顺序
-      leftComponents: ['menuButton', 'chatTitle', 'topicName', 'newTopicButton', 'clearButton'],
+      leftComponents: ['menuButton', 'topicName', 'newTopicButton', 'clearButton'],
       rightComponents: ['modelSelector', 'settingsButton'],
       // DIY布局组件位置信息
       componentPositions: [] as Array<{
@@ -227,7 +230,7 @@ const getInitialState = (): SettingsState => {
         height?: number;
       }>,
     },
-    isLoading: false, // 初始时设为非加载状态
+    isLoading: true, // 初始时设为加载中状态
 
     // 消息气泡宽度默认设置
     messageBubbleMinWidth: 50, // 默认最小宽度50%
@@ -259,6 +262,10 @@ const getInitialState = (): SettingsState => {
       aiBubbleColor: '',
       aiTextColor: ''
     },
+
+    // 隐藏气泡默认设置
+    hideUserBubble: false, // 默认显示用户气泡
+    hideAIBubble: false, // 默认显示AI气泡
 
     // 系统提示词变量注入默认设置
     systemPromptVariables: {
@@ -312,7 +319,197 @@ const getInitialState = (): SettingsState => {
   };
 };
 
-// 不再使用手动持久化 thunk，交由 redux-persist 处理
+// 创建异步加载设置的thunk
+export const loadSettings = createAsyncThunk('settings/load', async () => {
+  try {
+    const savedSettings = await getStorageItem<SettingsState>('settings');
+    if (savedSettings) {
+      const initialProviders = getDefaultModelProviders();
+      let providers = savedSettings.providers || initialProviders;
+
+      // 确保模型组合供应商始终存在
+      const hasModelComboProvider = providers.some((p: ModelProvider) => p.id === 'model-combo');
+      if (!hasModelComboProvider) {
+        // 如果没有模型组合供应商，添加到列表开头
+        const modelComboProvider = initialProviders.find((p: ModelProvider) => p.id === 'model-combo');
+        if (modelComboProvider) {
+          providers = [modelComboProvider, ...providers];
+        }
+      }
+
+      // 如果没有存储当前模型ID，使用默认模型ID
+      if (!savedSettings.currentModelId) {
+        savedSettings.currentModelId = savedSettings.defaultModelId || getDefaultModelId(providers);
+      }
+
+      // 如果没有思考过程显示样式设置，使用默认值
+      if (!savedSettings.thinkingDisplayStyle) {
+        savedSettings.thinkingDisplayStyle = ThinkingDisplayStyle.COMPACT;
+      }
+
+      // 如果没有工具栏显示样式设置，使用默认值
+      if (!savedSettings.toolbarDisplayStyle) {
+        savedSettings.toolbarDisplayStyle = 'both';
+      }
+
+      // 如果没有输入框风格设置，使用默认值
+      if (!savedSettings.inputBoxStyle) {
+        savedSettings.inputBoxStyle = 'default';
+      }
+
+      // 如果没有输入框布局样式设置，使用默认值
+      if (!savedSettings.inputLayoutStyle) {
+        savedSettings.inputLayoutStyle = 'default';
+      }
+
+      // 如果没有系统提示词气泡显示设置，使用默认值
+      if (savedSettings.showSystemPromptBubble === undefined) {
+        savedSettings.showSystemPromptBubble = true;
+      }
+
+      // 如果没有模型选择器样式设置，使用默认值
+      if (!savedSettings.modelSelectorStyle) {
+        savedSettings.modelSelectorStyle = 'dialog';
+      }
+
+      // 如果没有消息气泡宽度设置，使用默认值
+      if (savedSettings.messageBubbleMinWidth === undefined) {
+        savedSettings.messageBubbleMinWidth = 50;
+      }
+      if (savedSettings.messageBubbleMaxWidth === undefined) {
+        savedSettings.messageBubbleMaxWidth = 100;
+      }
+      if (savedSettings.userMessageMaxWidth === undefined) {
+        savedSettings.userMessageMaxWidth = 80;
+      }
+
+      // 如果没有工具栏折叠设置，使用默认值
+      if (savedSettings.toolbarCollapsed === undefined) {
+        savedSettings.toolbarCollapsed = false;
+      }
+
+      // 如果没有版本切换样式设置，使用默认值
+      if (savedSettings.versionSwitchStyle === undefined) {
+        savedSettings.versionSwitchStyle = 'popup';
+      }
+
+      // 如果没有消息样式设置，使用默认值
+      if (!savedSettings.messageStyle) {
+        savedSettings.messageStyle = 'bubble';
+      }
+
+      // 如果没有自动滚动设置，使用默认值
+      if (savedSettings.autoScrollToBottom === undefined) {
+        savedSettings.autoScrollToBottom = true;
+      }
+
+      // 如果没有AI辩论按钮显示设置，使用默认值
+      if (savedSettings.showAIDebateButton === undefined) {
+        savedSettings.showAIDebateButton = true;
+      }
+
+      // 如果没有快捷短语按钮显示设置，使用默认值
+      if (savedSettings.showQuickPhraseButton === undefined) {
+        savedSettings.showQuickPhraseButton = true;
+      }
+
+      // 如果没有代码块默认收起设置，使用默认值
+      if (savedSettings.codeDefaultCollapsed === undefined) {
+        savedSettings.codeDefaultCollapsed = false;
+      }
+
+      // 如果没有代码块主题设置，使用默认值
+      if (!savedSettings.codeStyle) {
+        savedSettings.codeStyle = 'auto';
+      }
+
+      // 如果没有小功能气泡显示设置，使用默认值
+      if (savedSettings.showMicroBubbles === undefined) {
+        savedSettings.showMicroBubbles = true;
+      }
+
+      // 如果没有隐藏气泡设置，使用默认值
+      if (savedSettings.hideUserBubble === undefined) {
+        savedSettings.hideUserBubble = false;
+      }
+      if (savedSettings.hideAIBubble === undefined) {
+        savedSettings.hideAIBubble = false;
+      }
+
+      // 如果没有系统提示词变量注入设置，使用默认值
+      if (!savedSettings.systemPromptVariables) {
+        savedSettings.systemPromptVariables = {
+          enableTimeVariable: false,
+          enableLocationVariable: false,
+          customLocation: '',
+          enableOSVariable: false
+        };
+      }
+
+      // 如果没有字体家族设置，使用默认值
+      if (!savedSettings.fontFamily) {
+        savedSettings.fontFamily = 'system';
+      }
+
+      // 如果没有长文本粘贴为文件设置，使用默认值
+      if (savedSettings.pasteLongTextAsFile === undefined) {
+        savedSettings.pasteLongTextAsFile = false;
+      }
+      if (savedSettings.pasteLongTextThreshold === undefined) {
+        savedSettings.pasteLongTextThreshold = 1500;
+      }
+
+      // 如果没有工具栏样式设置，使用默认值
+      if (!savedSettings.toolbarStyle) {
+        savedSettings.toolbarStyle = 'glassmorphism';
+      }
+
+      // 如果没有工具栏按钮配置，使用默认值
+      if (!savedSettings.toolbarButtons) {
+        savedSettings.toolbarButtons = {
+          order: ['mcp-tools', 'new-topic', 'clear-topic', 'generate-image', 'generate-video', 'knowledge', 'web-search'],
+          visibility: {
+            'mcp-tools': true,
+            'new-topic': true,
+            'clear-topic': true,
+            'generate-image': true,
+            'generate-video': true,
+            'knowledge': true,
+            'web-search': true
+          }
+        };
+      }
+
+      // 如果没有性能监控显示设置，使用默认值
+      if (savedSettings.showPerformanceMonitor === undefined) {
+        savedSettings.showPerformanceMonitor = false;
+      }
+
+      return {
+        ...savedSettings,
+        providers,
+        isLoading: false
+      };
+    }
+
+    // 如果没有保存的设置，返回null让reducer使用默认值
+    return null;
+  } catch (e) {
+    console.error('Failed to load settings from storage', e);
+    return null;
+  }
+});
+
+// 创建异步保存设置的thunk
+export const saveSettings = createAsyncThunk('settings/save', async (state: SettingsState) => {
+  try {
+    await setStorageItem('settings', state);
+    return true;
+  } catch (e) {
+    console.error('Failed to save settings to storage', e);
+    return false;
+  }
+});
 
 const initialState = getInitialState();
 
@@ -617,6 +814,36 @@ const settingsSlice = createSlice({
     setShowPerformanceMonitor: (state, action: PayloadAction<boolean>) => {
       state.showPerformanceMonitor = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    // 处理加载设置
+    builder
+      .addCase(loadSettings.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(loadSettings.fulfilled, (state, action) => {
+        if (action.payload) {
+          // 合并加载的设置与当前状态
+          return {
+            ...action.payload,
+            isLoading: false
+          };
+        }
+        state.isLoading = false;
+      })
+      .addCase(loadSettings.rejected, (state) => {
+        state.isLoading = false;
+      })
+      // 统一的响应保存设置操作的处理
+      .addCase(saveSettings.pending, () => {
+        // 可以在这里设置保存中的状态标记，如果需要的话
+      })
+      .addCase(saveSettings.fulfilled, () => {
+        // 保存完成后的处理，如果需要的话
+      })
+      .addCase(saveSettings.rejected, () => {
+        // 保存失败的处理，如果需要的话
+      });
   }
 });
 
@@ -683,4 +910,36 @@ export const {
   setShowPerformanceMonitor,
 } = settingsSlice.actions;
 
+// 重用现有的action creators，但添加异步保存
+export const saveSettingsToStorage = (state: RootState) => (
+  async (dispatch: any) => {
+    try {
+      // 触发异步保存
+      await dispatch(saveSettings(state.settings));
+    } catch (error) {
+      console.error('保存设置时出错:', error);
+    }
+  }
+);
+
+// 中间件，用于在每次状态更改后保存
+export const settingsMiddleware = (store: any) => (next: any) => (action: any) => {
+  // 首先让reducer处理action
+  const result = next(action);
+
+  // 如果是设置相关的action，自动保存状态
+  if (action.type.startsWith('settings/') &&
+      !action.type.includes('load') &&
+      !action.type.includes('save')) {
+    store.dispatch(saveSettings(store.getState().settings));
+  }
+
+  return result;
+};
+
 export default settingsSlice.reducer;
+
+// 用于TypeScript的RootState类型提示
+interface RootState {
+  settings: SettingsState;
+}

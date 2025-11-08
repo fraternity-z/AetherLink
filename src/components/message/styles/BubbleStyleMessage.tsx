@@ -52,6 +52,11 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
   // 获取自定义气泡颜色设置
   const customBubbleColors = settings?.customBubbleColors || {};
 
+  // 获取隐藏气泡设置
+  const hideUserBubble = settings?.hideUserBubble === true;
+  const hideAIBubble = settings?.hideAIBubble === true;
+  const shouldHideBubble = isUserMessage ? hideUserBubble : hideAIBubble;
+
   // 计算实际使用的颜色 - 使用 CSS Variables 作为回退值
   const actualBubbleColor = isUserMessage
     ? (customBubbleColors.userBubbleColor || 'var(--theme-msg-user-bg)')
@@ -235,18 +240,23 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
           elevation={0}
           data-theme-style={themeStyle}
           sx={{
+            // 🚀 使用统一的气泡优化配置（包含position: 'relative'）
+            ...bubbleStyles,
             // 优化内边距：为三点菜单留出合适空间
             paddingTop: 1.5,
             paddingBottom: 1.5,
             paddingLeft: 1.5,
             paddingRight: messageActionMode === 'bubbles' ? 3 : 1.5, // 气泡模式下为三点菜单留出空间
-            backgroundColor: actualBubbleColor,
+            backgroundColor: shouldHideBubble ? 'transparent' : actualBubbleColor,
             color: actualTextColor,
             width: '100%',
             border: 'none',
             maxWidth: '100%',
-            // 🚀 使用统一的气泡优化配置（包含position: 'relative'）
-            ...bubbleStyles,
+            // 隐藏气泡时覆盖样式
+            ...(shouldHideBubble && {
+              boxShadow: 'none',
+              borderRadius: 0,
+            }),
             // 🚀 添加性能优化CSS，减少重排重绘
             contain: 'layout style paint',
             willChange: message.status === 'streaming' ? 'contents' : 'auto',

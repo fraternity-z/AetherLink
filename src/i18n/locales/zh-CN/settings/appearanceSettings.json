@@ -59,7 +59,6 @@
       "alignButton": "矫正对齐",
       "components": {
         "menuButton": "菜单按钮",
-        "chatTitle": "对话标题",
         "topicName": "话题名称",
         "newTopicButton": "新建话题",
         "clearButton": "清空按钮",
@@ -70,7 +69,6 @@
       "preview": {
         "title": "DIY 布局预览",
         "tooltip": "拖拽下方组件到此区域进行自由布局",
-        "chatTitleExample": "对话",
         "topicNameExample": "示例话题",
         "emptyHint": "拖拽下方组件到此区域"
       },
@@ -325,6 +323,16 @@
         "showModelAvatar": "显示模型头像",
         "showModelName": "显示模型名称",
         "hint": "控制聊天界面中用户和AI模型的头像及名称显示。可以根据个人喜好选择性隐藏这些元素，获得更简洁的聊天体验。"
+      },
+      "hideBubble": {
+        "title": "隐藏气泡",
+        "tooltip": "隐藏消息气泡的背景，只显示内容",
+        "description": "可以选择隐藏用户或AI消息的气泡背景，只保留消息内容显示",
+        "hideUserBubble": "隐藏用户气泡",
+        "hideUserBubbleDesc": "隐藏用户消息的气泡背景，只显示消息内容",
+        "hideAIBubble": "隐藏AI气泡",
+        "hideAIBubbleDesc": "隐藏AI回复的气泡背景，只显示消息内容",
+        "hint": "提示：隐藏气泡后，消息内容仍然正常显示，只是移除了气泡的背景和边框样式"
       },
       "colors": {
         "title": "自定义气泡颜色",

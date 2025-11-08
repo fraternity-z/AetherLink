@@ -350,44 +350,18 @@ export const {
 // 创建稳定的空数组引用
 const EMPTY_MESSAGES_ARRAY: any[] = [];
 
-const selectMessageEntities = (state: RootState) => {
-  const messagesState = state.messages;
-  return messagesState ? messagesState.entities : {};
-};
-
-const selectMessageIdsForTopic = (state: RootState, topicId: string) => {
-  const messagesState = state.messages;
-  if (!messagesState) {
-    return EMPTY_MESSAGES_ARRAY;
-  }
-  return messagesState.messageIdsByTopic[topicId] || EMPTY_MESSAGES_ARRAY;
-};
-
 // 自定义选择器 - 使用 createSelector 进行记忆化
 export const selectMessagesByTopicId = createSelector(
   [
-    selectMessageIdsForTopic,
-    selectMessageEntities
+    (state: RootState) => state.messages,
+    (_state: RootState, topicId: string) => topicId
   ],
-  (messageIds, entities) => {
-    if (!messageIds.length) {
+  (messagesState, topicId) => {
+    if (!messagesState) {
       return EMPTY_MESSAGES_ARRAY;
     }
-    return messageIds.map((id: string) => entities[id]).filter(Boolean);
-  }
-);
-
-export const selectLastMessageForTopic = createSelector(
-  [
-    selectMessageIdsForTopic,
-    selectMessageEntities
-  ],
-  (messageIds, entities) => {
-    if (!messageIds.length) {
-      return null;
-    }
-    const lastId = messageIds[messageIds.length - 1];
-    return entities[lastId] || null;
+    const messageIds = messagesState.messageIdsByTopic[topicId] || EMPTY_MESSAGES_ARRAY;
+    return messageIds.map((id: string) => messagesState.entities[id]).filter(Boolean);
   }
 );
 
@@ -458,6 +432,15 @@ export const selectOrderedMessagesByTopicId = createSelector(
     // 消息已经按时间顺序存储，直接返回
     // 这样避免了每次渲染时的排序开销，提升性能
     return messages;
+  }
+);
+
+// 选择特定主题的最后一条消息
+export const selectLastMessageForTopic = createSelector(
+  [selectMessagesByTopicId],
+  (messages) => {
+    // 消息已按时间顺序存储，返回最后一条
+    return messages.length > 0 ? messages[messages.length - 1] : null;
   }
 );
 

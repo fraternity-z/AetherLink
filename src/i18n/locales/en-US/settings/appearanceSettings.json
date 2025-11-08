@@ -59,7 +59,6 @@
       "alignButton": "Align",
       "components": {
         "menuButton": "Menu",
-        "chatTitle": "Title",
         "topicName": "Topic",
         "newTopicButton": "New",
         "clearButton": "Clear",
@@ -70,7 +69,6 @@
       "preview": {
         "title": "DIY Layout Preview",
         "tooltip": "Drag components below to this area for custom layout",
-        "chatTitleExample": "Chat",
         "topicNameExample": "Sample Topic",
         "emptyHint": "Drag components here"
       },
@@ -325,6 +323,16 @@
         "showModelAvatar": "Show Model Avatar",
         "showModelName": "Show Model Name",
         "hint": "Control avatar and name display. Hide elements for cleaner chat experience."
+      },
+      "hideBubble": {
+        "title": "Hide Bubbles",
+        "tooltip": "Hide message bubble backgrounds, show content only",
+        "description": "Optionally hide bubble backgrounds for user or AI messages, keeping only the message content",
+        "hideUserBubble": "Hide User Bubble",
+        "hideUserBubbleDesc": "Hide user message bubble background, show content only",
+        "hideAIBubble": "Hide AI Bubble",
+        "hideAIBubbleDesc": "Hide AI reply bubble background, show content only",
+        "hint": "Tip: After hiding bubbles, message content still displays normally, only the background and border styles are removed"
       },
       "colors": {
         "title": "Custom Colors",

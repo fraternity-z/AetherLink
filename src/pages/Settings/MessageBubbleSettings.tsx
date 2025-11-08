@@ -61,6 +61,10 @@ const MessageBubbleSettings: React.FC = () => {
   const showModelAvatar = settings.showModelAvatar !== false;
   const showModelName = settings.showModelName !== false;
 
+  // 获取隐藏气泡设置
+  const hideUserBubble = (settings as any).hideUserBubble === true;
+  const hideAIBubble = (settings as any).hideAIBubble === true;
+
   const handleBack = () => {
     navigate('/settings/appearance');
   };
@@ -149,6 +153,19 @@ const MessageBubbleSettings: React.FC = () => {
   const handleShowModelNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(updateSettings({
       showModelName: event.target.checked
+    }));
+  };
+
+  // 隐藏气泡设置的事件处理函数
+  const handleHideUserBubbleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateSettings({
+      hideUserBubble: event.target.checked
+    }));
+  };
+
+  const handleHideAIBubbleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateSettings({
+      hideAIBubble: event.target.checked
     }));
   };
 
@@ -605,6 +622,103 @@ const MessageBubbleSettings: React.FC = () => {
           </Box>
         </Paper>
 
+        {/* 隐藏气泡设置 */}
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          }}
+        >
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: '1rem', sm: '1.1rem' }
+                }}
+              >
+                {t('settings.appearance.messageBubble.hideBubble.title')}
+              </Typography>
+              <Tooltip title={t('settings.appearance.messageBubble.hideBubble.tooltip')}>
+                <IconButton size="small" sx={{ ml: 1 }}>
+                  <Info />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+            >
+              {t('settings.appearance.messageBubble.hideBubble.description')}
+            </Typography>
+          </Box>
+
+          <Divider />
+
+          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <CustomSwitch
+                    checked={hideUserBubble}
+                    onChange={handleHideUserBubbleChange}
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {t('settings.appearance.messageBubble.hideBubble.hideUserBubble')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                      {t('settings.appearance.messageBubble.hideBubble.hideUserBubbleDesc')}
+                    </Typography>
+                  </Box>
+                }
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  mb: 2
+                }}
+              />
+              <FormControlLabel
+                control={
+                  <CustomSwitch
+                    checked={hideAIBubble}
+                    onChange={handleHideAIBubbleChange}
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {t('settings.appearance.messageBubble.hideBubble.hideAIBubble')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                      {t('settings.appearance.messageBubble.hideBubble.hideAIBubbleDesc')}
+                    </Typography>
+                  </Box>
+                }
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  mb: 1
+                }}
+              />
+            </FormGroup>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {t('settings.appearance.messageBubble.hideBubble.hint')}
+            </Typography>
+          </Box>
+        </Paper>
+
         {/* 自定义气泡颜色设置 */}
         <Paper
           elevation={0}
@@ -741,6 +855,8 @@ const MessageBubbleSettings: React.FC = () => {
                   showUserName={showUserName}
                   showModelAvatar={showModelAvatar}
                   showModelName={showModelName}
+                  hideUserBubble={hideUserBubble}
+                  hideAIBubble={hideAIBubble}
                 />
               </Box>
             </Box>

@@ -6,7 +6,7 @@ import type { ImageContent, FileContent } from '../../../shared/types';
 import type { FileStatus } from '../../FilePreview';
 import IntegratedFilePreview from '../../IntegratedFilePreview';
 import { toastManager } from '../../EnhancedToast';
-import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
+import { topicCacheManager } from '../../../shared/services/TopicCacheManager';
 
 interface FileUploadManagerProps {
   images: ImageContent[];
@@ -62,12 +62,14 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
       if (!currentTopicId) return;
 
       try {
-        const topic = await dexieStorage.getTopic(currentTopicId);
+        const topic = await topicCacheManager.getTopic(currentTopicId);
         if (topic) {
           setCurrentTopicState(topic);
+        } else {
+          console.warn('[FileUploadManager] 缓存或数据库中找不到话题:', currentTopicId);
         }
       } catch (error) {
-        console.error('加载话题信息失败:', error);
+        console.error('[FileUploadManager] 加载话题信息失败:', error);
       }
     };
 

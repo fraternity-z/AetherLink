@@ -17,18 +17,20 @@ import {
   useTheme,
   Alert,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 // Lucide Icons - 按需导入，高端简约设计
 import { Wrench, Database, Globe, Plus, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../shared/store';
-import type { MCPServer, MCPServerType } from '../../shared/types';
-import { mcpService } from '../../shared/services/mcp';
-import CustomSwitch from '../CustomSwitch';
-import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../input';
-import { useMCPServerStateManager } from '../../hooks/useMCPServerStateManager';
+import type { RootState } from '../../../shared/store';
+import type { MCPServer, MCPServerType } from '../../../shared/types';
+import { mcpService } from '../../../shared/services/mcp';
+import CustomSwitch from '../../CustomSwitch';
+import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../ChatToolbar';
+import { useMCPServerStateManager } from '../../../hooks/useMCPServerStateManager';
 
 // 服务器类型配置常量
 const SERVER_TYPE_CONFIG = {
@@ -52,11 +54,13 @@ const SERVER_TYPE_CONFIG = {
 interface MCPToolsButtonProps {
   toolsEnabled?: boolean;
   onToolsEnabledChange?: (enabled: boolean) => void;
+  variant?: 'toolbar' | 'icon-button-compact' | 'icon-button-integrated'; // 样式变体
 }
 
 const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
   toolsEnabled = false,
-  onToolsEnabledChange
+  onToolsEnabledChange,
+  variant = 'toolbar' // 默认为工具栏样式
 }) => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -192,8 +196,71 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
 
   const hasActiveServers = activeServers.length > 0;
 
-  return (
-    <>
+  // 根据 variant 渲染不同的按钮样式
+  const renderButton = () => {
+    if (variant === 'icon-button-compact') {
+      // CompactChatInput 样式：IconButton，small size，34x34px
+      const iconColor = hasActiveServers
+        ? '#4CAF50'
+        : (isDarkMode ? '#B0B0B0' : '#555');
+      
+      return (
+        <Tooltip title="MCP工具">
+          <IconButton
+            size="small"
+            onClick={handleOpen}
+            sx={{
+              color: iconColor,
+              backgroundColor: hasActiveServers ? `${iconColor}15` : 'transparent',
+              border: hasActiveServers ? `1px solid ${iconColor}30` : '1px solid transparent',
+              width: 34,
+              height: 34,
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: `${iconColor}20`,
+                borderColor: `${iconColor}50`,
+                color: iconColor,
+                transform: 'translateY(-1px)',
+                boxShadow: `0 2px 8px ${iconColor}20`
+              }
+            }}
+          >
+            <Wrench size={20} />
+          </IconButton>
+        </Tooltip>
+      );
+    }
+
+    if (variant === 'icon-button-integrated') {
+      // IntegratedChatInput 样式：IconButton，medium size，与其他按钮一致
+      const iconColor = hasActiveServers
+        ? '#4CAF50'
+        : (isDarkMode ? '#ffffff' : '#000000');
+      
+      return (
+        <Tooltip title="MCP工具">
+          <span>
+            <IconButton
+              size="medium"
+              onClick={handleOpen}
+              disabled={false}
+              style={{
+                color: iconColor,
+                padding: '6px',
+                backgroundColor: hasActiveServers ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                transition: 'all 0.2s ease-in-out'
+              }}
+            >
+              <Wrench size={20} />
+            </IconButton>
+          </span>
+        </Tooltip>
+      );
+    }
+
+    // toolbar 样式：使用原有的 Box 样式（glassmorphism/transparent）
+    return (
       <Box
         role="button"
         tabIndex={0}
@@ -275,6 +342,12 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
           </Typography>
         )}
       </Box>
+    );
+  };
+
+  return (
+    <>
+      {renderButton()}
 
       <Dialog
         open={open}
@@ -458,3 +531,4 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
 };
 
 export default MCPToolsButton;
+
