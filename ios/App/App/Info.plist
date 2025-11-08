@@ -70,6 +70,10 @@
 	<key>NSCalendarsUsageDescription</key>
 	<string>AetherLink需要访问您的日历以帮助您管理日程和事件</string>
 
+	<!-- Notification Permissions -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>AetherLink需要发送通知权限以提醒您重要的事项和闹钟</string>
+
 	<!--  禁用 iOS WebView 的 CORS 检查 -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

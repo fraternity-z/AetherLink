@@ -40,8 +40,16 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/appearance/thinking-process': '/settings/appearance',
     '/settings/appearance/input-box': '/settings/appearance',
     '/settings/appearance/top-toolbar': '/settings/appearance',
+    '/settings/appearance/theme-style': '/settings/appearance',
     '/settings/data/advanced-backup': '/settings/data',
     '/settings/assistant-model-settings': '/settings/assistant-settings',
+    '/settings/voice/tts/capacitor': '/settings/voice',
+    '/settings/voice/tts/siliconflow': '/settings/voice',
+    '/settings/voice/tts/openai': '/settings/voice',
+    '/settings/voice/tts/azure': '/settings/voice',
+    '/settings/voice/asr/capacitor': '/settings/voice',
+    '/settings/voice/asr/openai-whisper': '/settings/voice',
+    '/settings/add-provider': '/settings/default-model',
   };
 
   // 处理动态路由（如 /settings/model-provider/:providerId）

@@ -115,7 +115,9 @@ const toolbarContainerStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: 0.5,
-  width: '100%'
+  width: '100%',
+  overflow: 'visible', // 允许 token 显示溢出
+  minWidth: 0 // 允许 flex 子元素缩小
 } as const;
 
 const toolbarButtonGroupStyle = {
@@ -761,7 +763,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </>
           )}
 
-          {!isUser && enableTTS && (
+          {enableTTS && (
             <Chip
               size="small"
               label={isPlaying ? "播放中" : "播放"}
@@ -776,7 +778,9 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 fontSize: '10px',
                 fontWeight: 'medium',
                 opacity: 0.95,
-                backgroundColor: isPlaying ? 'var(--theme-msg-ai-bg-active)' : 'var(--theme-msg-ai-bg)',
+                backgroundColor: isPlaying ? 
+                  (isUser ? 'var(--theme-msg-user-bg-active)' : 'var(--theme-msg-ai-bg-active)') : 
+                  (isUser ? 'var(--theme-msg-user-bg)' : 'var(--theme-msg-ai-bg)'),
                 color: 'var(--theme-text-primary)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                 borderRadius: '10px',
@@ -785,7 +789,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 '&:hover': {
                   opacity: 1,
                   cursor: 'pointer',
-                  backgroundColor: 'var(--theme-msg-ai-bg-active)',
+                  backgroundColor: isUser ? 'var(--theme-msg-user-bg-active)' : 'var(--theme-msg-ai-bg-active)',
                   borderColor: versionSwitchStyle === 'arrows' ?
                     (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)') : undefined
                 },
@@ -827,10 +831,12 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         <Box sx={toolbarContainerStyle}>
           {/* 用户消息：Token显示在左侧 */}
           {isUser && (
-            <TokenDisplay
-              currentMessage={message}
-              showCurrentMessage={true}
-            />
+            <Box sx={{ flexShrink: 0, overflow: 'visible', minWidth: 0 }}>
+              <TokenDisplay
+                currentMessage={message}
+                showCurrentMessage={true}
+              />
+            </Box>
           )}
           {/* 工具栏按钮组 */}
           <Box sx={{ ...toolbarButtonGroupStyle, justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
@@ -904,8 +910,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </Tooltip>
           )}
 
-          {/* AI消息：语音播放 */}
-          {!isUser && enableTTS && (
+          {/* 语音播放 - 对所有消息显示 */}
+          {enableTTS && (
             <Tooltip title={isPlaying ? "停止播放" : "语音播放"}>
               <IconButton
                 size="small"
@@ -965,10 +971,12 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 
           {/* AI消息：Token显示在右侧 */}
           {!isUser && (
-            <TokenDisplay
-              currentMessage={message}
-              showCurrentMessage={true}
-            />
+            <Box sx={{ flexShrink: 0, overflow: 'visible', minWidth: 0 }}>
+              <TokenDisplay
+                currentMessage={message}
+                showCurrentMessage={true}
+              />
+            </Box>
           )}
         </Box>
       )}

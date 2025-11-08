@@ -1,8 +1,9 @@
 import * as sdk from 'microsoft-cognitiveservices-speech-sdk';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 /**
  * TTS服务类
- * 使用硅基流动TTS API、OpenAI TTS API、微软Azure TTS API和Web Speech API提供文本到语音转换功能
+ * 使用Capacitor TTS、硅基流动TTS API、OpenAI TTS API、微软Azure TTS API和Web Speech API提供文本到语音转换功能
  */
 export class TTSService {
   private static instance: TTSService;
@@ -35,6 +36,13 @@ export class TTSService {
   private azureApiKey: string = '';
   private azureRegion: string = 'eastus'; // Azure服务区域
   private useAzure: boolean = false;
+
+  // Capacitor TTS 设置
+  private useCapacitorTTS: boolean = false;
+  private capacitorTTSLanguage: string = 'zh-CN'; // 语言代码
+  private capacitorTTSRate: number = 1.0; // 语速 (0.0-1.0)
+  private capacitorTTSPitch: number = 1.0; // 音调 (0.0-2.0)
+  private capacitorTTSVolume: number = 1.0; // 音量 (0.0-1.0)
 
   // Azure TTS 参数 - 完整的可控参数
   private azureVoiceName: string = 'zh-CN-XiaoxiaoNeural'; // 语音名称
@@ -151,6 +159,46 @@ export class TTSService {
    */
   public setUseAzure(useAzure: boolean): void {
     this.useAzure = useAzure;
+  }
+
+  /**
+   * 设置是否使用Capacitor TTS
+   * @param useCapacitorTTS 是否使用Capacitor TTS
+   */
+  public setUseCapacitorTTS(useCapacitorTTS: boolean): void {
+    this.useCapacitorTTS = useCapacitorTTS;
+  }
+
+  /**
+   * 设置Capacitor TTS语言
+   * @param language 语言代码 (如: zh-CN, en-US)
+   */
+  public setCapacitorTTSLanguage(language: string): void {
+    this.capacitorTTSLanguage = language;
+  }
+
+  /**
+   * 设置Capacitor TTS语速
+   * @param rate 语速 (0.0-1.0)
+   */
+  public setCapacitorTTSRate(rate: number): void {
+    this.capacitorTTSRate = Math.max(0.0, Math.min(1.0, rate));
+  }
+
+  /**
+   * 设置Capacitor TTS音调
+   * @param pitch 音调 (0.0-2.0)
+   */
+  public setCapacitorTTSPitch(pitch: number): void {
+    this.capacitorTTSPitch = Math.max(0.0, Math.min(2.0, pitch));
+  }
+
+  /**
+   * 设置Capacitor TTS音量
+   * @param volume 音量 (0.0-1.0)
+   */
+  public setCapacitorTTSVolume(volume: number): void {
+    this.capacitorTTSVolume = Math.max(0.0, Math.min(1.0, volume));
   }
 
   /**
@@ -374,6 +422,15 @@ export class TTSService {
    * 停止当前播放
    */
   public stop(): void {
+    // 停止Capacitor TTS播放
+    if (this.useCapacitorTTS) {
+      try {
+        TextToSpeech.stop();
+      } catch (e) {
+        console.warn('停止Capacitor TTS失败:', e);
+      }
+    }
+
     // 停止Audio元素播放
     if (this.audio) {
       this.audio.pause();
@@ -500,7 +557,13 @@ export class TTSService {
       console.log(`开始播放文本，语音: ${voice}`);
       this.isPlaying = true;
 
-      // 首先检查是否使用Azure TTS
+      // 优先使用Capacitor TTS（原生，性能最好）
+      if (this.useCapacitorTTS) {
+        const success = await this.speakWithCapacitorTTS(text);
+        if (success) return true;
+      }
+
+      // 然后检查是否使用Azure TTS
       if (this.useAzure) {
         const success = await this.speakWithAzure(text);
         if (success) return true;
@@ -536,6 +599,33 @@ export class TTSService {
       console.error('播放文本失败:', error);
       this.isPlaying = false;
       this.currentMessageId = null;
+      return false;
+    }
+  }
+
+  /**
+   * 使用Capacitor TTS播放文本
+   * @param text 要播放的文本
+   * @returns 是否成功播放
+   */
+  private async speakWithCapacitorTTS(text: string): Promise<boolean> {
+    try {
+      await TextToSpeech.speak({
+        text: text,
+        lang: this.capacitorTTSLanguage,
+        rate: this.capacitorTTSRate,
+        pitch: this.capacitorTTSPitch,
+        volume: this.capacitorTTSVolume,
+        category: 'ambient',
+        queueStrategy: 1 // 0 = 立即停止并播放, 1 = 排队播放
+      });
+      
+      this.isPlaying = false;
+      this.currentMessageId = null;
+      return true;
+    } catch (error) {
+      console.error('Capacitor TTS播放失败:', error);
+      this.isPlaying = false;
       return false;
     }
   }

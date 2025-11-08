@@ -26,6 +26,7 @@ const VoiceSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2'));
 const SiliconFlowTTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/SiliconFlowTTSSettings'));
 const OpenAITTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/OpenAITTSSettings'));
 const AzureTTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/AzureTTSSettings'));
+const CapacitorTTSSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/CapacitorTTSSettings'));
 const CapacitorASRSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/CapacitorASRSettings'));
 const OpenAIWhisperSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2/OpenAIWhisperSettings'));
 const WebSearchSettings = lazy(() => import('../pages/Settings/WebSearchSettings'));
@@ -149,6 +150,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/add-provider" element={<AddProviderPage />} />
         <Route path="/settings/about" element={<AboutPage />} />
         <Route path="/settings/voice" element={<VoiceSettings />} />
+        <Route path="/settings/voice/tts/capacitor" element={<CapacitorTTSSettings />} />
         <Route path="/settings/voice/tts/siliconflow" element={<SiliconFlowTTSSettings />} />
         <Route path="/settings/voice/tts/openai" element={<OpenAITTSSettings />} />
         <Route path="/settings/voice/tts/azure" element={<AzureTTSSettings />} />

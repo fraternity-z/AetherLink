@@ -234,6 +234,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
         width: 'auto',
         alignSelf: isUserMessage ? 'flex-end' : 'flex-start',
         flex: 'none',
+        overflow: messageActionMode === 'toolbar' ? 'visible' : undefined, // 工具栏模式下允许溢出
       }}>
         {/* 消息内容容器 */}
         <Paper
@@ -252,13 +253,14 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
             width: '100%',
             border: 'none',
             maxWidth: '100%',
+            overflow: messageActionMode === 'toolbar' ? 'visible' : undefined, // 工具栏模式下允许溢出
             // 隐藏气泡时覆盖样式
             ...(shouldHideBubble && {
               boxShadow: 'none',
               borderRadius: 0,
             }),
             // 🚀 添加性能优化CSS，减少重排重绘
-            contain: 'layout style paint',
+            contain: messageActionMode === 'toolbar' ? 'layout style' : 'layout style paint', // 工具栏模式下不限制 paint，允许溢出
             willChange: message.status === 'streaming' ? 'contents' : 'auto',
             transform: 'translateZ(0)', // 启用硬件加速
           }}
@@ -297,6 +299,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                   pt: 1,
                   borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
                   opacity: 0.8,
+                  overflow: 'visible', // 允许 token 显示溢出
                   '&:hover': {
                     opacity: 1,
                   }
@@ -321,14 +324,16 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
         {/* 根据设置显示不同的操作模式 */}
         {messageActionMode === 'bubbles' && (
           <>
-            {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置 */}
-            {!isUserMessage && settings?.showMicroBubbles !== false && (
+            {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置（对所有消息显示） */}
+            {settings?.showMicroBubbles !== false && (
               <Box sx={{
                 position: 'absolute',
                 top: -22,
-                right: 0,
+                right: isUserMessage ? 0 : 0,
+                left: isUserMessage ? 0 : 'auto',
                 display: 'flex',
                 flexDirection: 'row',
+                justifyContent: isUserMessage ? 'flex-start' : 'flex-end',
                 gap: '5px',
                 zIndex: Z_INDEX.MESSAGE.BUBBLE_INDICATORS, // 降低z-index，确保不会覆盖三点菜单
                 pointerEvents: 'auto',
@@ -383,6 +388,8 @@ export default React.memo(BubbleStyleMessage, (prevProps, nextProps) => {
     prevProps.message.id !== nextProps.message.id ||
     prevProps.message.updatedAt !== nextProps.message.updatedAt ||
     prevProps.message.status !== nextProps.message.status ||
+    prevProps.message.currentVersionId !== nextProps.message.currentVersionId ||
+    prevProps.message.versions?.length !== nextProps.message.versions?.length ||
     prevProps.loading !== nextProps.loading ||
     prevProps.showAvatar !== nextProps.showAvatar ||
     prevProps.isCompact !== nextProps.isCompact ||

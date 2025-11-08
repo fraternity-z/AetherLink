@@ -16,6 +16,14 @@
           "bocha": "🤖 Bocha (AI Search)",
           "firecrawl": "🕷️ Firecrawl (Web Scraping)",
           "custom": "⚙️ Custom Service"
+        },
+        "status": {
+          "recommended": "Recommended",
+          "neuralSearch": "Neural Search",
+          "aiSearch": "AI Search",
+          "webScraping": "Web Scraping",
+          "custom": "Custom",
+          "unknown": "Unknown"
         }
       },
       "searchEngine": {
@@ -68,6 +76,9 @@
         "name": "Service Name",
         "apiUrl": "API URL: {{url}}",
         "enable": "Enable",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "urlNotSet": "URL Not Set",
         "edit": "Edit",
         "delete": "Delete",
         "add": "Add Custom Search Service",
@@ -93,7 +104,8 @@
         "manual": "Manual Search (Click search button to start)"
       },
       "maxResults": {
-        "label": "Maximum Results: {{count}}"
+        "label": "Maximum Results: {{count}}",
+        "description": "Adjust the maximum number of search results returned"
       },
       "includeInContext": {
         "label": "Include search results in context"
@@ -121,7 +133,8 @@
         "advanced": "Advanced Search (More Accurate, Recommended)"
       },
       "chunksPerSource": {
-        "label": "Content Chunks per Source: {{count}}"
+        "label": "Content Chunks per Source: {{count}}",
+        "description": "Number of content chunks per source"
       },
       "minScore": {
         "label": "Minimum Relevance Score: {{score}}%",

@@ -13,6 +13,7 @@ dependencies {
     implementation project(':capacitor-community-native-audio')
     implementation project(':capacitor-community-safe-area')
     implementation project(':capacitor-community-speech-recognition')
+    implementation project(':capacitor-community-text-to-speech')
     implementation project(':capacitor-app')
     implementation project(':capacitor-browser')
     implementation project(':capacitor-camera')
@@ -21,6 +22,7 @@ dependencies {
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-keyboard')
+    implementation project(':capacitor-local-notifications')
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-share')
     implementation project(':capacitor-splash-screen')
@@ -32,7 +34,7 @@ dependencies {
     implementation project(':capacitor-cors-bypass-enhanced')
 
 }
-apply from: "../../node_modules/cordova-plugin-websocket-server/src/android/websocket-server.gradle"
+
 
 if (hasProperty('postBuildExtras')) {
   postBuildExtras()

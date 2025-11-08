@@ -34,6 +34,11 @@
         "description": "基于设备的本地语音识别服务",
         "features": ["本地处理", "实时识别", "多语言", "隐私保护"]
       },
+      "capacitorTTS": {
+        "name": "Capacitor TTS",
+        "description": "使用设备原生TTS引擎，离线可用，性能优秀",
+        "features": ["原生引擎", "离线使用", "免费", "高性能"]
+      },
       "openaiWhisper": {
         "name": "OpenAI Whisper",
         "description": "强大的云端语音识别模型",
@@ -64,6 +69,17 @@
       "enableDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
       "testText": "你好，我是硅基流动语音合成服务，感谢你的使用！",
       "apiKeyRequired": "启用服务时API密钥不能为空"
+    },
+    "capacitorTTS": {
+      "title": "Capacitor TTS 设置",
+      "enableService": "启用 Capacitor TTS 服务",
+      "enableDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
+      "testText": "你好，我是设备原生语音合成服务，感谢你的使用！",
+      "language": "语言",
+      "languageHelper": "选择TTS使用的语言代码，如：zh-CN（中文）、en-US（英文）",
+      "rate": "语速",
+      "pitch": "音调",
+      "volume": "音量"
     },
     "capacitor": {
       "title": "Capacitor 语音识别设置",

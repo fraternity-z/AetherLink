@@ -205,6 +205,33 @@ export const SettingGroup: React.FC<SettingGroupProps> = ({ title, children }) =
   );
 };
 
+// Row - 设置行组件（用于在Group内展示设置项）
+interface RowProps {
+  children: React.ReactNode;
+  sx?: SxProps<Theme>;
+}
+
+export const Row: React.FC<RowProps> = ({ children, sx }) => {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '14px 16px',
+        minHeight: 'auto',
+        borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+        '&:last-child': {
+          borderBottom: 'none',
+        },
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
 // SettingItem - 设置项组件
 interface SettingItemProps {
   title: string;

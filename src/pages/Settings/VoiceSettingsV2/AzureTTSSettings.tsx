@@ -137,6 +137,7 @@ const AzureTTSSettings: React.FC = () => {
       await setStorageItem('azure_tts_role', settings.role);
       await setStorageItem('azure_tts_use_ssml', settings.useSSML.toString());
       await setStorageItem('enable_tts', enableTTS.toString());
+      await setStorageItem('use_capacitor_tts', 'false');
 
       // 只有启用时才设置为当前服务
       if (isEnabled) {
@@ -165,8 +166,10 @@ const AzureTTSSettings: React.FC = () => {
       if (isEnabled) {
         ttsService.setUseAzure(true);
         ttsService.setUseOpenAI(false);
+        ttsService.setUseCapacitorTTS(false);
       } else {
         ttsService.setUseAzure(false);
+        ttsService.setUseCapacitorTTS(false);
       }
 
       if (saveTimeoutRef.current) {
@@ -209,6 +212,7 @@ const AzureTTSSettings: React.FC = () => {
     // 设置为使用Azure TTS
     ttsService.setUseAzure(true);
     ttsService.setUseOpenAI(false);
+    ttsService.setUseCapacitorTTS(false);
     ttsService.setAzureApiKey(settings.apiKey);
     ttsService.setAzureRegion(settings.region);
     ttsService.setAzureVoiceName(settings.voiceName);

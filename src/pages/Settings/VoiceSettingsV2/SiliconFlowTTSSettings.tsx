@@ -113,6 +113,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
       setStorageItem('tts_voice', settings.selectedVoice);
       setStorageItem('siliconflow_tts_stream', settings.useStream.toString());
       setStorageItem('enable_tts', enableTTS.toString());
+      setStorageItem('use_capacitor_tts', 'false');
 
       // 只有启用时才设置为当前服务
       if (isEnabled) {
@@ -130,6 +131,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
       if (isEnabled) {
         ttsService.setUseOpenAI(false);
         ttsService.setUseAzure(false);
+        ttsService.setUseCapacitorTTS(false);
       }
 
       // 清除错误信息
@@ -180,6 +182,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
     // 设置为使用硅基流动TTS
     ttsService.setUseOpenAI(false);
     ttsService.setUseAzure(false);
+    ttsService.setUseCapacitorTTS(false);
     ttsService.setApiKey(settings.apiKey);
     ttsService.setUseSiliconFlowStream(settings.useStream);
     ttsService.setDefaultVoice(settings.selectedModel, `${settings.selectedModel}:${settings.selectedVoice}`);

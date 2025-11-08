@@ -137,6 +137,7 @@ const MinimalStyleMessage: React.FC<BaseMessageStyleProps> = ({
             mt: 0.5,
             pt: 0.25,
             opacity: 0.7,
+            overflow: 'visible', // 允许 token 显示溢出
             '&:hover': {
               opacity: 1,
             }
@@ -160,11 +161,30 @@ const MinimalStyleMessage: React.FC<BaseMessageStyleProps> = ({
 
 // 🚀 使用React.memo优化重新渲染
 export default React.memo(MinimalStyleMessage, (prevProps, nextProps) => {
+  const versionCountEqual =
+    (prevProps.message.versions?.length ?? 0) === (nextProps.message.versions?.length ?? 0);
+
+  const blocksEqual = (() => {
+    const prevBlocks = prevProps.message.blocks ?? [];
+    const nextBlocks = nextProps.message.blocks ?? [];
+    if (prevBlocks.length !== nextBlocks.length) {
+      return false;
+    }
+    for (let i = 0; i < prevBlocks.length; i += 1) {
+      if (prevBlocks[i] !== nextBlocks[i]) {
+        return false;
+      }
+    }
+    return true;
+  })();
+
   return (
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.updatedAt === nextProps.message.updatedAt &&
     prevProps.message.status === nextProps.message.status && // 🔥 关键！流式输出状态变化
-    JSON.stringify(prevProps.message.blocks) === JSON.stringify(nextProps.message.blocks) && // 🔥 消息块变化
+    prevProps.message.currentVersionId === nextProps.message.currentVersionId && // 🔥 版本切换需要重新渲染
+    versionCountEqual && // 🔥 版本数量变化
+    blocksEqual && // 🔥 消息块变化
     prevProps.loading === nextProps.loading &&
     prevProps.showUserAvatar === nextProps.showUserAvatar &&
     prevProps.showUserName === nextProps.showUserName &&

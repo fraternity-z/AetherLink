@@ -43,6 +43,8 @@ public class MainActivity extends BridgeActivity {
          registerPlugin(NativeHttpPlugin.class);
          // 注册 CorsBypass 插件以解决移动端 CORS 问题
          registerPlugin(com.capacitor.cors.CorsBypassPlugin.class);
+         // 注册系统闹钟插件
+         registerPlugin(SystemAlarmPlugin.class);
 
         super.onCreate(savedInstanceState);
 

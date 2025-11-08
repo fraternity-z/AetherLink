@@ -34,6 +34,11 @@
         "description": "Device-based local speech recognition service",
         "features": ["Local Processing", "Real-time", "Multi-language", "Privacy-focused"]
       },
+      "capacitorTTS": {
+        "name": "Capacitor TTS",
+        "description": "Use device native TTS engine, offline available, excellent performance",
+        "features": ["Native Engine", "Offline", "Free", "High Performance"]
+      },
       "openaiWhisper": {
         "name": "OpenAI Whisper",
         "description": "Powerful cloud-based speech recognition model",
@@ -64,6 +69,17 @@
       "enableDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
       "testText": "Hello, I am SiliconFlow text-to-speech service. Thank you for using me!",
       "apiKeyRequired": "API key cannot be empty when service is enabled"
+    },
+    "capacitorTTS": {
+      "title": "Capacitor TTS Settings",
+      "enableService": "Enable Capacitor TTS Service",
+      "enableDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
+      "testText": "Hello, I am device native text-to-speech service. Thank you for using me!",
+      "language": "Language",
+      "languageHelper": "Select language code for TTS, e.g.: zh-CN (Chinese), en-US (English)",
+      "rate": "Rate",
+      "pitch": "Pitch",
+      "volume": "Volume"
     },
     "capacitor": {
       "title": "Capacitor Speech Recognition Settings",

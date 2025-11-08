@@ -16,6 +16,14 @@
           "bocha": "🤖 Bocha (AI搜索)",
           "firecrawl": "🕷️ Firecrawl (网页抓取)",
           "custom": "⚙️ 自定义服务"
+        },
+        "status": {
+          "recommended": "推荐",
+          "neuralSearch": "神经搜索",
+          "aiSearch": "AI搜索",
+          "webScraping": "网页抓取",
+          "custom": "自定义",
+          "unknown": "未知"
         }
       },
       "searchEngine": {
@@ -68,6 +76,9 @@
         "name": "服务名称",
         "apiUrl": "API URL: {{url}}",
         "enable": "启用",
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "urlNotSet": "未设置 URL",
         "edit": "编辑",
         "delete": "删除",
         "add": "添加自定义搜索服务",
@@ -93,7 +104,8 @@
         "manual": "手动搜索 (点击搜索按钮启动)"
       },
       "maxResults": {
-        "label": "最大结果数量: {{count}}"
+        "label": "最大结果数量: {{count}}",
+        "description": "调整搜索返回的最大结果数量"
       },
       "includeInContext": {
         "label": "将搜索结果包含在上下文中"
@@ -121,7 +133,8 @@
         "advanced": "高级搜索 (更准确，推荐)"
       },
       "chunksPerSource": {
-        "label": "每个来源的内容块数量: {{count}}"
+        "label": "每个来源的内容块数量: {{count}}",
+        "description": "每个来源分块的数量"
       },
       "minScore": {
         "label": "最小相关性分数: {{score}}%",

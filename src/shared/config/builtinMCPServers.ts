@@ -39,6 +39,26 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     provider: 'AetherAI',
     logoUrl: '',
     tags: ['计算', '数学', '转换', '统计', '工具']
+  },
+  {
+    id: 'builtin-calendar',
+    name: '@aether/calendar',
+    type: 'inMemory',
+    description: '日历管理工具，支持创建、查询、修改和删除日历事件，查看日历列表',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['日历', '事件', '提醒', '时间管理', '工具']
+  },
+  {
+    id: 'builtin-alarm',
+    name: '@aether/alarm',
+    type: 'inMemory',
+    description: '闹钟和提醒工具，支持设置单次或重复闹钟，管理所有提醒',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['闹钟', '提醒', '通知', '时间管理', '工具']
   }
 ];
 

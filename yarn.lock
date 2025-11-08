@@ -168,6 +168,11 @@
   resolved "https://registry.npmmirror.com/@capacitor-community/speech-recognition/-/speech-recognition-7.0.0.tgz"
   integrity sha512-GwNaijf0Q2LilNtlnfKL2dJB6voZYOm95D6dbhzPwa1mV+PnzwcGCaeipjbID3oRlAnsDUFEFiakbdZDyxe54w==
 
+"@capacitor-community/text-to-speech@^6.1.0":
+  version "6.1.0"
+  resolved "https://registry.npmjs.org/@capacitor-community/text-to-speech/-/text-to-speech-6.1.0.tgz"
+  integrity sha512-K9kbQm7BEkUGhZQYMrPaLfHTbOjQPtXZyQTtZxR+lNJyl1pbSFWwRmK3PCIa5C5M2HLf3iPgj/vTaMvMxlk1Ag==
+
 "@capacitor/android@^5.0.0", "@capacitor/android@^6.0.0", "@capacitor/android@^7.2.0", "@capacitor/android@^7.4.4":
   version "7.4.4"
   resolved "https://registry.npmjs.org/@capacitor/android/-/android-7.4.4.tgz"
@@ -290,6 +295,11 @@
   version "7.0.3"
   resolved "https://registry.npmjs.org/@capacitor/keyboard/-/keyboard-7.0.3.tgz"
   integrity sha512-BIBKjmky5rOYNhvYhNeDi0MMvjwYZ6YF9JoCYcGKvKY+XLJKtezsEL78XfOlgWZBkbfR8uq3tzktY6PqgoYLKA==
+
+"@capacitor/local-notifications@^7.0.3":
+  version "7.0.3"
+  resolved "https://registry.npmjs.org/@capacitor/local-notifications/-/local-notifications-7.0.3.tgz"
+  integrity sha512-zVHZk5AYRiBwBDynaD7caPUROozgvwOG0L2SPFw1HBTWCscJvo0fsaE67NWW252jzel3PH0XogglJUYFx/jtHA==
 
 "@capacitor/preferences@^7.0.2":
   version "7.0.2"
@@ -3967,10 +3977,10 @@ cookie@^1.0.1:
   resolved "https://registry.npmjs.org/cookie/-/cookie-1.0.2.tgz"
   integrity sha512-9Kr/j4O16ISv8zBBhJoi4bXOYNTkFLOqSL3UDB0njXxCXNezjeyVrJyGOWtgfs/q2km1gwBcfH8q1yEGoMYunA==
 
-cordova-plugin-websocket-server@^1.6.0:
-  version "1.6.0"
-  resolved "https://registry.npmjs.org/cordova-plugin-websocket-server/-/cordova-plugin-websocket-server-1.6.0.tgz"
-  integrity sha512-41FUXWGOa+jUcft8PUBuibv1AhUT1wRnIt9TIQVFcjV1oDySGZ1oDmGzjtRi//UNEOvTGUPzkHeZfJKJs0TMpA==
+cordova-plugin-calendar@^5.1.6:
+  version "5.1.6"
+  resolved "https://registry.npmjs.org/cordova-plugin-calendar/-/cordova-plugin-calendar-5.1.6.tgz"
+  integrity sha512-aaK5XRHIiR+1AYEwmXbFL98Q/I62OoUMAbxK0DTpICo0M3luihomr0S+YXstDLL0MyIKOB3WtRHVuCP4y97kHw==
 
 core-js@^3.43.0:
   version "3.43.0"

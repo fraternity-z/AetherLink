@@ -14,7 +14,7 @@ interface TTSTestSectionProps {
   handleTestTTS: () => Promise<void>;
   isTestPlaying: boolean;
   enableTTS: boolean;
-  selectedTTSService: 'siliconflow' | 'openai' | 'azure';
+  selectedTTSService: 'siliconflow' | 'openai' | 'azure' | 'capacitor';
   openaiApiKey: string;
   azureApiKey: string;
   siliconFlowApiKey: string;
@@ -86,6 +86,7 @@ const TTSTestSection: React.FC<TTSTestSectionProps> = ({
             (selectedTTSService === 'openai' && !openaiApiKey) ||
             (selectedTTSService === 'azure' && !azureApiKey) ||
             (selectedTTSService === 'siliconflow' && !siliconFlowApiKey)
+            // Capacitor TTS 不需要 API 密钥，总是可用
           }
           size={window.innerWidth < 600 ? "large" : "medium"} // 移动端大按钮
           sx={{

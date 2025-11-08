@@ -15,16 +15,26 @@ import {
 import {
   ArrowLeft,
   Volume2,
-  Mic,
-  Settings as SettingsIcon
+  Mic
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import { getStorageItem } from '../../../shared/utils/storage';
 import { useTranslation } from '../../../i18n';
+import { cssVar } from '../../../shared/utils/cssVariables';
 
 // TTS服务配置 - 将在组件内使用 i18n
 const getTTSServices = (t: any) => [
+  {
+    id: 'capacitor',
+    name: t('settings.voice.services.capacitorTTS.name'),
+    description: t('settings.voice.services.capacitorTTS.description'),
+    icon: '📱',
+    color: '#F59E0B',
+    features: t('settings.voice.services.capacitorTTS.features', { returnObjects: true }),
+    status: 'free',
+    path: '/settings/voice/tts/capacitor'
+  },
   {
     id: 'siliconflow',
     name: t('settings.voice.services.siliconflow.name'),
@@ -96,6 +106,19 @@ const VoiceSettingsV2: React.FC = () => {
   const [currentTTSService, setCurrentTTSService] = useState<string>('siliconflow');
   const [currentASRService, setCurrentASRService] = useState<string>('capacitor');
 
+  const toolbarBg = cssVar('toolbar-bg');
+  const toolbarBorder = cssVar('toolbar-border');
+  const toolbarShadow = cssVar('toolbar-shadow');
+  const gradientPrimary = cssVar('gradient-primary');
+  const textPrimary = cssVar('text-primary');
+  const textSecondary = cssVar('text-secondary');
+  const borderDefault = cssVar('border-default');
+  const borderSubtle = cssVar('border-subtle');
+  const hoverBg = cssVar('hover-bg');
+  const bgPaper = cssVar('bg-paper');
+  const bgElevated = cssVar('bg-elevated');
+  const primaryColor = cssVar('primary');
+
   // 使用 useMemo 缓存服务配置，避免每次渲染重新计算
   const ttsServices = useMemo(() => getTTSServices(t), [t]);
   const asrServices = useMemo(() => getASRServices(t), [t]);
@@ -157,7 +180,8 @@ const VoiceSettingsV2: React.FC = () => {
       height: '100vh',
       width: '100vw',
       overflow: 'hidden',
-      bgcolor: 'background.default'
+      backgroundColor: cssVar('bg-default'),
+      color: textPrimary,
     }}>
       {/* 顶部导航栏 */}
       <AppBar
@@ -165,33 +189,35 @@ const VoiceSettingsV2: React.FC = () => {
         elevation={0}
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          borderBottom: 1,
-          borderColor: 'divider',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          background: 'rgba(255, 255, 255, 0.8)',
-          '@media (prefers-color-scheme: dark)': {
-            background: 'rgba(18, 18, 18, 0.8)',
-          },
+          backgroundColor: toolbarBg,
+          color: textPrimary,
+          borderBottom: `1px solid ${toolbarBorder}`,
+          boxShadow: `0 18px 40px -24px ${toolbarShadow}`,
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+          transition: 'background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
         }}
       >
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1, sm: 2, md: 3 } }}>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1.5, sm: 2.5, md: 4 }, gap: { xs: 1, sm: 1.5 } }}>
           <IconButton
             edge="start"
             onClick={handleBack}
             aria-label={t('settings.voice.back')}
             size="large"
             sx={{
-              color: 'primary.main',
+              color: primaryColor,
               mr: { xs: 1, sm: 2 },
-              '&:hover': {
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                transform: 'scale(1.05)',
-              },
+              borderRadius: 2,
+              border: `1px solid ${borderSubtle}`,
               transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                backgroundColor: hoverBg,
+                transform: 'translateY(-1px)',
+              },
+              '&:focus-visible': {
+                outline: `2px solid ${primaryColor}`,
+                outlineOffset: '2px',
+              },
             }}
           >
             <ArrowLeft size={20} />
@@ -201,13 +227,15 @@ const VoiceSettingsV2: React.FC = () => {
             component="div"
             sx={{
               flexGrow: 1,
-              fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
+              fontWeight: 700,
+              letterSpacing: '0.03em',
+              backgroundImage: gradientPrimary,
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               color: 'transparent',
+              textTransform: 'uppercase',
             }}
-            >
+          >
             {t('settings.voice.title')}
           </Typography>
         </Toolbar>
@@ -231,46 +259,74 @@ const VoiceSettingsV2: React.FC = () => {
             background: 'transparent',
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
+            backgroundColor: toolbarShadow,
             borderRadius: '10px',
-            '&:hover': {
-              backgroundColor: 'rgba(0,0,0,0.2)',
-            },
+            border: `1px solid ${borderSubtle}`,
           },
         }}
       >
         <Box
           sx={{
             width: '100%',
+            maxWidth: 1260,
+            mx: 'auto',
           }}
         >
           {/* Tab导航 */}
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="fullWidth"
+          <Paper
+            elevation={0}
             sx={{
               mb: { xs: 2, sm: 3 },
-              borderBottom: 1,
-              borderColor: 'divider',
-              '& .MuiTabs-indicator': {
-                height: { xs: 3, sm: 4 },
-                borderRadius: '2px 2px 0 0',
-                background: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              },
-              '& .MuiTab-root': {
-                minHeight: 64,
-                fontWeight: 600,
-                textTransform: 'none',
-                '&.Mui-selected': {
-                  color: 'primary.main',
-                },
-              },
+              p: { xs: 0.5, sm: 1 },
+              borderRadius: { xs: 2, sm: 2.5 },
+              border: `1px solid ${borderDefault}`,
+              bgcolor: bgPaper,
+              boxShadow: `0 18px 40px -28px ${toolbarShadow}`,
             }}
           >
-            <Tab label={t('settings.voice.tabs.tts')} icon={<Volume2 size={20} />} iconPosition="start" />
-            <Tab label={t('settings.voice.tabs.asr')} icon={<Mic size={20} />} iconPosition="start" />
-          </Tabs>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              variant="standard"
+              TabIndicatorProps={{ sx: { display: 'none' } }}
+              sx={{
+                minHeight: 0,
+                '& .MuiTabs-flexContainer': {
+                  gap: { xs: 0.5, sm: 1 },
+                },
+                '& .MuiTab-root': {
+                  flex: 1,
+                  minHeight: 0,
+                  borderRadius: { xs: 1.5, sm: 2 },
+                  px: { xs: 1.5, sm: 2 },
+                  py: { xs: 1.1, sm: 1.4 },
+                  color: textSecondary,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: { xs: 0.75, sm: 1 },
+                  '& svg': {
+                    width: 20,
+                    height: 20,
+                  },
+                  '&.Mui-selected': {
+                    color: textPrimary,
+                    backgroundColor: hoverBg,
+                    boxShadow: `0 18px 40px -24px ${toolbarShadow}`,
+                  },
+                  '&:hover': {
+                    backgroundColor: hoverBg,
+                  },
+                },
+              }}
+            >
+              <Tab disableRipple label={t('settings.voice.tabs.tts')} icon={<Volume2 size={20} />} iconPosition="start" />
+              <Tab disableRipple label={t('settings.voice.tabs.asr')} icon={<Mic size={20} />} iconPosition="start" />
+            </Tabs>
+          </Paper>
 
           {/* 服务卡片网格 */}
           <Box
@@ -289,19 +345,23 @@ const VoiceSettingsV2: React.FC = () => {
                 key={service.id}
                 elevation={0}
                 sx={{
-                  borderRadius: { xs: 2, sm: 2.5 },
+                  position: 'relative',
+                  borderRadius: { xs: 2.4, sm: 2.8 },
                   overflow: 'hidden',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  transition: 'all 0.2s ease-in-out',
-                  bgcolor: 'background.paper',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                  minHeight: { xs: '140px', sm: '160px' },
+                  border: `1px solid ${borderDefault}`,
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease',
+                  bgcolor: bgPaper,
+                  boxShadow: `0 22px 48px -32px ${toolbarShadow}`,
+                  minHeight: { xs: 152, sm: 176 },
                   '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                  }
+                    transform: 'translateY(-6px)',
+                    boxShadow: `0 32px 70px -30px ${toolbarShadow}`,
+                    borderColor: primaryColor,
+                    backgroundColor: bgElevated,
+                  },
+                  '&:hover .service-card__avatar': {
+                    transform: 'scale(1.06)',
+                  },
                 }}
               >
                 <ListItemButton
@@ -309,9 +369,15 @@ const VoiceSettingsV2: React.FC = () => {
                   sx={{
                     p: 0,
                     height: '100%',
+                    alignItems: 'stretch',
+                    transition: 'background-color 0.2s ease',
                     '&:hover': {
                       bgcolor: 'transparent',
-                    }
+                    },
+                    '&:focus-visible': {
+                      outline: `2px solid ${primaryColor}`,
+                      outlineOffset: '4px',
+                    },
                   }}
                 >
                   <Box sx={{
@@ -319,18 +385,22 @@ const VoiceSettingsV2: React.FC = () => {
                     flexDirection: 'column',
                     width: '100%',
                     p: { xs: 2, sm: 2.5 },
-                    height: '100%'
+                    height: '100%',
+                    gap: { xs: 1.5, sm: 2 },
                   }}>
                     {/* 头部：图标、标题和状态 */}
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1.5 }}>
                       <Avatar
+                        className="service-card__avatar"
                         sx={{
-                          bgcolor: alpha(service.color, 0.12),
+                          bgcolor: (theme) => alpha(service.color, theme.palette.mode === 'dark' ? 0.24 : 0.12),
                           color: service.color,
                           mr: 1.5,
-                          width: 44,
-                          height: 44,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                          width: 48,
+                          height: 48,
+                          border: `1px solid ${borderSubtle}`,
+                          boxShadow: `0 12px 28px -18px ${toolbarShadow}`,
+                          transition: 'transform 0.3s ease',
                         }}
                       >
                         {service.icon}
@@ -341,8 +411,9 @@ const VoiceSettingsV2: React.FC = () => {
                             variant="subtitle1"
                             sx={{
                               fontWeight: 600,
-                              color: 'text.primary',
-                              lineHeight: 1.2
+                              color: textPrimary,
+                              lineHeight: 1.2,
+                              letterSpacing: '0.01em',
                             }}
                           >
                             {service.name}
@@ -359,7 +430,9 @@ const VoiceSettingsV2: React.FC = () => {
                               variant="filled"
                               sx={{
                                 fontSize: '0.65rem',
+                                fontWeight: 600,
                                 height: 18,
+                                borderRadius: 1.5,
                                 '& .MuiChip-label': {
                                   px: 0.75,
                                 },
@@ -374,7 +447,9 @@ const VoiceSettingsV2: React.FC = () => {
                             variant="outlined"
                             sx={{
                               fontSize: '0.7rem',
+                              fontWeight: 600,
                               height: 20,
+                              borderRadius: 1.5,
                               '& .MuiChip-label': {
                                 px: 0.75,
                               },
@@ -388,7 +463,7 @@ const VoiceSettingsV2: React.FC = () => {
                     <Typography
                       variant="body2"
                       sx={{
-                        color: 'text.secondary',
+                        color: textSecondary,
                         lineHeight: 1.4,
                         mb: 1.5,
                         display: '-webkit-box',
@@ -407,19 +482,22 @@ const VoiceSettingsV2: React.FC = () => {
                       gap: 0.5,
                       mt: 'auto'
                     }}>
-                      {service.features.slice(0, 3).map((feature, index) => (
+                      {service.features.slice(0, 3).map((feature: string, index: number) => (
                         <Chip
                           key={index}
                           size="small"
                           label={feature}
                           variant="filled"
                           sx={{
-                            bgcolor: alpha(service.color, 0.08),
+                            bgcolor: (theme) => alpha(service.color, theme.palette.mode === 'dark' ? 0.24 : 0.12),
                             color: service.color,
                             fontSize: '0.65rem',
-                            height: 18,
+                            fontWeight: 600,
+                            height: 20,
+                            borderRadius: 1.5,
+                            border: `1px solid ${alpha(service.color, 0.25)}`,
                             '& .MuiChip-label': {
-                              px: 0.75,
+                              px: 0.9,
                             },
                           }}
                         />
@@ -431,7 +509,11 @@ const VoiceSettingsV2: React.FC = () => {
                           variant="outlined"
                           sx={{
                             fontSize: '0.65rem',
-                            height: 18,
+                            fontWeight: 600,
+                            height: 20,
+                            borderRadius: 1.5,
+                            borderColor: borderSubtle,
+                            color: textSecondary,
                             '& .MuiChip-label': {
                               px: 0.75,
                             },

@@ -111,6 +111,7 @@ const OpenAITTSSettings: React.FC = () => {
       await setStorageItem('openai_tts_speed', settings.speed.toString());
       await setStorageItem('openai_tts_stream', settings.useStream.toString());
       await setStorageItem('enable_tts', enableTTS.toString());
+      await setStorageItem('use_capacitor_tts', 'false');
 
       // 只有启用时才设置为当前服务
       if (isEnabled) {
@@ -133,8 +134,10 @@ const OpenAITTSSettings: React.FC = () => {
       if (isEnabled) {
         ttsService.setUseOpenAI(true);
         ttsService.setUseAzure(false);
+        ttsService.setUseCapacitorTTS(false);
       } else {
         ttsService.setUseOpenAI(false);
+        ttsService.setUseCapacitorTTS(false);
       }
 
       if (saveTimeoutRef.current) {
@@ -177,6 +180,7 @@ const OpenAITTSSettings: React.FC = () => {
     // 设置为使用OpenAI TTS
     ttsService.setUseOpenAI(true);
     ttsService.setUseAzure(false);
+    ttsService.setUseCapacitorTTS(false);
     ttsService.setOpenAIApiKey(settings.apiKey);
     ttsService.setOpenAIModel(settings.selectedModel);
     ttsService.setOpenAIVoice(settings.selectedVoice);

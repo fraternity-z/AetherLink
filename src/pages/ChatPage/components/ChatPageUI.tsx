@@ -761,6 +761,37 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 };
 
 // 🚀 自定义比较函数，只比较关键props
+const isSameMessage = (prevMsg: Message, nextMsg: Message) => {
+  if (
+    prevMsg.id !== nextMsg.id ||
+    prevMsg.updatedAt !== nextMsg.updatedAt ||
+    prevMsg.status !== nextMsg.status ||
+    prevMsg.currentVersionId !== nextMsg.currentVersionId
+  ) {
+    return false;
+  }
+
+  const prevVersionsLength = prevMsg.versions?.length ?? 0;
+  const nextVersionsLength = nextMsg.versions?.length ?? 0;
+  if (prevVersionsLength !== nextVersionsLength) {
+    return false;
+  }
+
+  const prevBlocks = prevMsg.blocks || [];
+  const nextBlocks = nextMsg.blocks || [];
+  if (prevBlocks.length !== nextBlocks.length) {
+    return false;
+  }
+
+  for (let i = 0; i < prevBlocks.length; i++) {
+    if (prevBlocks[i] !== nextBlocks[i]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) => {
   // 基础属性比较
   if (
@@ -815,27 +846,9 @@ const arePropsEqual = (prevProps: ChatPageUIProps, nextProps: ChatPageUIProps) =
   for (let i = 0; i < prevProps.currentMessages.length; i++) {
     const prevMsg = prevProps.currentMessages[i];
     const nextMsg = nextProps.currentMessages[i];
-    
-    if (
-      prevMsg.id !== nextMsg.id ||
-      prevMsg.updatedAt !== nextMsg.updatedAt ||
-      prevMsg.status !== nextMsg.status
-    ) {
-      return false;
-    }
 
-    // 🔥 关键：比较blocks数组，检测流式输出时的块变化
-    const prevBlocks = prevMsg.blocks || [];
-    const nextBlocks = nextMsg.blocks || [];
-    if (prevBlocks.length !== nextBlocks.length) {
+    if (!isSameMessage(prevMsg, nextMsg)) {
       return false;
-    }
-    
-    // 比较blocks数组的每个元素（block IDs）
-    for (let j = 0; j < prevBlocks.length; j++) {
-      if (prevBlocks[j] !== nextBlocks[j]) {
-        return false;
-      }
     }
   }
 

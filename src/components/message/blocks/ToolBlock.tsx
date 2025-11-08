@@ -7,14 +7,18 @@ import {
   IconButton,
   Chip,
   useTheme,
-  Divider
+  Divider,
+  alpha
 } from '@mui/material';
 import {
   ChevronDown as ExpandMoreIcon,
   Copy as ContentCopyIcon,
-  Code as CodeIcon
+  Code as CodeIcon,
+  CheckCircle2,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-import { styled } from '@mui/material/styles';
+import { styled, keyframes } from '@mui/material/styles';
 
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { ToolMessageBlock } from '../../../shared/types/newMessage';
@@ -25,8 +29,25 @@ interface Props {
   block: ToolMessageBlock;
 }
 
+// 定义动画
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
 /**
- * 工具调用块组件 - 基于最佳实例的实现
+ * 工具调用块组件 - 优化版本
  * 显示AI的工具调用过程和结果
  */
 const ToolBlock: React.FC<Props> = ({ block }) => {
@@ -34,7 +55,7 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
   const [copied, setCopied] = useState(false);
   const theme = useTheme();
 
-  // 获取工具响应数据 - 统一使用最佳实例的方式
+  // 获取工具响应数据
   const toolResponse = block.metadata?.rawMcpToolResponse;
 
   const isProcessing = block.status === MessageBlockStatus.STREAMING ||
@@ -44,11 +65,10 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
 
   // 复制工具调用内容到剪贴板
   const handleCopyCall = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // 防止触发折叠/展开
+    e.stopPropagation();
     const input = block.arguments || toolResponse?.arguments;
     if (input) {
       const callText = JSON.stringify(input, null, 2);
-
       navigator.clipboard.writeText(callText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -61,7 +81,7 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
     setExpanded(!expanded);
   }, [expanded]);
 
-  // 格式化工具调用参数 - 统一使用最佳实例的方式
+  // 格式化工具调用参数
   const formatToolCall = useCallback(() => {
     const params = toolResponse?.arguments || block.arguments;
     if (!params) return '';
@@ -73,21 +93,17 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
     }
   }, [toolResponse, block.arguments]);
 
-  // 格式化工具结果内容 - 按照最佳实例的方式
+  // 格式化工具结果内容
   const formatToolResult = useCallback(() => {
-    // 按照最佳实例的方式，优先使用 block.content（这是我们在 messageThunk 中设置的）
     if (block.content && typeof block.content === 'object') {
       const response = block.content as any;
 
-      // 如果是错误响应
       if (response.isError) {
         const errorContent = response.content?.[0]?.text || '工具调用失败';
         return `错误: ${errorContent}`;
       }
 
-      // 处理正常响应
       if (response.content && response.content.length > 0) {
-        // 如果只有一个文本内容，尝试格式化 JSON
         if (response.content.length === 1 && response.content[0].type === 'text') {
           const text = response.content[0].text || '';
           try {
@@ -98,11 +114,9 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
           }
         }
 
-        // 多个内容或非文本内容，格式化显示
         return response.content.map((item: any) => {
           switch (item.type) {
             case 'text':
-              // 尝试格式化 JSON 文本
               const text = item.text || '';
               try {
                 const parsed = JSON.parse(text);
@@ -123,7 +137,6 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
       return '无响应内容';
     }
 
-    // 从 metadata.rawMcpToolResponse 中获取输出（最佳实例方式）
     const toolResponseData = toolResponse;
     if (toolResponseData?.response) {
       const { response } = toolResponseData;
@@ -170,7 +183,7 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
 
   // 复制工具结果内容到剪贴板
   const handleCopyResult = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // 防止触发折叠/展开
+    e.stopPropagation();
     const resultText = formatToolResult();
     if (resultText) {
       navigator.clipboard.writeText(resultText);
@@ -180,19 +193,60 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
     }
   }, [formatToolResult]);
 
-  // 获取工具名称 - 统一使用最佳实例的方式
+  // 获取工具名称
   const getToolName = useCallback(() => {
     return block.toolName || toolResponse?.tool?.name || '工具调用';
   }, [block.toolName, toolResponse]);
+
+  // 获取状态颜色和图标
+  const getStatusConfig = () => {
+    if (isProcessing) {
+      return {
+        color: 'info' as const,
+        icon: <Loader2 size={14} style={{ animation: `${spin} 1s linear infinite` }} />,
+        label: '执行中',
+        bgColor: alpha(theme.palette.info.main, 0.1),
+        borderColor: alpha(theme.palette.info.main, 0.3)
+      };
+    }
+    if (hasError) {
+      return {
+        color: 'error' as const,
+        icon: <AlertCircle size={14} />,
+        label: '失败',
+        bgColor: alpha(theme.palette.error.main, 0.1),
+        borderColor: alpha(theme.palette.error.main, 0.3)
+      };
+    }
+    if (isCompleted) {
+      return {
+        color: 'success' as const,
+        icon: <CheckCircle2 size={14} />,
+        label: '成功',
+        bgColor: alpha(theme.palette.success.main, 0.1),
+        borderColor: alpha(theme.palette.success.main, 0.3)
+      };
+    }
+    return null;
+  };
+
+  const statusConfig = getStatusConfig();
 
   return (
     <StyledPaper
       elevation={0}
       sx={{
         mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: '8px',
-        overflow: 'hidden'
+        border: `1px solid ${statusConfig?.borderColor || theme.palette.divider}`,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        backgroundColor: statusConfig?.bgColor || 'background.paper',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        animation: `${fadeIn} 0.4s ease-out`,
+        '&:hover': {
+          boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+          transform: 'translateY(-2px)'
+        }
       }}
     >
       {/* 标题栏 */}
@@ -204,178 +258,214 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
           p: 1.5,
           cursor: 'pointer',
           borderBottom: expanded ? `1px solid ${theme.palette.divider}` : 'none',
+          background: expanded 
+            ? `linear-gradient(to right, ${alpha(theme.palette.primary.main, 0.03)}, transparent)`
+            : 'transparent',
+          transition: 'all 0.2s ease',
           '&:hover': {
-            backgroundColor: 'var(--theme-msg-block-bg-hover)',
+            backgroundColor: alpha(theme.palette.action.hover, 0.05),
           }
         }}
       >
-        <CodeIcon
-          size={16}
-          style={{
-            marginRight: '8px',
-            color: theme.palette.info.main
+        {/* 工具图标 */}
+        <Box
+          sx={{
+            width: 28,
+            height: 28,
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mr: 1.5,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.2)}, ${alpha(theme.palette.primary.main, 0.05)})`,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`
           }}
-        />
+        >
+          <CodeIcon
+            size={16}
+            style={{
+              color: theme.palette.primary.main
+            }}
+          />
+        </Box>
 
-        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>
-          {getToolName()}
-          {/*  参考最佳实例：显示工具状态 */}
-          {isProcessing && (
+        {/* 工具名称和状态 */}
+        <Box sx={{ flexGrow: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography 
+            variant="subtitle2" 
+            sx={{ 
+              fontWeight: 600,
+              fontSize: '0.9rem'
+            }}
+          >
+            {getToolName()}
+          </Typography>
+          {statusConfig && (
             <Chip
-              label="处理中"
+              icon={statusConfig.icon}
+              label={statusConfig.label}
               size="small"
-              color="info"
-              variant="outlined"
-              sx={{ ml: 1, height: 20 }}
+              color={statusConfig.color}
+              variant="filled"
+              sx={{
+                height: 20,
+                fontSize: '0.7rem',
+                fontWeight: 500,
+                '& .MuiChip-icon': {
+                  marginLeft: '4px'
+                }
+              }}
             />
           )}
-          {isCompleted && (
-            <Chip
-              label="已完成"
-              size="small"
-              color="success"
-              variant="outlined"
-              sx={{ ml: 1, height: 20 }}
-            />
-          )}
-          {hasError && (
-            <Chip
-              label="失败"
-              size="small"
-              color="error"
-              variant="outlined"
-              sx={{ ml: 1, height: 20 }}
-            />
-          )}
-        </Typography>
+        </Box>
 
-        <ExpandMoreIcon
-          size={20}
-          style={{
+        {/* 展开按钮 */}
+        <IconButton
+          size="small"
+          sx={{
             transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s'
+            transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            backgroundColor: alpha(theme.palette.action.hover, 0.05),
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.action.hover, 0.1),
+            }
           }}
-        />
+        >
+          <ExpandMoreIcon size={20} />
+        </IconButton>
       </Box>
 
       {/* 内容区域 */}
-      <Collapse in={expanded}>
+      <Collapse in={expanded} timeout={300}>
         <Box sx={{ p: 2 }}>
-          {/* 工具调用部分 */}
+          {/* 工具调用参数 */}
           <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                调用参数
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 4,
+                    height: 16,
+                    borderRadius: '2px',
+                    backgroundColor: theme.palette.primary.main
+                  }}
+                />
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  调用参数
+                </Typography>
+              </Box>
               <IconButton
                 size="small"
                 onClick={handleCopyCall}
-                color={copied ? "success" : "default"}
+                sx={{
+                  color: copied ? theme.palette.success.main : 'text.secondary',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                    color: theme.palette.primary.main
+                  }
+                }}
               >
-                <ContentCopyIcon fontSize="small" />
+                <ContentCopyIcon size={16} />
               </IconButton>
             </Box>
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 1.5,
-                maxHeight: '200px', // 限制参数显示区域的最大高度
-                overflowY: 'auto', // 超出部分可滚动
-                backgroundColor: 'var(--theme-msg-block-code-bg)',
-                fontFamily: 'monospace',
-                fontSize: '0.85rem',
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                // 自定义滚动条样式
-                '&::-webkit-scrollbar': {
-                  width: '6px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: 'var(--theme-msg-block-scrollbar-track)',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
-                  borderRadius: '3px',
-                },
-                '&::-webkit-scrollbar-thumb:hover': {
-                  backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
-                  opacity: 0.8,
-                },
-              }}
-            >
+            <CodeBlock>
               {formatToolCall()}
-            </Paper>
+            </CodeBlock>
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2, borderStyle: 'dashed' }} />
 
-          {/* 工具结果部分 */}
+          {/* 工具调用结果 */}
           {(block.content || toolResponse?.response || isProcessing) && (
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  调用结果
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 4,
+                      height: 16,
+                      borderRadius: '2px',
+                      backgroundColor: hasError 
+                        ? theme.palette.error.main 
+                        : theme.palette.success.main
+                    }}
+                  />
+                  <Typography 
+                    variant="subtitle2" 
+                    sx={{ 
+                      fontWeight: 600,
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    调用结果
+                  </Typography>
+                </Box>
                 {!isProcessing && (
                   <IconButton
                     size="small"
                     onClick={handleCopyResult}
-                    color={copied ? "success" : "default"}
+                    sx={{
+                      color: copied ? theme.palette.success.main : 'text.secondary',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                        color: theme.palette.primary.main
+                      }
+                    }}
                   >
-                    <ContentCopyIcon fontSize="small" />
+                    <ContentCopyIcon size={16} />
                   </IconButton>
                 )}
               </Box>
               {isProcessing ? (
-                <Box sx={{ p: 2, textAlign: 'center' }}>
+                <Box 
+                  sx={{ 
+                    p: 3, 
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    backgroundColor: alpha(theme.palette.info.main, 0.05),
+                    borderRadius: 2,
+                    border: `1px dashed ${alpha(theme.palette.info.main, 0.3)}`
+                  }}
+                >
+                  <Loader2 
+                    size={24} 
+                    style={{ 
+                      animation: `${spin} 1s linear infinite`,
+                      color: theme.palette.info.main
+                    }} 
+                  />
                   <Typography variant="body2" color="text.secondary">
                     正在处理工具调用...
                   </Typography>
                 </Box>
               ) : (
-                <Box
-                  sx={{
-                    maxHeight: '300px', // 限制最大高度为300px，与最佳实例保持一致
-                    overflowY: 'auto', // 超出部分可滚动
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    p: 1,
-                    backgroundColor: 'background.paper',
-                    // 自定义滚动条样式
-                    '&::-webkit-scrollbar': {
-                      width: '6px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                      backgroundColor: 'var(--theme-msg-block-scrollbar-track)',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
-                      borderRadius: '3px',
-                    },
-                    '&::-webkit-scrollbar-thumb:hover': {
-                      backgroundColor: 'var(--theme-msg-block-scrollbar-thumb)',
-                      opacity: 0.8,
-                    },
-                  }}
-                >
-                  {/*  修复：工具结果使用纯文本显示，避免 Markdown 渲染导致代码块问题 */}
+                <ResultBlock hasError={hasError}>
                   <Typography
                     component="pre"
                     sx={{
-                      fontFamily: 'monospace',
+                      fontFamily: '"Fira Code", "JetBrains Mono", "Consolas", monospace',
                       fontSize: '0.85rem',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                       margin: 0,
-                      color: 'text.primary',
-                      lineHeight: 1.4
+                      color: hasError ? 'error.main' : 'text.primary',
+                      lineHeight: 1.6
                     }}
                   >
                     {formatToolResult()}
                   </Typography>
-                </Box>
+                </ResultBlock>
               )}
             </Box>
           )}
@@ -387,17 +477,73 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
 
 // 样式化组件
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  borderRadius: theme.shape.borderRadius,
+  borderRadius: 12,
   boxShadow: 'none',
-  transition: theme.transitions.create(['background-color', 'box-shadow']),
+  transition: theme.transitions.create(['background-color', 'box-shadow', 'transform']),
 }));
 
-// 🔥 自定义比较函数，确保工具块更新时能正确重新渲染
+const CodeBlock = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(1.5),
+  maxHeight: '200px',
+  overflowY: 'auto',
+  backgroundColor: theme.palette.mode === 'dark' 
+    ? alpha(theme.palette.background.default, 0.5)
+    : alpha(theme.palette.grey[100], 0.8),
+  fontFamily: '"Fira Code", "JetBrains Mono", "Consolas", monospace',
+  fontSize: '0.85rem',
+  overflowX: 'auto',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  borderRadius: 8,
+  border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+  '&::-webkit-scrollbar': {
+    width: '8px',
+    height: '8px'
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: 'transparent',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: alpha(theme.palette.text.secondary, 0.2),
+    borderRadius: '4px',
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.text.secondary, 0.3),
+    }
+  },
+}));
+
+const ResultBlock = styled(Box)<{ hasError?: boolean }>(({ theme, hasError }) => ({
+  maxHeight: '300px',
+  overflowY: 'auto',
+  border: `1px solid ${hasError ? alpha(theme.palette.error.main, 0.3) : alpha(theme.palette.divider, 0.5)}`,
+  borderRadius: 8,
+  padding: theme.spacing(1.5),
+  backgroundColor: hasError
+    ? alpha(theme.palette.error.main, 0.05)
+    : theme.palette.mode === 'dark'
+    ? alpha(theme.palette.background.default, 0.5)
+    : theme.palette.background.paper,
+  '&::-webkit-scrollbar': {
+    width: '8px',
+    height: '8px'
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: 'transparent',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: alpha(theme.palette.text.secondary, 0.2),
+    borderRadius: '4px',
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.text.secondary, 0.3),
+    }
+  },
+}));
+
+// 自定义比较函数
 const arePropsEqual = (prevProps: Props, nextProps: Props) => {
   const prevBlock = prevProps.block;
   const nextBlock = nextProps.block;
   
-  // 比较基本属性
   if (prevBlock.id !== nextBlock.id ||
       prevBlock.status !== nextBlock.status ||
       prevBlock.content !== nextBlock.content ||
@@ -405,18 +551,15 @@ const arePropsEqual = (prevProps: Props, nextProps: Props) => {
     return false;
   }
   
-  // 🔥 关键：比较 metadata，确保 MCP 工具响应数据更新时能重新渲染
   const prevMetadata = prevBlock.metadata;
   const nextMetadata = nextBlock.metadata;
   if (prevMetadata !== nextMetadata) {
-    // 如果 metadata 对象引用不同，比较关键字段
     if (JSON.stringify(prevMetadata?.rawMcpToolResponse) !== 
         JSON.stringify(nextMetadata?.rawMcpToolResponse)) {
       return false;
     }
   }
   
-  // 🔥 比较 arguments，确保工具调用参数更新时能重新渲染
   if (JSON.stringify(prevBlock.arguments) !== JSON.stringify(nextBlock.arguments)) {
     return false;
   }

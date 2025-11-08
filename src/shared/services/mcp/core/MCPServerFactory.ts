@@ -3,6 +3,8 @@ import { getBuiltinMCPServers, isBuiltinServer, getBuiltinServerConfig } from '.
 import { TimeServer } from '../servers/TimeServer';
 import { FetchServer } from '../servers/FetchServer';
 import { CalculatorServer } from '../servers/CalculatorServer';
+import { CalendarServer } from '../servers/CalendarServer';
+import { AlarmServer } from '../servers/AlarmServer';
 
 /**
  * 创建内存 MCP 服务器
@@ -22,6 +24,14 @@ export function createInMemoryMCPServer(name: string, args: string[] = [], envs:
 
     case '@aether/calculator': {
       return new CalculatorServer().server;
+    }
+
+    case '@aether/calendar': {
+      return new CalendarServer().server;
+    }
+
+    case '@aether/alarm': {
+      return new AlarmServer().server;
     }
 
     default:

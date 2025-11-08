@@ -265,7 +265,7 @@ const getInitialState = (): SettingsState => {
 
     // 隐藏气泡默认设置
     hideUserBubble: false, // 默认显示用户气泡
-    hideAIBubble: false, // 默认显示AI气泡
+    hideAIBubble: true, // 默认隐藏AI气泡
 
     // 系统提示词变量注入默认设置
     systemPromptVariables: {
@@ -433,7 +433,7 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
         savedSettings.hideUserBubble = false;
       }
       if (savedSettings.hideAIBubble === undefined) {
-        savedSettings.hideAIBubble = false;
+        savedSettings.hideAIBubble = true;
       }
 
       // 如果没有系统提示词变量注入设置，使用默认值

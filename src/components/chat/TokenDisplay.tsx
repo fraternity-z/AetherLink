@@ -139,9 +139,11 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
 
   // 处理点击外部关闭tooltip（仅移动端）
   const handleTooltipClose = () => {
+    // 只在移动端需要手动关闭 tooltip
     if (isMobile) {
       setTooltipOpen(false);
     }
+    // web 端使用默认悬停行为，不需要手动处理
   };
 
   return (
@@ -149,7 +151,7 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
       title={tooltipContent}
       placement="top"
       arrow
-      open={isMobile ? tooltipOpen : false}
+      open={isMobile ? tooltipOpen : undefined} // web 端使用默认悬停行为，移动端使用受控状态
       onClose={handleTooltipClose}
       disableHoverListener={isMobile}
       disableFocusListener={isMobile}

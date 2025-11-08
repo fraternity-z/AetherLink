@@ -5,6 +5,19 @@ import { useMessageBlocks } from './hooks/useMessageBlocks';
 import BubbleStyleMessage from './styles/BubbleStyleMessage';
 import MinimalStyleMessage from './styles/MinimalStyleMessage';
 
+const areArraysEqual = (a?: string[], b?: string[]) => {
+  if (a === b) return true;
+  const arrayA = a ?? [];
+  const arrayB = b ?? [];
+  if (arrayA.length !== arrayB.length) return false;
+  for (let i = 0; i < arrayA.length; i += 1) {
+    if (arrayA[i] !== arrayB[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const MessageItem: React.FC<MessageItemProps> = React.memo(({
   message,
   showAvatar = true,
@@ -81,7 +94,9 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.updatedAt === nextProps.message.updatedAt &&
     prevProps.message.status === nextProps.message.status && // 🔥 关键！流式输出状态变化
-    JSON.stringify(prevProps.message.blocks) === JSON.stringify(nextProps.message.blocks) && // 🔥 消息块变化
+    prevProps.message.currentVersionId === nextProps.message.currentVersionId && // 🔥 版本切换需要重新渲染
+    (prevProps.message.versions?.length ?? 0) === (nextProps.message.versions?.length ?? 0) && // 🔥 版本数量变化
+    areArraysEqual(prevProps.message.blocks, nextProps.message.blocks) && // 🔥 消息块变化
     prevProps.showAvatar === nextProps.showAvatar &&
     prevProps.isCompact === nextProps.isCompact &&
     prevProps.messageIndex === nextProps.messageIndex &&
