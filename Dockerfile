@@ -1,6 +1,6 @@
 # 多阶段构建 Dockerfile for AetherLink
-# 阶段1: 构建阶段
-FROM node:22-alpine AS builder
+# 阶段1: 构建阶段（使用基于 glibc 的镜像以兼容 rolldown 二进制）
+FROM node:22-bookworm AS builder
 
 # 设置工作目录
 WORKDIR /app
