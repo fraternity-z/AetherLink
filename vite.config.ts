@@ -17,8 +17,14 @@ export default defineConfig({
         }
       }),
       configResolved(resolvedConfig) {
+        // 清理 esbuildOptions
         if (resolvedConfig.optimizeDeps?.esbuildOptions) {
           delete resolvedConfig.optimizeDeps.esbuildOptions
+        }
+        // 清理 rollupOptions.jsx（Rolldown 不支持此选项）
+        const optimizeDeps = resolvedConfig.optimizeDeps as any
+        if (optimizeDeps?.rollupOptions?.jsx) {
+          delete optimizeDeps.rollupOptions.jsx
         }
       }
     }
