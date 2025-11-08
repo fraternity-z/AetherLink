@@ -23,36 +23,65 @@ export const ImageUploadService = {
           source === 'camera' ? CameraSource.Camera : CameraSource.Photos;
         
         // 请求权限
-        const permissionStatus = await Camera.checkPermissions();
-        if (permissionStatus.photos !== 'granted' && source === 'photos') {
-          const requested = await Camera.requestPermissions({
-            permissions: ['photos']
-          });
-          if (requested.photos !== 'granted') {
-            throw new Error('需要相册访问权限');
+        try {
+          const permissionStatus = await Camera.checkPermissions();
+          if (permissionStatus.photos !== 'granted' && source === 'photos') {
+            const requested = await Camera.requestPermissions({
+              permissions: ['photos']
+            });
+            if (requested.photos !== 'granted') {
+              console.warn('用户拒绝了相册访问权限');
+              return []; // 用户拒绝权限，返回空数组而不是抛出错误
+            }
+          } else if (permissionStatus.camera !== 'granted' && source === 'camera') {
+            const requested = await Camera.requestPermissions({
+              permissions: ['camera']
+            });
+            if (requested.camera !== 'granted') {
+              console.warn('用户拒绝了相机访问权限');
+              return []; // 用户拒绝权限，返回空数组而不是抛出错误
+            }
           }
-        } else if (permissionStatus.camera !== 'granted' && source === 'camera') {
-          const requested = await Camera.requestPermissions({
-            permissions: ['camera']
-          });
-          if (requested.camera !== 'granted') {
-            throw new Error('需要相机访问权限');
-          }
+        } catch (permissionError) {
+          console.error('权限检查失败:', permissionError);
+          // 权限检查失败，返回空数组而不是抛出错误
+          return [];
         }
         
         // 获取图片
-        const result = await Camera.getPhoto({
-          quality: 75, // 降低质量以避免过大的图片
-          allowEditing: false,
-          resultType: CameraResultType.Base64,
-          source: cameraSource,
-          width: 1024, // 限制宽度，以减小文件大小
-          height: 1024, // 限制高度
-          correctOrientation: true,
-        });
+        let result;
+        try {
+          result = await Camera.getPhoto({
+            quality: 75, // 降低质量以避免过大的图片
+            allowEditing: false,
+            resultType: CameraResultType.Base64,
+            source: cameraSource,
+            width: 1024, // 限制宽度，以减小文件大小
+            height: 1024, // 限制高度
+            correctOrientation: true,
+          });
+        } catch (cameraError: any) {
+          // 处理用户取消操作或其他错误
+          const errorMessage = cameraError?.message || String(cameraError);
+          
+          // 用户取消操作是正常行为，不应该抛出错误
+          if (errorMessage.includes('cancel') || 
+              errorMessage.includes('取消') || 
+              errorMessage.includes('User cancelled') ||
+              errorMessage.includes('cancelled')) {
+            console.log('用户取消了图片选择');
+            return []; // 返回空数组，表示用户取消了操作
+          }
+          
+          // 其他错误记录日志但不抛出，避免闪退
+          console.error('获取图片失败:', cameraError);
+          return [];
+        }
         
+        // 检查结果是否有效
         if (!result || !result.base64String) {
-          throw new Error('获取图片失败');
+          console.warn('未获取到图片数据，用户可能取消了操作');
+          return []; // 返回空数组而不是抛出错误
         }
         
         // 判断MIME类型

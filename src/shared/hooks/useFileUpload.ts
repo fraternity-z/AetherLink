@@ -16,7 +16,25 @@ export const useFileUpload = ({ currentTopicState, setUploadingMedia }: UseFileU
       setUploadingMedia(true);
 
       // 选择图片
-      const selectedImages = await ImageUploadService.selectImages(source);
+      let selectedImages: ImageContent[];
+      try {
+        selectedImages = await ImageUploadService.selectImages(source);
+      } catch (selectError: any) {
+        // 处理选择图片时的错误（包括用户取消）
+        const errorMessage = selectError?.message || String(selectError);
+        if (errorMessage.includes('cancel') || 
+            errorMessage.includes('取消') || 
+            errorMessage.includes('User cancelled')) {
+          // 用户取消是正常行为，不记录错误
+          setUploadingMedia(false);
+          return [];
+        }
+        // 其他错误记录日志并返回空数组
+        console.error('选择图片时出错:', selectError);
+        setUploadingMedia(false);
+        return [];
+      }
+      
       if (selectedImages.length === 0) {
         setUploadingMedia(false);
         return [];
@@ -90,10 +108,21 @@ export const useFileUpload = ({ currentTopicState, setUploadingMedia }: UseFileU
       const validImages = processedImages.filter(img => img !== null) as ImageContent[];
       setUploadingMedia(false);
       return validImages;
-    } catch (error) {
+    } catch (error: any) {
+      // 捕获所有未预期的错误，避免闪退
+      const errorMessage = error?.message || String(error);
       console.error('图片上传失败:', error);
       setUploadingMedia(false);
-      throw error;
+      
+      // 对于用户取消等正常操作，返回空数组而不是抛出错误
+      if (errorMessage.includes('cancel') || 
+          errorMessage.includes('取消') || 
+          errorMessage.includes('User cancelled')) {
+        return [];
+      }
+      
+      // 其他错误也返回空数组，避免闪退
+      return [];
     }
   };
 
