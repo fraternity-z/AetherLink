@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useLayoutEffect } from 'react';
 import { throttle } from 'lodash';
 
 interface UseScrollPositionOptions {
@@ -94,13 +94,14 @@ export function useScrollPosition(key: string, options: UseScrollPositionOptions
     }
   }, []);
 
-  // 自动恢复滚动位置
-  useEffect(() => {
-    if (autoRestore) {
-      const timer = setTimeout(restoreScrollPosition, restoreDelay);
-      return () => clearTimeout(timer);
+  // 自动恢复滚动位置（使用 useLayoutEffect 在浏览器绘制前恢复，避免闪烁）
+  useLayoutEffect(() => {
+    if (autoRestore && containerRef.current) {
+      // 直接设置滚动位置，不使用延迟，在浏览器绘制前完成
+      const savedPosition = getSavedScrollPosition();
+      containerRef.current.scrollTop = savedPosition;
     }
-  }, [autoRestore, restoreScrollPosition, restoreDelay]);
+  }, [autoRestore, getSavedScrollPosition]);
 
   // 清理节流函数
   useEffect(() => () => handleScroll.cancel(), [handleScroll]);

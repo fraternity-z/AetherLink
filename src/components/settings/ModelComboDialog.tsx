@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -56,18 +56,20 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
 
   // 获取所有可用模型（排除模型组合供应商）
   const providers = useSelector((state: RootState) => state.settings.providers);
-  const availableModels = providers
-    .filter(provider => provider.id !== 'model-combo' && provider.isEnabled)
-    .flatMap(provider =>
-      provider.models
-        .filter(model => model.enabled)
-        .map(model => ({
-          ...model,
-          provider: model.provider || provider.id,
-          providerId: provider.id,
-          identityKey: getModelIdentityKey({ id: model.id, provider: model.provider || provider.id })
-        }))
-    );
+  const availableModels = useMemo(() => (
+    providers
+      .filter(provider => provider.id !== 'model-combo' && provider.isEnabled)
+      .flatMap(provider =>
+        provider.models
+          .filter(model => model.enabled)
+          .map(model => ({
+            ...model,
+            provider: model.provider || provider.id,
+            providerId: provider.id,
+            identityKey: getModelIdentityKey({ id: model.id, provider: model.provider || provider.id })
+          }))
+      )
+  ), [providers]);
 
   const steps = ['基本信息', '选择策略', '配置模型', '完成设置'];
 

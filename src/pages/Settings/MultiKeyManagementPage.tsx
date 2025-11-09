@@ -30,13 +30,13 @@ const MultiKeyManagementPage: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography>供应商未找到</Typography>
-        <Button onClick={() => navigate(-1)}>返回</Button>
+        <Button onClick={() => navigate('/settings/default-model')}>返回</Button>
       </Box>
     );
   }
 
   const handleBack = () => {
-    navigate(-1);
+    navigate(`/settings/model-provider/${providerId}`);
   };
 
   const handleApiKeysChange = (keys: ApiKeyConfig[]) => {

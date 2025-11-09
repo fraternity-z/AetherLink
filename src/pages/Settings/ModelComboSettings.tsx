@@ -38,6 +38,7 @@ import type { ModelComboConfig, ModelComboTemplate, ModelComboStrategy } from '.
 import ModelComboDialog from '../../components/settings/ModelComboDialog';
 import { useModelComboSync } from '../../shared/hooks/useModelComboSync';
 import { useTranslation } from 'react-i18next';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 const ModelComboSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -45,6 +46,15 @@ const ModelComboSettings: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // 小于960px为移动端
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm')); // 小于600px为小屏手机
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-model-combo', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   const [combos, setCombos] = useState<ModelComboConfig[]>([]);
   const [templates, setTemplates] = useState<ModelComboTemplate[]>([]);
@@ -218,6 +228,8 @@ const ModelComboSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflow: 'auto',

@@ -26,7 +26,6 @@ import {
   Plus,
   Trash2,
   Bot,
-  Type,
   MessageSquare,
   Hand,
   Wand2,
@@ -58,13 +57,13 @@ const TopToolbarDIYSettings: React.FC = () => {
   const settings = useAppSelector((state) => state.settings);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // 使用滚动位置保存功能
+  // 使用滚动位置保存功能（useLayoutEffect 立即恢复，不需要延迟）
   const {
     containerRef,
     handleScroll
   } = useScrollPosition('settings-top-toolbar', {
     autoRestore: true,
-    restoreDelay: 100
+    restoreDelay: 0  // 使用 useLayoutEffect 立即恢复，此参数已不再使用
   });
 
   // 获取当前工具栏设置

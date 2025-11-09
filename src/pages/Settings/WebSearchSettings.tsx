@@ -32,6 +32,7 @@ import type { WebSearchProvider, WebSearchCustomProvider } from '../../shared/ty
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer, Container, HeaderBar, YStack, SettingGroup, Row } from '../../components/settings/SettingComponents';
+import useScrollPosition from '../../hooks/useScrollPosition';
 import {
   toggleWebSearchEnabled,
   setWebSearchProvider,
@@ -66,6 +67,15 @@ const WebSearchSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { t } = useTranslation();
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-websearch', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   // 从Redux获取设置
   const webSearchSettings = useSelector((state: RootState) => state.webSearch) || {
@@ -214,7 +224,7 @@ const WebSearchSettings: React.FC = () => {
   return (
     <SafeAreaContainer>
       <HeaderBar title={t('settings.webSearch.title')} onBackPress={handleBack} />
-      <Container>
+      <Container ref={containerRef} onScroll={handleScroll}>
         <YStack sx={{ gap: 3 }}>
           {/* 基本设置 */}
           <SettingGroup title={t('settings.webSearch.basic.title')}>

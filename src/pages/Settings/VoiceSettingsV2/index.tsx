@@ -22,6 +22,7 @@ import { alpha } from '@mui/material/styles';
 import { getStorageItem } from '../../../shared/utils/storage';
 import { useTranslation } from '../../../i18n';
 import { cssVar } from '../../../shared/utils/cssVariables';
+import useScrollPosition from '../../../hooks/useScrollPosition';
 
 // TTS服务配置 - 将在组件内使用 i18n
 const getTTSServices = (t: any) => [
@@ -105,6 +106,15 @@ const VoiceSettingsV2: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0); // 0: TTS, 1: ASR
   const [currentTTSService, setCurrentTTSService] = useState<string>('siliconflow');
   const [currentASRService, setCurrentASRService] = useState<string>('capacitor');
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-voice', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   const toolbarBg = cssVar('toolbar-bg');
   const toolbarBorder = cssVar('toolbar-border');
@@ -239,6 +249,8 @@ const VoiceSettingsV2: React.FC = () => {
 
       {/* 可滚动的内容区域 */}
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flex: 1,
           overflow: 'auto',

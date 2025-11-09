@@ -23,6 +23,7 @@ import type { RootState } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
 import { notionApiRequest, NotionApiError } from '../../utils/notionApiUtils';
 import { useTranslation } from '../../i18n';
+import useScrollPosition from '../../hooks/useScrollPosition';
 
 /**
  * Notion设置页面
@@ -39,6 +40,15 @@ const NotionSettingsPage: React.FC = () => {
     pageTitleField: 'Name',
     dateField: ''
   };
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-notion', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
@@ -178,6 +188,8 @@ const NotionSettingsPage: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',

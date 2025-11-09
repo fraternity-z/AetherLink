@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -11,11 +11,13 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import CustomSwitch from '../CustomSwitch';
 import { Edit as EditIcon, Trash2 as DeleteIcon, MoreVertical as MoreVertIcon, CheckCircle as CheckCircleIcon } from 'lucide-react';
 import type { Model } from '../../shared/types';
 import { getProviderName } from '../../shared/data/presetModels';
+import { getModelOrProviderIcon } from '../../shared/utils/providerIcons';
 
 interface ModelCardProps {
   model: Model;
@@ -32,8 +34,20 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onDelete,
   onSetDefault,
 }) => {
+  const muiTheme = useMuiTheme();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+
+  // 根据主题获取图标
+  const modelIcon = useMemo(() => {
+    // 如果模型有自定义图标，使用自定义图标
+    if (model.iconUrl) {
+      return model.iconUrl;
+    }
+    // 否则使用供应商图标
+    const isDark = muiTheme.palette.mode === 'dark';
+    return getModelOrProviderIcon(model.id, model.provider, isDark);
+  }, [model.id, model.provider, model.iconUrl, muiTheme.palette.mode]);
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -84,7 +98,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <Avatar
-            src={model.iconUrl}
+            src={modelIcon}
             alt={model.name}
             sx={{ mr: 2, width: 40, height: 40 }}
           />
@@ -144,7 +158,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {model.enabled ? '已启用' : '已禁用'}
           </Typography>
           <CustomSwitch
-            checked={model.enabled}
+            checked={model.enabled ?? false}
             onChange={(e) => onToggleEnabled(model.id, e.target.checked)}
           />
         </Box>

@@ -43,7 +43,7 @@ const AgentPromptsSettings: React.FC = () => {
 
   // 返回上一页
   const handleBack = () => {
-    navigate(-1);
+    navigate('/settings');
   };
 
   // 切换类别展开状态

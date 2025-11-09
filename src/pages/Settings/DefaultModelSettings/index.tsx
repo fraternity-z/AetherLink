@@ -23,12 +23,22 @@ import { updateSettings } from '../../../shared/store/settingsSlice';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
 import DialogModelSelector from '../../../pages/ChatPage/components/DialogModelSelector';
 import { useTranslation } from 'react-i18next';
+import useScrollPosition from '../../../hooks/useScrollPosition';
 
 
 const DefaultModelSettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-default-model', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   // 获取当前设置
   const defaultModelId = useSelector((state: RootState) => state.settings.defaultModelId);
@@ -156,6 +166,8 @@ const DefaultModelSettingsPage: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',

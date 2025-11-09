@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -25,7 +25,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Checkbox
+  Checkbox,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import { ArrowLeft as ArrowBackIcon, Plus as AddIcon, ChevronRight as ChevronRightIcon, Settings as SettingsIcon, Trash2 as DeleteIcon, X as CloseIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +38,8 @@ import type { DropResult } from '@hello-pangea/dnd';
 import { reorderArray } from '../../shared/utils/dragUtils';
 import { Bot as SmartToyIcon, AlignLeft as FormattedAlignLeftIcon, List as ViewAgendaIcon, GripVertical as DragIndicatorIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useScrollPosition from '../../hooks/useScrollPosition';
+import { getProviderIcon } from '../../shared/utils/providerIcons';
 
 /**
  * 默认模型设置组件
@@ -45,9 +48,22 @@ const DefaultModelSettings: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const muiTheme = useMuiTheme();
   const providers = useAppSelector(state => state.settings.providers);
   const modelSelectorStyle = useAppSelector(state => state.settings.modelSelectorStyle);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // 获取当前主题模式
+  const isDark = muiTheme.palette.mode === 'dark';
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-default-model-list', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   // 编辑供应商弹窗状态
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -305,6 +321,8 @@ const DefaultModelSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
@@ -418,12 +436,14 @@ const DefaultModelSettings: React.FC = () => {
                           )}
                           <ListItemAvatar>
                             <Avatar
+                              src={getProviderIcon(provider.providerType || provider.id, isDark)}
+                              alt={provider.name}
                               sx={{
-                                bgcolor: provider.color || '#8e24aa',
+                                bgcolor: 'transparent',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
                               }}
                             >
-                              {provider.avatar || provider.name.charAt(0).toUpperCase()}
+                              {provider.name.charAt(0).toUpperCase()}
                             </Avatar>
                           </ListItemAvatar>
                           <ListItemText

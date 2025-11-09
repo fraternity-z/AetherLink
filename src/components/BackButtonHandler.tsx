@@ -54,6 +54,22 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
 
   // 处理动态路由（如 /settings/model-provider/:providerId）
   if (pathname.startsWith('/settings/model-provider/')) {
+    // 检查是否是四级页面（如 /settings/model-provider/:providerId/advanced-api）
+    const modelProviderMatch = pathname.match(/^\/settings\/model-provider\/([^/]+)(?:\/(.+))?$/);
+    if (modelProviderMatch) {
+      const providerId = modelProviderMatch[1];
+      const subPath = modelProviderMatch[2];
+      
+      // 如果有子路径（如 advanced-api 或 multi-key），说明是四级页面，返回到三级页面
+      if (subPath) {
+        navigate(`/settings/model-provider/${providerId}`);
+        return;
+      }
+      // 如果没有子路径，说明是三级页面，返回到二级页面
+      navigate('/settings/default-model');
+      return;
+    }
+    // 如果匹配失败，默认返回到二级页面
     navigate('/settings/default-model');
     return;
   }

@@ -1,5 +1,6 @@
 import type { PresetModel } from '../types';
 import { ModelType } from '../types';
+import { getProviderIcon, getModelOrProviderIcon } from '../utils/providerIcons';
 
 // 预设模型列表
 export const presetModels: PresetModel[] = [
@@ -447,25 +448,16 @@ export const presetModels: PresetModel[] = [
 ];
 
 // 获取模型图标
-export const getModelIcon = (provider: string): string => {
-  switch (provider) {
-    case 'openai':
-      return '/icons/openai.png';
-    case 'anthropic':
-      return '/icons/anthropic.png';
-    case 'google':
-      return '/icons/google.png';
-    case 'grok':
-      return '/icons/grok.png';
-    case 'siliconflow':
-      return '/icons/siliconflow.png';
-    case 'volcengine':
-      return '/icons/volcengine.png';
-    case 'custom':
-      return '/icons/custom.png';
-    default:
-      return '/icons/ai.png';
-  }
+/**
+ * 获取模型图标
+ * @param provider 供应商ID
+ * @param isDark 是否为深色主题（可选，默认从系统主题判断）
+ * @returns 图标路径
+ */
+export const getModelIcon = (provider: string, isDark?: boolean): string => {
+  // 如果未指定 isDark，尝试从系统主题判断
+  const theme = isDark ?? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  return getProviderIcon(provider, theme);
 };
 
 // 获取模型提供商名称

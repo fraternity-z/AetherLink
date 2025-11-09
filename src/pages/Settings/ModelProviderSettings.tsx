@@ -16,7 +16,8 @@ import {
   FormControlLabel,
   CircularProgress,
   InputAdornment,
-  Tooltip
+  Tooltip,
+  useTheme as useMuiTheme,
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
 import {
@@ -53,11 +54,23 @@ import { useProviderSettings } from './ModelProviderSettings/hooks';
 import { useTranslation } from 'react-i18next';
 import type { Model } from '../../shared/types';
 import { getDefaultGroupName } from '../../shared/utils/modelUtils';
+import useScrollPosition from '../../hooks/useScrollPosition';
+import { getProviderIcon } from '../../shared/utils/providerIcons';
 
 const ModelProviderSettings: React.FC = () => {
   const { t } = useTranslation();
   const { providerId } = useParams<{ providerId: string }>();
   const navigate = useNavigate();
+  const muiTheme = useMuiTheme();
+  
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition(`settings-model-provider-${providerId}`, {
+    autoRestore: true,
+    restoreDelay: 0
+  });
   
   // 测试模式开关
   const [testModeEnabled, setTestModeEnabled] = useState(false);
@@ -65,6 +78,14 @@ const ModelProviderSettings: React.FC = () => {
   const provider = useAppSelector(state =>
     state.settings.providers.find(p => p.id === providerId)
   );
+  
+  // 获取当前主题模式和供应商图标
+  const isDark = muiTheme.palette.mode === 'dark';
+  const providerIcon = useMemo(() => {
+    if (!provider) return '';
+    // 优先使用 providerType，如果没有则使用 id
+    return getProviderIcon(provider.providerType || provider.id, isDark);
+  }, [provider, isDark]);
 
   // 使用自定义 hook 管理所有状态和业务逻辑
   const {
@@ -239,6 +260,8 @@ const ModelProviderSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
@@ -268,16 +291,18 @@ const ModelProviderSettings: React.FC = () => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <Avatar
+              src={providerIcon}
+              alt={provider.name}
               sx={{
                 width: 56,
                 height: 56,
-                bgcolor: provider.color || '#9333EA',
+                bgcolor: 'transparent',
                 fontSize: '1.5rem',
                 mr: 2,
                 boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
               }}
             >
-              {provider.avatar || provider.name.charAt(0).toUpperCase()}
+              {provider.name.charAt(0).toUpperCase()}
             </Avatar>
             <Box>
               <Typography

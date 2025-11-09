@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { updateModelComboModels } from '../store/settingsSlice';
 import { modelComboService } from '../services/ModelComboService';
@@ -11,7 +11,7 @@ import { EventEmitter, EVENT_NAMES } from '../services/EventEmitter';
 export const useModelComboSync = () => {
   const dispatch = useDispatch();
 
-  const syncModelCombos = async () => {
+  const syncModelCombos = useCallback(async () => {
     try {
       const combos = await modelComboService.getAllCombos();
 
@@ -37,7 +37,7 @@ export const useModelComboSync = () => {
     } catch (error) {
       console.error('[useModelComboSync] 同步模型组合失败:', error);
     }
-  };
+  }, [dispatch]);
 
   useEffect(() => {
     // 初始同步
@@ -58,7 +58,7 @@ export const useModelComboSync = () => {
       EventEmitter.off(EVENT_NAMES.MODEL_COMBO_UPDATED, handleComboChange);
       EventEmitter.off(EVENT_NAMES.MODEL_COMBO_DELETED, handleComboChange);
     };
-  }, [dispatch, syncModelCombos]);
+  }, [syncModelCombos]);
 
   return { syncModelCombos };
 };

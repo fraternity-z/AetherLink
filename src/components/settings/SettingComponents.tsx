@@ -23,8 +23,10 @@ export const SafeAreaContainer = styled(Box)(({ theme }) => ({
   overflow: 'hidden',
 }));
 
-// Container - 内容容器
-export const Container = styled(Box)(({ theme }) => ({
+// Container - 内容容器（支持 ref 转发）
+export const Container = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'ref',
+})(({ theme }) => ({
   flex: 1,
   padding: theme.spacing(2),
   gap: theme.spacing(3), // gap-6 (24px)

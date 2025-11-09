@@ -112,7 +112,11 @@ export const useMessageData = (message: Message) => {
 
     // 异步获取模型头像
     if (message.role === 'assistant' && message.model?.id) {
-      getModelAvatar(message.model.id, message.model.iconUrl).then(setModelAvatar);
+      getModelAvatar(
+        message.model.id, 
+        message.model.iconUrl, 
+        message.model.provider
+      ).then(setModelAvatar);
     } else {
       setModelAvatar(null);
     }

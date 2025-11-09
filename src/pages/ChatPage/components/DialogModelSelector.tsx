@@ -21,6 +21,7 @@ import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
+import { getProviderIcon } from '../../../shared/utils/providerIcons';
 
 // 样式常量 - 提取重复的样式对象以提升性能
 const DIALOG_STYLES = {
@@ -289,6 +290,12 @@ const ModelItem: React.FC<ModelItemProps> = React.memo(({
     [isSelected]
   );
 
+  // 获取供应商图标
+  const providerIcon = useMemo(() => {
+    const providerId = model.provider || model.providerType || '';
+    return getProviderIcon(providerId, isDark);
+  }, [model.provider, model.providerType, isDark]);
+
   return (
     <ListItem
       onClick={onSelect}
@@ -304,8 +311,15 @@ const ModelItem: React.FC<ModelItemProps> = React.memo(({
       }}
     >
       <ListItemIcon sx={MODEL_ITEM_STYLES.listItemIcon}>
-        <Avatar sx={avatarStyle}>
-          {provider?.avatar || providerDisplayName[0]}
+        <Avatar 
+          src={providerIcon}
+          alt={providerDisplayName}
+          sx={{
+            ...avatarStyle,
+            bgcolor: 'transparent',
+          }}
+        >
+          {providerDisplayName[0]}
         </Avatar>
       </ListItemIcon>
       <ListItemText

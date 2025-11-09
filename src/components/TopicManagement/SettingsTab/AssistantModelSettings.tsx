@@ -347,7 +347,7 @@ const AssistantModelSettings: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate('/settings/assistant-settings');
   };
 
   const handleSave = async () => {

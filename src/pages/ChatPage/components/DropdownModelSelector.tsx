@@ -15,6 +15,7 @@ import type { RootState } from '../../../shared/store';
 import type { SelectChangeEvent } from '@mui/material';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
+import { getProviderIcon } from '../../../shared/utils/providerIcons';
 
 interface DropdownModelSelectorProps {
   selectedModel: Model | null;
@@ -42,11 +43,6 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
     }
     // 没有找到，返回原始ID
     return providerId;
-  }, [providers]);
-
-  // 获取提供商信息的函数
-  const getProviderInfo = React.useCallback((providerId: string) => {
-    return providers.find(p => p.id === providerId);
   }, [providers]);
 
   // 按供应商分组模型
@@ -239,7 +235,6 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
       >
         {groupedModels.sortedGroups.flatMap((providerId) => {
           const providerName = getProviderName(providerId);
-          const providerInfo = getProviderInfo(providerId);
           const models = groupedModels.groups[providerId];
 
           return [
@@ -266,14 +261,16 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
               }}
             >
               <Avatar
+                src={getProviderIcon(providerId, theme.palette.mode === 'dark')}
+                alt={providerName}
                 sx={{
                   width: 16, // 减小头像大小
                   height: 16,
-                  bgcolor: providerInfo?.color || theme.palette.primary.main,
+                  bgcolor: 'transparent',
                   fontSize: '0.65rem' // 减小字体大小
                 }}
               >
-                {providerInfo?.avatar || providerName[0]}
+                {providerName[0]}
               </Avatar>
               {providerName}
             </ListSubheader>,

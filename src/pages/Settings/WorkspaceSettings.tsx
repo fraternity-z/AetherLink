@@ -41,6 +41,7 @@ import {
 import { workspaceService } from '../../shared/services/WorkspaceService';
 import { WorkspaceCreateDialog } from '../../components/WorkspaceCreateDialog';
 import type { Workspace } from '../../shared/types/workspace';
+import useScrollPosition from '../../hooks/useScrollPosition';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
@@ -56,6 +57,15 @@ const WorkspaceSettings: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<Workspace | null>(null);
+
+  // 使用滚动位置保存功能
+  const {
+    containerRef,
+    handleScroll
+  } = useScrollPosition('settings-workspace', {
+    autoRestore: true,
+    restoreDelay: 0
+  });
 
   // 加载工作区列表
   const loadWorkspaces = async () => {
@@ -207,6 +217,8 @@ const WorkspaceSettings: React.FC = () => {
       </AppBar>
 
       <Box
+        ref={containerRef}
+        onScroll={handleScroll}
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
