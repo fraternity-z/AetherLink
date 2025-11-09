@@ -30,7 +30,9 @@ import {
   Tooltip,
   Card,
   CardContent,
+  InputAdornment,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Plus,
   Delete,
@@ -67,8 +69,9 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
   const [newKeyValue, setNewKeyValue] = useState('');
   const [newKeyName, setNewKeyName] = useState('');
   const [newKeyPriority, setNewKeyPriority] = useState(5);
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [validationError, setValidationError] = useState('');
+  const [showDialogKey, setShowDialogKey] = useState(false);
+  const [keyToDelete, setKeyToDelete] = useState<string | null>(null);
 
   const keyManager = ApiKeyManager.getInstance();
 
@@ -95,6 +98,7 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
     setNewKeyName('');
     setNewKeyPriority(5);
     setValidationError('');
+    setShowDialogKey(false);
     setDialogOpen(true);
   };
 
@@ -105,6 +109,8 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
     setNewKeyName(key.name || '');
     setNewKeyPriority(key.priority);
     setValidationError('');
+    setShowDialogKey(false);
+    setKeyToDelete(null); // 取消删除确认状态
     setDialogOpen(true);
   };
 
@@ -154,13 +160,21 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
     setDialogOpen(false);
   };
 
-  // 删除 Key
+  // 处理删除 Key（两步确认）
   const handleDeleteKey = (keyId: string) => {
-    const updatedKeys = apiKeys.filter(key => key.id !== keyId);
-    onKeysChange(updatedKeys);
+    if (keyToDelete === keyId) {
+      // 第二次点击，确认删除
+      const updatedKeys = apiKeys.filter(key => key.id !== keyId);
+      onKeysChange(updatedKeys);
 
-    // 重置轮询状态，因为 Key 配置发生了变化
-    keyManager.resetRoundRobinState();
+      // 重置轮询状态，因为 Key 配置发生了变化
+      keyManager.resetRoundRobinState();
+      
+      setKeyToDelete(null);
+    } else {
+      // 第一次点击，进入删除确认状态
+      setKeyToDelete(keyId);
+    }
   };
 
   // 切换 Key 启用状态
@@ -171,19 +185,11 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
         : key
     );
     onKeysChange(updatedKeys);
+    setKeyToDelete(null); // 取消删除确认状态
   };
 
-  // 切换 Key 显示/隐藏
-  const toggleKeyVisibility = (keyId: string) => {
-    setShowKeys(prev => ({
-      ...prev,
-      [keyId]: !prev[keyId]
-    }));
-  };
-
-  // 格式化 Key 显示
-  const formatKeyDisplay = (key: string, show: boolean) => {
-    if (show) return key;
+  // 格式化 Key 显示（始终隐藏）
+  const formatKeyDisplay = (key: string) => {
     if (key.length <= 8) return '••••••••';
     return `${key.substring(0, 4)}••••${key.substring(key.length - 4)}`;
   };
@@ -275,7 +281,6 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
         <List>
           {apiKeys.map((key, index) => {
             const statusInfo = getStatusInfo(key.status);
-            const isVisible = showKeys[key.id] || false;
 
             return (
               <ListItem key={key.id} divider>
@@ -310,7 +315,7 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
                           maxWidth: '100%', // 确保在父容器内
                         }}
                       >
-                        {formatKeyDisplay(key.key, isVisible)}
+                        {formatKeyDisplay(key.key)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         请求: {key.usage.totalRequests} | 成功: {key.usage.successfulRequests} | 
@@ -325,9 +330,10 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
                       )}
                     </Box>
                   }
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
                 <ListItemSecondaryAction>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -338,29 +344,33 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
                       }
                       label=""
                     />
-                    <Tooltip title={isVisible ? "隐藏 Key" : "显示 Key"}>
-                      <IconButton
-                        size="small"
-                        onClick={() => toggleKeyVisibility(key.id)}
-                      >
-                        {isVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </IconButton>
-                    </Tooltip>
                     <Tooltip title="编辑">
                       <IconButton
-                        size="small"
+                        size="medium"
                         onClick={() => handleEditKey(key)}
+                        sx={{
+                          bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
+                          '&:hover': {
+                            bgcolor: (theme) => alpha(theme.palette.info.main, 0.2),
+                          }
+                        }}
                       >
-                        <Edit size={16} />
+                        <Edit size={20} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="删除">
+                    <Tooltip title={keyToDelete === key.id ? "再次点击确认删除" : "删除"}>
                       <IconButton
-                        size="small"
-                        color="error"
+                        size="medium"
                         onClick={() => handleDeleteKey(key.id)}
+                        sx={{
+                          bgcolor: keyToDelete === key.id ? 'error.main' : (theme) => alpha(theme.palette.error.main, 0.1),
+                          color: keyToDelete === key.id ? 'white' : 'error.main',
+                          '&:hover': {
+                            bgcolor: keyToDelete === key.id ? 'error.dark' : (theme) => alpha(theme.palette.error.main, 0.2),
+                          }
+                        }}
                       >
-                        <Delete size={16} />
+                        {keyToDelete === key.id ? <CheckCircle size={20} /> : <Delete size={20} />}
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -381,7 +391,7 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
             autoFocus
             margin="dense"
             label="API Key"
-            type="password"
+            type={showDialogKey ? 'text' : 'password'}
             fullWidth
             variant="outlined"
             value={newKeyValue}
@@ -392,6 +402,20 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
             error={!!validationError}
             helperText={validationError || `请输入有效的 ${providerName} API Key`}
             sx={{ mb: 2 }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label={showDialogKey ? "隐藏密钥" : "显示密钥"}
+                    onClick={() => setShowDialogKey(!showDialogKey)}
+                    edge="end"
+                    size="small"
+                  >
+                    {showDialogKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           <TextField
             margin="dense"

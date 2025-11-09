@@ -138,9 +138,6 @@ const DefaultModelSettingsPage: React.FC = () => {
             sx={{
               flexGrow: 1,
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #4f46e5, #8b5cf6)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             {t('modelSettings.defaultModel.title')}

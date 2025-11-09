@@ -26,9 +26,6 @@ const BackupHeader: React.FC = () => {
             variant="h6"
             sx={{
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             数据备份与恢复

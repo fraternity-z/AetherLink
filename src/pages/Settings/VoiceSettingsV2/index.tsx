@@ -229,10 +229,6 @@ const VoiceSettingsV2: React.FC = () => {
               flexGrow: 1,
               fontWeight: 700,
               letterSpacing: '0.03em',
-              backgroundImage: gradientPrimary,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              color: 'transparent',
               textTransform: 'uppercase',
             }}
           >

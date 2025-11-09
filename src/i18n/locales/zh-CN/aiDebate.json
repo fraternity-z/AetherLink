@@ -99,7 +99,9 @@
   },
   "dialog": {
     "title": "AI辩论设置",
-    "notConfiguredWarning": "AI辩论功能未正确配置。请先配置至少2个辩论角色。",
+    "notConfiguredTitle": "需要配置辩论角色",
+    "notConfiguredWarning": "AI辩论功能未正确配置。请先在设置中配置至少2个辩论角色才能开始辩论。",
+    "goToSettings": "前往设置",
     "configuredInfo": "已配置 {{count}} 个辩论角色，准备开始辩论。",
     "topic": "辩论主题/问题",
     "topicPlaceholder": "请输入要辩论的主题或问题，或从下方选择预设主题...",

@@ -19,6 +19,7 @@ const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings
 
 const TopicNamingSettings = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
 const ModelProviderSettings = lazy(() => import('../pages/Settings/ModelProviderSettings'));
+const MultiKeyManagementPage = lazy(() => import('../pages/Settings/MultiKeyManagementPage'));
 const AddProviderPage = lazy(() => import('../pages/Settings/AddProviderPage'));
 const AboutPage = lazy(() => import('../pages/Settings/AboutPage'));
 // 导入语音设置页面
@@ -147,6 +148,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/ai-debate" element={<AIDebateSettings />} />
         <Route path="/settings/quick-phrases" element={<QuickPhraseSettings />} />
         <Route path="/settings/model-provider/:providerId" element={<ModelProviderSettings />} />
+        <Route path="/settings/model-provider/:providerId/multi-key" element={<MultiKeyManagementPage />} />
         <Route path="/settings/add-provider" element={<AddProviderPage />} />
         <Route path="/settings/about" element={<AboutPage />} />
         <Route path="/settings/voice" element={<VoiceSettings />} />

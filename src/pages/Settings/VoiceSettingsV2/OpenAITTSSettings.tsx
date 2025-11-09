@@ -284,14 +284,10 @@ const OpenAITTSSettings: React.FC = () => {
           <Typography
             variant="h6"
             component="div"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              color: 'transparent',
-            }}
+              sx={{
+                flexGrow: 1,
+                fontWeight: 600,
+              }}
             >
             {t('settings.voice.openai.title')}
           </Typography>

@@ -26,17 +26,26 @@
     "baseUrlForce": "强制使用: ",
     "baseUrlKeep": "保持原格式: ",
     "baseUrlComplete": "完整地址: ",
-    "customHeaders": "自定义请求头 (可选)",
+    "customHeaders": "自定义Headers",
     "configureHeaders": "配置请求头",
     "headersConfigured": "已配置 {{count}} 个请求头",
+    "customBody": "自定义请求体",
+    "configureBody": "配置请求体参数",
+    "bodyConfigured": "已配置 {{count}} 个请求体参数",
+    "advancedAPIConfig": "高级 API 配置",
+    "configureAdvanced": "配置高级参数",
+    "advancedConfigured": "已配置 {{headersCount}} 个请求头 / {{bodyCount}} 个请求体参数",
     "testConnection": "测试连接",
     "testing": "测试中...",
-    "availableModels": "可用模型",
+    "availableModels": "模型列表",
     "modelCombos": "模型组合",
     "manageCombos": "管理组合",
     "clickToTest": "点击✓测试单个模型",
-    "autoFetch": "自动获取",
-    "manualAdd": "手动添加",
+    "autoFetch": "获取",
+    "manualAdd": "添加",
+    "testMode": "模型测试",
+    "testModeDesc": "开启后可以在模型列表中测试单个模型的连接状态",
+    "exitTestMode": "退出测试",
     "configureEndpoint": "配置自定义模型端点",
     "defaultBadge": "默认",
     "modelId": "ID: {{id}}",
@@ -46,7 +55,9 @@
     "testSuccess": "连接测试成功!",
     "testFailed": "连接测试失败",
     "viewDetails": "查看详情",
-    "testResult": "API测试结果"
+    "testResult": "API测试结果",
+    "multiKeyManagement": "多 Key 管理",
+    "manageMultiKey": "管理多个 API 密钥"
   },
   "defaultModel": {
     "title": "话题命名设置",
@@ -131,6 +142,11 @@
       "providerNamePlaceholder": "例如: 我的智谱AI",
       "providerType": "供应商类型"
     },
+    "advancedConfig": {
+      "title": "高级 API 配置",
+      "headersTab": "请求头 (Headers)",
+      "bodyTab": "请求体 (Body)"
+    },
     "headers": {
       "title": "配置自定义请求头",
       "description": "用于解决 CORS 问题或添加特殊认证头",
@@ -147,6 +163,18 @@
       "newHeaderValue": "新请求头值",
       "newHeaderValuePlaceholder": "例如: 30000"
     },
+    "body": {
+      "title": "配置自定义请求体参数",
+      "description": "添加额外的请求体参数，这些参数会合并到API请求中。支持JSON格式、数字、布尔值和字符串。",
+      "parameterName": "参数名称",
+      "parameterValue": "参数值",
+      "valueHint": "支持JSON格式、数字、布尔值或字符串",
+      "newParameterName": "新参数名称",
+      "newParameterNamePlaceholder": "例如: custom_param",
+      "newParameterValue": "新参数值",
+      "newParameterValuePlaceholder": "例如: {\"key\": \"value\"} 或 123 或 true",
+      "emptyHint": "暂无自定义请求体参数，点击下方添加按钮添加参数"
+    },
     "customEndpoint": {
       "title": "配置自定义模型端点",
       "description": "输入完整的模型端点URL，系统将同时从默认端点和自定义端点获取模型列表并合并。",
@@ -157,6 +185,18 @@
     },
     "testResult": {
       "title": "API测试结果"
+    },
+    "modelManagement": {
+      "title": "{{name}}模型管理",
+      "searchPlaceholder": "搜索模型...",
+      "selectAll": "全选",
+      "deselectAll": "取消全选",
+      "invertSelection": "反选",
+      "addGroup": "添加组",
+      "removeGroup": "移除组",
+      "noModelsFound": "找不到匹配的模型",
+      "noModelsAvailable": "暂无模型",
+      "loading": "加载中..."
     }
   }
 }

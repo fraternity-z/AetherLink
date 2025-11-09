@@ -299,7 +299,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
         <span>
           <IconButton
             onClick={handleButtonClick}
-            disabled={disabled || (!isConfigValid && !isDebating)}
+            disabled={disabled}
             color={buttonProps.color}
             size="small"
           >
@@ -319,8 +319,28 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
 
         <DialogContent>
           {!isConfigValid ? (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              {t('aiDebate.dialog.notConfiguredWarning')}
+            <Alert 
+              severity="warning" 
+              sx={{ mb: 2 }}
+              action={
+                <Button
+                  color="inherit"
+                  size="small"
+                  onClick={handleGoToSettings}
+                  sx={{ fontWeight: 600 }}
+                >
+                  {t('aiDebate.dialog.goToSettings')}
+                </Button>
+              }
+            >
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  {t('aiDebate.dialog.notConfiguredTitle')}
+                </Typography>
+                <Typography variant="body2">
+                  {t('aiDebate.dialog.notConfiguredWarning')}
+                </Typography>
+              </Box>
             </Alert>
           ) : (
             <Alert severity="info" sx={{ mb: 2 }}>

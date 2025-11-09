@@ -170,9 +170,6 @@ const WorkspaceSettings: React.FC = () => {
             sx={{
               flexGrow: 1,
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             工作区管理
@@ -359,6 +356,8 @@ const WorkspaceSettings: React.FC = () => {
                           </Box>
                         </Box>
                       }
+                      primaryTypographyProps={{ component: 'div' }}
+                      secondaryTypographyProps={{ component: 'div' }}
                     />
                     <IconButton
                       size="small"
@@ -435,6 +434,7 @@ const WorkspaceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>创建新工作区</Typography>}
                   secondary="添加新的工作区来管理您的文件和文档"
+                  primaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             </ListItem>
@@ -463,6 +463,7 @@ const WorkspaceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>文件权限管理</Typography>}
                   secondary="管理文件访问权限和安全设置"
+                  primaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             </ListItem>
@@ -491,9 +492,6 @@ const WorkspaceSettings: React.FC = () => {
       >
         <DialogTitle sx={{
           fontWeight: 600,
-          backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-          backgroundClip: 'text',
-          color: 'transparent',
         }}>
           删除工作区
         </DialogTitle>

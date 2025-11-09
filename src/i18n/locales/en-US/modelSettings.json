@@ -26,17 +26,26 @@
     "baseUrlForce": "Force: ",
     "baseUrlKeep": "Keep: ",
     "baseUrlComplete": "Full URL: ",
-    "customHeaders": "Custom Headers (optional)",
+    "customHeaders": "Custom Headers",
     "configureHeaders": "Configure",
     "headersConfigured": "{{count}} header(s) set",
+    "customBody": "Custom Request Body",
+    "configureBody": "Configure Body Parameters",
+    "bodyConfigured": "{{count}} body parameter(s) configured",
+    "advancedAPIConfig": "Advanced API Config",
+    "configureAdvanced": "Configure Advanced",
+    "advancedConfigured": "{{headersCount}} header(s) / {{bodyCount}} body param(s)",
     "testConnection": "Test",
     "testing": "Testing...",
     "availableModels": "Models",
     "modelCombos": "Combos",
     "manageCombos": "Manage",
     "clickToTest": "Click ✓ to test model",
-    "autoFetch": "Auto Fetch",
+    "autoFetch": "Fetch",
     "manualAdd": "Add",
+    "testMode": "Model Testing",
+    "testModeDesc": "Enable to test individual model connections in the model list",
+    "exitTestMode": "Exit Test",
     "configureEndpoint": "Custom endpoint",
     "defaultBadge": "Default",
     "modelId": "ID: {{id}}",
@@ -46,7 +55,9 @@
     "testSuccess": "Test successful!",
     "testFailed": "Test failed",
     "viewDetails": "Details",
-    "testResult": "Test Result"
+    "testResult": "Test Result",
+    "multiKeyManagement": "Multi-Key Management",
+    "manageMultiKey": "Manage Multiple API Keys"
   },
   "defaultModel": {
     "title": "Topic Naming",
@@ -131,6 +142,11 @@
       "providerNamePlaceholder": "e.g., My Zhipu AI",
       "providerType": "Provider Type"
     },
+    "advancedConfig": {
+      "title": "Advanced API Configuration",
+      "headersTab": "Headers",
+      "bodyTab": "Body"
+    },
     "headers": {
       "title": "Custom Headers",
       "description": "For CORS issues or special authentication",
@@ -147,6 +163,18 @@
       "newHeaderValue": "New Value",
       "newHeaderValuePlaceholder": "e.g., 30000"
     },
+    "body": {
+      "title": "Configure Custom Request Body Parameters",
+      "description": "Add extra request body parameters that will be merged into API requests. Supports JSON format, numbers, booleans, and strings.",
+      "parameterName": "Parameter Name",
+      "parameterValue": "Parameter Value",
+      "valueHint": "Supports JSON format, numbers, booleans, or strings",
+      "newParameterName": "New Parameter Name",
+      "newParameterNamePlaceholder": "e.g., custom_param",
+      "newParameterValue": "New Parameter Value",
+      "newParameterValuePlaceholder": "e.g., {\"key\": \"value\"} or 123 or true",
+      "emptyHint": "No custom body parameters yet. Click the add button below to add parameters"
+    },
     "customEndpoint": {
       "title": "Custom Endpoint",
       "description": "Enter full endpoint URL. System will merge models from both default and custom endpoints.",
@@ -157,6 +185,18 @@
     },
     "testResult": {
       "title": "Test Result"
+    },
+    "modelManagement": {
+      "title": "{{name}} Model Management",
+      "searchPlaceholder": "Search models...",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "invertSelection": "Invert Selection",
+      "addGroup": "Add Group",
+      "removeGroup": "Remove Group",
+      "noModelsFound": "No matching models found",
+      "noModelsAvailable": "No models available",
+      "loading": "Loading..."
     }
   }
 }

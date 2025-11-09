@@ -23,6 +23,7 @@ interface Provider {
   models: Model[];
   providerType?: string;
   extraHeaders?: Record<string, string>;
+  extraBody?: Record<string, any>;
   apiKeys?: ApiKeyConfig[];
   keyManagement?: {
     strategy: LoadBalanceStrategy;
@@ -68,11 +69,14 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   const [editProviderName, setEditProviderName] = useState('');
   const [editProviderType, setEditProviderType] = useState('');
 
-  // 自定义请求头相关状态
+  // 高级 API 配置相关状态（合并请求头和请求体）
   const [extraHeaders, setExtraHeaders] = useState<Record<string, string>>({});
   const [newHeaderKey, setNewHeaderKey] = useState('');
   const [newHeaderValue, setNewHeaderValue] = useState('');
-  const [openHeadersDialog, setOpenHeadersDialog] = useState(false);
+  const [extraBody, setExtraBody] = useState<Record<string, any>>({});
+  const [newBodyKey, setNewBodyKey] = useState('');
+  const [newBodyValue, setNewBodyValue] = useState('');
+  const [openAdvancedConfigDialog, setOpenAdvancedConfigDialog] = useState(false);
 
   // 自定义模型端点相关状态
   const [customModelEndpoint, setCustomModelEndpoint] = useState('');
@@ -80,7 +84,6 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   const [customEndpointError, setCustomEndpointError] = useState('');
 
   // 多 Key 管理相关状态
-  const [currentTab, setCurrentTab] = useState(0);
   const [multiKeyEnabled, setMultiKeyEnabled] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const keyManager = ApiKeyManager.getInstance();
@@ -105,6 +108,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       setBaseUrl(provider.baseUrl || '');
       setIsEnabled(provider.isEnabled);
       setExtraHeaders(provider.extraHeaders || {});
+      setExtraBody(provider.extraBody || {});
 
       // 检查是否启用了多 Key 模式
       setMultiKeyEnabled(!!(provider.apiKeys && provider.apiKeys.length > 0));
@@ -240,6 +244,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
           baseUrl: baseUrl.trim(),
           isEnabled,
           extraHeaders,
+          extraBody,
           ...updates
         }
       }));
@@ -249,7 +254,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       setBaseUrlError('保存配置失败，请重试');
       return false;
     }
-  }, [provider, baseUrl, apiKey, isEnabled, extraHeaders, dispatch]);
+  }, [provider, baseUrl, apiKey, isEnabled, extraHeaders, extraBody, dispatch]);
 
   // 保存并返回
   const handleSave = useCallback(() => {
@@ -327,6 +332,76 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       newHeaders[newKey] = newValue;
       return newHeaders;
     });
+  };
+
+  // ========================================================================
+  // 自定义请求体相关函数
+  // ========================================================================
+
+  const handleAddBody = () => {
+    if (newBodyKey.trim() && newBodyValue.trim()) {
+      try {
+        // 尝试解析JSON值
+        let parsedValue: any = newBodyValue.trim();
+        try {
+          parsedValue = JSON.parse(parsedValue);
+        } catch {
+          // 如果不是有效的JSON，尝试解析为数字或布尔值
+          if (parsedValue === 'true') parsedValue = true;
+          else if (parsedValue === 'false') parsedValue = false;
+          else if (parsedValue === 'null') parsedValue = null;
+          else if (/^-?\d+$/.test(parsedValue)) parsedValue = parseInt(parsedValue, 10);
+          else if (/^-?\d*\.\d+$/.test(parsedValue)) parsedValue = parseFloat(parsedValue);
+          // 否则保持为字符串
+        }
+        
+        setExtraBody(prev => ({
+          ...prev,
+          [newBodyKey.trim()]: parsedValue
+        }));
+        setNewBodyKey('');
+        setNewBodyValue('');
+      } catch (error) {
+        console.error('解析body值失败:', error);
+      }
+    }
+  };
+
+  const handleRemoveBody = (key: string) => {
+    setExtraBody(prev => {
+      const newBody = { ...prev };
+      delete newBody[key];
+      return newBody;
+    });
+  };
+
+  const handleUpdateBody = (oldKey: string, newKey: string, newValue: string) => {
+    try {
+      // 尝试解析JSON值
+      let parsedValue: any = newValue.trim();
+      try {
+        parsedValue = JSON.parse(parsedValue);
+      } catch {
+        // 如果不是有效的JSON，尝试解析为数字或布尔值
+        if (parsedValue === 'true') parsedValue = true;
+        else if (parsedValue === 'false') parsedValue = false;
+        else if (parsedValue === 'null') parsedValue = null;
+        else if (/^-?\d+$/.test(parsedValue)) parsedValue = parseInt(parsedValue, 10);
+        else if (/^-?\d*\.\d+$/.test(parsedValue)) parsedValue = parseFloat(parsedValue);
+        // 否则保持为字符串
+      }
+      
+      setExtraBody(prev => {
+        const newBody = { ...prev };
+        if (oldKey !== newKey) {
+          delete newBody[oldKey];
+        }
+        newBody[newKey] = parsedValue;
+        return newBody;
+      });
+    } catch (error) {
+      console.error('更新body值失败:', error);
+    }
   };
 
   // ========================================================================
@@ -696,16 +771,20 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     setNewHeaderKey,
     newHeaderValue,
     setNewHeaderValue,
-    openHeadersDialog,
-    setOpenHeadersDialog,
+    extraBody,
+    setExtraBody,
+    newBodyKey,
+    setNewBodyKey,
+    newBodyValue,
+    setNewBodyValue,
+    openAdvancedConfigDialog,
+    setOpenAdvancedConfigDialog,
     customModelEndpoint,
     setCustomModelEndpoint,
     openCustomEndpointDialog,
     setOpenCustomEndpointDialog,
     customEndpointError,
     setCustomEndpointError,
-    currentTab,
-    setCurrentTab,
     multiKeyEnabled,
     setMultiKeyEnabled,
     showApiKey,
@@ -726,6 +805,9 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     handleAddHeader,
     handleRemoveHeader,
     handleUpdateHeader,
+    handleAddBody,
+    handleRemoveBody,
+    handleUpdateBody,
     handleOpenCustomEndpointDialog,
     handleSaveCustomEndpoint,
     handleAddModel,

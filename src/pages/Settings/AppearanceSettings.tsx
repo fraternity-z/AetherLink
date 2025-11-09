@@ -160,9 +160,6 @@ const AppearanceSettings: React.FC = () => {
             sx={{
               flexGrow: 1,
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             {t('settings.appearance.title')}
@@ -512,6 +509,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.themeStyle.title')}</Typography>}
                   secondary={t('settings.appearance.themeStyle.navigationDescription')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -542,6 +540,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.topToolbar.title')}</Typography>}
                   secondary={t('settings.appearance.topToolbar.description')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -572,6 +571,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.chatInterface.title')}</Typography>}
                   secondary={t('settings.appearance.chatInterface.description')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -602,6 +602,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.thinkingProcess.title')}</Typography>}
                   secondary={t('settings.appearance.thinkingProcess.description')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -632,6 +633,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.messageBubble.title')}</Typography>}
                   secondary={t('settings.appearance.messageBubble.description')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -662,6 +664,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.toolbarCustomization.title')}</Typography>}
                   secondary={t('settings.appearance.toolbarCustomization.description')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -692,6 +695,7 @@ const AppearanceSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.inputBox.title')}</Typography>}
                   secondary={t('settings.appearance.inputBox.description')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>

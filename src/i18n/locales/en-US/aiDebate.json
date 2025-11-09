@@ -99,7 +99,9 @@
   },
   "dialog": {
     "title": "AI Debate Settings",
-    "notConfiguredWarning": "AI debate function is not properly configured. Please configure at least 2 debate roles first.",
+    "notConfiguredTitle": "Configuration Required",
+    "notConfiguredWarning": "AI debate function is not properly configured. Please configure at least 2 debate roles in settings before starting a debate.",
+    "goToSettings": "Go to Settings",
     "configuredInfo": "Configured {{count}} debate roles, ready to start debate.",
     "topic": "Debate Topic/Question",
     "topicPlaceholder": "Enter the topic or question to debate, or select from preset topics below...",

@@ -1,178 +1,91 @@
 import React, { useState, useEffect, useCallback, useRef, useTransition, useMemo } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Drawer,
   Button,
-  ListItem,
-  ListItemText,
   IconButton,
   TextField,
   Typography,
   Box,
-  Divider,
   CircularProgress,
-  Chip,
-  Skeleton,
-  Fade,
+  Collapse,
   useTheme,
-  useMediaQuery
+  InputAdornment,
+  Avatar
 } from '@mui/material';
-import { Plus as AddIcon, Minus as RemoveIcon, Search as SearchIcon, Database } from 'lucide-react';
+import { 
+  Plus as AddIcon, 
+  Minus as RemoveIcon, 
+  Search as SearchIcon, 
+  ChevronRight,
+  Square,
+  CheckSquare,
+  Repeat
+} from 'lucide-react';
 import { alpha } from '@mui/material/styles';
-import { FixedSizeList } from 'react-window';
-import type { ListChildComponentProps } from 'react-window';
 import { fetchModels } from '../shared/services/network/APIService';
 import type { Model } from '../shared/types';
 import { debounce } from 'lodash';
-
-// STEP 1: Define necessary types and a shell for the Row component
+import { useTranslation } from 'react-i18next';
 
 // 定义分组模型的类型
 type GroupedModels = Record<string, Model[]>;
 
-// Virtual list item data type
-type ListItemData = { type: 'group'; name: string; modelCount: number } | { type: 'model'; data: Model };
+// 触感反馈按钮组件
+const TactileButton: React.FC<{
+  children: React.ReactNode;
+  onClick?: () => void;
+  sx?: any;
+}> = ({ children, onClick, sx }) => {
+  const [pressed, setPressed] = useState(false);
 
-// Complete data passed to each list item
-interface RowData {
-  items: ListItemData[];
-  isModelInProvider: (modelId: string) => boolean;
-  handleAddSingleModel: (model: Model) => void;
-  handleRemoveSingleModel: (modelId: string) => void;
-  handleAddGroup: (group: string) => void;
-  handleRemoveGroup: (group: string) => void;
-  groupedModels: GroupedModels;
-}
-
-// Row component, memoized for performance.
-const Row = React.memo(({ index, style, data }: ListChildComponentProps<RowData>) => {
-  const theme = useTheme();
-  const { items, isModelInProvider, handleAddSingleModel, handleRemoveSingleModel, handleAddGroup, handleRemoveGroup, groupedModels } = data;
-  const item = items[index];
-
-  // Render Group Header
-  if (item.type === 'group') {
-    const groupModels = groupedModels[item.name] || [];
-    const addableModels = groupModels.filter(model => !isModelInProvider(model.id));
-    const removableModels = groupModels.filter(model => isModelInProvider(model.id));
-
-    return (
-      <Box
-        style={style}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pl: 2,
-          pr: 2,
-          backgroundColor: (theme) => alpha(theme.palette.background.default, 0.95),
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="subtitle2" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {item.name}
-          </Typography>
-          <Chip label={item.modelCount} size="small" sx={{ ml: 1.5, height: 20, fontSize: '0.7rem' }} />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {addableModels.length > 0 && (
-            <IconButton
-              size="small"
-              onClick={() => handleAddGroup(item.name)}
-              sx={{
-                border: '1px solid',
-                borderColor: 'primary.light',
-                color: 'primary.main',
-                '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1) }
-              }}
-              title={`添加 ${addableModels.length} 个模型`}
-            >
-              <AddIcon size={14} />
-            </IconButton>
-          )}
-          {removableModels.length > 0 && (
-            <IconButton
-              size="small"
-              onClick={() => handleRemoveGroup(item.name)}
-              sx={{
-                border: '1px solid',
-                borderColor: 'error.light',
-                color: 'error.main',
-                '&:hover': { bgcolor: (theme) => alpha(theme.palette.error.main, 0.1) }
-              }}
-              title={`移除 ${removableModels.length} 个模型`}
-            >
-              <RemoveIcon size={14} />
-            </IconButton>
-          )}
-        </Box>
-      </Box>
-    );
-  }
-
-  // Render Model Item
-  const model = item.data;
   return (
-    <Box style={style} sx={{ display: 'flex', alignItems: 'center' }}>
-      <ListItem
-        key={model.id}
-        sx={{
-          pl: 2, pr: 2,
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.04),
-          }
-        }}
-        secondaryAction={
-          isModelInProvider(model.id) ? (
-            <IconButton
-              edge="end" size="small"
-              onClick={() => handleRemoveSingleModel(model.id)}
-              sx={{
-                border: '1px solid',
-                borderColor: 'error.light',
-                color: 'error.main',
-                '&:hover': { bgcolor: (theme) => alpha(theme.palette.error.main, 0.1) }
-              }}
-            >
-              <RemoveIcon size={16} />
-            </IconButton>
-          ) : (
-            <IconButton
-              edge="end" size="small"
-              onClick={() => handleAddSingleModel(model)}
-              sx={{
-                border: '1px solid',
-                borderColor: 'primary.light',
-                color: 'primary.main',
-                '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1) }
-              }}
-            >
-              <AddIcon size={16} />
-            </IconButton>
-          )
-        }
-      >
-        <Database size={20} color={theme.palette.text.secondary} style={{ marginRight: theme.spacing(2) }} />
-        <ListItemText
-          primary={
-            <Typography variant="body1" fontWeight={500} sx={{ lineHeight: 1.4 }}>
-              {model.name || model.id}
-            </Typography>
-          }
-          secondary={
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-              {model.id}
-            </Typography>
-          }
-        />
-      </ListItem>
+    <Box
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onClick={onClick}
+      sx={{
+        transform: pressed ? 'scale(0.97)' : 'scale(1)',
+        transition: 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'pointer',
+        ...sx
+      }}
+    >
+      {children}
     </Box>
   );
-});
+};
+
+// 品牌头像组件
+const BrandAvatar: React.FC<{ name: string; size?: number }> = ({ name, size = 28 }) => {
+  const getInitial = (name: string) => {
+    const match = name.match(/^([a-zA-Z0-9])/);
+    return match ? match[1].toUpperCase() : '?';
+  };
+
+  const getColor = (name: string) => {
+    const colors = [
+      '#9333EA', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
+      '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316'
+    ];
+    const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
+  return (
+    <Avatar
+      sx={{
+        width: size,
+        height: size,
+        bgcolor: getColor(name),
+        fontSize: size * 0.5,
+        fontWeight: 600
+      }}
+    >
+      {getInitial(name)}
+    </Avatar>
+  );
+};
 
 interface ModelManagementDialogProps {
   open: boolean;
@@ -196,14 +109,14 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
   existingModels
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<boolean>(false);
   const [models, setModels] = useState<Model[]>([]);
-  const [searchInputValue, setSearchInputValue] = useState<string>(''); // 输入框显示值
-  const [actualSearchTerm, setActualSearchTerm] = useState<string>(''); // 实际搜索值
+  const [searchInputValue, setSearchInputValue] = useState<string>('');
+  const [actualSearchTerm, setActualSearchTerm] = useState<string>('');
   const [pendingModels, setPendingModels] = useState<Map<string, boolean>>(new Map());
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-  // 恢复 useTransition 进行性能优化
   const [isSearchPending, startSearchTransition] = useTransition();
 
   // 使用ref存储初始provider，避免重新加载
@@ -261,21 +174,24 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     return result;
   }, [models, actualSearchTerm]);
 
-  // STEP 2: Add memoized hooks to prepare data for react-window
+  // 获取过滤后的模型列表
+  const filteredModels = useMemo(() => {
+    const searchLower = actualSearchTerm.toLowerCase();
+    return models.filter(model => {
+      const modelName = model.name || model.id;
+      return !searchLower || 
+             modelName.toLowerCase().includes(searchLower) || 
+             model.id.toLowerCase().includes(searchLower);
+    });
+  }, [models, actualSearchTerm]);
 
-  const flattenedData = useMemo((): ListItemData[] => {
-    const data: ListItemData[] = [];
-    const sortedGroupNames = Object.keys(groupedModels).sort((a, b) => a.localeCompare(b));
-
-    for (const groupName of sortedGroupNames) {
-      const modelsInGroup = groupedModels[groupName];
-      data.push({ type: 'group', name: groupName, modelCount: modelsInGroup.length });
-      modelsInGroup.forEach((model: Model) => {
-        data.push({ type: 'model', data: model });
-      });
-    }
-    return data;
-  }, [groupedModels]);
+  // 切换分组折叠状态
+  const toggleGroup = (groupName: string) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }));
+  };
 
   const handleAddSingleModel = useCallback((model: Model) => {
     if (!isModelInProvider(model.id)) {
@@ -351,15 +267,79 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     }
   }, [groupedModels, isModelInProvider, onRemoveModels, onRemoveModel]);
 
-  const itemData = useMemo((): RowData => ({
-    items: flattenedData,
-    isModelInProvider,
-    handleAddSingleModel,
-    handleRemoveSingleModel,
-    handleAddGroup,
-    handleRemoveGroup,
-    groupedModels,
-  }), [flattenedData, isModelInProvider, handleAddSingleModel, handleRemoveSingleModel, handleAddGroup, handleRemoveGroup, groupedModels]);
+  // 全选/取消全选当前过滤结果
+  const handleToggleAll = useCallback(() => {
+    if (filteredModels.length === 0) return;
+    
+    const allSelected = filteredModels.every(m => isModelInProvider(m.id));
+    
+    if (allSelected) {
+      // 取消全选
+      const toRemove = filteredModels.map(m => m.id);
+      if (onRemoveModels) {
+        onRemoveModels(toRemove);
+      } else {
+        toRemove.forEach(id => onRemoveModel(id));
+      }
+      setPendingModels(prev => {
+        const newMap = new Map(prev);
+        toRemove.forEach(id => newMap.delete(id));
+        return newMap;
+      });
+    } else {
+      // 全选
+      const toAdd = filteredModels.filter(m => !isModelInProvider(m.id));
+      if (onAddModels) {
+        onAddModels(toAdd);
+      } else {
+        toAdd.forEach(m => onAddModel(m));
+      }
+      setPendingModels(prev => {
+        const newMap = new Map(prev);
+        toAdd.forEach(m => newMap.set(m.id, true));
+        return newMap;
+      });
+    }
+  }, [filteredModels, isModelInProvider, onAddModels, onRemoveModels, onAddModel, onRemoveModel]);
+
+  // 反选当前过滤结果
+  const handleInvertSelection = useCallback(() => {
+    if (filteredModels.length === 0) return;
+    
+    const toAdd: Model[] = [];
+    const toRemove: string[] = [];
+    
+    filteredModels.forEach(m => {
+      if (isModelInProvider(m.id)) {
+        toRemove.push(m.id);
+      } else {
+        toAdd.push(m);
+      }
+    });
+    
+    if (toRemove.length > 0) {
+      if (onRemoveModels) {
+        onRemoveModels(toRemove);
+      } else {
+        toRemove.forEach(id => onRemoveModel(id));
+      }
+    }
+    
+    if (toAdd.length > 0) {
+      if (onAddModels) {
+        onAddModels(toAdd);
+      } else {
+        toAdd.forEach(m => onAddModel(m));
+      }
+    }
+    
+    setPendingModels(prev => {
+      const newMap = new Map(prev);
+      toRemove.forEach(id => newMap.delete(id));
+      toAdd.forEach(m => newMap.set(m.id, true));
+      return newMap;
+    });
+  }, [filteredModels, isModelInProvider, onAddModels, onRemoveModels, onAddModel, onRemoveModel]);
 
   // 加载模型列表
   const loadModels = async () => {
@@ -397,142 +377,262 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     }
   }, [open, debouncedSetSearchTerm]);
 
-  const listHeight = useMemo(() => {
-    const dialogHeight = window.innerHeight * (isMobile ? 0.85 : 0.9);
-    // 140 is a rough estimate for header, search, and actions
-    return dialogHeight - 140; 
-  }, [isMobile]);
+  // 分组后的模型数据
+  const groupedModelsList = useMemo(() => {
+    const groupKeys = Object.keys(groupedModels).sort((a, b) => {
+      if (a === 'Embeddings') return -1;
+      if (b === 'Embeddings') return 1;
+      if (a === '其他模型') return 1;
+      if (b === '其他模型') return -1;
+      return a.localeCompare(b);
+    });
+    
+    return groupKeys.map(name => ({
+      name,
+      models: groupedModels[name]
+    }));
+  }, [groupedModels]);
 
-  // 渲染加载骨架屏
-  const renderLoadingSkeleton = () => (
-    <Box sx={{ p: 2 }}>
-      {[1, 2, 3].map((index) => (
-        <Box key={index} sx={{ mb: 2 }}>
-          <Skeleton variant="rectangular" height={48} sx={{ borderRadius: 2, mb: 1 }} />
-          <Box sx={{ pl: 2 }}>
-            {[1, 2, 3].map((itemIndex) => (
-              <Skeleton key={itemIndex} variant="rectangular" height={60} sx={{ borderRadius: 1, mb: 1 }} />
-            ))}
-          </Box>
-        </Box>
-      ))}
-    </Box>
-  );
+  // 计算是否全部已选择
+  const allSelected = useMemo(() => {
+    return filteredModels.length > 0 && filteredModels.every(m => isModelInProvider(m.id));
+  }, [filteredModels, isModelInProvider]);
 
   return (
-    <Dialog
+    <Drawer
+      anchor="bottom"
       open={open}
       onClose={onClose}
-      fullWidth
-      maxWidth="md"
-      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: isMobile ? 0 : 2,
-          height: isMobile ? '100%' : '90vh', // 移动端全屏，桌面端固定高度
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column'
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          maxHeight: '80vh',
+          bgcolor: 'background.paper'
         }
       }}
     >
-      <DialogTitle
-        sx={{
-          fontWeight: 700,
-          backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-          backgroundClip: 'text',
-          color: 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          p: 3,
-          flexShrink: 0 // 防止标题区域收缩
-        }}
-      >
-        {provider.name}模型管理
-        {loading && <CircularProgress size={24} sx={{ ml: 2 }} />}
-      </DialogTitle>
+      <Box sx={{ height: '80vh', display: 'flex', flexDirection: 'column' }}>
+        {/* 拖拽指示器 */}
+        <Box sx={{ pt: 1, pb: 1.5, display: 'flex', justifyContent: 'center' }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 4,
+              bgcolor: (theme) => alpha(theme.palette.text.primary, 0.2),
+              borderRadius: 999
+            }}
+          />
+        </Box>
 
-      <Box sx={{ px: 3, pb: 2, flexShrink: 0 }}>
-        <TextField
-          fullWidth
-          placeholder="搜索模型..."
-          size="small"
-          value={searchInputValue}
-          onChange={handleSearchChange}
-          autoComplete="off"
-          spellCheck={false}
-          InputProps={{
-            startAdornment: <SearchIcon size={20} color="var(--mui-palette-text-secondary)" style={{ marginRight: 8 }} />,
-            sx: { 
-              borderRadius: 2
-            }
-          }}
-          sx={{
-            '& .MuiInputBase-input': {
-              transition: 'none', // 移除可能的过渡效果
-              padding: '8px 14px'
-            }
-          }}
-        />
-        {isSearchPending && (
-          <Fade in={isSearchPending}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-              <CircularProgress size={16} />
+        {/* 搜索栏 */}
+        <Box sx={{ px: 2, pb: 1 }}>
+          <TextField
+            fullWidth
+            placeholder={t('modelSettings.dialogs.modelManagement.searchPlaceholder')}
+            value={searchInputValue}
+            onChange={handleSearchChange}
+            autoComplete="off"
+            spellCheck={false}
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon size={20} color={theme.palette.text.secondary} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    {/* 全选/取消全选 */}
+                    <IconButton
+                      size="small"
+                      onClick={handleToggleAll}
+                      disabled={filteredModels.length === 0}
+                      title={allSelected ? t('modelSettings.dialogs.modelManagement.deselectAll') : t('modelSettings.dialogs.modelManagement.selectAll')}
+                      sx={{ p: 0.5 }}
+                    >
+                      {allSelected ? (
+                        <Square size={22} color={theme.palette.text.secondary} />
+                      ) : (
+                        <CheckSquare size={22} color={theme.palette.text.secondary} />
+                      )}
+                    </IconButton>
+                    
+                    {/* 反选 */}
+                    <IconButton
+                      size="small"
+                      onClick={handleInvertSelection}
+                      disabled={filteredModels.length === 0}
+                      title={t('modelSettings.dialogs.modelManagement.invertSelection')}
+                      sx={{ p: 0.5 }}
+                    >
+                      <Repeat size={22} color={theme.palette.text.secondary} />
+                    </IconButton>
+                  </Box>
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 3,
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#F2F3F5',
+                '& fieldset': { border: 'none' }
+              }
+            }}
+          />
+        </Box>
+
+        {/* 模型列表 */}
+        <Box sx={{ flex: 1, overflow: 'auto', px: 1.5 }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
             </Box>
-          </Fade>
-        )}
-      </Box>
-
-      <Divider sx={{ flexShrink: 0 }} />
-
-      <DialogContent
-        sx={{
-          flex: 1,
-          overflow: 'hidden', // IMPORTANT: Keep this hidden
-          p: 0,
-        }}
-      >
-        {loading ? (
-          renderLoadingSkeleton()
-        ) : (
-          <Fade in={!isSearchPending} timeout={300}>
-            <Box sx={{ height: '100%' }}>
-              {flattenedData.length === 0 ? (
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: '100%',
-                  minHeight: '200px',
-                  textAlign: 'center'
-                }}>
-                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                    {actualSearchTerm ? '找不到匹配的模型' : '暂无模型'}
-                  </Typography>
-                </Box>
-              ) : (
-                <FixedSizeList
-                  height={listHeight}
-                  itemCount={flattenedData.length}
-                  itemSize={56} // Optimized item size for tighter layout
-                  width="100%"
-                  itemData={itemData}
+          ) : groupedModelsList.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography color="text.secondary">
+                {actualSearchTerm ? t('modelSettings.dialogs.modelManagement.noModelsFound') : t('modelSettings.dialogs.modelManagement.noModelsAvailable')}
+              </Typography>
+            </Box>
+          ) : (
+            groupedModelsList.map((group) => (
+              <Box key={group.name} sx={{ mb: 0.75 }}>
+                {/* 分组头部 */}
+                <TactileButton
+                  onClick={() => toggleGroup(group.name)}
+                  sx={{ width: '100%' }}
                 >
-                  {Row}
-                </FixedSizeList>
-              )}
-            </Box>
-          </Fade>
-        )}
-      </DialogContent>
+                  <Box
+                    sx={{
+                      bgcolor: theme.palette.mode === 'dark' 
+                        ? 'rgba(255, 255, 255, 0.1)' 
+                        : '#F2F3F5',
+                      borderRadius: 3,
+                      px: 2,
+                      py: 0.75
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box
+                        sx={{
+                          width: 28,
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            transform: collapsedGroups[group.name] ? 'rotate(0deg)' : 'rotate(90deg)',
+                            transition: 'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <ChevronRight size={20} color={theme.palette.text.secondary} />
+                        </Box>
+                      </Box>
+                      
+                      <Box sx={{ flex: 1, ml: 2 }}>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {group.name}
+                          <Typography component="span" variant="caption" sx={{ ml: 1, color: 'text.secondary', fontWeight: 400 }}>
+                            ({group.models.length})
+                          </Typography>
+                        </Typography>
+                      </Box>
+                      
+                      {/* 分组批量按钮 */}
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            const allAdded = group.models.every(m => isModelInProvider(m.id));
+                            if (allAdded) {
+                              handleRemoveGroup(group.name);
+                            } else {
+                              handleAddGroup(group.name);
+                            }
+                          }}
+                          sx={{
+                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                            '&:hover': {
+                              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                            }
+                          }}
+                          title={group.models.every(m => isModelInProvider(m.id)) ? t('modelSettings.dialogs.modelManagement.removeGroup') : t('modelSettings.dialogs.modelManagement.addGroup')}
+                        >
+                          {group.models.every(m => isModelInProvider(m.id)) ? (
+                            <RemoveIcon size={18} color={theme.palette.primary.main} />
+                          ) : (
+                            <AddIcon size={18} color={theme.palette.primary.main} />
+                          )}
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Box>
+                </TactileButton>
 
-      <DialogActions sx={{ p: isMobile ? 2 : 3, flexShrink: 0 }}>
-        <Button onClick={onClose} variant="outlined">
-          关闭
-        </Button>
-      </DialogActions>
-    </Dialog>
+                {/* 分组内的模型 */}
+                <Collapse in={!collapsedGroups[group.name]} timeout={220}>
+                  <Box sx={{ pl: 0.5 }}>
+                    {group.models.map((model) => {
+                      const added = isModelInProvider(model.id);
+                      return (
+                        <TactileButton key={model.id} sx={{ width: '100%' }}>
+                          <Box
+                            sx={{
+                              borderRadius: 3,
+                              px: 2,
+                              py: 1.25,
+                              my: 0.75
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ width: 28, display: 'flex', justifyContent: 'center' }}>
+                                <BrandAvatar name={model.id} size={28} />
+                              </Box>
+                              
+                              <Box sx={{ flex: 1, ml: 2 }}>
+                                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.4 }}>
+                                  {model.name || model.id}
+                                </Typography>
+                                {model.id !== model.name && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, lineHeight: 1.3 }}>
+                                    {model.id}
+                                  </Typography>
+                                )}
+                              </Box>
+                              
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  if (added) {
+                                    handleRemoveSingleModel(model.id);
+                                  } else {
+                                    handleAddSingleModel(model);
+                                  }
+                                }}
+                                sx={{ ml: 1 }}
+                              >
+                                {added ? (
+                                  <RemoveIcon size={24} color={theme.palette.text.secondary} />
+                                ) : (
+                                  <AddIcon size={24} color={theme.palette.text.secondary} />
+                                )}
+                              </IconButton>
+                            </Box>
+                          </Box>
+                        </TactileButton>
+                      );
+                    })}
+                  </Box>
+                </Collapse>
+              </Box>
+            ))
+          )}
+        </Box>
+      </Box>
+    </Drawer>
   );
 };
 

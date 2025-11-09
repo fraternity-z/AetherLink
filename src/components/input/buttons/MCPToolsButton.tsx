@@ -414,6 +414,7 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
                         <Skeleton variant="rectangular" width={50} height={20} sx={{ borderRadius: '10px' }} />
                       </Box>
                     }
+                    secondaryTypographyProps={{ component: 'div' }}
                   />
                   <Box sx={{ ml: 'auto' }}>
                     <Skeleton variant="rectangular" width={40} height={24} sx={{ borderRadius: '12px' }} />

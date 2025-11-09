@@ -179,7 +179,7 @@ const CapacitorTTSSettings: React.FC = () => {
           <IconButton edge="start" onClick={() => navigate('/settings/voice')} sx={{ mr: 1.5, color: primaryColor, borderRadius: 2, border: `1px solid ${borderSubtle}`, transition: 'all 0.2s ease', '&:hover': { backgroundColor: hoverBg, transform: 'translateY(-1px)' }, '&:focus-visible': { outline: `2px solid ${primaryColor}`, outlineOffset: '2px' } }}>
             <ArrowLeft />
           </IconButton>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: '0.03em', backgroundImage: gradientPrimary, backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', textTransform: 'uppercase' }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase' }}>
             {t('settings.voice.services.capacitorTTS.name')}
           </Typography>
           <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 2, px: { xs: 2.5, sm: 3 }, py: { xs: 0.9, sm: 1 }, fontWeight: 700 }}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -13,8 +13,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Paper,
+  Stack,
   Snackbar,
-  Alert
+  Alert,
+  Tabs,
+  Tab
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
@@ -52,6 +56,30 @@ interface EditProviderDialogProps {
   onSave: () => void;
 }
 
+interface AdvancedAPIConfigDialogProps {
+  open: boolean;
+  onClose: () => void;
+  // Headers
+  extraHeaders: Record<string, string>;
+  newHeaderKey: string;
+  newHeaderValue: string;
+  onNewHeaderKeyChange: (value: string) => void;
+  onNewHeaderValueChange: (value: string) => void;
+  onAddHeader: () => void;
+  onRemoveHeader: (key: string) => void;
+  onUpdateHeader: (oldKey: string, newKey: string, newValue: string) => void;
+  onSetExtraHeaders: (headers: Record<string, string>) => void;
+  // Body
+  extraBody: Record<string, any>;
+  newBodyKey: string;
+  newBodyValue: string;
+  onNewBodyKeyChange: (value: string) => void;
+  onNewBodyValueChange: (value: string) => void;
+  onAddBody: () => void;
+  onRemoveBody: (key: string) => void;
+  onUpdateBody: (oldKey: string, newKey: string, newValue: string) => void;
+}
+
 interface HeadersDialogProps {
   open: boolean;
   onClose: () => void;
@@ -64,6 +92,19 @@ interface HeadersDialogProps {
   onRemoveHeader: (key: string) => void;
   onUpdateHeader: (oldKey: string, newKey: string, newValue: string) => void;
   onSetExtraHeaders: (headers: Record<string, string>) => void;
+}
+
+interface CustomBodyDialogProps {
+  open: boolean;
+  onClose: () => void;
+  extraBody: Record<string, any>;
+  newBodyKey: string;
+  newBodyValue: string;
+  onNewBodyKeyChange: (value: string) => void;
+  onNewBodyValueChange: (value: string) => void;
+  onAddBody: () => void;
+  onRemoveBody: (key: string) => void;
+  onUpdateBody: (oldKey: string, newKey: string, newValue: string) => void;
 }
 
 interface CustomEndpointDialogProps {
@@ -107,9 +148,6 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle sx={{
         fontWeight: 600,
-        backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-        backgroundClip: 'text',
-        color: 'transparent',
       }}>
         {t('modelSettings.dialogs.addModel.title')}
       </DialogTitle>
@@ -221,9 +259,6 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle sx={{
         fontWeight: 600,
-        backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-        backgroundClip: 'text',
-        color: 'transparent',
       }}>
         {t('modelSettings.dialogs.editProvider.title')}
       </DialogTitle>
@@ -277,6 +312,436 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
 };
 
 // ============================================================================
+// 高级 API 配置对话框（合并版）
+// ============================================================================
+
+export const AdvancedAPIConfigDialog: React.FC<AdvancedAPIConfigDialogProps> = ({
+  open,
+  onClose,
+  extraHeaders,
+  newHeaderKey,
+  newHeaderValue,
+  onNewHeaderKeyChange,
+  onNewHeaderValueChange,
+  onAddHeader,
+  onRemoveHeader,
+  onUpdateHeader,
+  onSetExtraHeaders,
+  extraBody,
+  newBodyKey,
+  newBodyValue,
+  onNewBodyKeyChange,
+  onNewBodyValueChange,
+  onAddBody,
+  onRemoveBody,
+  onUpdateBody
+}) => {
+  const { t } = useTranslation();
+  const [currentTab, setCurrentTab] = useState(0);
+  
+  const headersEntries = Object.entries(extraHeaders);
+  const hasHeaders = headersEntries.length > 0;
+  
+  const bodyEntries = Object.entries(extraBody);
+  const hasBody = bodyEntries.length > 0;
+  
+  // 尝试解析JSON值，如果失败则返回原始字符串
+  const formatBodyValue = (value: any): string => {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return value;
+      }
+    }
+    return JSON.stringify(value, null, 2);
+  };
+
+  // 尝试解析输入值为JSON，如果失败则作为字符串处理
+  const parseBodyValue = (value: string): any => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      if (trimmed === 'true') return true;
+      if (trimmed === 'false') return false;
+      if (trimmed === 'null') return null;
+      if (/^-?\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+      if (/^-?\d*\.\d+$/.test(trimmed)) return parseFloat(trimmed);
+      return trimmed;
+    }
+  };
+  
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 600,
+          color: 'text.primary',
+          pb: 0
+        }}
+      >
+        {t('modelSettings.dialogs.advancedConfig.title')}
+      </DialogTitle>
+      
+      <Tabs
+        value={currentTab}
+        onChange={(_, newValue) => setCurrentTab(newValue)}
+        sx={{
+          px: 3,
+          borderBottom: 1,
+          borderColor: 'divider'
+        }}
+      >
+        <Tab label={t('modelSettings.dialogs.advancedConfig.headersTab')} />
+        <Tab label={t('modelSettings.dialogs.advancedConfig.bodyTab')} />
+      </Tabs>
+      
+      <DialogContent dividers sx={{ pt: 3 }}>
+        {/* Headers Tab */}
+        {currentTab === 0 && (
+          <Stack spacing={3}>
+            <Typography variant="body2" color="text.secondary">
+              {t('modelSettings.dialogs.headers.description')}
+            </Typography>
+
+            <Paper
+              variant="outlined"
+              sx={(theme) => ({
+                p: 2,
+                borderRadius: 2,
+                bgcolor: theme.palette.action.hover,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: theme.spacing(1.5),
+              })}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                {t('modelSettings.dialogs.headers.quickActions')}
+              </Typography>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                sx={{
+                  flexWrap: 'wrap',
+                  '& > *': {
+                    flex: { xs: '1 1 auto', sm: '0 0 auto' }
+                  }
+                }}
+              >
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    onSetExtraHeaders({
+                      ...extraHeaders,
+                      'x-stainless-timeout': 'REMOVE'
+                    });
+                  }}
+                  sx={{ borderRadius: 999 }}
+                >
+                  {t('modelSettings.dialogs.headers.disableTimeout')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    onSetExtraHeaders({
+                      ...extraHeaders,
+                      'x-stainless-retry-count': 'REMOVE'
+                    });
+                  }}
+                  sx={{ borderRadius: 999 }}
+                >
+                  {t('modelSettings.dialogs.headers.disableRetry')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    onSetExtraHeaders({
+                      ...extraHeaders,
+                      'x-stainless-timeout': 'REMOVE',
+                      'x-stainless-retry-count': 'REMOVE',
+                      'x-stainless-arch': 'REMOVE',
+                      'x-stainless-lang': 'REMOVE',
+                      'x-stainless-os': 'REMOVE',
+                      'x-stainless-package-version': 'REMOVE',
+                      'x-stainless-runtime': 'REMOVE',
+                      'x-stainless-runtime-version': 'REMOVE'
+                    });
+                  }}
+                  sx={{ borderRadius: 999 }}
+                >
+                  {t('modelSettings.dialogs.headers.disableAll')}
+                </Button>
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                {t('modelSettings.dialogs.headers.removeHint')}
+              </Typography>
+            </Paper>
+
+            <Stack spacing={2}>
+              {hasHeaders ? (
+                headersEntries.map(([key, value]) => (
+                  <Paper key={key} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 2, sm: 1.5 },
+                        alignItems: { sm: 'center' }
+                      }}
+                    >
+                      <TextField
+                        size="small"
+                        label={t('modelSettings.dialogs.headers.headerName')}
+                        value={key}
+                        onChange={(e) => onUpdateHeader(key, e.target.value, value)}
+                        sx={{ flex: 1 }}
+                      />
+                      <TextField
+                        size="small"
+                        label={t('modelSettings.dialogs.headers.headerValue')}
+                        value={value}
+                        onChange={(e) => onUpdateHeader(key, key, e.target.value)}
+                        sx={(theme) => ({
+                          flex: 1,
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor:
+                              value === 'REMOVE'
+                                ? alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.2 : 0.08)
+                                : theme.palette.background.paper,
+                            transition: theme.transitions.create('background-color', {
+                              duration: theme.transitions.duration.shortest
+                            })
+                          },
+                          '& .MuiOutlinedInput-input': {
+                            color: value === 'REMOVE' ? theme.palette.error.main : theme.palette.text.primary
+                          }
+                        })}
+                        helperText={value === 'REMOVE' ? t('modelSettings.dialogs.headers.willBeDisabled') : ''}
+                        slotProps={{
+                          formHelperText: {
+                            sx: { color: 'error.main', fontSize: '0.7rem' }
+                          }
+                        }}
+                      />
+                      <IconButton
+                        color="error"
+                        aria-label={t('common.delete')}
+                        onClick={() => onRemoveHeader(key)}
+                        sx={{
+                          alignSelf: { xs: 'flex-end', sm: 'center' }
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Box>
+                  </Paper>
+                ))
+              ) : (
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {t('modelSettings.provider.headersConfigured', { count: 0 })}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {t('modelSettings.dialogs.headers.removeHint')}
+                  </Typography>
+                </Paper>
+              )}
+            </Stack>
+
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ alignItems: { sm: 'center' } }}
+              >
+                <TextField
+                  size="small"
+                  label={t('modelSettings.dialogs.headers.newHeaderName')}
+                  placeholder={t('modelSettings.dialogs.headers.newHeaderNamePlaceholder')}
+                  value={newHeaderKey}
+                  onChange={(e) => onNewHeaderKeyChange(e.target.value)}
+                  sx={{ flex: 1 }}
+                />
+                <TextField
+                  size="small"
+                  label={t('modelSettings.dialogs.headers.newHeaderValue')}
+                  placeholder={t('modelSettings.dialogs.headers.newHeaderValuePlaceholder')}
+                  value={newHeaderValue}
+                  onChange={(e) => onNewHeaderValueChange(e.target.value)}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  startIcon={<Plus size={16} />}
+                  onClick={onAddHeader}
+                  disabled={!newHeaderKey.trim() || !newHeaderValue.trim()}
+                  variant="contained"
+                  disableElevation
+                  sx={{
+                    borderRadius: 2,
+                    width: { xs: '100%', sm: 'auto' }
+                  }}
+                >
+                  {t('common.submit')}
+                </Button>
+              </Stack>
+            </Paper>
+          </Stack>
+        )}
+
+        {/* Body Tab */}
+        {currentTab === 1 && (
+          <Stack spacing={3}>
+            <Typography variant="body2" color="text.secondary">
+              {t('modelSettings.dialogs.body.description')}
+            </Typography>
+
+            <Stack spacing={2}>
+              {hasBody ? (
+                bodyEntries.map(([key, value]) => (
+                  <Paper key={key} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 2, sm: 1.5 },
+                        alignItems: { sm: 'flex-start' }
+                      }}
+                    >
+                      <TextField
+                        size="small"
+                        label={t('modelSettings.dialogs.body.parameterName')}
+                        value={key}
+                        onChange={(e) => onUpdateBody(key, e.target.value, value)}
+                        sx={{ flex: 1 }}
+                      />
+                      <TextField
+                        size="small"
+                        label={t('modelSettings.dialogs.body.parameterValue')}
+                        value={formatBodyValue(value)}
+                        onChange={(e) => {
+                          const parsedValue = parseBodyValue(e.target.value);
+                          onUpdateBody(key, key, parsedValue);
+                        }}
+                        multiline
+                        rows={1}
+                        sx={{
+                          flex: 1,
+                          '& .MuiInputBase-input': {
+                            fontFamily: 'monospace',
+                            fontSize: '0.875rem'
+                          }
+                        }}
+                        helperText={t('modelSettings.dialogs.body.valueHint')}
+                      />
+                      <IconButton
+                        color="error"
+                        aria-label={t('common.delete')}
+                        onClick={() => onRemoveBody(key)}
+                        sx={{
+                          alignSelf: { xs: 'flex-end', sm: 'flex-start' },
+                          mt: { sm: 0.5 }
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Box>
+                  </Paper>
+                ))
+              ) : (
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {t('modelSettings.provider.bodyConfigured', { count: 0 })}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {t('modelSettings.dialogs.body.emptyHint')}
+                  </Typography>
+                </Paper>
+              )}
+            </Stack>
+
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                sx={{ alignItems: { sm: 'flex-start' } }}
+              >
+                <TextField
+                  size="small"
+                  label={t('modelSettings.dialogs.body.newParameterName')}
+                  placeholder={t('modelSettings.dialogs.body.newParameterNamePlaceholder')}
+                  value={newBodyKey}
+                  onChange={(e) => onNewBodyKeyChange(e.target.value)}
+                  sx={{ flex: 1 }}
+                />
+                <TextField
+                  size="small"
+                  label={t('modelSettings.dialogs.body.newParameterValue')}
+                  placeholder={t('modelSettings.dialogs.body.newParameterValuePlaceholder')}
+                  value={newBodyValue}
+                  onChange={(e) => onNewBodyValueChange(e.target.value)}
+                  multiline
+                  rows={1}
+                  sx={{
+                    flex: 1,
+                    '& .MuiInputBase-input': {
+                      fontFamily: 'monospace',
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                  helperText={t('modelSettings.dialogs.body.valueHint')}
+                />
+                <Button
+                  startIcon={<Plus size={16} />}
+                  onClick={onAddBody}
+                  disabled={!newBodyKey.trim() || !newBodyValue.trim()}
+                  variant="contained"
+                  disableElevation
+                  sx={{
+                    borderRadius: 2,
+                    width: { xs: '100%', sm: 'auto' },
+                    alignSelf: { xs: 'stretch', sm: 'flex-start' },
+                    mt: { sm: 0.5 }
+                  }}
+                >
+                  {t('common.submit')}
+                </Button>
+              </Stack>
+            </Paper>
+          </Stack>
+        )}
+      </DialogContent>
+      
+      <DialogActions sx={{ p: 2.5 }}>
+        <Button onClick={onClose} color="inherit">
+          {t('common.cancel')}
+        </Button>
+        <Button
+          onClick={onClose}
+          variant="contained"
+          disableElevation
+          sx={{ borderRadius: 2 }}
+        >
+          {t('common.ok')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// ============================================================================
 // 自定义请求头对话框
 // ============================================================================
 
@@ -294,6 +759,8 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
   onSetExtraHeaders
 }) => {
   const { t } = useTranslation();
+  const headersEntries = Object.entries(extraHeaders);
+  const hasHeaders = headersEntries.length > 0;
   
   return (
     <Dialog
@@ -302,167 +769,422 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
       maxWidth="md"
       fullWidth
     >
-      <DialogTitle sx={{
-        fontWeight: 600,
-        backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-        backgroundClip: 'text',
-        color: 'transparent',
-      }}>
+      <DialogTitle
+        sx={{
+          fontWeight: 600,
+          color: 'text.primary',
+        }}
+      >
         {t('modelSettings.dialogs.headers.title')}
       </DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('modelSettings.dialogs.headers.description')}
-        </Typography>
-
-        {/* 快速操作按钮 */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-            {t('modelSettings.dialogs.headers.quickActions')}
+      <DialogContent dividers sx={{ pt: 3 }}>
+        <Stack spacing={3}>
+          <Typography variant="body2" color="text.secondary">
+            {t('modelSettings.dialogs.headers.description')}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                onSetExtraHeaders({
-                  ...extraHeaders,
-                  'x-stainless-timeout': 'REMOVE'
-                });
-              }}
-              sx={{ fontSize: '0.75rem' }}
-            >
-              {t('modelSettings.dialogs.headers.disableTimeout')}
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => {
-                onSetExtraHeaders({
-                  ...extraHeaders,
-                  'x-stainless-retry-count': 'REMOVE'
-                });
-              }}
-              sx={{ fontSize: '0.75rem' }}
-            >
-              {t('modelSettings.dialogs.headers.disableRetry')}
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                onSetExtraHeaders({
-                  ...extraHeaders,
-                  'x-stainless-timeout': 'REMOVE',
-                  'x-stainless-retry-count': 'REMOVE',
-                  'x-stainless-arch': 'REMOVE',
-                  'x-stainless-lang': 'REMOVE',
-                  'x-stainless-os': 'REMOVE',
-                  'x-stainless-package-version': 'REMOVE',
-                  'x-stainless-runtime': 'REMOVE',
-                  'x-stainless-runtime-version': 'REMOVE'
-                });
-              }}
-              sx={{ fontSize: '0.75rem' }}
-            >
-              {t('modelSettings.dialogs.headers.disableAll')}
-            </Button>
-          </Box>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            {t('modelSettings.dialogs.headers.removeHint')}
-          </Typography>
-        </Box>
 
-        {/* 现有请求头列表 */}
-        {Object.entries(extraHeaders).map(([key, value]) => (
-          <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
-            <TextField
-              size="small"
-              label={t('modelSettings.dialogs.headers.headerName')}
-              value={key}
-              onChange={(e) => onUpdateHeader(key, e.target.value, value)}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              size="small"
-              label={t('modelSettings.dialogs.headers.headerValue')}
-              value={value}
-              onChange={(e) => onUpdateHeader(key, key, e.target.value)}
-              sx={{
-                flex: 1,
-                '& .MuiInputBase-input': {
-                  color: value === 'REMOVE' ? 'error.main' : 'inherit'
-                }
-              }}
-              helperText={value === 'REMOVE' ? t('modelSettings.dialogs.headers.willBeDisabled') : ''}
-              slotProps={{
-                formHelperText: {
-                  sx: { color: 'error.main', fontSize: '0.7rem' }
-                }
-              }}
-            />
-            <IconButton
-              onClick={() => onRemoveHeader(key)}
-              sx={{
-                color: 'error.main',
-                '&:hover': {
-                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-                }
-              }}
-            >
-              <Trash2 size={20} />
-            </IconButton>
-          </Box>
-        ))}
-
-        {/* 添加新请求头 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
-          <TextField
-            size="small"
-            label={t('modelSettings.dialogs.headers.newHeaderName')}
-            placeholder={t('modelSettings.dialogs.headers.newHeaderNamePlaceholder')}
-            value={newHeaderKey}
-            onChange={(e) => onNewHeaderKeyChange(e.target.value)}
-            sx={{ flex: 1 }}
-          />
-          <TextField
-            size="small"
-            label={t('modelSettings.dialogs.headers.newHeaderValue')}
-            placeholder={t('modelSettings.dialogs.headers.newHeaderValuePlaceholder')}
-            value={newHeaderValue}
-            onChange={(e) => onNewHeaderValueChange(e.target.value)}
-            sx={{ flex: 1 }}
-          />
-          <Button
-            startIcon={<Plus size={16} />}
-            onClick={onAddHeader}
-            disabled={!newHeaderKey.trim() || !newHeaderValue.trim()}
-            sx={{
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              color: 'primary.main',
-              '&:hover': {
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
-              },
+          <Paper
+            variant="outlined"
+            sx={(theme) => ({
+              p: 2,
               borderRadius: 2,
-            }}
+              bgcolor: theme.palette.action.hover,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: theme.spacing(1.5),
+            })}
           >
-            {t('common.submit')}
-          </Button>
-        </Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              {t('modelSettings.dialogs.headers.quickActions')}
+            </Typography>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{
+                flexWrap: 'wrap',
+                '& > *': {
+                  flex: { xs: '1 1 auto', sm: '0 0 auto' }
+                }
+              }}
+            >
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  onSetExtraHeaders({
+                    ...extraHeaders,
+                    'x-stainless-timeout': 'REMOVE'
+                  });
+                }}
+                sx={{ borderRadius: 999 }}
+              >
+                {t('modelSettings.dialogs.headers.disableTimeout')}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  onSetExtraHeaders({
+                    ...extraHeaders,
+                    'x-stainless-retry-count': 'REMOVE'
+                  });
+                }}
+                sx={{ borderRadius: 999 }}
+              >
+                {t('modelSettings.dialogs.headers.disableRetry')}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={() => {
+                  onSetExtraHeaders({
+                    ...extraHeaders,
+                    'x-stainless-timeout': 'REMOVE',
+                    'x-stainless-retry-count': 'REMOVE',
+                    'x-stainless-arch': 'REMOVE',
+                    'x-stainless-lang': 'REMOVE',
+                    'x-stainless-os': 'REMOVE',
+                    'x-stainless-package-version': 'REMOVE',
+                    'x-stainless-runtime': 'REMOVE',
+                    'x-stainless-runtime-version': 'REMOVE'
+                  });
+                }}
+                sx={{ borderRadius: 999 }}
+              >
+                {t('modelSettings.dialogs.headers.disableAll')}
+              </Button>
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              {t('modelSettings.dialogs.headers.removeHint')}
+            </Typography>
+          </Paper>
+
+          <Stack spacing={2}>
+            {hasHeaders ? (
+              headersEntries.map(([key, value]) => (
+                <Paper key={key} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: { xs: 2, sm: 1.5 },
+                      alignItems: { sm: 'center' }
+                    }}
+                  >
+                    <TextField
+                      size="small"
+                      label={t('modelSettings.dialogs.headers.headerName')}
+                      value={key}
+                      onChange={(e) => onUpdateHeader(key, e.target.value, value)}
+                      sx={{ flex: 1 }}
+                    />
+                    <TextField
+                      size="small"
+                      label={t('modelSettings.dialogs.headers.headerValue')}
+                      value={value}
+                      onChange={(e) => onUpdateHeader(key, key, e.target.value)}
+                      sx={(theme) => ({
+                        flex: 1,
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor:
+                            value === 'REMOVE'
+                              ? alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.2 : 0.08)
+                              : theme.palette.background.paper,
+                          transition: theme.transitions.create('background-color', {
+                            duration: theme.transitions.duration.shortest
+                          })
+                        },
+                        '& .MuiOutlinedInput-input': {
+                          color: value === 'REMOVE' ? theme.palette.error.main : theme.palette.text.primary
+                        }
+                      })}
+                      helperText={value === 'REMOVE' ? t('modelSettings.dialogs.headers.willBeDisabled') : ''}
+                      slotProps={{
+                        formHelperText: {
+                          sx: { color: 'error.main', fontSize: '0.7rem' }
+                        }
+                      }}
+                    />
+                    <IconButton
+                      color="error"
+                      aria-label={t('common.delete')}
+                      onClick={() => onRemoveHeader(key)}
+                      sx={{
+                        alignSelf: { xs: 'flex-end', sm: 'center' }
+                      }}
+                    >
+                      <Trash2 size={18} />
+                    </IconButton>
+                  </Box>
+                </Paper>
+              ))
+            ) : (
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {t('modelSettings.provider.headersConfigured', { count: 0 })}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {t('modelSettings.dialogs.headers.removeHint')}
+                </Typography>
+              </Paper>
+            )}
+          </Stack>
+
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              sx={{ alignItems: { sm: 'center' } }}
+            >
+              <TextField
+                size="small"
+                label={t('modelSettings.dialogs.headers.newHeaderName')}
+                placeholder={t('modelSettings.dialogs.headers.newHeaderNamePlaceholder')}
+                value={newHeaderKey}
+                onChange={(e) => onNewHeaderKeyChange(e.target.value)}
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                size="small"
+                label={t('modelSettings.dialogs.headers.newHeaderValue')}
+                placeholder={t('modelSettings.dialogs.headers.newHeaderValuePlaceholder')}
+                value={newHeaderValue}
+                onChange={(e) => onNewHeaderValueChange(e.target.value)}
+                sx={{ flex: 1 }}
+              />
+              <Button
+                startIcon={<Plus size={16} />}
+                onClick={onAddHeader}
+                disabled={!newHeaderKey.trim() || !newHeaderValue.trim()}
+                variant="contained"
+                disableElevation
+                sx={{
+                  borderRadius: 2,
+                  width: { xs: '100%', sm: 'auto' }
+                }}
+              >
+                {t('common.submit')}
+              </Button>
+            </Stack>
+          </Paper>
+        </Stack>
       </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
+      <DialogActions sx={{ p: 2.5 }}>
+        <Button onClick={onClose} color="inherit">
+          {t('common.cancel')}
+        </Button>
         <Button
           onClick={onClose}
-          sx={{
-            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-            color: 'primary.main',
-            '&:hover': {
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
-            },
-            borderRadius: 2,
-          }}
+          variant="contained"
+          disableElevation
+          sx={{ borderRadius: 2 }}
+        >
+          {t('common.ok')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// ============================================================================
+// 自定义请求体对话框
+// ============================================================================
+
+export const CustomBodyDialog: React.FC<CustomBodyDialogProps> = ({
+  open,
+  onClose,
+  extraBody,
+  newBodyKey,
+  newBodyValue,
+  onNewBodyKeyChange,
+  onNewBodyValueChange,
+  onAddBody,
+  onRemoveBody,
+  onUpdateBody
+}) => {
+  const { t } = useTranslation();
+  const bodyEntries = Object.entries(extraBody);
+  const hasBody = bodyEntries.length > 0;
+  
+  // 尝试解析JSON值，如果失败则返回原始字符串
+  const formatBodyValue = (value: any): string => {
+    if (typeof value === 'string') {
+      try {
+        // 尝试解析JSON，如果是有效的JSON字符串则格式化
+        const parsed = JSON.parse(value);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return value;
+      }
+    }
+    return JSON.stringify(value, null, 2);
+  };
+
+  // 尝试解析输入值为JSON，如果失败则作为字符串处理
+  const parseBodyValue = (value: string): any => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    
+    // 尝试解析为JSON
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      // 如果不是有效的JSON，尝试解析为数字或布尔值
+      if (trimmed === 'true') return true;
+      if (trimmed === 'false') return false;
+      if (trimmed === 'null') return null;
+      if (/^-?\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+      if (/^-?\d*\.\d+$/.test(trimmed)) return parseFloat(trimmed);
+      // 否则作为字符串返回
+      return trimmed;
+    }
+  };
+  
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle
+        sx={{
+          fontWeight: 600,
+          color: 'text.primary',
+        }}
+      >
+        {t('modelSettings.dialogs.body.title')}
+      </DialogTitle>
+      <DialogContent dividers sx={{ pt: 3 }}>
+        <Stack spacing={3}>
+          <Typography variant="body2" color="text.secondary">
+            {t('modelSettings.dialogs.body.description')}
+          </Typography>
+
+          <Stack spacing={2}>
+            {hasBody ? (
+              bodyEntries.map(([key, value]) => (
+                <Paper key={key} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      gap: { xs: 2, sm: 1.5 },
+                      alignItems: { sm: 'flex-start' }
+                    }}
+                  >
+                    <TextField
+                      size="small"
+                      label={t('modelSettings.dialogs.body.parameterName')}
+                      value={key}
+                      onChange={(e) => onUpdateBody(key, e.target.value, value)}
+                      sx={{ flex: 1 }}
+                    />
+                    <TextField
+                      size="small"
+                      label={t('modelSettings.dialogs.body.parameterValue')}
+                      value={formatBodyValue(value)}
+                      onChange={(e) => {
+                        const parsedValue = parseBodyValue(e.target.value);
+                        onUpdateBody(key, key, parsedValue);
+                      }}
+                      multiline
+                      rows={1}
+                      sx={{
+                        flex: 1,
+                        '& .MuiInputBase-input': {
+                          fontFamily: 'monospace',
+                          fontSize: '0.875rem'
+                        }
+                      }}
+                      helperText={t('modelSettings.dialogs.body.valueHint')}
+                    />
+                    <IconButton
+                      color="error"
+                      aria-label={t('common.delete')}
+                      onClick={() => onRemoveBody(key)}
+                      sx={{
+                        alignSelf: { xs: 'flex-end', sm: 'flex-start' },
+                        mt: { sm: 0.5 }
+                      }}
+                    >
+                      <Trash2 size={18} />
+                    </IconButton>
+                  </Box>
+                </Paper>
+              ))
+            ) : (
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {t('modelSettings.provider.bodyConfigured', { count: 0 })}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {t('modelSettings.dialogs.body.emptyHint')}
+                </Typography>
+              </Paper>
+            )}
+          </Stack>
+
+          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              sx={{ alignItems: { sm: 'flex-start' } }}
+            >
+              <TextField
+                size="small"
+                label={t('modelSettings.dialogs.body.newParameterName')}
+                placeholder={t('modelSettings.dialogs.body.newParameterNamePlaceholder')}
+                value={newBodyKey}
+                onChange={(e) => onNewBodyKeyChange(e.target.value)}
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                size="small"
+                label={t('modelSettings.dialogs.body.newParameterValue')}
+                placeholder={t('modelSettings.dialogs.body.newParameterValuePlaceholder')}
+                value={newBodyValue}
+                onChange={(e) => onNewBodyValueChange(e.target.value)}
+                multiline
+                rows={1}
+                sx={{
+                  flex: 1,
+                  '& .MuiInputBase-input': {
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem'
+                  }
+                }}
+                helperText={t('modelSettings.dialogs.body.valueHint')}
+              />
+              <Button
+                startIcon={<Plus size={16} />}
+                onClick={onAddBody}
+                disabled={!newBodyKey.trim() || !newBodyValue.trim()}
+                variant="contained"
+                disableElevation
+                sx={{
+                  borderRadius: 2,
+                  width: { xs: '100%', sm: 'auto' },
+                  alignSelf: { xs: 'stretch', sm: 'flex-start' },
+                  mt: { sm: 0.5 }
+                }}
+              >
+                {t('common.submit')}
+              </Button>
+            </Stack>
+          </Paper>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ p: 2.5 }}>
+        <Button onClick={onClose} color="inherit">
+          {t('common.cancel')}
+        </Button>
+        <Button
+          onClick={onClose}
+          variant="contained"
+          disableElevation
+          sx={{ borderRadius: 2 }}
         >
           {t('common.ok')}
         </Button>
@@ -494,9 +1216,6 @@ export const CustomEndpointDialog: React.FC<CustomEndpointDialogProps> = ({
     >
       <DialogTitle sx={{
         fontWeight: 600,
-        backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-        backgroundClip: 'text',
-        color: 'transparent',
       }}>
         {t('modelSettings.dialogs.customEndpoint.title')}
       </DialogTitle>

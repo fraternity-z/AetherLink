@@ -366,9 +366,6 @@ const AdvancedBackupPage: React.FC = () => {
             sx={{
               flexGrow: 1,
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             {t('dataSettings.advancedBackup.title')}
@@ -420,9 +417,6 @@ const AdvancedBackupPage: React.FC = () => {
                   variant="h6"
                   sx={{
                     fontWeight: 600,
-                    backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-                    backgroundClip: 'text',
-                    color: 'transparent',
                   }}
                 >
                   {t('dataSettings.advancedBackup.fullBackup.title')}
@@ -651,9 +645,6 @@ const AdvancedBackupPage: React.FC = () => {
               sx={{
                 mb: 2,
                 fontWeight: 600,
-                backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-                backgroundClip: 'text',
-                color: 'transparent',
               }}
             >
               {t('dataSettings.advancedBackup.fullBackup.instructions.title')}
@@ -668,6 +659,7 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItemText
                   primary={<Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.instructions.jsonFile.primary')}</Typography>}
                   secondary={t('dataSettings.advancedBackup.fullBackup.instructions.jsonFile.secondary')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
               </ListItem>
 
@@ -678,6 +670,7 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItemText
                   primary={<Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.instructions.cloud.primary')}</Typography>}
                   secondary={t('dataSettings.advancedBackup.fullBackup.instructions.cloud.secondary')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
               </ListItem>
 
@@ -688,6 +681,7 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItemText
                   primary={<Typography variant="body1" fontWeight={500}>{t('dataSettings.advancedBackup.fullBackup.instructions.regular.primary')}</Typography>}
                   secondary={t('dataSettings.advancedBackup.fullBackup.instructions.regular.secondary')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
               </ListItem>
             </List>

@@ -259,6 +259,14 @@ export class OpenAIParameterManager {
       completeParams.signal = options.abortSignal;
     }
 
+    // 合并自定义请求体参数（extraBody）
+    // 优先使用模型级别的extraBody，然后是provider级别的extraBody
+    const extraBody = (this.model as any).extraBody || (this.model as any).providerExtraBody;
+    if (extraBody && typeof extraBody === 'object') {
+      Object.assign(completeParams, extraBody);
+      console.log(`[OpenAIParameterManager] 合并自定义请求体参数: ${Object.keys(extraBody).join(', ')}`);
+    }
+
     return completeParams;
   }
 

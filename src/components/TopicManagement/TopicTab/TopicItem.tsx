@@ -243,6 +243,7 @@ const TopicItem = React.memo(function TopicItem({
             {getLastMessageContent()}
           </Typography>
         }
+        secondaryTypographyProps={{ component: 'div' }}
       />
 
       {/* 右侧按钮区域 */}

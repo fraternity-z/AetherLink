@@ -171,14 +171,11 @@ const AddProviderPage: React.FC = () => {
           <Typography
             variant="h6"
             component="div"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
+              sx={{
+                flexGrow: 1,
+                fontWeight: 600,
+              }}
+            >
             添加提供商
           </Typography>
         </Toolbar>
@@ -229,9 +226,6 @@ const AddProviderPage: React.FC = () => {
               variant="h5"
               sx={{
                 fontWeight: 600,
-                backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-                backgroundClip: 'text',
-                color: 'transparent',
               }}
             >
               {providerName || '新提供商'}

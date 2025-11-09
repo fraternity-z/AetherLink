@@ -207,14 +207,11 @@ const ModelComboSettings: React.FC = () => {
           <Typography
             variant="h6"
             component="div"
-            sx={{
-              flexGrow: 1,
-              fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
+              sx={{
+                flexGrow: 1,
+                fontWeight: 600,
+              }}
+            >
             {t('modelSettings.combo.title')}
           </Typography>
         </Toolbar>

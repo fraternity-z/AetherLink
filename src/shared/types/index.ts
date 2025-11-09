@@ -312,6 +312,7 @@ export interface Model {
   modelTypes?: ModelType[]; // 模型类型
   apiVersion?: string; // API版本，主要用于Azure OpenAI
   extraHeaders?: Record<string, string>; // 额外的请求头
+  extraBody?: Record<string, any>; // 额外的请求体参数
 }
 
 // 设置类型

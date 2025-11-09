@@ -82,9 +82,6 @@ const BehaviorSettings: React.FC = () => {
             sx={{
               flexGrow: 1,
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             {t('settings.behavior.title')}
@@ -171,6 +168,7 @@ const BehaviorSettings: React.FC = () => {
                       <ListItemText
                         primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.sendWithEnter.label')}</Typography>}
                         secondary={t('settings.behavior.sendWithEnter.description')}
+                        primaryTypographyProps={{ component: 'div' }}
                       />
                     </Box>
                   }
@@ -217,6 +215,7 @@ const BehaviorSettings: React.FC = () => {
                       <ListItemText
                         primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.enableNotifications.label')}</Typography>}
                         secondary={t('settings.behavior.enableNotifications.description')}
+                        primaryTypographyProps={{ component: 'div' }}
                       />
                     </Box>
                   }
@@ -263,6 +262,7 @@ const BehaviorSettings: React.FC = () => {
                       <ListItemText
                         primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.behavior.mobileInputMethodEnterAsNewline.label')}</Typography>}
                         secondary={t('settings.behavior.mobileInputMethodEnterAsNewline.description')}
+                        primaryTypographyProps={{ component: 'div' }}
                       />
                     </Box>
                   }

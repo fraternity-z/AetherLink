@@ -227,9 +227,6 @@ const DefaultModelSettings: React.FC = () => {
             sx={{
               flexGrow: 1,
               fontWeight: 600,
-              backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-              backgroundClip: 'text',
-              color: 'transparent',
             }}
           >
             {t('modelSettings.modelList.title')}
@@ -535,6 +532,7 @@ const DefaultModelSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('modelSettings.modelList.topicNamingSettings')}</Typography>}
                   secondary={t('modelSettings.modelList.topicNamingSettingsDesc')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRightIcon size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -564,6 +562,7 @@ const DefaultModelSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('modelSettings.modelList.modelSelectorStyle')}</Typography>}
                   secondary={modelSelectorStyle === 'dialog' ? t('modelSettings.modelList.modelSelectorDialog') : t('modelSettings.modelList.modelSelectorDropdown')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             </ListItem>
@@ -592,6 +591,7 @@ const DefaultModelSettings: React.FC = () => {
                 <ListItemText
                   primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('modelSettings.modelList.addProvider')}</Typography>}
                   secondary={t('modelSettings.modelList.addProviderDesc')}
+                  primaryTypographyProps={{ component: 'div' }}
                 />
                 <ChevronRightIcon size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
               </ListItemButton>
@@ -614,9 +614,6 @@ const DefaultModelSettings: React.FC = () => {
       >
         <DialogTitle sx={{
           fontWeight: 600,
-          backgroundImage: 'linear-gradient(90deg, #9333EA, #754AB4)',
-          backgroundClip: 'text',
-          color: 'transparent',
         }}>
           {t('modelSettings.modelList.editProvider')}
         </DialogTitle>
