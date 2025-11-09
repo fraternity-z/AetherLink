@@ -14,6 +14,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SelectChangeEvent } from '@mui/material';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 interface DropdownModelSelectorProps {
   selectedModel: Model | null;
@@ -82,8 +83,8 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
   }, [availableModels, getProviderName, providers]);
 
   const handleChange = (event: SelectChangeEvent<string>) => {
-    const compositeValue = event.target.value;
-    if (!compositeValue || typeof compositeValue !== 'string') return;
+    const identityValue = event.target.value;
+    if (!identityValue || typeof identityValue !== 'string') return;
 
     setOpen(false);
     requestAnimationFrame(() => {
@@ -94,12 +95,14 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
     });
 
     try {
-      // 从复合值中提取模型ID和提供商
-      const [modelId, providerId] = compositeValue.split('---');
+      const identity = parseModelIdentityKey(identityValue);
+      if (!identity) {
+        console.error('无法解析模型标识:', identityValue);
+        return;
+      }
 
-      // 找到匹配ID和提供商的模型
       const model = availableModels.find(m =>
-        m.id === modelId && (m.provider || '') === providerId
+        modelMatchesIdentity(m, identity, m.provider)
       );
 
       if (model) {
@@ -108,41 +111,35 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           handleModelSelect(model);
         }, 0);
       } else {
-        console.error('未找到匹配的模型:', modelId, providerId);
+        console.error('未找到匹配的模型:', identityValue);
       }
     } catch (error) {
       console.error('处理模型选择时出错:', error);
     }
   };
 
-  // 生成唯一的复合值，防止-字符在modelId或providerId中导致的解析错误
-  const getCompositeValue = React.useCallback((model: Model): string => {
-    return `${model.id}---${model.provider || ''}`;
+  const getIdentityValue = React.useCallback((model: Model): string => {
+    return getModelIdentityKey({ id: model.id, provider: model.provider || model.providerType || '' });
   }, []);
 
   // 获取当前选中模型的复合值
   const getCurrentValue = React.useCallback((): string => {
     if (!selectedModel) return '';
 
-    // 首先尝试在 availableModels 中找到完全匹配的模型（id + provider）
-    const exactMatch = availableModels.find(m =>
-      m.id === selectedModel.id &&
-      (m.provider || '') === (selectedModel.provider || '')
-    );
+    const selectedIdentity = parseModelIdentityKey(getIdentityValue(selectedModel));
+    if (selectedIdentity) {
+      const exactMatch = availableModels.find(m =>
+        modelMatchesIdentity(m, selectedIdentity, m.provider)
+      );
 
-    if (exactMatch) {
-      return getCompositeValue(exactMatch);
-    }
-
-    // 如果没有找到完全匹配，尝试只匹配 id，但优先选择第一个匹配的
-    const idMatch = availableModels.find(m => m.id === selectedModel.id);
-    if (idMatch) {
-      return getCompositeValue(idMatch);
+      if (exactMatch) {
+        return getIdentityValue(exactMatch);
+      }
     }
 
     // 如果都没找到，返回原始的复合值（可能导致不匹配，但至少不会崩溃）
-    return getCompositeValue(selectedModel);
-  }, [selectedModel, getCompositeValue, availableModels]);
+    return getIdentityValue(selectedModel);
+  }, [selectedModel, getIdentityValue, availableModels]);
 
   // 处理下拉菜单打开状态
   const [open, setOpen] = React.useState(false);
@@ -282,12 +279,12 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
             </ListSubheader>,
             // 该供应商下的模型
             ...models.map((model) => {
-              const compositeValue = getCompositeValue(model);
+              const identityValue = getIdentityValue(model);
 
               return (
                 <MenuItem
-                  key={compositeValue}
-                  value={compositeValue}
+                  key={identityValue}
+                  value={identityValue}
                   sx={{
                     py: 1, // 减少垂直内边距
                     pl: 3, // 减少左边距

@@ -7,6 +7,7 @@ import { EventEmitter } from '../services/EventEmitter';
 import { EVENT_NAMES } from '../services/EventEmitter';
 import store from '../store';
 import { regenerateMessage } from '../store/thunks/messageThunk';
+import { findModelInProviders } from './modelUtils';
 
 /**
  * 检测是否为 API Key 相关错误
@@ -136,20 +137,15 @@ export async function retryApiKeyError(messageId: string, topicId: string): Prom
     // 从可用模型中找到当前选择的模型
     let currentModel = null;
     if (state.settings.providers) {
-      for (const provider of state.settings.providers) {
-        if (provider.isEnabled) {
-          const model = provider.models.find(m => m.id === currentModelId && m.enabled);
-          if (model) {
-            currentModel = {
-              ...model,
-              provider: provider.id, // 确保provider字段设置为正确的provider ID
-              apiKey: model.apiKey || provider.apiKey,
-              baseUrl: model.baseUrl || provider.baseUrl,
-              providerType: model.providerType || provider.providerType || provider.id,
-            };
-            break;
-          }
-        }
+      const matched = findModelInProviders(state.settings.providers, currentModelId);
+      if (matched && matched.provider.isEnabled) {
+        currentModel = {
+          ...matched.model,
+          provider: matched.model.provider || matched.provider.id,
+          apiKey: matched.model.apiKey || matched.provider.apiKey,
+          baseUrl: matched.model.baseUrl || matched.provider.baseUrl,
+          providerType: matched.model.providerType || matched.provider.providerType || matched.provider.id
+        };
       }
     }
 

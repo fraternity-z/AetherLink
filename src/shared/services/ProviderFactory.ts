@@ -9,6 +9,7 @@ import * as geminiApi from '../api/gemini';
 import { modelComboService } from './ModelComboService';
 import { OpenAIAISDKProvider } from '../api/openai-aisdk';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
+import { getDefaultGroupName } from '../utils/modelUtils';
 
 
 /**
@@ -248,78 +249,6 @@ export async function sendChatRequest(
   }
 }
 
-// 获取默认分组名称 - 从APIService移过来，统一管理
-function getDefaultGroupName(modelId: string): string {
-  const modelIdLower = modelId.toLowerCase();
-
-  // GPT 系列
-  if (modelIdLower.includes('gpt-4')) return 'GPT-4';
-  if (modelIdLower.includes('gpt-3.5')) return 'GPT-3.5';
-
-  // Claude 系列
-  if (modelIdLower.includes('claude-3')) return 'Claude 3';
-  if (modelIdLower.includes('claude-2')) return 'Claude 2';
-  if (modelIdLower.includes('claude')) return 'Claude';
-
-  // Gemini 系列
-  if (modelIdLower.includes('gemini-1.5')) return 'Gemini 1.5';
-  if (modelIdLower.includes('gemini-2')) return 'Gemini 2.0';
-  if (modelIdLower.includes('gemini')) return 'Gemini';
-
-  // Grok 系列
-  if (modelIdLower.includes('grok-3')) return 'Grok 3';
-  if (modelIdLower.includes('grok')) return 'Grok';
-
-  // DeepSeek 系列
-  if (modelIdLower.includes('deepseek')) return 'DeepSeek';
-
-  // Qwen 系列
-  if (modelIdLower.includes('qwen') || modelIdLower.includes('qvq') || modelIdLower.includes('qwq')) return 'Qwen';
-
-  // THUDM/GLM 系列
-  if (modelIdLower.includes('thudm') || modelIdLower.includes('glm')) return 'GLM';
-
-  // BAAI 系列
-  if (modelIdLower.includes('baai') || modelIdLower.includes('bge')) return 'BAAI';
-
-  // Stability AI 系列
-  if (modelIdLower.includes('stabilityai') || modelIdLower.includes('stable-diffusion')) return 'Stability AI';
-
-  // Black Forest Labs 系列
-  if (modelIdLower.includes('black-forest-labs') || modelIdLower.includes('flux')) return 'FLUX';
-
-  // 音频模型
-  if (modelIdLower.includes('funaudiollm') || modelIdLower.includes('sensevoice') || modelIdLower.includes('cosyvoice') ||
-      modelIdLower.includes('fishaudio') || modelIdLower.includes('fish-speech') || modelIdLower.includes('rvc-boss') ||
-      modelIdLower.includes('gpt-sovits')) return '音频模型';
-
-  // 嵌入模型
-  if (modelIdLower.includes('embedding') || modelIdLower.includes('bce-embedding') || modelIdLower.includes('reranker')) return '嵌入模型';
-
-  // InternLM 系列
-  if (modelIdLower.includes('internlm')) return 'InternLM';
-
-  // 网易有道
-  if (modelIdLower.includes('netease-youdao')) return '网易有道';
-
-  // Kolors 系列
-  if (modelIdLower.includes('kwai-kolors') || modelIdLower.includes('kolors')) return 'Kolors';
-
-  // Wan AI 系列
-  if (modelIdLower.includes('wan-ai')) return 'Wan AI';
-
-  // MiniMax 系列
-  if (modelIdLower.includes('minimax')) return 'MiniMax';
-
-  // Pro 版本模型
-  if (modelIdLower.startsWith('pro/')) return 'Pro 模型';
-
-  // LoRA 版本模型
-  if (modelIdLower.startsWith('lora/')) return 'LoRA 模型';
-
-  return '其他模型';
-}
-
 /**
  * 从默认端点获取模型列表
  * @param provider 提供商配置
@@ -519,7 +448,7 @@ export async function fetchModels(provider: any): Promise<any[]> {
       provider: provider.id,
       providerType: provider.providerType || provider.id,
       description: model.description,
-      group: getDefaultGroupName(model.id),
+      group: getDefaultGroupName(model.id, provider.id),
       enabled: true,
       // 保留原始数据
       ...model

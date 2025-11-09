@@ -7,6 +7,7 @@ import { addOneBlock, updateOneBlock, removeOneBlock } from '../store/slices/mes
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
 import { EventEmitter, EVENT_NAMES } from './EventEmitter';
 import type { Model } from '../types';
+import { getModelIdentityKey } from '../utils/modelUtils';
 
 /**
  * 多模型响应接口
@@ -55,7 +56,7 @@ export class MultiModelService {
 
     // 创建响应数组
     const responses = models.map(model => ({
-      modelId: model.id,
+      modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
       modelName: model.name || model.id,
       content: '',
       status: MessageBlockStatus.PENDING

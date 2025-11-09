@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,6 +27,7 @@ import { addGeneratedImage } from '../../shared/store/settingsSlice';
 import type { ImageGenerationParams, Model } from '../../shared/types';
 import { ModelType } from '../../shared/types';
 import type { ModelProvider } from '../../shared/config/defaultModels';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 
 interface ImageGenerationDialogProps {
   open: boolean;
@@ -48,22 +49,43 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
     ) || []
   );
 
+  const providers = useSelector((state: RootState) => state.settings.providers || []);
+
   // 从providers获取支持图像生成的模型
-  const providersModels = useSelector((state: RootState) =>
-    state.settings.providers
+  const providersModels = useMemo(() => (
+    providers
       .filter((provider: ModelProvider) => provider.isEnabled)
       .flatMap((provider: ModelProvider) =>
         provider.models.filter((model: Model) =>
           model.enabled && (model.modelTypes?.includes(ModelType.ImageGen) || model.imageGeneration || model.capabilities?.imageGeneration)
         )
       )
-  );
+  ), [providers]);
 
   // 合并两个模型列表并去重
-  const availableModels = [...models, ...providersModels]
-    .filter((model, index, self) =>
-      index === self.findIndex(m => m.id === model.id)
+  const availableModels = useMemo(() => {
+    const combined = [...models, ...providersModels];
+
+    const mapped = combined.map(model => {
+      // 使用 {id, provider} 组合查找，避免同名模型冲突
+      const modelIdentity = { id: model.id, provider: model.provider || model.providerType };
+      const provider = providers.find(p => {
+        if (!p.models) return false;
+        return p.models.some(m => modelMatchesIdentity(m, modelIdentity, p.id));
+      });
+      const providerId = model.provider || model.providerType || provider?.id || '';
+      return {
+        ...model,
+        provider: providerId,
+        providerName: provider?.name || (model as any).providerName || providerId,
+        identityKey: getModelIdentityKey({ id: model.id, provider: providerId })
+      };
+    });
+
+    return mapped.filter((model, index, self) =>
+      index === self.findIndex(item => item.identityKey === model.identityKey)
     );
+  }, [models, providersModels, providers]);
 
   // 状态
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -90,7 +112,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
   // 初始化默认选择的模型
   useEffect(() => {
     if (availableModels.length > 0 && !selectedModelId) {
-      setSelectedModelId(availableModels[0].id);
+      setSelectedModelId(availableModels[0].identityKey);
     }
   }, [availableModels, selectedModelId]);
 
@@ -121,7 +143,18 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
       return;
     }
 
-    const selectedModel = availableModels.find(m => m.id === selectedModelId);
+    const identity = parseModelIdentityKey(selectedModelId);
+    let selectedModel: typeof availableModels[0] | undefined;
+    
+    if (identity) {
+      // 使用 {id, provider} 组合精确匹配
+      selectedModel = availableModels.find(m => modelMatchesIdentity(m, identity, m.provider));
+    }
+    
+    // 如果未找到，使用 identityKey 作为兜底匹配
+    if (!selectedModel) {
+      selectedModel = availableModels.find(m => m.identityKey === selectedModelId);
+    }
     if (!selectedModel) {
       setError('请选择有效的模型');
       return;
@@ -221,7 +254,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
               </MenuItem>
             )}
             {availableModels.map((model) => (
-              <MenuItem key={model.id} value={model.id}>
+              <MenuItem key={model.identityKey} value={model.identityKey}>
                 {model.name} ({model.provider})
               </MenuItem>
             ))}

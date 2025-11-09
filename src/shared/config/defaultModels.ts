@@ -1,4 +1,5 @@
 import type { Model } from '../types';
+import { getModelIdentityKey } from '../utils/modelUtils';
 
 // 导出负载均衡策略类型
 export type LoadBalanceStrategy = 'round_robin' | 'priority' | 'least_used' | 'random';
@@ -315,11 +316,15 @@ export const getDefaultModelId = (providers: ModelProvider[]): string | undefine
   for (const provider of providers) {
     if (provider.isEnabled) {
       const defaultModel = provider.models.find(m => m.isDefault && m.enabled);
-      if (defaultModel) return defaultModel.id;
+      if (defaultModel) {
+        return getModelIdentityKey({ id: defaultModel.id, provider: defaultModel.provider || provider.id });
+      }
 
       // 如果没有默认模型，取第一个启用的模型
       const firstEnabledModel = provider.models.find(m => m.enabled);
-      if (firstEnabledModel) return firstEnabledModel.id;
+      if (firstEnabledModel) {
+        return getModelIdentityKey({ id: firstEnabledModel.id, provider: firstEnabledModel.provider || provider.id });
+      }
     }
   }
   return undefined;

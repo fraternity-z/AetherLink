@@ -22,6 +22,7 @@ import { X as CloseIcon, ArrowLeftRight as CompareArrowsIcon, CheckSquare as Sel
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import type { Model } from '../../shared/types';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 
 interface MultiModelSelectorProps {
   open: boolean;
@@ -100,8 +101,8 @@ const MultiModelSelector: React.FC<MultiModelSelectorProps> = ({
 
   // 生成唯一的模型标识符（供应商+模型ID）
   const getUniqueModelId = useCallback((model: Model) => {
-    const provider = model.provider || model.providerType || 'unknown';
-    return `${provider}:${model.id}`;
+    const providerId = model.provider || (model as any).providerId || 'unknown';
+    return getModelIdentityKey({ id: model.id, provider: providerId });
   }, []);
 
   // 处理模型选择

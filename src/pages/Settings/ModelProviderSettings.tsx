@@ -16,7 +16,6 @@ import {
   FormControlLabel,
   CircularProgress,
   InputAdornment,
-  Collapse,
   Tooltip
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
@@ -30,8 +29,6 @@ import {
   Settings,
   Eye,
   EyeOff,
-  ChevronRight,
-  Minus,
   Info
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -39,6 +36,7 @@ import { useAppSelector } from '../../shared/store';
 import { alpha } from '@mui/material/styles';
 import ModelManagementDialog from '../../components/ModelManagementDialog';
 import SimpleModelDialog from '../../components/settings/SimpleModelDialog';
+import ModelGroup from '../../components/settings/ModelGroup';
 import {
   isOpenAIProvider,
   getCompleteApiUrl
@@ -47,96 +45,19 @@ import {
   AddModelDialog,
   DeleteDialog,
   EditProviderDialog,
-  AdvancedAPIConfigDialog,
   CustomEndpointDialog,
   TestResultSnackbar,
   TestResultDialog
 } from './ModelProviderSettings/dialogs';
 import { useProviderSettings } from './ModelProviderSettings/hooks';
 import { useTranslation } from 'react-i18next';
-
-// 模型分组逻辑
-const getModelGroup = (modelId: string, modelName: string): string => {
-  const id = modelId.toLowerCase();
-  const name = modelName.toLowerCase();
-  
-  // Embeddings
-  if (id.includes('embedding') || id.includes('embed') || name.includes('embedding')) {
-    return 'Embeddings';
-  }
-  
-  // OpenAI GPT
-  if (id.includes('gpt') || /o[134]/.test(id)) {
-    if (id.includes('gpt-4') || id.includes('gpt4')) return 'GPT-4';
-    if (id.includes('gpt-3') || id.includes('gpt3')) return 'GPT-3';
-    if (id.includes('gpt-5') || id.includes('gpt5')) return 'GPT-5';
-    if (/o[134]/.test(id)) return 'o 系列';
-    return 'GPT';
-  }
-  
-  // Google Gemini
-  if (id.includes('gemini')) {
-    if (id.includes('gemini-2.0')) return 'Gemini 2.0';
-    if (id.includes('gemini-2.5')) return 'Gemini 2.5';
-    if (id.includes('gemini-1.5')) return 'Gemini 1.5';
-    if (id.includes('gemini-exp')) return 'Gemini Exp';
-    return 'Gemini';
-  }
-  
-  // Anthropic Claude
-  if (id.includes('claude')) {
-    if (id.includes('claude-3.5')) return 'Claude 3.5';
-    if (id.includes('claude-3')) return 'Claude 3';
-    if (id.includes('claude-4')) return 'Claude 4';
-    if (id.includes('sonnet')) return 'Claude Sonnet';
-    if (id.includes('opus')) return 'Claude Opus';
-    if (id.includes('haiku')) return 'Claude Haiku';
-    return 'Claude';
-  }
-  
-  // DeepSeek
-  if (id.includes('deepseek')) return 'DeepSeek';
-  
-  // Qwen
-  if (id.includes('qwen') || id.includes('qwq') || id.includes('qvq')) return 'Qwen';
-  
-  // Doubao
-  if (id.includes('doubao') || id.includes('豆包')) return 'Doubao';
-  
-  // GLM/Zhipu
-  if (id.includes('glm') || id.includes('zhipu') || id.includes('智谱')) return 'GLM';
-  
-  // Mistral
-  if (id.includes('mistral')) return 'Mistral';
-  
-  // Grok
-  if (id.includes('grok') || id.includes('xai')) return 'Grok';
-  
-  // Meta Llama
-  if (id.includes('llama')) return 'Llama';
-  
-  // Yi
-  if (id.includes('yi-')) return 'Yi';
-  
-  // Moonshot/Kimi
-  if (id.includes('moonshot') || id.includes('kimi')) return 'Kimi';
-  
-  // Others
-  return '其他模型';
-};
-
-interface ModelGroup {
-  name: string;
-  models: any[];
-}
+import type { Model } from '../../shared/types';
+import { getDefaultGroupName } from '../../shared/utils/modelUtils';
 
 const ModelProviderSettings: React.FC = () => {
   const { t } = useTranslation();
   const { providerId } = useParams<{ providerId: string }>();
   const navigate = useNavigate();
-  
-  // 分组折叠状态
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   
   // 测试模式开关
   const [testModeEnabled, setTestModeEnabled] = useState(false);
@@ -180,18 +101,7 @@ const ModelProviderSettings: React.FC = () => {
     setEditProviderName,
     setEditProviderType,
     extraHeaders,
-    setExtraHeaders,
-    newHeaderKey,
-    setNewHeaderKey,
-    newHeaderValue,
-    setNewHeaderValue,
     extraBody,
-    newBodyKey,
-    setNewBodyKey,
-    newBodyValue,
-    setNewBodyValue,
-    openAdvancedConfigDialog,
-    setOpenAdvancedConfigDialog,
     customModelEndpoint,
     setCustomModelEndpoint,
     openCustomEndpointDialog,
@@ -208,12 +118,6 @@ const ModelProviderSettings: React.FC = () => {
     handleDelete,
     handleEditProviderName,
     handleSaveProviderName,
-    handleAddHeader,
-    handleRemoveHeader,
-    handleUpdateHeader,
-    handleAddBody,
-    handleRemoveBody,
-    handleUpdateBody,
     handleOpenCustomEndpointDialog,
     handleSaveCustomEndpoint,
     handleAddModel,
@@ -234,47 +138,28 @@ const ModelProviderSettings: React.FC = () => {
     const groups: Record<string, any[]> = {};
     
     provider.models.forEach((model) => {
-      const groupName = getModelGroup(model.id, model.name);
+      // 使用自动分组逻辑
+      const groupName = model.group || getDefaultGroupName(model.id, provider.id);
       if (!groups[groupName]) {
         groups[groupName] = [];
       }
       groups[groupName].push(model);
     });
     
-    // 转换为数组并排序
-    const groupArray: ModelGroup[] = Object.keys(groups)
-      .sort((a, b) => {
-        // Embeddings 放最前面
-        if (a === 'Embeddings') return -1;
-        if (b === 'Embeddings') return 1;
-        // 其他模型放最后面
-        if (a === '其他模型') return 1;
-        if (b === '其他模型') return -1;
-        // 其他按字母排序
-        return a.localeCompare(b);
-      })
-      .map(name => ({
-        name,
-        models: groups[name]
-      }));
+    // 转换为数组并按字母排序
+    const groupArray: [string, Model[]][] = Object.keys(groups)
+      .sort((a, b) => a.localeCompare(b))
+      .map(name => [name, groups[name]]);
     
     return groupArray;
   }, [provider]);
 
-  // 切换分组折叠状态
-  const toggleGroup = (groupName: string) => {
-    setCollapsedGroups(prev => ({
-      ...prev,
-      [groupName]: !prev[groupName]
-    }));
-  };
-
   // 批量删除分组内所有模型
   const handleDeleteGroup = (groupName: string) => {
-    const group = groupedModels.find(g => g.name === groupName);
+    const group = groupedModels.find(([name]) => name === groupName);
     if (!group) return;
     
-    group.models.forEach(model => {
+    group[1].forEach(model => {
       handleDeleteModel(model.id);
     });
   };
@@ -654,7 +539,7 @@ const ModelProviderSettings: React.FC = () => {
                   <Button
                     variant="outlined"
                     startIcon={<Settings size={16} />}
-                    onClick={() => setOpenAdvancedConfigDialog(true)}
+                    onClick={() => navigate(`/settings/model-provider/${provider.id}/advanced-api`)}
                     sx={{
                       borderRadius: 2,
                       borderColor: (theme) => alpha(theme.palette.secondary.main, 0.5),
@@ -714,7 +599,7 @@ const ModelProviderSettings: React.FC = () => {
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: 1,
             borderRadius: 2,
             border: '1px solid',
             borderColor: 'divider',
@@ -877,204 +762,165 @@ const ModelProviderSettings: React.FC = () => {
               )}
             </List>
           ) : (
-            /* 普通供应商使用分组列表 */
+            /* 普通供应商 - 使用新的 ModelGroup 组件 */
             <Box sx={{ width: '100%' }}>
-              {groupedModels.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography color="text.secondary">
-                    {t('modelSettings.provider.noModels')}
-                  </Typography>
-                </Box>
-              ) : (
-                groupedModels.map((group) => (
-                  <Box key={group.name} sx={{ mb: 2 }}>
-                    {/* 分组标题 */}
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        mb: 1,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: (theme) => theme.palette.mode === 'dark' 
-                          ? 'rgba(255, 255, 255, 0.05)' 
-                          : 'rgba(0, 0, 0, 0.02)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          bgcolor: (theme) => theme.palette.mode === 'dark' 
-                            ? 'rgba(255, 255, 255, 0.08)' 
-                            : 'rgba(0, 0, 0, 0.04)',
-                        }
+              <ModelGroup
+                modelGroups={groupedModels}
+                showEmptyState={true}
+                emptyStateKey={t('modelSettings.provider.noModels')}
+                defaultExpanded={[]}
+                renderModelItem={(model) => (
+                  <Box
+                    key={model.id}
+                    sx={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      py: { xs: 1.5, sm: 1 },
+                      pl: { xs: 2.5, sm: 2 },
+                      pr: { xs: testModeEnabled ? 15 : 11, sm: testModeEnabled ? 13 : 9.5 },
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                      },
+                    }}
+                  >
+                    <Typography 
+                      variant="subtitle2" 
+                      sx={{ 
+                        fontWeight: 600,
+                        fontSize: { xs: '0.95rem', sm: '0.875rem' },
+                        flex: 1,
+                        mr: 1
                       }}
-                      onClick={() => toggleGroup(group.name)}
                     >
+                      {model.name}
+                    </Typography>
+                    {model.isDefault && (
                       <Box
                         sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          px: 2,
-                          py: 1.5,
+                          px: { xs: 1.25, sm: 1 },
+                          py: { xs: 0.5, sm: 0.25 },
+                          borderRadius: 1,
+                          fontSize: { xs: '0.75rem', sm: '0.7rem' },
+                          fontWeight: 600,
+                          bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
+                          color: 'success.main',
+                          mr: 1
                         }}
                       >
-                        {/* 折叠箭头 */}
-                        <IconButton
-                          size="small"
-                          sx={{
-                            mr: 1,
-                            transform: collapsedGroups[group.name] ? 'rotate(0deg)' : 'rotate(90deg)',
-                            transition: 'transform 0.3s ease',
-                            p: 0.5,
-                          }}
-                        >
-                          <ChevronRight size={20} />
-                        </IconButton>
-                        
-                        {/* 分组名称 */}
-                        <Typography 
-                          variant="subtitle2" 
-                          sx={{ 
-                            fontWeight: 600,
-                            flex: 1,
-                          }}
-                        >
-                          {group.name}
-                          <Typography 
-                            component="span" 
-                            variant="caption" 
-                            sx={{ 
-                              ml: 1, 
-                              color: 'text.secondary',
-                              fontWeight: 400,
-                            }}
-                          >
-                            ({group.models.length})
-                          </Typography>
-                        </Typography>
-                        
-                        {/* 批量删除按钮 */}
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`确定要删除 ${group.name} 分组中的所有 ${group.models.length} 个模型吗？`)) {
-                              handleDeleteGroup(group.name);
-                            }
-                          }}
-                          sx={{
-                            bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-                            '&:hover': {
-                              bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
-                            }
-                          }}
-                          title={`删除 ${group.name} 组`}
-                        >
-                          <Minus size={18} />
-                        </IconButton>
+                        {t('modelSettings.provider.defaultBadge')}
                       </Box>
-                    </Paper>
+                    )}
 
-                    {/* 分组内的模型列表 */}
-                    <Collapse in={!collapsedGroups[group.name]} timeout={300}>
-                      <Box sx={{ pl: 1 }}>
-                        {group.models.map((model) => (
-                          <Paper
-                            key={model.id}
-                            elevation={0}
-                            sx={{
-                              mb: 1.5,
-                              borderRadius: 2,
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              overflow: 'hidden',
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                boxShadow: '0 4px 8px rgba(0,0,0,0.05)',
-                                borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
-                              }
-                            }}
-                          >
-                            <ListItem
-                              secondaryAction={
-                                <Box>
-                                  {/* 只在测试模式开启时显示测试按钮 */}
-                                  {testModeEnabled && (
-                                    <IconButton
-                                      aria-label="test"
-                                      onClick={() => handleTestModelConnection(model)}
-                                      disabled={testingModelId !== null}
-                                      sx={{
-                                        mr: 1,
-                                        bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
-                                        '&:hover': {
-                                          bgcolor: (theme) => alpha(theme.palette.success.main, 0.2),
-                                        }
-                                      }}
-                                    >
-                                      {testingModelId === model.id ? <CircularProgress size={16} color="success" /> : <CheckCircle size={16} color="#2e7d32" />}
-                                    </IconButton>
-                                  )}
-                                  <IconButton
-                                    aria-label="edit"
-                                    onClick={() => openModelEditDialog(model)}
-                                    sx={{
-                                      mr: 1,
-                                      bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
-                                      '&:hover': {
-                                        bgcolor: (theme) => alpha(theme.palette.info.main, 0.2),
-                                      }
-                                    }}
-                                  >
-                                    <Edit size={20} color="#0288d1" />
-                                  </IconButton>
-                                  <IconButton
-                                    aria-label="delete"
-                                    onClick={() => handleDeleteModel(model.id)}
-                                    sx={{
-                                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-                                      '&:hover': {
-                                        bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
-                                      }
-                                    }}
-                                  >
-                                    <Trash2 size={20} color="#d32f2f" />
-                                  </IconButton>
-                                </Box>
-                              }
-                            >
-                              <ListItemText
-                                primary={
-                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="subtitle2" fontWeight={600}>
-                                      {model.name}
-                                    </Typography>
-                                    {model.isDefault && (
-                                      <Box
-                                        sx={{
-                                          ml: 1,
-                                          px: 1,
-                                          py: 0.2,
-                                          borderRadius: 1,
-                                          fontSize: '0.7rem',
-                                          fontWeight: 600,
-                                          bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
-                                          color: 'success.main',
-                                        }}
-                                      >
-                                        {t('modelSettings.provider.defaultBadge')}
-                                      </Box>
-                                    )}
-                                  </Box>
-                                }
-                              />
-                            </ListItem>
-                          </Paper>
-                        ))}
-                      </Box>
-                    </Collapse>
+                    {/* 按钮组 - 绝对定位 */}
+                    <Box 
+                      sx={{ 
+                        position: 'absolute',
+                        right: { xs: 2.5, sm: 2 },
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: { xs: 1, sm: 0.75 }
+                      }}
+                    >
+                      {testModeEnabled && (
+                        <IconButton
+                          aria-label="test"
+                          onClick={() => handleTestModelConnection(model)}
+                          disabled={testingModelId !== null}
+                          sx={{
+                            width: { xs: 40, sm: 36 },
+                            height: { xs: 40, sm: 36 },
+                            minWidth: { xs: 40, sm: 36 },
+                            borderRadius: 1.5,
+                            p: 0,
+                            bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
+                            color: 'success.main',
+                            '&:hover': {
+                              bgcolor: (theme) => alpha(theme.palette.success.main, 0.2),
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          {testingModelId === model.id ? (
+                            <CircularProgress size={16} color="success" />
+                          ) : (
+                            <CheckCircle size={18} />
+                          )}
+                        </IconButton>
+                      )}
+
+                      <IconButton
+                        aria-label="edit"
+                        onClick={() => openModelEditDialog(model)}
+                        sx={{
+                          width: { xs: 40, sm: 36 },
+                          height: { xs: 40, sm: 36 },
+                          minWidth: { xs: 40, sm: 36 },
+                          borderRadius: 1.5,
+                          p: 0,
+                          bgcolor: (theme) => alpha(theme.palette.info.main, 0.12),
+                          color: 'info.main',
+                          '&:hover': {
+                            bgcolor: (theme) => alpha(theme.palette.info.main, 0.2),
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <Edit size={18} />
+                      </IconButton>
+
+                      <IconButton
+                        aria-label="delete"
+                        onClick={() => handleDeleteModel(model.id)}
+                        sx={{
+                          width: { xs: 40, sm: 36 },
+                          height: { xs: 40, sm: 36 },
+                          minWidth: { xs: 40, sm: 36 },
+                          borderRadius: 1.5,
+                          p: 0,
+                          bgcolor: (theme) => alpha(theme.palette.error.main, 0.12),
+                          color: 'error.main',
+                          '&:hover': {
+                            bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </Box>
                   </Box>
-                ))
-              )}
+                )}
+                renderGroupButton={(groupName, models) => (
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`确定要删除 ${groupName} 分组中的所有 ${models.length} 个模型吗？`)) {
+                        handleDeleteGroup(groupName);
+                      }
+                    }}
+                    sx={{
+                      width: { xs: 40, sm: 36 },
+                      height: { xs: 40, sm: 36 },
+                      minWidth: { xs: 40, sm: 36 },
+                      borderRadius: 1.5,
+                      p: 0,
+                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.12),
+                      color: 'error.main',
+                      '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
+                      },
+                      transition: 'all 0.2s ease',
+                    }}
+                    title={`删除 ${groupName} 组`}
+                  >
+                    <Trash2 size={18} />
+                  </IconButton>
+                )}
+              />
             </Box>
           )}
         </Paper>
@@ -1131,29 +977,6 @@ const ModelProviderSettings: React.FC = () => {
         onProviderNameChange={setEditProviderName}
         onProviderTypeChange={setEditProviderType}
         onSave={handleSaveProviderName}
-      />
-
-      {/* 高级 API 配置对话框（合并版） */}
-      <AdvancedAPIConfigDialog
-        open={openAdvancedConfigDialog}
-        onClose={() => setOpenAdvancedConfigDialog(false)}
-        extraHeaders={extraHeaders}
-        newHeaderKey={newHeaderKey}
-        newHeaderValue={newHeaderValue}
-        onNewHeaderKeyChange={setNewHeaderKey}
-        onNewHeaderValueChange={setNewHeaderValue}
-        onAddHeader={handleAddHeader}
-        onRemoveHeader={handleRemoveHeader}
-        onUpdateHeader={handleUpdateHeader}
-        onSetExtraHeaders={setExtraHeaders}
-        extraBody={extraBody}
-        newBodyKey={newBodyKey}
-        newBodyValue={newBodyValue}
-        onNewBodyKeyChange={setNewBodyKey}
-        onNewBodyValueChange={setNewBodyValue}
-        onAddBody={handleAddBody}
-        onRemoveBody={handleRemoveBody}
-        onUpdateBody={handleUpdateBody}
       />
 
       {/* 自定义模型端点配置对话框 */}

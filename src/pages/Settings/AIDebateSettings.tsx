@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -38,6 +38,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { DropdownModelSelector } from '../ChatPage/components/DropdownModelSelector';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 import { setShowAIDebateButton } from '../../shared/store/settingsSlice';
 import { toastManager } from '../../components/EnhancedToast';
 import { useTranslation } from 'react-i18next';
@@ -101,9 +102,19 @@ const AIDebateSettings: React.FC = () => {
   const availableModels = providers.flatMap(provider =>
     provider.models.filter(model => model.enabled).map(model => ({
       ...model,
-      providerName: provider.name // 添加提供商名称
+      providerName: provider.name, // 添加提供商名称
+      providerId: provider.id,
+      identityKey: getModelIdentityKey({ id: model.id, provider: provider.id })
     }))
   );
+
+  const resolveModelName = useCallback((modelId?: string) => {
+    if (!modelId) return '';
+    const identity = parseModelIdentityKey(modelId);
+    if (!identity) return '';
+    const matched = availableModels.find(model => modelMatchesIdentity(model, identity, (model as any).provider || (model as any).providerId));
+    return matched?.name || '';
+  }, [availableModels]);
 
   // 辩论配置状态
   const [config, setConfig] = useState<DebateConfig>({
@@ -646,7 +657,12 @@ const AIDebateSettings: React.FC = () => {
     let selectedTemplates: typeof roleTemplates = [];
 
     // 获取默认模型ID（选择第一个可用模型）
-    const defaultModelId = availableModels.length > 0 ? availableModels[0].id : '';
+    const defaultModelId = availableModels.length > 0
+      ? getModelIdentityKey({
+          id: availableModels[0].id,
+          provider: availableModels[0].provider || (availableModels[0] as any).providerId
+        })
+      : '';
 
     switch (setupType) {
       case 'basic':
@@ -1111,7 +1127,7 @@ const AIDebateSettings: React.FC = () => {
                         />
                       </Box>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                        {role.description} • {role.modelId ? availableModels.find(m => m.id === role.modelId)?.name || t('aiDebate.roles.unknownModel') : t('aiDebate.roles.defaultModel')}
+                        {role.description} • {role.modelId ? resolveModelName(role.modelId) || t('aiDebate.roles.unknownModel') : t('aiDebate.roles.defaultModel')}
                       </Typography>
                     </Box>
                   </Box>
@@ -1327,9 +1343,26 @@ const AIDebateSettings: React.FC = () => {
                 {t('aiDebate.roleDialog.model')}
               </Typography>
               <DropdownModelSelector
-                selectedModel={availableModels.find(m => m.id === newRole.modelId) || null}
+                selectedModel={
+                  newRole.modelId
+                    ? availableModels.find(model =>
+                        modelMatchesIdentity(
+                          model,
+                          parseModelIdentityKey(newRole.modelId),
+                          model.provider || model.providerId
+                        )
+                      ) || null
+                    : null
+                }
                 availableModels={availableModels}
-                handleModelSelect={(model) => setNewRole({ ...newRole, modelId: model?.id || '' })}
+                handleModelSelect={(model) =>
+                  setNewRole({
+                    ...newRole,
+                    modelId: model
+                      ? getModelIdentityKey({ id: model.id, provider: model.provider || (model as any).providerId })
+                      : ''
+                  })
+                }
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                 {t('aiDebate.roleDialog.modelHelper')}

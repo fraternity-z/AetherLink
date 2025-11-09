@@ -7,6 +7,7 @@ import { saveMessageAndBlocksToDB } from './utils';
 import { processAssistantResponse } from './assistantResponse';
 import { versionService } from '../../../services/VersionService';
 import { getMainTextContent } from '../../../utils/blockUtils';
+import { getModelIdentityKey } from '../../../utils/modelUtils';
 import type { Message } from '../../../types/newMessage';
 import type { Model } from '../../../types';
 import type { RootState, AppDispatch } from '../../index';
@@ -114,7 +115,7 @@ export const resendUserMessage = (userMessageId: string, topicId: string, model:
       const { message: assistantMessage } = createAssistantMessage({
         assistantId,
         topicId,
-        modelId: model.id,
+        modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
         model,
         askId: userMessageId
       });
@@ -138,7 +139,7 @@ export const resendUserMessage = (userMessageId: string, topicId: string, model:
           status: AssistantMessageStatus.PENDING,
           updatedAt: new Date().toISOString(),
           model: model,
-          modelId: model.id,
+          modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
           blocks: [] // 清空块数组
         };
 
@@ -303,7 +304,7 @@ export const regenerateMessage = (messageId: string, topicId: string, model: Mod
       status: AssistantMessageStatus.PENDING,
       updatedAt: new Date().toISOString(),
       model: model, // 使用顶部模型选择器的新模型
-      modelId: model.id, // 更新模型ID
+      modelId: getModelIdentityKey({ id: model.id, provider: model.provider }), // 更新模型ID
       blocks: [], // 清空块，等待processAssistantResponse创建新的块
       // 保持版本信息，包括新保存的版本
       versions: updatedMessage.versions || []

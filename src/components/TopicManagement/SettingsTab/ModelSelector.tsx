@@ -15,6 +15,7 @@ import {
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { Model } from '../../../shared/types';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 interface ModelSelectorProps {
   value: string;
@@ -28,6 +29,7 @@ interface ExtendedModel extends Model {
   providerName?: string;
   supportsFunctionCalling?: boolean;
   supportsVision?: boolean;
+  identityKey: string;
 }
 
 /**
@@ -61,6 +63,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               ...model,
               providerId: provider.id,
               providerName: provider.name,
+              identityKey: getModelIdentityKey({ id: model.id, provider: provider.id }),
               // 确保必要字段存在
               supportsFunctionCalling: model.capabilities?.functionCalling || false,
               supportsVision: model.capabilities?.multimodal || model.multimodal || false
@@ -94,7 +97,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   };
 
   const getModelById = (modelId: string) => {
-    return availableModels.find(model => model.id === modelId);
+    const identity = parseModelIdentityKey(modelId);
+    if (identity) {
+      // 使用 {id, provider} 组合精确匹配，避免同名模型冲突
+      return availableModels.find(model => modelMatchesIdentity(model, identity, model.providerId));
+    }
+    
+    // 兜底：使用 identityKey 匹配（避免仅按 id 匹配导致冲突）
+    return availableModels.find(model => model.identityKey === modelId);
   };
 
   if (loading) {
@@ -158,7 +168,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         }}
       >
         {availableModels.map((model) => (
-          <MenuItem key={model.id} value={model.id}>
+          <MenuItem key={model.identityKey} value={model.identityKey}>
             <ListItemIcon>
               <Avatar
                 sx={{

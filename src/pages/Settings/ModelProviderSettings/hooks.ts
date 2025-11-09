@@ -6,8 +6,8 @@ import type { Model } from '../../../shared/types';
 import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../shared/config/defaultModels';
 import { isValidUrl } from '../../../shared/utils';
 import ApiKeyManager from '../../../shared/services/ApiKeyManager';
-import { testApiConnection, sendChatRequest } from '../../../shared/api';
-import { OpenAIResponseProvider } from '../../../shared/providers/OpenAIResponseProvider';
+import { testApiConnection } from '../../../shared/api';
+import { modelMatchesIdentity } from '../../../shared/utils/modelUtils';
 import { CONSTANTS, STYLES, useDebounce } from './constants';
 
 // ============================================================================
@@ -518,8 +518,10 @@ export const useProviderSettings = (provider: Provider | undefined) => {
         enabled: true
       };
 
-      // 检查模型是否已存在
-      const modelExists = provider.models.some(m => m.id === model.id);
+      // 检查模型是否已存在（使用精确匹配：{id, provider}组合）
+      const modelExists = provider.models.some(m => 
+        modelMatchesIdentity(m, { id: model.id, provider: provider.id }, provider.id)
+      );
       if (modelExists) {
         // 如果模型已存在，不添加
         return;
@@ -536,9 +538,11 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   // 批量添加多个模型
   const handleBatchAddModels = useCallback((addedModels: Model[]) => {
     if (provider && addedModels.length > 0) {
-      // 获取所有不存在的模型
+      // 获取所有不存在的模型（使用精确匹配：{id, provider}组合）
       const newModels = addedModels.filter(model =>
-        !provider.models.some(m => m.id === model.id)
+        !provider.models.some(m => 
+          modelMatchesIdentity(m, { id: model.id, provider: provider.id }, provider.id)
+        )
       ).map(model => ({
         ...model,
         provider: provider.id,
@@ -658,60 +662,28 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       // 创建测试模型对象，使用当前保存的API配置
       const testModel = {
         ...model,
+        provider: provider.id, // 确保包含 provider 信息
+        providerType: provider.providerType, // 确保包含 providerType
         apiKey: apiKey,
         baseUrl: baseUrl,
         enabled: true
       };
 
-      // 根据提供商类型选择正确的测试方法
-      let testResponse;
+      // 直接使用 testApiConnection，它会使用模型对象的配置进行测试
+      // 而不会去数据库中查找，这样即使模型还未添加到 provider 也可以测试
+      const success = await testApiConnection(testModel);
 
-      if (provider.providerType === 'openai-response') {
-        // 对于 OpenAI Responses API，使用专用的测试方法
-        try {
-          // 使用静态导入的 OpenAIResponseProvider
-          const responseProvider = new OpenAIResponseProvider(testModel);
-
-          // 使用 sendChatMessage 方法测试
-          const result = await responseProvider.sendChatMessage([{
-            role: 'user',
-            content: '这是一条API测试消息，请简短回复以验证连接。'
-          }], {
-            assistant: { temperature: 0.7, maxTokens: 50 }
-          });
-
-          testResponse = {
-            success: true,
-            content: typeof result === 'string' ? result : result.content
-          };
-        } catch (error: any) {
-          testResponse = {
-            success: false,
-            error: error.message || '测试失败'
-          };
-        }
-      } else {
-        // 其他提供商使用原有的测试方法
-        testResponse = await sendChatRequest({
-          messages: [{
-            role: 'user',
-            content: '这是一条API测试消息，请简短回复以验证连接。'
-          }],
-          modelId: testModel.id
-        });
-      }
-
-      if (testResponse.success) {
-        // 显示成功信息和API响应内容
+      if (success) {
+        // 显示成功信息
         setTestResult({
           success: true,
-          message: `模型 ${model.name} 连接成功!\n\n响应内容: "${testResponse.content?.substring(0, 100)}${testResponse.content && testResponse.content.length > 100 ? '...' : ''}"`
+          message: `模型 ${model.name} 连接成功！`
         });
       } else {
-        // 显示失败信息和错误原因
+        // 显示失败信息
         setTestResult({
           success: false,
-          message: `模型 ${model.name} 连接失败：${testResponse.error || '未知错误'}`
+          message: `模型 ${model.name} 连接失败，请检查API密钥和基础URL是否正确。`
         });
       }
     } catch (error) {

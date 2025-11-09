@@ -1,6 +1,7 @@
 import type { Model } from '../types';
 import { getSettingFromDB } from '../services/storage/storageService';
 import { getProviderApi } from '../services/ProviderFactory';
+import { modelMatchesIdentity, parseModelIdentityKey } from '../utils/modelUtils';
 import store from '../store';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 
@@ -60,16 +61,24 @@ export const testApiConnection = async (model: Model): Promise<boolean> => {
       return await provider.testConnection();
     }
 
-    // 其他提供商使用原有的测试方法
-    const response = await sendChatRequest({
-      messages: [{
-        role: 'user',
-        content: '你好，这是一条测试消息。请回复"连接成功"。'
-      }],
-      modelId: model.id
-    });
+    // 对于测试连接，直接使用传入的模型对象，不从数据库查找
+    // 这样可以测试未添加到 provider 列表中的模型
+    const api = getProviderApi(model);
+    
+    // 构造测试消息
+    const testMessages = [{
+      id: 'test-msg',
+      role: 'user' as const,
+      content: '你好，这是一条测试消息。请回复"连接成功"。',
+      timestamp: new Date().toISOString()
+    }];
 
-    return response.success && (response.content?.includes('连接成功') || (response.content?.length || 0) > 0);
+    // 直接调用 API 的 sendChatRequest 方法
+    const response = await api.sendChatRequest(testMessages, model);
+    
+    // 检查响应
+    const content = typeof response === 'string' ? response : response.content;
+    return Boolean(content && content.length > 0);
   } catch (error) {
     console.error('API连接测试失败:', error);
     return false;
@@ -190,34 +199,57 @@ async function findModelById(modelId: string): Promise<Model | null> {
     const settings = await getSettingFromDB('settings');
     if (!settings) return null;
 
+    const identity = parseModelIdentityKey(modelId);
+    if (!identity) return null;
+
+    const providers = settings.providers || [];
+
     // 先在models中查找
     const models = settings.models as Model[];
     if (models && Array.isArray(models)) {
-      const model = models.find(m => m.id === modelId);
+      // 使用 {id, provider} 组合精确匹配
+      const model = models.find(m => modelMatchesIdentity(m, identity, m.provider));
+      
       if (model) {
-        // 补充provider信息
-        if ((!model.apiKey || !model.baseUrl) && model.provider && settings.providers) {
-          const provider = settings.providers.find((p: any) => p.id === model.provider);
+        const providerId = model.provider || identity.provider;
+        if (providerId) {
+          const provider = providers.find((p: any) => p.id === providerId);
           if (provider) {
-            model.apiKey = provider.apiKey;
-            model.baseUrl = provider.baseUrl;
+            return {
+              ...model,
+              provider: providerId,
+              apiKey: model.apiKey || provider.apiKey,
+              baseUrl: model.baseUrl || provider.baseUrl,
+              providerType: model.providerType || provider.providerType || providerId
+            };
           }
         }
-        return model;
+        return {
+          ...model,
+          provider: providerId || model.provider
+        };
       }
     }
 
     // 在providers中查找
-    if (settings.providers && Array.isArray(settings.providers)) {
-      for (const provider of settings.providers) {
+    if (providers && Array.isArray(providers)) {
+      for (const provider of providers) {
+        if (identity.provider && provider.id !== identity.provider) {
+          continue;
+        }
+        
         if (provider.models && Array.isArray(provider.models)) {
-          const providerModel = provider.models.find((m: any) => m.id === modelId);
+          const providerModel = provider.models.find((m: any) => 
+            modelMatchesIdentity(m, identity, provider.id)
+          );
+          
           if (providerModel) {
             return {
               ...providerModel,
               provider: provider.id,
               apiKey: provider.apiKey,
-              baseUrl: provider.baseUrl
+              baseUrl: provider.baseUrl,
+              providerType: providerModel.providerType || provider.providerType || provider.id
             };
           }
         }

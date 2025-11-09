@@ -382,6 +382,8 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     onClearTopic,
     onToolsEnabledChange,
     handleQuickWebSearchToggle,
+    toggleImageGenerationMode,
+    toggleVideoGenerationMode,
     menuManager,
     voiceInputManager,
     canSendMessage: canSendMessage as () => boolean,

@@ -5,6 +5,220 @@
 import type { Model } from '../types';
 
 /**
+ * 模型唯一标识结构
+ */
+export interface ModelIdentity {
+  id: string;
+  provider?: string;
+}
+
+/**
+ * 从模型 ID 中提取默认组名。
+ * 规则如下：
+ * 1. 第一类分隔规则：以第一个出现的分隔符分割，取第 0 个部分作为组名。
+ * 2. 第二类分隔规则：取前两个部分拼接（如 'a-b-c' 得到 'a-b'）。
+ * 3. 其他情况返回 id。
+ *
+ * 例如：
+ * - 'gpt-3.5-turbo-16k-0613' => 'gpt-3.5'
+ * - 'qwen3:32b' => 'qwen3'
+ * - 'Qwen/Qwen3-32b' => 'qwen'
+ * - 'deepseek-r1' => 'deepseek-r1'
+ * - 'o3' => 'o3'
+ *
+ * @param {string} id 模型 ID 字符串
+ * @param {string} [provider] 提供商 ID 字符串
+ * @returns {string} 提取的组名
+ */
+export function getDefaultGroupName(id: string, provider?: string): string {
+  const str = id.toLowerCase();
+
+  // 定义分隔符
+  let firstDelimiters = ['/', ' ', ':'];
+  let secondDelimiters = ['-', '_'];
+
+  if (provider && ['aihubmix', 'silicon', 'ocoolai', 'o3', 'dmxapi'].includes(provider.toLowerCase())) {
+    firstDelimiters = ['/', ' ', '-', '_', ':'];
+    secondDelimiters = [];
+  }
+
+  // 第一类分隔规则
+  for (const delimiter of firstDelimiters) {
+    if (str.includes(delimiter)) {
+      return str.split(delimiter)[0];
+    }
+  }
+
+  // 第二类分隔规则
+  for (const delimiter of secondDelimiters) {
+    if (str.includes(delimiter)) {
+      const parts = str.split(delimiter);
+      return parts.length > 1 ? parts[0] + '-' + parts[1] : parts[0];
+    }
+  }
+
+  return str;
+}
+
+/**
+ * 从模型 ID 中提取基础名称。
+ * 例如：
+ * - 'deepseek/deepseek-r1' => 'deepseek-r1'
+ * - 'deepseek-ai/deepseek/deepseek-r1' => 'deepseek-r1'
+ * @param {string} id 模型 ID
+ * @param {string} [delimiter='/'] 分隔符，默认为 '/'
+ * @returns {string} 基础名称
+ */
+export function getBaseModelName(id: string, delimiter: string = '/'): string {
+  const parts = id.split(delimiter);
+  return parts[parts.length - 1];
+}
+
+/**
+ * 从模型 ID 中提取基础名称并转换为小写。
+ * 例如：
+ * - 'deepseek/DeepSeek-R1' => 'deepseek-r1'
+ * - 'deepseek-ai/deepseek/DeepSeek-R1' => 'deepseek-r1'
+ * @param {string} id 模型 ID
+ * @param {string} [delimiter='/'] 分隔符，默认为 '/'
+ * @returns {string} 小写的基础名称
+ */
+export function getLowerBaseModelName(id: string, delimiter: string = '/'): string {
+  const baseModelName = getBaseModelName(id, delimiter).toLowerCase();
+
+  // for openrouter
+  if (baseModelName.endsWith(':free')) {
+    return baseModelName.replace(':free', '');
+  }
+
+  return baseModelName;
+}
+
+/**
+ * 根据模型信息生成唯一标识
+ * 采用JSON序列化，避免分隔符冲突
+ * @param model 模型或包含id/provider的对象
+ * @returns 唯一标识字符串
+ */
+export function getModelIdentityKey(model?: (Pick<Model, 'id'> & { provider?: string }) | null): string {
+  if (!model || !model.id) {
+    return '';
+  }
+
+  const identity: ModelIdentity = { id: model.id };
+  if (model.provider) {
+    identity.provider = model.provider;
+  }
+
+  return JSON.stringify(identity);
+}
+
+/**
+ * 解析模型唯一标识
+ * 支持 JSON 字符串 或 provider::id 格式，向后兼容纯 id
+ * @param identifier 唯一标识字符串
+ * @returns 解析后的模型信息
+ */
+export function parseModelIdentityKey(identifier?: string | null): ModelIdentity | null {
+  if (!identifier) {
+    return null;
+  }
+
+  const trimmed = identifier.trim();
+
+  // 优先尝试解析 JSON
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed) as ModelIdentity;
+      if (parsed && typeof parsed.id === 'string') {
+        return {
+          id: parsed.id,
+          provider: typeof parsed.provider === 'string' ? parsed.provider : undefined
+        };
+      }
+    } catch {
+      // ignore json parse error, fallback below
+    }
+  }
+
+  // 兼容 provider::modelId 格式
+  const delimiter = '::';
+  if (trimmed.includes(delimiter)) {
+    const [provider, ...rest] = trimmed.split(delimiter);
+    const id = rest.join(delimiter);
+    if (id) {
+      return {
+        id,
+        provider: provider || undefined
+      };
+    }
+  }
+
+  // 兜底：仅包含模型ID
+  return { id: trimmed };
+}
+
+/**
+ * 判断模型是否匹配指定的标识
+ * @param model 模型对象
+ * @param identity 模型标识
+ * @param providerFallback 当模型缺少provider字段时的兜底提供商ID
+ */
+export function modelMatchesIdentity(
+  model: Pick<Model, 'id'> & { provider?: string },
+  identity: ModelIdentity | null | undefined,
+  providerFallback?: string
+): boolean {
+  if (!identity) return false;
+  if (identity.id !== model.id) return false;
+
+  const targetProvider = identity.provider;
+  const modelProvider = model.provider || providerFallback;
+
+  if (!targetProvider) {
+    return true;
+  }
+
+  if (!modelProvider) {
+    return false;
+  }
+
+  return targetProvider === modelProvider;
+}
+
+/**
+ * 在提供商列表中根据标识查找模型
+ * @param providers 提供商列表
+ * @param identifier 模型标识字符串
+ * @param options 配置项
+ * @returns 匹配的模型及其提供商
+ */
+export function findModelInProviders<T extends { id: string; models?: Model[] }>(
+  providers: T[],
+  identifier?: string | null,
+  options: { includeDisabled?: boolean } = {}
+): { model: Model; provider: T } | null {
+  const identity = parseModelIdentityKey(identifier);
+  if (!identity) {
+    return null;
+  }
+
+  for (const provider of providers) {
+    if (!provider.models) continue;
+
+    const found = provider.models.find(model =>
+      modelMatchesIdentity(model, identity, provider.id) && (options.includeDisabled || model.enabled)
+    );
+
+    if (found) {
+      return { model: found, provider };
+    }
+  }
+
+  return null;
+}
+
+/**
  * 检查模型是否支持多模态输入
  * @param model 模型对象
  * @returns 是否支持多模态输入

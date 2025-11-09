@@ -27,6 +27,7 @@ import { Plus as AddIcon, Trash2 as DeleteIcon } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import DropdownModelSelector from '../../pages/ChatPage/components/DropdownModelSelector';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 
 import type { ModelComboConfig, ModelComboTemplate, ModelComboStrategy, ModelComboFormData } from '../../shared/types/ModelCombo';
 
@@ -60,23 +61,52 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
     .flatMap(provider =>
       provider.models
         .filter(model => model.enabled)
+        .map(model => ({
+          ...model,
+          provider: model.provider || provider.id,
+          providerId: provider.id,
+          identityKey: getModelIdentityKey({ id: model.id, provider: model.provider || provider.id })
+        }))
     );
 
   const steps = ['基本信息', '选择策略', '配置模型', '完成设置'];
 
   useEffect(() => {
     if (combo) {
+      const normalizedModels = combo.models.map(m => {
+        const parsedIdentity = parseModelIdentityKey(m.modelId);
+        if (parsedIdentity) {
+          return {
+            modelId: getModelIdentityKey(parsedIdentity),
+            role: m.role,
+            weight: m.weight,
+            priority: m.priority
+          };
+        }
+
+        const matchedModel = availableModels.find(model =>
+          model.id === m.modelId ||
+          (model as any).identityKey === m.modelId
+        );
+
+        const fallbackIdentity = matchedModel
+          ? getModelIdentityKey({ id: matchedModel.id, provider: matchedModel.provider || matchedModel.providerId })
+          : getModelIdentityKey({ id: m.modelId, provider: '' });
+
+        return {
+          modelId: fallbackIdentity,
+          role: m.role,
+          weight: m.weight,
+          priority: m.priority
+        };
+      });
+
       setFormData({
         name: combo.name,
         description: combo.description || '',
         strategy: combo.strategy,
         enabled: combo.enabled,
-        models: combo.models.map(m => ({
-          modelId: m.modelId,
-          role: m.role,
-          weight: m.weight,
-          priority: m.priority
-        }))
+        models: normalizedModels
       });
     } else {
       setFormData({
@@ -88,7 +118,7 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
       });
     }
     setActiveStep(0);
-  }, [combo, open]);
+  }, [combo, open, availableModels]);
 
   const handleNext = () => {
     setActiveStep((prevStep) => prevStep + 1);
@@ -122,10 +152,26 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
   };
 
   const handleModelChange = (index: number, field: string, value: any) => {
+    let nextValue = value;
+
+    if (field === 'modelId' && typeof value === 'string') {
+      const parsedIdentity = parseModelIdentityKey(value);
+      if (parsedIdentity) {
+        nextValue = getModelIdentityKey(parsedIdentity);
+      } else {
+        const matchedModel = availableModels.find(model =>
+          model.id === value || (model as any).identityKey === value
+        );
+        nextValue = matchedModel
+          ? getModelIdentityKey({ id: matchedModel.id, provider: matchedModel.provider || matchedModel.providerId })
+          : value;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       models: prev.models.map((model, i) =>
-        i === index ? { ...model, [field]: value } : model
+        i === index ? { ...model, [field]: nextValue } : model
       )
     }));
   };
@@ -253,10 +299,29 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
                           选择模型 *
                         </Typography>
                         <DropdownModelSelector
-                          selectedModel={availableModels.find(m => m.id === model.modelId) || null}
+                          selectedModel={
+                            model.modelId
+                              ? availableModels.find(m =>
+                                  modelMatchesIdentity(
+                                    m,
+                                    parseModelIdentityKey(model.modelId),
+                                    m.provider
+                                  )
+                                ) || null
+                              : null
+                          }
                           availableModels={availableModels}
                           handleModelSelect={(selectedModel) => {
-                            handleModelChange(index, 'modelId', selectedModel?.id || '');
+                            handleModelChange(
+                              index,
+                              'modelId',
+                              selectedModel
+                                ? getModelIdentityKey({
+                                    id: selectedModel.id,
+                                    provider: selectedModel.provider || (selectedModel as any).providerId
+                                  })
+                                : ''
+                            );
                           }}
                         />
                       </Box>

@@ -5,6 +5,7 @@ import type { GeneratedImage } from '../types';
 import { ThinkingDisplayStyle } from '../../components/message/blocks/ThinkingBlock';
 import { getStorageItem, setStorageItem } from '../utils/storage';
 import { getDefaultModelProviders, getDefaultModelId, type ModelProvider } from '../config/defaultModels';
+import { findModelInProviders, getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../utils/modelUtils';
 import type { ThemeStyle } from '../config/themes';
 
 interface SettingsState {
@@ -164,7 +165,41 @@ interface SettingsState {
   showPerformanceMonitor?: boolean; // 是否显示性能监控
 }
 
+const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {
+  if (!identifier) return undefined;
 
+  const parsed = parseModelIdentityKey(identifier);
+  if (!parsed) return undefined;
+
+  if (parsed.provider) {
+    return getModelIdentityKey(parsed);
+  }
+
+  const matched = findModelInProviders(providers, identifier, { includeDisabled: true });
+  if (matched) {
+    return getModelIdentityKey({
+      id: matched.model.id,
+      provider: matched.model.provider || matched.provider.id
+    });
+  }
+
+  return getModelIdentityKey(parsed);
+};
+
+const setDefaultFlags = (providers: ModelProvider[], identityKey?: string): void => {
+  const identity = parseModelIdentityKey(identityKey);
+
+  providers.forEach(provider => {
+    provider.models = provider.models.map(model => ({
+      ...model,
+      isDefault: modelMatchesIdentity(model, identity, provider.id)
+    }));
+  });
+};
+
+const canonicalModelKey = (model: Model, providerId: string): string => {
+  return getModelIdentityKey({ id: model.id, provider: model.provider || providerId });
+};
 
 // 初始化默认状态
 const getInitialState = (): SettingsState => {
@@ -312,6 +347,7 @@ const getInitialState = (): SettingsState => {
 
   // 设置默认模型
   const defaultModelId = getDefaultModelId(initialProviders);
+  setDefaultFlags(defaultState.providers, defaultModelId);
   return {
     ...defaultState,
     defaultModelId,
@@ -341,6 +377,12 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       if (!savedSettings.currentModelId) {
         savedSettings.currentModelId = savedSettings.defaultModelId || getDefaultModelId(providers);
       }
+
+      // 统一模型标识格式，兼容旧数据
+      savedSettings.defaultModelId = ensureModelIdentityKey(savedSettings.defaultModelId || getDefaultModelId(providers), providers);
+      savedSettings.currentModelId = ensureModelIdentityKey(savedSettings.currentModelId || savedSettings.defaultModelId, providers);
+      savedSettings.topicNamingModelId = ensureModelIdentityKey(savedSettings.topicNamingModelId, providers);
+      setDefaultFlags(providers, savedSettings.defaultModelId);
 
       // 如果没有思考过程显示样式设置，使用默认值
       if (!savedSettings.thinkingDisplayStyle) {
@@ -547,50 +589,68 @@ const settingsSlice = createSlice({
     },
     updateModel: (state, action: PayloadAction<{ id: string; updates: Partial<Model> }>) => {
       const { id, updates } = action.payload;
-      const modelIndex = state.models.findIndex(model => model.id === id);
-      if (modelIndex !== -1) {
-        state.models[modelIndex] = { ...state.models[modelIndex], ...updates };
+      const identity = parseModelIdentityKey(id);
+      
+      if (identity) {
+        const modelIndex = state.models.findIndex(model => 
+          modelMatchesIdentity(model, identity, model.provider)
+        );
+        if (modelIndex !== -1) {
+          state.models[modelIndex] = { ...state.models[modelIndex], ...updates };
+        }
       }
     },
     deleteModel: (state, action: PayloadAction<string>) => {
       const modelId = action.payload;
+      const identity = parseModelIdentityKey(modelId);
 
-      // 从全局models数组中删除模型
-      state.models = state.models.filter(model => model.id !== modelId);
+      if (identity) {
+        // 从全局models数组中删除模型
+        state.models = state.models.filter(model => 
+          !modelMatchesIdentity(model, identity, model.provider)
+        );
 
-      // 从所有provider的models数组中删除模型
-      state.providers.forEach((provider: ModelProvider, index: number) => {
-        state.providers[index].models = provider.models.filter((model: Model) => model.id !== modelId);
-      });
+        // 从所有provider的models数组中删除模型
+        state.providers.forEach((provider: ModelProvider, index: number) => {
+          state.providers[index].models = provider.models.filter((model: Model) => 
+            !modelMatchesIdentity(model, identity, provider.id)
+          );
+        });
+      }
 
-      // 如果删除的是默认模型，需要重新设置默认模型
-      if (state.defaultModelId === modelId) {
-        // 尝试找到新的默认模型
-        const firstAvailableModel = state.providers
-          .flatMap((provider: ModelProvider) => provider.models)
-          .find((model: Model) => model.enabled);
+      // 校验默认模型是否仍然存在
+      const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
+      if (defaultMatch) {
+        state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
+        setDefaultFlags(state.providers, state.defaultModelId);
+      } else {
+        const replacement = state.providers
+          .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
+          .find(({ model }) => model.enabled);
 
-        if (firstAvailableModel) {
-          state.defaultModelId = firstAvailableModel.id;
-          firstAvailableModel.isDefault = true;
+        if (replacement) {
+          state.defaultModelId = canonicalModelKey(replacement.model, replacement.provider.id);
+          setDefaultFlags(state.providers, state.defaultModelId);
         } else {
           state.defaultModelId = undefined;
         }
       }
 
       // 如果删除的是当前选中的模型，需要重新设置当前模型
-      if (state.currentModelId === modelId) {
+      if (!findModelInProviders(state.providers, state.currentModelId, { includeDisabled: true })) {
         state.currentModelId = state.defaultModelId;
       }
     },
     setDefaultModel: (state, action: PayloadAction<string>) => {
-        state.models.forEach(model => {
-        model.isDefault = model.id === action.payload;
+      const identity = parseModelIdentityKey(action.payload);
+      state.models.forEach(model => {
+        model.isDefault = modelMatchesIdentity(model, identity);
       });
-      state.defaultModelId = action.payload;
+      setDefaultFlags(state.providers, action.payload);
+      state.defaultModelId = identity ? getModelIdentityKey(identity) : action.payload;
     },
     setCurrentModel: (state, action: PayloadAction<string>) => {
-      state.currentModelId = action.payload;
+      state.currentModelId = ensureModelIdentityKey(action.payload, state.providers) || action.payload;
     },
     addProvider: (state, action: PayloadAction<ModelProvider>) => {
       state.providers.push(action.payload);
@@ -644,8 +704,9 @@ const settingsSlice = createSlice({
       const { providerId, modelId } = action.payload;
       const providerIndex = state.providers.findIndex((provider: ModelProvider) => provider.id === providerId);
       if (providerIndex !== -1) {
+        const identity = parseModelIdentityKey(modelId);
         state.providers[providerIndex].models.forEach((model: Model) => {
-          model.isDefault = model.id === modelId;
+          model.isDefault = modelMatchesIdentity(model, identity, providerId);
         });
       }
     },
@@ -659,21 +720,24 @@ const settingsSlice = createSlice({
           (model: Model) => model.id !== modelId
         );
 
-        // 如果删除的是默认模型，需要重新设置默认模型
-        if (state.defaultModelId === modelId) {
-          // 尝试找到新的默认模型
-          const firstAvailableModel = state.providers[providerIndex].models.find((model: Model) => model.enabled);
+        const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
+        if (defaultMatch) {
+          state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
+          setDefaultFlags(state.providers, state.defaultModelId);
+        } else {
+          const replacement = state.providers
+            .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
+            .find(({ model }) => model.enabled);
 
-          if (firstAvailableModel) {
-            state.defaultModelId = firstAvailableModel.id;
-            firstAvailableModel.isDefault = true;
+          if (replacement) {
+            state.defaultModelId = canonicalModelKey(replacement.model, replacement.provider.id);
+            setDefaultFlags(state.providers, state.defaultModelId);
           } else {
             state.defaultModelId = undefined;
           }
         }
 
-        // 如果删除的是当前选中的模型，需要重新设置当前模型
-        if (state.currentModelId === modelId) {
+        if (!findModelInProviders(state.providers, state.currentModelId, { includeDisabled: true })) {
           state.currentModelId = state.defaultModelId;
         }
       }
@@ -707,7 +771,22 @@ const settingsSlice = createSlice({
       state.generatedImages = [];
     },
     updateSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
-      Object.assign(state, action.payload);
+      const updates: Partial<SettingsState> = { ...action.payload };
+
+      if (updates.defaultModelId !== undefined) {
+        updates.defaultModelId = ensureModelIdentityKey(updates.defaultModelId, state.providers);
+        setDefaultFlags(state.providers, updates.defaultModelId);
+      }
+
+      if (updates.currentModelId !== undefined) {
+        updates.currentModelId = ensureModelIdentityKey(updates.currentModelId, state.providers);
+      }
+
+      if (updates.topicNamingModelId !== undefined) {
+        updates.topicNamingModelId = ensureModelIdentityKey(updates.topicNamingModelId, state.providers);
+      }
+
+      Object.assign(state, updates);
     },
     setModelSelectorStyle: (state, action: PayloadAction<'dialog' | 'dropdown'>) => {
       state.modelSelectorStyle = action.payload;

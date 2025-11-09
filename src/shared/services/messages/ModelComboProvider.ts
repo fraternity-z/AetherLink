@@ -6,6 +6,7 @@ import type { Message, Model, MCPTool } from '../../types';
 import { getMainTextContent, createMessage } from '../../utils/messageUtils';
 import { ApiProviderRegistry } from './ApiProvider';
 import store from '../../store';
+import { modelMatchesIdentity, parseModelIdentityKey } from '../../utils/modelUtils';
 
 export class ModelComboProvider {
   private model: Model;
@@ -426,10 +427,19 @@ ${combinedContent}`;
     try {
       // 使用静态导入的store来获取当前的模型配置
       const state = store.getState();
+      const identity = parseModelIdentityKey(modelId);
+
+      if (!identity) {
+        console.warn(`[ModelComboProvider] 无法解析模型标识: ${modelId}`);
+        return null;
+      }
 
       // 从所有供应商中查找模型
       for (const provider of state.settings.providers) {
-        const model = provider.models.find((m: any) => m.id === modelId);
+        if (identity.provider && provider.id !== identity.provider) {
+          continue;
+        }
+        const model = provider.models.find((m: any) => modelMatchesIdentity(m, identity, provider.id));
         if (model) {
           // 确保模型有完整的API配置
           return {

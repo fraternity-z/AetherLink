@@ -15,6 +15,7 @@ import {
   MessageBlockStatus,
   AssistantMessageStatus
 } from '../../../shared/types/newMessage.ts';
+import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 
 import { EnhancedWebSearchService } from '../../../shared/services/webSearch';
@@ -622,7 +623,7 @@ export const useChatFeatures = (
 
       const response = await sendChatRequest({
         messages,
-        modelId: model.id,
+        modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
         onChunk: async (content: string) => {
           // 只累积新的AI分析内容
           accumulatedContent += content;
@@ -817,7 +818,7 @@ export const useChatFeatures = (
 
       // 3. 直接创建多模型块
       const responses = models.map(model => ({
-        modelId: model.id,
+        modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
         modelName: model.name || model.id,
         content: '',
         status: MessageBlockStatus.PENDING

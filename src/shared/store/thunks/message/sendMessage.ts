@@ -7,6 +7,7 @@ import type { RootState, AppDispatch } from '../../index';
 import { saveMessageAndBlocksToDB } from './utils';
 import { processAssistantResponse } from './assistantResponse';
 import { AssistantMessageStatus } from '../../../types/newMessage';
+import { getModelIdentityKey } from '../../../utils/modelUtils';
 
 export const sendMessage = (
   content: string,
@@ -34,7 +35,7 @@ export const sendMessage = (
       content,
       assistantId,
       topicId,
-      modelId: model.id,
+      modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
       model,
       images,
       files
@@ -53,7 +54,7 @@ export const sendMessage = (
     const { message: assistantMessage, blocks: assistantBlocks } = createAssistantMessage({
       assistantId,
       topicId,
-      modelId: model.id,
+      modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
       model,
       askId: userMessage.id,
       status: AssistantMessageStatus.STREAMING

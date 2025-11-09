@@ -7,6 +7,7 @@ import { loadTopicMessagesThunk } from '../../../shared/store/slices/newMessages
 import { versionService } from '../../../shared/services/VersionService';
 import type { SiliconFlowImageFormat } from '../../../shared/types';
 import type { AppDispatch } from '../../../shared/store';
+import { findModelInProviders } from '../../../shared/utils/modelUtils';
 
 /**
  * 处理消息相关逻辑的钩子
@@ -80,15 +81,23 @@ export const useMessageHandling = (
       const availableModels = providers.flatMap((provider: any) =>
         (provider.models?.filter((model: any) => model.enabled) || []).map((model: any) => ({
           ...model,
-          provider: provider.id, // 确保provider字段设置为正确的provider ID
+          provider: model.provider || provider.id,
           providerType: model.providerType || provider.providerType || provider.id,
           apiKey: model.apiKey || provider.apiKey,
           baseUrl: model.baseUrl || provider.baseUrl
         }))
       );
 
-      // 从可用模型列表中找到对应的模型对象
-      const latestModel = availableModels.find((m: any) => m.id === latestModelId);
+      const latestMatch = findModelInProviders(providers, latestModelId);
+      const latestModel = latestMatch
+        ? {
+            ...latestMatch.model,
+            provider: latestMatch.model.provider || latestMatch.provider.id,
+            providerType: latestMatch.model.providerType || latestMatch.provider.providerType || latestMatch.provider.id,
+            apiKey: latestMatch.model.apiKey || latestMatch.provider.apiKey,
+            baseUrl: latestMatch.model.baseUrl || latestMatch.provider.baseUrl
+          }
+        : null;
       if (!latestModel) {
         console.error('[handleRegenerateMessage] 找不到对应的模型:', latestModelId);
         // 如果找不到最新模型，回退到组件状态中的模型

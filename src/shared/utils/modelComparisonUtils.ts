@@ -6,6 +6,7 @@ import store from '../store';
 import { updateOneBlock, addOneBlock, messageBlocksSelectors } from '../store/slices/messageBlocksSlice';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
 import { dexieStorage } from '../services/storage/DexieStorageService';
+import { modelMatchesIdentity, parseModelIdentityKey } from './modelUtils';
 
 /**
  * 创建模型对比消息块
@@ -337,16 +338,20 @@ export function getModelInfo(modelId: string): {
     // 使用静态导入的store
     const state = store.getState();
     const providers = state.settings.providers;
+    const identity = parseModelIdentityKey(modelId);
 
-    for (const provider of providers) {
-      const model = provider.models.find(m => m.id === modelId);
-      if (model) {
-        return {
-          name: model.name,
-          providerName: provider.name,
-          avatar: provider.avatar || provider.name.charAt(0).toUpperCase(),
-          color: provider.color || '#1976d2'
-        };
+    // 使用 {id, provider} 组合精确匹配，避免同名模型冲突
+    if (identity) {
+      for (const provider of providers) {
+        const model = provider.models.find(m => modelMatchesIdentity(m, identity, provider.id));
+        if (model) {
+          return {
+            name: model.name,
+            providerName: provider.name,
+            avatar: provider.avatar || provider.name.charAt(0).toUpperCase(),
+            color: provider.color || '#1976d2'
+          };
+        }
       }
     }
 

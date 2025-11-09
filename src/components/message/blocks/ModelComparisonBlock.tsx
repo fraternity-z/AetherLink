@@ -28,6 +28,7 @@ import type { RootState } from '../../../shared/store';
 import type { ModelComparisonMessageBlock } from '../../../shared/types/newMessage';
 import { updateOneBlock } from '../../../shared/store/slices/messageBlocksSlice';
 import { handleUserSelection } from '../../../shared/utils/modelComparisonUtils';
+import { modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 interface ModelComparisonBlockProps {
   block: ModelComparisonMessageBlock;
@@ -41,17 +42,23 @@ const ModelComparisonBlock: React.FC<ModelComparisonBlockProps> = ({ block }) =>
   // 获取模型信息
   const providers = useSelector((state: RootState) => state.settings.providers);
   const getModelInfo = useCallback((modelId: string) => {
-    for (const provider of providers) {
-      const model = provider.models.find(m => m.id === modelId);
-      if (model) {
-        return {
-          name: model.name,
-          providerName: provider.name,
-          avatar: provider.avatar || provider.name.charAt(0).toUpperCase(),
-          color: provider.color
-        };
+    const identity = parseModelIdentityKey(modelId);
+
+    // 使用 {id, provider} 组合精确匹配，避免同名模型冲突
+    if (identity) {
+      for (const provider of providers) {
+        const model = provider.models.find(m => modelMatchesIdentity(m, identity, provider.id));
+        if (model) {
+          return {
+            name: model.name,
+            providerName: provider.name,
+            avatar: provider.avatar || provider.name.charAt(0).toUpperCase(),
+            color: provider.color
+          };
+        }
       }
     }
+
     return {
       name: modelId,
       providerName: 'Unknown',

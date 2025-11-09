@@ -20,6 +20,7 @@ import { X as CloseIcon, Check as CheckIcon } from 'lucide-react';
 import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
+import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 // 样式常量 - 提取重复的样式对象以提升性能
 const DIALOG_STYLES = {
@@ -165,6 +166,14 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
     handleModelSelect(model);
   }, [handleModelSelect]);
 
+  const getIdentityValue = useCallback((model: Model): string => {
+    return getModelIdentityKey({ id: model.id, provider: model.provider });
+  }, []);
+
+  const selectedIdentity = useMemo(() => (
+    selectedModel ? getIdentityValue(selectedModel) : ''
+  ), [selectedModel, getIdentityValue]);
+
 
 
   return (
@@ -210,9 +219,9 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
               // 显示所有模型
               availableModels.map((model) => (
                 <ModelItem
-                  key={`${model.id}-${model.provider}`}
+                  key={getIdentityValue(model)}
                   model={model}
-                  isSelected={selectedModel?.id === model.id && selectedModel?.provider === model.provider}
+                  isSelected={selectedIdentity === getIdentityValue(model)}
                   onSelect={() => handleModelSelectWithClose(model)}
                   providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
                   providers={providers}
@@ -222,9 +231,9 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
               // 显示特定提供商的模型
               groupedModels.groups[activeTab]?.map((model) => (
                 <ModelItem
-                  key={`${model.id}-${model.provider}`}
+                  key={getIdentityValue(model)}
                   model={model}
-                  isSelected={selectedModel?.id === model.id && selectedModel?.provider === model.provider}
+                  isSelected={selectedIdentity === getIdentityValue(model)}
                   onSelect={() => handleModelSelectWithClose(model)}
                   providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
                   providers={providers}

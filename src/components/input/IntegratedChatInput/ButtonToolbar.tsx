@@ -32,6 +32,8 @@ interface ButtonToolbarProps {
   onClearTopic?: () => void;
   onToolsEnabledChange?: (enabled: boolean) => void;
   handleQuickWebSearchToggle?: () => void;
+  toggleImageGenerationMode?: () => void;
+  toggleVideoGenerationMode?: () => void;
   
   // 菜单管理器方法
   menuManager: {
@@ -78,6 +80,8 @@ const useButtonToolbar = ({
   onClearTopic,
   onToolsEnabledChange,
   handleQuickWebSearchToggle,
+  toggleImageGenerationMode,
+  toggleVideoGenerationMode,
   menuManager,
   voiceInputManager,
   canSendMessage,
@@ -144,7 +148,7 @@ const useButtonToolbar = ({
       id: 'image',
       icon: <Image size={20} />,
       tooltip: imageGenerationMode ? '退出图像生成模式' : '图像生成',
-      onClick: () => console.log('图像生成功能'),
+      onClick: toggleImageGenerationMode || (() => {}),
       color: imageGenerationMode ? '#9C27B0' : iconColor,
       disabled: false,
       isActive: imageGenerationMode
@@ -153,7 +157,7 @@ const useButtonToolbar = ({
       id: 'video',
       icon: <Video size={20} />,
       tooltip: videoGenerationMode ? '退出视频生成模式' : '视频生成',
-      onClick: () => console.log('视频生成功能'),
+      onClick: toggleVideoGenerationMode || (() => {}),
       color: videoGenerationMode ? '#FF5722' : iconColor,
       disabled: false,
       isActive: videoGenerationMode

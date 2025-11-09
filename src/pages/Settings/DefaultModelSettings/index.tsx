@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { updateSettings } from '../../../shared/store/settingsSlice';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
 import DialogModelSelector from '../../../pages/ChatPage/components/DialogModelSelector';
 import { useTranslation } from 'react-i18next';
 
@@ -51,13 +52,20 @@ const DefaultModelSettingsPage: React.FC = () => {
           .filter(model => model.enabled)
           .map(model => ({
             ...model,
-            providerName: provider.name // 添加提供商名称
+            providerName: provider.name, // 添加提供商名称
+            providerId: provider.id
           }))
       )
   ), [providers]);
 
   // 当前选中的模型
-  const selectedModel = allModels.find(model => model.id === (topicNamingModelId || defaultModelId)) || null;
+  const selectedModel = useMemo(() => {
+    const identity = parseModelIdentityKey(topicNamingModelId || defaultModelId);
+    if (!identity) {
+      return null;
+    }
+    return allModels.find(model => modelMatchesIdentity(model, identity, (model as any).providerId)) || null;
+  }, [allModels, topicNamingModelId, defaultModelId]);
 
   // 处理返回按钮点击
   const handleBack = () => {
@@ -66,8 +74,10 @@ const DefaultModelSettingsPage: React.FC = () => {
 
   // 处理选择话题命名模型
   const handleTopicNamingModelChange = (model: any) => {
+    const providerId = model.provider || model.providerId;
+    const identityKey = getModelIdentityKey({ id: model.id, provider: providerId });
     // 更新到 Redux store
-    dispatch(updateSettings({ topicNamingModelId: model.id }));
+    dispatch(updateSettings({ topicNamingModelId: identityKey }));
     // 关闭选择器
     setModelSelectorOpen(false);
   };

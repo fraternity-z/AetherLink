@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { setCurrentModel } from '../../../shared/store/settingsSlice';
+import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
 import type { Model } from '../../../shared/types';
 
 export function useModelSelection() {
@@ -25,6 +26,10 @@ export function useModelSelection() {
     setDialogOpen(false);
   }, []);
 
+  const matchesSelection = useCallback((model: Model, identifier?: string | null) => {
+    return modelMatchesIdentity(model, parseModelIdentityKey(identifier), model.provider);
+  }, []);
+
   // 优化选择模型函数 - 添加防抖和错误处理
   const handleModelSelect = useCallback((model: Model) => {
     if (!model || !model.id) {
@@ -32,11 +37,13 @@ export function useModelSelection() {
       return;
     }
 
+    const identityKey = getModelIdentityKey({ id: model.id, provider: model.provider });
+
     // 使用 requestAnimationFrame 优化 UI 更新时机
     requestAnimationFrame(() => {
       setSelectedModel(model);
       // 保存选择的模型ID到Redux和localStorage
-      dispatch(setCurrentModel(model.id));
+      dispatch(setCurrentModel(identityKey));
       handleModelMenuClose();
     });
   }, [dispatch, handleModelMenuClose]);
@@ -84,7 +91,7 @@ export function useModelSelection() {
 
           // 如果存储了当前模型ID，查找匹配的模型
           if (currentModelId) {
-            const model = defaultModels.find(m => m.id === currentModelId);
+            const model = defaultModels.find(m => matchesSelection(m, currentModelId));
             if (model) {
               setSelectedModel(model);
             } else {
@@ -98,7 +105,7 @@ export function useModelSelection() {
 
           // 使用Redux中存储的当前模型ID，如果没有则使用默认模型
           if (currentModelId) {
-            const model = availableModels.find(m => m.id === currentModelId);
+            const model = availableModels.find(m => matchesSelection(m, currentModelId));
             if (model) {
               setSelectedModel(model);
             } else {
@@ -107,7 +114,7 @@ export function useModelSelection() {
               setSelectedModel(defaultModel);
               // 更新Redux中的当前模型ID
               if (defaultModel) {
-                dispatch(setCurrentModel(defaultModel.id));
+                dispatch(setCurrentModel(getModelIdentityKey({ id: defaultModel.id, provider: defaultModel.provider })));
               }
             }
           } else {
@@ -116,7 +123,7 @@ export function useModelSelection() {
             setSelectedModel(defaultModel);
             // 更新Redux中的当前模型ID
             if (defaultModel) {
-              dispatch(setCurrentModel(defaultModel.id));
+              dispatch(setCurrentModel(getModelIdentityKey({ id: defaultModel.id, provider: defaultModel.provider })));
             }
           }
         }

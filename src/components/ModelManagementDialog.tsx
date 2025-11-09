@@ -7,7 +7,6 @@ import {
   Typography,
   Box,
   CircularProgress,
-  Collapse,
   useTheme,
   InputAdornment,
   Avatar
@@ -16,7 +15,6 @@ import {
   Plus as AddIcon, 
   Minus as RemoveIcon, 
   Search as SearchIcon, 
-  ChevronRight,
   Square,
   CheckSquare,
   Repeat
@@ -26,6 +24,8 @@ import { fetchModels } from '../shared/services/network/APIService';
 import type { Model } from '../shared/types';
 import { debounce } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import ModelGroup from './settings/ModelGroup';
+import { getDefaultGroupName, modelMatchesIdentity } from '../shared/utils/modelUtils';
 
 // 定义分组模型的类型
 type GroupedModels = Record<string, Model[]>;
@@ -115,17 +115,18 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
   const [searchInputValue, setSearchInputValue] = useState<string>('');
   const [actualSearchTerm, setActualSearchTerm] = useState<string>('');
   const [pendingModels, setPendingModels] = useState<Map<string, boolean>>(new Map());
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const [isSearchPending, startSearchTransition] = useTransition();
 
   // 使用ref存储初始provider，避免重新加载
   const initialProviderRef = useRef<any>(null);
 
-  // 检查模型是否已经在提供商的模型列表中
+  // 检查模型是否已经在提供商的模型列表中（使用精确匹配：{id, provider}组合）
   const isModelInProvider = useCallback((modelId: string): boolean => {
-    return existingModels.some(m => m.id === modelId) || pendingModels.get(modelId) === true;
-  }, [existingModels, pendingModels]);
+    return existingModels.some(m => 
+      modelMatchesIdentity(m, { id: modelId, provider: provider.id }, provider.id)
+    ) || pendingModels.get(modelId) === true;
+  }, [existingModels, pendingModels, provider.id]);
 
   // 恢复防抖搜索函数，使用 useTransition 优化性能
   const debouncedSetSearchTerm = useMemo(
@@ -162,8 +163,8 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
       // 如果搜索词为空，或模型名称/ID匹配，则处理该模型
       const modelName = model.name || model.id;
       if (!searchLower || modelName.toLowerCase().includes(searchLower) || model.id.toLowerCase().includes(searchLower)) {
-        // 使用模型的分组信息，如果没有则使用默认分组
-        const group = model.group || '其他模型';
+        // 使用自动分组逻辑：优先使用 model.group，否则自动从 ID 推断
+        const group = model.group || getDefaultGroupName(model.id, provider?.id);
 
         if (!result[group]) {
           result[group] = [];
@@ -172,7 +173,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
       }
     }
     return result;
-  }, [models, actualSearchTerm]);
+  }, [models, actualSearchTerm, provider?.id]);
 
   // 获取过滤后的模型列表
   const filteredModels = useMemo(() => {
@@ -185,13 +186,6 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     });
   }, [models, actualSearchTerm]);
 
-  // 切换分组折叠状态
-  const toggleGroup = (groupName: string) => {
-    setCollapsedGroups(prev => ({
-      ...prev,
-      [groupName]: !prev[groupName]
-    }));
-  };
 
   const handleAddSingleModel = useCallback((model: Model) => {
     if (!isModelInProvider(model.id)) {
@@ -387,10 +381,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
       return a.localeCompare(b);
     });
     
-    return groupKeys.map(name => ({
-      name,
-      models: groupedModels[name]
-    }));
+    return groupKeys.map(name => [name, groupedModels[name]] as [string, Model[]]);
   }, [groupedModels]);
 
   // 计算是否全部已选择
@@ -441,37 +432,6 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
                   <SearchIcon size={20} color={theme.palette.text.secondary} />
                 </InputAdornment>
               ),
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    {/* 全选/取消全选 */}
-                    <IconButton
-                      size="small"
-                      onClick={handleToggleAll}
-                      disabled={filteredModels.length === 0}
-                      title={allSelected ? t('modelSettings.dialogs.modelManagement.deselectAll') : t('modelSettings.dialogs.modelManagement.selectAll')}
-                      sx={{ p: 0.5 }}
-                    >
-                      {allSelected ? (
-                        <Square size={22} color={theme.palette.text.secondary} />
-                      ) : (
-                        <CheckSquare size={22} color={theme.palette.text.secondary} />
-                      )}
-                    </IconButton>
-                    
-                    {/* 反选 */}
-                    <IconButton
-                      size="small"
-                      onClick={handleInvertSelection}
-                      disabled={filteredModels.length === 0}
-                      title={t('modelSettings.dialogs.modelManagement.invertSelection')}
-                      sx={{ p: 0.5 }}
-                    >
-                      <Repeat size={22} color={theme.palette.text.secondary} />
-                    </IconButton>
-                  </Box>
-                </InputAdornment>
-              ),
               sx: {
                 borderRadius: 3,
                 bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#F2F3F5',
@@ -494,141 +454,141 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
               </Typography>
             </Box>
           ) : (
-            groupedModelsList.map((group) => (
-              <Box key={group.name} sx={{ mb: 0.75 }}>
-                {/* 分组头部 */}
-                <TactileButton
-                  onClick={() => toggleGroup(group.name)}
-                  sx={{ width: '100%' }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: theme.palette.mode === 'dark' 
-                        ? 'rgba(255, 255, 255, 0.1)' 
-                        : '#F2F3F5',
-                      borderRadius: 3,
-                      px: 2,
-                      py: 0.75
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box
-                        sx={{
-                          width: 28,
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            transform: collapsedGroups[group.name] ? 'rotate(0deg)' : 'rotate(90deg)',
-                            transition: 'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <ChevronRight size={20} color={theme.palette.text.secondary} />
-                        </Box>
+            <ModelGroup
+              modelGroups={groupedModelsList}
+              showEmptyState={false}
+              defaultExpanded={[]}
+              renderModelItem={(model, index) => {
+                const added = isModelInProvider(model.id);
+                return (
+                  <TactileButton key={model.id} sx={{ width: '100%' }}>
+                    <Box
+                      sx={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        py: { xs: 1.5, sm: 1 },
+                        pl: { xs: 2.5, sm: 2 },
+                        pr: { xs: 7, sm: 6 },
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.05),
+                        },
+                      }}
+                    >
+                      <Box sx={{ width: { xs: 32, sm: 28 }, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                        <BrandAvatar name={model.id} size={28} />
                       </Box>
                       
-                      <Box sx={{ flex: 1, ml: 2 }}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {group.name}
-                          <Typography component="span" variant="caption" sx={{ ml: 1, color: 'text.secondary', fontWeight: 400 }}>
-                            ({group.models.length})
-                          </Typography>
+                      <Box sx={{ flex: 1, ml: { xs: 2.5, sm: 2 }, minWidth: 0 }}>
+                        <Typography 
+                          variant="body2" 
+                          fontWeight={600} 
+                          sx={{ 
+                            lineHeight: 1.4,
+                            fontSize: { xs: '0.95rem', sm: '0.875rem' }
+                          }}
+                        >
+                          {model.name || model.id}
                         </Typography>
-                      </Box>
-                      
-                      {/* 分组批量按钮 */}
-                      <Box onClick={(e) => e.stopPropagation()}>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            const allAdded = group.models.every(m => isModelInProvider(m.id));
-                            if (allAdded) {
-                              handleRemoveGroup(group.name);
-                            } else {
-                              handleAddGroup(group.name);
-                            }
-                          }}
-                          sx={{
-                            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                            '&:hover': {
-                              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.2),
-                            }
-                          }}
-                          title={group.models.every(m => isModelInProvider(m.id)) ? t('modelSettings.dialogs.modelManagement.removeGroup') : t('modelSettings.dialogs.modelManagement.addGroup')}
-                        >
-                          {group.models.every(m => isModelInProvider(m.id)) ? (
-                            <RemoveIcon size={18} color={theme.palette.primary.main} />
-                          ) : (
-                            <AddIcon size={18} color={theme.palette.primary.main} />
-                          )}
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  </Box>
-                </TactileButton>
-
-                {/* 分组内的模型 */}
-                <Collapse in={!collapsedGroups[group.name]} timeout={220}>
-                  <Box sx={{ pl: 0.5 }}>
-                    {group.models.map((model) => {
-                      const added = isModelInProvider(model.id);
-                      return (
-                        <TactileButton key={model.id} sx={{ width: '100%' }}>
-                          <Box
-                            sx={{
-                              borderRadius: 3,
-                              px: 2,
-                              py: 1.25,
-                              my: 0.75
+                        {model.id !== model.name && (
+                          <Typography 
+                            variant="caption" 
+                            color="text.secondary" 
+                            sx={{ 
+                              display: 'block', 
+                              mt: { xs: 0.5, sm: 0.25 }, 
+                              lineHeight: 1.3,
+                              fontSize: { xs: '0.8rem', sm: '0.75rem' }
                             }}
                           >
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Box sx={{ width: 28, display: 'flex', justifyContent: 'center' }}>
-                                <BrandAvatar name={model.id} size={28} />
-                              </Box>
-                              
-                              <Box sx={{ flex: 1, ml: 2 }}>
-                                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.4 }}>
-                                  {model.name || model.id}
-                                </Typography>
-                                {model.id !== model.name && (
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, lineHeight: 1.3 }}>
-                                    {model.id}
-                                  </Typography>
-                                )}
-                              </Box>
-                              
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  if (added) {
-                                    handleRemoveSingleModel(model.id);
-                                  } else {
-                                    handleAddSingleModel(model);
-                                  }
-                                }}
-                                sx={{ ml: 1 }}
-                              >
-                                {added ? (
-                                  <RemoveIcon size={24} color={theme.palette.text.secondary} />
-                                ) : (
-                                  <AddIcon size={24} color={theme.palette.text.secondary} />
-                                )}
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </TactileButton>
-                      );
-                    })}
-                  </Box>
-                </Collapse>
-              </Box>
-            ))
+                            {model.id}
+                          </Typography>
+                        )}
+                      </Box>
+                      
+                      {/* 添加/移除按钮 - 绝对定位 */}
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (added) {
+                            handleRemoveSingleModel(model.id);
+                          } else {
+                            handleAddSingleModel(model);
+                          }
+                        }}
+                        sx={{ 
+                          position: 'absolute',
+                          right: { xs: 2.5, sm: 2 },
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: { xs: 40, sm: 36 },
+                          height: { xs: 40, sm: 36 },
+                          minWidth: { xs: 40, sm: 36 },
+                          borderRadius: 1.5,
+                          p: 0,
+                          bgcolor: added
+                            ? (theme) => alpha(theme.palette.error.main, 0.12)
+                            : (theme) => alpha(theme.palette.success.main, 0.12),
+                          color: added ? 'error.main' : 'success.main',
+                          '&:hover': {
+                            bgcolor: added
+                              ? (theme) => alpha(theme.palette.error.main, 0.2)
+                              : (theme) => alpha(theme.palette.success.main, 0.2),
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {added ? (
+                          <RemoveIcon size={18} />
+                        ) : (
+                          <AddIcon size={18} />
+                        )}
+                      </IconButton>
+                    </Box>
+                  </TactileButton>
+                );
+              }}
+              renderGroupButton={(groupName, models) => {
+                const allAdded = models.every(m => isModelInProvider(m.id));
+                return (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (allAdded) {
+                        handleRemoveGroup(groupName);
+                      } else {
+                        handleAddGroup(groupName);
+                      }
+                    }}
+                    sx={{
+                      width: { xs: 40, sm: 36 },
+                      height: { xs: 40, sm: 36 },
+                      minWidth: { xs: 40, sm: 36 },
+                      borderRadius: 1.5,
+                      p: 0,
+                      bgcolor: allAdded
+                        ? (theme) => alpha(theme.palette.error.main, 0.12)
+                        : (theme) => alpha(theme.palette.success.main, 0.12),
+                      color: allAdded ? 'error.main' : 'success.main',
+                      '&:hover': {
+                        bgcolor: allAdded
+                          ? (theme) => alpha(theme.palette.error.main, 0.2)
+                          : (theme) => alpha(theme.palette.success.main, 0.2),
+                      }
+                    }}
+                    title={allAdded ? t('modelSettings.dialogs.modelManagement.removeGroup') : t('modelSettings.dialogs.modelManagement.addGroup')}
+                  >
+                    {allAdded ? (
+                      <RemoveIcon size={18} />
+                    ) : (
+                      <AddIcon size={18} />
+                    )}
+                  </IconButton>
+                );
+              }}
+            />
           )}
         </Box>
       </Box>

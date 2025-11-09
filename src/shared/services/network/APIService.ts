@@ -9,6 +9,7 @@ import { generateVideoWithVeo } from '../../api/google/veo';
 import type { VideoGenerationParams } from '../../api/openai/video';
 import type { GoogleVeoParams } from '../../api/google/veo';
 import { fetchModels as factoryFetchModels } from '../ProviderFactory';
+import { getModelIdentityKey } from '../../utils/modelUtils';
 
 // 重新导出类型
 export type { VideoGenerationParams, GoogleVeoParams };
@@ -79,7 +80,7 @@ export async function generateImage(
       url: imageUrls[0], // 取第一个生成的图像
       prompt: params.prompt,
       timestamp: new Date().toISOString(),
-      modelId: model.id
+      modelId: getModelIdentityKey({ id: model.id, provider: model.provider })
     };
 
     log('INFO', `图像生成成功: ${generatedImage.url.substring(0, 50)}...`);
@@ -151,7 +152,7 @@ export async function generateVideo(
       url: videoUrl,
       prompt: params.prompt,
       timestamp: new Date().toISOString(),
-      modelId: model.id
+      modelId: getModelIdentityKey({ id: model.id, provider: model.provider })
     };
 
     log('INFO', `视频生成成功: ${generatedVideo.url.substring(0, 50)}...`);
