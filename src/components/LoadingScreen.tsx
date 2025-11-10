@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useTheme } from '../hooks/useTheme';
 
 interface LoadingScreenProps {
@@ -7,7 +7,11 @@ interface LoadingScreenProps {
   isFirstInstall: boolean;
 }
 
-const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
+/**
+ * 🚀 性能优化：使用 memo 避免不必要的重渲染
+ * LoadingScreen 在启动过程中会频繁更新进度，memo 可以减少渲染次数
+ */
+const LoadingScreen: React.FC<LoadingScreenProps> = memo(({ 
   progress, 
   step, 
   isFirstInstall 
@@ -81,12 +85,16 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
           overflow: 'hidden',
           marginBottom: '20px'
         }}>
+          {/* 🚀 性能优化：使用 transform: scaleX 替代 width 动画，避免重排 */}
           <div style={{
-            width: `${progress}%`,
+            width: '100%',
             height: '100%',
             background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
             borderRadius: '2px',
-            transition: 'width 0.3s ease'
+            transformOrigin: 'left center',
+            transform: `scaleX(${progress / 100})`,
+            transition: 'transform 0.3s ease',
+            willChange: 'transform'
           }} />
         </div>
 
@@ -98,6 +106,15 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 🚀 自定义比较函数：只在这些属性变化时才重新渲染
+  return (
+    prevProps.progress === nextProps.progress &&
+    prevProps.step === nextProps.step &&
+    prevProps.isFirstInstall === nextProps.isFirstInstall
+  );
+});
+
+LoadingScreen.displayName = 'LoadingScreen';
 
 export default LoadingScreen;

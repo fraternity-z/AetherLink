@@ -265,6 +265,13 @@ const SettingsPage: React.FC = () => {
         onScroll={handleScroll}
         sx={{
           overflow: 'auto',
+          // 🚀 性能优化：硬件加速和滚动优化
+          willChange: 'scroll-position',
+          transform: 'translateZ(0)',
+          WebkitOverflowScrolling: 'touch',
+          contain: 'layout style paint',
+          // 禁用平滑滚动，提升性能
+          scrollBehavior: 'auto',
           '&::-webkit-scrollbar': {
             width: '6px',
           },

@@ -223,13 +223,14 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   }, []); // 移除所有依赖，只在组件挂载时执行一次
 
   // 缓存样式对象避免重复创建
+  // 🚀 性能优化：移除 margin transition，避免重排
   const containerStyle = useMemo(() => ({
     flexGrow: 1,
     margin: shouldHideVoiceButton
       ? (isTablet ? '0 12px 0 4px' : '0 8px 0 2px')
       : (isTablet ? '0 12px' : '0 8px'),
     position: 'relative' as const,
-    transition: 'margin 0.25s ease-in-out'
+    // 移除 margin transition，语音按钮切换不需要动画
   }), [shouldHideVoiceButton, isTablet]);
 
   // 缓存 placeholder 文本避免重复计算

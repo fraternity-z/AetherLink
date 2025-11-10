@@ -137,11 +137,12 @@ const HueBar: React.FC<HueBarProps> = ({
         }}
       >
         {/* 滑块 */}
+        {/* 🚀 性能优化：使用 transform: translateX 替代 left 动画，避免重排 */}
         <Box
           sx={{
             position: 'absolute',
             top: -2,
-            left: sliderPosition - 6,
+            left: -6,
             width: 12,
             height: height + 4,
             backgroundColor: '#ffffff',
@@ -149,7 +150,9 @@ const HueBar: React.FC<HueBarProps> = ({
             borderRadius: 1,
             boxShadow: theme.shadows[2],
             cursor: disabled ? 'not-allowed' : 'grab',
-            transition: isDragging.current ? 'none' : 'left 0.1s ease-out',
+            transform: `translateX(${sliderPosition}px)`,
+            transition: isDragging.current ? 'none' : 'transform 0.1s ease-out',
+            willChange: 'transform',
             '&:active': {
               cursor: disabled ? 'not-allowed' : 'grabbing'
             }

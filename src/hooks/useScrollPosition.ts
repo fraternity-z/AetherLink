@@ -24,10 +24,19 @@ export function useScrollPosition(key: string, options: UseScrollPositionOptions
   const containerRef = useRef<HTMLDivElement | null>(null);
   const scrollKey = useMemo(() => `scroll:${key}`, [key]);
 
+  // 🚀 性能优化：使用 ref 缓存上次保存的位置，避免重复写入
+  const lastSavedPosition = useRef<number>(-1);
+
   // 保存滚动位置到 localStorage
   const saveScrollPosition = useCallback((position: number) => {
+    // 只有位置变化超过 10px 才保存，减少写入频率
+    if (Math.abs(position - lastSavedPosition.current) < 10) {
+      return;
+    }
+
     try {
       localStorage.setItem(scrollKey, position.toString());
+      lastSavedPosition.current = position;
     } catch (error) {
       console.error('保存滚动位置失败:', error);
     }
@@ -43,7 +52,7 @@ export function useScrollPosition(key: string, options: UseScrollPositionOptions
     }
   }, [scrollKey]);
 
-  // 处理滚动事件（节流）
+  // 🚀 性能优化：处理滚动事件（节流 + RAF）
   const handleScroll = useMemo(
     () =>
       throttle(() => {
@@ -51,8 +60,11 @@ export function useScrollPosition(key: string, options: UseScrollPositionOptions
         if (!container) return;
 
         const position = container.scrollTop;
-        requestAnimationFrame(() => saveScrollPosition(position));
-        onScroll?.(position);
+        // 使用 RAF 确保在浏览器空闲时保存，不阻塞滚动
+        requestAnimationFrame(() => {
+          saveScrollPosition(position);
+          onScroll?.(position);
+        });
       }, throttleTime),
     [throttleTime, saveScrollPosition, onScroll]
   );

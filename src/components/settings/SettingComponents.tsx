@@ -24,6 +24,7 @@ export const SafeAreaContainer = styled(Box)(({ theme }) => ({
 }));
 
 // Container - 内容容器（支持 ref 转发）
+// 🚀 性能优化：添加硬件加速和滚动优化
 export const Container = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'ref',
 })(({ theme }) => ({
@@ -35,6 +36,12 @@ export const Container = styled(Box, {
   overflow: 'auto',
   backgroundColor: 'transparent',
   minHeight: 0, // 允许 flex 子元素缩小，使滚动生效
+  // 🚀 性能优化：硬件加速
+  willChange: 'scroll-position',
+  transform: 'translateZ(0)',
+  WebkitOverflowScrolling: 'touch',
+  // 🚀 性能优化：减少重排
+  contain: 'layout style paint',
 }));
 
 // HeaderBar - 标题栏
@@ -198,14 +205,15 @@ interface SettingGroupProps {
   children: React.ReactNode;
 }
 
-export const SettingGroup: React.FC<SettingGroupProps> = ({ title, children }) => {
+// 🚀 性能优化：使用 React.memo 避免不必要的重渲染
+export const SettingGroup: React.FC<SettingGroupProps> = React.memo(({ title, children }) => {
   return (
     <YStack sx={{ gap: 1 }}> {/* gap-2 (8px) */}
       {title && title.trim() !== '' && <GroupTitle>{title}</GroupTitle>}
       <Group>{children}</Group>
     </YStack>
   );
-};
+});
 
 // Row - 设置行组件（用于在Group内展示设置项）
 interface RowProps {
@@ -246,7 +254,8 @@ interface SettingItemProps {
   danger?: boolean; // 危险操作样式（红色文字）
 }
 
-export const SettingItem: React.FC<SettingItemProps> = ({
+// 🚀 性能优化：使用 React.memo 避免不必要的重渲染
+export const SettingItem: React.FC<SettingItemProps> = React.memo(({
   title,
   description,
   icon,
@@ -311,5 +320,5 @@ export const SettingItem: React.FC<SettingItemProps> = ({
       {showArrow && <RowRightArrow />}
     </PressableRow>
   );
-};
+});
 

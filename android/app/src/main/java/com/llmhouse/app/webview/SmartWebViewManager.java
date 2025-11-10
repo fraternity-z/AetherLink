@@ -129,24 +129,36 @@ public class SmartWebViewManager {
 
     /**
      * 最优配置 - 适用于现代WebView
+     * 🚀 性能优化：包含所有推荐的性能配置
      */
     private static void configureOptimalSettings(WebSettings settings) {
         Log.d(TAG, "应用最优WebView配置");
 
-        // 性能优化
+        // 🚀 性能优化：核心配置
         settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        
+        // 🚀 图片加载优化
+        settings.setLoadsImagesAutomatically(true);
+        settings.setBlockNetworkImage(false);
+        
+        // 🚀 视口优化（移动端性能关键）
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
 
         // 现代特性
         if (WebViewFeature.isFeatureSupported(WebViewFeature.OFF_SCREEN_PRERASTER)) {
             WebSettingsCompat.setOffscreenPreRaster(settings, true);
+            Log.d(TAG, "✅ 已启用离屏预渲染");
         }
 
         if (WebViewFeature.isFeatureSupported(WebViewFeature.SAFE_BROWSING_ENABLE)) {
             WebSettingsCompat.setSafeBrowsingEnabled(settings, true);
+            Log.d(TAG, "✅ 已启用安全浏览");
         }
 
-        // 硬件加速通过WebView层级设置，不是通过WebSettings
+        // 注意：硬件加速通过 WebView.setLayerType() 设置，不是通过 WebSettings
+        // 在 MainActivity 的 applyPerformanceOptimizations 中已设置
 
         // 支持多窗口
         settings.setSupportMultipleWindows(false); // 安全考虑
@@ -156,6 +168,8 @@ public class SmartWebViewManager {
         settings.setSupportZoom(true);
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
+        
+        Log.d(TAG, "🎉 最优配置应用完成");
     }
 
     /**

@@ -29,7 +29,7 @@ const EnhancedVoiceInput: React.FC<EnhancedVoiceInputProps> = ({
   } = useVoiceRecognition();
 
   // 组件状态
-  const [volumeLevel] = useState(50); // 固定音量级别用于动画
+  // const [volumeLevel] = useState(50); // 保留以备将来动态波形使用
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartY, setDragStartY] = useState(0);
   const [shouldCancel, setShouldCancel] = useState(false);
@@ -450,7 +450,7 @@ const EnhancedVoiceInput: React.FC<EnhancedVoiceInputProps> = ({
           WebkitTapHighlightColor: 'transparent'
         }}
       >
-        {/* 长按进度指示器 */}
+        {/* 长按进度指示器 - 🚀 性能优化：使用 transform: scaleX 替代 width 动画，避免重排 */}
         {!hasStartedRecording && longPressProgress > 0 && (
           <Box
             sx={{
@@ -458,10 +458,13 @@ const EnhancedVoiceInput: React.FC<EnhancedVoiceInputProps> = ({
               top: 0,
               left: 0,
               height: '100%',
-              width: `${longPressProgress}%`,
+              width: '100%',
               backgroundColor: 'rgba(99, 102, 241, 0.3)',
               borderRadius: 2,
-              transition: 'width 0.1s ease',
+              transformOrigin: 'left center',
+              transform: `scaleX(${longPressProgress / 100})`,
+              transition: 'transform 0.1s ease',
+              willChange: 'transform',
               zIndex: 1
             }}
           />
@@ -503,10 +506,8 @@ const EnhancedVoiceInput: React.FC<EnhancedVoiceInputProps> = ({
                   borderRadius: '2px',
                   animation: `wave-${i % 4} 1.2s ease-in-out infinite`,
                   animationDelay: `${i * 0.1}s`,
-                  height: `${20 + (volumeLevel / 100) * 60 + Math.sin(i * 0.5) * 20}%`,
-                  minHeight: '20%',
-                  maxHeight: '100%',
-                  transition: 'height 0.1s ease',
+                  height: '100%',
+                  // 🚀 性能优化：移除 height transition，已经有 scaleY 动画了
                   '@keyframes wave-0': {
                     '0%, 100%': { transform: 'scaleY(0.3)' },
                     '50%': { transform: 'scaleY(1)' }

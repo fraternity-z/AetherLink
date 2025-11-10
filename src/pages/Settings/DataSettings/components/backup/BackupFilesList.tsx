@@ -321,13 +321,17 @@ const BackupFilesList: React.FC<BackupFilesListProps> = ({
             borderRadius: 3,
             overflow: 'hidden'
           }}>
+            {/* 🚀 性能优化：使用 transform: scaleX 替代 width 动画，避免重排 */}
             <Box
               sx={{
                 height: '100%',
-                width: `${restoreProgress.progress * 100}%`,
+                width: '100%',
                 bgcolor: '#9333EA',
                 borderRadius: 3,
-                transition: 'width 0.3s ease-in-out'
+                transformOrigin: 'left center',
+                transform: `scaleX(${restoreProgress.progress})`,
+                transition: 'transform 0.3s ease-in-out',
+                willChange: 'transform'
               }}
             />
           </Box>

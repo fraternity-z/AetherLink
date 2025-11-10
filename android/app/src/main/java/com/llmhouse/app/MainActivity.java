@@ -111,6 +111,9 @@ public class MainActivity extends BridgeActivity {
             // 2. 应用调试设置
             applyDebuggingSettings();
 
+            // 🚀 性能优化：启用硬件加速和高优先级渲染
+            applyPerformanceOptimizations(webView, settings);
+
             // 3. 应用 SmartWebViewManager 优化 (核心修复: 应用到正确的实例上)
             Log.d(TAG, "🔧 应用 SmartWebViewManager 优化...");
              // !!! 假设你已将 SmartWebViewManager.createOptimizedWebView 的逻辑
@@ -199,8 +202,51 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * 抽取方法：检查 WebView 版本并根据需要延迟显示升级对话框
+     * 🚀 性能优化：应用 WebView 性能优化配置
+     * 参考：Capacitor 性能优化最佳实践
      */
+    private void applyPerformanceOptimizations(WebView webView, WebSettings settings) {
+        Log.d(TAG, "🚀 开始应用 WebView 性能优化配置...");
+        try {
+            // 1. 启用硬件加速（最重要的性能优化）
+            webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
+            Log.d(TAG, "✅ 已启用 WebView 硬件加速 (LAYER_TYPE_HARDWARE)");
+
+            // 2. 设置高优先级渲染（提升渲染性能）
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+            Log.d(TAG, "✅ 已设置渲染优先级为 HIGH");
+
+            // 3. 设置合适的缓存策略（平衡性能和内容更新）
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            Log.d(TAG, "✅ 已设置缓存模式为 LOAD_DEFAULT");
+
+            // 4. 启用GPU加速渲染（如果支持）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // 强制启用混合内容硬件加速
+                settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            }
+
+            // 5. 优化图片加载
+            settings.setLoadsImagesAutomatically(true);
+            settings.setBlockNetworkImage(false);
+            
+            // 6. 启用视口元标签支持（移动端优化）
+            settings.setUseWideViewPort(true);
+            settings.setLoadWithOverviewMode(true);
+
+            // 7. 优化滚动性能
+            webView.setScrollBarStyle(android.view.View.SCROLLBARS_INSIDE_OVERLAY);
+            webView.setHorizontalScrollBarEnabled(false);
+
+            Log.d(TAG, "🎉 WebView 性能优化配置应用完成！");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ 应用 WebView 性能优化时出错: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+      * 抽取方法：检查 WebView 版本并根据需要延迟显示升级对话框
+      */
      private void checkAndPromptForUpgrade() {
          Log.d(TAG, "🔍 开始检测 WebView 版本和策略...");
          try {

@@ -15,6 +15,9 @@ import './i18n/config';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { Capacitor } from '@capacitor/core';
 
+// 🚀 性能优化：初始化性能追踪系统
+import { initPerformanceTracking } from './utils/performanceMetrics';
+
 //  保存原生fetch引用，防止被拦截器覆盖
 if (typeof globalThis !== 'undefined' && globalThis.fetch) {
   (globalThis as any).__originalFetch = globalThis.fetch.bind(globalThis);
@@ -32,6 +35,11 @@ if (typeof window !== 'undefined') {
 // 显示启动画面的最小时间（毫秒）
 const MIN_SPLASH_DURATION_NORMAL = 300; // 正常启动0.3秒
 const MIN_SPLASH_DURATION_FIRST_INSTALL = 1000; // 首次安装1秒
+
+// 🚀 性能优化：启动性能追踪（仅开发环境）
+if (process.env.NODE_ENV === 'development') {
+  initPerformanceTracking();
+}
 
 // 初始化系统服务
 async function initializeApp() {

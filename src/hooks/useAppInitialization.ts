@@ -8,6 +8,8 @@ import { DataRepairService } from '../shared/services/DataRepairService';
 import { DatabaseCleanupService } from '../shared/services/storage/DatabaseCleanupService';
 import { initGroups } from '../shared/store/slices/groupsSlice';
 import { getStorageItem } from '../shared/utils/storage';
+// 🚀 性能优化：性能指标追踪
+import { recordMetric } from '../utils/performanceMetrics';
 
 export const useAppInitialization = () => {
   const [appInitialized, setAppInitialized] = useState(false);
@@ -103,6 +105,11 @@ export const useAppInitialization = () => {
       // 快速完成，不额外等待
       await new Promise(resolve => setTimeout(resolve, 100));
       setAppInitialized(true);
+
+      // 🚀 性能优化：记录应用初始化完成时间
+      if (process.env.NODE_ENV === 'development') {
+        recordMetric('appInitialized');
+      }
 
     } catch (error) {
       if (!signal.aborted) {

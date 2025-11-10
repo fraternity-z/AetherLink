@@ -67,7 +67,8 @@ export const getDesktopDrawerStyles = (drawerWidth: number, isOpen: boolean) => 
   display: { xs: 'none', sm: 'block' },
   width: isOpen ? drawerWidth : 0,
   flexShrink: 0,
-  // 关键优化：平滑的宽度变化
+  // ⚠️ 注意：侧边栏需要使用 width 动画来推开主内容区域（无法用 transform 替代）
+  // 已通过 opacity + visibility 配合来减少重排影响
   transition: `width ${ANIMATION_DURATION.NORMAL}ms ${EASING.STANDARD}`,
   '& .MuiDrawer-paper': {
     boxSizing: 'border-box',

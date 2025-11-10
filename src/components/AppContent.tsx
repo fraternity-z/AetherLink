@@ -4,6 +4,8 @@ import { CssBaseline, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogC
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import { useTheme } from '../hooks/useTheme';
 import { useCapacitorSetup } from '../hooks/useCapacitorSetup';
+// 🚀 性能优化：性能指标追踪
+import { recordMetric } from '../utils/performanceMetrics';
 
 import AppRouter from '../routes';
 import AppInitializer from './AppInitializer';
@@ -22,6 +24,8 @@ const AppContent = memo(() => {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('✅ CSS Variables 系统已初始化');
+      // 🚀 性能优化：记录启动屏隐藏时间（AppContent 首次渲染）
+      recordMetric('splashScreenHide');
     }
   }, []);
   const {

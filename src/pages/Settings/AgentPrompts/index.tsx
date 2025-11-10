@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   AppBar,
@@ -20,6 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { getAgentPromptCategories, searchAgentPrompts } from '../../../shared/config/agentPrompts';
 import type { AgentPrompt, AgentPromptCategory } from '../../../shared/types/AgentPrompt';
 import SystemPromptVariablesPanel from '../../../components/SystemPromptVariablesPanel';
+// 🚀 性能优化：虚拟滚动
+import VirtualScroller from '../../../components/common/VirtualScroller';
 
 /**
  * 智能体提示词集合 - 主页面组件
@@ -58,7 +60,7 @@ const AgentPromptsSettings: React.FC = () => {
   };
 
   // 复制提示词内容
-  const handleCopyPrompt = async (prompt: AgentPrompt) => {
+  const handleCopyPrompt = useCallback(async (prompt: AgentPrompt) => {
     try {
       await navigator.clipboard.writeText(prompt.content);
       setCopiedPromptId(prompt.id);
@@ -66,12 +68,11 @@ const AgentPromptsSettings: React.FC = () => {
     } catch (error) {
       console.error(t('settings.agentPromptsPage.promptCard.copyFailed') + ':', error);
     }
-  };
+  }, [t]);
 
-  // 渲染提示词卡片
-  const renderPromptCard = (prompt: AgentPrompt) => (
+  // 🚀 性能优化：使用useCallback缓存渲染函数
+  const renderPromptCard = useCallback((prompt: AgentPrompt) => (
     <Paper
-      key={prompt.id}
       elevation={0}
       sx={{
         borderRadius: 1,
@@ -132,11 +133,19 @@ const AgentPromptsSettings: React.FC = () => {
         </Box>
       </Box>
     </Paper>
-  );
+  ), [handleCopyPrompt, copiedPromptId, t]);
+
+  // 🚀 性能优化：提示词键值函数
+  const getPromptKey = useCallback((prompt: AgentPrompt) => prompt.id, []);
+
+  // 🚀 性能优化：虚拟滚动阈值
+  const VIRTUALIZATION_THRESHOLD = 20;
+  const PROMPT_CARD_HEIGHT = 120; // 提示词卡片高度（包括间距）
 
   // 渲染类别
   const renderCategory = (category: AgentPromptCategory) => {
     const isExpanded = expandedCategories.has(category.id);
+    const shouldVirtualize = category.prompts.length > VIRTUALIZATION_THRESHOLD;
 
     return (
       <Paper
@@ -170,6 +179,7 @@ const AgentPromptsSettings: React.FC = () => {
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
             {category.prompts.length} {t('settings.agentPromptsPage.category.promptsCount')}
+            {shouldVirtualize && isExpanded && ' (虚拟化)'}
           </Typography>
           {isExpanded ? <ExpandLessIcon size={20} /> : <ExpandMoreIcon size={20} />}
         </Box>
@@ -180,9 +190,34 @@ const AgentPromptsSettings: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {category.description}
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {category.prompts.map(renderPromptCard)}
-            </Box>
+            
+            {/* 🚀 性能优化：根据提示词数量选择渲染方式 */}
+            {shouldVirtualize ? (
+              <VirtualScroller<AgentPrompt>
+                items={category.prompts}
+                itemHeight={PROMPT_CARD_HEIGHT}
+                renderItem={(prompt) => (
+                  <Box sx={{ mb: 1 }}>
+                    {renderPromptCard(prompt)}
+                  </Box>
+                )}
+                itemKey={getPromptKey}
+                height={Math.min(500, category.prompts.length * PROMPT_CARD_HEIGHT)}
+                overscanCount={3}
+                style={{
+                  borderRadius: '8px',
+                  border: '1px solid rgba(0,0,0,0.05)',
+                }}
+              />
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {category.prompts.map((prompt) => (
+                  <Box key={prompt.id}>
+                    {renderPromptCard(prompt)}
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Box>
         </Collapse>
       </Paper>
@@ -331,9 +366,33 @@ const AgentPromptsSettings: React.FC = () => {
             <Divider />
 
             <Box sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {searchResults.map(renderPromptCard)}
-              </Box>
+              {/* 🚀 性能优化：搜索结果也使用虚拟滚动 */}
+              {searchResults.length > VIRTUALIZATION_THRESHOLD ? (
+                <VirtualScroller<AgentPrompt>
+                  items={searchResults}
+                  itemHeight={PROMPT_CARD_HEIGHT}
+                  renderItem={(prompt) => (
+                    <Box sx={{ mb: 1 }}>
+                      {renderPromptCard(prompt)}
+                    </Box>
+                  )}
+                  itemKey={getPromptKey}
+                  height={Math.min(500, searchResults.length * PROMPT_CARD_HEIGHT)}
+                  overscanCount={3}
+                  style={{
+                    borderRadius: '8px',
+                    border: '1px solid rgba(0,0,0,0.05)',
+                  }}
+                />
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {searchResults.map((prompt) => (
+                    <Box key={prompt.id}>
+                      {renderPromptCard(prompt)}
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           </Paper>
         )}

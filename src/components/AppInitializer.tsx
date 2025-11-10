@@ -50,18 +50,20 @@ const AppInitializer = () => {
       // 确保加载分组数据
       dispatch(initGroups());
 
-      // 检查文件管理器权限状态（不自动请求）
-      try {
-        console.log('[AppInitializer] 检查文件管理器权限状态...');
-        const permissionResult = await advancedFileManagerService.checkPermissions();
-        if (permissionResult.granted) {
-          console.log('[AppInitializer] 文件管理器权限已授予');
-        } else {
-          console.log('[AppInitializer] 文件管理器权限未授予，用户可在工作区设置中手动授权');
+      // 🚀 性能优化：将非关键的权限检查移到后台执行，不阻塞启动流程
+      Promise.resolve().then(async () => {
+        try {
+          console.log('[AppInitializer] 后台检查文件管理器权限状态...');
+          const permissionResult = await advancedFileManagerService.checkPermissions();
+          if (permissionResult.granted) {
+            console.log('[AppInitializer] 文件管理器权限已授予');
+          } else {
+            console.log('[AppInitializer] 文件管理器权限未授予，用户可在工作区设置中手动授权');
+          }
+        } catch (error) {
+          console.error('[AppInitializer] 检查文件管理器权限失败:', error);
         }
-      } catch (error) {
-        console.error('[AppInitializer] 检查文件管理器权限失败:', error);
-      }
+      });
 
       try {
         // 🔥 优化：一次性预加载所有助手和话题数据到Redux
