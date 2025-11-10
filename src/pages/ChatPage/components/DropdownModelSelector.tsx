@@ -15,7 +15,7 @@ import type { RootState } from '../../../shared/store';
 import type { SelectChangeEvent } from '@mui/material';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
-import { getProviderIcon } from '../../../shared/utils/providerIcons';
+import { getProviderIcon, getModelOrProviderIcon } from '../../../shared/utils/providerIcons';
 
 interface DropdownModelSelectorProps {
   selectedModel: Model | null;
@@ -299,7 +299,20 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
                     }
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', maxWidth: '100%' }}>
+                    <Avatar
+                      src={getModelOrProviderIcon(model.id, model.provider || model.providerType || '', theme.palette.mode === 'dark')}
+                      alt={model.name}
+                      sx={{
+                        width: 24,
+                        height: 24,
+                        bgcolor: 'transparent',
+                        fontSize: '0.7rem',
+                        flexShrink: 0
+                      }}
+                    >
+                      {model.name[0]}
+                    </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"

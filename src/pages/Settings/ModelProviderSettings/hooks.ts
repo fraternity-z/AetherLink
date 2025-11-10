@@ -571,7 +571,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     }
   }, [provider, validateAndUpdateProvider]);
 
-  // 打开模型管理对话框（模型操作时会自动保存配置，无需提前保存）
+
   const handleOpenModelManagement = () => {
     // 验证URL有效性
     if (baseUrl && !isValidUrl(baseUrl)) {
@@ -579,6 +579,22 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       alert('请输入有效的基础URL');
       return;
     }
+    
+    // 在打开对话框前，先保存当前输入的配置到 Redux
+    // 这样 ModelManagementDialog 就能使用最新的 apiKey 和 baseUrl
+    if (provider) {
+      dispatch(updateProvider({
+        id: provider.id,
+        updates: {
+          apiKey,
+          baseUrl: baseUrl.trim(),
+          isEnabled,
+          extraHeaders,
+          extraBody
+        }
+      }));
+    }
+    
     setOpenModelManagementDialog(true);
   };
 

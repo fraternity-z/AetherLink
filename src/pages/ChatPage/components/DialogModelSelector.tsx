@@ -21,7 +21,7 @@ import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
-import { getProviderIcon } from '../../../shared/utils/providerIcons';
+import { getModelOrProviderIcon } from '../../../shared/utils/providerIcons';
 
 // 样式常量 - 提取重复的样式对象以提升性能
 const DIALOG_STYLES = {
@@ -73,12 +73,12 @@ const MODEL_ITEM_STYLES = {
   listItemIcon: {
     minWidth: 40
   },
-  avatar: (provider: any, isSelected: boolean, primaryColor: string) => ({
+  avatar: {
     width: 28,
     height: 28,
-    bgcolor: provider?.color || (isSelected ? primaryColor : 'grey.400'),
-    color: 'white'
-  }),
+    bgcolor: 'transparent',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+  },
   primaryText: (isSelected: boolean) => ({
     variant: 'body1' as const,
     fontWeight: isSelected ? 'medium' : 'normal'
@@ -151,11 +151,32 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
 
     // 转换为数组格式，以便可以排序
     const providersArray = Object.values(providersMap);
-    // 按显示名称排序
-    providersArray.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    
+    // 按照用户添加的供应商列表顺序排序
+    // 创建供应商ID到索引的映射
+    const providerOrderMap = new Map<string, number>();
+    providers.forEach((provider, index) => {
+      providerOrderMap.set(provider.id, index);
+    });
+
+    providersArray.sort((a, b) => {
+      const orderA = providerOrderMap.get(a.id);
+      const orderB = providerOrderMap.get(b.id);
+      
+      // 如果都在列表中，按照列表顺序排序
+      if (orderA !== undefined && orderB !== undefined) {
+        return orderA - orderB;
+      }
+      // 如果a在列表中，b不在，a排在前面
+      if (orderA !== undefined) return -1;
+      // 如果b在列表中，a不在，b排在前面
+      if (orderB !== undefined) return 1;
+      // 如果都不在列表中，按字母顺序排序
+      return a.displayName.localeCompare(b.displayName);
+    });
 
     return { groups, providers: providersArray };
-  }, [availableModels, getProviderName]);
+  }, [availableModels, getProviderName, providers]);
 
   // 优化标签页切换处理函数 - 使用 useCallback
   const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: string) => {
@@ -175,7 +196,17 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
     selectedModel ? getIdentityValue(selectedModel) : ''
   ), [selectedModel, getIdentityValue]);
 
+  // 获取当前选中模型的供应商ID（用于"常用"标签页）
+  const currentProviderId = useMemo(() => {
+    return selectedModel?.provider || selectedModel?.providerType || null;
+  }, [selectedModel]);
 
+  // 当对话框打开时，如果有当前供应商且activeTab还是初始值，自动切换到"常用"
+  React.useEffect(() => {
+    if (menuOpen && currentProviderId && activeTab === 'all') {
+      setActiveTab('frequently-used');
+    }
+  }, [menuOpen, currentProviderId]);
 
   return (
     <Dialog
@@ -208,9 +239,14 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
             aria-label="model provider tabs"
           >
             <Tab label="全部" value="all" />
-            {groupedModels.providers.map(provider => (
-              <Tab key={provider.id} label={provider.displayName} value={provider.id} />
-            ))}
+            {currentProviderId && groupedModels.groups[currentProviderId] && (
+              <Tab label="常用" value="frequently-used" />
+            )}
+            {groupedModels.providers
+              .filter(provider => provider.id !== currentProviderId)
+              .map(provider => (
+                <Tab key={provider.id} label={provider.displayName} value={provider.id} />
+              ))}
           </Tabs>
         </Box>
 
@@ -219,6 +255,18 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
             {activeTab === 'all' ? (
               // 显示所有模型
               availableModels.map((model) => (
+                <ModelItem
+                  key={getIdentityValue(model)}
+                  model={model}
+                  isSelected={selectedIdentity === getIdentityValue(model)}
+                  onSelect={() => handleModelSelectWithClose(model)}
+                  providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
+                  providers={providers}
+                />
+              ))
+            ) : activeTab === 'frequently-used' && currentProviderId ? (
+              // 显示常用（上次使用的供应商）的模型
+              groupedModels.groups[currentProviderId]?.map((model) => (
                 <ModelItem
                   key={getIdentityValue(model)}
                   model={model}
@@ -268,21 +316,10 @@ const ModelItem: React.FC<ModelItemProps> = React.memo(({
   // 优化主题相关计算 - 使用 useMemo 缓存
   const isDark = useMemo(() => theme.palette.mode === 'dark', [theme.palette.mode]);
 
-  // 优化提供商查找 - 使用 useMemo 缓存
-  const provider = useMemo(() =>
-    providers?.find(p => p.id === (model.provider || model.providerType)),
-    [providers, model.provider, model.providerType]
-  );
-
   // 优化样式计算 - 使用 useMemo 缓存
   const listItemStyle = useMemo(() =>
     MODEL_ITEM_STYLES.listItem(isSelected, isDark),
     [isSelected, isDark]
-  );
-
-  const avatarStyle = useMemo(() =>
-    MODEL_ITEM_STYLES.avatar(provider, isSelected, theme.palette.primary.main),
-    [provider, isSelected, theme.palette.primary.main]
   );
 
   const primaryTextProps = useMemo(() =>
@@ -290,11 +327,12 @@ const ModelItem: React.FC<ModelItemProps> = React.memo(({
     [isSelected]
   );
 
-  // 获取供应商图标
+  // 获取模型或供应商图标（优先显示模型图标）
   const providerIcon = useMemo(() => {
+    const modelId = model.id || '';
     const providerId = model.provider || model.providerType || '';
-    return getProviderIcon(providerId, isDark);
-  }, [model.provider, model.providerType, isDark]);
+    return getModelOrProviderIcon(modelId, providerId, isDark);
+  }, [model.id, model.provider, model.providerType, isDark]);
 
   return (
     <ListItem
@@ -314,10 +352,7 @@ const ModelItem: React.FC<ModelItemProps> = React.memo(({
         <Avatar 
           src={providerIcon}
           alt={providerDisplayName}
-          sx={{
-            ...avatarStyle,
-            bgcolor: 'transparent',
-          }}
+          sx={MODEL_ITEM_STYLES.avatar}
         >
           {providerDisplayName[0]}
         </Avatar>
