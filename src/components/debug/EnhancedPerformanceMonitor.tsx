@@ -1,50 +1,57 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Box, Typography, Chip, Paper, IconButton } from '@mui/material';
-import { Activity, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { 
+  Box, 
+  Typography, 
+  Chip, 
+  Paper, 
+  IconButton
+} from '@mui/material';
+import { 
+  Activity, 
+  ChevronUp, 
+  ChevronDown, 
+  GripVertical
+} from 'lucide-react';
 import { useAppSelector } from '../../shared/store';
-
-interface ScrollPerformanceMonitorProps {
-  enabled?: boolean;
-  targetId?: string;
-  forceShow?: boolean; // 🚀 强制显示选项
-}
 
 interface PerformanceMetrics {
   fps: number;
-  scrollEvents: number;
   renderTime: number;
   memoryUsage?: number;
-  scrollEventsPerSecond: number; // 新增：每秒滚动事件数
+  jsHeapSize?: number;
+  totalJSHeapSize?: number;
+}
+
+
+interface EnhancedPerformanceMonitorProps {
+  enabled?: boolean;
+  forceShow?: boolean;
 }
 
 /**
- * 滚动性能监控组件
- * 用于调试和监控滚动性能
+ * 增强版全局性能监控组件
+ * 监控FPS、帧时间、内存使用等核心性能指标
  */
-const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
+const EnhancedPerformanceMonitor: React.FC<EnhancedPerformanceMonitorProps> = ({
   enabled = process.env.NODE_ENV === 'development',
-  targetId = 'messageList',
   forceShow = false
 }) => {
   // 从Redux获取性能监控显示设置
   const showPerformanceMonitor = useAppSelector((state) => state.settings.showPerformanceMonitor);
 
-  // 🚀 根据设置决定是否显示
-  // 如果用户明确设置了showPerformanceMonitor，则以用户设置为准
-  // 如果用户没有设置（undefined），则在开发环境中默认显示
+  // 决定是否显示
   const shouldShow = showPerformanceMonitor !== undefined
     ? showPerformanceMonitor
     : (enabled || forceShow);
 
-  // 悬浮窗展开/收起状态
-  const [isExpanded, setIsExpanded] = useState(false); // 默认收起
+  // UI状态
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  // 拖拽相关状态
+  // 拖拽状态
   const [position, setPosition] = useState(() => {
-    // 从localStorage恢复位置
     try {
-      const saved = localStorage.getItem('performanceMonitorPosition');
+      const saved = localStorage.getItem('enhancedPerformanceMonitorPosition');
       return saved ? JSON.parse(saved) : { x: 16, y: 80 };
     } catch {
       return { x: 16, y: 80 };
@@ -53,26 +60,24 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const dragRef = useRef<HTMLDivElement>(null);
-
-  // 🚀 优化：使用 ref 存储实时位置，避免频繁重渲染
   const currentPositionRef = useRef(position);
   const savePositionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const rafRef = useRef<number | null>(null);
 
+  // 性能指标
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fps: 0,
-    scrollEvents: 0,
     renderTime: 0,
     memoryUsage: 0,
-    scrollEventsPerSecond: 0
+    jsHeapSize: 0,
+    totalJSHeapSize: 0
   });
 
+  // 监控引用
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
-  const scrollEventsCountRef = useRef(0);
-  const scrollEventsStartTimeRef = useRef(performance.now());
 
-  // 拖拽事件处理 - 统一处理鼠标和触摸事件
+  // 拖拽处理
   const startDrag = useCallback((clientX: number, clientY: number) => {
     setIsDragging(true);
     setDragStart({
@@ -81,26 +86,22 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     });
   }, [position]);
 
-  // 🚀 优化：使用 requestAnimationFrame 节流拖动更新
   const updateDragPosition = useCallback((clientX: number, clientY: number) => {
     if (!isDragging) return;
 
     const newX = clientX - dragStart.x;
     const newY = clientY - dragStart.y;
 
-    // 限制在屏幕范围内
-    const maxX = window.innerWidth - 200; // 减去组件宽度
-    const maxY = window.innerHeight - 300; // 减去组件高度
+    const maxX = window.innerWidth - 300;
+    const maxY = window.innerHeight - 400;
 
     const newPosition = {
       x: Math.max(0, Math.min(newX, maxX)),
       y: Math.max(0, Math.min(newY, maxY))
     };
 
-    // 🚀 使用 ref 存储实时位置，避免频繁状态更新
     currentPositionRef.current = newPosition;
 
-    // 🚀 使用 RAF 节流 DOM 更新
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
@@ -115,31 +116,26 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
 
   const endDrag = useCallback(() => {
     setIsDragging(false);
-
-    // 🚀 拖动结束时同步状态并保存位置
     const finalPosition = currentPositionRef.current;
     setPosition(finalPosition);
 
-    // 🚀 防抖保存到 localStorage
     if (savePositionTimeoutRef.current) {
       clearTimeout(savePositionTimeoutRef.current);
     }
     savePositionTimeoutRef.current = setTimeout(() => {
       try {
-        localStorage.setItem('performanceMonitorPosition', JSON.stringify(finalPosition));
+        localStorage.setItem('enhancedPerformanceMonitorPosition', JSON.stringify(finalPosition));
       } catch (error) {
         console.warn('无法保存性能监控位置:', error);
       }
-    }, 500); // 500ms 防抖
+    }, 500);
 
-    // 清理 RAF
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
   }, []);
 
-  // 鼠标事件处理
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     startDrag(e.clientX, e.clientY);
@@ -153,7 +149,6 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     endDrag();
   }, [endDrag]);
 
-  // 触摸事件处理
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     const touch = e.touches[0];
@@ -170,31 +165,22 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     endDrag();
   }, [endDrag]);
 
-  // 🚀 优化：移除频繁的 localStorage 保存，改为在拖动结束时保存
-
-  // 🚀 同步 position 状态到 ref
   useEffect(() => {
     currentPositionRef.current = position;
   }, [position]);
 
-  // 添加全局鼠标和触摸事件监听
+  // 拖拽事件监听
   useEffect(() => {
     if (isDragging) {
-      // 鼠标事件
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-
-      // 触摸事件
       document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('touchend', handleTouchEnd);
       document.addEventListener('touchcancel', handleTouchEnd);
 
       return () => {
-        // 清理鼠标事件
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
-
-        // 清理触摸事件
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', handleTouchEnd);
         document.removeEventListener('touchcancel', handleTouchEnd);
@@ -202,7 +188,7 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  // 🚀 组件卸载时清理资源
+  // 清理
   useEffect(() => {
     return () => {
       if (savePositionTimeoutRef.current) {
@@ -214,12 +200,13 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     };
   }, []);
 
+  // 性能监控主逻辑
   useEffect(() => {
     if (!shouldShow) return;
 
     let animationId: number;
 
-    // FPS 监控
+    // FPS监控
     const measureFPS = () => {
       frameCountRef.current++;
       const now = performance.now();
@@ -227,14 +214,27 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
 
       if (delta >= 1000) {
         const fps = Math.round((frameCountRef.current * 1000) / delta);
-
-        // 计算单帧渲染时间（毫秒）
         const frameTime = delta / frameCountRef.current;
+
+        // 获取内存信息
+        let memoryUsage = 0;
+        let jsHeapSize = 0;
+        let totalJSHeapSize = 0;
+        
+        if ('memory' in performance) {
+          const memory = (performance as any).memory;
+          memoryUsage = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+          jsHeapSize = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+          totalJSHeapSize = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+        }
 
         setMetrics(prev => ({
           ...prev,
           fps,
-          renderTime: frameTime
+          renderTime: frameTime,
+          memoryUsage,
+          jsHeapSize,
+          totalJSHeapSize
         }));
 
         frameCountRef.current = 0;
@@ -244,62 +244,17 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
       animationId = requestAnimationFrame(measureFPS);
     };
 
-    // 滚动事件监控 - 优化高频事件处理
-    const handleScroll = () => {
-      scrollEventsCountRef.current++;
-      const now = performance.now();
-      const timeDelta = now - scrollEventsStartTimeRef.current;
-
-      // 每秒更新一次滚动事件统计
-      if (timeDelta >= 1000) {
-        const eventsPerSecond = Math.round((scrollEventsCountRef.current * 1000) / timeDelta);
-
-        setMetrics(prev => ({
-          ...prev,
-          scrollEvents: scrollEventsCountRef.current,
-          scrollEventsPerSecond: eventsPerSecond
-        }));
-
-        // 重置计数器
-        scrollEventsCountRef.current = 0;
-        scrollEventsStartTimeRef.current = now;
-      }
-    };
-
-    // 内存使用监控
-    const measureMemory = () => {
-      if ('memory' in performance) {
-        const memory = (performance as any).memory;
-        setMetrics(prev => ({
-          ...prev,
-          memoryUsage: Math.round(memory.usedJSHeapSize / 1024 / 1024)
-        }));
-      }
-    };
-
     // 开始监控
     animationId = requestAnimationFrame(measureFPS);
 
-    // 监听滚动事件
-    const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-      targetElement.addEventListener('scroll', handleScroll, { passive: true });
-    }
-
-    // 定期测量内存
-    const memoryInterval = setInterval(measureMemory, 2000);
-
     return () => {
       cancelAnimationFrame(animationId);
-      clearInterval(memoryInterval);
-
-      if (targetElement) {
-        targetElement.removeEventListener('scroll', handleScroll);
-      }
     };
-  }, [shouldShow, targetId]);
+  }, [shouldShow]);
 
-  if (!shouldShow) return null;
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   const getFPSColor = (fps: number) => {
     if (fps >= 55) return 'success';
@@ -307,19 +262,12 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
     return 'error';
   };
 
-  const getScrollColor = (events: number) => {
-    // 移动设备触摸滚动会产生更多事件，调整阈值
-    if (events <= 50) return 'success';   // 正常范围
-    if (events <= 100) return 'warning';  // 中等频率
-    return 'error';                       // 过高频率
+  const getMemoryColor = (usage: number) => {
+    if (usage < 100) return 'success';
+    if (usage < 200) return 'warning';
+    return 'error';
   };
 
-  // 切换展开/收起状态
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  // 使用Portal将组件渲染到body下，避免被聊天界面容器限制
   if (!shouldShow) return null;
 
   const performanceMonitor = (
@@ -330,81 +278,74 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
         position: 'fixed',
         left: position.x,
         top: position.y,
-        zIndex: 10000, // 提高z-index确保在最顶层
-        minWidth: isExpanded ? { xs: 180, sm: 200 } : { xs: 120, sm: 140 }, // 未展开时宽度更小
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        zIndex: 10000,
+        minWidth: isExpanded ? 320 : 'auto',
+        maxWidth: isExpanded ? 400 : 'auto',
+        width: isExpanded ? 'auto' : 'fit-content',
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         color: 'white',
-        borderRadius: 2,
-        backdropFilter: 'blur(8px)',
+        borderRadius: isExpanded ? 2 : 1.5,
+        backdropFilter: 'blur(10px)',
         userSelect: 'none',
-        fontSize: { xs: '0.8rem', sm: '1rem' },
+        fontSize: { xs: '0.8rem', sm: '0.9rem' },
         cursor: isDragging ? 'grabbing' : 'default',
-        transition: isDragging ? 'none' : 'all 0.2s ease',
-        // 确保不被父容器的overflow影响
+        transition: isDragging ? 'none' : 'all 0.3s ease',
         pointerEvents: 'auto',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
       }}
     >
-      {/* 可拖拽的标题栏 */}
+      {/* 标题栏 */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          p: 1,
+          p: isExpanded ? 1.5 : 0.75,
           cursor: 'grab',
           '&:active': { cursor: 'grabbing' },
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          // 移动端触摸优化
+          borderBottom: isExpanded ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
           touchAction: 'none',
-          userSelect: 'none'
+          userSelect: 'none',
+          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(33, 150, 243, 0.2))',
+          borderRadius: isExpanded ? 0 : 1.5
         }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <GripVertical size={14} style={{ opacity: 0.7 }} />
-          <Activity size={16} />
-          <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
-            性能监控
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isExpanded ? 1 : 0.5 }}>
+          <GripVertical size={isExpanded ? 14 : 12} style={{ opacity: 0.7 }} />
+          <Activity size={isExpanded ? 18 : 14} />
+          {isExpanded && (
+            <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 600 }}>
+              性能监控
+            </Typography>
+          )}
         </Box>
         <IconButton
           size="small"
           onClick={toggleExpanded}
-          sx={{ color: 'white', p: 0.5 }}
+          sx={{ color: 'white', p: isExpanded ? 0.5 : 0.25 }}
         >
-          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={14} />}
         </IconButton>
       </Box>
 
       {/* 性能指标内容 */}
       {isExpanded && (
         <Box sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2">FPS:</Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>FPS:</Typography>
               <Chip
                 label={metrics.fps}
                 size="small"
                 color={getFPSColor(metrics.fps)}
-                sx={{ minWidth: 50 }}
+                sx={{ minWidth: 50, fontWeight: 600 }}
               />
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2" title="移动设备触摸滚动通常产生高频事件">
-                滚动/秒:
-              </Typography>
-              <Chip
-                label={metrics.scrollEventsPerSecond}
-                size="small"
-                color={getScrollColor(metrics.scrollEventsPerSecond)}
-                sx={{ minWidth: 50 }}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2">渲染:</Typography>
+              <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>帧时间:</Typography>
               <Chip
                 label={`${metrics.renderTime.toFixed(1)}ms`}
                 size="small"
@@ -413,29 +354,35 @@ const ScrollPerformanceMonitor: React.FC<ScrollPerformanceMonitorProps> = ({
               />
             </Box>
 
-            {metrics.memoryUsage !== undefined && (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>内存:</Typography>
+              <Chip
+                label={`${metrics.memoryUsage}MB`}
+                size="small"
+                color={getMemoryColor(metrics.memoryUsage || 0)}
+                sx={{ minWidth: 50 }}
+              />
+            </Box>
+
+            {metrics.totalJSHeapSize && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2">内存:</Typography>
+                <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>堆使用率:</Typography>
                 <Chip
-                  label={`${metrics.memoryUsage}MB`}
+                  label={`${((metrics.jsHeapSize! / metrics.totalJSHeapSize) * 100).toFixed(1)}%`}
                   size="small"
-                  color={metrics.memoryUsage < 100 ? 'success' : 'warning'}
+                  color="info"
                   sx={{ minWidth: 50 }}
                 />
               </Box>
             )}
           </Box>
-
-          <Typography variant="caption" sx={{ mt: 1, display: 'block', opacity: 0.7 }}>
-            目标: {targetId}
-          </Typography>
         </Box>
       )}
     </Paper>
   );
 
-  // 使用Portal将组件渲染到document.body，确保不受父容器限制
   return createPortal(performanceMonitor, document.body);
 };
 
-export default ScrollPerformanceMonitor;
+export default EnhancedPerformanceMonitor;
+

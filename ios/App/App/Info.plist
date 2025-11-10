@@ -92,5 +92,9 @@
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
+
+	<!-- 启用 120Hz ProMotion 高刷新率支持 (仅 iPhone Pro 系列) -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 </dict>
 </plist>

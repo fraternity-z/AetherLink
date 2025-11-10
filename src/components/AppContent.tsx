@@ -13,6 +13,7 @@ import UpdateNoticeDialog from './UpdateNoticeDialog';
 import GlobalStyles from './GlobalStyles';
 import LoadingScreen from './LoadingScreen';
 import ErrorBoundary from './ErrorBoundary';
+import EnhancedPerformanceMonitor from './debug/EnhancedPerformanceMonitor';
 
 const AppContent = memo(() => {
   const { theme, fontSize } = useTheme();
@@ -68,6 +69,8 @@ const AppContent = memo(() => {
             <BackButtonHandler />
             <ExitConfirmDialog />
             <UpdateNoticeDialog />
+            {/* 全局性能监控 */}
+            <EnhancedPerformanceMonitor />
           </>
         ) : (
           <LoadingScreen

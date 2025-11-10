@@ -17,7 +17,6 @@ import useScrollPosition from '../../hooks/useScrollPosition';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
 import { scrollContainerStyles, scrollbarStyles, getOptimizedConfig, debugScrollPerformance } from '../../shared/config/scrollOptimization';
-import ScrollPerformanceMonitor from '../debug/ScrollPerformanceMonitor';
 
 // 加载更多消息的数量
 const LOAD_MORE_COUNT = 20;
@@ -664,11 +663,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
       <div ref={messagesEndRef} />
       {/* 添加一个隐形的底部占位元素，确保最后的消息不被输入框遮挡 */}
       <div style={{ height: '35px', minHeight: '35px', width: '100%' }} />
-
-      {/* 🚀 性能监控组件 */}
-      <ScrollPerformanceMonitor
-        targetId="messageList"
-      />
     </Box>
   );
 };
