@@ -163,6 +163,18 @@ interface SettingsState {
 
   // 性能监控设置
   showPerformanceMonitor?: boolean; // 是否显示性能监控
+  
+  // 模型测试按钮设置
+  alwaysShowModelTestButton?: boolean; // 是否长期显示模型测试按钮
+  
+  // 触觉反馈设置
+  hapticFeedback?: {
+    enabled: boolean; // 全局触觉反馈总开关
+    enableOnSidebar: boolean; // 侧边栏打开/关闭时的触觉反馈
+    enableOnSwitch: boolean; // 开关切换时的触觉反馈
+    enableOnListItem: boolean; // 列表项点击时的触觉反馈
+    enableOnNavigation: boolean; // 上下导航按钮的触觉反馈
+  };
 }
 
 const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {
@@ -343,6 +355,18 @@ const getInitialState = (): SettingsState => {
 
     // 性能监控默认设置
     showPerformanceMonitor: false, // 默认不显示性能监控
+    
+    // 模型测试按钮默认设置
+    alwaysShowModelTestButton: false, // 默认不长期显示模型测试按钮
+    
+    // 触觉反馈默认设置
+    hapticFeedback: {
+      enabled: true, // 默认启用触觉反馈
+      enableOnSidebar: true, // 默认启用侧边栏触觉反馈
+      enableOnSwitch: true, // 默认启用开关触觉反馈
+      enableOnListItem: false, // 默认关闭列表项触觉反馈（避免过于频繁）
+      enableOnNavigation: true, // 默认启用导航触觉反馈
+    }
   };
 
   // 设置默认模型
@@ -525,6 +549,20 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       // 如果没有性能监控显示设置，使用默认值
       if (savedSettings.showPerformanceMonitor === undefined) {
         savedSettings.showPerformanceMonitor = false;
+      }
+
+      // 如果没有触觉反馈设置，使用默认值
+      if (!savedSettings.hapticFeedback) {
+        savedSettings.hapticFeedback = {
+          enabled: true,
+          enableOnSidebar: true,
+          enableOnSwitch: true,
+          enableOnListItem: false,
+          enableOnNavigation: true
+        };
+      } else if (savedSettings.hapticFeedback.enableOnNavigation === undefined) {
+        // 兼容旧数据：如果没有enableOnNavigation字段，添加默认值
+        savedSettings.hapticFeedback.enableOnNavigation = true;
       }
 
       return {
@@ -894,6 +932,73 @@ const settingsSlice = createSlice({
     setShowPerformanceMonitor: (state, action: PayloadAction<boolean>) => {
       state.showPerformanceMonitor = action.payload;
     },
+    
+    // 触觉反馈设置控制
+    setHapticFeedbackEnabled: (state, action: PayloadAction<boolean>) => {
+      if (!state.hapticFeedback) {
+        state.hapticFeedback = {
+          enabled: action.payload,
+          enableOnSidebar: true,
+          enableOnSwitch: true,
+          enableOnListItem: false,
+          enableOnNavigation: true
+        };
+      } else {
+        state.hapticFeedback.enabled = action.payload;
+      }
+    },
+    setHapticFeedbackOnSidebar: (state, action: PayloadAction<boolean>) => {
+      if (!state.hapticFeedback) {
+        state.hapticFeedback = {
+          enabled: true,
+          enableOnSidebar: action.payload,
+          enableOnSwitch: true,
+          enableOnListItem: false,
+          enableOnNavigation: true
+        };
+      } else {
+        state.hapticFeedback.enableOnSidebar = action.payload;
+      }
+    },
+    setHapticFeedbackOnSwitch: (state, action: PayloadAction<boolean>) => {
+      if (!state.hapticFeedback) {
+        state.hapticFeedback = {
+          enabled: true,
+          enableOnSidebar: true,
+          enableOnSwitch: action.payload,
+          enableOnListItem: false,
+          enableOnNavigation: true
+        };
+      } else {
+        state.hapticFeedback.enableOnSwitch = action.payload;
+      }
+    },
+    setHapticFeedbackOnListItem: (state, action: PayloadAction<boolean>) => {
+      if (!state.hapticFeedback) {
+        state.hapticFeedback = {
+          enabled: true,
+          enableOnSidebar: true,
+          enableOnSwitch: true,
+          enableOnListItem: action.payload,
+          enableOnNavigation: true
+        };
+      } else {
+        state.hapticFeedback.enableOnListItem = action.payload;
+      }
+    },
+    setHapticFeedbackOnNavigation: (state, action: PayloadAction<boolean>) => {
+      if (!state.hapticFeedback) {
+        state.hapticFeedback = {
+          enabled: true,
+          enableOnSidebar: true,
+          enableOnSwitch: true,
+          enableOnListItem: false,
+          enableOnNavigation: action.payload
+        };
+      } else {
+        state.hapticFeedback.enableOnNavigation = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     // 处理加载设置
@@ -988,6 +1093,12 @@ export const {
   updateToolbarButtons,
   // 性能监控控制
   setShowPerformanceMonitor,
+  // 触觉反馈控制
+  setHapticFeedbackEnabled,
+  setHapticFeedbackOnSidebar,
+  setHapticFeedbackOnSwitch,
+  setHapticFeedbackOnListItem,
+  setHapticFeedbackOnNavigation,
 } = settingsSlice.actions;
 
 // 重用现有的action creators，但添加异步保存

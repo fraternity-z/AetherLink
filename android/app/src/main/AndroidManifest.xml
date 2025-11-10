@@ -58,4 +58,35 @@
     
     <!-- System Alarm Permissions -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
+    <!-- ========================================
+         HarmonyOS Specific Permissions
+         鸿蒙系统专用权限声明
+         ======================================== -->
+    
+    <!-- HarmonyOS 剪贴板权限 - 必需 -->
+    <!-- 鸿蒙系统需要明确声明剪贴板访问权限 -->
+    <uses-permission android:name="ohos.permission.READ_CLIPBOARD" />
+    <uses-permission android:name="ohos.permission.WRITE_CLIPBOARD" />
+    
+    <!-- HarmonyOS 文件访问权限增强 -->
+    <uses-permission android:name="ohos.permission.READ_USER_STORAGE" />
+    <uses-permission android:name="ohos.permission.WRITE_USER_STORAGE" />
+    
+    <!-- HarmonyOS 相机和媒体权限 -->
+    <uses-permission android:name="ohos.permission.CAMERA" />
+    <uses-permission android:name="ohos.permission.MEDIA_LOCATION" />
+    
+    <!-- HarmonyOS 录音权限 -->
+    <uses-permission android:name="ohos.permission.MICROPHONE" />
+    
+    <!-- HarmonyOS 通知权限 -->
+    <uses-permission android:name="ohos.permission.NOTIFICATION" />
+    
+    <!-- HarmonyOS 网络权限 -->
+    <uses-permission android:name="ohos.permission.INTERNET" />
+    <uses-permission android:name="ohos.permission.GET_NETWORK_INFO" />
+    
+    <!-- HarmonyOS 设备信息权限 -->
+    <uses-permission android:name="ohos.permission.GET_DEVICE_INFO" />
 </manifest>

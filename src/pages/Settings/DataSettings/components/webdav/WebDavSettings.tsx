@@ -9,7 +9,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Switch,
   FormControlLabel,
   Alert,
   CircularProgress,
@@ -26,6 +25,7 @@ import {
 } from 'lucide-react';
 import type { WebDavConfig, WebDavSyncState } from '../../../../../shared/types';
 import { WebDavBackupService } from '../../../../../shared/services/storage/WebDavBackupService';
+import CustomSwitch from '../../../../../components/CustomSwitch';
 import {
   saveWebDavConfig,
   getWebDavConfig,
@@ -336,7 +336,7 @@ const WebDavSettings: React.FC<WebDavSettingsProps> = ({ onConfigChange }) => {
 
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={syncState.autoSync}
                   onChange={(e) => handleSyncSettingChange('autoSync', e.target.checked)}
                 />

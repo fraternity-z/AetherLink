@@ -19,7 +19,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Switch,
   Card,
   CardContent,
   CardActions,
@@ -309,7 +308,7 @@ const AssistantModelSettings: React.FC = () => {
         );
       case 'boolean':
         return (
-          <Switch
+          <CustomSwitch
             checked={param.value as boolean}
             onChange={(e) => handleUpdateCustomParameter(index, 'value', e.target.checked)}
           />
@@ -1191,7 +1190,7 @@ const AssistantModelSettings: React.FC = () => {
                 <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
                   并行工具调用 (Parallel Tool Calls)
                 </Typography>
-                <Switch
+                <CustomSwitch
                   checked={parallelToolCalls}
                   onChange={(e) => setParallelToolCalls(e.target.checked)}
                 />
@@ -1329,7 +1328,7 @@ const AssistantModelSettings: React.FC = () => {
                 <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
                   语音输出 (Speech Output)
                 </Typography>
-                <Switch
+                <CustomSwitch
                   checked={enableSpeech}
                   onChange={(e) => setEnableSpeech(e.target.checked)}
                 />
@@ -1360,7 +1359,7 @@ const AssistantModelSettings: React.FC = () => {
                 <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
                   思维链 (Thinking)
                 </Typography>
-                <Switch
+                <CustomSwitch
                   checked={enableThinking}
                   onChange={(e) => setEnableThinking(e.target.checked)}
                 />

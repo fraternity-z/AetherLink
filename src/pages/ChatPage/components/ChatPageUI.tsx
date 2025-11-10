@@ -539,7 +539,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
   const InputContainer = useMemo(() => (
     <motion.div
-      initial={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
+      key={`input-container-${isDrawerVisible ? 'open' : 'closed'}`}
+      initial={false}
       animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       transition={ANIMATION_CONFIG}
       style={{
@@ -590,7 +591,17 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     isDrawerVisible,
     shouldShowToolbar,
     inputComponent,
-    isMobile
+    isMobile,
+    // 添加这些依赖确保工具栏状态变化时正确更新
+    handleClearTopic,
+    imageGenerationMode,
+    toggleImageGenerationMode,
+    videoGenerationMode,
+    toggleVideoGenerationMode,
+    webSearchActive,
+    toggleWebSearch,
+    toolsEnabled,
+    toggleToolsEnabled
   ]);
 
   // ==================== 组件渲染 ====================
@@ -617,7 +628,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       {/* 主内容区域 - 🚀 使用预计算布局，避免Drawer推开导致的重新布局 */}
       <Box
         component={motion.div}
-        initial={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.mainContent : LAYOUT_CONFIGS.SIDEBAR_CLOSED.mainContent}
+        key={`main-content-${isDrawerVisible ? 'open' : 'closed'}`}
+        initial={false}
         animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.mainContent : LAYOUT_CONFIGS.SIDEBAR_CLOSED.mainContent}
         transition={ANIMATION_CONFIG}
         sx={{

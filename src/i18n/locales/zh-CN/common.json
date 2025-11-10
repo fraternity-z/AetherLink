@@ -30,6 +30,8 @@
   "no": "否",
   "ok": "确定",
   "apply": "应用",
-  "discard": "丢弃"
+  "discard": "丢弃",
+  "enabled": "已启用",
+  "disabled": "已禁用"
 }
 

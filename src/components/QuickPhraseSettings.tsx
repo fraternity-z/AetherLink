@@ -18,7 +18,6 @@ import {
   Divider,
   Chip,
   Alert,
-  Switch,
   FormControlLabel,
   AppBar,
   Toolbar,
@@ -39,6 +38,7 @@ import QuickPhraseService from '../shared/services/QuickPhraseService';
 import type { QuickPhrase } from '../shared/types';
 import type { RootState } from '../shared/store';
 import { setShowQuickPhraseButton } from '../shared/store/settingsSlice';
+import CustomSwitch from './CustomSwitch';
 
 const QuickPhraseSettings: React.FC = () => {
   const theme = useTheme();
@@ -221,7 +221,7 @@ const QuickPhraseSettings: React.FC = () => {
           </Typography>
           <FormControlLabel
             control={
-              <Switch
+              <CustomSwitch
                 checked={showQuickPhraseButton}
                 onChange={(e) => dispatch(setShowQuickPhraseButton(e.target.checked))}
               />

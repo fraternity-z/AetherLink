@@ -8,7 +8,6 @@ import {
   Typography,
   FormGroup,
   FormControlLabel,
-  Checkbox,
   Box,
   Alert,
   AlertTitle,
@@ -16,6 +15,7 @@ import {
 } from '@mui/material';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { useTranslation } from '../../../../../i18n';
+import CustomSwitch from '../../../../../components/CustomSwitch';
 import type { SelectiveBackupOptions } from '../../utils/selectiveBackupUtils';
 
 interface SelectiveBackupDialogProps {
@@ -73,13 +73,9 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
         <FormGroup>
           <FormControlLabel
             control={
-              <Checkbox 
+              <CustomSwitch 
                 checked={options.modelConfig} 
                 onChange={() => onOptionChange('modelConfig')}
-                sx={{ 
-                  color: "#9333EA", 
-                  "&.Mui-checked": { color: "#9333EA" } 
-                }}
               />
             }
             label={

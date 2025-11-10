@@ -12,7 +12,6 @@ import {
   Chip,
   Alert,
   FormControlLabel,
-  Switch,
   TextField,
   Divider,
   FormControl,
@@ -25,6 +24,7 @@ import { Play, Square, FolderOpen, ChevronDown, ChevronUp, Settings } from 'luci
 import { CustomIcon } from './icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import CustomSwitch from './CustomSwitch';
 
 // AI辩论配置默认值常量
 const DEFAULT_CONFIG = {
@@ -507,7 +507,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
 
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={customSettings.enableModerator}
                   onChange={(e) => setCustomSettings({
                     ...customSettings,
@@ -521,7 +521,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
 
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={customSettings.enableSummary}
                   onChange={(e) => setCustomSettings({
                     ...customSettings,

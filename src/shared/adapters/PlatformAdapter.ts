@@ -5,8 +5,18 @@
 
 import {
   detectDetailedPlatform,
-  RuntimeType
+  RuntimeType,
+  isHarmonyOS
 } from '../utils/platformDetection';
+import { 
+  harmonyOSPermissionService 
+} from '../services/HarmonyOSPermissionService';
+import { 
+  HarmonyOSPermission,
+  HARMONYOS_CLIPBOARD_CONFIG,
+  HarmonyOSErrorCode,
+  HARMONYOS_ERROR_MESSAGES
+} from '../config/harmonyOSConfig';
 
 // 统一的接口定义
 export interface UnifiedPlatformAPI {
@@ -266,14 +276,128 @@ class CapacitorAdapter implements UnifiedPlatformAPI {
 
   clipboard = {
     async writeText(text: string): Promise<void> {
+      // 鸿蒙适配：检查并请求剪贴板权限
+      if (isHarmonyOS()) {
+        const hasPermission = await harmonyOSPermissionService.hasPermission(
+          HarmonyOSPermission.WRITE_CLIPBOARD
+        );
+        
+        if (!hasPermission) {
+          const result = await harmonyOSPermissionService.requestPermission(
+            HarmonyOSPermission.WRITE_CLIPBOARD
+          );
+          
+          if (result.status !== 'granted') {
+            throw new Error(
+              result.error || HARMONYOS_ERROR_MESSAGES[HarmonyOSErrorCode.CLIPBOARD_ACCESS_DENIED]
+            );
+          }
+        }
+        
+        // 鸿蒙系统写入剪贴板需要重试机制
+        return await this.writeClipboardWithRetry(text);
+      }
+      
+      // 非鸿蒙系统直接使用 Capacitor
       const { Clipboard } = await import('@capacitor/clipboard');
       await Clipboard.write({ string: text });
     },
     
     async readText(): Promise<string> {
+      // 鸿蒙适配：检查并请求剪贴板权限
+      if (isHarmonyOS()) {
+        const hasPermission = await harmonyOSPermissionService.hasPermission(
+          HarmonyOSPermission.READ_CLIPBOARD
+        );
+        
+        if (!hasPermission) {
+          const result = await harmonyOSPermissionService.requestPermission(
+            HarmonyOSPermission.READ_CLIPBOARD
+          );
+          
+          if (result.status !== 'granted') {
+            throw new Error(
+              result.error || HARMONYOS_ERROR_MESSAGES[HarmonyOSErrorCode.CLIPBOARD_ACCESS_DENIED]
+            );
+          }
+        }
+        
+        // 鸿蒙系统读取剪贴板需要重试机制
+        return await this.readClipboardWithRetry();
+      }
+      
+      // 非鸿蒙系统直接使用 Capacitor
       const { Clipboard } = await import('@capacitor/clipboard');
       const result = await Clipboard.read();
       return result.value;
+    },
+    
+    /**
+     * 鸿蒙专用：带重试的剪贴板写入
+     */
+    async writeClipboardWithRetry(text: string, retries = HARMONYOS_CLIPBOARD_CONFIG.maxRetries): Promise<void> {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const { Clipboard } = await import('@capacitor/clipboard');
+          
+          // 使用超时保护
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(
+              () => reject(new Error(HARMONYOS_ERROR_MESSAGES[HarmonyOSErrorCode.CLIPBOARD_WRITE_TIMEOUT])),
+              HARMONYOS_CLIPBOARD_CONFIG.writeTimeout
+            )
+          );
+          
+          const writePromise = Clipboard.write({ string: text });
+          await Promise.race([writePromise, timeoutPromise]);
+          
+          return; // 成功
+        } catch (error) {
+          console.warn(`[HarmonyOS] 剪贴板写入失败 (尝试 ${i + 1}/${retries}):`, error);
+          
+          if (i === retries - 1) {
+            throw error; // 最后一次失败，抛出错误
+          }
+          
+          // 等待后重试
+          await new Promise(resolve => setTimeout(resolve, HARMONYOS_CLIPBOARD_CONFIG.retryDelay));
+        }
+      }
+    },
+    
+    /**
+     * 鸿蒙专用：带重试的剪贴板读取
+     */
+    async readClipboardWithRetry(retries = HARMONYOS_CLIPBOARD_CONFIG.maxRetries): Promise<string> {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const { Clipboard } = await import('@capacitor/clipboard');
+          
+          // 使用超时保护
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(
+              () => reject(new Error(HARMONYOS_ERROR_MESSAGES[HarmonyOSErrorCode.CLIPBOARD_READ_TIMEOUT])),
+              HARMONYOS_CLIPBOARD_CONFIG.readTimeout
+            )
+          );
+          
+          const readPromise = Clipboard.read();
+          const result = await Promise.race([readPromise, timeoutPromise]);
+          
+          return result.value;
+        } catch (error) {
+          console.warn(`[HarmonyOS] 剪贴板读取失败 (尝试 ${i + 1}/${retries}):`, error);
+          
+          if (i === retries - 1) {
+            throw error; // 最后一次失败，抛出错误
+          }
+          
+          // 等待后重试
+          await new Promise(resolve => setTimeout(resolve, HARMONYOS_CLIPBOARD_CONFIG.retryDelay));
+        }
+      }
+      
+      return ''; // 理论上不会到达这里
     },
   };
 

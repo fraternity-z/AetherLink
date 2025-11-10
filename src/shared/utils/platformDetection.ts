@@ -17,6 +17,7 @@ export enum OSType {
   LINUX = 'linux',
   ANDROID = 'android',
   IOS = 'ios',
+  HARMONYOS = 'harmonyos',
   WEB = 'web'
 }
 
@@ -28,10 +29,12 @@ export enum PlatformType {
   TAURI_LINUX = 'tauri-linux',
   TAURI_ANDROID = 'tauri-android',
   TAURI_IOS = 'tauri-ios',
+  TAURI_HARMONYOS = 'tauri-harmonyos',
 
   // Capacitor 平台
   CAPACITOR_ANDROID = 'capacitor-android',
   CAPACITOR_IOS = 'capacitor-ios',
+  CAPACITOR_HARMONYOS = 'capacitor-harmonyos',
   CAPACITOR_WEB = 'capacitor-web',
 
   // 纯 Web
@@ -66,6 +69,7 @@ export interface DetailedPlatformInfo {
   isLinux: boolean;
   isAndroid: boolean;
   isIOS: boolean;
+  isHarmonyOS: boolean;
 
   // 系统信息
   platform: string;
@@ -85,6 +89,27 @@ export function detectOS(): OSType {
 
   const userAgent = navigator.userAgent.toLowerCase();
   const platform = navigator.platform?.toLowerCase() || '';
+
+  // 检测鸿蒙系统（优先检测，因为鸿蒙也包含 Android 特征）
+  // HarmonyOS 检测方式：
+  // 1. UserAgent 包含 harmonyos
+  // 2. 检查特定的鸿蒙 API (如果有)
+  // 3. 检测华为设备 + Android 11+ (因为新设备可能运行鸿蒙)
+  if (/harmonyos/i.test(userAgent) || 
+      /openharmony/i.test(userAgent)) {
+    return OSType.HARMONYOS;
+  }
+
+  // 额外检测：华为设备可能运行鸿蒙但 UA 中没有明确标识
+  if (/huawei/i.test(userAgent) || /honor/i.test(userAgent)) {
+    // 检查是否有鸿蒙特有的 API
+    if (typeof window !== 'undefined') {
+      // @ts-ignore - 检测鸿蒙特有属性
+      if (window.harmony || window.HarmonyOS) {
+        return OSType.HARMONYOS;
+      }
+    }
+  }
 
   // 检测移动端
   if (/android/i.test(userAgent)) {
@@ -145,6 +170,7 @@ export function getPlatformType(runtime: RuntimeType, os: OSType): PlatformType 
         case OSType.LINUX: return PlatformType.TAURI_LINUX;
         case OSType.ANDROID: return PlatformType.TAURI_ANDROID;
         case OSType.IOS: return PlatformType.TAURI_IOS;
+        case OSType.HARMONYOS: return PlatformType.TAURI_HARMONYOS;
         default: return PlatformType.TAURI_WINDOWS; // 默认
       }
 
@@ -152,6 +178,7 @@ export function getPlatformType(runtime: RuntimeType, os: OSType): PlatformType 
       switch (os) {
         case OSType.ANDROID: return PlatformType.CAPACITOR_ANDROID;
         case OSType.IOS: return PlatformType.CAPACITOR_IOS;
+        case OSType.HARMONYOS: return PlatformType.CAPACITOR_HARMONYOS;
         default: return PlatformType.CAPACITOR_WEB;
       }
 
@@ -173,7 +200,7 @@ export function detectDetailedPlatform(): DetailedPlatformInfo {
   const platform = typeof navigator !== 'undefined' ? navigator.platform : '';
 
   // 基本分类
-  const isMobile = [OSType.ANDROID, OSType.IOS].includes(osType);
+  const isMobile = [OSType.ANDROID, OSType.IOS, OSType.HARMONYOS].includes(osType);
   const isDesktop = [OSType.WINDOWS, OSType.MACOS, OSType.LINUX].includes(osType);
   const isWeb = runtimeType === RuntimeType.WEB;
 
@@ -187,6 +214,7 @@ export function detectDetailedPlatform(): DetailedPlatformInfo {
   const isLinux = osType === OSType.LINUX;
   const isAndroid = osType === OSType.ANDROID;
   const isIOS = osType === OSType.IOS;
+  const isHarmonyOS = osType === OSType.HARMONYOS;
 
   // 向后兼容的类型
   let legacyType: LegacyPlatformType;
@@ -216,6 +244,7 @@ export function detectDetailedPlatform(): DetailedPlatformInfo {
     isLinux,
     isAndroid,
     isIOS,
+    isHarmonyOS,
     platform,
     userAgent,
     type: legacyType
@@ -256,6 +285,7 @@ export function getPlatformConfig() {
       fileSystem: platformInfo.isDesktop || platformInfo.isMobile,
       notifications: true,
       clipboard: true,
+      clipboardRequiresPermission: platformInfo.isHarmonyOS, // 鸿蒙需要显式权限
       camera: platformInfo.isMobile,
       microphone: true,
       fullscreen: platformInfo.isDesktop,
@@ -263,8 +293,8 @@ export function getPlatformConfig() {
       systemTray: platformInfo.isWindows || platformInfo.isLinux,
       menuBar: platformInfo.isMacOS,
       touchID: platformInfo.isMacOS || platformInfo.isIOS,
-      faceID: platformInfo.isIOS,
-      fingerprint: platformInfo.isAndroid,
+      faceID: platformInfo.isIOS || platformInfo.isHarmonyOS,
+      fingerprint: platformInfo.isAndroid || platformInfo.isHarmonyOS,
     },
 
     // UI 配置
@@ -274,9 +304,10 @@ export function getPlatformConfig() {
       compactMode: platformInfo.isMobile,
       sidebarCollapsible: platformInfo.isDesktop,
       useNativeScrollbars: platformInfo.isMacOS,
-      roundedCorners: platformInfo.isIOS,
+      roundedCorners: platformInfo.isIOS || platformInfo.isHarmonyOS,
       materialDesign: platformInfo.isAndroid,
       fluentDesign: platformInfo.isWindows,
+      harmonyDesign: platformInfo.isHarmonyOS, // 鸿蒙设计语言
     },
 
     // 网络配置
@@ -385,4 +416,11 @@ export function isIOS(): boolean {
   return info.isIOS;
 }
 
+/**
+ * 检查是否为 HarmonyOS 环境
+ */
+export function isHarmonyOS(): boolean {
+  const info = detectDetailedPlatform();
+  return info.isHarmonyOS;
+}
 

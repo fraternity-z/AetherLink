@@ -10,7 +10,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Switch,
   FormControlLabel,
   Box,
   Typography,
@@ -28,6 +27,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import DropdownModelSelector from '../../pages/ChatPage/components/DropdownModelSelector';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
+import CustomSwitch from '../../components/CustomSwitch';
 
 import type { ModelComboConfig, ModelComboTemplate, ModelComboStrategy, ModelComboFormData } from '../../shared/types/ModelCombo';
 
@@ -228,7 +228,7 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
             />
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={formData.enabled}
                   onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
                 />

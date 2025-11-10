@@ -33,7 +33,8 @@ import {
   Info
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../../shared/store';
+import { useAppSelector, useAppDispatch } from '../../shared/store';
+import { updateSettings } from '../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
 import ModelManagementDialog from '../../components/ModelManagementDialog';
 import SimpleModelDialog from '../../components/settings/SimpleModelDialog';
@@ -61,6 +62,7 @@ const ModelProviderSettings: React.FC = () => {
   const { t } = useTranslation();
   const { providerId } = useParams<{ providerId: string }>();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const muiTheme = useMuiTheme();
   
   // 使用滚动位置保存功能
@@ -78,6 +80,9 @@ const ModelProviderSettings: React.FC = () => {
   const provider = useAppSelector(state =>
     state.settings.providers.find(p => p.id === providerId)
   );
+  
+  // 获取是否长期显示测试按钮的设置
+  const alwaysShowModelTestButton = useAppSelector(state => state.settings.alwaysShowModelTestButton);
   
   // 获取当前主题模式和供应商图标
   const isDark = muiTheme.palette.mode === 'dark';
@@ -596,25 +601,53 @@ const ModelProviderSettings: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                   {t('modelSettings.provider.testModeDesc')}
                 </Typography>
-                <Button
-                  variant={testModeEnabled ? "contained" : "outlined"}
-                  startIcon={<CheckCircle size={16} />}
-                  onClick={() => setTestModeEnabled(!testModeEnabled)}
-                  sx={{
-                    borderRadius: 2,
-                    borderColor: (theme) => alpha(theme.palette.success.main, 0.5),
-                    color: testModeEnabled ? 'white' : 'success.main',
-                    bgcolor: testModeEnabled ? 'success.main' : 'transparent',
-                    '&:hover': {
-                      borderColor: 'success.main',
-                      bgcolor: testModeEnabled 
-                        ? (theme) => alpha(theme.palette.success.main, 0.8)
-                        : (theme) => alpha(theme.palette.success.main, 0.1),
-                    },
-                  }}
-                >
-                  {testModeEnabled ? t('modelSettings.provider.exitTestMode') : t('modelSettings.provider.testMode')}
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                  <Button
+                    variant={testModeEnabled ? "contained" : "outlined"}
+                    startIcon={<CheckCircle size={16} />}
+                    onClick={() => setTestModeEnabled(!testModeEnabled)}
+                    sx={{
+                      borderRadius: 2,
+                      borderColor: (theme) => alpha(theme.palette.success.main, 0.5),
+                      color: testModeEnabled ? 'white' : 'success.main',
+                      bgcolor: testModeEnabled ? 'success.main' : 'transparent',
+                      '&:hover': {
+                        borderColor: 'success.main',
+                        bgcolor: testModeEnabled 
+                          ? (theme) => alpha(theme.palette.success.main, 0.8)
+                          : (theme) => alpha(theme.palette.success.main, 0.1),
+                      },
+                    }}
+                  >
+                    {testModeEnabled ? t('modelSettings.provider.exitTestMode') : t('modelSettings.provider.testMode')}
+                  </Button>
+                  
+                  {/* 长期显示测试按钮开关 */}
+                  <FormControlLabel
+                    control={
+                      <CustomSwitch
+                        checked={alwaysShowModelTestButton || false}
+                        onChange={(e) => dispatch(updateSettings({ alwaysShowModelTestButton: e.target.checked }))}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2">
+                          {t('modelSettings.provider.alwaysShowTestButton', '长期显示测试按钮')}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {t('modelSettings.provider.alwaysShowTestButtonDesc', '启用后，测试按钮将一直显示在模型列表中')}
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{ 
+                      ml: 1,
+                      '& .MuiFormControlLabel-label': {
+                        ml: 1
+                      }
+                    }}
+                  />
+                </Box>
               </Box>
 
             </>
@@ -803,7 +836,7 @@ const ModelProviderSettings: React.FC = () => {
                       alignItems: 'center',
                       py: { xs: 1.5, sm: 1 },
                       pl: { xs: 2.5, sm: 2 },
-                      pr: { xs: testModeEnabled ? 15 : 11, sm: testModeEnabled ? 13 : 9.5 },
+                      pr: { xs: (testModeEnabled || alwaysShowModelTestButton) ? 15 : 11, sm: (testModeEnabled || alwaysShowModelTestButton) ? 13 : 9.5 },
                       transition: 'all 0.2s ease',
                       '&:hover': {
                         bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
@@ -850,7 +883,7 @@ const ModelProviderSettings: React.FC = () => {
                         gap: { xs: 1, sm: 0.75 }
                       }}
                     >
-                      {testModeEnabled && (
+                      {(testModeEnabled || alwaysShowModelTestButton) && (
                         <IconButton
                           aria-label="test"
                           onClick={() => handleTestModelConnection(model)}

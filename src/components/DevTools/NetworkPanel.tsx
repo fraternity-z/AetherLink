@@ -7,7 +7,6 @@ import {
   TextField,
   InputAdornment,
   FormControlLabel,
-  Switch,
   Chip,
   Dialog,
   DialogTitle,
@@ -36,6 +35,7 @@ import { useMediaQuery } from '@mui/material';
 import { useTranslation } from '../../i18n';
 import EnhancedNetworkService from '../../shared/services/network/EnhancedNetworkService';
 import type { NetworkEntry, NetworkFilter } from '../../shared/services/network/EnhancedNetworkService';
+import CustomSwitch from '../CustomSwitch';
 
 const NetworkPanel: React.FC = () => {
   const { t } = useTranslation();
@@ -504,8 +504,7 @@ const NetworkPanel: React.FC = () => {
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <FormControlLabel
               control={
-                <Switch
-                  size="small"
+                <CustomSwitch
                   checked={filter.onlyErrors}
                   onChange={(e) => setFilter(prev => ({ ...prev, onlyErrors: e.target.checked }))}
                 />
@@ -515,8 +514,7 @@ const NetworkPanel: React.FC = () => {
             />
             <FormControlLabel
               control={
-                <Switch
-                  size="small"
+                <CustomSwitch
                   checked={!filter.hideDataUrls}
                   onChange={(e) => setFilter(prev => ({ ...prev, hideDataUrls: !e.target.checked }))}
                 />

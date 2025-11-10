@@ -123,6 +123,32 @@
     "mobileInputMethodEnterAsNewline": {
       "label": "Mobile Input Method Enter as Newline",
       "description": "When enabled, the send button of the mobile input method will become a newline function, and you need to click the send button in the input box to send messages"
+    },
+    "hapticFeedback": {
+      "title": "Haptic Feedback",
+      "description": "Customize haptic feedback settings for app interactions",
+      "specificSettings": "Specific Settings",
+      "disabledHint": "Enable haptic feedback to configure more options",
+      "enabled": {
+        "label": "Enable Haptic Feedback",
+        "description": "When enabled, app interactions will provide haptic feedback"
+      },
+      "enableOnSidebar": {
+        "label": "Haptics on Sidebar",
+        "description": "Enable haptic feedback when opening/closing sidebar"
+      },
+      "enableOnSwitch": {
+        "label": "Haptics on Switch",
+        "description": "Enable haptic feedback when toggling switches"
+      },
+      "enableOnListItem": {
+        "label": "Haptics on List Items",
+        "description": "Enable haptic feedback when tapping list items"
+      },
+      "enableOnNavigation": {
+        "label": "Haptics on Navigation",
+        "description": "Enable haptic feedback when using navigation buttons"
+      }
     }
   },
   "agentPromptsPage": {

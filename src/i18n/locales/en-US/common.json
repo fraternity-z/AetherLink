@@ -30,6 +30,8 @@
   "no": "No",
   "ok": "OK",
   "apply": "Apply",
-  "discard": "Discard"
+  "discard": "Discard",
+  "enabled": "Enabled",
+  "disabled": "Disabled"
 }
 

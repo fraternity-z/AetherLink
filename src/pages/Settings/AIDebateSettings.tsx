@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Switch,
   FormControlLabel,
   TextField,
   Button,
@@ -42,6 +41,7 @@ import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from
 import { setShowAIDebateButton } from '../../shared/store/settingsSlice';
 import { toastManager } from '../../components/EnhancedToast';
 import { useTranslation } from 'react-i18next';
+import CustomSwitch from '../../components/CustomSwitch';
 
 // AI辩论配置默认值常量
 const DEFAULT_CONFIG = {
@@ -840,7 +840,7 @@ const AIDebateSettings: React.FC = () => {
           <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
             <FormControlLabel
             control={
-              <Switch
+              <CustomSwitch
                 checked={config.enabled}
                 onChange={(e) => saveConfig({ ...config, enabled: e.target.checked })}
               />
@@ -851,7 +851,7 @@ const AIDebateSettings: React.FC = () => {
 
           <FormControlLabel
             control={
-              <Switch
+              <CustomSwitch
                 checked={showAIDebateButton}
                 onChange={(e) => dispatch(setShowAIDebateButton(e.target.checked))}
               />
@@ -912,7 +912,7 @@ const AIDebateSettings: React.FC = () => {
           <Box sx={{ mt: 2 }}>
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={config.moderatorEnabled}
                   onChange={(e) => saveConfig({ ...config, moderatorEnabled: e.target.checked })}
                 />
@@ -921,7 +921,7 @@ const AIDebateSettings: React.FC = () => {
             />
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={config.summaryEnabled}
                   onChange={(e) => saveConfig({ ...config, summaryEnabled: e.target.checked })}
                 />

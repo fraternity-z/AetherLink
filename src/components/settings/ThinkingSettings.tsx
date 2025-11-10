@@ -11,7 +11,6 @@ import {
   FormLabel,
   Radio,
   RadioGroup,
-  Switch,
   Typography
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,6 +22,7 @@ import {
   setDefaultThinkingEffort
 } from '../../shared/store/slices/uiSlice';
 import type { ThinkingOption } from '../../shared/config/reasoningConfig';
+import CustomSwitch from '../CustomSwitch';
 
 /**
  * 思考过程设置组件
@@ -66,7 +66,7 @@ const ThinkingSettings: React.FC = () => {
       <FormGroup>
         <FormControlLabel
           control={
-            <Switch
+            <CustomSwitch
               checked={showThinking}
               onChange={handleShowThinkingChange}
             />
@@ -79,7 +79,7 @@ const ThinkingSettings: React.FC = () => {
       <FormGroup>
         <FormControlLabel
           control={
-            <Switch
+            <CustomSwitch
               checked={thoughtAutoCollapse}
               onChange={handleAutoCollapseChange}
               disabled={!showThinking}

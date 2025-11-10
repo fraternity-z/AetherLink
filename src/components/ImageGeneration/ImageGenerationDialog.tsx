@@ -15,7 +15,6 @@ import {
   Collapse,
   Slider,
   FormControlLabel,
-  Switch,
   CircularProgress,
   Alert
 } from '@mui/material';
@@ -28,6 +27,7 @@ import type { ImageGenerationParams, Model } from '../../shared/types';
 import { ModelType } from '../../shared/types';
 import type { ModelProvider } from '../../shared/config/defaultModels';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
+import CustomSwitch from '../CustomSwitch';
 
 interface ImageGenerationDialogProps {
   open: boolean;
@@ -355,7 +355,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
               {/* 随机种子 */}
               <FormControlLabel
                 control={
-                  <Switch
+                  <CustomSwitch
                     checked={randomSeed}
                     onChange={(e) => setRandomSeed(e.target.checked)}
                     disabled={isGenerating}

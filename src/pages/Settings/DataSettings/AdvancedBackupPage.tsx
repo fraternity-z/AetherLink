@@ -17,9 +17,9 @@ import {
   ListItemText,
   ListItemIcon,
   FormControlLabel,
-  Checkbox,
   Avatar
 } from '@mui/material';
+import CustomSwitch from '../../../components/CustomSwitch';
 import {
   ArrowLeft as ArrowBackIcon,
   Upload as BackupIcon,
@@ -473,12 +473,12 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItem sx={{ p: 0 }}>
                   <FormControlLabel
                     control={
-                      <Checkbox
-                        checked={backupOptions.includeChats}
-                        onChange={handleOptionChange('includeChats')}
-                        color="primary"
-                        sx={{ ml: 2 }}
-                      />
+                      <Box sx={{ ml: 2 }}>
+                        <CustomSwitch
+                          checked={backupOptions.includeChats}
+                          onChange={handleOptionChange('includeChats')}
+                        />
+                      </Box>
                     }
                     label={
                       <Box sx={{ py: 1 }}>
@@ -511,12 +511,12 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItem sx={{ p: 0 }}>
                   <FormControlLabel
                     control={
-                      <Checkbox
-                        checked={backupOptions.includeAssistants}
-                        onChange={handleOptionChange('includeAssistants')}
-                        color="primary"
-                        sx={{ ml: 2 }}
-                      />
+                      <Box sx={{ ml: 2 }}>
+                        <CustomSwitch
+                          checked={backupOptions.includeAssistants}
+                          onChange={handleOptionChange('includeAssistants')}
+                        />
+                      </Box>
                     }
                     label={
                       <Box sx={{ py: 1 }}>
@@ -549,12 +549,12 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItem sx={{ p: 0 }}>
                   <FormControlLabel
                     control={
-                      <Checkbox
-                        checked={backupOptions.includeSettings}
-                        onChange={handleOptionChange('includeSettings')}
-                        color="primary"
-                        sx={{ ml: 2 }}
-                      />
+                      <Box sx={{ ml: 2 }}>
+                        <CustomSwitch
+                          checked={backupOptions.includeSettings}
+                          onChange={handleOptionChange('includeSettings')}
+                        />
+                      </Box>
                     }
                     label={
                       <Box sx={{ py: 1 }}>
@@ -587,12 +587,12 @@ const AdvancedBackupPage: React.FC = () => {
                 <ListItem sx={{ p: 0 }}>
                   <FormControlLabel
                     control={
-                      <Checkbox
-                        checked={backupOptions.includeLocalStorage}
-                        onChange={handleOptionChange('includeLocalStorage')}
-                        color="primary"
-                        sx={{ ml: 2 }}
-                      />
+                      <Box sx={{ ml: 2 }}>
+                        <CustomSwitch
+                          checked={backupOptions.includeLocalStorage}
+                          onChange={handleOptionChange('includeLocalStorage')}
+                        />
+                      </Box>
                     }
                     label={
                       <Box sx={{ py: 1 }}>

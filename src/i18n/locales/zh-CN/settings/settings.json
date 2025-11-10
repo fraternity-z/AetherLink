@@ -123,6 +123,32 @@
     "mobileInputMethodEnterAsNewline": {
       "label": "移动端输入法换行模式",
       "description": "开启后，移动端输入法的发送按钮将变为换行功能，需要点击输入框的发送按钮来发送消息"
+    },
+    "hapticFeedback": {
+      "title": "触觉反馈",
+      "description": "自定义应用的触觉反馈设置",
+      "specificSettings": "细分设置",
+      "disabledHint": "启用触觉反馈以配置更多选项",
+      "enabled": {
+        "label": "启用触觉反馈",
+        "description": "开启后，应用交互将提供触觉反馈"
+      },
+      "enableOnSidebar": {
+        "label": "侧边栏触觉反馈",
+        "description": "打开/关闭侧边栏时启用触觉反馈"
+      },
+      "enableOnSwitch": {
+        "label": "开关触觉反馈",
+        "description": "切换开关时启用触觉反馈"
+      },
+      "enableOnListItem": {
+        "label": "列表项触觉反馈",
+        "description": "点击列表项时启用触觉反馈"
+      },
+      "enableOnNavigation": {
+        "label": "导航触觉反馈",
+        "description": "使用上下导航按钮时启用触觉反馈"
+      }
     }
   },
   "agentPromptsPage": {

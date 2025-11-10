@@ -46,6 +46,8 @@
     "testMode": "模型测试",
     "testModeDesc": "开启后可以在模型列表中测试单个模型的连接状态",
     "exitTestMode": "退出测试",
+    "alwaysShowTestButton": "长期显示测试按钮",
+    "alwaysShowTestButtonDesc": "启用后，测试按钮将一直显示在模型列表中",
     "configureEndpoint": "配置自定义模型端点",
     "defaultBadge": "默认",
     "modelId": "ID: {{id}}",

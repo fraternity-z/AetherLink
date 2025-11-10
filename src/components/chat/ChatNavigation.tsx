@@ -4,6 +4,7 @@ import { ChevronUp, ChevronDown, ArrowUp, ArrowDown, Scroll } from 'lucide-react
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { updateSettings } from '../../shared/store/slices/settingsSlice';
+import { Haptics } from '../../shared/utils/hapticFeedback';
 
 interface ChatNavigationProps {
   containerId: string;
@@ -27,6 +28,13 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
   const showNavigationOnScroll = useSelector((state: RootState) =>
     (state.settings as any).showNavigationOnScroll ?? false
   );
+
+  const hapticFeedback = useSelector((state: RootState) =>
+    (state.settings as any).hapticFeedback
+  );
+
+  // 判断是否启用导航触觉反馈
+  const isNavigationHapticEnabled = hapticFeedback?.enabled && hapticFeedback?.enableOnNavigation;
 
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) {
@@ -112,6 +120,9 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
   }, [findAllMessages, containerId]);
 
   const handlePrevMessage = useCallback(() => {
+    if (isNavigationHapticEnabled) {
+      Haptics.light(); // 触觉反馈
+    }
     resetHideTimer();
     const allMessages = findAllMessages();
 
@@ -132,9 +143,12 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     }
 
     scrollToMessage(allMessages[targetIndex]);
-  }, [resetHideTimer, findAllMessages, getCurrentVisibleIndex, scrollToTop, scrollToMessage]);
+  }, [resetHideTimer, findAllMessages, getCurrentVisibleIndex, scrollToTop, scrollToMessage, isNavigationHapticEnabled]);
 
   const handleNextMessage = useCallback(() => {
+    if (isNavigationHapticEnabled) {
+      Haptics.light(); // 触觉反馈
+    }
     resetHideTimer();
     const allMessages = findAllMessages();
 
@@ -155,23 +169,32 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     }
 
     scrollToMessage(allMessages[targetIndex]);
-  }, [resetHideTimer, findAllMessages, getCurrentVisibleIndex, scrollToBottom, scrollToMessage]);
+  }, [resetHideTimer, findAllMessages, getCurrentVisibleIndex, scrollToBottom, scrollToMessage, isNavigationHapticEnabled]);
 
   const handleScrollToTop = useCallback(() => {
+    if (isNavigationHapticEnabled) {
+      Haptics.light(); // 触觉反馈
+    }
     resetHideTimer();
     scrollToTop();
-  }, [resetHideTimer, scrollToTop]);
+  }, [resetHideTimer, scrollToTop, isNavigationHapticEnabled]);
 
   const handleScrollToBottom = useCallback(() => {
+    if (isNavigationHapticEnabled) {
+      Haptics.light(); // 触觉反馈
+    }
     resetHideTimer();
     scrollToBottom();
-  }, [resetHideTimer, scrollToBottom]);
+  }, [resetHideTimer, scrollToBottom, isNavigationHapticEnabled]);
 
   const handleToggleScrollNavigation = useCallback(() => {
+    if (isNavigationHapticEnabled) {
+      Haptics.soft(); // 触觉反馈 - 使用soft反馈作为开关切换
+    }
     dispatch(updateSettings({
       showNavigationOnScroll: !showNavigationOnScroll
     }));
-  }, [dispatch, showNavigationOnScroll]);
+  }, [dispatch, showNavigationOnScroll, isNavigationHapticEnabled]);
 
   useEffect(() => {
     const container = document.getElementById(containerId);

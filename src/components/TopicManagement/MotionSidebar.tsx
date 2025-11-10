@@ -9,6 +9,8 @@ import {
 import { X as CloseIcon } from 'lucide-react';
 import SidebarTabs from './SidebarTabs';
 import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
+import { useAppSelector } from '../../shared/store';
+import { Haptics } from '../../shared/utils/hapticFeedback';
 
 // 侧边栏的唯一标识符，用于返回按键处理
 const SIDEBAR_DIALOG_ID = 'sidebar-drawer';
@@ -67,6 +69,12 @@ const MotionSidebar = React.memo(function MotionSidebar({
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md')); // 与ChatPageUI保持一致
   const [showSidebar, setShowSidebar] = useState(!isSmallScreen);
+  
+  // 获取触觉反馈设置
+  const hapticSettings = useAppSelector((state) => state.settings.hapticFeedback);
+  
+  // 用于追踪上一次的打开状态，避免初次渲染时触发反馈
+  const prevOpenRef = useRef<boolean | null>(null);
 
   const drawerWidth = 320;
 
@@ -97,6 +105,38 @@ const MotionSidebar = React.memo(function MotionSidebar({
       return onDesktopToggleRef.current ? desktopOpen : showSidebar;
     }
   }, [isSmallScreen, mobileOpen, showSidebar, desktopOpen]);
+  
+  // 监听侧边栏打开/关闭状态变化，触发触觉反馈
+  useEffect(() => {
+    // 跳过初次渲染
+    if (prevOpenRef.current === null) {
+      console.log('🎵 [Haptic] 初次渲染，跳过触觉反馈');
+      prevOpenRef.current = finalOpen;
+      return;
+    }
+    
+    // 检查状态是否真的发生了变化
+    if (prevOpenRef.current !== finalOpen) {
+      console.log('🎵 [Haptic] 侧边栏状态变化:', {
+        from: prevOpenRef.current,
+        to: finalOpen,
+        hapticSettings,
+        enabled: hapticSettings?.enabled,
+        enableOnSidebar: hapticSettings?.enableOnSidebar
+      });
+      
+      // 检查是否启用了触觉反馈
+      if (hapticSettings?.enabled && hapticSettings?.enableOnSidebar) {
+        console.log('🎵 [Haptic] 触发侧边栏触觉反馈！');
+        // 触发侧边栏专用的触觉反馈
+        Haptics.drawerPulse();
+      } else {
+        console.log('🎵 [Haptic] 触觉反馈未启用或侧边栏反馈已关闭');
+      }
+      
+      prevOpenRef.current = finalOpen;
+    }
+  }, [finalOpen, hapticSettings]);
 
   // 统一的关闭处理函数
   const handleClose = useCallback(() => {

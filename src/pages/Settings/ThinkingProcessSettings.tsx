@@ -14,7 +14,6 @@ import {
   Divider,
   alpha,
   FormControlLabel,
-  Switch,
   FormGroup
 } from '@mui/material';
 import { ArrowLeft, Info, Brain, Eye } from 'lucide-react';
@@ -26,6 +25,7 @@ import ThinkingBlock from '../../components/message/blocks/ThinkingBlock';
 import type { ThinkingMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
 import { useTranslation } from '../../i18n';
+import CustomSwitch from '../../components/CustomSwitch';
 
 const ThinkingProcessSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -229,8 +229,7 @@ const ThinkingProcessSettings: React.FC = () => {
             <FormGroup>
               <FormControlLabel
                 control={
-                  <Switch
-                    size="small"
+                  <CustomSwitch
                     checked={thoughtAutoCollapse}
                     onChange={handleThoughtAutoCollapseChange}
                   />

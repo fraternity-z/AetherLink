@@ -1,5 +1,7 @@
 import React from 'react';
 import { styled } from '@mui/material/styles';
+import { useAppSelector } from '../shared/store';
+import { Haptics } from '../shared/utils/hapticFeedback';
 
 const CustomSwitchRoot = styled('span')(({ theme }) => ({
   width: 32, // 调整宽度
@@ -42,17 +44,33 @@ interface CustomSwitchProps {
   disabled?: boolean;
   name?: string;
   value?: string;
+  // 新增：是否禁用触觉反馈（默认启用）
+  disableHaptics?: boolean;
 }
 
 export default function CustomSwitch(props: CustomSwitchProps) {
-  const { checked, onChange, disabled, name, value } = props;
+  const { checked, onChange, disabled, name, value, disableHaptics = false } = props;
+  
+  // 获取触觉反馈设置
+  const hapticSettings = useAppSelector((state) => state.settings.hapticFeedback);
+
+  // 处理开关切换，集成触觉反馈
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // 先触发触觉反馈
+    if (!disableHaptics && hapticSettings?.enabled && hapticSettings?.enableOnSwitch) {
+      Haptics.soft();
+    }
+    
+    // 然后触发原始的 onChange 回调
+    onChange(event);
+  };
 
   return (
     <CustomSwitchRoot className={checked ? 'Mui-checked' : ''}>
       <input
         type="checkbox"
         checked={checked}
-        onChange={onChange}
+        onChange={handleChange}
         disabled={disabled}
         name={name}
         value={value}

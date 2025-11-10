@@ -18,7 +18,6 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   IconButton,
-  Switch,
   FormControlLabel,
   Chip,
   Select,
@@ -46,6 +45,7 @@ import {
 
 import type { ApiKeyConfig, LoadBalanceStrategy } from '../../shared/config/defaultModels';
 import ApiKeyManager from '../../shared/services/ApiKeyManager';
+import CustomSwitch from '../CustomSwitch';
 
 interface MultiKeyManagerProps {
   providerName: string;
@@ -336,10 +336,9 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <FormControlLabel
                       control={
-                        <Switch
+                        <CustomSwitch
                           checked={key.isEnabled}
                           onChange={(e) => handleToggleKey(key.id, e.target.checked)}
-                          size="small"
                         />
                       }
                       label=""

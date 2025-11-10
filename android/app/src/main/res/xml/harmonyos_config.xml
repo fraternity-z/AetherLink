@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HarmonyOS 配置文件
+     此文件用于配置鸿蒙系统的特定行为和权限
+     HarmonyOS Configuration File -->
+<harmonyos-config>
+    <!-- 应用信息 -->
+    <application>
+        <harmonyos-compatible>true</harmonyos-compatible>
+        <min-harmonyos-version>4.0</min-harmonyos-version>
+        <target-harmonyos-version>5.0</target-harmonyos-version>
+    </application>
+
+    <!-- 权限配置 -->
+    <permissions>
+        <!-- 剪贴板权限配置 -->
+        <permission name="ohos.permission.READ_CLIPBOARD">
+            <reason>应用需要读取剪贴板内容以支持粘贴功能</reason>
+            <usage-scene>
+                <when>在聊天输入框中使用</when>
+                <when>在代码编辑器中使用</when>
+            </usage-scene>
+        </permission>
+        
+        <permission name="ohos.permission.WRITE_CLIPBOARD">
+            <reason>应用需要写入剪贴板以支持复制功能</reason>
+            <usage-scene>
+                <when>复制消息内容</when>
+                <when>复制代码块</when>
+                <when>分享文本</when>
+            </usage-scene>
+        </permission>
+
+        <!-- 文件权限配置 -->
+        <permission name="ohos.permission.READ_USER_STORAGE">
+            <reason>应用需要读取用户文件以支持文件上传和附件功能</reason>
+            <usage-scene>
+                <when>上传文档到聊天</when>
+                <when>选择图片</when>
+            </usage-scene>
+        </permission>
+        
+        <permission name="ohos.permission.WRITE_USER_STORAGE">
+            <reason>应用需要写入文件以支持导出和保存功能</reason>
+            <usage-scene>
+                <when>导出聊天记录</when>
+                <when>保存生成的文件</when>
+            </usage-scene>
+        </permission>
+
+        <!-- 相机权限配置 -->
+        <permission name="ohos.permission.CAMERA">
+            <reason>应用需要访问相机以支持拍照和扫描功能</reason>
+            <usage-scene>
+                <when>拍照上传</when>
+                <when>扫描二维码</when>
+            </usage-scene>
+        </permission>
+
+        <!-- 麦克风权限配置 -->
+        <permission name="ohos.permission.MICROPHONE">
+            <reason>应用需要访问麦克风以支持语音输入功能</reason>
+            <usage-scene>
+                <when>语音转文字</when>
+                <when>语音消息</when>
+            </usage-scene>
+        </permission>
+
+        <!-- 通知权限配置 -->
+        <permission name="ohos.permission.NOTIFICATION">
+            <reason>应用需要发送通知以及时提醒用户</reason>
+            <usage-scene>
+                <when>消息提醒</when>
+                <when>任务完成通知</when>
+            </usage-scene>
+        </permission>
+    </permissions>
+
+    <!-- 隐私说明 -->
+    <privacy-policy>
+        <url>https://your-domain.com/privacy-policy</url>
+        <description>我们重视您的隐私，仅在必要时请求权限</description>
+    </privacy-policy>
+
+    <!-- 兼容性配置 -->
+    <compatibility>
+        <!-- 使用鸿蒙原生 WebView -->
+        <use-harmonyos-webview>true</use-harmonyos-webview>
+        
+        <!-- 启用鸿蒙手势导航适配 -->
+        <gesture-navigation>true</gesture-navigation>
+        
+        <!-- 启用鸿蒙深色模式 -->
+        <dark-mode-support>true</dark-mode-support>
+        
+        <!-- 启用鸿蒙分屏功能 -->
+        <split-screen-support>true</split-screen-support>
+    </compatibility>
+
+    <!-- 性能优化配置 -->
+    <performance>
+        <!-- 启用鸿蒙渲染优化 -->
+        <enable-render-optimization>true</enable-render-optimization>
+        
+        <!-- 启用鸿蒙内存管理 -->
+        <enable-memory-management>true</enable-memory-management>
+        
+        <!-- 启用鸿蒙省电模式 -->
+        <enable-power-saving>true</enable-power-saving>
+    </performance>
+</harmonyos-config>
+

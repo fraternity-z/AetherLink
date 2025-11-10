@@ -9,7 +9,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  Switch,
   Divider,
   alpha,
   TextField,
@@ -24,6 +23,7 @@ import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from
 import DialogModelSelector from '../../../pages/ChatPage/components/DialogModelSelector';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../../hooks/useScrollPosition';
+import CustomSwitch from '../../../components/CustomSwitch';
 
 
 const DefaultModelSettingsPage: React.FC = () => {
@@ -249,11 +249,9 @@ const DefaultModelSettingsPage: React.FC = () => {
           <List disablePadding>
             <ListItem>
               <ListItemText primary={t('modelSettings.defaultModel.autoNaming')} />
-              <Switch
-                edge="end"
+              <CustomSwitch
                 checked={enableTopicNaming}
                 onChange={handleEnableTopicNamingChange}
-                inputProps={{ 'aria-labelledby': 'enable-topic-naming-switch' }}
               />
             </ListItem>
           </List>

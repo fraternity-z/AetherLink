@@ -11,10 +11,10 @@ import {
   FormHelperText,
   Slider,
   FormControlLabel,
-  Switch,
 } from '@mui/material';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import CustomSwitch from '../CustomSwitch';
 
 // OpenAI TTS配置接口
 export interface OpenAITTSSettings {
@@ -222,10 +222,9 @@ export const OpenAITTSTab: React.FC<OpenAITTSTabProps> = ({
 
         <FormControlLabel
           control={
-            <Switch
+            <CustomSwitch
               checked={settings.useStream}
               onChange={(e) => handleStreamToggle(e.target.checked)}
-              color="primary"
             />
           }
           label={t('settings.voice.tabSettings.openai.useStream')}

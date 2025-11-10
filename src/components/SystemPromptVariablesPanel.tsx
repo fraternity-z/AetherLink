@@ -3,7 +3,6 @@ import {
   Paper,
   Box,
   Typography,
-  Switch,
   TextField,
   Divider,
   Chip,
@@ -22,6 +21,7 @@ import {
   getLocationString,
   getOperatingSystemString
 } from '../shared/utils/systemPromptVariables';
+import CustomSwitch from './CustomSwitch';
 
 /**
  * 系统提示词变量注入配置面板
@@ -167,10 +167,9 @@ const SystemPromptVariablesPanel: React.FC = () => {
           <Box sx={{ mb: 3 }}>
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={variableConfig.enableTimeVariable}
                   onChange={(e) => handleTimeVariableToggle(e.target.checked)}
-                  color="primary"
                 />
               }
               label={
@@ -199,10 +198,9 @@ const SystemPromptVariablesPanel: React.FC = () => {
           <Box sx={{ mb: 3 }}>
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={variableConfig.enableLocationVariable}
                   onChange={(e) => handleLocationVariableToggle(e.target.checked)}
-                  color="primary"
                 />
               }
               label={
@@ -243,10 +241,9 @@ const SystemPromptVariablesPanel: React.FC = () => {
           <Box>
             <FormControlLabel
               control={
-                <Switch
+                <CustomSwitch
                   checked={variableConfig.enableOSVariable}
                   onChange={(e) => handleOSVariableToggle(e.target.checked)}
-                  color="primary"
                 />
               }
               label={

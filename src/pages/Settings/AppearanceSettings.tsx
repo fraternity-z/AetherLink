@@ -21,10 +21,9 @@ import {
   Avatar,
   Divider,
   alpha,
-  Switch,
   FormControlLabel
 } from '@mui/material';
-import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Wrench, Brain, Palette } from 'lucide-react';
+import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Brain, Palette, LayoutDashboard, Sliders, Edit3, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor } from '../../shared/store/settingsSlice';
@@ -34,6 +33,7 @@ import { useLanguageSettings } from '../../i18n/useLanguageSettings';
 import { supportedLanguages } from '../../i18n';
 import { Globe } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import CustomSwitch from '../../components/CustomSwitch';
 
 const AppearanceSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -534,7 +534,7 @@ const AppearanceSettings: React.FC = () => {
                     color: '#10b981',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
                   }}>
-                    <Wrench size={20} />
+                    <LayoutDashboard size={20} />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
@@ -596,7 +596,7 @@ const AppearanceSettings: React.FC = () => {
                     color: '#f59e0b',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
                   }}>
-                    <Brain size={20} />
+                    <Sparkles size={20} />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
@@ -658,7 +658,7 @@ const AppearanceSettings: React.FC = () => {
                     color: '#06b6d4',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
                   }}>
-                    <Wrench size={20} />
+                    <Sliders size={20} />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
@@ -689,7 +689,7 @@ const AppearanceSettings: React.FC = () => {
                     color: '#ec4899',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
                   }}>
-                    <MessageSquare size={20} />
+                    <Edit3 size={20} />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
@@ -728,31 +728,43 @@ const AppearanceSettings: React.FC = () => {
           <Divider />
 
           <Box sx={{ p: 3 }}>
-            <FormControlLabel
-              control={
-                <Switch
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    fontWeight: 500,
+                    mb: 0.5,
+                    fontSize: { xs: '0.9rem', sm: '1rem' }
+                  }}
+                >
+                  {t('settings.appearance.developerTools.performanceMonitor.title')}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    lineHeight: 1.5
+                  }}
+                >
+                  {t('settings.appearance.developerTools.performanceMonitor.description')}
+                </Typography>
+              </Box>
+              <Box sx={{ flexShrink: 0, pt: 0.5 }}>
+                <CustomSwitch
                   checked={settings.showPerformanceMonitor || false}
                   onChange={handlePerformanceMonitorChange}
-                  color="primary"
                 />
-              }
-              label={
-                <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {t('settings.appearance.developerTools.performanceMonitor.title')}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('settings.appearance.developerTools.performanceMonitor.description')}
-                  </Typography>
-                </Box>
-              }
-              sx={{
-                alignItems: 'flex-start',
-                '& .MuiFormControlLabel-label': {
-                  mt: 0.5
-                }
-              }}
-            />
+              </Box>
+            </Box>
           </Box>
         </Paper>
       </Box>

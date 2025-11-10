@@ -46,6 +46,8 @@
     "testMode": "Model Testing",
     "testModeDesc": "Enable to test individual model connections in the model list",
     "exitTestMode": "Exit Test",
+    "alwaysShowTestButton": "Always Show Test Button",
+    "alwaysShowTestButtonDesc": "When enabled, the test button will always be visible in the model list",
     "configureEndpoint": "Custom endpoint",
     "defaultBadge": "Default",
     "modelId": "ID: {{id}}",
