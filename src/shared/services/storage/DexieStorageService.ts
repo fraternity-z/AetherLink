@@ -211,19 +211,55 @@ export class DexieStorageService extends Dexie {
       // 确保topic有messageIds字段
       if (!topic.messageIds) {
         topic.messageIds = [];
+      }
 
-        // 兼容性处理：如果有旧的messages字段，转换为messageIds
-        if (topic.messages && Array.isArray(topic.messages)) {
-          // 保存消息到messages表
-          for (const message of topic.messages) {
-            if (message.id) {
-              await this.saveMessage(message);
-              if (!topic.messageIds.includes(message.id)) {
-                topic.messageIds.push(message.id);
+      // 兼容性处理：如果有messages字段，保存消息到messages表
+      if (topic.messages && Array.isArray(topic.messages) && topic.messages.length > 0) {
+        console.log(`[DexieStorageService] 保存话题 ${topic.id} 的 ${topic.messages.length} 条消息...`);
+        
+        for (const message of topic.messages) {
+          if (message.id) {
+            const messageBlocks = (message as any).blocks;
+            const blockIds: string[] = [];
+            
+            // 保存消息块（如果blocks是完整对象数组）
+            if (messageBlocks && Array.isArray(messageBlocks)) {
+              console.log(`[DexieStorageService] 保存消息 ${message.id} 的 ${messageBlocks.length} 个块...`);
+              
+              for (const block of messageBlocks) {
+                // 检查是否是完整的block对象（有content等字段）
+                if (block && typeof block === 'object' && 'type' in block) {
+                  // 确保block有id
+                  if (!block.id) {
+                    block.id = uuid();
+                  }
+                  // 保存block到message_blocks表
+                  await this.saveMessageBlock(block);
+                  blockIds.push(block.id);
+                } else if (typeof block === 'string') {
+                  // 如果已经是ID字符串，直接使用
+                  blockIds.push(block);
+                }
               }
+            }
+            
+            // 创建消息副本，将blocks转换为ID数组
+            const messageToSave = {
+              ...message,
+              blocks: blockIds
+            };
+            
+            // 保存消息到messages表
+            await this.saveMessage(messageToSave as Message);
+            
+            // 更新messageIds数组
+            if (!topic.messageIds.includes(message.id)) {
+              topic.messageIds.push(message.id);
             }
           }
         }
+        
+        console.log(`[DexieStorageService] 话题 ${topic.id} 的消息和块保存完成`);
       }
 
       // 设置lastMessageTime字段

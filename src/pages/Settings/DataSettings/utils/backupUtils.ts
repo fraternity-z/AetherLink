@@ -267,6 +267,47 @@ export async function prepareBasicBackupData(): Promise<{
     const topics = await dexieStorage.getAllTopics();
     console.log(`获取到 ${topics.length} 个话题`);
 
+    // 为每个话题加载完整的消息数据
+    console.log('开始加载话题的完整消息数据...');
+    for (const topic of topics) {
+      if (topic.messageIds && topic.messageIds.length > 0) {
+        console.log(`加载话题 ${topic.id} 的 ${topic.messageIds.length} 条消息...`);
+        
+        // 从messages表加载消息
+        const messages = await Promise.all(
+          topic.messageIds.map(async (id) => {
+            try {
+              return await dexieStorage.getMessage(id);
+            } catch (error) {
+              console.error(`加载消息 ${id} 失败:`, error);
+              return null;
+            }
+          })
+        );
+        
+        // 过滤掉null值
+        topic.messages = messages.filter(Boolean) as any[];
+        
+        // 为每条消息加载消息块
+        for (const message of topic.messages) {
+          if (message && message.id) {
+            try {
+              const blocks = await dexieStorage.getMessageBlocksByMessageId(message.id);
+              (message as any).blocks = blocks;
+            } catch (error) {
+              console.error(`加载消息 ${message.id} 的块失败:`, error);
+            }
+          }
+        }
+        
+        console.log(`话题 ${topic.id} 加载了 ${topic.messages.length} 条完整消息`);
+      } else {
+        // 没有消息的话题，确保messages字段为空数组
+        topic.messages = [];
+      }
+    }
+    console.log('所有话题的消息数据加载完成');
+
     // 获取助手数据
     console.log('开始获取助手数据...');
     const assistants = await dexieStorage.getAllAssistants();

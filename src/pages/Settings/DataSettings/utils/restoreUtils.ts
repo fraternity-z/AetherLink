@@ -254,19 +254,12 @@ export async function restoreTopics(topics: ChatTopic[]): Promise<number> {
         continue;
       }
       try {
-        // 保存话题
+        // saveTopic 内部已经处理了消息的保存（通过 topic.messages 字段）
+        // 不需要在这里再次保存消息，避免重复操作
         await dexieStorage.saveTopic(topic);
-
-        // 如果话题包含消息，也要保存到messages表
+        
         if (topic.messages && Array.isArray(topic.messages) && topic.messages.length > 0) {
-          console.log(`保存话题 ${topic.id} 的 ${topic.messages.length} 条消息到messages表...`);
-          for (const message of topic.messages) {
-            try {
-              await dexieStorage.saveMessage(message);
-            } catch (messageError) {
-              console.error(`保存消息 ${message.id} 时出错:`, messageError);
-            }
-          }
+          console.log(`话题 ${topic.id} 包含 ${topic.messages.length} 条消息，已由 saveTopic 自动处理`);
         }
 
         successCount++;
