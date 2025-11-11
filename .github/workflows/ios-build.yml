@@ -57,8 +57,10 @@ jobs:
           # 使用固定版本避免 GitHub Actions 切换到带有 iOS 26.1 平台的最新 Xcode
           xcode-version: '15.4'
 
-      - name: Install CocoaPods
-        run: sudo gem install cocoapods
+      - name: Install CocoaPods and xcpretty
+        run: |
+          sudo gem install cocoapods
+          sudo gem install xcpretty
 
       - name: Sync Capacitor iOS
         run: npx cap sync ios
@@ -134,7 +136,8 @@ jobs:
           # 创建构建目录
           mkdir -p build
 
-          # 构建归档，添加Swift优化设置以消除警告
+          # 构建归档,添加更详细的日志以便调试
+          set -o pipefail
           xcodebuild archive \
             -workspace App.xcworkspace \
             -scheme App \
@@ -142,11 +145,20 @@ jobs:
             -archivePath ./build/App.xcarchive \
             -destination generic/platform=iOS \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
             DEVELOPMENT_TEAM="" \
-            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
-            -quiet
+            PRODUCT_BUNDLE_IDENTIFIER="com.llmhouse.app" \
+            ENABLE_BITCODE=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            -allowProvisioningUpdates \
+            | tee build.log | xcpretty || {
+              echo "=== Build failed, showing last 100 lines of log ==="
+              tail -n 100 build.log
+              exit 1
+            }
 
       - name: Export IPA (Unsigned)
         run: |
