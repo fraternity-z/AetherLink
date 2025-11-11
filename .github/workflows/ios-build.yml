@@ -57,21 +57,11 @@ jobs:
           # 使用固定版本避免 GitHub Actions 切换到带有 iOS 26.1 平台的最新 Xcode
           xcode-version: '15.4'
 
-      - name: Install CocoaPods and xcpretty
-        run: |
-          sudo gem install cocoapods
-          sudo gem install xcpretty
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
 
       - name: Sync Capacitor iOS
         run: npx cap sync ios
-
-      - name: Verify Podfile changes
-        run: |
-          cd ios/App
-          echo "=== Current Podfile content ==="
-          cat Podfile
-          echo ""
-          echo "=== Podfile has post_install hook with CI/CD optimizations ==="
 
       - name: Install CocoaPods dependencies
         run: |
@@ -82,7 +72,7 @@ jobs:
         run: |
           cd ios/App
 
-          # 创建更强力的项目配置脚本
+          # 创建一个更安全的项目配置脚本
           cat > update_project.py << 'EOF'
           import re
           import sys
@@ -92,49 +82,29 @@ jobs:
                   with open(file_path, 'r') as f:
                       content = f.read()
 
-                  print("Updating project file to disable code signing...")
-                  
-                  # 禁用代码签名 - 更彻底的替换
+                  # 更安全的替换方式
+                  # 禁用代码签名
                   content = re.sub(r'CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;', content)
-                  content = re.sub(r'CODE_SIGN_IDENTITY = "[^"]*";', 'CODE_SIGN_IDENTITY = "";', content)
-                  content = re.sub(r'CODE_SIGN_IDENTITY = [^;]+;', 'CODE_SIGN_IDENTITY = "";', content)
                   content = re.sub(r'DEVELOPMENT_TEAM = [^;]*;', 'DEVELOPMENT_TEAM = "";', content)
+                  content = re.sub(r'CODE_SIGN_IDENTITY = [^;]*;', 'CODE_SIGN_IDENTITY = "";', content)
                   content = re.sub(r'PROVISIONING_PROFILE_SPECIFIER = [^;]*;', 'PROVISIONING_PROFILE_SPECIFIER = "";', content)
-                  content = re.sub(r'PROVISIONING_PROFILE = [^;]*;', 'PROVISIONING_PROFILE = "";', content)
-                  
-                  # 在每个 buildSettings 块中添加代码签名禁用设置
-                  # 查找所有 buildSettings = { 并在其后添加设置
-                  def add_signing_settings(match):
-                      settings_block = match.group(0)
-                      # 如果已经有这些设置,先删除
-                      settings_block = re.sub(r'\s*CODE_SIGNING_ALLOWED = [^;]*;', '', settings_block)
-                      settings_block = re.sub(r'\s*CODE_SIGNING_REQUIRED = [^;]*;', '', settings_block)
-                      
-                      # 在 buildSettings = { 后添加新设置
-                      settings_block = settings_block.replace(
-                          'buildSettings = {',
-                          'buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;'
+
+                  # 添加禁用代码签名的设置
+                  if 'CODE_SIGNING_ALLOWED' not in content:
+                      # 在构建设置部分添加
+                      content = re.sub(
+                          r'(buildSettings = \{[^}]*)',
+                          r'\1\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;',
+                          content
                       )
-                      return settings_block
-                  
-                  content = re.sub(
-                      r'buildSettings = \{[^}]*\}',
-                      add_signing_settings,
-                      content,
-                      flags=re.DOTALL
-                  )
 
                   with open(file_path, 'w') as f:
                       f.write(content)
 
-                  print("✓ Project file updated successfully")
-                  print("✓ Code signing disabled")
-                  print("✓ Manual signing style set")
+                  print("Project file updated successfully")
                   return True
               except Exception as e:
-                  print(f"✗ Error updating project file: {e}")
-                  import traceback
-                  traceback.print_exc()
+                  print(f"Error updating project file: {e}")
                   return False
 
           if __name__ == "__main__":
@@ -144,11 +114,6 @@ jobs:
 
           # 运行 Python 脚本更新项目
           python3 update_project.py
-          
-          # 验证修改
-          echo ""
-          echo "=== Verifying CODE_SIGN settings in project.pbxproj ==="
-          grep "CODE_SIGN" App.xcodeproj/project.pbxproj | head -n 10
 
       - name: List available schemes and verify setup
         run: |
@@ -169,49 +134,19 @@ jobs:
           # 创建构建目录
           mkdir -p build
 
-          # 清理之前的构建
-          xcodebuild clean \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release
-
-          # 构建归档,使用最宽松的代码签名设置
-          set -o pipefail
+          # 构建归档，添加Swift优化设置以消除警告
           xcodebuild archive \
             -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -archivePath ./build/App.xcarchive \
             -destination generic/platform=iOS \
-            -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
             PROVISIONING_PROFILE="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
             DEVELOPMENT_TEAM="" \
-            PRODUCT_BUNDLE_IDENTIFIER="com.llmhouse.app" \
-            ENABLE_BITCODE=NO \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            ONLY_ACTIVE_ARCH=NO \
-            ARCHS="arm64" \
-            VALID_ARCHS="arm64" \
-            SKIP_INSTALL=NO \
-            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
-            | tee build.log | xcpretty --color || {
-              echo ""
-              echo "=== Build failed ==="
-              echo "=== Showing last 200 lines of build log ==="
-              tail -n 200 build.log
-              echo ""
-              echo "=== Searching for error messages ==="
-              grep -i "error:" build.log | tail -n 20 || echo "No error messages found"
-              echo ""
-              echo "=== Searching for code signing issues ==="
-              grep -i "signing\|certificate\|provisioning" build.log | tail -n 20 || echo "No signing issues found"
-              exit 1
-            }
+            SWIFT_OPTIMIZATION_LEVEL="-Onone" \
+            -quiet
 
       - name: Export IPA (Unsigned)
         run: |

@@ -53,22 +53,6 @@ post_install do |installer|
       end
       # 确保所有target都有正确的iOS部署目标
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-      
-      # 禁用代码签名以支持 CI/CD 构建
-      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
-      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
-      config.build_settings['CODE_SIGN_IDENTITY'] = ''
-    end
-    
-    # 修复 CocoaPods 脚本阶段警告 - 添加输出文件
-    target.build_phases.each do |phase|
-      if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
-        if phase.name == '[CP] Copy XCFrameworks'
-          phase.output_paths = ['${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/']
-        elsif phase.name == '[CP] Embed Pods Frameworks'
-          phase.output_paths = ['${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/']
-        end
-      end
     end
   end
 end
