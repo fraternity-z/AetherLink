@@ -1,6 +1,5 @@
 import UIKit
 import Capacitor
-import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,47 +8,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-        
-        // 🚀 性能优化：配置 WebView 性能设置
-        configureWebViewOptimizations()
-        
         return true
-    }
-    
-    /// 🚀 性能优化：WebView 配置优化
-    /// 参考：Capacitor 性能优化最佳实践
-    private func configureWebViewOptimizations() {
-        // 1. 启用 WKWebView 的内容模式优化
-        if #available(iOS 13.0, *) {
-            let processPool = WKProcessPool()
-            CAPBridgeViewController.instanceDescriptor().processPool = processPool
-        }
-        
-        // 2. 配置 WebView 配置
-        let configuration = WKWebViewConfiguration()
-        
-        // 启用 JavaScript
-        configuration.preferences.javaScriptEnabled = true
-        
-        // 启用多媒体播放
-        if #available(iOS 10.0, *) {
-            configuration.mediaTypesRequiringUserActionForPlayback = []
-        }
-        
-        // 允许内联播放
-        configuration.allowsInlineMediaPlayback = true
-        
-        // 启用画中画
-        if #available(iOS 9.0, *) {
-            configuration.allowsPictureInPictureMediaPlayback = true
-        }
-        
-        // 3. 性能优化：启用 GPU 加速
-        if #available(iOS 9.0, *) {
-            configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
-        }
-        
-        print("🚀 iOS WebView 性能优化配置已应用")
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
