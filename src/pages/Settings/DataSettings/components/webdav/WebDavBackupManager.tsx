@@ -129,6 +129,11 @@ const WebDavBackupManager: React.FC<WebDavBackupManagerProps> = ({
       } else {
         throw new Error(result.error || '恢复失败');
       }
+
+      // 恢复成功后刷新页面
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (error) {
       setError(`恢复失败: ${error instanceof Error ? error.message : String(error)}`);
     } finally {

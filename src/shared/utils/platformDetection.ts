@@ -141,8 +141,24 @@ export function detectOS(): OSType {
  * 检测运行时环境
  */
 export function detectRuntime(): RuntimeType {
-  if (typeof window !== 'undefined' && '__TAURI__' in window) {
-    return RuntimeType.TAURI;
+  const globalObj = typeof globalThis !== 'undefined' ? (globalThis as any) : undefined;
+
+  if (globalObj) {
+    const hasTauriGlobals = Boolean(
+      globalObj.__TAURI__ ||
+      globalObj.__TAURI_IPC__ ||
+      globalObj.__TAURI_METADATA__ ||
+      globalObj.__TAURI_INTERNALS__ ||
+      globalObj.__TAURI_METADATA__ ||
+      globalObj.tauri ||
+      (globalObj.window && (globalObj.window.__TAURI__ || globalObj.window.__TAURI_IPC__))
+    );
+
+    const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+
+    if (hasTauriGlobals || /tauri/i.test(userAgent)) {
+      return RuntimeType.TAURI;
+    }
   }
 
   // 更严格的Capacitor检测：不仅要有Capacitor对象，还要确保是真正的原生环境
