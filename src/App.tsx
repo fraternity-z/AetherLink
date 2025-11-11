@@ -9,9 +9,13 @@ import KnowledgeProvider from './components/KnowledgeManagement/KnowledgeProvide
 import AppContent from './components/AppContent';
 import LoadingScreen from './components/LoadingScreen';
 import LoggerService from './shared/services/LoggerService';
+import { loadSettings } from './shared/store/settingsSlice';
 
 // 初始化日志拦截器
 LoggerService.log('INFO', '应用初始化');
+
+// 在应用启动时加载设置
+store.dispatch(loadSettings());
 
 function App() {
   return (

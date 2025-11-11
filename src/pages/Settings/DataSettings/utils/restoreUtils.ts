@@ -6,6 +6,8 @@ import { importExternalBackup, type ImportMode } from './externalBackupUtils';
 import { dexieStorage } from '../../../../shared/services/storage/DexieStorageService';
 import { getStorageItem, setStorageItem, setStorageItems } from '../../../../shared/utils/storage';
 import { getMainTextContent } from '../../../../shared/utils/messageUtils';
+import store from '../../../../shared/store';
+import { loadSettings } from '../../../../shared/store/settingsSlice';
 
 /**
  * 从文件中读取JSON内容
@@ -352,6 +354,10 @@ export async function restoreSettings(
     // 保存设置到数据库
     await setStorageItem('settings', finalSettings);
 
+    // 重新加载设置到Redux store，确保状态同步
+    console.log('重新加载设置到Redux store...');
+    await store.dispatch(loadSettings());
+
     console.log('设置恢复完成');
     return true;
   } catch (error) {
@@ -393,6 +399,10 @@ export async function restoreModelConfig(
 
     // 保存设置到数据库
     await setStorageItem('settings', mergedSettings);
+
+    // 重新加载设置到Redux store，确保状态同步
+    console.log('重新加载模型配置到Redux store...');
+    await store.dispatch(loadSettings());
 
     console.log('模型配置恢复完成');
     return true;
