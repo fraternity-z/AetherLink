@@ -222,24 +222,42 @@ const WebDavConfigDialog: React.FC<WebDavConfigDialogProps> = ({
               <strong>常见 WebDAV 服务器配置示例：</strong>
               <br /><br />
               
+              <strong>123 云盘 (需要 VIP):</strong><br />
+              服务器地址: https://webdav.123pan.cn/webdav<br />
+              用户名: 您的 123 云盘用户名<br />
+              密码: 应用密码（在 123 云盘中生成）<br />
+              备份路径: /AetherLink（需要先在 123 云盘根目录创建此目录）<br />
+              <br />
+              
+              <strong>坚果云:</strong><br />
+              服务器地址: https://dav.jianguoyun.com/dav<br />
+              用户名: 您的坚果云邮箱<br />
+              密码: 应用密码（在坚果云中生成）<br />
+              备份路径: /AetherLink<br />
+              <br />
+              
               <strong>Nextcloud:</strong><br />
               服务器地址: https://your-domain.com/remote.php/webdav<br />
               用户名: 您的 Nextcloud 用户名<br />
               密码: 您的 Nextcloud 密码或应用密码<br />
+              备份路径: /AetherLink<br />
               <br />
               
               <strong>ownCloud:</strong><br />
               服务器地址: https://your-domain.com/remote.php/webdav<br />
+              备份路径: /AetherLink<br />
               <br />
               
               <strong>Synology NAS:</strong><br />
               服务器地址: https://your-nas-ip:5006/webdav<br />
+              备份路径: /AetherLink<br />
               <br />
               
-              <strong>注意事项：</strong><br />
-              • 确保服务器支持 HTTPS 连接<br />
-              • 路径必须以 / 开头<br />
-              • 建议使用应用专用密码而非主密码
+              <strong>重要提示：</strong><br />
+              • 备份路径必须以 / 开头（如 /AetherLink）<br />
+              • 对于 123 云盘和坚果云，需要先在服务器根目录创建对应的目录<br />
+              • 建议使用应用专用密码而非主密码<br />
+              • 确保服务器支持 HTTPS 连接
             </Typography>
           </AccordionDetails>
         </Accordion>

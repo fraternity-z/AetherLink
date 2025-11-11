@@ -10,6 +10,7 @@ import { modelComboService } from './ModelComboService';
 import { OpenAIAISDKProvider } from '../api/openai-aisdk';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 import { getDefaultGroupName } from '../utils/modelUtils';
+import ApiKeyManager from './ApiKeyManager';
 
 
 /**
@@ -250,145 +251,281 @@ export async function sendChatRequest(
 }
 
 /**
- * 从默认端点获取模型列表
+ * 检查 Key 是否在冷却期（复制ApiKeyManager的逻辑）
+ */
+function isKeyInCooldown(key: any): boolean {
+  if (key.status !== 'error') return false;
+  
+  const cooldownTime = 5 * 60 * 1000; // 5分钟冷却期
+  const timeSinceLastError = Date.now() - key.updatedAt;
+  
+  return timeSinceLastError < cooldownTime;
+}
+
+/**
+ * 获取所有可用的API Keys（用于故障转移）
+ * @param provider 提供商配置
+ * @returns 可用的API Keys数组
+ */
+function getAllAvailableApiKeys(provider: any): Array<{ key: string; config: any }> {
+  const availableKeys: Array<{ key: string; config: any }> = [];
+  
+  // 如果配置了多key，获取所有可用的keys
+  if (provider.apiKeys && Array.isArray(provider.apiKeys) && provider.apiKeys.length > 0) {
+    // 过滤出可用的keys（isEnabled && status === 'active' && 不在冷却期）
+    const availableKeyConfigs = provider.apiKeys.filter((key: any) => 
+      key.isEnabled && 
+      key.status === 'active' &&
+      !isKeyInCooldown(key) &&
+      key.key &&
+      key.key.trim().length > 0
+    );
+    
+    availableKeyConfigs.forEach((keyConfig: any) => {
+      availableKeys.push({ key: keyConfig.key, config: keyConfig });
+    });
+  }
+  
+  // 如果没有多key，回退到单key模式
+  if (availableKeys.length === 0 && provider.apiKey && provider.apiKey.trim().length > 0) {
+    availableKeys.push({ key: provider.apiKey, config: null });
+  }
+  
+  return availableKeys;
+}
+
+/**
+ * 从默认端点获取模型列表（支持多key故障转移）
  * @param provider 提供商配置
  * @param providerType 提供商类型
  * @returns 原始模型列表
  */
 async function fetchModelsFromEndpoint(provider: any, providerType: string): Promise<any[]> {
   let rawModels: any[] = [];
+  let lastError: Error | null = null;
 
-  // 简化的Provider选择逻辑，与最佳实例保持一致
-  switch (providerType.toLowerCase()) {
-    case 'anthropic':
-      rawModels = await anthropicApi.fetchModels(provider);
-      break;
-    case 'gemini':
-      rawModels = await geminiApi.fetchModels(provider);
-      break;
-    case 'deepseek':
-      // DeepSeek使用OpenAI兼容API，失败时返回预设列表
-      try {
-        rawModels = await openaiApi.fetchModels(provider);
-      } catch (error) {
-        console.warn(`[fetchModelsFromEndpoint] DeepSeek模型获取失败，返回预设列表:`, error);
-        rawModels = [
-          { id: 'deepseek-chat', name: 'DeepSeek-V3', description: 'DeepSeek最新的大型语言模型，具有优秀的中文和代码能力。', owned_by: 'deepseek' },
-          { id: 'deepseek-reasoner', name: 'DeepSeek-R1', description: 'DeepSeek的推理模型，擅长解决复杂推理问题。', owned_by: 'deepseek' }
-        ];
-      }
-      break;
-    case 'zhipu':
-      // 智谱AI不支持标准的 /v1/models 接口，返回预设列表
-      console.log(`[fetchModelsFromEndpoint] 智谱AI使用预设模型列表`);
-      rawModels = [
-        { id: 'glm-5-plus', name: 'GLM-5-Plus', description: 'GLM-5增强版，最新一代大模型', owned_by: 'zhipu' },
-        { id: 'glm-5-air', name: 'GLM-5-Air', description: 'GLM-5轻量版，平衡性能与速度', owned_by: 'zhipu' },
-        { id: 'glm-4-0520', name: 'GLM-4-0520', description: 'GLM-4最新版本，性能优化', owned_by: 'zhipu' },
-        { id: 'glm-4-plus', name: 'GLM-4-Plus', description: 'GLM-4增强版，更强推理能力', owned_by: 'zhipu' },
-        { id: 'glm-4-long', name: 'GLM-4-Long', description: 'GLM-4长文本版，支持超长上下文', owned_by: 'zhipu' },
-        { id: 'glm-4-air', name: 'GLM-4-Air', description: 'GLM-4轻量版，快速响应', owned_by: 'zhipu' },
-        { id: 'glm-4-airx', name: 'GLM-4-AirX', description: 'GLM-4轻量增强版', owned_by: 'zhipu' },
-        { id: 'glm-4-flash', name: 'GLM-4-Flash', description: 'GLM-4极速版，超快响应', owned_by: 'zhipu' },
-        { id: 'glm-4-flashx', name: 'GLM-4-FlashX', description: 'GLM-4极速增强版', owned_by: 'zhipu' },
-        { id: 'glm-4v', name: 'GLM-4V', description: 'GLM-4视觉版，支持图像理解', owned_by: 'zhipu' },
-        { id: 'glm-4v-flash', name: 'GLM-4V-Flash', description: 'GLM-4V极速版', owned_by: 'zhipu' },
-        { id: 'glm-4v-plus', name: 'GLM-4V-Plus', description: 'GLM-4V增强版', owned_by: 'zhipu' },
-        { id: 'glm-4-alltools', name: 'GLM-4-AllTools', description: 'GLM-4全工具版，支持网络搜索等工具', owned_by: 'zhipu' }
-      ];
-      break;
-    case 'openai-aisdk':
-      // AI SDK版本使用相同的模型获取逻辑
-      console.log(`[fetchModelsFromEndpoint] AI SDK OpenAI使用标准模型获取`);
-      rawModels = await openaiApi.fetchModels(provider);
-      break;
-    case 'openai-response':
-      // OpenAI Responses API 使用专门的模型获取逻辑
-      console.log(`[fetchModelsFromEndpoint] OpenAI Responses API使用专门的模型获取`);
-      try {
-        // 创建 OpenAIResponseProvider 实例来获取模型
-        // 使用静态导入的 OpenAIResponseProvider
-        const responseProvider = new OpenAIResponseProvider({
-          id: provider.id,
-          name: provider.name || 'OpenAI Responses',
-          apiKey: provider.apiKey,
-          baseUrl: provider.baseUrl || 'https://api.openai.com/v1',
-          provider: 'openai',
-          providerType: 'openai-response'
-        });
-        rawModels = await responseProvider.getModels();
-      } catch (error) {
-        console.warn(`[fetchModelsFromEndpoint] OpenAI Responses API模型获取失败，使用标准API:`, error);
-        rawModels = await openaiApi.fetchModels(provider);
-      }
-      break;
-    case 'openai':
-    case 'google':
-    default:
-      // 默认使用OpenAI兼容API
-      rawModels = await openaiApi.fetchModels(provider);
-      break;
+  // 获取所有可用的API Keys（用于故障转移）
+  const availableKeys = getAllAvailableApiKeys(provider);
+  if (availableKeys.length === 0) {
+    throw new Error('未找到可用的API Key，无法获取模型列表');
   }
 
-  return rawModels;
+  // 尝试使用每个可用的key，直到成功或全部失败
+  for (let i = 0; i < availableKeys.length; i++) {
+    const { key: apiKey, config: keyConfig } = availableKeys[i];
+    
+    try {
+      console.log(`[fetchModelsFromEndpoint] 尝试使用key ${i + 1}/${availableKeys.length}: ${keyConfig?.name || apiKey.substring(0, 8)}...`);
+      
+      // 创建一个带有apiKey的provider副本
+      const providerWithKey = {
+        ...provider,
+        apiKey: apiKey
+      };
+
+      // 根据提供商类型调用相应的API
+      switch (providerType.toLowerCase()) {
+        case 'anthropic':
+          rawModels = await anthropicApi.fetchModels(providerWithKey);
+          break;
+        case 'gemini':
+          // Gemini的fetchModels需要Model对象格式，需要转换
+          const geminiModel = {
+            id: provider.id,
+            name: provider.name || 'Gemini',
+            apiKey: apiKey,
+            baseUrl: provider.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
+            provider: 'gemini'
+          };
+          rawModels = await geminiApi.fetchModels(geminiModel);
+          break;
+        case 'deepseek':
+          // DeepSeek使用OpenAI兼容API，失败时返回预设列表
+          try {
+            rawModels = await openaiApi.fetchModels(providerWithKey);
+          } catch (error) {
+            console.warn(`[fetchModelsFromEndpoint] DeepSeek模型获取失败，返回预设列表:`, error);
+            rawModels = [
+              { id: 'deepseek-chat', name: 'DeepSeek-V3', description: 'DeepSeek最新的大型语言模型，具有优秀的中文和代码能力。', owned_by: 'deepseek' },
+              { id: 'deepseek-reasoner', name: 'DeepSeek-R1', description: 'DeepSeek的推理模型，擅长解决复杂推理问题。', owned_by: 'deepseek' }
+            ];
+          }
+          break;
+        case 'zhipu':
+          // 智谱AI不支持标准的 /v1/models 接口，返回预设列表
+          console.log(`[fetchModelsFromEndpoint] 智谱AI使用预设模型列表`);
+          rawModels = [
+            { id: 'glm-5-plus', name: 'GLM-5-Plus', description: 'GLM-5增强版，最新一代大模型', owned_by: 'zhipu' },
+            { id: 'glm-5-air', name: 'GLM-5-Air', description: 'GLM-5轻量版，平衡性能与速度', owned_by: 'zhipu' },
+            { id: 'glm-4-0520', name: 'GLM-4-0520', description: 'GLM-4最新版本，性能优化', owned_by: 'zhipu' },
+            { id: 'glm-4-plus', name: 'GLM-4-Plus', description: 'GLM-4增强版，更强推理能力', owned_by: 'zhipu' },
+            { id: 'glm-4-long', name: 'GLM-4-Long', description: 'GLM-4长文本版，支持超长上下文', owned_by: 'zhipu' },
+            { id: 'glm-4-air', name: 'GLM-4-Air', description: 'GLM-4轻量版，快速响应', owned_by: 'zhipu' },
+            { id: 'glm-4-airx', name: 'GLM-4-AirX', description: 'GLM-4轻量增强版', owned_by: 'zhipu' },
+            { id: 'glm-4-flash', name: 'GLM-4-Flash', description: 'GLM-4极速版，超快响应', owned_by: 'zhipu' },
+            { id: 'glm-4-flashx', name: 'GLM-4-FlashX', description: 'GLM-4极速增强版', owned_by: 'zhipu' },
+            { id: 'glm-4v', name: 'GLM-4V', description: 'GLM-4视觉版，支持图像理解', owned_by: 'zhipu' },
+            { id: 'glm-4v-flash', name: 'GLM-4V-Flash', description: 'GLM-4V极速版', owned_by: 'zhipu' },
+            { id: 'glm-4v-plus', name: 'GLM-4V-Plus', description: 'GLM-4V增强版', owned_by: 'zhipu' },
+            { id: 'glm-4-alltools', name: 'GLM-4-AllTools', description: 'GLM-4全工具版，支持网络搜索等工具', owned_by: 'zhipu' }
+          ];
+          break;
+        case 'openai-aisdk':
+          // AI SDK版本使用相同的模型获取逻辑
+          console.log(`[fetchModelsFromEndpoint] AI SDK OpenAI使用标准模型获取`);
+          rawModels = await openaiApi.fetchModels(providerWithKey);
+          break;
+        case 'openai-response':
+          // OpenAI Responses API 使用专门的模型获取逻辑
+          console.log(`[fetchModelsFromEndpoint] OpenAI Responses API使用专门的模型获取`);
+          try {
+            // 创建 OpenAIResponseProvider 实例来获取模型
+            // 使用静态导入的 OpenAIResponseProvider
+            const responseProvider = new OpenAIResponseProvider({
+              id: provider.id,
+              name: provider.name || 'OpenAI Responses',
+              apiKey: apiKey,
+              baseUrl: provider.baseUrl || 'https://api.openai.com/v1',
+              provider: 'openai',
+              providerType: 'openai-response'
+            });
+            rawModels = await responseProvider.getModels();
+          } catch (error) {
+            console.warn(`[fetchModelsFromEndpoint] OpenAI Responses API模型获取失败，使用标准API:`, error);
+            rawModels = await openaiApi.fetchModels(providerWithKey);
+          }
+          break;
+        case 'openai':
+        case 'google':
+        default:
+          // 默认使用OpenAI兼容API
+          rawModels = await openaiApi.fetchModels(providerWithKey);
+          break;
+      }
+
+      // 如果成功，记录key使用并返回结果
+      if (keyConfig) {
+        const keyManager = ApiKeyManager.getInstance();
+        keyManager.updateKeyStatus(keyConfig, true);
+      }
+      
+      console.log(`[fetchModelsFromEndpoint] ✅ 使用key ${i + 1} 成功获取模型列表 (${rawModels.length}个模型)`);
+      return rawModels;
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      console.warn(`[fetchModelsFromEndpoint] ❌ key ${i + 1} 获取失败: ${errorMessage}`);
+      
+      // 如果使用了多key模式，更新key状态
+      if (keyConfig) {
+        const keyManager = ApiKeyManager.getInstance();
+        keyManager.updateKeyStatus(keyConfig, false, errorMessage);
+      }
+      
+      // 如果还有更多key可以尝试，继续下一个
+      if (i < availableKeys.length - 1) {
+        console.log(`[fetchModelsFromEndpoint] 🔄 切换到下一个key继续尝试...`);
+        continue;
+      }
+    }
+  }
+
+  // 所有key都失败了
+  throw lastError || new Error('所有API Key都获取失败，无法获取模型列表');
 }
 
 /**
- * 从自定义端点获取模型列表
+ * 从自定义端点获取模型列表（支持多key故障转移）
  * @param customEndpoint 自定义端点完整URL
  * @param provider 原始提供商配置（用于API密钥等）
  * @returns 原始模型列表
  */
 async function fetchModelsFromCustomEndpoint(customEndpoint: string, provider: any): Promise<any[]> {
-  try {
-    // 直接使用自定义端点，不进行任何URL处理
-    console.log(`[fetchModelsFromCustomEndpoint] 直接请求自定义端点: ${customEndpoint}`);
+  let lastError: Error | null = null;
 
-    // 构建请求头
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-
-    // 添加API密钥（如果有）
-    if (provider.apiKey) {
-      headers['Authorization'] = `Bearer ${provider.apiKey}`;
-    }
-
-    // 添加自定义请求头（如果有）
-    if (provider.extraHeaders) {
-      Object.assign(headers, provider.extraHeaders);
-    }
-
-    // 直接请求自定义端点，不通过OpenAI的fetchModels函数
-    const response = await fetch(customEndpoint, {
-      method: 'GET',
-      headers: headers
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.warn(`[fetchModelsFromCustomEndpoint] 自定义端点请求失败: ${response.status}, ${errorText}`);
-      throw new Error(`自定义端点请求失败: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log(`[fetchModelsFromCustomEndpoint] 成功获取模型列表, 找到 ${(data.data || data || []).length} 个模型`);
-
-    // 处理不同的响应格式
-    if (data.data && Array.isArray(data.data)) {
-      // 标准OpenAI格式: {data: [...]}
-      return data.data;
-    } else if (Array.isArray(data)) {
-      // 直接返回数组格式
-      return data;
-    } else {
-      console.warn(`[fetchModelsFromCustomEndpoint] 未知的响应格式:`, data);
-      return [];
-    }
-  } catch (error) {
-    console.error(`[fetchModelsFromCustomEndpoint] 自定义端点请求失败:`, error);
-    throw error;
+  // 获取所有可用的API Keys（用于故障转移）
+  const availableKeys = getAllAvailableApiKeys(provider);
+  if (availableKeys.length === 0) {
+    throw new Error('未找到可用的API Key，无法获取模型列表');
   }
+
+  // 尝试使用每个可用的key，直到成功或全部失败
+  for (let i = 0; i < availableKeys.length; i++) {
+    const { key: apiKey, config: keyConfig } = availableKeys[i];
+    
+    try {
+      console.log(`[fetchModelsFromCustomEndpoint] 尝试使用key ${i + 1}/${availableKeys.length}: ${keyConfig?.name || apiKey.substring(0, 8)}...`);
+      
+      // 构建请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // 添加API密钥
+      headers['Authorization'] = `Bearer ${apiKey}`;
+
+      // 添加自定义请求头（如果有）
+      if (provider.extraHeaders) {
+        Object.assign(headers, provider.extraHeaders);
+      }
+
+      // 直接请求自定义端点
+      const response = await fetch(customEndpoint, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`自定义端点请求失败: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      const modelsCount = (data.data || data || []).length;
+      console.log(`[fetchModelsFromCustomEndpoint] ✅ 使用key ${i + 1} 成功获取模型列表, 找到 ${modelsCount} 个模型`);
+
+      // 如果成功，记录key使用
+      if (keyConfig) {
+        const keyManager = ApiKeyManager.getInstance();
+        keyManager.updateKeyStatus(keyConfig, true);
+      }
+
+      // 处理不同的响应格式
+      if (data.data && Array.isArray(data.data)) {
+        // 标准OpenAI格式: {data: [...]}
+        return data.data;
+      } else if (Array.isArray(data)) {
+        // 直接返回数组格式
+        return data;
+      } else {
+        console.warn(`[fetchModelsFromCustomEndpoint] 未知的响应格式:`, data);
+        return [];
+      }
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      console.warn(`[fetchModelsFromCustomEndpoint] ❌ key ${i + 1} 获取失败: ${errorMessage}`);
+      
+      // 如果使用了多key模式，更新key状态
+      if (keyConfig) {
+        const keyManager = ApiKeyManager.getInstance();
+        keyManager.updateKeyStatus(keyConfig, false, errorMessage);
+      }
+      
+      // 如果还有更多key可以尝试，继续下一个
+      if (i < availableKeys.length - 1) {
+        console.log(`[fetchModelsFromCustomEndpoint] 🔄 切换到下一个key继续尝试...`);
+        continue;
+      }
+    }
+  }
+
+  // 所有key都失败了
+  throw lastError || new Error('所有API Key都获取失败，无法获取模型列表');
 }
 
 /**

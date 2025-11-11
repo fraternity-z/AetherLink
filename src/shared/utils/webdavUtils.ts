@@ -67,10 +67,9 @@ export function validateWebDavConfig(config: Partial<WebDavConfig>): string[] {
     errors.push('密码不能为空');
   }
 
-  if (!config.webdavPath?.trim()) {
-    errors.push('路径不能为空');
-  } else if (!config.webdavPath.startsWith('/')) {
-    errors.push('路径必须以 / 开头');
+  // webdavPath 可以为空或以 / 开头
+  if (config.webdavPath && !config.webdavPath.startsWith('/')) {
+    errors.push('备份路径必须以 / 开头（如 /AetherLink）或留空');
   }
 
   return errors;

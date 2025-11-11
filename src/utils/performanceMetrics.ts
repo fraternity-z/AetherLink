@@ -7,14 +7,19 @@
  * 🎯 追踪指标：
  * - DOMContentLoaded: DOM 加载完成时间
  * - FCP (First Contentful Paint): 首次内容绘制时间
- * - TTI (Time to Interactive): 可交互时间
+ * - LCP (Largest Contentful Paint): 最大内容绘制时间（作为可交互时间的近似值）
  * - Splash Screen Hide: 启动屏隐藏时间
  * - App Initialized: 应用完全初始化时间
  * 
  * 📊 目标值（参考文章）：
- * - 白屏时间 < 1s
- * - 首屏渲染 < 1.5s
+ * - 白屏时间 (FCP) < 1s
+ * - 首屏渲染 (LCP) < 1.5s
  * - 可交互时间 < 2.1s
+ * 
+ * 📝 注意：
+ * - web-vitals v3+ 已移除 TTI (Time to Interactive)
+ * - 使用 LCP 作为可交互时间的替代指标
+ * - LCP 测量最大内容元素的渲染时间，通常接近可交互时间
  */
 
 export interface PerformanceMetrics {
@@ -29,8 +34,9 @@ export interface PerformanceMetrics {
 }
 
 // 性能指标存储
+// navigationStart 应该为 0，表示从页面加载开始计时
 const metrics: Partial<PerformanceMetrics> = {
-  navigationStart: performance.now()
+  navigationStart: 0
 };
 
 // 是否已经上报过性能数据
@@ -179,21 +185,24 @@ export function initPerformanceTracking(): void {
     recordMetric('domContentLoaded', performance.now());
   }
 
-  // 使用 Web Vitals 追踪 FCP 和 TTI
+  // 使用 Web Vitals 追踪 FCP 和其他指标
+  // 注意：web-vitals v3+ 已移除 TTI，使用 LCP 作为可交互时间的近似值
   if (typeof window !== 'undefined') {
     // 动态导入 web-vitals（如果项目已安装）
     import('web-vitals')
-      .then(({ onFCP, onTTI }) => {
-        onFCP((metric) => {
+      .then(({ onFCP, onLCP }) => {
+        onFCP((metric: { value: number }) => {
           recordMetric('firstContentfulPaint', metric.value);
         });
 
-        onTTI((metric) => {
+        // 使用 LCP 作为 TTI 的近似替代
+        // LCP 通常在页面主要内容渲染完成后触发，接近可交互时间
+        onLCP((metric: { value: number }) => {
           recordMetric('timeToInteractive', metric.value);
         });
       })
       .catch(() => {
-        console.warn('[Performance] web-vitals 未安装，跳过 FCP/TTI 追踪');
+        console.warn('[Performance] web-vitals 未安装，跳过 FCP/LCP 追踪');
         // 使用 Performance API 的备选方案
         useFallbackMetrics();
       });

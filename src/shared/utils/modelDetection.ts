@@ -141,6 +141,11 @@ export function isSupportedThinkingTokenModel(model?: Model): boolean {
 export function isReasoningModel(model?: Model): boolean {
   if (!model) return false;
 
+  // 排除 Grok-4 fast 系列模型（虽然名字包含 "reasoning" 但不支持 reasoningEffort 参数）
+  if (model.id.includes('grok-4-fast')) {
+    return false;
+  }
+
   // 检查模型类型是否包含推理类型
   if (model.modelTypes?.includes('reasoning')) {
     return true;

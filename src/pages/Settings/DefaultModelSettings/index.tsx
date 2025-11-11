@@ -20,7 +20,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { updateSettings } from '../../../shared/store/settingsSlice';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
-import DialogModelSelector from '../../../pages/ChatPage/components/DialogModelSelector';
+import { ModelSelector } from '../../ChatPage/components/ModelSelector';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../../hooks/useScrollPosition';
 import CustomSwitch from '../../../components/CustomSwitch';
@@ -212,7 +212,7 @@ const DefaultModelSettingsPage: React.FC = () => {
             <Typography variant="body2" color="text.secondary">
               {selectedModel ? t('modelSettings.defaultModel.currentModel', { model: selectedModel.name }) : t('modelSettings.defaultModel.notSelected')}
             </Typography>
-            <DialogModelSelector
+            <ModelSelector
               selectedModel={selectedModel}
               availableModels={allModels}
               handleModelSelect={handleTopicNamingModelChange}

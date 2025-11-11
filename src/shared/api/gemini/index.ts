@@ -8,6 +8,7 @@ import type { Model, Message, ImageGenerationParams } from '../../types';
 import GeminiProvider from './provider';
 import { generateImage, generateImageByChat } from './image.ts';
 import { isGenerateImageModel } from '../../config/models';
+import { ChunkType } from '../../types/chunk';
 
 // 导出客户端模块
 export {
@@ -113,7 +114,7 @@ export function createGeminiAPI(model: Model) {
         assistant,
         mcpTools,
         onChunk: (chunk: any) => {
-          if (chunk.type === 'TEXT_DELTA' && chunk.text) {
+          if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
             result += chunk.text;
             // 传递增量文本给前端，让前端自己累积
             options?.onUpdate?.(chunk.text);
@@ -262,7 +263,7 @@ export const sendChatRequest = async (
     assistant,
     mcpTools: [],
     onChunk: (chunk: any) => {
-      if (chunk.type === 'TEXT_DELTA' && chunk.text) {
+      if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
         result += chunk.text;
         // 传递增量文本给前端，让前端自己累积
         onUpdate?.(chunk.text);

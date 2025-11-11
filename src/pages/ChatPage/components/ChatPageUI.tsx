@@ -7,8 +7,7 @@ import { CustomIcon } from '../../../components/icons';
 import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
-import DialogModelSelector from './DialogModelSelector';
-import DropdownModelSelector from './DropdownModelSelector';
+import { ModelSelector } from './ModelSelector';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
@@ -360,11 +359,13 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         return shouldShow('showModelSelector') ? (
           <Box key={componentId} sx={{ display: 'flex', alignItems: 'center' }}>
             {settings.modelSelectorStyle === 'dropdown' ? (
-              <DropdownModelSelector
+              <ModelSelector
                 selectedModel={selectedModel}
                 availableModels={availableModels}
                 handleModelSelect={handleModelSelect}
-                displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
+                handleMenuClick={handleModelMenuClick}
+                handleMenuClose={handleModelMenuClose}
+                menuOpen={menuOpen}
               />
             ) : (
               <>
@@ -374,7 +375,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
                   displayStyle={mergedTopToolbarSettings.modelSelectorDisplayStyle || 'icon'}
                 />
                 <Box sx={{ position: 'absolute', visibility: 'hidden', pointerEvents: 'none' }}>
-                  <DialogModelSelector
+                  <ModelSelector
                     selectedModel={selectedModel}
                     availableModels={availableModels}
                     handleModelSelect={handleModelSelect}

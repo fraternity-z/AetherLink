@@ -1,12 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-oxc'  // 使用 OXC 处理 React，更适配 rolldown-vite
+import solidPlugin from 'vite-plugin-solid'
 
-// Rolldown-Vite + OXC 配置
+// Rolldown-Vite + OXC + SolidJS 混合配置
 // OXC 处理 React（高性能且与 rolldown 深度集成）
+// SolidJS 用于性能关键页面
 export default defineConfig({
   plugins: [
+    // SolidJS 插件 - 必须在 React 之前，处理 .solid.tsx 文件
+    solidPlugin({
+      include: /\.solid\.(tsx|jsx|ts|js)$/,
+    }),
     // 使用 OXC 处理 React - rolldown-vite 推荐方案
-    react(),
+    react({
+      include: /^(?!.*\.solid\.(tsx|jsx|ts|js)$).*\.(tsx|jsx)$/,
+    }),
     {
       name: 'rolldown-clean-optimize-deps',
       enforce: 'post',
@@ -125,11 +133,29 @@ export default defineConfig({
           'Origin': 'https://api.notion.com'
         }
       },
-      // WebDAV 代理 - 支持坚果云等 WebDAV 服务
-      '/api/webdav': {
+      // WebDAV 代理 - 123 云盘 (.cn) - 代理整个域名
+      '/api/webdav/123pan-cn': {
+        target: 'https://webdav.123pan.cn',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/webdav\/123pan-cn/, ''),
+        headers: {
+          'Origin': 'https://webdav.123pan.cn'
+        }
+      },
+      // WebDAV 代理 - 123 云盘 (.com)
+      '/api/webdav/123pan': {
+        target: 'https://webdav.123pan.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/webdav\/123pan/, ''),
+        headers: {
+          'Origin': 'https://webdav.123pan.com'
+        }
+      },
+      // WebDAV 代理 - 坚果云
+      '/api/webdav/jianguoyun': {
         target: 'https://dav.jianguoyun.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/webdav/, '/dav'),
+        rewrite: (path) => path.replace(/^\/api\/webdav\/jianguoyun/, '/dav'),
         headers: {
           'Origin': 'https://dav.jianguoyun.com'
         }
@@ -176,6 +202,8 @@ export default defineConfig({
       '@emotion/react',
       '@emotion/styled',
       'axios',
+      'solid-js',
+      'solid-js/web',
     ],
     // 移除 force: true，避免每次都重新构建
     // force: true

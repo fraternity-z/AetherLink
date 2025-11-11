@@ -233,7 +233,17 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
           }
         }}
       >
-        {groupedModels.sortedGroups.flatMap((providerId) => {
+        {/* 始终渲染当前选中的模型，避免 MUI Select 值不匹配警告 */}
+        {!open && selectedModel && (
+          <MenuItem 
+            key={getIdentityValue(selectedModel)} 
+            value={getIdentityValue(selectedModel)}
+            sx={{ display: 'none' }}
+          />
+        )}
+        
+        {/* 只在打开时渲染完整的模型列表 */}
+        {open && groupedModels.sortedGroups.flatMap((providerId) => {
           const providerName = getProviderName(providerId);
           const models = groupedModels.groups[providerId];
 

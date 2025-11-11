@@ -625,13 +625,31 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     setTestResult(null);
 
     try {
+      // 确定要使用的 API Key
+      let testApiKey = apiKey;
+      
+      // 如果启用了多 Key 模式，从可用的 Key 中选择一个
+      if (multiKeyEnabled && provider.apiKeys && provider.apiKeys.length > 0) {
+        const keySelection = keyManager.selectApiKey(
+          provider.apiKeys,
+          provider.keyManagement?.strategy || 'round_robin'
+        );
+        
+        if (keySelection.key) {
+          testApiKey = keySelection.key.key;
+          console.log(`[handleTestConnection] 多 Key 模式: 使用 ${keySelection.key.name || keySelection.key.id}`);
+        } else {
+          throw new Error('没有可用的 API Key。请检查多 Key 配置。');
+        }
+      }
+
       // 创建一个模拟模型对象，包含当前输入的API配置
       const testModel = {
         id: provider.models.length > 0 ? provider.models[0].id : 'gpt-3.5-turbo',
         name: provider.name,
         provider: provider.id,
         providerType: provider.providerType,
-        apiKey: apiKey,
+        apiKey: testApiKey,
         baseUrl: baseUrl,
         enabled: true
       };
@@ -664,7 +682,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       setIsTesting(false);
       abortControllerRef.current = null;
     }
-  }, [provider, baseUrl, apiKey]);
+  }, [provider, baseUrl, apiKey, multiKeyEnabled, keyManager]);
 
   // 增强的测试单个模型的函数
   const handleTestModelConnection = async (model: Model) => {
@@ -675,12 +693,30 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     setTestResult(null);
 
     try {
+      // 确定要使用的 API Key
+      let testApiKey = apiKey;
+      
+      // 如果启用了多 Key 模式，从可用的 Key 中选择一个
+      if (multiKeyEnabled && provider.apiKeys && provider.apiKeys.length > 0) {
+        const keySelection = keyManager.selectApiKey(
+          provider.apiKeys,
+          provider.keyManagement?.strategy || 'round_robin'
+        );
+        
+        if (keySelection.key) {
+          testApiKey = keySelection.key.key;
+          console.log(`[handleTestModelConnection] 多 Key 模式: 使用 ${keySelection.key.name || keySelection.key.id}`);
+        } else {
+          throw new Error('没有可用的 API Key。请检查多 Key 配置。');
+        }
+      }
+
       // 创建测试模型对象，使用当前保存的API配置
       const testModel = {
         ...model,
         provider: provider.id, // 确保包含 provider 信息
         providerType: provider.providerType, // 确保包含 providerType
-        apiKey: apiKey,
+        apiKey: testApiKey,
         baseUrl: baseUrl,
         enabled: true
       };

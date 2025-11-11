@@ -32,79 +32,92 @@ function getProviderConfig(model: Model): ModelProvider | null {
 }
 
 /**
+ * 根据 Provider 类型创建对应的 Provider 实例
+ */
+function createProviderInstance(model: Model, providerType: string): any {
+  switch (providerType) {
+    case 'anthropic':
+      return new AnthropicProvider(model);
+    case 'gemini':
+      return new GeminiProvider({
+        id: model.id,
+        name: model.name || 'Gemini',
+        apiKey: model.apiKey,
+        apiHost: model.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
+        models: [{ id: model.id }]
+      });
+    case 'openai-aisdk':
+      return new OpenAIAISDKProvider(model);
+    case 'openai-response':
+      return new OpenAIResponseProvider(model);
+    default:
+      return new OpenAIProvider(model);
+  }
+}
+
+/**
  * 创建增强的 Provider 包装器，支持多 Key 负载均衡
  */
-function createEnhancedProvider(originalProvider: any, model: Model, providerConfig: ModelProvider | null) {
-  // 如果没有多 Key 配置，直接返回原始 Provider
+function createEnhancedProvider(model: Model, providerConfig: ModelProvider | null, providerType: string) {
+  // 如果没有多 Key 配置，创建单 Key 的 Provider
   if (!providerConfig?.apiKeys || providerConfig.apiKeys.length === 0) {
-    return originalProvider;
+    console.log(`[ApiProvider] 📝 单 Key 模式，直接创建 Provider`);
+    return createProviderInstance(model, providerType);
   }
 
-  console.log(`[ApiProvider] 🚀 为 ${model.provider} 创建增强 Provider，支持 ${providerConfig.apiKeys.length} 个 Key，策略: ${providerConfig.keyManagement?.strategy || 'round_robin'}`);
+  console.log(`[ApiProvider] 🚀 多 Key 模式，支持 ${providerConfig.apiKeys.length} 个 Key，策略: ${providerConfig.keyManagement?.strategy || 'round_robin'}`);
 
-  // 创建增强的 Provider 包装器
+  const enhancedApiProvider = new EnhancedApiProvider();
+
+  // 🔧 关键：返回一个虚拟 Provider 对象，每次调用时动态选择 Key
   return {
-    ...originalProvider,
     sendChatMessage: async (messages: any[], options?: any) => {
-      const enhancedApiProvider = new EnhancedApiProvider();
+      const maxRetries = 3;
+      const retryDelay = 1000;
+      let lastError: string = '';
 
-      // 包装原始的 sendChatMessage 调用，接受 apiKey 参数
-      const wrappedApiCall = async (apiKey: string) => {
-        // 创建一个新的模型对象，使用指定的 API Key
-        const modelWithNewKey = {
-          ...model,
-          apiKey: apiKey
-        };
-
-        // 创建新的 Provider 实例，使用新的 API Key
-        let providerWithNewKey: any;
-        const providerType = getActualProviderType(model);
-
-        switch (providerType) {
-          case 'anthropic':
-            providerWithNewKey = new AnthropicProvider(modelWithNewKey);
-            break;
-          case 'gemini':
-            providerWithNewKey = new GeminiProvider({
-              id: modelWithNewKey.id,
-              name: modelWithNewKey.name || 'Gemini',
-              apiKey: modelWithNewKey.apiKey,
-              apiHost: modelWithNewKey.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-              models: [{ id: modelWithNewKey.id }]
-            });
-            break;
-          case 'openai-aisdk':
-            providerWithNewKey = new OpenAIAISDKProvider(modelWithNewKey);
-            break;
-          default:
-            providerWithNewKey = new OpenAIProvider(modelWithNewKey);
-            break;
+      // 🔧 每次请求都重新选择 Key，实现真正的负载均衡
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const selectedKey = enhancedApiProvider.getNextAvailableKey(providerConfig);
+        
+        if (!selectedKey) {
+          lastError = '没有可用的 API Key';
+          console.error(`[ApiProvider] ❌ ${lastError}`);
+          break;
         }
 
-        return await providerWithNewKey.sendChatMessage(messages, options);
-      };
+        console.log(`[ApiProvider] 🔑 [第${attempt + 1}次尝试] 使用 Key: ${selectedKey.name || selectedKey.id.substring(0, 8)}`);
 
-      // 使用增强的 API 提供商进行调用
-      const result = await enhancedApiProvider.callWithMultiKey(
-        providerConfig,
-        model,
-        wrappedApiCall,
-        {
-          maxRetries: 3,
-          retryDelay: 1000,
-          enableFallback: true,
-          onKeyUsed: (keyId: string, success: boolean, error?: string) => {
-            const keyName = providerConfig.apiKeys?.find(k => k.id === keyId)?.name || keyId;
-            console.log(`[ApiProvider] 🔑 ${keyName} ${success ? '✅ 成功' : '❌ 失败'}${error ? `: ${error}` : ''}`);
+        try {
+          // 🔧 每次请求时动态创建 Provider，使用当前选中的 Key
+          const modelWithKey = {
+            ...model,
+            apiKey: selectedKey.key
+          };
+
+          const provider = createProviderInstance(modelWithKey, providerType);
+
+          // 🔧 直接调用并返回，让流式回调能实时工作
+          const result = await provider.sendChatMessage(messages, options);
+          
+          console.log(`[ApiProvider] ✅ Key ${selectedKey.name || selectedKey.id.substring(0, 8)} 调用成功`);
+          return result;
+
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : String(error);
+          console.error(`[ApiProvider] ❌ Key ${selectedKey.name || selectedKey.id.substring(0, 8)} 调用失败:`, lastError);
+
+          // 如果不是最后一次尝试，等待后重试
+          if (attempt < maxRetries - 1) {
+            const delay = retryDelay * (attempt + 1);
+            console.log(`[ApiProvider] ⏳ 等待 ${delay}ms 后重试...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
-      );
-
-      if (!result.success) {
-        throw new Error(result.error || '多 Key API 调用失败');
       }
 
-      return result.data;
+      // 所有 Key 都失败了
+      throw new Error(`所有 API Key 调用失败。最后错误: ${lastError}`);
     }
   };
 }
@@ -180,56 +193,36 @@ export const ApiProviderRegistry = {
 
     // 获取供应商配置
     const providerConfig = getProviderConfig(model);
+    
+    console.log(`[ApiProvider] 📊 获取供应商配置:`, {
+      modelId: model.id,
+      modelProvider: model.provider,
+      modelApiKey: model.apiKey ? `${model.apiKey.substring(0, 10)}...` : 'undefined',
+      providerConfigExists: !!providerConfig,
+      providerConfigId: providerConfig?.id,
+      hasApiKeys: !!(providerConfig?.apiKeys && providerConfig.apiKeys.length > 0),
+      apiKeysCount: providerConfig?.apiKeys?.length || 0,
+      hasSingleApiKey: !!providerConfig?.apiKey,
+      keyManagementStrategy: providerConfig?.keyManagement?.strategy
+    });
 
-    // 直接创建Provider实例，避免通过API模块的双重调用
+    // 获取实际的 Provider 类型
     const providerType = getActualProviderType(model);
 
-    let originalProvider: any;
-
-    switch (providerType) {
-      case 'model-combo':
-        // 返回模型组合专用的Provider（不支持多 Key）
-        return new ModelComboProvider(model);
-      case 'anthropic':
-        originalProvider = new AnthropicProvider(model);
-        break;
-      case 'gemini':
-        originalProvider = new GeminiProvider({
-          id: model.id,
-          name: model.name || 'Gemini',
-          apiKey: model.apiKey,
-          apiHost: model.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-          models: [{ id: model.id }]
-        });
-        break;
-      case 'openai-aisdk':
-        originalProvider = new OpenAIAISDKProvider(model);
-        break;
-      case 'openai-response':
-        console.log(`[ApiProvider] 🚀 使用 OpenAI Responses API for ${model.id}`);
-        originalProvider = new OpenAIResponseProvider(model);
-        break;
-      case 'azure-openai':
-      case 'openai':
-      case 'deepseek':
-      case 'google':
-      case 'grok':
-      case 'zhipu':
-      case 'siliconflow':
-      case 'volcengine':
-      default:
-        // 检查是否应该使用 OpenAI Responses API
-        if (providerType === 'openai' && shouldUseResponsesAPI(model)) {
-          console.log(`[ApiProvider] 🚀 自动使用 OpenAI Responses API for ${model.id}`);
-          originalProvider = new OpenAIResponseProvider(model);
-        } else {
-          originalProvider = new OpenAIProvider(model);
-        }
-        break;
+    // 🔧 特殊处理：模型组合不支持多 Key
+    if (providerType === 'model-combo') {
+      return new ModelComboProvider(model);
     }
 
-    // 创建增强的 Provider（支持多 Key 负载均衡）
-    return createEnhancedProvider(originalProvider, model, providerConfig);
+    // 🔧 检查是否需要使用 OpenAI Responses API
+    let actualProviderType = providerType;
+    if (providerType === 'openai' && shouldUseResponsesAPI(model)) {
+      console.log(`[ApiProvider] 🚀 自动使用 OpenAI Responses API for ${model.id}`);
+      actualProviderType = 'openai-response';
+    }
+
+    // 🔧 使用新的 createEnhancedProvider，支持多 Key 动态切换
+    return createEnhancedProvider(model, providerConfig, actualProviderType);
   },
 
   /**

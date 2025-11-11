@@ -28,5 +28,5 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src"],
-  "exclude": ["vite.config.ts", "farm.config.ts", "node_modules", "dist"]
+  "exclude": ["vite.config.ts", "farm.config.ts", "node_modules", "dist", "src/solid/**/*"]
 }

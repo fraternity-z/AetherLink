@@ -20,10 +20,24 @@ export class WebDavManagerService {
    */
   private buildUrl(path: string = ''): string {
     // 移动端直接使用原始 URL
-    const host = this.config.webdavHost.replace(/\/$/, '');
-    const basePath = this.config.webdavPath.replace(/^\/+|\/+$/g, '');
+    let host = this.config.webdavHost.replace(/\/$/, '');
+    let basePath = this.config.webdavPath.replace(/^\/+|\/+$/g, '');
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [WebDAV] buildUrl debug:', { host, basePath, path });
+    }
+
+    // 对于 123 云盘，如果 host 已经包含 /webdav，不需要再添加 basePath
+    // 例如：host = "https://webdav.123pan.cn/webdav", basePath = "AetherLink"
+    // 应该返回 "https://webdav.123pan.cn/webdav/AetherLink"
+    
+    // 如果 basePath 为空，直接返回 host
     if (!basePath) {
+      return path ? `${host}/${path}` : host;
+    }
+
+    // 如果 basePath 已经在 host 中，不要重复添加
+    if (host.endsWith(basePath)) {
       return path ? `${host}/${path}` : host;
     }
 
@@ -146,6 +160,22 @@ export class WebDavManagerService {
   }
 
   /**
+   * 检测 WebDAV 服务器类型
+   */
+  private detectWebDavProvider(url: string): 'jianguoyun' | '123pan' | '123pan3' | 'unknown' {
+    if (url.includes('dav.jianguoyun.com') || url.includes('jianguoyun')) {
+      return 'jianguoyun';
+    } else if (url.includes('webdav3.123pan')) {
+      // 123 云盘备用：支持 .com 和 .cn
+      return '123pan3';
+    } else if (url.includes('webdav.123pan') || url.includes('123pan')) {
+      // 123 云盘：支持 .com、.cn 等多种域名
+      return '123pan';
+    }
+    return 'unknown';
+  }
+
+  /**
    * 回退到标准 fetch（仅 Web 端）
    */
   private async fallbackFetch(options: {
@@ -154,20 +184,37 @@ export class WebDavManagerService {
     headers?: Record<string, string>;
     data?: string | Blob;
   }) {
-    // 在 Web 端将原始 URL 转换为代理 URL
+    const provider = this.detectWebDavProvider(options.url);
     let proxyUrl = options.url;
+    let useProxy = false;
+
     if (options.url.startsWith('http')) {
-      // 如果是完整 URL，转换为代理路径
       const originalUrl = new URL(options.url);
-      // 将 https://dav.jianguoyun.com/dav/AetherLink/ 转换为 /api/webdav/AetherLink/
-      // 代理会将 /api/webdav/AetherLink/ 重写为 /dav/AetherLink/
-      const pathWithoutDav = originalUrl.pathname.replace(/^\/dav/, '');
-      proxyUrl = `/api/webdav${pathWithoutDav}`;
+      
+      if (provider === 'jianguoyun') {
+        // 坚果云：使用代理
+        // 将 https://dav.jianguoyun.com/dav/AetherLink/ 转换为 /api/webdav/jianguoyun/AetherLink/
+        const pathWithoutDav = originalUrl.pathname.replace(/^\/dav/, '');
+        proxyUrl = `/api/webdav/jianguoyun${pathWithoutDav}`;
+        useProxy = true;
+      } else if (provider === '123pan' || provider === '123pan3') {
+        // 123 云盘：使用代理（简化版）
+        // 将 https://webdav.123pan.cn/webdav/AetherLink/ 转换为 /api/webdav/123pan-cn/webdav/AetherLink/
+        const isCnDomain = originalUrl.hostname.includes('123pan.cn');
+        const proxyPrefix = isCnDomain ? '/api/webdav/123pan-cn' : '/api/webdav/123pan';
+        proxyUrl = `${proxyPrefix}${originalUrl.pathname}`;
+        useProxy = true;
+        console.log('🌐 [WebDAV] 123 云盘使用 Vite 反向代理');
+      } else {
+        // 其他 WebDAV 服务器：直接请求（可能遇到 CORS 问题）
+        console.warn('⚠️ [WebDAV] 检测到非标准 WebDAV 服务器，Web 端可能遇到 CORS 限制');
+        console.warn('💡 [WebDAV] 建议：使用桌面端(Tauri)或移动端(Capacitor)以获得最佳体验');
+        useProxy = false;
+      }
     }
 
-    // 仅在开发环境显示详细日志
     if (process.env.NODE_ENV === 'development') {
-      console.log('🌐 [WebDAV] 代理请求:', proxyUrl);
+      console.log(`🌐 [WebDAV] ${useProxy ? '代理' : '直接'}请求:`, useProxy ? proxyUrl : options.url);
     }
 
     const headers = {
@@ -175,7 +222,8 @@ export class WebDavManagerService {
       ...options.headers
     };
 
-    const response = await fetch(proxyUrl, {
+    const finalUrl = useProxy ? proxyUrl : options.url;
+    const response = await fetch(finalUrl, {
       method: options.method,
       headers,
       body: options.data
@@ -185,10 +233,10 @@ export class WebDavManagerService {
 
     // 仅在出错时显示响应日志
     if (!response.ok) {
-      console.error('🌐 [WebDAV] 代理请求失败:', {
+      console.error(`🌐 [WebDAV] 请求失败 (${provider}):`, {
         status: response.status,
         statusText: response.statusText,
-        url: proxyUrl
+        url: finalUrl
       });
     }
 

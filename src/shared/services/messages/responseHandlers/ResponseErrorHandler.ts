@@ -41,7 +41,13 @@ export class ResponseErrorHandler {
     await checkAndHandleApiKeyError(error, this.messageId, this.topicId);
 
     // 获取错误消息
-    const errorMessage = error.message || '响应处理失败';
+    let errorMessage = error.message || '响应处理失败';
+    
+    // 检测 reasoningEffort 参数不支持的错误，提供友好提示
+    if (errorMessage.includes('does not support parameter reasoningEffort') || 
+        errorMessage.includes('does not support parameter reasoning_effort')) {
+      errorMessage = `${errorMessage}\n\n💡 解决方案：此模型不支持思考功能，请在设置中将「思维链长度」设置为「关闭思考」，或选择支持推理的模型。`;
+    }
 
     // 获取错误类型
     const errorType = getErrorType(error);
