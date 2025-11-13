@@ -720,7 +720,7 @@ const ModelProviderSettings: React.FC = () => {
               <Button
                 variant="outlined"
                 startIcon={<Settings size={16} />}
-                onClick={() => window.location.href = '/settings/model-combo'}
+                onClick={() => navigate('/settings/model-combo')}
                 sx={{
                   borderRadius: 2,
                   borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
@@ -851,7 +851,7 @@ const ModelProviderSettings: React.FC = () => {
                   <Button
                     variant="outlined"
                     startIcon={<Plus size={16} />}
-                    onClick={() => window.location.href = '/settings/model-combo'}
+                    onClick={() => navigate('/settings/model-combo')}
                     sx={{ mt: 2 }}
                   >
                     {t('modelSettings.provider.createCombo')}
