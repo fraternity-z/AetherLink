@@ -54,9 +54,11 @@ const AdvancedAPIConfigPage: React.FC = () => {
   const handleSave = () => {
     if (provider) {
       dispatch(updateProvider({
-        ...provider,
-        extraHeaders,
-        extraBody
+        id: provider.id,
+        updates: {
+          extraHeaders,
+          extraBody
+        }
       }));
       navigate(`/settings/model-provider/${providerId}`);
     }

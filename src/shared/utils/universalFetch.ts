@@ -3,10 +3,12 @@
  * 根据平台自动选择最适合的HTTP请求方式
  * - Web端：使用代理避免CORS问题
  * - 移动端：使用CorsBypass插件直接请求
+ * - Tauri桌面端：使用Tauri HTTP插件绕过CORS
  */
 
 import { Capacitor } from '@capacitor/core';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
+import { isTauri } from './platformDetection';
 
 // 请求选项接口
 export interface UniversalFetchOptions extends RequestInit {
@@ -28,27 +30,49 @@ export interface UniversalResponse extends Response {
 export async function universalFetch(url: string, options: UniversalFetchOptions = {}): Promise<UniversalResponse> {
   const { timeout = 30000, responseType = 'json', ...fetchOptions } = options;
 
-  // 移动端优先使用 CorsBypass 插件处理外部请求
-  if (Capacitor.isNativePlatform()) {
-    console.log('[Universal Fetch] 移动端使用 CorsBypass 插件:', url);
-    
+  // Tauri 桌面端使用 Tauri HTTP 插件绕过CORS
+  if (isTauri()) {
+    console.log('[Universal Fetch] Tauri 桌面端使用 HTTP 插件:', url);
     try {
-      const response = await CorsBypass.request({
-        url,
-        method: (fetchOptions.method || 'GET') as any,
-        headers: extractHeaders(fetchOptions.headers),
-        data: serializeRequestBody(fetchOptions.body),
-        timeout,
-        responseType: validateResponseType(responseType)
-      });
-
-      // 创建兼容的Response对象
-      const compatibleResponse = createCompatibleResponse(response, url);
-      return compatibleResponse;
-
+      return await tauriFetch(url, { ...fetchOptions, timeout });
     } catch (error) {
-      console.error('[Universal Fetch] CorsBypass 请求失败，回退到标准 fetch:', error);
-      // 如果 CorsBypass 失败，回退到标准 fetch
+      console.error('[Universal Fetch] Tauri HTTP 请求失败:', error);
+      throw error;
+    }
+  }
+
+  // 移动端：根据配置决定是否使用 CorsBypass 插件
+  // 注意：CorsBypass 插件不支持流式响应，会导致流式输出失效
+  // 默认使用标准 fetch 以保持流式输出功能
+  if (Capacitor.isNativePlatform()) {
+    // 检查是否明确要求使用 CORS 插件（从 options 中获取）
+    const useCorsPlugin = (fetchOptions as any).useCorsPlugin === true;
+    
+    if (useCorsPlugin) {
+      console.log('[Universal Fetch] 移动端使用 CorsBypass 插件（兼容模式）:', url);
+      
+      try {
+        const response = await CorsBypass.request({
+          url,
+          method: (fetchOptions.method || 'GET') as any,
+          headers: extractHeaders(fetchOptions.headers),
+          data: serializeRequestBody(fetchOptions.body),
+          timeout,
+          responseType: validateResponseType(responseType)
+        });
+
+        // 创建兼容的Response对象
+        const compatibleResponse = createCompatibleResponse(response, url);
+        return compatibleResponse;
+
+      } catch (error) {
+        console.error('[Universal Fetch] CorsBypass 请求失败，回退到标准 fetch:', error);
+        // 如果 CorsBypass 失败，回退到标准 fetch
+        return standardFetch(url, { ...fetchOptions, timeout });
+      }
+    } else {
+      // 默认使用标准 fetch，保持流式输出功能
+      console.log('[Universal Fetch] 移动端使用标准 fetch（保持流式输出）:', url);
       return standardFetch(url, { ...fetchOptions, timeout });
     }
   }
@@ -104,6 +128,29 @@ function createCompatibleResponse(corsBypassResponse: any, _originalUrl: string)
 }
 
 /**
+ * Tauri fetch 函数，使用 Tauri HTTP 插件绕过 CORS
+ */
+async function tauriFetch(url: string, options: RequestInit & { timeout?: number }): Promise<UniversalResponse> {
+  try {
+    // 动态导入 Tauri HTTP 插件
+    const { fetch: tauriHttpFetch } = await import('@tauri-apps/plugin-http');
+    
+    // Tauri 的 fetch 函数与标准 fetch 兼容
+    const response = await tauriHttpFetch(url, {
+      method: options.method as any,
+      headers: options.headers as any,
+      body: options.body as any,
+    });
+    
+    console.log('[Universal Fetch] Tauri HTTP 请求成功:', response.status, response.statusText);
+    return response as UniversalResponse;
+  } catch (error) {
+    console.error('[Universal Fetch] Tauri HTTP 请求失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 标准fetch函数，带超时控制
  */
 async function standardFetch(url: string, options: RequestInit & { timeout?: number }): Promise<UniversalResponse> {
@@ -136,6 +183,12 @@ export function needsCORSProxy(url: string): boolean {
     const hostname = urlObj.hostname;
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
       console.log(`[Universal Fetch] 本地地址，不需要代理: ${url}`);
+      return false;
+    }
+
+    // Tauri 桌面端：使用 HTTP 插件，不需要代理
+    if (isTauri()) {
+      console.log(`[Universal Fetch] Tauri 桌面端，不使用代理: ${url}`);
       return false;
     }
 

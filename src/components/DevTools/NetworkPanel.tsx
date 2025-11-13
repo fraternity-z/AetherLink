@@ -394,7 +394,7 @@ const NetworkPanel: React.FC = () => {
                   borderRadius: 1,
                 }}
               >
-                <AccordionSummary 
+                <AccordionSummary
                   expandIcon={<ExpandMoreIcon size={18} />}
                   sx={{
                     bgcolor: theme.palette.mode === 'dark'
@@ -410,6 +410,19 @@ const NetworkPanel: React.FC = () => {
                 >
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                     {t('devtools.network.responseBody')}
+                    {selectedEntry.responseHeaders?.['content-type']?.includes('text/event-stream') && (
+                      <Chip
+                        label="SSE Stream"
+                        size="small"
+                        sx={{
+                          ml: 1,
+                          height: '20px',
+                          fontSize: '0.7rem',
+                          bgcolor: alpha(theme.palette.info.main, 0.1),
+                          color: 'info.main'
+                        }}
+                      />
+                    )}
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ bgcolor: 'transparent', p: 2 }}>

@@ -5,6 +5,7 @@
 import type { Model } from '../../types';
 import { createClient } from './client';
 import { logApiRequest, logApiResponse } from '../../services/LoggerService';
+import { universalFetch } from '../../utils/universalFetch';
 
 /**
  * 获取模型列表
@@ -53,8 +54,8 @@ export async function fetchModels(provider: any): Promise<any[]> {
       provider: provider.id
     });
     
-    // 发送请求 - WebView混合内容设置已允许HTTP请求
-    const response = await fetch(endpoint, {
+    // 发送请求 - 使用 universalFetch 自动处理平台差异（Tauri/Web/Mobile）
+    const response = await universalFetch(endpoint, {
       method: 'GET',
       headers: headers
     });

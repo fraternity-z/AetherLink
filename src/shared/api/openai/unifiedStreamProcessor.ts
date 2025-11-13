@@ -367,6 +367,20 @@ export async function unifiedStreamCompletion(
     topicId: additionalParams?.topicId
   });
 
+  // 过滤掉内部使用的参数和某些 API 不支持的参数
+  const {
+    enableTools,
+    mcpTools,
+    signal,
+    messageId,
+    blockId,
+    thinkingBlockId,
+    topicId,
+    model: _model,
+    top_p,  // 某些 API 不支持此参数
+    ...apiParams
+  } = additionalParams || {};
+  
   // 创建流
   const stream = await client.chat.completions.create({
     model: modelId,
@@ -374,7 +388,7 @@ export async function unifiedStreamCompletion(
     temperature: temperature || 1.0,
     max_tokens: maxTokens,
     stream: true,
-    ...additionalParams
+    ...apiParams
   });
 
   const result = await processor.processStream(stream as any);

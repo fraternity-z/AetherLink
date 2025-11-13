@@ -313,6 +313,7 @@ export interface Model {
   apiVersion?: string; // API版本，主要用于Azure OpenAI
   extraHeaders?: Record<string, string>; // 额外的请求头
   extraBody?: Record<string, any>; // 额外的请求体参数
+  useCorsPlugin?: boolean; // 移动端是否使用CORS插件（默认false，使用标准fetch保持流式输出）
 }
 
 // 设置类型

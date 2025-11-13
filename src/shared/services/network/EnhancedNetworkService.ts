@@ -117,24 +117,54 @@ class EnhancedNetworkService {
         const response = await this.originalFetch(input, init);
         const endTime = performance.now();
 
-        // 检查是否是流式响应，避免缓冲问题
+        // 检查是否是流式响应
         const contentType = response.headers.get('content-type') || '';
         const isStreamResponse = contentType.includes('text/event-stream') ||
                                 contentType.includes('application/stream') ||
                                 url.includes('/chat/completions');
 
         if (isStreamResponse) {
-          // 对于流式响应，只记录基本信息，不读取响应体以避免缓冲
-          this.updateEntry(id, {
-            status: response.ok ? 'success' : 'error',
-            statusCode: response.status,
-            statusText: response.statusText,
-            endTime,
-            duration: endTime - entry.startTime,
-            responseHeaders: this.extractHeaders(response.headers),
-            responseData: '[Streaming Response - Not Captured]',
-            responseSize: 0
-          });
+          // 对于流式响应，使用 tee() 创建两个独立的流
+          // 一个用于捕获数据，一个返回给原始调用者
+          const [stream1, stream2] = response.body?.tee() || [null, null];
+          
+          if (stream1 && stream2) {
+            // 创建新的响应对象返回给调用者
+            const newResponse = new Response(stream2, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers
+            });
+
+            // 异步捕获流式数据
+            this.captureStreamData(stream1, id);
+            
+            // 立即更新基本信息
+            this.updateEntry(id, {
+              status: response.ok ? 'success' : 'error',
+              statusCode: response.status,
+              statusText: response.statusText,
+              endTime,
+              duration: endTime - entry.startTime,
+              responseHeaders: this.extractHeaders(response.headers),
+              responseData: '[Streaming Response - Capturing...]',
+              responseSize: 0
+            });
+
+            return newResponse;
+          } else {
+            // 如果无法 tee，则只记录基本信息
+            this.updateEntry(id, {
+              status: response.ok ? 'success' : 'error',
+              statusCode: response.status,
+              statusText: response.statusText,
+              endTime,
+              duration: endTime - entry.startTime,
+              responseHeaders: this.extractHeaders(response.headers),
+              responseData: '[Streaming Response - Not Captured]',
+              responseSize: 0
+            });
+          }
         } else {
           // 非流式响应，正常处理
           const clonedResponse = response.clone();
@@ -424,6 +454,61 @@ class EnhancedNetworkService {
     }
 
     return undefined;
+  }
+
+  /**
+   * 捕获流式响应数据的完整内容
+   * 类似浏览器开发者工具,完整记录所有流式数据
+   */
+  private async captureStreamData(
+    stream: ReadableStream<Uint8Array>,
+    id: string
+  ): Promise<void> {
+    try {
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      const chunks: string[] = [];
+      let totalSize = 0;
+      
+      // 读取所有chunk直到流结束
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        if (value) {
+          const text = decoder.decode(value, { stream: true });
+          chunks.push(text);
+          totalSize += value.length;
+          
+          // 实时更新进度(每10个chunk更新一次UI)
+          if (chunks.length % 10 === 0) {
+            this.updateEntry(id, {
+              responseData: `[Streaming Response - Capturing... ${chunks.length} chunks, ${this.formatSize(totalSize)}]\n\n${chunks.join('')}`,
+              responseSize: totalSize
+            });
+          }
+        }
+      }
+      
+      // 关闭reader
+      reader.releaseLock();
+      
+      // 最终更新,显示完整捕获的数据
+      const capturedData = chunks.join('');
+      
+      this.updateEntry(id, {
+        responseData: capturedData,
+        responseSize: totalSize
+      });
+      
+      console.log(`[EnhancedNetworkService] 流式响应捕获完成: ${chunks.length} chunks, ${this.formatSize(totalSize)}`);
+    } catch (error) {
+      console.error('[EnhancedNetworkService] 捕获流式数据失败:', error);
+      this.updateEntry(id, {
+        responseData: '[Streaming Response - Capture Failed: ' + (error as Error).message + ']'
+      });
+    }
   }
 
   private addEntry(entry: NetworkEntry): void {

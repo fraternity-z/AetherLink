@@ -170,6 +170,15 @@ export default defineConfig({
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
       },
+      // NewCLI Code API代理
+      '/api/newcli': {
+        target: 'https://code.newcli.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/newcli/, ''),
+        headers: {
+          'Origin': 'https://code.newcli.com'
+        }
+      },
 
     }
   },

@@ -32,6 +32,9 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/voice': '/settings',
     '/settings/about': '/settings',
     '/settings/assistant-settings': '/settings',
+    
+    // 开发者工具(三级页面) - 从关于我们进入
+    '/devtools': '/settings/about',
 
     // 二级设置页面返回对应的一级页面
     '/settings/appearance/chat-interface': '/settings/appearance',
@@ -158,8 +161,8 @@ const BackButtonHandler: React.FC = () => {
     } else if (currentPath === '/welcome') {
       // 在欢迎页面，显示退出确认对话框
       setShowExitConfirm(true);
-    } else if (currentPath.startsWith('/settings')) {
-      // 在设置页面，智能返回到上级页面
+    } else if (currentPath.startsWith('/settings') || currentPath === '/devtools') {
+      // 在设置页面或开发者工具页面，智能返回到上级页面
       handleSettingsBack(currentPath, navigate);
     } else {
       // 在其他页面，返回到聊天页面

@@ -55,7 +55,7 @@ const DevToolsPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate('/settings/about');
   };
 
   const handleClear = () => {

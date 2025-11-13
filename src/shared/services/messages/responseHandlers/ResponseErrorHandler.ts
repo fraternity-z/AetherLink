@@ -5,15 +5,14 @@ import { createStreamProcessor } from '../../StreamProcessingService';
 import { MessageBlockStatus, AssistantMessageStatus, MessageBlockType } from '../../../types/newMessage';
 import { newMessagesActions } from '../../../store/slices/newMessagesSlice';
 import type { ErrorInfo } from '../../../store/slices/newMessagesSlice';
-import { formatErrorMessage, getErrorType } from '../../../utils/error';
+import { formatErrorMessage, getErrorType, serializeError, getErrorDetails } from '../../../utils/error';
 import { updateOneBlock } from '../../../store/slices/messageBlocksSlice';
 import type { Chunk } from '../../../types/chunk';
 import { ChunkType } from '../../../types/chunk';
 import { globalToolTracker } from '../../../utils/toolExecutionSync';
 import { checkAndHandleApiKeyError } from '../../../utils/apiKeyErrorHandler';
-
-// 在文件开头添加错误记录类型定义
-type ErrorRecord = Record<string, any>;
+import { AISDKError } from 'ai';
+import type { AiSdkErrorUnion } from '../../../types/error';
 
 /**
  * 响应错误处理器 - 处理错误相关的逻辑
@@ -34,7 +33,7 @@ export class ResponseErrorHandler {
    * @param error 错误对象
    */
   async fail(error: Error) {
-    console.error(`[ResponseErrorHandler] 响应失败 - 消息ID: ${this.messageId}, 错误: ${error.message}`);
+    console.error(`[ResponseErrorHandler] 响应失败 - 消息ID: ${this.messageId}, 错误:`, error);
 
     // 新增：检测 API Key 问题并提供重试机制
     // 注意：现在 checkAndHandleApiKeyError 返回 false，让我们继续创建错误块
@@ -55,13 +54,23 @@ export class ResponseErrorHandler {
     // 获取错误详情
     const errorDetails = formatErrorMessage(error);
 
-    // 创建错误记录对象
-    const errorRecord: ErrorRecord = {
-      message: errorMessage,
-      timestamp: new Date().toISOString(),
-      code: error.name || 'ERROR',
-      type: errorType
-    };
+    // 创建错误记录对象 - 序列化 AI SDK 错误
+    let errorRecord: Record<string, any>;
+    
+    // 检查是否为 AI SDK 错误并序列化
+    if (AISDKError.isInstance(error)) {
+      console.log('[ResponseErrorHandler] 检测到 AI SDK 错误，进行序列化');
+      errorRecord = serializeError(error as AiSdkErrorUnion);
+    } else {
+      // 普通错误，获取详细信息
+      errorRecord = getErrorDetails(error);
+    }
+
+    // 确保基本字段存在
+    errorRecord.message = errorMessage;
+    errorRecord.timestamp = new Date().toISOString();
+    errorRecord.code = error.name || 'ERROR';
+    errorRecord.type = errorType;
 
     // 创建更详细的错误信息对象用于Redux状态
     const errorInfo: ErrorInfo = {

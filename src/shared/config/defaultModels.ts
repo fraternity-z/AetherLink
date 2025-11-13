@@ -51,6 +51,7 @@ export interface ModelProvider {
   extraHeaders?: Record<string, string>; // 额外的请求头
   extraBody?: Record<string, any>; // 额外的请求体参数
   customModelEndpoint?: string; // 自定义模型端点URL
+  useCorsPlugin?: boolean; // 移动端是否使用CORS插件（默认false，使用标准fetch保持流式输出）
 }
 
 // 默认模型供应商配置

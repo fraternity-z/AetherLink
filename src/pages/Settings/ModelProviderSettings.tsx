@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { updateSettings } from '../../shared/store/settingsSlice';
+import { updateSettings, updateProvider } from '../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
 import ModelManagementDialog from '../../components/ModelManagementDialog';
 import SimpleModelDialog from '../../components/settings/SimpleModelDialog';
@@ -640,8 +640,48 @@ const ModelProviderSettings: React.FC = () => {
                         </Typography>
                       </Box>
                     }
-                    sx={{ 
+                    sx={{
                       ml: 1,
+                      '& .MuiFormControlLabel-label': {
+                        ml: 1
+                      }
+                    }}
+                  />
+                </Box>
+
+                {/* 移动端 CORS 兼容模式开关 */}
+                <Box sx={{ mt: 3, p: 2, bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08), borderRadius: 2, border: '1px solid', borderColor: (theme) => alpha(theme.palette.warning.main, 0.2) }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Info size={16} />
+                    移动端 CORS 兼容模式
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                    仅在移动端遇到跨域问题时启用。注意：启用后会使用 CORS 插件，但会导致流式输出失效，响应将变为一次性返回。
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <CustomSwitch
+                        checked={provider.useCorsPlugin || false}
+                        onChange={(e) => {
+                          dispatch(updateProvider({
+                            id: provider.id,
+                            updates: { useCorsPlugin: e.target.checked }
+                          }));
+                        }}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2">
+                          启用 CORS 兼容插件
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          默认关闭以保持流式输出功能
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{
+                      ml: 0,
                       '& .MuiFormControlLabel-label': {
                         ml: 1
                       }
