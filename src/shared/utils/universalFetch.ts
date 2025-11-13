@@ -42,29 +42,39 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
   }
 
   // 移动端：根据配置决定是否使用 CorsBypass 插件
-  // 注意：CorsBypass 插件不支持流式响应，会导致流式输出失效
-  // 默认使用标准 fetch 以保持流式输出功能
+  // 插件现已支持流式响应！
   if (Capacitor.isNativePlatform()) {
     // 检查是否明确要求使用 CORS 插件（从 options 中获取）
     const useCorsPlugin = (fetchOptions as any).useCorsPlugin === true;
     
     if (useCorsPlugin) {
-      console.log('[Universal Fetch] 移动端使用 CorsBypass 插件（兼容模式）:', url);
+      console.log('[Universal Fetch] 移动端使用 CorsBypass 插件（支持流式输出）:', url);
       
       try {
-        const response = await CorsBypass.request({
-          url,
-          method: (fetchOptions.method || 'GET') as any,
-          headers: extractHeaders(fetchOptions.headers),
-          data: serializeRequestBody(fetchOptions.body),
-          timeout,
-          responseType: validateResponseType(responseType)
-        });
+        // 检查是否是流式请求（通过 Content-Type 或 URL 判断）
+        const isStreamRequest = url.includes('/chat/completions') ||
+                               url.includes('/v1/completions') ||
+                               (fetchOptions.body && typeof fetchOptions.body === 'string' &&
+                                fetchOptions.body.includes('"stream":true'));
+        
+        if (isStreamRequest) {
+          // 使用流式 API
+          return await corsPluginStreamFetch(url, fetchOptions, timeout);
+        } else {
+          // 使用普通请求
+          const response = await CorsBypass.request({
+            url,
+            method: (fetchOptions.method || 'GET') as any,
+            headers: extractHeaders(fetchOptions.headers),
+            data: serializeRequestBody(fetchOptions.body),
+            timeout,
+            responseType: validateResponseType(responseType)
+          });
 
-        // 创建兼容的Response对象
-        const compatibleResponse = createCompatibleResponse(response, url);
-        return compatibleResponse;
-
+          // 创建兼容的Response对象
+          const compatibleResponse = createCompatibleResponse(response, url);
+          return compatibleResponse;
+        }
       } catch (error) {
         console.error('[Universal Fetch] CorsBypass 请求失败，回退到标准 fetch:', error);
         // 如果 CorsBypass 失败，回退到标准 fetch
@@ -335,4 +345,96 @@ function validateResponseType(responseType: string): 'json' | 'text' {
   }
   
   return responseType === 'json' ? 'json' : 'text';
+}
+
+/**
+ * 使用 CorsBypass 插件的流式请求
+ */
+async function corsPluginStreamFetch(
+  url: string,
+  options: RequestInit,
+  timeout: number
+): Promise<UniversalResponse> {
+  console.log('[Universal Fetch] 使用 CorsBypass 流式 API:', url);
+
+  // 创建一个 ReadableStream 来模拟标准的流式响应
+  let streamId: string;
+  let streamController: ReadableStreamDefaultController<Uint8Array>;
+  let responseHeaders: Record<string, string> = {};
+  let statusCode = 200;
+  let statusText = 'OK';
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      streamController = controller;
+
+      try {
+        // 设置事件监听器
+        const chunkListener = await CorsBypass.addListener('streamChunk', (event: any) => {
+          if (event.streamId === streamId) {
+            if (event.data) {
+              // 将数据转换为 Uint8Array 并推送到流中
+              const encoder = new TextEncoder();
+              const chunk = encoder.encode(event.data);
+              controller.enqueue(chunk);
+            }
+
+            if (event.done) {
+              console.log('[Universal Fetch] 流式响应完成');
+              controller.close();
+              chunkListener.remove();
+            }
+          }
+        });
+
+        const statusListener = await CorsBypass.addListener('streamStatus', (event: any) => {
+          if (event.streamId === streamId) {
+            console.log('[Universal Fetch] 流状态变化:', event.status);
+            
+            if (event.status === 'error') {
+              const error = new Error(event.error || 'Stream error');
+              controller.error(error);
+              statusListener.remove();
+              chunkListener.remove();
+            }
+          }
+        });
+
+        // 发起流式请求
+        const result = await CorsBypass.streamRequest({
+          url,
+          method: (options.method || 'POST') as any,
+          headers: extractHeaders(options.headers),
+          data: serializeRequestBody(options.body),
+          timeout
+        });
+
+        streamId = result.streamId;
+        console.log('[Universal Fetch] 流式请求已启动，streamId:', streamId);
+
+      } catch (error) {
+        console.error('[Universal Fetch] 流式请求启动失败:', error);
+        controller.error(error);
+      }
+    },
+
+    cancel() {
+      // 取消流时，取消插件的流式请求
+      if (streamId) {
+        console.log('[Universal Fetch] 取消流式请求:', streamId);
+        CorsBypass.cancelStream({ streamId }).catch((err: any) => {
+          console.error('[Universal Fetch] 取消流失败:', err);
+        });
+      }
+    }
+  });
+
+  // 创建兼容的 Response 对象
+  const response = new Response(stream, {
+    status: statusCode,
+    statusText: statusText,
+    headers: new Headers(responseHeaders)
+  });
+
+  return response as UniversalResponse;
 }
