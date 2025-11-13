@@ -59,7 +59,11 @@
     "viewDetails": "Details",
     "testResult": "Test Result",
     "multiKeyManagement": "Multi-Key Management",
-    "manageMultiKey": "Manage Multiple API Keys"
+    "manageMultiKey": "Manage Multiple API Keys",
+    "corsCompatibilityMode": "Mobile CORS Compatibility",
+    "corsCompatibilityDesc": "Enable only when encountering CORS issues on mobile. Uses CORS plugin to bypass restrictions with streaming support.",
+    "enableCorsPlugin": "Enable CORS Plugin",
+    "corsPluginNote": "Disabled by default for standard requests"
   },
   "defaultModel": {
     "title": "Topic Naming",

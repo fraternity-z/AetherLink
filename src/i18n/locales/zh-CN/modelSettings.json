@@ -59,7 +59,11 @@
     "viewDetails": "查看详情",
     "testResult": "API测试结果",
     "multiKeyManagement": "多 Key 管理",
-    "manageMultiKey": "管理多个 API 密钥"
+    "manageMultiKey": "管理多个 API 密钥",
+    "corsCompatibilityMode": "移动端 CORS 兼容模式",
+    "corsCompatibilityDesc": "仅在移动端遇到跨域问题时启用。启用后会使用 CORS 插件绕过跨域限制，现已支持流式输出。",
+    "enableCorsPlugin": "启用 CORS 兼容插件",
+    "corsPluginNote": "默认关闭以使用标准请求"
   },
   "defaultModel": {
     "title": "话题命名设置",

@@ -55,10 +55,12 @@ export async function fetchModels(provider: any): Promise<any[]> {
     });
     
     // 发送请求 - 使用 universalFetch 自动处理平台差异（Tauri/Web/Mobile）
+    // 传递 useCorsPlugin 配置以支持 CORS 兼容模式
     const response = await universalFetch(endpoint, {
       method: 'GET',
-      headers: headers
-    });
+      headers: headers,
+      useCorsPlugin: provider.useCorsPlugin
+    } as any);
     
     if (!response.ok) {
       const errorText = await response.text();

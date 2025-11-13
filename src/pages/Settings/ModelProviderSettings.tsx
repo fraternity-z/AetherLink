@@ -653,10 +653,10 @@ const ModelProviderSettings: React.FC = () => {
                 <Box sx={{ mt: 3, p: 2, bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08), borderRadius: 2, border: '1px solid', borderColor: (theme) => alpha(theme.palette.warning.main, 0.2) }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Info size={16} />
-                    移动端 CORS 兼容模式
+                    {t('modelSettings.provider.corsCompatibilityMode')}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                    仅在移动端遇到跨域问题时启用。注意：启用后会使用 CORS 插件，但会导致流式输出失效，响应将变为一次性返回。
+                    {t('modelSettings.provider.corsCompatibilityDesc')}
                   </Typography>
                   <FormControlLabel
                     control={
@@ -673,10 +673,10 @@ const ModelProviderSettings: React.FC = () => {
                     label={
                       <Box>
                         <Typography variant="body2">
-                          启用 CORS 兼容插件
+                          {t('modelSettings.provider.enableCorsPlugin')}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          默认关闭以保持流式输出功能
+                          {t('modelSettings.provider.corsPluginNote')}
                         </Typography>
                       </Box>
                     }
