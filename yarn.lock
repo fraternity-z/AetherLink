@@ -3708,9 +3708,9 @@ capacitor-advanced-file-manager@^0.1.5:
   integrity sha512-K0WCGlEUoNAdoRTWkAh9TKggHFMvTgZ7xRM1bflxu/UOYmnmnQnrGfhsNV2GmmVfmmTuZ+MZstHU3IuAg59Alw==
 
 capacitor-cors-bypass-enhanced@^1.0.6:
-  version "1.0.6"
-  resolved "https://registry.npmjs.org/capacitor-cors-bypass-enhanced/-/capacitor-cors-bypass-enhanced-1.0.6.tgz"
-  integrity sha512-/H3e9spxJrmhfEEQZ1Xc7fb3Wd/SgKTQ2um0PGMnCzvFYnuiVRpWzEtFZAOeLAQZM8clsz+LAGaNpDYkd434QQ==
+  version "1.0.7"
+  resolved "https://registry.npmjs.org/capacitor-cors-bypass-enhanced/-/capacitor-cors-bypass-enhanced-1.0.7.tgz"
+  integrity sha512-3QFAEwpvcO/ND3w3NvxShsQRnGYCR7sphH4qXRdKTRLio8BdspCCFhS1qpv6BXxVrbI/4YVkSmLahmQ0ENyTDA==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.12.1"
 
