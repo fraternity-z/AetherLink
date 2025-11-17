@@ -99,7 +99,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           sx={{
             flex: 1,
             textAlign: 'center',
-            fontSize: 18,
+            fontSize: 'calc(var(--global-font-size) * 1.125)',
             fontWeight: 700,
             color: theme.palette.text.primary,
           }}
@@ -142,7 +142,7 @@ export const GroupTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
   opacity: 0.7,
   paddingLeft: theme.spacing(1.5),
-  fontSize: '0.875rem',
+  fontSize: 'calc(var(--global-font-size, 1rem) * 0.875)',
   color: theme.palette.text.secondary,
   textTransform: 'none',
   letterSpacing: '0.05em',
@@ -287,7 +287,7 @@ export const SettingItem: React.FC<SettingItemProps> = React.memo(({
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: '1rem',
+              fontSize: 'var(--global-font-size, 1rem)',
               color: danger ? theme.palette.error.main : theme.palette.text.primary,
             }}
           >
@@ -296,7 +296,7 @@ export const SettingItem: React.FC<SettingItemProps> = React.memo(({
           {description && (
             <Typography
               sx={{
-                fontSize: '0.75rem',
+                fontSize: 'calc(var(--global-font-size, 1rem) * 0.75)',
                 color: theme.palette.text.secondary,
                 marginTop: 0.25,
               }}
@@ -309,7 +309,7 @@ export const SettingItem: React.FC<SettingItemProps> = React.memo(({
       {value && (
         <Typography
           sx={{
-            fontSize: '0.875rem',
+            fontSize: 'calc(var(--global-font-size, 1rem) * 0.875)',
             color: theme.palette.text.secondary,
             marginRight: showArrow ? 1 : 0,
           }}

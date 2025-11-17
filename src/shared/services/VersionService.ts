@@ -2,8 +2,18 @@ import { dexieStorage } from './storage/DexieStorageService';
 import { v4 as uuid } from 'uuid';
 import store from '../store';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
-import { updateOneBlock } from '../store/slices/messageBlocksSlice';
-import type { Message, MessageVersion } from '../types/newMessage';
+import {
+  updateOneBlock,
+  removeManyBlocks,
+  upsertOneBlock,
+  upsertManyBlocks
+} from '../store/slices/messageBlocksSlice';
+import type {
+  Message,
+  MessageVersion,
+  MessageBlock,
+  MessageBlockStatus
+} from '../types/newMessage';
 
 /**
  * 优化的版本管理服务
@@ -39,16 +49,29 @@ class VersionService {
         throw new Error(`消息 ${messageId} 不存在`);
       }
 
+      const messageBlocks = await dexieStorage.getMessageBlocksByMessageId(messageId);
+
       // 如果没有提供内容，从消息块中获取
       let versionContent = content;
       if (!versionContent) {
-        versionContent = await this.getMessageContent(messageId);
+        const mainBlock = messageBlocks.find(block => block.type === 'main_text');
+        versionContent = (mainBlock as any)?.content || '';
       }
 
       if (!versionContent?.trim()) {
         console.log(`[VersionService] 内容为空，跳过版本保存`);
         return '';
       }
+
+      const thinkingBlock = messageBlocks.find(block => block.type === 'thinking');
+      const thinkingSnapshot = thinkingBlock
+        ? {
+            content: (thinkingBlock as any).content ?? '',
+            metadata: thinkingBlock.metadata ?? null,
+            thinking_millsec: (thinkingBlock as any).thinking_millsec ?? null,
+            status: thinkingBlock.status ?? 'success'
+          }
+        : null;
 
       // 创建版本ID
       const versionId = uuid();
@@ -69,7 +92,9 @@ class VersionService {
           source: source, // 记录版本来源
           previousVersionId: message.currentVersionId, // 记录切换前的版本ID，方便回溯
           tokenCount: message.metrics && 'tokenCount' in message.metrics ? message.metrics.tokenCount : undefined, // 记录token数量
-          timestamp: Date.now() // 记录时间戳，便于排序和清理
+          timestamp: Date.now(), // 记录时间戳，便于排序和清理
+          hasThinkingBlock: Boolean(thinkingSnapshot),
+          thinkingSnapshot: thinkingSnapshot
         }
       };
 
@@ -167,6 +192,12 @@ class VersionService {
       }
 
       const messageId = targetMessage.id;
+      const originalContentKey = `original_content_${messageId}`;
+      const originalModelKey = `original_model_${messageId}`;
+      const originalThinkingKey = `original_thinking_blocks_${messageId}`;
+      const originalBlockOrderKey = `original_block_order_${messageId}`;
+      const currentBlocks = await dexieStorage.getMessageBlocksByMessageId(messageId);
+      const thinkingBlocks = currentBlocks.filter(block => block.type === 'thinking');
       
       // 获取版本内容
       const contentSnapshot = targetVersion.metadata?.contentSnapshot;
@@ -175,19 +206,38 @@ class VersionService {
         return false;
       }
 
-      // 在切换之前，如果是从最新版本切换到历史版本，保存当前最新内容
+      // 在切换之前，如果是从最新版本切换到历史版本，保存当前最新内容和模型信息
       if (!targetMessage.currentVersionId) {
         // 当前是最新状态，需要保存原始内容
         const currentContent = await this.getMessageContent(messageId);
         if (currentContent) {
-          // 使用消息ID作为键存储原始内容
-          await dexieStorage.saveSetting(`original_content_${messageId}`, currentContent);
+          await dexieStorage.saveSetting(originalContentKey, currentContent);
           console.log(`[VersionService] 已保存原始内容，长度: ${currentContent.length}`);
+        }
+
+        // 记录原始模型信息以便返回时恢复
+        await dexieStorage.saveSetting(
+          originalModelKey,
+          JSON.stringify({
+            model: targetMessage.model || null,
+            modelId: targetMessage.modelId || null
+          })
+        );
+
+        if (thinkingBlocks.length > 0) {
+          await dexieStorage.saveSetting(originalThinkingKey, thinkingBlocks);
+        } else {
+          await dexieStorage.deleteSetting(originalThinkingKey);
+        }
+
+        if (targetMessage.blocks?.length) {
+          await dexieStorage.saveSetting(originalBlockOrderKey, targetMessage.blocks);
+        } else {
+          await dexieStorage.deleteSetting(originalBlockOrderKey);
         }
       }
 
       // 更新消息块内容
-      const currentBlocks = await dexieStorage.getMessageBlocksByMessageId(messageId);
       const mainTextBlock = currentBlocks.find(block => block.type === 'main_text');
 
       if (mainTextBlock) {
@@ -214,16 +264,33 @@ class VersionService {
         return false;
       }
 
-      // 更新消息的当前版本标记
+      const thinkingSnapshot = (targetVersion.metadata as any)?.thinkingSnapshot;
+      await this.applyThinkingSnapshot({
+        messageId,
+        targetMessage,
+        thinkingBlocks,
+        thinkingSnapshot
+      });
+
+      const versionModel = targetVersion.model || null;
+      const resolvedModelId = targetVersion.modelId
+        || versionModel?.id
+        || targetMessage.modelId;
+
+      // 更新消息的当前版本标记与模型
       await dexieStorage.updateMessage(messageId, {
-        currentVersionId: versionId
+        currentVersionId: versionId,
+        model: versionModel || targetMessage.model,
+        modelId: resolvedModelId
       });
 
       // 同步更新 Redux 状态
       store.dispatch(newMessagesActions.updateMessage({
         id: messageId,
         changes: {
-          currentVersionId: versionId
+          currentVersionId: versionId,
+          model: versionModel || targetMessage.model,
+          modelId: resolvedModelId
         }
       }));
 
@@ -253,8 +320,25 @@ class VersionService {
         return true;
       }
       
+      const originalContentKey = `original_content_${messageId}`;
+      const originalModelKey = `original_model_${messageId}`;
+      const originalThinkingKey = `original_thinking_blocks_${messageId}`;
+      const originalBlockOrderKey = `original_block_order_${messageId}`;
+
       // 获取保存的原始内容（切换到历史版本前的内容）
-      const originalContent = await dexieStorage.getSetting(`original_content_${messageId}`);
+      const originalContent = await dexieStorage.getSetting(originalContentKey);
+      const originalModelInfo = await dexieStorage.getSetting(originalModelKey);
+      const originalThinkingBlocks = await dexieStorage.getSetting(originalThinkingKey) as MessageBlock[] | null;
+      const originalBlockOrder = await dexieStorage.getSetting(originalBlockOrderKey) as string[] | null;
+      let originalModelData: { model?: Message['model']; modelId?: string | null } | null = null;
+
+      if (originalModelInfo) {
+        try {
+          originalModelData = JSON.parse(originalModelInfo);
+        } catch (error) {
+          console.warn('[VersionService] 原始模型信息解析失败:', error);
+        }
+      }
       
       if (!originalContent) {
         console.warn(`[VersionService] 找不到消息 ${messageId} 的原始内容备份`);
@@ -288,19 +372,51 @@ class VersionService {
           }
         }));
         
-        // 清除currentVersionId标记，表示使用当前最新内容
+        const existingThinkingBlocks = blocks.filter(block => block.type === 'thinking');
+
+        if (originalThinkingBlocks && originalThinkingBlocks.length > 0) {
+        if (existingThinkingBlocks.length > 0) {
+          const removeIds = existingThinkingBlocks.map(block => block.id);
+          await dexieStorage.deleteMessageBlocksByIds(removeIds);
+          store.dispatch(removeManyBlocks(removeIds));
+        }
+
+          await dexieStorage.message_blocks.bulkPut(originalThinkingBlocks);
+          store.dispatch(upsertManyBlocks(originalThinkingBlocks));
+        } else if (existingThinkingBlocks.length > 0) {
+          const removeIds = existingThinkingBlocks.map(block => block.id);
+          await dexieStorage.deleteMessageBlocksByIds(removeIds);
+          store.dispatch(removeManyBlocks(removeIds));
+        }
+
+        const restoredModel = originalModelData?.model ?? message.model;
+        const restoredModelId = originalModelData?.modelId ?? message.modelId;
+        const restoredBlockOrder = Array.isArray(originalBlockOrder) ? originalBlockOrder : (message.blocks || []);
+
         await dexieStorage.updateMessage(messageId, {
-          currentVersionId: undefined
+          currentVersionId: undefined,
+          model: restoredModel,
+          modelId: restoredModelId,
+          blocks: restoredBlockOrder
         });
-        
+
         // 同步更新Redux状态
         store.dispatch(newMessagesActions.updateMessage({
           id: messageId,
           changes: {
-            currentVersionId: undefined
+            currentVersionId: undefined,
+            model: restoredModel,
+            modelId: restoredModelId,
+            blocks: restoredBlockOrder
           }
         }));
-        
+
+        // 清理缓存
+        await dexieStorage.deleteSetting(originalContentKey);
+        await dexieStorage.deleteSetting(originalModelKey);
+        await dexieStorage.deleteSetting(originalThinkingKey);
+        await dexieStorage.deleteSetting(originalBlockOrderKey);
+
         console.log(`[VersionService] 已切换到最新版本，使用原始内容`);
         return true;
       } else {
@@ -397,7 +513,7 @@ class VersionService {
         await dexieStorage.updateMessage(messageId, {
           currentVersionId: undefined
         });
-        
+
         // 同步更新Redux状态
         store.dispatch(newMessagesActions.updateMessage({
           id: messageId,
@@ -405,7 +521,7 @@ class VersionService {
             currentVersionId: undefined
           }
         }));
-        
+
         // 保存当前内容作为原始内容备份
         await dexieStorage.saveSetting(`original_content_${messageId}`, latestContent);
         
@@ -418,6 +534,93 @@ class VersionService {
     } catch (error) {
       console.error(`[VersionService] 后备策略恢复失败:`, error);
       return false;
+    }
+  }
+
+  private async applyThinkingSnapshot(params: {
+    messageId: string;
+    targetMessage: Message;
+    thinkingBlocks: MessageBlock[];
+    thinkingSnapshot?: {
+      content?: string;
+      metadata?: Record<string, any> | null;
+      thinking_millsec?: number | null;
+      status?: MessageBlockStatus;
+    };
+  }): Promise<void> {
+    const { messageId, targetMessage, thinkingBlocks, thinkingSnapshot } = params;
+    const currentOrder = Array.isArray(targetMessage.blocks) ? [...targetMessage.blocks] : [];
+
+    if (thinkingSnapshot && typeof thinkingSnapshot.content === 'string') {
+      const existingBlock = thinkingBlocks[0];
+      const extraBlocks = thinkingBlocks.slice(1);
+      const now = new Date().toISOString();
+      const newContent = thinkingSnapshot.content ?? '';
+
+      if (existingBlock) {
+        const newStatus: MessageBlockStatus | undefined =
+          thinkingSnapshot.status ?? (existingBlock.status as MessageBlockStatus | undefined);
+
+        const changes: Partial<MessageBlock> = {
+          type: 'thinking',
+          content: newContent,
+          metadata: thinkingSnapshot.metadata ?? existingBlock.metadata,
+          updatedAt: now,
+          status: newStatus,
+          thinking_millsec:
+            thinkingSnapshot.thinking_millsec ?? (existingBlock as any)?.thinking_millsec ?? null
+        };
+
+        await dexieStorage.updateMessageBlock(existingBlock.id, changes);
+
+        store.dispatch(updateOneBlock({
+          id: existingBlock.id,
+          changes
+        }));
+
+        if (extraBlocks.length > 0) {
+          const extraIds = extraBlocks.map(block => block.id);
+          await dexieStorage.deleteMessageBlocksByIds(extraIds);
+          store.dispatch(removeManyBlocks(extraIds));
+        }
+      } else {
+        const newBlock: MessageBlock = {
+          id: uuid(),
+          messageId,
+          type: 'thinking',
+          content: newContent,
+          metadata: thinkingSnapshot.metadata ?? {},
+          createdAt: now,
+          updatedAt: now,
+          status: thinkingSnapshot.status || 'success',
+          thinking_millsec: thinkingSnapshot.thinking_millsec ?? null
+        } as MessageBlock;
+
+        await dexieStorage.message_blocks.put(newBlock);
+        store.dispatch(upsertOneBlock(newBlock));
+
+        const updatedOrder = [...currentOrder, newBlock.id];
+        await dexieStorage.updateMessage(messageId, { blocks: updatedOrder });
+        store.dispatch(newMessagesActions.updateMessage({
+          id: messageId,
+          changes: { blocks: updatedOrder }
+        }));
+      }
+
+      return;
+    }
+
+    if (thinkingBlocks.length > 0) {
+      const thinkingIds = thinkingBlocks.map(block => block.id);
+      await dexieStorage.deleteMessageBlocksByIds(thinkingIds);
+      store.dispatch(removeManyBlocks(thinkingIds));
+
+      const updatedOrder = currentOrder.filter(id => !thinkingIds.includes(id));
+      await dexieStorage.updateMessage(messageId, { blocks: updatedOrder });
+      store.dispatch(newMessagesActions.updateMessage({
+        id: messageId,
+        changes: { blocks: updatedOrder }
+      }));
     }
   }
 

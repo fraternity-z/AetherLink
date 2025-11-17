@@ -260,9 +260,9 @@ export const regenerateMessage = (messageId: string, topicId: string, model: Mod
         await versionService.saveCurrentAsVersion(
           messageId,
           currentContent,
-          {
-            ...model,
-            id: model.id || message.modelId
+          message.model || {
+            id: message.modelId,
+            provider: message.model?.provider
           },
           'regenerate'
         );
