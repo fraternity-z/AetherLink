@@ -20,13 +20,12 @@ import {
   ListItemText,
   Avatar,
   Divider,
-  alpha,
-  FormControlLabel
+  alpha
 } from '@mui/material';
-import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Brain, Palette, LayoutDashboard, Sliders, Edit3, Sparkles } from 'lucide-react';
+import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor } from '../../shared/store/settingsSlice';
+import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor, setShowDevToolsFloatingButton } from '../../shared/store/settingsSlice';
 import { fontOptions, fontCategoryLabels, getFontById } from '../../shared/config/fonts';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useLanguageSettings } from '../../i18n/useLanguageSettings';
@@ -118,6 +117,11 @@ const AppearanceSettings: React.FC = () => {
   // 性能监控开关处理函数
   const handlePerformanceMonitorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setShowPerformanceMonitor(event.target.checked));
+  };
+
+  // 开发者工具悬浮窗开关处理函数
+  const handleDevToolsFloatingButtonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(setShowDevToolsFloatingButton(event.target.checked));
   };
 
   return (
@@ -762,6 +766,46 @@ const AppearanceSettings: React.FC = () => {
                 <CustomSwitch
                   checked={settings.showPerformanceMonitor || false}
                   onChange={handlePerformanceMonitorChange}
+                />
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 500,
+                    mb: 0.5,
+                    fontSize: { xs: '0.9rem', sm: '1rem' }
+                  }}
+                >
+                  {t('settings.appearance.developerTools.floatingButton.title')}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    lineHeight: 1.5
+                  }}
+                >
+                  {t('settings.appearance.developerTools.floatingButton.description')}
+                </Typography>
+              </Box>
+              <Box sx={{ flexShrink: 0, pt: 0.5 }}>
+                <CustomSwitch
+                  checked={settings.showDevToolsFloatingButton || false}
+                  onChange={handleDevToolsFloatingButtonChange}
                 />
               </Box>
             </Box>

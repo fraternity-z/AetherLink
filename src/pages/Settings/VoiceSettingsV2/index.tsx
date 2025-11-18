@@ -65,6 +65,16 @@ const getTTSServices = (t: any) => [
     features: t('settings.voice.services.azure.features', { returnObjects: true }),
     status: 'enterprise',
     path: '/settings/voice/tts/azure'
+  },
+  {
+    id: 'gemini',
+    name: t('settings.voice.services.gemini.name'),
+    description: t('settings.voice.services.gemini.description'),
+    icon: '✨',
+    color: '#EA4335',
+    features: t('settings.voice.services.gemini.features', { returnObjects: true }),
+    status: 'premium',
+    path: '/settings/voice/tts/gemini'
   }
 ];
 
@@ -119,7 +129,6 @@ const VoiceSettingsV2: React.FC = () => {
   const toolbarBg = cssVar('toolbar-bg');
   const toolbarBorder = cssVar('toolbar-border');
   const toolbarShadow = cssVar('toolbar-shadow');
-  const gradientPrimary = cssVar('gradient-primary');
   const textPrimary = cssVar('text-primary');
   const textSecondary = cssVar('text-secondary');
   const borderDefault = cssVar('border-default');
@@ -259,7 +268,7 @@ const VoiceSettingsV2: React.FC = () => {
           pb: { xs: 2, sm: 3 },
           px: { xs: 1, sm: 2, md: 3 },
           WebkitOverflowScrolling: 'touch',
-          scrollBehavior: 'smooth',
+          scrollBehavior: 'auto',
           '&::-webkit-scrollbar': {
             width: { xs: '4px', sm: '6px' },
           },

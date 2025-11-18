@@ -56,6 +56,17 @@ export class TTSService {
   private azureRole: string = 'default'; // 角色扮演: default, Girl, Boy, YoungAdultFemale, YoungAdultMale, OlderAdultFemale, OlderAdultMale, SeniorFemale, SeniorMale
   private azureUseSSML: boolean = true; // 是否使用SSML标记语言
 
+  // Gemini TTS API 设置
+  private geminiApiKey: string = '';
+  private useGemini: boolean = false;
+  
+  // Gemini TTS 参数
+  private geminiModel: string = 'gemini-2.5-flash-preview-tts'; // 可选: gemini-2.5-flash-preview-tts, gemini-2.5-pro-preview-tts
+  private geminiVoice: string = 'Kore'; // 30种预设语音之一
+  private geminiStylePrompt: string = ''; // 风格控制提示词，如 "Say cheerfully:", "Say in a spooky whisper:"
+  private useGeminiMultiSpeaker: boolean = false; // 是否使用多说话人模式
+  private geminiSpeakers: Array<{ speaker: string; voiceName: string }> = []; // 多说话人配置
+
   // 默认使用的语音模型
   private defaultModel: string = 'FunAudioLLM/CosyVoice2-0.5B';
   // 默认使用的语音
@@ -167,6 +178,63 @@ export class TTSService {
    */
   public setUseCapacitorTTS(useCapacitorTTS: boolean): void {
     this.useCapacitorTTS = useCapacitorTTS;
+  }
+
+  /**
+   * 设置Gemini API密钥
+   * @param apiKey API密钥
+   */
+  public setGeminiApiKey(apiKey: string): void {
+    this.geminiApiKey = apiKey;
+  }
+
+  /**
+   * 设置是否使用Gemini TTS
+   * @param useGemini 是否使用Gemini
+   */
+  public setUseGemini(useGemini: boolean): void {
+    this.useGemini = useGemini;
+  }
+
+  /**
+   * 设置Gemini模型
+   * @param model 模型名称 (gemini-2.5-flash-preview-tts, gemini-2.5-pro-preview-tts)
+   */
+  public setGeminiModel(model: string): void {
+    this.geminiModel = model;
+  }
+
+  /**
+   * 设置Gemini语音
+   * @param voice 语音名称 (30种预设语音之一，如: Kore, Puck, Zephyr等)
+   */
+  public setGeminiVoice(voice: string): void {
+    this.geminiVoice = voice;
+  }
+
+  /**
+   * 设置Gemini风格提示词
+   * @param prompt 风格控制提示词，如 "Say cheerfully:", "Say in a spooky whisper:"
+   */
+  public setGeminiStylePrompt(prompt: string): void {
+    this.geminiStylePrompt = prompt;
+  }
+
+  /**
+   * 设置是否使用Gemini多说话人模式
+   * @param useMultiSpeaker 是否使用多说话人
+   */
+  public setUseGeminiMultiSpeaker(useMultiSpeaker: boolean): void {
+    this.useGeminiMultiSpeaker = useMultiSpeaker;
+  }
+
+  /**
+   * 设置Gemini多说话人配置
+   * @param speakers 说话人配置数组，最多2个说话人
+   */
+  public setGeminiSpeakers(speakers: Array<{ speaker: string; voiceName: string }>): void {
+    // 限制最多2个说话人
+    this.geminiSpeakers = speakers.slice(0, 2);
   }
 
   /**
@@ -560,6 +628,12 @@ export class TTSService {
       // 优先使用Capacitor TTS（原生，性能最好）
       if (this.useCapacitorTTS) {
         const success = await this.speakWithCapacitorTTS(text);
+        if (success) return true;
+      }
+
+      // 然后检查是否使用Gemini TTS
+      if (this.useGemini) {
+        const success = await this.speakWithGemini(text);
         if (success) return true;
       }
 
@@ -1171,6 +1245,193 @@ export class TTSService {
       return false;
     }
   }
+  /**
+   * 使用Gemini TTS API播放文本
+   * @param text 要播放的文本
+   * @returns 是否成功播放
+   */
+  private async speakWithGemini(text: string): Promise<boolean> {
+    try {
+      // 检查API密钥是否已设置
+      if (!this.geminiApiKey) {
+        console.warn('Gemini API密钥未设置，尝试其他方法');
+        return false;
+      }
+
+      // 准备API请求URL
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent`;
+
+      // 构建提示词
+      let promptText = text;
+      if (this.geminiStylePrompt) {
+        promptText = `${this.geminiStylePrompt} ${text}`;
+      }
+
+      // 构建请求体
+      const requestBody: any = {
+        contents: [{
+          parts: [{
+            text: promptText
+          }]
+        }],
+        generationConfig: {
+          responseModalities: ['AUDIO']
+        }
+      };
+
+      // 配置语音
+      if (this.useGeminiMultiSpeaker && this.geminiSpeakers.length > 0) {
+        // 多说话人模式
+        requestBody.generationConfig.speechConfig = {
+          multiSpeakerVoiceConfig: {
+            speakerVoiceConfigs: this.geminiSpeakers.map(speaker => ({
+              speaker: speaker.speaker,
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: speaker.voiceName
+                }
+              }
+            }))
+          }
+        };
+      } else {
+        // 单说话人模式
+        requestBody.generationConfig.speechConfig = {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: this.geminiVoice
+            }
+          }
+        };
+      }
+
+      console.log('Gemini TTS请求参数:', {
+        model: this.geminiModel,
+        voice: this.geminiVoice,
+        stylePrompt: this.geminiStylePrompt,
+        multiSpeaker: this.useGeminiMultiSpeaker,
+        speakers: this.geminiSpeakers
+      });
+
+      // 发送API请求
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': this.geminiApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      // 检查响应状态
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Gemini TTS API请求失败:', response.status, errorData);
+        return false;
+      }
+
+      // 解析响应
+      const responseData = await response.json();
+      
+      // 提取音频数据 (base64编码的PCM数据)
+      const audioData = responseData.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      
+      if (!audioData) {
+        console.error('Gemini TTS API响应中没有音频数据');
+        return false;
+      }
+
+      // 将base64数据转换为Blob
+      const binaryString = atob(audioData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Gemini返回的是PCM格式 (16-bit, 24kHz, mono)
+      // 需要转换为WAV格式才能播放
+      const wavBlob = this.createWavBlob(bytes, 24000, 1, 16);
+
+      // 释放之前的Blob URL
+      this.releaseBlobUrl();
+
+      // 创建新的Blob URL
+      this.currentAudioBlob = URL.createObjectURL(wavBlob);
+
+      // 播放音频
+      if (this.audio) {
+        this.audio.src = this.currentAudioBlob;
+        try {
+          await this.audio.play();
+          console.log('Gemini TTS播放成功');
+          return true;
+        } catch (error) {
+          console.error('Gemini TTS播放失败:', error);
+          this.isPlaying = false;
+          return false;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Gemini TTS API播放失败:', error);
+      this.isPlaying = false;
+      return false;
+    }
+  }
+
+  /**
+   * 创建WAV格式的Blob
+   * @param pcmData PCM音频数据
+   * @param sampleRate 采样率
+   * @param channels 声道数
+   * @param bitsPerSample 每个样本的位数
+   * @returns WAV格式的Blob
+   */
+  private createWavBlob(pcmData: Uint8Array, sampleRate: number, channels: number, bitsPerSample: number): Blob {
+    const dataLength = pcmData.length;
+    const buffer = new ArrayBuffer(44 + dataLength);
+    const view = new DataView(buffer);
+
+    // WAV文件头
+    // "RIFF" chunk descriptor
+    this.writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    this.writeString(view, 8, 'WAVE');
+
+    // "fmt " sub-chunk
+    this.writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); // fmt chunk size
+    view.setUint16(20, 1, true); // audio format (1 = PCM)
+    view.setUint16(22, channels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * channels * (bitsPerSample / 8), true); // byte rate
+    view.setUint16(32, channels * (bitsPerSample / 8), true); // block align
+    view.setUint16(34, bitsPerSample, true);
+
+    // "data" sub-chunk
+    this.writeString(view, 36, 'data');
+    view.setUint32(40, dataLength, true);
+
+    // 写入PCM数据
+    const dataView = new Uint8Array(buffer, 44);
+    dataView.set(pcmData);
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  /**
+   * 在DataView中写入字符串
+   * @param view DataView对象
+   * @param offset 偏移量
+   * @param string 要写入的字符串
+   */
+  private writeString(view: DataView, offset: number, string: string): void {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
 
   /**
    * 使用Azure TTS API播放文本

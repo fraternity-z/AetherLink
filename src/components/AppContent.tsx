@@ -16,6 +16,7 @@ import GlobalStyles from './GlobalStyles';
 import LoadingScreen from './LoadingScreen';
 import ErrorBoundary from './ErrorBoundary';
 import EnhancedPerformanceMonitor from './debug/EnhancedPerformanceMonitor';
+import DevToolsFloatingButton from './debug/DevToolsFloatingButton';
 
 const AppContent = memo(() => {
   const { theme, fontSize } = useTheme();
@@ -75,6 +76,8 @@ const AppContent = memo(() => {
             <UpdateNoticeDialog />
             {/* 全局性能监控 */}
             <EnhancedPerformanceMonitor />
+            {/* 开发者工具悬浮按钮 */}
+            <DevToolsFloatingButton />
           </>
         ) : (
           <LoadingScreen

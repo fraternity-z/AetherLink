@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Box, Typography, useTheme, IconButton } from '@mui/material';
 // Lucide Icons - 按需导入，高端简约设计
-import { Plus, Trash2, AlertTriangle, ChevronLeft, BookOpen, Video } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, ChevronLeft, Video } from 'lucide-react';
 // 自定义图标
 import { CustomIcon } from '../icons';
 import { useSelector, useDispatch } from 'react-redux';
@@ -176,7 +176,7 @@ export const getTransparentToolbarStyles = (isDarkMode: boolean) => {
   };
 };
 
-interface ChatToolbarProps {
+interface InputToolbarProps {
   onClearTopic?: () => void;
   imageGenerationMode?: boolean; // 是否处于图像生成模式
   toggleImageGenerationMode?: () => void; // 切换图像生成模式
@@ -189,11 +189,11 @@ interface ChatToolbarProps {
 }
 
 /**
- * 聊天工具栏组件
+ * 输入框工具栏组件（位于输入框上方）
  * 提供新建话题和清空话题内容功能
  * 使用独立气泡式设计，支持横向滑动
  */
-const ChatToolbar: React.FC<ChatToolbarProps> = ({
+const InputToolbar: React.FC<InputToolbarProps> = ({
   onClearTopic,
   imageGenerationMode = false,
   toggleImageGenerationMode,
@@ -224,7 +224,6 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   // 从Redux获取网络搜索设置
   const webSearchSettings = useSelector((state: RootState) => state.webSearch);
   const webSearchEnabled = webSearchSettings?.enabled || false;
-  const currentProvider = webSearchSettings?.provider;
 
   // 获取工具栏显示样式设置
   const toolbarDisplayStyle = useSelector((state: RootState) =>
@@ -772,4 +771,4 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   );
 };
 
-export default ChatToolbar;
+export default InputToolbar;

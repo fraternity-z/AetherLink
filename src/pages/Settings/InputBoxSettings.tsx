@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
 import DraggableButtonConfig from '../../components/DraggableButtonConfig';
-import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../components/input';
+import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../components/input';
 import { useTranslation } from '../../i18n';
 
 // 输入框预览组件
@@ -76,7 +76,7 @@ const InputBoxPreview: React.FC<{
           <Box>
             <ChatInput {...previewProps} />
             <Box sx={{ mt: 1 }}>
-              <ChatToolbar
+              <InputToolbar
                 onClearTopic={previewProps.onClearTopic}
                 toggleImageGenerationMode={previewProps.toggleImageGenerationMode}
                 toggleWebSearch={previewProps.toggleWebSearch}

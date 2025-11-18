@@ -164,6 +164,9 @@ interface SettingsState {
   // 性能监控设置
   showPerformanceMonitor?: boolean; // 是否显示性能监控
   
+  // 开发者工具悬浮窗设置
+  showDevToolsFloatingButton?: boolean; // 是否显示开发者工具悬浮窗
+
   // 模型测试按钮设置
   alwaysShowModelTestButton?: boolean; // 是否长期显示模型测试按钮
   
@@ -356,6 +359,9 @@ const getInitialState = (): SettingsState => {
     // 性能监控默认设置
     showPerformanceMonitor: false, // 默认不显示性能监控
     
+    // 开发者工具悬浮窗默认设置
+    showDevToolsFloatingButton: false, // 默认不显示开发者工具悬浮窗
+
     // 模型测试按钮默认设置
     alwaysShowModelTestButton: false, // 默认不长期显示模型测试按钮
     
@@ -933,6 +939,11 @@ const settingsSlice = createSlice({
     setShowPerformanceMonitor: (state, action: PayloadAction<boolean>) => {
       state.showPerformanceMonitor = action.payload;
     },
+
+    // 开发者工具悬浮窗显示控制
+    setShowDevToolsFloatingButton: (state, action: PayloadAction<boolean>) => {
+      state.showDevToolsFloatingButton = action.payload;
+    },
     
     // 触觉反馈设置控制
     setHapticFeedbackEnabled: (state, action: PayloadAction<boolean>) => {
@@ -1094,6 +1105,7 @@ export const {
   updateToolbarButtons,
   // 性能监控控制
   setShowPerformanceMonitor,
+  setShowDevToolsFloatingButton,
   // 触觉反馈控制
   setHapticFeedbackEnabled,
   setHapticFeedbackOnSidebar,

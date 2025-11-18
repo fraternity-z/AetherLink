@@ -15,9 +15,9 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { alpha } from '@mui/material/styles';
 import { TTSService } from '../../../shared/services/TTSService';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
+import { cssVar } from '../../../shared/utils/cssVariables';
 import {
   AzureTTSTab,
   type AzureTTSSettings as AzureTTSSettingsType,
@@ -273,6 +273,18 @@ const AzureTTSSettings: React.FC = () => {
     };
   }, [uiState.isTestPlaying, ttsService]);
 
+  // 获取主题变量
+  const toolbarBg = cssVar('toolbar-bg');
+  const toolbarBorder = cssVar('toolbar-border');
+  const toolbarShadow = cssVar('toolbar-shadow');
+  const textPrimary = cssVar('text-primary');
+  const borderDefault = cssVar('border-default');
+  const borderSubtle = cssVar('border-subtle');
+  const hoverBg = cssVar('hover-bg');
+  const bgPaper = cssVar('bg-paper');
+  const bgDefault = cssVar('bg-default');
+  const primaryColor = cssVar('primary');
+
   return (
     <Box sx={{
       display: 'flex',
@@ -280,7 +292,8 @@ const AzureTTSSettings: React.FC = () => {
       height: '100vh',
       width: '100vw',
       overflow: 'hidden',
-      bgcolor: 'background.default'
+      backgroundColor: bgDefault,
+      color: textPrimary
     }}>
       {/* 顶部导航栏 */}
       <AppBar
@@ -288,33 +301,35 @@ const AzureTTSSettings: React.FC = () => {
         elevation={0}
         sx={{
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          borderBottom: 1,
-          borderColor: 'divider',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          background: 'rgba(255, 255, 255, 0.8)',
-          '@media (prefers-color-scheme: dark)': {
-            background: 'rgba(18, 18, 18, 0.8)',
-          },
+          backgroundColor: toolbarBg,
+          color: textPrimary,
+          borderBottom: `1px solid ${toolbarBorder}`,
+          boxShadow: `0 18px 40px -24px ${toolbarShadow}`,
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+          transition: 'background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
         }}
       >
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1, sm: 2, md: 3 } }}>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1.5, sm: 2.5, md: 4 }, gap: { xs: 1, sm: 1.5 } }}>
           <IconButton
             edge="start"
             onClick={handleBack}
             aria-label={t('settings.voice.back')}
             size="large"
             sx={{
-              color: 'primary.main',
+              color: primaryColor,
               mr: { xs: 1, sm: 2 },
+              borderRadius: 2,
+              border: `1px solid ${borderSubtle}`,
+              transition: 'all 0.2s ease',
               '&:hover': {
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                transform: 'scale(1.05)',
+                backgroundColor: hoverBg,
+                transform: 'translateY(-1px)',
               },
-              transition: 'all 0.2s ease-in-out',
+              '&:focus-visible': {
+                outline: `2px solid ${primaryColor}`,
+                outlineOffset: '2px',
+              },
             }}
           >
             <ArrowLeft size={20} />
@@ -322,24 +337,23 @@ const AzureTTSSettings: React.FC = () => {
           <Typography
             variant="h6"
             component="div"
-              sx={{
-                flexGrow: 1,
-                fontWeight: 600,
-              }}
-            >
+            sx={{
+              flexGrow: 1,
+              fontWeight: 700,
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
+            }}
+          >
             {t('settings.voice.azure.title')}
           </Typography>
           <Button
             onClick={handleSave}
             variant="contained"
             sx={{
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-              },
               borderRadius: 2,
-              px: 3,
+              px: { xs: 2.5, sm: 3 },
+              py: { xs: 0.9, sm: 1 },
+              fontWeight: 700,
             }}
           >
             {t('settings.voice.common.save')}
@@ -350,27 +364,22 @@ const AzureTTSSettings: React.FC = () => {
       {/* 可滚动的内容区域 */}
       <Box
         sx={{
-          flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          mt: 8,
-          bgcolor: (theme) => theme.palette.mode === 'light'
-            ? alpha(theme.palette.primary.main, 0.02)
-            : alpha(theme.palette.background.default, 0.9),
+          flex: 1,
+          overflow: 'auto',
+          pt: { xs: 8, sm: 9 },
+          pb: { xs: 2, sm: 3 },
+          px: { xs: 1.5, sm: 2.5, md: 4 },
           '&::-webkit-scrollbar': {
             width: '6px',
           },
           '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
+            backgroundColor: toolbarShadow,
+            borderRadius: 3,
+            border: `1px solid ${borderSubtle}`,
           },
         }}
       >
-        <Box
-          sx={{
-            width: '100%',
-          }}
-        >
+        <Box sx={{ maxWidth: 960, mx: 'auto', width: '100%' }}>
           {/* 错误提示 */}
           {uiState.saveError && (
             <Alert
@@ -388,13 +397,12 @@ const AzureTTSSettings: React.FC = () => {
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              mb: 3,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              background: 'background.paper',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+              p: { xs: 2.5, sm: 3 },
+              mb: { xs: 2, sm: 3 },
+              borderRadius: { xs: 2, sm: 2.5 },
+              border: `1px solid ${borderDefault}`,
+              bgcolor: bgPaper,
+              boxShadow: `0 18px 40px -28px ${toolbarShadow}`,
             }}
           >
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>

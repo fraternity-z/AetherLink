@@ -51,6 +51,10 @@
       "performanceMonitor": {
         "title": "显示性能监控",
         "description": "在聊天界面显示实时性能监控面板，包括FPS、滚动事件、渲染时间和内存使用情况"
+      },
+      "floatingButton": {
+        "title": "显示开发者工具悬浮按钮",
+        "description": "在聊天界面显示一个悬浮按钮，点击可快速进入开发者工具页面"
       }
     },
     "topToolbarDIY": {

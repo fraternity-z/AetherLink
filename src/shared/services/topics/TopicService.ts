@@ -142,6 +142,7 @@ export class TopicService {
 
   /**
    * 清空当前话题内容
+   * 完整清理所有关联数据：消息、消息块、图片、文件等
    */
   static async clearTopicContent(topicId: string): Promise<boolean> {
     if (!topicId) return false;
@@ -153,43 +154,105 @@ export class TopicService {
         return false;
       }
 
-      // 使用事务保证原子性
+      // 使用事务保证原子性，包含所有相关表
       await dexieStorage.transaction('rw', [
         dexieStorage.topics,
         dexieStorage.messages,
-        dexieStorage.message_blocks
+        dexieStorage.message_blocks,
+        dexieStorage.images,
+        dexieStorage.imageMetadata,
+        dexieStorage.files
       ], async () => {
-        // 1. 从数据库中删除主题的所有消息块
+        // 1. 清理图片数据（images + imageMetadata）
+        console.log(`[TopicService] 开始清理话题 ${topicId} 的图片数据`);
+        const imageMetadataList = await dexieStorage.getImageMetadataByTopicId(topicId);
+        if (imageMetadataList.length > 0) {
+          console.log(`[TopicService] 找到 ${imageMetadataList.length} 个图片，开始删除`);
+          for (const metadata of imageMetadataList) {
+            await dexieStorage.deleteImage(metadata.id); // 同时删除images和imageMetadata
+          }
+          console.log(`[TopicService] 已删除 ${imageMetadataList.length} 个图片`);
+        }
+
+        // 2. 获取所有消息
         const messages = await dexieStorage.getMessagesByTopicId(topicId);
+        console.log(`[TopicService] 找到 ${messages.length} 条消息`);
+
+        // 3. 清理消息块和关联文件
+        let totalBlocksDeleted = 0;
+        let totalFilesDeleted = 0;
+        
         for (const message of messages) {
-          if (message.blocks && message.blocks.length > 0) {
-            await dexieStorage.deleteMessageBlocksByIds(message.blocks);
+          // 3.1 收集所有块ID（包括当前版本和历史版本）
+          const allBlockIds: string[] = [...(message.blocks || [])];
+          
+          // 添加历史版本的块ID
+          if (message.versions && message.versions.length > 0) {
+            for (const version of message.versions) {
+              if (version.blocks && version.blocks.length > 0) {
+                allBlockIds.push(...version.blocks);
+              }
+            }
+          }
+          
+          // 3.2 清理块中的文件引用
+          if (allBlockIds.length > 0) {
+            const blocks = await dexieStorage.message_blocks
+              .where('id')
+              .anyOf(allBlockIds)
+              .toArray();
+            
+            // 删除块中引用的文件
+            for (const block of blocks) {
+              // 检查不同类型的块是否包含文件引用
+              if ('file' in block && block.file && typeof block.file === 'object' && 'id' in block.file) {
+                try {
+                  await dexieStorage.files.delete(block.file.id);
+                  totalFilesDeleted++;
+                  console.log(`[TopicService] 已删除文件: ${block.file.id}`);
+                } catch (fileError) {
+                  console.warn(`[TopicService] 删除文件失败: ${block.file.id}`, fileError);
+                }
+              }
+            }
+            
+            // 3.3 删除所有块
+            await dexieStorage.deleteMessageBlocksByIds(allBlockIds);
+            totalBlocksDeleted += allBlockIds.length;
           }
         }
 
-        // 2. 从数据库中删除主题的所有消息
-        await dexieStorage.messages.where('topicId').equals(topicId).delete();
+        console.log(`[TopicService] 已删除 ${totalBlocksDeleted} 个消息块，${totalFilesDeleted} 个文件`);
 
-        // 3. 清空话题的messageIds数组
+        // 4. 从数据库中删除主题的所有消息
+        await dexieStorage.messages.where('topicId').equals(topicId).delete();
+        console.log(`[TopicService] 已删除 ${messages.length} 条消息`);
+
+        // 5. 清空话题的messageIds数组
         const updatedTopic = {
           ...topic,
           messageIds: []
         };
         await dexieStorage.topics.put(updatedTopic);
+        console.log(`[TopicService] 已清空话题的messageIds数组`);
       });
 
-      console.log(`[TopicService] 已清空话题 ${topicId} 的所有消息`);
+      console.log(`[TopicService] ✅ 已完整清空话题 ${topicId} 的所有消息和关联数据`);
 
-      // 统一使用新的Redux状态管理
+      // 6. 统一使用新的Redux状态管理
       store.dispatch(newMessagesActions.clearTopicMessages(topicId));
 
-      // 发送事件通知
+      // 7. 发送事件通知
       EventEmitter.emit(EVENT_NAMES.CLEAR_MESSAGES, { topicId });
 
       return true;
     } catch (error) {
       console.error('[TopicService] 清空话题内容失败:', error);
-      EventEmitter.emit(EVENT_NAMES.SERVICE_ERROR, { serviceName: 'TopicService', error, message: `Failed to clear content for topic ${topicId}` });
+      EventEmitter.emit(EVENT_NAMES.SERVICE_ERROR, {
+        serviceName: 'TopicService',
+        error,
+        message: `Failed to clear content for topic ${topicId}`
+      });
       return false;
     }
   }

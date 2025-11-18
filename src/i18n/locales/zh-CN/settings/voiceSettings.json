@@ -43,6 +43,11 @@
         "name": "OpenAI Whisper",
         "description": "强大的云端语音识别模型",
         "features": ["高精度", "多语言", "噪音抑制", "云端处理"]
+      },
+      "gemini": {
+        "name": "Google Gemini TTS",
+        "description": "Google 最新的高质量文本转语音服务，支持30种语音和风格控制",
+        "features": ["30种预设语音", "风格控制", "多说话人", "24种语言"]
       }
     },
     "common": {
@@ -53,7 +58,8 @@
       "enableService": "启用 {{name}} 服务",
       "enableServiceDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
       "loadingError": "加载{{service}}设置失败",
-      "saveErrorText": "保存{{service}}设置失败"
+      "saveErrorText": "保存{{service}}设置失败",
+      "showApiKey": "显示API密钥"
     },
     "azure": {
       "title": "微软Azure TTS 设置",
@@ -69,6 +75,23 @@
       "enableDesc": "启用后，此服务将成为默认的文本转语音服务。启用其他TTS服务会自动禁用此服务。",
       "testText": "你好，我是硅基流动语音合成服务，感谢你的使用！",
       "apiKeyRequired": "启用服务时API密钥不能为空"
+    },
+    "gemini": {
+      "title": "Google Gemini TTS 设置",
+      "enableDesc": "启用后，将使用 Google Gemini TTS 作为默认的文本转语音服务",
+      "apiKey": "Gemini API Key",
+      "apiKeyHelp": "在 Google AI Studio 获取 API Key: https://aistudio.google.com/apikey",
+      "model": "模型",
+      "modelFlash": "Gemini 2.5 Flash (快速响应)",
+      "modelPro": "Gemini 2.5 Pro (高质量)",
+      "voice": "语音",
+      "stylePrompt": "风格提示词（可选）",
+      "stylePromptPlaceholder": "例如: \"Say cheerfully:\", \"Say in a whisper:\"",
+      "stylePromptHelp": "使用自然语言控制语音风格、语调和情感",
+      "multiSpeaker": "多说话人配置",
+      "enableMultiSpeaker": "启用多说话人模式（最多2人）",
+      "speakerName": "说话人 {{number}} 名称",
+      "multiSpeakerExample": "多说话人模式下，文本格式示例：\nTTS the following conversation between {{speaker1}} and {{speaker2}}:\n{{speaker1}}: 你好！\n{{speaker2}}: 很高兴见到你！"
     },
     "capacitorTTS": {
       "title": "Capacitor TTS 设置",
@@ -193,6 +216,18 @@
         "voiceHelperNoModel": "请先选择TTS模型",
         "useStream": "启用流式输出",
         "useStreamHelper": "流式输出可以实现更快的语音响应，音频将边生成边播放"
+      },
+      "gemini": {
+        "title": "Google Gemini TTS API 设置",
+        "apiKey": "Gemini API Key",
+        "apiKeyPlaceholder": "请输入 Gemini API 密钥",
+        "apiKeyHelper": "在 Google AI Studio 获取 API Key: https://aistudio.google.com/apikey",
+        "model": "模型",
+        "modelHelper": "选择适合的 Gemini TTS 模型",
+        "voice": "语音",
+        "voiceHelper": "选择您喜欢的语音风格",
+        "stylePrompt": "风格提示词（可选）",
+        "stylePromptHelper": "使用自然语言控制语音风格、语调和情感"
       },
       "whisper": {
         "title": "OpenAI Whisper 语音识别设置",

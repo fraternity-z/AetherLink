@@ -92,12 +92,9 @@ const EnhancedPerformanceMonitor: React.FC<EnhancedPerformanceMonitorProps> = ({
     const newX = clientX - dragStart.x;
     const newY = clientY - dragStart.y;
 
-    const maxX = window.innerWidth - 300;
-    const maxY = window.innerHeight - 400;
-
     const newPosition = {
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY))
+      x: newX,
+      y: newY
     };
 
     currentPositionRef.current = newPosition;

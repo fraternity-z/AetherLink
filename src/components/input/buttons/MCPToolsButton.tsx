@@ -29,7 +29,7 @@ import type { RootState } from '../../../shared/store';
 import type { MCPServer, MCPServerType } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
 import CustomSwitch from '../../CustomSwitch';
-import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../ChatToolbar';
+import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../InputToolbar';
 import { useMCPServerStateManager } from '../../../hooks/useMCPServerStateManager';
 
 // 服务器类型配置常量

@@ -1,11 +1,11 @@
-import React, { useMemo, useCallback, startTransition } from 'react';
+import React, { useMemo, useCallback, startTransition, useState, useEffect } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
-import { Settings, Plus, Trash2 } from 'lucide-react';
+import { Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
 import MessageList from '../../../components/message/MessageList';
-import { ChatInput, CompactChatInput, IntegratedChatInput, ChatToolbar } from '../../../components/input';
+import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
 import { ModelSelector } from './ModelSelector';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
@@ -207,12 +207,37 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   }, [setDrawerOpen]);
 
   // 本地状态
+  // 清空按钮的二次确认状态
+  const [clearConfirmMode, setClearConfirmMode] = useState(false);
+
+  // 自动重置确认模式（3秒后）
+  useEffect(() => {
+    if (clearConfirmMode) {
+      const timer = setTimeout(() => {
+        setClearConfirmMode(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [clearConfirmMode]);
 
   // 提取重复的条件判断 - 使用useMemo确保初始值稳定
   const isDrawerVisible = useMemo(() => drawerOpen && !isMobile, [drawerOpen, isMobile]);
 
   // 使用记忆化的选择器
   const settings = useSelector(selectChatPageSettings);
+
+  // ==================== 事件处理函数 ====================
+  // 处理清空话题的二次确认
+  const handleClearTopicWithConfirm = useCallback(() => {
+    if (clearConfirmMode) {
+      // 第二次点击，执行清空
+      handleClearTopic();
+      setClearConfirmMode(false);
+    } else {
+      // 第一次点击，进入确认模式
+      setClearConfirmMode(true);
+    }
+  }, [clearConfirmMode, handleClearTopic]);
 
   // ==================== 计算属性和样式 ====================
   const mergedTopToolbarSettings = {
@@ -346,11 +371,19 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           >
             <IconButton
               color="inherit"
-              onClick={handleClearTopic}
+              onClick={handleClearTopicWithConfirm}
               size="small"
-              sx={{ ml: isDIYLayout ? 0 : 1 }}
+              sx={{
+                ml: isDIYLayout ? 0 : 1,
+                color: clearConfirmMode ? '#f44336' : 'inherit',
+                transition: 'color 0.2s ease'
+              }}
             >
-              <Trash2 size={20} />
+              {clearConfirmMode ? (
+                <AlertTriangle size={20} />
+              ) : (
+                <Trash2 size={20} />
+              )}
             </IconButton>
           </motion.div>
         ) : null;
@@ -564,7 +597,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           justifyContent: 'center',
           px: 2
         }}>
-          <ChatToolbar
+          <InputToolbar
             onClearTopic={handleClearTopic}
             imageGenerationMode={imageGenerationMode}
             toggleImageGenerationMode={toggleImageGenerationMode}

@@ -5,7 +5,10 @@ export { default as IntegratedChatInput } from './IntegratedChatInput';
 export { default as ToolsMenu } from './ToolsMenu';
 export { default as UploadMenu } from './UploadMenu';
 export { default as MultiModelSelector } from './MultiModelSelector';
-export { default as ChatToolbar, getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from './ChatToolbar';
+export { default as InputToolbar, getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from './InputToolbar';
+
+// 向后兼容的别名导出
+export { default as ChatToolbar } from './InputToolbar';
 
 // 重新导出类型（如果有的话）
 export type { default as ChatInputProps } from './ChatInput';

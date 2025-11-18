@@ -4,7 +4,7 @@ import { BookOpen } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import KnowledgeSelector from '../../chat/KnowledgeSelector';
-import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../ChatToolbar';
+import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../InputToolbar';
 
 interface KnowledgeButtonProps {
   variant?: 'toolbar' | 'icon-button-compact' | 'icon-button-integrated';

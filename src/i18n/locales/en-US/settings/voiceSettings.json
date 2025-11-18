@@ -43,6 +43,11 @@
         "name": "OpenAI Whisper",
         "description": "Powerful cloud-based speech recognition model",
         "features": ["High Accuracy", "Multi-language", "Noise Suppression", "Cloud Processing"]
+      },
+      "gemini": {
+        "name": "Google Gemini TTS",
+        "description": "Google's latest high-quality text-to-speech service, supporting 30 voices and style control",
+        "features": ["30 preset voices", "Style control", "Multi-speaker", "24 languages"]
       }
     },
     "common": {
@@ -53,7 +58,8 @@
       "enableService": "Enable {{name}} Service",
       "enableServiceDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
       "loadingError": "Failed to load {{service}} settings",
-      "saveErrorText": "Failed to save {{service}} settings"
+      "saveErrorText": "Failed to save {{service}} settings",
+      "showApiKey": "Show API Key"
     },
     "azure": {
       "title": "Azure TTS Settings",
@@ -69,6 +75,23 @@
       "enableDesc": "When enabled, this service will become the default text-to-speech service. Enabling other TTS services will automatically disable this one.",
       "testText": "Hello, I am SiliconFlow text-to-speech service. Thank you for using me!",
       "apiKeyRequired": "API key cannot be empty when service is enabled"
+    },
+    "gemini": {
+      "title": "Google Gemini TTS Settings",
+      "enableDesc": "When enabled, Google Gemini TTS will be used as the default text-to-speech service",
+      "apiKey": "Gemini API Key",
+      "apiKeyHelp": "Get API Key at Google AI Studio: https://aistudio.google.com/apikey",
+      "model": "Model",
+      "modelFlash": "Gemini 2.5 Flash (Fast Response)",
+      "modelPro": "Gemini 2.5 Pro (High Quality)",
+      "voice": "Voice",
+      "stylePrompt": "Style Prompt (Optional)",
+      "stylePromptPlaceholder": "e.g.: \"Say cheerfully:\", \"Say in a whisper:\"",
+      "stylePromptHelp": "Use natural language to control voice style, tone, and emotion",
+      "multiSpeaker": "Multi-Speaker Configuration",
+      "enableMultiSpeaker": "Enable Multi-Speaker Mode (Max 2 speakers)",
+      "speakerName": "Speaker {{number}} Name",
+      "multiSpeakerExample": "Multi-speaker mode text format example:\nTTS the following conversation between {{speaker1}} and {{speaker2}}:\n{{speaker1}}: Hello!\n{{speaker2}}: Nice to meet you!"
     },
     "capacitorTTS": {
       "title": "Capacitor TTS Settings",
@@ -193,6 +216,18 @@
         "voiceHelperNoModel": "Please select a TTS model first",
         "useStream": "Enable Streaming Output",
         "useStreamHelper": "Streaming output enables faster voice response, audio will play as it's generated"
+      },
+      "gemini": {
+        "title": "Google Gemini TTS API Settings",
+        "apiKey": "Gemini API Key",
+        "apiKeyPlaceholder": "Enter Gemini API key",
+        "apiKeyHelper": "Get API Key at Google AI Studio: https://aistudio.google.com/apikey",
+        "model": "Model",
+        "modelHelper": "Select an appropriate Gemini TTS model",
+        "voice": "Voice",
+        "voiceHelper": "Choose your preferred voice style",
+        "stylePrompt": "Style Prompt (Optional)",
+        "stylePromptHelper": "Use natural language to control voice style, tone, and emotion"
       },
       "whisper": {
         "title": "OpenAI Whisper Speech Recognition Settings",
