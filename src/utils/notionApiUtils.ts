@@ -14,13 +14,10 @@ export const getNotionApiUrl = (endpoint: string): string => {
     return `https://api.notion.com${endpoint}`;
   }
   
-  // Web 端使用代理
-  const isDevelopment = process.env.NODE_ENV === 'development' || 
-                       window.location.hostname === 'localhost' ||
-                       window.location.hostname === '127.0.0.1';
-  
-  const baseUrl = isDevelopment ? '/api/notion' : 'https://api.notion.com';
-  return `${baseUrl}${endpoint}`;
+  // Web 端使用通用 CORS 代理
+  const notionApiUrl = `https://api.notion.com${endpoint}`;
+  const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(notionApiUrl)}`;
+  return proxyUrl;
 };
 
 /**

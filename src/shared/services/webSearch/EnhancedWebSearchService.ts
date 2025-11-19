@@ -300,10 +300,13 @@ class EnhancedWebSearchService {
         console.log(`[EnhancedWebSearchService] Exa搜索完成，找到 ${results.length} 个结果`);
         return { results };
       } else {
-        // Web端使用代理路径
-        console.log('[EnhancedWebSearchService] Web端使用代理路径请求 Exa API');
+        // Web端使用通用 CORS 代理
+        console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Exa API');
+        
+        const exaApiUrl = 'https://api.exa.ai/search';
+        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(exaApiUrl)}`;
 
-        response = await fetch('/api/exa/search', {
+        response = await fetch(proxyUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -396,10 +399,13 @@ class EnhancedWebSearchService {
         console.log(`[EnhancedWebSearchService] Bocha搜索完成，找到 ${results.length} 个结果`);
         return { results };
       } else {
-        // Web端使用代理路径
-        console.log('[EnhancedWebSearchService] Web端使用代理路径请求 Bocha API');
+        // Web端使用通用 CORS 代理
+        console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Bocha API');
+        
+        const bochaApiUrl = 'https://api.bocha.ai/v1/web-search';
+        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(bochaApiUrl)}`;
 
-        response = await fetch('/api/bocha/v1/web-search', {
+        response = await fetch(proxyUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -490,10 +496,13 @@ class EnhancedWebSearchService {
         console.log(`[EnhancedWebSearchService] Firecrawl搜索完成，找到 ${results.length} 个结果`);
         return { results };
       } else {
-        // Web端使用代理路径
-        console.log('[EnhancedWebSearchService] Web端使用代理路径请求 Firecrawl API');
+        // Web端使用通用 CORS 代理
+        console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Firecrawl API');
+        
+        const firecrawlApiUrl = 'https://api.firecrawl.dev/v1/search';
+        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(firecrawlApiUrl)}`;
 
-        response = await fetch('/api/firecrawl/v1/search', {
+        response = await fetch(proxyUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

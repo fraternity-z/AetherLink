@@ -191,26 +191,10 @@ export class WebDavManagerService {
     if (options.url.startsWith('http')) {
       const originalUrl = new URL(options.url);
       
-      if (provider === 'jianguoyun') {
-        // 坚果云：使用代理
-        // 将 https://dav.jianguoyun.com/dav/AetherLink/ 转换为 /api/webdav/jianguoyun/AetherLink/
-        const pathWithoutDav = originalUrl.pathname.replace(/^\/dav/, '');
-        proxyUrl = `/api/webdav/jianguoyun${pathWithoutDav}`;
-        useProxy = true;
-      } else if (provider === '123pan' || provider === '123pan3') {
-        // 123 云盘：使用代理（简化版）
-        // 将 https://webdav.123pan.cn/webdav/AetherLink/ 转换为 /api/webdav/123pan-cn/webdav/AetherLink/
-        const isCnDomain = originalUrl.hostname.includes('123pan.cn');
-        const proxyPrefix = isCnDomain ? '/api/webdav/123pan-cn' : '/api/webdav/123pan';
-        proxyUrl = `${proxyPrefix}${originalUrl.pathname}`;
-        useProxy = true;
-        console.log('🌐 [WebDAV] 123 云盘使用 Vite 反向代理');
-      } else {
-        // 其他 WebDAV 服务器：直接请求（可能遇到 CORS 问题）
-        console.warn('⚠️ [WebDAV] 检测到非标准 WebDAV 服务器，Web 端可能遇到 CORS 限制');
-        console.warn('💡 [WebDAV] 建议：使用桌面端(Tauri)或移动端(Capacitor)以获得最佳体验');
-        useProxy = false;
-      }
+      // 所有 WebDAV 服务都使用通用 CORS 代理
+      proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(options.url)}`;
+      useProxy = true;
+      console.log(`🌐 [WebDAV] ${provider} 使用通用 CORS 代理转发请求`);
     }
 
     if (process.env.NODE_ENV === 'development') {

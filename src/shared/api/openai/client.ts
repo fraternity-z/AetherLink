@@ -12,6 +12,55 @@ import { isTauri } from '../../utils/platformDetection';
 import { Capacitor } from '@capacitor/core';
 
 /**
+ * 检查是否需要使用 CORS 代理
+ */
+function needsCORSProxy(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+
+    // 本地地址不需要代理
+    const hostname = urlObj.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+      return false;
+    }
+
+    // Web端：跨域请求需要代理
+    const needsProxy = urlObj.origin !== currentOrigin;
+    return needsProxy;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 创建代理 fetch 函数
+ */
+function createProxyFetch(originalFetch?: (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
+  const baseFetch = originalFetch || fetch;
+  
+  return async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as any).url;
+    
+    // 检查是否需要使用代理
+    if (needsCORSProxy(urlStr)) {
+      const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(urlStr)}`;
+      console.log(`[OpenAI ProxyFetch] 使用代理: ${urlStr} -> ${proxyUrl}`);
+      
+      try {
+        return await baseFetch(proxyUrl, init);
+      } catch (error) {
+        console.error(`[OpenAI ProxyFetch] 代理请求失败: ${error}`);
+        throw error;
+      }
+    }
+    
+    // 不需要代理，直接请求
+    return baseFetch(urlStr, init);
+  };
+}
+
+/**
  * 创建OpenAI客户端
  * @param model 模型配置
  * @returns OpenAI客户端实例
@@ -79,6 +128,31 @@ export function createClient(model: Model): OpenAI {
       dangerouslyAllowBrowser: true // 允许在浏览器环境中使用
     };
 
+    // 【第一步】先设置代理 fetch（如果需要）
+    // 这必须在处理自定义头部之前完成，确保代理配置不会被覆盖
+    const isTauriEnv = isTauri();
+    const isCapacitorNative = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+    const isWeb = !isTauriEnv && !isCapacitorNative;
+    
+    if (isTauriEnv) {
+      config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+        console.log(`[OpenAI createClient] Tauri 平台使用 universalFetch 请求: ${url.toString()}`);
+        return universalFetch(url.toString(), init);
+      };
+      console.log(`[OpenAI createClient] Tauri 平台：使用 Tauri HTTP 插件`);
+    } else if (isCapacitorNative) {
+      config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+        console.log(`[OpenAI createClient] Capacitor Native 平台使用 universalFetch 请求: ${url.toString()}`);
+        const fetchOptions = { ...init, useCorsPlugin: model.useCorsPlugin };
+        return universalFetch(url.toString(), fetchOptions);
+      };
+      const fetchMode = model.useCorsPlugin ? 'CorsBypass Plugin' : 'Standard Fetch';
+      console.log(`[OpenAI createClient] Capacitor Native 平台：使用 ${fetchMode}`);
+    } else if (isWeb) {
+      config.fetch = createProxyFetch();
+      console.log(`[OpenAI createClient] Web 端：使用 CORS 代理服务器`);
+    }
+
     // Azure OpenAI特殊配置
     if (isAzureOpenAI(model)) {
       config.defaultHeaders = {
@@ -120,9 +194,8 @@ export function createClient(model: Model): OpenAI {
 
       // 如果有需要删除的头部，创建自定义的 fetch 函数来拦截和删除这些头部
       if (headersToRemove.length > 0) {
-        // 根据平台选择基础 fetch 函数
-        const needsCustomFetch = isTauri() || Capacitor.isNativePlatform();
-        const originalFetch = config.fetch || (needsCustomFetch ? universalFetch : fetch);
+        // 使用已经配置好的 config.fetch（可能是代理、Tauri 或 Capacitor）
+        const originalFetch = config.fetch || fetch;
         
         config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
           if (init?.headers) {
@@ -160,28 +233,6 @@ export function createClient(model: Model): OpenAI {
         };
         console.log(`[OpenAI createClient] 设置供应商额外头部: ${Object.keys(filteredHeaders).join(', ')}`);
       }
-    }
-
-    // 只在 Tauri 或移动端平台使用 universalFetch 来绕过 CORS
-    // Web 端使用标准 fetch（开发环境会通过代理解决 CORS）
-    const needsCustomFetch = isTauri() || Capacitor.isNativePlatform();
-    
-    if (!config.fetch && needsCustomFetch) {
-      config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
-        const platform = isTauri() ? 'Tauri' : 'Mobile';
-        console.log(`[OpenAI createClient] ${platform} 平台使用 universalFetch 请求: ${url.toString()}`);
-        
-        // 将模型的 useCorsPlugin 配置传递给 universalFetch
-        const fetchOptions = {
-          ...init,
-          useCorsPlugin: model.useCorsPlugin
-        };
-        
-        return universalFetch(url.toString(), fetchOptions);
-      };
-      
-      const fetchMode = model.useCorsPlugin ? 'CorsBypass Plugin (兼容模式)' : 'Standard Fetch (流式输出)';
-      console.log(`[OpenAI createClient] 已配置自定义 fetch (${isTauri() ? 'Tauri HTTP Plugin' : fetchMode})`);
     }
 
     // 创建客户端

@@ -224,21 +224,8 @@ export function needsCORSProxy(url: string): boolean {
 export function getPlatformUrl(originalUrl: string): string {
   // 统一处理：根据是否跨域决定是否使用代理
   if (needsCORSProxy(originalUrl)) {
-    // 根据URL选择对应的代理
-    if (originalUrl.includes('api.notion.com')) {
-      return originalUrl.replace('https://api.notion.com', '/api/notion');
-    } else if (originalUrl.includes('glama.ai')) {
-      return originalUrl.replace('https://glama.ai', '/api/mcp-glama');
-    } else if (originalUrl.includes('mcp.api-inference.modelscope.net')) {
-      return originalUrl.replace('https://mcp.api-inference.modelscope.net', '/api/mcp-modelscope');
-    } else if (originalUrl.includes('router.mcp.so')) {
-      return originalUrl.replace('https://router.mcp.so', '/api/mcp-router');
-    } else if (originalUrl.includes('html.duckduckgo.com')) {
-      // DuckDuckGo 搜索代理
-      return originalUrl.replace('https://html.duckduckgo.com', '/api/duckduckgo');
-    }
-    // 其他URL暂时直接返回（可以根据需要添加更多代理）
-    return originalUrl;
+    // 使用通用 CORS 代理服务器
+    return `http://localhost:8888/proxy?url=${encodeURIComponent(originalUrl)}`;
   } else {
     // 不需要代理：返回原始 URL
     return originalUrl;
@@ -251,22 +238,8 @@ export function getPlatformUrl(originalUrl: string): string {
 export function getFullProxyUrl(originalUrl: string): string {
   // 统一处理：根据是否跨域决定是否使用代理
   if (needsCORSProxy(originalUrl)) {
-    // 根据URL选择对应的代理，返回完整URL
-    const currentOrigin = window.location.origin;
-    if (originalUrl.includes('api.notion.com')) {
-      return originalUrl.replace('https://api.notion.com', `${currentOrigin}/api/notion`);
-    } else if (originalUrl.includes('glama.ai')) {
-      return originalUrl.replace('https://glama.ai', `${currentOrigin}/api/mcp-glama`);
-    } else if (originalUrl.includes('mcp.api-inference.modelscope.net')) {
-      return originalUrl.replace('https://mcp.api-inference.modelscope.net', `${currentOrigin}/api/mcp-modelscope`);
-    } else if (originalUrl.includes('router.mcp.so')) {
-      return originalUrl.replace('https://router.mcp.so', `${currentOrigin}/api/mcp-router`);
-    } else if (originalUrl.includes('html.duckduckgo.com')) {
-      // DuckDuckGo 搜索代理
-      return originalUrl.replace('https://html.duckduckgo.com', `${currentOrigin}/api/duckduckgo`);
-    }
-    // 其他URL使用通用代理
-    return `${currentOrigin}/api/proxy?url=${encodeURIComponent(originalUrl)}`;
+    // 使用通用 CORS 代理服务器
+    return `http://localhost:8888/proxy?url=${encodeURIComponent(originalUrl)}`;
   } else {
     // 不需要代理：返回原始 URL
     return originalUrl;

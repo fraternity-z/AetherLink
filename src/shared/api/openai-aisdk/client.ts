@@ -4,6 +4,57 @@
  */
 import { createOpenAI } from '@ai-sdk/openai';
 import type { Model } from '../../types';
+import { isTauri } from '../../utils/platformDetection';
+import { Capacitor } from '@capacitor/core';
+import { universalFetch } from '../../utils/universalFetch';
+
+/**
+ * 检查是否需要使用代理
+ */
+function needsCORSProxy(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+
+    // 本地地址不需要代理
+    const hostname = urlObj.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+      return false;
+    }
+
+    // Web端：跨域请求需要代理
+    const needsProxy = urlObj.origin !== currentOrigin;
+    return needsProxy;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 创建自定义 fetch 函数，支持 CORS 代理
+ */
+function createProxyFetch() {
+  return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    
+    // 检查是否需要使用代理
+    if (needsCORSProxy(url)) {
+      const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(url)}`;
+      console.log(`[AI SDK ProxyFetch] 使用代理服务器: ${url} -> ${proxyUrl}`);
+      
+      try {
+        const response = await fetch(proxyUrl, init);
+        return response;
+      } catch (error) {
+        console.error(`[AI SDK ProxyFetch] 代理请求失败: ${error}`);
+        throw error;
+      }
+    }
+    
+    // 不需要代理，直接请求
+    return fetch(url, init);
+  };
+}
 
 /**
  * 创建AI SDK OpenAI客户端
@@ -33,10 +84,34 @@ export function createAISDKClient(model: Model) {
 
     console.log(`[AI SDK createClient] 创建客户端, 模型ID: ${model.id}, baseURL: ${baseURL.substring(0, 20)}...`);
 
+    // 只在 Web 端使用代理服务器
+    let fetchFn: ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) | undefined;
+    
+    const isTauriEnv = isTauri();
+    const isCapacitorNative = Capacitor?.isNativePlatform?.();
+    const isWeb = !isTauriEnv && !isCapacitorNative;
+    
+    if (isWeb) {
+      // 只有 Web 端使用代理服务器
+      fetchFn = createProxyFetch();
+      console.log(`[AI SDK createClient] Web 端使用代理服务器 (http://localhost:8888/proxy)`);
+    } else if (isCapacitorNative && model.useCorsPlugin) {
+      // 移动端：如果开启了 CORS 插件，使用 universalFetch
+      console.log(`[AI SDK createClient] 移动端使用 CorsBypass 插件`);
+      fetchFn = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+        // 显式传递 useCorsPlugin: true
+        return universalFetch(url, { ...init, useCorsPlugin: true } as any);
+      };
+    } else {
+      console.log(`[AI SDK createClient] 非 Web 端：${isTauriEnv ? 'Tauri' : 'Capacitor Native'} 不使用代理服务器`);
+    }
+
     // 创建AI SDK OpenAI客户端
     const client = createOpenAI({
       apiKey,
       baseURL,
+      ...(fetchFn && { fetch: fetchFn }),
       // AI SDK 专为浏览器设计，无需 dangerouslyAllowBrowser
       // 也不会发送有问题的 x-stainless-timeout 头部
     });
