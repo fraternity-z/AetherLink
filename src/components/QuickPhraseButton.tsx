@@ -1,11 +1,7 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   IconButton,
   Tooltip,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -19,7 +15,7 @@ import {
   Radio,
   Box,
   Typography,
-  Divider
+  Drawer
 } from '@mui/material';
 import { Plus, BotMessageSquare } from 'lucide-react';
 import { CustomIcon } from './icons';
@@ -27,6 +23,8 @@ import { useTheme } from '@mui/material/styles';
 import QuickPhraseService from '../shared/services/QuickPhraseService';
 import type { QuickPhrase } from '../shared/types';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
+import styled from '@emotion/styled';
+import { alpha } from '@mui/material/styles';
 
 interface QuickPhraseButtonProps {
   onInsertPhrase: (content: string) => void;
@@ -35,6 +33,118 @@ interface QuickPhraseButtonProps {
   size?: 'small' | 'medium' | 'large';
 }
 
+// 样式组件定义
+const QuickPanelBody = styled.div<{ theme?: any }>`
+  padding: 5px 0;
+  background-color: ${props => props.theme?.palette?.background?.paper};
+`;
+
+const QuickPanelList = styled.div<{ theme?: any }>`
+  max-height: 300px;
+  overflow-y: auto;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
+    border-radius: 3px;
+  }
+`;
+
+const QuickPanelItem = styled.div<{ theme?: any }>`
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 5px 1px 5px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+
+  &:hover {
+    background-color: ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'};
+  }
+
+  &.focused {
+    background-color: ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'};
+  }
+`;
+
+const QuickPanelItemLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const QuickPanelItemIcon = styled.span<{ theme?: any }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${props => props.theme?.palette?.text?.secondary || '#666'};
+  flex-shrink: 0;
+`;
+
+const QuickPanelItemLabel = styled.span`
+  font-size: 14px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+`;
+
+const QuickPanelItemRight = styled.div<{ theme?: any }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: ${props => props.theme?.palette?.text?.secondary || '#666'};
+  flex-shrink: 1;
+  min-width: 0;
+`;
+
+const QuickPanelItemDescription = styled.span`
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const QuickPanelDivider = styled.div<{ theme?: any }>`
+  height: 1px;
+  background-color: ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'};
+  margin: 4px 8px;
+`;
+
+const QuickPanelFooter = styled.div<{ theme?: any }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px 6px;
+  border-top: 1px solid ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'};
+`;
+
+const QuickPanelFooterTitle = styled.div<{ theme?: any }>`
+  font-size: 12px;
+  color: ${props => props.theme?.palette?.text?.secondary || '#666'};
+`;
+
+const QuickPanelFooterTips = styled.div<{ theme?: any }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: ${props => props.theme?.palette?.text?.secondary || '#666'};
+`;
+
 const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
   onInsertPhrase,
   assistant,
@@ -42,10 +152,12 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
   size = 'medium'
 }) => {
   const theme = useTheme();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [globalPhrases, setGlobalPhrases] = useState<QuickPhrase[]>([]);
   const [assistantPhrases, setAssistantPhrases] = useState<QuickPhrase[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -73,14 +185,17 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
     loadPhrases();
   }, [loadPhrases]);
 
-  // 打开菜单
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  // 打开面板
+  const handleClick = () => {
+    console.log('QuickPhrase button clicked, opening panel');
+    setPanelOpen(true);
+    setSelectedIndex(-1);
   };
 
-  // 关闭菜单
+  // 关闭面板
   const handleClose = () => {
-    setAnchorEl(null);
+    setPanelOpen(false);
+    setSelectedIndex(-1);
   };
 
   // 选择快捷短语
@@ -92,7 +207,7 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
   // 打开添加对话框
   const handleOpenDialog = () => {
     setDialogOpen(true);
-    handleClose();
+    setPanelOpen(false);
   };
 
   // 关闭添加对话框
@@ -146,6 +261,41 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
 
   const iconSize = size === 'large' ? 28 : size === 'small' ? 20 : 24;
 
+  // 键盘导航
+  useEffect(() => {
+    if (!panelOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev < allPhrases.length ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev > 0 ? prev - 1 : allPhrases.length
+        );
+      } else if (e.key === 'Enter' && selectedIndex >= 0) {
+        e.preventDefault();
+        if (selectedIndex === allPhrases.length) {
+          handleOpenDialog();
+        } else {
+          handlePhraseSelect(allPhrases[selectedIndex]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [panelOpen, selectedIndex, allPhrases]);
+
   return (
     <>
       <Tooltip title="快捷短语">
@@ -164,78 +314,118 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
         </span>
       </Tooltip>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
+      {/* 从底部向上弹出的面板 - 使用 Drawer 组件 */}
+      <Drawer
+        anchor="bottom"
+        open={panelOpen}
         onClose={handleClose}
-        disableAutoFocus={true}
-        disableRestoreFocus={true}
         PaperProps={{
-          style: {
-            maxHeight: 400,
-            minWidth: 250,
-            maxWidth: 350
+          sx: {
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            maxHeight: '60vh',
+            bgcolor: 'background.paper'
           }
         }}
       >
-        {allPhrases.length > 0 && [
-          ...assistantPhrases.map((phrase) => (
-            <MenuItem
-              key={phrase.id}
-              onClick={() => handlePhraseSelect(phrase)}
-              style={{ paddingRight: 16 }}
-            >
-              <ListItemIcon>
-                <BotMessageSquare size={18} />
-              </ListItemIcon>
-              <ListItemText
-                primary={phrase.title}
-                secondary={phrase.content.length > 50
-                  ? phrase.content.substring(0, 50) + '...'
-                  : phrase.content
-                }
-                secondaryTypographyProps={{
-                  style: { fontSize: '0.75rem', opacity: 0.7 }
-                }}
-              />
-            </MenuItem>
-          )),
+        <Box sx={{ maxHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
+          {/* 拖拽指示器 */}
+          <Box sx={{ pt: 1, pb: 1.5, display: 'flex', justifyContent: 'center' }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 4,
+                bgcolor: (theme) => alpha(theme.palette.text.primary, 0.2),
+                borderRadius: 999
+              }}
+            />
+          </Box>
 
-          ...(assistantPhrases.length > 0 && globalPhrases.length > 0 ? [
-            <Divider key="divider-1" />
-          ] : []),
+          <QuickPanelBody ref={panelRef} theme={theme}>
+            <QuickPanelList theme={theme}>
+              {allPhrases.length > 0 && (
+                <>
+                  {assistantPhrases.map((phrase, index) => (
+                    <QuickPanelItem
+                      key={phrase.id}
+                      theme={theme}
+                      className={selectedIndex === index ? 'focused' : ''}
+                      onClick={() => handlePhraseSelect(phrase)}
+                      onMouseEnter={() => setSelectedIndex(index)}
+                    >
+                      <QuickPanelItemLeft>
+                        <QuickPanelItemIcon theme={theme}>
+                          <BotMessageSquare size={18} />
+                        </QuickPanelItemIcon>
+                        <QuickPanelItemLabel>{phrase.title}</QuickPanelItemLabel>
+                      </QuickPanelItemLeft>
+                      <QuickPanelItemRight theme={theme}>
+                        <QuickPanelItemDescription>
+                          {phrase.content.length > 50
+                            ? phrase.content.substring(0, 50) + '...'
+                            : phrase.content}
+                        </QuickPanelItemDescription>
+                      </QuickPanelItemRight>
+                    </QuickPanelItem>
+                  ))}
 
-          ...globalPhrases.map((phrase) => (
-            <MenuItem
-              key={phrase.id}
-              onClick={() => handlePhraseSelect(phrase)}
-              style={{ paddingRight: 16 }}
-            >
-              <ListItemIcon>
-                <CustomIcon name="quickPhrase" size={18} color="currentColor" />
-              </ListItemIcon>
-              <ListItemText
-                primary={phrase.title}
-                secondary={phrase.content.length > 50
-                  ? phrase.content.substring(0, 50) + '...'
-                  : phrase.content
-                }
-                secondaryTypographyProps={{
-                  style: { fontSize: '0.75rem', opacity: 0.7 }
-                }}
-              />
-            </MenuItem>
-          )),
-          <Divider key="divider-2" />
-        ]}
-        
-        <MenuItem onClick={handleOpenDialog}>
-          <ListItemIcon>
-            <Plus size={18} />
-          </ListItemIcon>
-          <ListItemText primary="添加快捷短语..." />
-        </MenuItem>
-      </Menu>
+                  {globalPhrases.map((phrase, index) => {
+                    const itemIndex = assistantPhrases.length + index;
+                    return (
+                      <QuickPanelItem
+                        key={phrase.id}
+                        theme={theme}
+                        className={selectedIndex === itemIndex ? 'focused' : ''}
+                        onClick={() => handlePhraseSelect(phrase)}
+                        onMouseEnter={() => setSelectedIndex(itemIndex)}
+                      >
+                        <QuickPanelItemLeft>
+                          <QuickPanelItemIcon theme={theme}>
+                            <CustomIcon name="quickPhrase" size={18} color="currentColor" />
+                          </QuickPanelItemIcon>
+                          <QuickPanelItemLabel>{phrase.title}</QuickPanelItemLabel>
+                        </QuickPanelItemLeft>
+                        <QuickPanelItemRight theme={theme}>
+                          <QuickPanelItemDescription>
+                            {phrase.content.length > 50
+                              ? phrase.content.substring(0, 50) + '...'
+                              : phrase.content}
+                          </QuickPanelItemDescription>
+                        </QuickPanelItemRight>
+                      </QuickPanelItem>
+                    );
+                  })}
+
+                  <QuickPanelDivider theme={theme} />
+                </>
+              )}
+
+              <QuickPanelItem
+                theme={theme}
+                className={selectedIndex === allPhrases.length ? 'focused' : ''}
+                onClick={handleOpenDialog}
+                onMouseEnter={() => setSelectedIndex(allPhrases.length)}
+              >
+                <QuickPanelItemLeft>
+                  <QuickPanelItemIcon theme={theme}>
+                    <Plus size={18} />
+                  </QuickPanelItemIcon>
+                  <QuickPanelItemLabel>添加快捷短语...</QuickPanelItemLabel>
+                </QuickPanelItemLeft>
+              </QuickPanelItem>
+            </QuickPanelList>
+
+            <QuickPanelFooter theme={theme}>
+              <QuickPanelFooterTitle theme={theme}>快捷短语</QuickPanelFooterTitle>
+              <QuickPanelFooterTips theme={theme}>
+                <span>ESC 关闭</span>
+                <span>▲▼ 选择</span>
+                <span>↩︎ 确认</span>
+              </QuickPanelFooterTips>
+            </QuickPanelFooter>
+          </QuickPanelBody>
+        </Box>
+      </Drawer>
 
       {/* 添加快捷短语对话框 */}
       <Dialog

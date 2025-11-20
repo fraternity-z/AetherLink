@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useTransition, useMemo } from 'react';
 import {
   Drawer,
-  Button,
   IconButton,
   TextField,
   Typography,
@@ -11,13 +10,10 @@ import {
   InputAdornment,
   Avatar
 } from '@mui/material';
-import { 
-  Plus as AddIcon, 
-  Minus as RemoveIcon, 
-  Search as SearchIcon, 
-  Square,
-  CheckSquare,
-  Repeat
+import {
+  Plus as AddIcon,
+  Minus as RemoveIcon,
+  Search as SearchIcon
 } from 'lucide-react';
 import { alpha } from '@mui/material/styles';
 import { fetchModels } from '../shared/services/network/APIService';
@@ -116,7 +112,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
   const [actualSearchTerm, setActualSearchTerm] = useState<string>('');
   const [pendingModels, setPendingModels] = useState<Map<string, boolean>>(new Map());
 
-  const [isSearchPending, startSearchTransition] = useTransition();
+  const [, startSearchTransition] = useTransition();
 
   // 使用ref存储初始provider，避免重新加载
   const initialProviderRef = useRef<any>(null);
@@ -174,18 +170,6 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     }
     return result;
   }, [models, actualSearchTerm, provider?.id]);
-
-  // 获取过滤后的模型列表
-  const filteredModels = useMemo(() => {
-    const searchLower = actualSearchTerm.toLowerCase();
-    return models.filter(model => {
-      const modelName = model.name || model.id;
-      return !searchLower || 
-             modelName.toLowerCase().includes(searchLower) || 
-             model.id.toLowerCase().includes(searchLower);
-    });
-  }, [models, actualSearchTerm]);
-
 
   const handleAddSingleModel = useCallback((model: Model) => {
     if (!isModelInProvider(model.id)) {
@@ -261,80 +245,6 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     }
   }, [groupedModels, isModelInProvider, onRemoveModels, onRemoveModel]);
 
-  // 全选/取消全选当前过滤结果
-  const handleToggleAll = useCallback(() => {
-    if (filteredModels.length === 0) return;
-    
-    const allSelected = filteredModels.every(m => isModelInProvider(m.id));
-    
-    if (allSelected) {
-      // 取消全选
-      const toRemove = filteredModels.map(m => m.id);
-      if (onRemoveModels) {
-        onRemoveModels(toRemove);
-      } else {
-        toRemove.forEach(id => onRemoveModel(id));
-      }
-      setPendingModels(prev => {
-        const newMap = new Map(prev);
-        toRemove.forEach(id => newMap.delete(id));
-        return newMap;
-      });
-    } else {
-      // 全选
-      const toAdd = filteredModels.filter(m => !isModelInProvider(m.id));
-      if (onAddModels) {
-        onAddModels(toAdd);
-      } else {
-        toAdd.forEach(m => onAddModel(m));
-      }
-      setPendingModels(prev => {
-        const newMap = new Map(prev);
-        toAdd.forEach(m => newMap.set(m.id, true));
-        return newMap;
-      });
-    }
-  }, [filteredModels, isModelInProvider, onAddModels, onRemoveModels, onAddModel, onRemoveModel]);
-
-  // 反选当前过滤结果
-  const handleInvertSelection = useCallback(() => {
-    if (filteredModels.length === 0) return;
-    
-    const toAdd: Model[] = [];
-    const toRemove: string[] = [];
-    
-    filteredModels.forEach(m => {
-      if (isModelInProvider(m.id)) {
-        toRemove.push(m.id);
-      } else {
-        toAdd.push(m);
-      }
-    });
-    
-    if (toRemove.length > 0) {
-      if (onRemoveModels) {
-        onRemoveModels(toRemove);
-      } else {
-        toRemove.forEach(id => onRemoveModel(id));
-      }
-    }
-    
-    if (toAdd.length > 0) {
-      if (onAddModels) {
-        onAddModels(toAdd);
-      } else {
-        toAdd.forEach(m => onAddModel(m));
-      }
-    }
-    
-    setPendingModels(prev => {
-      const newMap = new Map(prev);
-      toRemove.forEach(id => newMap.delete(id));
-      toAdd.forEach(m => newMap.set(m.id, true));
-      return newMap;
-    });
-  }, [filteredModels, isModelInProvider, onAddModels, onRemoveModels, onAddModel, onRemoveModel]);
-
   // 加载模型列表
   const loadModels = async () => {
     try {
@@ -383,11 +293,6 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
     
     return groupKeys.map(name => [name, groupedModels[name]] as [string, Model[]]);
   }, [groupedModels]);
-
-  // 计算是否全部已选择
-  const allSelected = useMemo(() => {
-    return filteredModels.length > 0 && filteredModels.every(m => isModelInProvider(m.id));
-  }, [filteredModels, isModelInProvider]);
 
   return (
     <Drawer
@@ -458,7 +363,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
               modelGroups={groupedModelsList}
               showEmptyState={false}
               defaultExpanded={[]}
-              renderModelItem={(model, index) => {
+              renderModelItem={(model) => {
                 const added = isModelInProvider(model.id);
                 return (
                   <TactileButton key={model.id} sx={{ width: '100%' }}>

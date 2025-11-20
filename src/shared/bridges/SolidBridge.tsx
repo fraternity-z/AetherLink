@@ -3,7 +3,8 @@
  * 允许在 React 应用中嵌入 SolidJS 组件
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { render, type Component as SolidComponent } from 'solid-js/web';
+import { render } from 'solid-js/web';
+import type { Component as SolidComponent } from 'solid-js';
 
 interface SolidBridgeProps<T extends Record<string, any>> {
   /** SolidJS 组件 */

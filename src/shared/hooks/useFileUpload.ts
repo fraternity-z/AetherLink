@@ -59,7 +59,8 @@ export const useFileUpload = ({ currentTopicState, setUploadingMedia }: UseFileU
             updateProgress(0.5); // 算作半个完成单位
 
             // 2. 尝试保存到DexieStorageService
-            if (currentTopicState) {
+            // 确保 currentTopicState 和 currentTopicState.id 都存在
+            if (currentTopicState && currentTopicState.id) {
               try {
                 const imageRef = await dexieStorage.saveBase64Image(
                   compressedImage.base64Data || '',
@@ -84,22 +85,24 @@ export const useFileUpload = ({ currentTopicState, setUploadingMedia }: UseFileU
 
               } catch (storageError) {
                 // 数据库存储失败，直接使用压缩后的图片
-                console.warn('数据库存储图片失败，使用内存中的图片:', storageError);
+                console.warn('[useFileUpload] 数据库存储图片失败，使用内存中的图片:', storageError);
                 updateProgress(0.5);
 
                 // 返回压缩后的图片，而不是引用
                 return compressedImage;
               }
             } else {
-              // 没有当前话题，使用原始方式
+              // 没有当前话题或话题ID，使用原始方式
+              console.log('[useFileUpload] 当前没有话题或话题ID，直接使用压缩后的图片');
               const formattedImage = ImageUploadService.ensureCorrectFormat(compressedImage);
               updateProgress(0.5);
               return formattedImage;
             }
           } catch (error) {
-            console.error(`处理第 ${index + 1} 张图片时出错:`, error);
+            console.error(`[useFileUpload] 处理第 ${index + 1} 张图片时出错:`, error);
             updateProgress(1);
-            return null; // 返回null，稍后过滤掉
+            // 返回null，稍后过滤掉，避免因单张图片失败导致整体失败
+            return null;
           }
         })
       );

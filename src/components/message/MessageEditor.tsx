@@ -1,14 +1,73 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Drawer,
+  Button,
+  TextField,
+  useMediaQuery,
+  useTheme,
+  Box,
+  alpha,
+  Typography
+} from '@mui/material';
 import { useDispatch } from 'react-redux';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import type { Message } from '../../shared/types/newMessage.ts';
 import { UserMessageStatus, AssistantMessageStatus } from '../../shared/types/newMessage.ts';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { clearGetMainTextContentCache } from '../../shared/utils/messageUtils';
+import styled from '@emotion/styled';
 // 开发环境日志工具 - 只保留错误日志
 const isDev = process.env.NODE_ENV === 'development';
 const devError = isDev ? console.error : () => {};
+
+// 样式组件定义 - 参考QuickPhraseButton的设计
+const EditorContainer = styled(Box)<{ theme?: any }>`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 70vh;
+`;
+
+const EditorHeader = styled(Box)<{ theme?: any }>`
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'};
+`;
+
+const EditorTitle = styled(Typography)<{ theme?: any }>`
+  font-size: 16px;
+  font-weight: 500;
+  color: ${props => props.theme?.palette?.text?.primary};
+`;
+
+const EditorContent = styled(Box)<{ theme?: any }>`
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'};
+    border-radius: 3px;
+  }
+`;
+
+const EditorFooter = styled(Box)<{ theme?: any }>`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid ${props => props.theme?.palette?.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'};
+`;
 
 interface MessageEditorProps {
   message: Message;
@@ -300,93 +359,84 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
   // 🚀 性能优化：内容变更处理 - 使用useCallback
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedContent(e.target.value);
-  }, []);
-
-  return (
-    <Dialog
+    }, []);
+ 
+    return (
+    <Drawer
+      anchor="bottom"
       open={open}
       onClose={handleClose}
-      fullWidth
-      maxWidth={isMobile ? "xs" : "sm"} // 移动端使用更小的宽度
-      // 移动端优化：确保Dialog正确显示
-      slotProps={{
-        paper: {
-          sx: {
-            margin: isMobile ? 1 : 3,
-            maxHeight: isMobile ? '90vh' : '80vh',
-            // 移动端确保内容可见
-            ...(isMobile && {
-              position: 'fixed',
-              top: '5%',
-              left: '5%',
-              right: '5%',
-              bottom: 'auto',
-              transform: 'none'
-            })
-          }
+      PaperProps={{
+        sx: {
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          maxHeight: '70vh',
+          bgcolor: 'background.paper'
         }
       }}
-      // 移动端禁用backdrop点击关闭，避免意外关闭
-      disableEscapeKeyDown={isMobile}
     >
-      <DialogTitle sx={{
-        pb: 1,
-        fontWeight: 500,
-        fontSize: isMobile ? '1.1rem' : '1.25rem' // 移动端字体调整
-      }}>
-        编辑{isUser ? '消息' : '回复'}
-      </DialogTitle>
-      <DialogContent sx={{
-        pt: 2,
-        pb: isMobile ? 1 : 2 // 移动端减少底部间距
-      }}>
-        <TextField
-          multiline
-          fullWidth
-          minRows={isMobile ? 3 : 4} // 移动端减少最小行数
-          maxRows={isMobile ? 8 : 10} // 移动端调整最大行数
-          value={editedContent}
-          onChange={handleContentChange}
-          variant="outlined"
-          placeholder={isInitialized ? "请输入内容..." : "正在加载内容..."}
-          disabled={!isInitialized} // 未初始化时禁用输入
-          autoFocus={isInitialized && !isMobile} // 移动端不自动聚焦，避免键盘弹出问题
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              fontSize: isMobile ? '16px' : '14px', // 移动端使用16px避免缩放
-              lineHeight: 1.5
-            }
-          }}
-        />
-      </DialogContent>
-      <DialogActions sx={{
-        px: 3,
-        pb: 2,
-        gap: 1 // 按钮间距
-      }}>
-        <Button
-          onClick={handleClose}
-          color="inherit"
-          size={isMobile ? "medium" : "small"}
-          sx={{ minWidth: isMobile ? 80 : 'auto' }}
-        >
-          取消
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSave}
-          disabled={!isInitialized || !editedContent || !editedContent.trim()}
-          size={isMobile ? "medium" : "small"}
-          sx={{
-            mr: 1,
-            minWidth: isMobile ? 80 : 'auto'
-          }}
-        >
-          保存
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <EditorContainer theme={theme}>
+        {/* 拖拽指示器 */}
+        <Box sx={{ pt: 1, pb: 1.5, display: 'flex', justifyContent: 'center' }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 4,
+              bgcolor: (theme) => alpha(theme.palette.text.primary, 0.2),
+              borderRadius: 999
+            }}
+          />
+        </Box>
+
+        {/* 标题栏 */}
+        <EditorHeader theme={theme}>
+          <EditorTitle theme={theme}>
+            编辑{isUser ? '消息' : '回复'}
+          </EditorTitle>
+        </EditorHeader>
+
+        {/* 编辑区域 */}
+        <EditorContent theme={theme}>
+          <TextField
+            multiline
+            fullWidth
+            minRows={6}
+            maxRows={12}
+            value={editedContent}
+            onChange={handleContentChange}
+            variant="outlined"
+            placeholder={isInitialized ? "请输入内容..." : "正在加载内容..."}
+            disabled={!isInitialized}
+            autoFocus={isInitialized && !isMobile}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: '14px',
+                lineHeight: 1.5
+              }
+            }}
+          />
+        </EditorContent>
+
+        {/* 操作栏 */}
+        <EditorFooter theme={theme}>
+          <Button
+            onClick={handleClose}
+            color="inherit"
+            variant="text"
+          >
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSave}
+            disabled={!isInitialized || !editedContent || !editedContent.trim()}
+          >
+            保存
+          </Button>
+        </EditorFooter>
+      </EditorContainer>
+    </Drawer>
   );
 };
 
