@@ -14,6 +14,7 @@ import { isTauri } from './platformDetection';
 export interface UniversalFetchOptions extends RequestInit {
   timeout?: number;
   responseType?: 'json' | 'text' | 'blob' | 'arraybuffer';
+  useCorsPlugin?: boolean; // 是否使用 CORS 插件（仅移动端有效）
 }
 
 // 响应接口，兼容标准Response
@@ -28,7 +29,7 @@ export interface UniversalResponse extends Response {
  * @returns Promise<Response>
  */
 export async function universalFetch(url: string, options: UniversalFetchOptions = {}): Promise<UniversalResponse> {
-  const { timeout = 30000, responseType = 'json', ...fetchOptions } = options;
+  const { timeout = 30000, responseType = 'json', useCorsPlugin = false, ...fetchOptions } = options;
 
   // Tauri 桌面端使用 Tauri HTTP 插件绕过CORS
   if (isTauri()) {
@@ -44,9 +45,7 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
   // 移动端：根据配置决定是否使用 CorsBypass 插件
   // 插件现已支持流式响应！
   if (Capacitor.isNativePlatform()) {
-    // 检查是否明确要求使用 CORS 插件（从 options 中获取）
-    const useCorsPlugin = (fetchOptions as any).useCorsPlugin === true;
-    
+    // 使用从 options 中提取的 useCorsPlugin 参数
     if (useCorsPlugin) {
       console.log('[Universal Fetch] 移动端使用 CorsBypass 插件（支持流式输出）:', url);
       

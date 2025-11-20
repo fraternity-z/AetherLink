@@ -7,6 +7,8 @@ import type { Model } from '../../types';
 import { isTauri } from '../../utils/platformDetection';
 import { Capacitor } from '@capacitor/core';
 import { universalFetch } from '../../utils/universalFetch';
+import store from '../../store';
+import type { ModelProvider } from '../../config/defaultModels';
 
 /**
  * 检查是否需要使用代理
@@ -91,20 +93,32 @@ export function createAISDKClient(model: Model) {
     const isCapacitorNative = Capacitor?.isNativePlatform?.();
     const isWeb = !isTauriEnv && !isCapacitorNative;
     
+    // 获取 useCorsPlugin 配置：优先使用 model 级别的配置，如果未定义则从 provider 级别获取
+    let useCorsPlugin = model.useCorsPlugin;
+    if (useCorsPlugin === undefined && model.provider) {
+      // 从 Redux store 中查找对应的 Provider 配置
+      const state = store.getState();
+      const provider = state.settings.providers?.find((p: ModelProvider) => p.id === model.provider);
+      if (provider) {
+        useCorsPlugin = provider.useCorsPlugin;
+        console.log(`[AI SDK createClient] 从 Provider "${provider.name}" 继承 useCorsPlugin: ${useCorsPlugin}`);
+      }
+    }
+    
     if (isWeb) {
       // 只有 Web 端使用代理服务器
       fetchFn = createProxyFetch();
       console.log(`[AI SDK createClient] Web 端使用代理服务器 (http://localhost:8888/proxy)`);
-    } else if (isCapacitorNative && model.useCorsPlugin) {
+    } else if (isCapacitorNative && useCorsPlugin) {
       // 移动端：如果开启了 CORS 插件，使用 universalFetch
-      console.log(`[AI SDK createClient] 移动端使用 CorsBypass 插件`);
+      console.log(`[AI SDK createClient] 移动端使用 CorsBypass 插件 (useCorsPlugin=${useCorsPlugin})`);
       fetchFn = async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
         // 显式传递 useCorsPlugin: true
-        return universalFetch(url, { ...init, useCorsPlugin: true } as any);
+        return universalFetch(url, { ...init, useCorsPlugin: true });
       };
     } else {
-      console.log(`[AI SDK createClient] 非 Web 端：${isTauriEnv ? 'Tauri' : 'Capacitor Native'} 不使用代理服务器`);
+      console.log(`[AI SDK createClient] 非 Web 端：${isTauriEnv ? 'Tauri' : 'Capacitor Native'}，useCorsPlugin=${useCorsPlugin}，使用标准 fetch`);
     }
 
     // 创建AI SDK OpenAI客户端
