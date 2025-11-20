@@ -173,7 +173,7 @@ const MotionSidebar = React.memo(function MotionSidebar({
     // 打开侧边栏（右滑）
     () => {
       console.log('📱 右滑手势触发 - 打开侧边栏');
-      setSwipeProgress(0); // 重置进度
+      // 不立即重置进度，让动画完成后再重置
       if (onMobileToggleRef.current) {
         onMobileToggleRef.current();
       } else {
@@ -183,7 +183,7 @@ const MotionSidebar = React.memo(function MotionSidebar({
     // 关闭侧边栏（左滑）
     () => {
       console.log('📱 左滑手势触发 - 关闭侧边栏');
-      setSwipeProgress(0); // 重置进度
+      // 不立即重置进度，让动画完成后再重置
       handleClose();
     },
     isSmallScreen && !finalOpen, // 只在移动端且侧边栏关闭时启用右滑打开
@@ -195,6 +195,17 @@ const MotionSidebar = React.memo(function MotionSidebar({
       }
     }
   );
+
+  // 🎯 当侧边栏完全打开后，延迟重置滑动进度，避免抖动
+  useEffect(() => {
+    if (finalOpen && swipeProgress > 0) {
+      // 等待过渡动画完成后再重置
+      const timer = setTimeout(() => {
+        setSwipeProgress(0);
+      }, 300); // 稍微长于 transition 时间（250ms）
+      return () => clearTimeout(timer);
+    }
+  }, [finalOpen, swipeProgress]);
 
 
   // 优化：减少 drawer 的依赖项，避免频繁重新渲染
