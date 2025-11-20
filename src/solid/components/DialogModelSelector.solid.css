@@ -108,6 +108,13 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: smooth;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch; /* 移动端流畅滚动 */
+}
+
+.solid-tabs-container:active {
+  cursor: grabbing;
 }
 
 .solid-tabs-container::-webkit-scrollbar {

@@ -28,6 +28,9 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
   const [activeTab, setActiveTab] = createSignal<string>('all');
   const [showLeftArrow, setShowLeftArrow] = createSignal(false);
   const [showRightArrow, setShowRightArrow] = createSignal(false);
+  const [isDragging, setIsDragging] = createSignal(false);
+  const [startX, setStartX] = createSignal(0);
+  const [scrollLeftStart, setScrollLeftStart] = createSignal(0);
   let tabsContainerRef: HTMLDivElement | undefined;
 
   // 提供商名称映射
@@ -146,6 +149,53 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
     setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 1);
   };
 
+  // 鼠标滚轮横向滚动
+  const handleWheel = (e: WheelEvent) => {
+    if (!tabsContainerRef) return;
+    
+    // 阻止默认的垂直滚动
+    e.preventDefault();
+    
+    // 将垂直滚动转换为横向滚动
+    tabsContainerRef.scrollLeft += e.deltaY;
+    
+    // 更新箭头显示状态
+    updateScrollButtons();
+  };
+
+  // 鼠标拖拽滚动
+  const handleMouseDown = (e: MouseEvent) => {
+    if (!tabsContainerRef) return;
+    setIsDragging(true);
+    setStartX(e.pageX - tabsContainerRef.offsetLeft);
+    setScrollLeftStart(tabsContainerRef.scrollLeft);
+    tabsContainerRef.style.cursor = 'grabbing';
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging() || !tabsContainerRef) return;
+    e.preventDefault();
+    const x = e.pageX - tabsContainerRef.offsetLeft;
+    const walk = (x - startX()) * 1.5; // 滚动速度倍数
+    tabsContainerRef.scrollLeft = scrollLeftStart() - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (tabsContainerRef) {
+      tabsContainerRef.style.cursor = 'grab';
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging()) {
+      setIsDragging(false);
+      if (tabsContainerRef) {
+        tabsContainerRef.style.cursor = 'grab';
+      }
+    }
+  };
+
   // 滚动标签页
   const scrollTabs = (direction: 'left' | 'right') => {
     if (!tabsContainerRef) return;
@@ -220,10 +270,15 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
                 </button>
               </Show>
               
-              <div 
+              <div
                 class="solid-tabs-container"
                 ref={tabsContainerRef}
                 onScroll={updateScrollButtons}
+                onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
               >
                 <div class="solid-tabs">
                 <button

@@ -9,6 +9,7 @@ import {
 import { X as CloseIcon } from 'lucide-react';
 import SidebarTabs from './SidebarTabs';
 import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
+import { useSwipeGesture } from '../../hooks/useSwipeGesture';
 import { useAppSelector } from '../../shared/store';
 import { Haptics } from '../../shared/utils/hapticFeedback';
 
@@ -164,7 +165,60 @@ const MotionSidebar = React.memo(function MotionSidebar({
     handleClose // 使用统一的关闭处理函数
   );
 
+  // 🎯 拖拽进度状态（用于跟随手指移动）
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
 
+  // 🎯 使用新的手势系统
+  const { isDragging } = useSwipeGesture(
+    finalOpen,
+    {
+      onDragStart: () => {
+        console.log('🎯 [Gesture] 开始拖拽');
+        // 触发触觉反馈
+        if (hapticSettings?.enabled && hapticSettings?.enableOnSidebar) {
+          Haptics.light();
+        }
+      },
+      onDragMove: (offset: number, progress: number) => {
+        console.log('🎯 [Gesture] 拖拽中', { offset, progress: progress.toFixed(2) });
+        // 更新拖拽进度，实现跟随效果
+        setDragProgress(progress);
+      },
+      onDragEnd: (shouldOpen: boolean) => {
+        console.log('🎯 [Gesture] 拖拽结束', { shouldOpen });
+        // 清除拖拽进度
+        setDragProgress(null);
+        
+        // 根据结果打开或关闭侧边栏
+        if (shouldOpen !== finalOpen) {
+          if (isSmallScreen) {
+            onMobileToggleRef.current?.();
+          } else {
+            onDesktopToggleRef.current?.();
+          }
+        }
+        
+        // ✅ 触发触觉反馈（使用中等强度）
+        if (hapticSettings?.enabled && hapticSettings?.enableOnSidebar) {
+          Haptics.medium();
+        }
+      },
+      onCancel: () => {
+        console.log('🎯 [Gesture] 手势取消');
+        // 清除拖拽进度
+        setDragProgress(null);
+      },
+    },
+    {
+      edgeWidth: 30,
+      minSwipeDistance: 50,
+      minSwipeVelocity: 0.3,
+      hysteresis: 0.52,
+      drawerWidth: drawerWidth,
+      enabled: isSmallScreen, // 只在移动端启用
+      debug: true, // 开发时启用调试
+    }
+  );
 
   // 优化：减少 drawer 的依赖项，避免频繁重新渲染
   const drawer = useMemo(() => (
@@ -236,92 +290,60 @@ const MotionSidebar = React.memo(function MotionSidebar({
     </Box>
   ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle, onDesktopToggle]);
 
-  if (isSmallScreen) {
-    // 🚀 移动端：高性能Drawer + 简化手势支持
-    return (
-      <>
-        {/* 🚀 高性能边缘滑动区域 - 替代SwipeableDrawer */}
-        {!finalOpen && (
-          <Box
-            sx={{
-              position: 'fixed',
-              left: 0,
-              top: 0,
-              width: 30, // 30px触发区域，与原SwipeableDrawer一致
-              height: '100vh',
-              zIndex: 1300,
-              backgroundColor: 'transparent',
-              // 🔧 添加视觉提示
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 3,
-                height: 40,
-                backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                borderRadius: '0 3px 3px 0',
-                opacity: 0,
-                transition: 'opacity 0.3s ease',
-              },
-              '&:active::after': {
-                opacity: 1,
-              }
-            }}
-            onTouchStart={(e) => {
-              // 🚀 优化的手势检测 - 比SwipeableDrawer更轻量
-              const touch = e.touches[0];
-              if (touch.clientX < 30) {
-                console.log('📱 移动端边缘滑动触发');
-                if (onMobileToggleRef.current) {
-                  onMobileToggleRef.current();
-                } else {
-                  setShowSidebar(true);
-                }
-              }
-            }}
-          />
-        )}
+  // 🎯 计算实际的 transform 值（考虑拖拽进度）
+  const getDrawerTransform = useCallback(() => {
+    if (dragProgress !== null) {
+      // 拖拽中：根据进度计算位置
+      const offset = -drawerWidth * (1 - dragProgress);
+      return `translateX(${offset}px)`;
+    }
+    // 非拖拽状态：根据打开/关闭状态
+    return finalOpen ? 'translateX(0)' : `translateX(-${drawerWidth}px)`;
+  }, [dragProgress, finalOpen, drawerWidth]);
 
-        <Drawer
-          variant="temporary"
-          anchor="left"
-          open={finalOpen}
-          onClose={handleClose}
-          ModalProps={{
-            keepMounted: true, // 保持DOM挂载，提升性能
-            disablePortal: false,
-            // 🔧 优化背景遮罩性能
-            BackdropProps: {
-              sx: {
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                // 🚀 使用GPU加速的opacity动画
-                transition: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-              }
-            },
-            // 🔧 移动端性能优化
-            disableScrollLock: true, // 避免滚动锁定开销
-            disableEnforceFocus: true, // 减少焦点管理开销
-            disableAutoFocus: true, // 避免自动聚焦开销
-          }}
-          sx={{
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              borderRadius: '0 16px 16px 0',
-              boxShadow: theme.shadows[16],
-              // 🚀 关键优化：使用transform而不是默认动画
-              transform: finalOpen ? 'translateX(0)' : `translateX(-${drawerWidth}px)`,
-              transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-              // 🔧 移动端优化
-              willChange: 'transform', // 提示浏览器优化
-              backfaceVisibility: 'hidden', // 避免闪烁
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </>
+  if (isSmallScreen) {
+    // 🚀 移动端：高性能Drawer + 完整手势支持
+    return (
+      <Drawer
+        variant="temporary"
+        anchor="left"
+        open={finalOpen || isDragging} // 拖拽时也保持打开
+        onClose={handleClose}
+        ModalProps={{
+          keepMounted: true, // 保持DOM挂载，提升性能
+          disablePortal: false,
+          // 🔧 优化背景遮罩性能
+          BackdropProps: {
+            sx: {
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              // 拖拽时根据进度调整透明度
+              opacity: dragProgress !== null ? dragProgress * 0.5 : (finalOpen ? 0.5 : 0),
+              // ✅ 改为线性过渡，更丝滑
+              transition: dragProgress !== null ? 'none' : 'opacity 200ms linear',
+            }
+          },
+          // 🔧 移动端性能优化
+          disableScrollLock: true, // 避免滚动锁定开销
+          disableEnforceFocus: true, // 减少焦点管理开销
+          disableAutoFocus: true, // 避免自动聚焦开销
+        }}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            borderRadius: '0 16px 16px 0',
+            boxShadow: theme.shadows[16],
+            // 🚀 关键优化：使用transform实现拖拽跟随
+            transform: getDrawerTransform(),
+            // ✅ 拖拽时禁用过渡，非拖拽时使用线性过渡（更丝滑）
+            transition: dragProgress !== null ? 'none' : 'transform 200ms linear',
+            // 🔧 移动端优化
+            willChange: 'transform', // 提示浏览器优化
+            backfaceVisibility: 'hidden', // 避免闪烁
+          },
+        }}
+      >
+        {drawer}
+      </Drawer>
     );
   }
 

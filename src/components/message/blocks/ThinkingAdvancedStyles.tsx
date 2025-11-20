@@ -103,13 +103,6 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
           }
         }, 50);
       }
-
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-      };
     } else if (!isThinking) {
       // 思考完成，清除定时器并显示完整内容
       if (timerRef.current) {
@@ -120,6 +113,14 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
       lastContentRef.current = '';
       onSetStreamText(removeTrailingDoubleSpaces(content));
     }
+
+    // 始终返回清理函数
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [isThinking, content, onSetStreamText]);
 
   return (
@@ -298,6 +299,7 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
             <IconButton
               onClick={() => onSetSidebarOpen(false)}
               sx={{ p: { xs: 1.5, sm: 1 } }}
+              aria-label={t('settings.appearance.thinkingProcess.preview.texts.close')}
             >
               <X size={20} />
             </IconButton>
@@ -319,6 +321,7 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
               onClick={onCopy}
               color={copied ? "success" : "default"}
               sx={{ p: { xs: 1, sm: 0.5 } }}
+              aria-label={copied ? t('settings.appearance.thinkingProcess.preview.texts.copied') : t('settings.appearance.thinkingProcess.preview.texts.copy')}
             >
               <Copy size={16} />
             </IconButton>
@@ -378,13 +381,11 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setMousePosition({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
+    // 直接保存客户端坐标
+    setMousePosition({
+      x: e.clientX,
+      y: e.clientY
+    });
   }, []);
 
   const handleMouseEnter = React.useCallback(() => {
@@ -447,6 +448,7 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
               transition: 'all 0.2s ease',
               '&:hover': { transform: 'scale(1.1)' }
             }}
+            aria-label={copied ? t('settings.appearance.thinkingProcess.preview.texts.copied') : t('settings.appearance.thinkingProcess.preview.texts.copy')}
           >
             <Copy size={16} />
           </IconButton>
@@ -480,8 +482,8 @@ const FloatingRenderer: React.FC<FloatingRendererProps> = React.memo(({
         <Box
           sx={{
             position: 'fixed',
-            left: mousePosition.x + (containerRef.current?.getBoundingClientRect().left || 0) + 20,
-            top: mousePosition.y + (containerRef.current?.getBoundingClientRect().top || 0) - 10,
+            left: mousePosition.x + 20,  // 移除重复的 getBoundingClientRect
+            top: mousePosition.y - 10,   // 移除重复的 getBoundingClientRect
             maxWidth: 350,
             backgroundColor: 'var(--theme-bg-elevated)',
             backdropFilter: 'blur(12px)',
@@ -637,6 +639,7 @@ const TerminalRenderer: React.FC<TerminalRendererProps> = React.memo(({
                 onCopy(e);
               }}
               sx={{ color: copied ? theme.palette.success.main : '#ccc' }}
+              aria-label={copied ? t('settings.appearance.thinkingProcess.preview.texts.copied') : t('settings.appearance.thinkingProcess.preview.texts.copy')}
             >
               <Copy size={14} />
             </IconButton>
@@ -804,7 +807,7 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
   const { t } = useTranslation();
   const theme = useTheme();
 
-  const extractKeySteps = (text: string) => {
+  const extractKeySteps = React.useCallback((text: string) => {
     if (!text || text.trim() === '') return [];
     const lines = text.split('\n').filter(line => line.trim());
     const keySteps: string[] = [];
@@ -824,9 +827,9 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
       return lines.slice(0, Math.min(lines.length, 4));
     }
     return keySteps;
-  };
+  }, []);
 
-  const steps = extractKeySteps(content);
+  const steps = React.useMemo(() => extractKeySteps(content), [content, extractKeySteps]);
   const hasSteps = steps.length > 0;
 
   return (
@@ -851,7 +854,11 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
           sx={{ ml: 1, height: 20 }}
         />
         <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton size="small" onClick={onToggleExpanded}>
+          <IconButton
+            size="small"
+            onClick={onToggleExpanded}
+            aria-label={expanded ? t('settings.appearance.thinkingProcess.preview.texts.collapse') : t('settings.appearance.thinkingProcess.preview.texts.expand')}
+          >
             <ChevronDown
               size={16}
               style={{
@@ -860,7 +867,12 @@ const BreadcrumbRenderer: React.FC<BreadcrumbRendererProps> = React.memo(({
               }}
             />
           </IconButton>
-          <IconButton size="small" onClick={onCopy} color={copied ? "success" : "default"}>
+          <IconButton
+            size="small"
+            onClick={onCopy}
+            color={copied ? "success" : "default"}
+            aria-label={copied ? t('settings.appearance.thinkingProcess.preview.texts.copied') : t('settings.appearance.thinkingProcess.preview.texts.copy')}
+          >
             <Copy size={16} />
           </IconButton>
         </Box>
@@ -1005,11 +1017,11 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
   onSetStreamText
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const formattedThinkingTime = formatThinkingTimeSeconds(thinkingTime).toFixed(1);
 
   // 波浪形思维流动可视化
   const renderWaveStyle = () => {
-    const { t } = useTranslation();
     return (
     <Box sx={{ mb: 2, position: 'relative' }}>
       <Box sx={{
@@ -1045,7 +1057,11 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
             {isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingWave') : t('settings.appearance.thinkingProcess.preview.texts.thinkingWaveComplete')} ({formattedThinkingTime}s)
           </Typography>
           <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-            <IconButton size="small" onClick={onToggleExpanded}>
+            <IconButton
+              size="small"
+              onClick={onToggleExpanded}
+              aria-label={expanded ? t('settings.appearance.thinkingProcess.preview.texts.collapse') : t('settings.appearance.thinkingProcess.preview.texts.expand')}
+            >
               <ChevronDown
                 size={16}
                 style={{
@@ -1054,7 +1070,12 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
                 }}
               />
             </IconButton>
-            <IconButton size="small" onClick={onCopy} color={copied ? "success" : "default"}>
+            <IconButton
+              size="small"
+              onClick={onCopy}
+              color={copied ? "success" : "default"}
+              aria-label={copied ? t('settings.appearance.thinkingProcess.preview.texts.copied') : t('settings.appearance.thinkingProcess.preview.texts.copy')}
+            >
               <Copy size={16} />
             </IconButton>
           </Box>
@@ -1078,7 +1099,6 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
 
   // 全屏半透明覆盖层
   const renderOverlayStyle = () => {
-    const { t } = useTranslation();
     return (
     <Box sx={{ mb: 2 }}>
       <Box

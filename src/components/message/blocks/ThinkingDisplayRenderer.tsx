@@ -58,8 +58,8 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   minWidth: 0,
   boxSizing: 'border-box',
   // 启用硬件加速
-  transform: 'translateZ(0)',
-  willChange: 'background-color, box-shadow'
+  transform: 'translateZ(0)'
+  // 移除 willChange - 只在真正需要时才动态添加
 }));
 
 /**
@@ -76,7 +76,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   streamText,
   sidebarOpen,
   overlayOpen,
-  updateCounter,
+  updateCounter: _updateCounter,
   onToggleExpanded,
   onCopy,
   onSetSidebarOpen,
@@ -88,6 +88,12 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   
   // 格式化思考时间（毫秒转为秒，保留1位小数）
   const formattedThinkingTime = formatThinkingTimeSeconds(thinkingTime).toFixed(1);
+
+  // 辅助函数：处理复制按钮点击，阻止事件冒泡
+  const handleCopyClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCopy(e);
+  };
 
   // 如果设置为隐藏思考过程，则不显示
   if (displayStyle === 'hidden') {
@@ -161,7 +167,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
             size="small"
-            onClick={onCopy}
+            onClick={handleCopyClick}
             sx={{ mr: 1 }}
             color={copied ? "success" : "default"}
           >
@@ -179,7 +185,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
       </Box>
 
       {/* 内容区域 */}
-      <Collapse in={expanded}>
+      <Collapse in={expanded} timeout={0}>
         <Box sx={{
           p: 2,
           width: '100%',
@@ -266,7 +272,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         minWidth: 0,
         boxSizing: 'border-box',
         ...getThinkingScrollbarStyles(theme)
-      }} key={`thinking-content-${updateCounter}`}>
+      }}>
         <Markdown content={content} allowHtml={false} />
       </Box>
     </StyledPaper>
@@ -276,14 +282,11 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
   const renderMinimalStyle = () => (
     <Box sx={{ position: 'relative', display: 'inline-block', mb: 1 }}>
       <Tooltip title={t('settings.appearance.thinkingProcess.preview.texts.thinkingProcessWithTime', { time: formattedThinkingTime })} placement="top">
-        <Box
+        <IconButton
           onClick={onToggleExpanded}
+          size="small"
           sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            cursor: 'pointer',
             p: 0.5,
-            borderRadius: '50%',
             backgroundColor: isThinking ? theme.palette.warning.light : theme.palette.grey[200],
             transition: 'all 0.2s ease',
             '&:hover': {
@@ -311,7 +314,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
               color={isThinking ? theme.palette.warning.contrastText : theme.palette.text.secondary}
             />
           </motion.div>
-        </Box>
+        </IconButton>
       </Tooltip>
       {expanded && (
         <Box sx={{
@@ -403,14 +406,14 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           </Box>
           <IconButton
             size="small"
-            onClick={onCopy}
+            onClick={handleCopyClick}
             sx={{ ml: 1, p: 0.5 }}
             color={copied ? "success" : "default"}
           >
             <Copy size={14} />
           </IconButton>
         </Box>
-        <Collapse in={expanded}>
+        <Collapse in={expanded} timeout={0}>
           <Box sx={{
             mt: 1,
             ...getThinkingScrollbarStyles(theme)
@@ -453,7 +456,8 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         <Box
           sx={{
             width: 2,
-            flex: 1,
+            minHeight: 40,
+            height: expanded ? 'auto' : 40,
             backgroundColor: theme.palette.divider,
             mt: 1
           }}
@@ -489,7 +493,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             </Box>
             <IconButton
               size="small"
-              onClick={onCopy}
+              onClick={handleCopyClick}
               color={copied ? "success" : "default"}
             >
               <Copy size={16} />
@@ -502,7 +506,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
               }}
             />
           </Box>
-          <Collapse in={expanded}>
+          <Collapse in={expanded} timeout={0}>
             <Box sx={{
               pl: 4,
               ...getThinkingScrollbarStyles(theme)
@@ -599,7 +603,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             />
           </Box>
         </Box>
-        <Collapse in={expanded}>
+        <Collapse in={expanded} timeout={0}>
           <Box
             sx={{
               p: 2,

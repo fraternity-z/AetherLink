@@ -332,14 +332,12 @@ async function corsPluginStreamFetch(
 
   // 创建一个 ReadableStream 来模拟标准的流式响应
   let streamId: string;
-  let streamController: ReadableStreamDefaultController<Uint8Array>;
   let responseHeaders: Record<string, string> = {};
   let statusCode = 200;
   let statusText = 'OK';
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      streamController = controller;
 
       try {
         // 设置事件监听器
