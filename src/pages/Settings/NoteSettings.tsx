@@ -32,7 +32,6 @@ import {
   ArrowLeft as ArrowBackIcon,
   FolderOpen as FolderIcon,
   ChevronRight,
-  ChevronDown,
   FileText,
   Folder,
   FolderPlus,
@@ -43,7 +42,8 @@ import {
   MoreVertical,
   Edit2,
   Trash2,
-  UploadCloud
+  UploadCloud,
+  Home
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
@@ -66,8 +66,8 @@ const NoteSettings: React.FC = () => {
   const [sidebarEnabled, setSidebarEnabled] = useState(false);
 
   // 文件管理状态
+  const [currentPath, setCurrentPath] = useState<string>(''); // 当前所在目录
   const [folderCache, setFolderCache] = useState<FolderCache>({});
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(['']));
   const [loadingPaths, setLoadingPaths] = useState<Record<string, boolean>>({});
   const [selectedItem, setSelectedItem] = useState<NoteFile | null>(null);
   const [sortType, setSortType] = useState<'name' | 'date'>('name');
@@ -90,8 +90,8 @@ const NoteSettings: React.FC = () => {
 
   useEffect(() => {
     if (hasStorage) {
-      // 重置展开状态和缓存
-      setExpandedPaths(new Set(['']));
+      // 重置到根目录
+      setCurrentPath('');
       setFolderCache({});
       void loadFolder('');
     } else {
@@ -172,17 +172,31 @@ const NoteSettings: React.FC = () => {
     return path.split('/').slice(0, -1).join('/');
   };
 
-  const handleToggleFolder = async (path: string) => {
-    const nextExpanded = new Set(expandedPaths);
-    if (nextExpanded.has(path)) {
-      nextExpanded.delete(path);
-    } else {
-      nextExpanded.add(path);
-      if (!folderCache[path]) {
-        await loadFolder(path);
-      }
+  // 进入文件夹
+  const handleEnterFolder = async (path: string) => {
+    setCurrentPath(path);
+    if (!folderCache[path]) {
+      await loadFolder(path);
     }
-    setExpandedPaths(nextExpanded);
+  };
+
+  // 返回上级目录
+  const handleGoBack = () => {
+    const parentPath = getParentPath(currentPath);
+    setCurrentPath(parentPath);
+  };
+
+  // 获取面包屑路径数组
+  const getBreadcrumbs = () => {
+    if (!currentPath) return [{ name: '根目录', path: '' }];
+    const parts = currentPath.split('/');
+    const breadcrumbs = [{ name: '根目录', path: '' }];
+    let accPath = '';
+    parts.forEach((part) => {
+      accPath = accPath ? `${accPath}/${part}` : part;
+      breadcrumbs.push({ name: part, path: accPath });
+    });
+    return breadcrumbs;
   };
 
   const openCreateDialog = (type: 'file' | 'folder') => {
@@ -190,11 +204,8 @@ const NoteSettings: React.FC = () => {
       toastManager.warning('请先设置存储目录', '提示');
       return;
     }
-    let targetDir = '';
-    if (selectedItem) {
-      targetDir = selectedItem.isDirectory ? selectedItem.path : getParentPath(selectedItem.path);
-    }
-    setCreateTargetDir(targetDir);
+    // 在当前目录下创建
+    setCreateTargetDir(currentPath);
     setCreateType(type);
     setNewItemName('');
     setCreateDialogOpen(true);
@@ -210,7 +221,7 @@ const NoteSettings: React.FC = () => {
       }
       setCreateDialogOpen(false);
       setNewItemName('');
-      await refreshFolder(createTargetDir);
+      await refreshFolder(currentPath);
       toastManager.success('创建成功', '成功');
     } catch (error) {
       console.error('创建失败:', error);
@@ -268,7 +279,8 @@ const NoteSettings: React.FC = () => {
   const handleFileClick = (item: NoteFile) => {
     setSelectedItem(item);
     if (item.isDirectory) {
-      void handleToggleFolder(item.path);
+      // 进入文件夹
+      void handleEnterFolder(item.path);
     } else {
       // 跳转到编辑器页面
       navigate(`/settings/notes/edit?path=${encodeURIComponent(item.path)}&name=${encodeURIComponent(item.name)}`);
@@ -294,21 +306,17 @@ const NoteSettings: React.FC = () => {
     return result;
   }, [sortType, searchQuery]);
 
-  const renderTree = useCallback((path: string, level: number = 0) => {
-    const items = folderCache[path];
+  // 渲染当前目录的文件列表
+  const renderFileList = useCallback(() => {
+    const items = folderCache[currentPath];
+    
     if (!items) {
-      if (loadingPaths[path]) {
+      if (loadingPaths[currentPath]) {
         return (
-          <ListItem disablePadding sx={{ pl: 2 + level * 2 }}>
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={16} />
-                  <Typography variant="caption">加载中...</Typography>
-                </Box>
-              }
-            />
-          </ListItem>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+            <CircularProgress size={24} />
+            <Typography variant="body2" sx={{ ml: 2 }}>加载中...</Typography>
+          </Box>
         );
       }
       return null;
@@ -316,64 +324,72 @@ const NoteSettings: React.FC = () => {
 
     const itemsToRender = filteredItems(items);
 
-    if (itemsToRender.length === 0 && level === 0 && !searchQuery) {
+    if (itemsToRender.length === 0 && !searchQuery) {
       return (
         <ListItem>
-          <ListItemText primary={<Typography color="text.secondary">暂无笔记</Typography>} />
+          <ListItemText primary={<Typography color="text.secondary">此文件夹为空</Typography>} />
+        </ListItem>
+      );
+    }
+
+    if (itemsToRender.length === 0 && searchQuery) {
+      return (
+        <ListItem>
+          <ListItemText primary={<Typography color="text.secondary">未找到匹配的文件</Typography>} />
         </ListItem>
       );
     }
 
     return itemsToRender.map((item) => {
-      const isExpanded = expandedPaths.has(item.path);
       const isSelected = selectedItem?.path === item.path;
       return (
-        <React.Fragment key={item.path}>
-          <ListItem
-            disablePadding
-            sx={{ display: 'block' }}
-            onContextMenu={(event) => handleMenuOpen(event, item)}
+        <ListItem
+          key={item.path}
+          disablePadding
+          sx={{ display: 'block' }}
+          onContextMenu={(event) => handleMenuOpen(event, item)}
+        >
+          <ListItemButton
+            selected={isSelected}
+            onClick={() => handleFileClick(item)}
+            sx={{
+              pl: 1.5,
+              pr: 1,
+              minHeight: 40,
+              '&.Mui-selected': {
+                bgcolor: 'action.selected',
+              },
+              '&:hover': {
+                bgcolor: 'action.hover',
+              }
+            }}
           >
-            <ListItemButton
-              selected={isSelected}
-              onClick={() => handleFileClick(item)}
-              sx={{
-                pl: 1.5 + level * 2,
-                pr: 1,
-                minHeight: 34,
-                '&.Mui-selected': {
-                  bgcolor: 'action.selected',
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 0.5 }}>
-                <Box sx={{ width: 18, display: 'flex', justifyContent: 'center' }}>
-                  {item.isDirectory && (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
-                </Box>
-                <Box sx={{ color: item.isDirectory ? '#FBC02D' : '#42A5F5', display: 'flex' }}>
-                  {item.isDirectory ? <Folder size={16} /> : <FileText size={16} />}
-                </Box>
-                <ListItemText
-                  primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                  primary={item.name}
-                />
-                <IconButton size="small" onClick={(event) => handleMenuOpen(event, item)}>
-                  <MoreVertical size={14} />
-                </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+              <Box sx={{ color: item.isDirectory ? '#FBC02D' : '#42A5F5', display: 'flex' }}>
+                {item.isDirectory ? <Folder size={18} /> : <FileText size={18} />}
               </Box>
-            </ListItemButton>
-          </ListItem>
-          {item.isDirectory && (
-            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-              <List component="div" disablePadding dense>
-                {renderTree(item.path, level + 1)}
-              </List>
-            </Collapse>
-          )}
-        </React.Fragment>
+              <ListItemText
+                primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                primary={item.name}
+                secondary={item.isDirectory ? undefined : new Date(item.lastModified).toLocaleString('zh-CN')}
+                secondaryTypographyProps={{ variant: 'caption' }}
+              />
+              {item.isDirectory && (
+                <ChevronRight size={16} style={{ opacity: 0.5 }} />
+              )}
+              <IconButton 
+                size="small" 
+                onClick={(event) => handleMenuOpen(event, item)}
+                sx={{ ml: 'auto' }}
+              >
+                <MoreVertical size={14} />
+              </IconButton>
+            </Box>
+          </ListItemButton>
+        </ListItem>
       );
     });
-  }, [expandedPaths, filteredItems, handleFileClick, selectedItem?.path, folderCache, loadingPaths, searchQuery]);
+  }, [currentPath, filteredItems, handleFileClick, selectedItem?.path, folderCache, loadingPaths, searchQuery]);
 
   return (
     <Box
@@ -495,11 +511,48 @@ const NoteSettings: React.FC = () => {
             </Box>
           ) : (
             <>
+              {/* 面包屑导航 */}
+              <Box sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {currentPath && (
+                  <Tooltip title="返回上级">
+                    <IconButton size="small" onClick={handleGoBack}>
+                      <ArrowBackIcon size={16} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', flex: 1 }}>
+                  {getBreadcrumbs().map((crumb, index) => (
+                    <React.Fragment key={crumb.path}>
+                      {index > 0 && <ChevronRight size={14} style={{ opacity: 0.4 }} />}
+                      <Button
+                        size="small"
+                        onClick={() => setCurrentPath(crumb.path)}
+                        sx={{
+                          minWidth: 'auto',
+                          textTransform: 'none',
+                          color: index === getBreadcrumbs().length - 1 ? 'primary.main' : 'text.secondary',
+                          fontWeight: index === getBreadcrumbs().length - 1 ? 600 : 400,
+                          '&:hover': {
+                            bgcolor: 'action.hover'
+                          }
+                        }}
+                        startIcon={index === 0 ? <Home size={14} /> : undefined}
+                      >
+                        {crumb.name}
+                      </Button>
+                    </React.Fragment>
+                  ))}
+                </Box>
+              </Box>
+
+              {/* 文件列表 */}
               <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
                 <List dense disablePadding>
-                  {renderTree('')}
+                  {renderFileList()}
                 </List>
               </Box>
+
+              {/* 拖拽导入区域 */}
               <Box
                 sx={{
                   m: 1.5,

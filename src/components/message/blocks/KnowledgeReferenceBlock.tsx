@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Paper, IconButton, Collapse, Chip } from '@mui/material';
+import { Box, Typography, Paper, IconButton, Chip } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Link as LinkIcon } from 'lucide-react';
 import type { KnowledgeReferenceMessageBlock } from '../../../shared/types/newMessage';
 import { styled } from '@mui/material/styles';
@@ -15,11 +15,10 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   border: `1px solid ${theme.palette.divider}`,
   backgroundColor: 'var(--theme-msg-block-bg)',
   position: 'relative',
-  transition: 'all 0.2s ease-in-out',
+  cursor: 'pointer',
   '&:hover': {
     backgroundColor: 'var(--theme-msg-block-bg-hover)',
     borderColor: theme.palette.primary.main,
-    transform: 'translateY(-1px)',
     boxShadow: theme.shadows[3],
   }
 }));
@@ -57,17 +56,22 @@ const KnowledgeIcon = styled(Box)(({ theme }) => ({
 }));
 
 const ResultItem = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(1.5),
-  padding: theme.spacing(1.5),
+  marginBottom: theme.spacing(1),
+  padding: theme.spacing(1.25),
   backgroundColor: 'var(--theme-msg-block-bg-content)',
   borderRadius: theme.spacing(0.75),
   border: `1px solid ${theme.palette.divider}`,
+  transition: 'background-color 0.15s ease',
+  cursor: 'pointer',
+  '&:hover': {
+    backgroundColor: 'var(--theme-msg-block-bg-hover)'
+  },
   '&:last-child': {
     marginBottom: 0,
   }
 }));
 
-const ScrollableContent = styled(Box)(({ theme }) => ({
+const ScrollableContent = styled(Box)(() => ({
   maxHeight: '120px',
   overflowY: 'auto',
   overflowX: 'hidden',
@@ -91,10 +95,7 @@ const ScrollableContent = styled(Box)(({ theme }) => ({
 
 const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block }) => {
   const [expanded, setExpanded] = useState(false);
-
-  const toggleExpanded = () => {
-    setExpanded(!expanded);
-  };
+  const [activeReference, setActiveReference] = useState<number | null>(null);
 
   const formatSimilarity = (similarity?: number) => {
     if (!similarity) return '匹配度未知';
@@ -103,48 +104,88 @@ const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block
 
   const sourceLabel = block.source || (block.metadata?.fileName || '知识库');
 
-  const handleSourceClick = () => {
-    // 如果有文件ID，可以打开文件
-    if (block.metadata?.fileId) {
+  const handleSourceClick = (fileId?: string) => {
+    const targetFileId = fileId || block.metadata?.fileId;
+    if (targetFileId) {
       // TODO: 实现文件打开功能
-      console.log('打开文件:', block.metadata.fileId);
+      console.log('打开文件:', targetFileId);
     }
   };
 
   // 处理引用角标点击
   const handleReferenceClick = (referenceIndex: number) => {
-    // 如果没有展开，先展开
     if (!expanded) {
       setExpanded(true);
     }
+    setActiveReference(referenceIndex);
 
     // 滚动到对应的引用项
     setTimeout(() => {
       const element = document.getElementById(`reference-${block.id}-${referenceIndex}`);
       if (element) {
         element.scrollIntoView({
-          behavior: 'smooth',
+          behavior: 'auto',
           block: 'center'
         });
 
         // 添加高亮效果
         element.style.backgroundColor = 'rgba(25, 118, 210, 0.1)';
-        element.style.transition = 'background-color 0.3s ease';
 
         setTimeout(() => {
           element.style.backgroundColor = '';
         }, 2000);
       }
-    }, 300); // 等待展开动画完成
+    }, 0);
+  };
+
+  const handleResultToggle = (referenceIndex: number) => {
+    setActiveReference((prev) => (prev === referenceIndex ? null : referenceIndex));
+  };
+
+  const toggleExpanded = () => {
+    setExpanded(!expanded);
+    if (expanded) {
+      setActiveReference(null);
+    }
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // 防止点击列表项时触发
+    if ((e.target as HTMLElement).closest('[data-result-item]')) {
+      return;
+    }
+    // 防止点击按钮时触发
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    toggleExpanded();
   };
 
   // 检查是否是综合引用块
   const isCombined = block.metadata?.isCombined;
   const resultCount = block.metadata?.resultCount || 1;
   const results = block.metadata?.results || [];
+  const singleReferenceIndex = results[0]?.index ?? 1;
+  const displayResults = isCombined
+    ? results
+    : [{
+        index: singleReferenceIndex,
+        content: block.content,
+        similarity: block.similarity,
+        metadata: block.metadata,
+      }];
+
+  const getSummary = (content: string) => {
+    if (!content) return '暂无内容';
+    return content.length > 90 ? `${content.slice(0, 90)}...` : content;
+  };
+
+  const getResultSource = (result: any) => {
+    return result?.metadata?.fileName || result?.source || sourceLabel;
+  };
 
   return (
-    <StyledPaper elevation={0}>
+    <StyledPaper elevation={0} onClick={handleCardClick}>
       {/* 显示来源和相似度 */}
       <HeaderBox>
         <KnowledgeIcon>
@@ -170,7 +211,10 @@ const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block
         <Box flexGrow={1} />
         <IconButton
           size="small"
-          onClick={toggleExpanded}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded();
+          }}
           sx={{
             padding: 0.5,
             '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
@@ -180,56 +224,87 @@ const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block
         </IconButton>
       </HeaderBox>
 
-      {/* 显示内容摘要 */}
       {!expanded && (
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', lineHeight: 1.4 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', lineHeight: 1.4 }}>
           {isCombined
             ? `找到 ${resultCount} 条相关内容，点击展开查看详情`
-            : `${block.content.slice(0, 120)}${block.content.length > 120 ? '...' : ''}`
-          }
+            : `${block.content.slice(0, 120)}${block.content.length > 120 ? '...' : ''}`}
         </Typography>
       )}
 
-      {/* 展开时显示的详细信息 */}
-      <Collapse in={expanded}>
+      {expanded && (
         <Box mt={1.5}>
-          {isCombined ? (
-            // 综合引用块：显示所有结果
-            <Box>
-              {results.map((result: any, index: number) => (
-                <ResultItem
-                  key={index}
-                  id={`reference-${block.id}-${result.index}`}
+        {displayResults.map((result: any, index: number) => {
+          const referenceIndex = typeof result.index === 'number' ? result.index : index + 1;
+          const isActive = activeReference === referenceIndex;
+          const summary = getSummary(result.content || '');
+          const resultSource = getResultSource(result);
+          const similarity = typeof result.similarity === 'number' ? result.similarity : undefined;
+
+          return (
+            <ResultItem
+              key={`reference-${block.id}-${referenceIndex}`}
+              id={`reference-${block.id}-${referenceIndex}`}
+              data-result-item
+              onClick={(e) => {
+                e.stopPropagation();
+                handleResultToggle(referenceIndex);
+              }}
+            >
+              <Box display="flex" alignItems="center" mb={0.75}>
+                <Box
+                  component="span"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReferenceClick(referenceIndex);
+                  }}
+                  data-reference-index={referenceIndex}
+                  sx={{
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'primary.main',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    marginRight: 1,
+                  }}
                 >
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <Box
-                      component="span"
-                      onClick={() => handleReferenceClick(result.index)}
-                      sx={{
-                        cursor: 'pointer',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        backgroundColor: 'primary.main',
-                        color: 'white',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        marginRight: 1,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                          transform: 'scale(1.05)',
-                        }
-                      }}
-                    >
-                      #{result.index}
-                    </Box>
-                    <SimilarityChip
-                      size="small"
-                      color={result.similarity > 0.8 ? "success" : result.similarity > 0.6 ? "warning" : "default"}
-                      label={formatSimilarity(result.similarity)}
-                    />
-                  </Box>
-                  <ScrollableContent>
+                  #{referenceIndex}
+                </Box>
+                <Typography
+                  variant="body2"
+                  color="text.primary"
+                  sx={{ flexGrow: 1, fontWeight: 500, fontSize: '0.875rem' }}
+                >
+                  {summary}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleResultToggle(referenceIndex);
+                  }}
+                >
+                  {isActive ? <ExpandLessIcon size={16} /> : <ExpandMoreIcon size={16} />}
+                </IconButton>
+              </Box>
+
+              <Box display="flex" alignItems="center" gap={1} mb={isActive ? 1 : 0}>
+                {similarity && (
+                  <SimilarityChip
+                    size="small"
+                    color={similarity > 0.8 ? 'success' : similarity > 0.6 ? 'warning' : 'default'}
+                    label={formatSimilarity(similarity)}
+                  />
+                )}
+                <Typography variant="caption" color="text.secondary">
+                  {resultSource}
+                </Typography>
+              </Box>
+
+              {isActive && (
+                <>
+                  <ScrollableContent sx={{ mb: 1 }}>
                     <Typography
                       variant="body2"
                       sx={{
@@ -242,82 +317,47 @@ const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block
                       {result.content}
                     </Typography>
                   </ScrollableContent>
-                </ResultItem>
-              ))}
 
-              {/* 搜索查询信息 */}
-              <Box
-                mt={1.5}
-                p={1}
-                sx={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  borderRadius: 0.5,
-                  border: '1px solid rgba(0, 0, 0, 0.05)'
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                  📁 来源: {sourceLabel}
-                </Typography>
-                {block.metadata?.searchQuery && (
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    🔍 查询: {block.metadata.searchQuery}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          ) : (
-            // 单个引用块：显示完整内容
-            <Box>
-              <ScrollableContent sx={{ mb: 1.5 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: 1.5,
-                    fontSize: '0.875rem'
-                  }}
-                >
-                  {block.content}
-                </Typography>
-              </ScrollableContent>
-
-              <Box
-                p={1}
-                sx={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  borderRadius: 0.5,
-                  border: '1px solid rgba(0, 0, 0, 0.05)'
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                  📁 来源: {sourceLabel}
-                </Typography>
-                {block.metadata?.searchQuery && (
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    🔍 查询: {block.metadata.searchQuery}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          )}
+                  <Box
+                    p={1}
+                    sx={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                      borderRadius: 0.5,
+                      border: '1px solid rgba(0, 0, 0, 0.05)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 1
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                        📁 来源: {resultSource}
+                      </Typography>
+                      {block.metadata?.searchQuery && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          🔍 查询: {block.metadata.searchQuery}
+                        </Typography>
+                      )}
+                    </Box>
+                    {(result?.metadata?.fileId || block.metadata?.fileId) && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSourceClick(result?.metadata?.fileId);
+                        }}
+                      >
+                        <LinkIcon size={16} />
+                      </IconButton>
+                    )}
+                  </Box>
+                </>
+              )}
+            </ResultItem>
+          );
+        })}
         </Box>
-      </Collapse>
-
-      {/* 来源链接 */}
-      {!isCombined && (block.metadata?.fileId || block.metadata?.fileName) && (
-        <IconButton
-          size="small"
-          sx={{
-            position: 'absolute',
-            bottom: 6,
-            right: 6,
-            padding: 0.5,
-            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
-          }}
-          onClick={handleSourceClick}
-        >
-          <LinkIcon fontSize="small" />
-        </IconButton>
       )}
     </StyledPaper>
   );

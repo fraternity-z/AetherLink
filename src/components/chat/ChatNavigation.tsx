@@ -208,7 +208,7 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
       if (now - lastMoveTime.current < 100) return;
       lastMoveTime.current = now;
 
-      const triggerWidth = 100;
+      const triggerWidth = 30;
       const isInTriggerArea = e.clientX > window.innerWidth - triggerWidth;
 
       if (isInTriggerArea && !isNearButtons) {
