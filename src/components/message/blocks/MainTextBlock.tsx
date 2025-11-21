@@ -62,43 +62,29 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
     }
     
     return sortedToolBlocks;
-  }, (left, right) => {
-    // 🔥 自定义比较函数：比较工具块的关键属性，确保更新时能正确重新渲染
-    if (left.length !== right.length) return false;
-    return left.every((leftBlock, index) => {
-      const rightBlock = right[index];
-      if (!rightBlock) return false;
-      
-      // 比较基本属性
-      if (leftBlock?.id !== rightBlock?.id ||
-          leftBlock?.status !== rightBlock?.status ||
-          leftBlock?.content !== rightBlock?.content ||
-          leftBlock?.updatedAt !== rightBlock?.updatedAt) {
-        return false;
-      }
-      
-      // 🔥 关键修复：比较 metadata，确保 MCP 工具响应数据更新时能重新渲染
-      const leftMetadata = leftBlock?.metadata;
-      const rightMetadata = rightBlock?.metadata;
-      if (leftMetadata !== rightMetadata) {
-        // 如果 metadata 对象引用不同，比较关键字段
-        if (JSON.stringify(leftMetadata?.rawMcpToolResponse) !== 
-            JSON.stringify(rightMetadata?.rawMcpToolResponse)) {
-          return false;
-        }
-      }
-      
-      // 🔥 比较 arguments，确保工具调用参数更新时能重新渲染
-      if (JSON.stringify(leftBlock?.arguments) !== JSON.stringify(rightBlock?.arguments)) {
-        return false;
-      }
-      
-      return true;
-    });
   });
 
   // 获取用户输入渲染设置
   const renderUserInputAsMarkdown = useSelector((state: RootState) => state.settings.renderUserInputAsMarkdown);
+
+  // 🔍 性能监控：只在 toolBlocks 真正变化时记录
+  const prevToolBlocksRef = useRef<ToolMessageBlock[]>([]);
+  useEffect(() => {
+    const prev = prevToolBlocksRef.current;
+    if (process.env.NODE_ENV === 'development' && toolBlocks.length > 0) {
+      // 检查是否真的变化了
+      const changed = prev.length !== toolBlocks.length || 
+                     toolBlocks.some((block, i) => 
+                       !prev[i] || 
+                       prev[i].id !== block.id || 
+                       prev[i].status !== block.status
+                     );
+      if (changed) {
+        console.log(`[MainTextBlock] 工具块更新，数量: ${toolBlocks.length}，消息ID: ${messageId}`);
+        prevToolBlocksRef.current = toolBlocks;
+      }
+    }
+  }, [toolBlocks, messageId]);
 
   // 🚀 流式输出节流机制
   const [throttledContent, setThrottledContent] = useState(content);
@@ -208,10 +194,6 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
       // 添加工具块（如果存在）
       if (toolIndex < toolBlocks.length) {
         const toolBlock = toolBlocks[toolIndex];
-        // 只在开发环境输出调试信息
-        if (process.env.NODE_ENV === 'development' && toolIndex === 0) {
-          console.log(`[MainTextBlock] 渲染 ${toolBlocks.length} 个工具块，消息ID: ${messageId}`);
-        }
         parts.push(
           <div key={`tool-${toolBlock.id}`} style={{ margin: '16px 0' }}>
             <ToolBlock block={toolBlock} />

@@ -59,6 +59,19 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     provider: 'AetherAI',
     logoUrl: '',
     tags: ['闹钟', '提醒', '通知', '时间管理', '工具']
+  },
+  {
+    id: 'builtin-metaso-search',
+    name: '@aether/metaso-search',
+    type: 'inMemory',
+    description: '秘塔AI官方API，提供网页搜索和内容阅读功能，返回结构化搜索结果和网页文本内容',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['搜索', 'AI', '阅读器', '网络', '工具'],
+    env: {
+      METASO_API_KEY: ''
+    }
   }
 ];
 

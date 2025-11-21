@@ -38,6 +38,14 @@ const getDefaultProviders = (): WebSearchProviderConfig[] => [
     name: 'Firecrawl (网页抓取)',
     apiHost: 'https://api.firecrawl.dev',
     apiKey: ''
+  },
+  {
+    id: 'cloudflare-ai-search',
+    name: 'Cloudflare AI Search',
+    apiHost: 'https://api.cloudflare.com',
+    apiKey: '',
+    accountId: '',
+    autoragName: ''
   }
 ];
 

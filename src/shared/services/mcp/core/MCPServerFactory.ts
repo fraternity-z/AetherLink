@@ -5,6 +5,7 @@ import { FetchServer } from '../servers/FetchServer';
 import { CalculatorServer } from '../servers/CalculatorServer';
 import { CalendarServer } from '../servers/CalendarServer';
 import { AlarmServer } from '../servers/AlarmServer';
+import { MetasoSearchServer } from '../servers/MetasoSearchServer';
 
 /**
  * 创建内存 MCP 服务器
@@ -32,6 +33,12 @@ export function createInMemoryMCPServer(name: string, args: string[] = [], envs:
 
     case '@aether/alarm': {
       return new AlarmServer().server;
+    }
+
+    case '@aether/metaso-search': {
+      const apiKey = envs.METASO_API_KEY || '';
+      const metasoServer = new MetasoSearchServer(apiKey);
+      return metasoServer.server;
     }
 
     default:

@@ -117,7 +117,7 @@ export interface GeneratedImage {
 }
 
 // 网络搜索提供商类型 - 包含免费和收费API服务
-export type WebSearchProvider = 'bing-free' | 'tavily' | 'exa' | 'bocha' | 'firecrawl' | 'custom';
+export type WebSearchProvider = 'bing-free' | 'tavily' | 'exa' | 'bocha' | 'firecrawl' | 'cloudflare-ai-search' | 'custom';
 
 // 搜索引擎类型 - 用于bing-free提供商
 export type SearchEngine = 'bing' | 'google' | 'baidu' | 'sogou' | 'yandex';
@@ -134,6 +134,9 @@ export interface WebSearchProviderConfig {
   basicAuthPassword?: string;
   contentLimit?: number;
   usingBrowser?: boolean;
+  // Cloudflare AI Search 特定配置
+  accountId?: string;  // Cloudflare Account ID
+  autoragName?: string; // AI Search (AutoRAG) 名称
 }
 
 // 网络搜索设置

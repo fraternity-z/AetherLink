@@ -46,6 +46,11 @@ class EnhancedWebSearchService {
       return true;
     }
 
+    // Cloudflare AI Search 需要 API 密钥、Account ID 和 AutoRAG 名称
+    if (provider.id === 'cloudflare-ai-search') {
+      return !!(provider.apiKey && provider.accountId && provider.autoragName);
+    }
+
     // 检查API密钥
     if (provider.apiKey) {
       return provider.apiKey !== '';
@@ -100,6 +105,8 @@ class EnhancedWebSearchService {
         return await this.bochaSearch(provider, formattedQuery, websearch);
       case 'firecrawl':
         return await this.firecrawlSearch(provider, formattedQuery, websearch);
+      case 'cloudflare-ai-search':
+        return await this.cloudflareAiSearch(provider, formattedQuery, websearch);
       default:
         throw new Error(`不支持的搜索提供商: ${provider.id}`);
     }
@@ -535,9 +542,169 @@ class EnhancedWebSearchService {
     }
   }
 
+  /**
+   * Cloudflare AI Search 搜索实现 - 支持移动端和Web端
+   */
+  private async cloudflareAiSearch(
+    provider: WebSearchProviderConfig,
+    query: string,
+    websearch: any
+  ): Promise<WebSearchProviderResponse> {
+    try {
+      if (!provider.apiKey) {
+        throw new Error('Cloudflare AI Search API密钥未配置');
+      }
 
+      if (!provider.accountId) {
+        throw new Error('Cloudflare Account ID 未配置');
+      }
 
+      if (!provider.autoragName) {
+        throw new Error('Cloudflare AutoRAG 名称未配置');
+      }
 
+      console.log(`[EnhancedWebSearchService] 开始Cloudflare AI Search搜索: ${query}`);
+
+      const requestBody = {
+        query,
+        max_num_results: Math.min(websearch.maxResults || 10, 50),
+        rewrite_query: true, // 启用查询重写以提高检索准确性
+        ranking_options: {
+          score_threshold: websearch.minScore || 0.3
+        },
+        reranking: {
+          enabled: true,
+          model: '@cf/baai/bge-reranker-base'
+        }
+      };
+
+      let response: any;
+      const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${provider.accountId}/autorag/rags/${provider.autoragName}/search`;
+
+      if (Capacitor.isNativePlatform()) {
+        // 移动端使用 CorsBypass 插件直接请求 Cloudflare API
+        console.log('[EnhancedWebSearchService] 移动端使用 CorsBypass 插件请求 Cloudflare AI Search API');
+
+        response = await CorsBypass.request({
+          url: apiUrl,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${provider.apiKey}`
+          },
+          data: requestBody,
+          timeout: 30000,
+          responseType: 'json'
+        });
+
+        if (response.status >= 400) {
+          throw new Error(`Cloudflare AI Search API error: ${response.status}`);
+        }
+
+        // CorsBypass 返回的数据结构
+        const data = response.data;
+
+        // 处理 Cloudflare AI Search 响应
+        if (!data.success) {
+          throw new Error('Cloudflare AI Search API 返回失败状态');
+        }
+
+        const searchResults = data.result?.data || [];
+        const results: WebSearchResult[] = searchResults.map((result: any) => {
+          // 提取内容
+          const contentParts = result.content?.map((c: any) => c.text).filter(Boolean) || [];
+          const snippet = contentParts.join(' ').substring(0, 500);
+
+          // 使用 modified_date 作为时间戳（如果存在）
+          let timestamp = new Date().toISOString();
+          if (result.attributes?.modified_date) {
+            timestamp = new Date(result.attributes.modified_date).toISOString();
+          }
+
+          // 构建标题：优先使用文件名，包含文件夹信息
+          let title = result.filename || '无标题';
+          if (result.attributes?.folder) {
+            title = `${result.attributes.folder}${result.filename || ''}`;
+          }
+
+          return {
+            id: result.file_id || uuidv4(), // 使用官方提供的 file_id
+            title: title,
+            url: result.filename || '', // Cloudflare 返回文件名而非URL
+            snippet: snippet || '无内容',
+            timestamp: timestamp,
+            provider: 'cloudflare-ai-search',
+            score: result.score || 0,
+            content: contentParts.join('\n\n')
+          };
+        });
+
+        console.log(`[EnhancedWebSearchService] Cloudflare AI Search搜索完成，找到 ${results.length} 个结果`);
+        return { results };
+      } else {
+        // Web端使用通用 CORS 代理
+        console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Cloudflare AI Search API');
+        
+        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(apiUrl)}`;
+
+        response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${provider.apiKey}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Cloudflare AI Search API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // 处理 Cloudflare AI Search 响应
+        if (!data.success) {
+          throw new Error('Cloudflare AI Search API 返回失败状态');
+        }
+
+        const searchResults = data.result?.data || [];
+        const results: WebSearchResult[] = searchResults.map((result: any) => {
+          // 提取内容
+          const contentParts = result.content?.map((c: any) => c.text).filter(Boolean) || [];
+          const snippet = contentParts.join(' ').substring(0, 500);
+
+          // 使用 modified_date 作为时间戳（如果存在）
+          let timestamp = new Date().toISOString();
+          if (result.attributes?.modified_date) {
+            timestamp = new Date(result.attributes.modified_date).toISOString();
+          }
+
+          // 构建标题：优先使用文件名，包含文件夹信息
+          let title = result.filename || '无标题';
+          if (result.attributes?.folder) {
+            title = `${result.attributes.folder}${result.filename || ''}`;
+          }
+
+          return {
+            id: result.file_id || uuidv4(), // 使用官方提供的 file_id
+            title: title,
+            url: result.filename || '', // Cloudflare 返回文件名而非URL
+            snippet: snippet || '无内容',
+            timestamp: timestamp,
+            provider: 'cloudflare-ai-search',
+            score: result.score || 0,
+            content: contentParts.join('\n\n')
+          };
+        });
+
+        console.log(`[EnhancedWebSearchService] Cloudflare AI Search搜索完成，找到 ${results.length} 个结果`);
+        return { results };
+      }
+    } catch (error: any) {
+      console.error('[EnhancedWebSearchService] Cloudflare AI Search搜索失败:', error);
+      throw new Error(`Cloudflare AI Search搜索失败: ${error.message}`);
+    }
+  }
 
   /**
    * 使用SEARCHING状态执行搜索

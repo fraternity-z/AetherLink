@@ -512,7 +512,9 @@ const CodeBlock = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const ResultBlock = styled(Box)<{ hasError?: boolean }>(({ theme, hasError }) => ({
+const ResultBlock = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'hasError'
+})<{ hasError?: boolean }>(({ theme, hasError }) => ({
   maxHeight: '300px',
   overflowY: 'auto',
   border: `1px solid ${hasError ? alpha(theme.palette.error.main, 0.3) : alpha(theme.palette.divider, 0.5)}`,

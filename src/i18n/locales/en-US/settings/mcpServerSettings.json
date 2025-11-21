@@ -91,6 +91,16 @@
             "统计": "Stats",
             "工具": "Tool"
           }
+        },
+        "@aether/metaso-search": {
+          "description": "Metaso AI Official API. Provides web search and content reader. Search returns structured results, reader extracts webpage text. Requires METASO_API_KEY from official platform",
+          "tags": {
+            "搜索": "Search",
+            "AI": "AI",
+            "阅读器": "Reader",
+            "网络": "Web",
+            "工具": "Tool"
+          }
         }
       }
     },

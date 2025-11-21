@@ -48,6 +48,7 @@ import {
   toggleCustomProviderEnabled,
   toggleSearchWithTime,
   setExcludeDomains,
+  updateProvider,
 
   // 🚀 新增：Tavily最佳实践相关actions
   setSearchDepth,
@@ -220,6 +221,21 @@ const WebSearchSettings: React.FC = () => {
     dispatch(setNewsSearchDays(newValue as number));
   };
 
+  // 🚀 新增：Cloudflare AI Search 配置处理函数
+  const handleCloudflareFieldChange = (field: 'accountId' | 'autoragName', value: string) => {
+    const currentProvider = webSearchSettings.providers.find(p => p.id === 'cloudflare-ai-search');
+    if (currentProvider) {
+      dispatch(updateProvider({
+        ...currentProvider,
+        [field]: value
+      }));
+    }
+  };
+
+  const getCurrentCloudflareProvider = () => {
+    return webSearchSettings.providers.find(p => p.id === 'cloudflare-ai-search');
+  };
+
   // 渲染主要内容
   return (
     <SafeAreaContainer>
@@ -270,6 +286,7 @@ const WebSearchSettings: React.FC = () => {
                   <MenuItem value="exa">{t('settings.webSearch.basic.provider.options.exa')}</MenuItem>
                   <MenuItem value="bocha">{t('settings.webSearch.basic.provider.options.bocha')}</MenuItem>
                   <MenuItem value="firecrawl">{t('settings.webSearch.basic.provider.options.firecrawl')}</MenuItem>
+                  <MenuItem value="cloudflare-ai-search">Cloudflare AI Search</MenuItem>
                   <MenuItem value="custom">{t('settings.webSearch.basic.provider.options.custom')}</MenuItem>
                 </Select>
               </FormControl>
@@ -424,6 +441,54 @@ const WebSearchSettings: React.FC = () => {
                       {t('settings.webSearch.basic.alerts.firecrawl.linkText')}
                     </Alert>
                   </Box>
+                )}
+
+                {webSearchSettings.provider === 'cloudflare-ai-search' && (
+                  <>
+                    <Box sx={{ px: 2, pb: 2, pt: 0 }}>
+                      <Alert 
+                        severity="info" 
+                        icon={false}
+                        sx={{ 
+                          py: 1,
+                          fontSize: '0.875rem',
+                          borderLeft: 3,
+                          borderColor: 'info.main',
+                          bgcolor: (theme) => alpha(theme.palette.info.main, 0.08)
+                        }}
+                      >
+                        获取 API Token 和配置：访问{' '}
+                        <a href="https://developers.cloudflare.com/ai-search/get-started/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', fontWeight: 600 }}>
+                          Cloudflare AI Search 文档
+                        </a>{' '}
+                        了解如何创建 AI Search 并获取所需的 Account ID 和 AutoRAG 名称。
+                      </Alert>
+                    </Box>
+
+                    <Row>
+                      <Typography sx={{ flex: 1 }}>Account ID</Typography>
+                      <TextField
+                        size="small"
+                        value={getCurrentCloudflareProvider()?.accountId || ''}
+                        onChange={(e) => handleCloudflareFieldChange('accountId', e.target.value)}
+                        disabled={!webSearchSettings.enabled}
+                        placeholder="输入 Cloudflare Account ID"
+                        sx={{ minWidth: 220 }}
+                      />
+                    </Row>
+
+                    <Row>
+                      <Typography sx={{ flex: 1 }}>AutoRAG Name</Typography>
+                      <TextField
+                        size="small"
+                        value={getCurrentCloudflareProvider()?.autoragName || ''}
+                        onChange={(e) => handleCloudflareFieldChange('autoragName', e.target.value)}
+                        disabled={!webSearchSettings.enabled}
+                        placeholder="输入 AutoRAG 名称"
+                        sx={{ minWidth: 220 }}
+                      />
+                    </Row>
+                  </>
                 )}
               </>
             )}
