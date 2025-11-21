@@ -12,7 +12,7 @@ import { universalFetch } from '../../../utils/universalFetch';
 // 工具定义
 const METASO_SEARCH_TOOL: Tool = {
   name: 'metaso_search',
-  description: '使用秘塔AI进行全网搜索，返回相关网页结果',
+  description: '使用秘塔AI进行全网搜索，返回相关网页结果。支持多种召回和内容提取选项',
   inputSchema: {
     type: 'object',
     properties: {
@@ -22,13 +22,28 @@ const METASO_SEARCH_TOOL: Tool = {
       },
       size: {
         type: 'number',
-        description: '返回结果数量，默认10',
+        description: '返回结果数量，默认10，建议范围5-20',
         default: 10
+      },
+      page: {
+        type: 'number',
+        description: '页码，从1开始，用于分页获取更多结果',
+        default: 1
       },
       includeSummary: {
         type: 'boolean',
-        description: '是否包含摘要',
+        description: '是否包含AI生成的摘要（召回增强），推荐开启以获得更丰富的上下文',
         default: true
+      },
+      includeRawContent: {
+        type: 'boolean',
+        description: '是否抓取所有来源网页的原文内容（完整文本），开启后返回完整网页内容但响应较慢',
+        default: false
+      },
+      conciseSnippet: {
+        type: 'boolean',
+        description: '是否返回精简的原文匹配信息（代码片段），开启后只返回关键匹配部分',
+        default: false
       }
     },
     required: ['query']
@@ -51,6 +66,38 @@ const METASO_READER_TOOL: Tool = {
   }
 };
 
+const METASO_CHAT_TOOL: Tool = {
+  name: 'metaso_chat',
+  description: '使用秘塔AI进行智能对话，基于实时搜索提供带引用来源的回答。支持多种知识范围和模型',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: '用户的问题或查询内容'
+      },
+      scope: {
+        type: 'string',
+        enum: ['webpage', 'document', 'scholar', 'video', 'podcast'],
+        description: '知识范围：webpage=网页(默认)、document=文库、scholar=学术、video=视频、podcast=播客',
+        default: 'webpage'
+      },
+      model: {
+        type: 'string',
+        enum: ['fast', 'fast_thinking', 'ds-r1'],
+        description: '模型选择：fast=快速模型(默认)、fast_thinking=极速思考、ds-r1=深度推理',
+        default: 'fast'
+      },
+      stream: {
+        type: 'boolean',
+        description: '是否使用流式响应，MCP中建议false以获得完整结果',
+        default: false
+      }
+    },
+    required: ['query']
+  }
+};
+
 /**
  * Metaso Search Server 类
  */
@@ -59,11 +106,13 @@ export class MetasoSearchServer {
   private apiKey: string;
   private searchEndpoint: string;
   private readerEndpoint: string;
+  private chatEndpoint: string;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || '';
     this.searchEndpoint = 'https://metaso.cn/api/v1/search';
     this.readerEndpoint = 'https://metaso.cn/api/v1/reader';
+    this.chatEndpoint = 'https://metaso.cn/api/v1/chat/completions';
 
     this.server = new Server(
       {
@@ -91,7 +140,7 @@ export class MetasoSearchServer {
     // 列出可用工具
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
-        tools: [METASO_SEARCH_TOOL, METASO_READER_TOOL]
+        tools: [METASO_SEARCH_TOOL, METASO_READER_TOOL, METASO_CHAT_TOOL]
       };
     });
 
@@ -100,9 +149,23 @@ export class MetasoSearchServer {
       const { name, arguments: args } = request.params;
 
       if (name === 'metaso_search') {
-        return this.search(args as { query: string; size?: number; includeSummary?: boolean });
+        return this.search(args as { 
+          query: string; 
+          size?: number; 
+          page?: number;
+          includeSummary?: boolean;
+          includeRawContent?: boolean;
+          conciseSnippet?: boolean;
+        });
       } else if (name === 'metaso_reader') {
         return this.reader(args as { url: string });
+      } else if (name === 'metaso_chat') {
+        return this.chat(args as {
+          query: string;
+          scope?: string;
+          model?: string;
+          stream?: boolean;
+        });
       }
 
       throw new Error(`未知的工具: ${name}`);
@@ -113,7 +176,14 @@ export class MetasoSearchServer {
    * 执行搜索
    */
   private async search(
-    params: { query: string; size?: number; includeSummary?: boolean }
+    params: { 
+      query: string; 
+      size?: number;
+      page?: number;
+      includeSummary?: boolean;
+      includeRawContent?: boolean;
+      conciseSnippet?: boolean;
+    }
   ): Promise<{
     content: Array<{ type: string; text: string }>;
     isError?: boolean;
@@ -126,15 +196,26 @@ export class MetasoSearchServer {
         );
       }
 
-      // 构建请求体
+      // 构建请求体（所有参数都可由AI控制）
       const requestBody = {
         q: params.query,
         scope: 'webpage',
-        includeSummary: params.includeSummary !== false,
         size: String(params.size || 10),
-        includeRawContent: false,
-        conciseSnippet: false
+        page: String(params.page || 1),
+        includeSummary: params.includeSummary !== false,  // 默认开启AI摘要
+        includeRawContent: params.includeRawContent === true,  // 默认关闭完整原文
+        conciseSnippet: params.conciseSnippet === true  // 默认关闭精简片段
       };
+
+      // 记录API调用参数（便于调试）
+      console.log('[Metaso Search] API请求参数:', {
+        query: params.query,
+        size: requestBody.size,
+        page: requestBody.page,
+        includeSummary: requestBody.includeSummary,
+        includeRawContent: requestBody.includeRawContent,
+        conciseSnippet: requestBody.conciseSnippet
+      });
 
       // 构建请求头
       const headers: Record<string, string> = {
@@ -160,17 +241,51 @@ export class MetasoSearchServer {
       // 格式化搜索结果
       const webpages = data.webpages || [];
       const total = data.total || 0;
-      let resultText = `## 秘塔AI搜索结果\n\n**查询**: ${params.query}\n**返回结果数**: ${webpages.length}\n**总匹配数**: ${total}\n**消耗积分**: ${data.credits || 0}\n\n---\n\n`;
+      
+      // 构建头部信息
+      let resultText = `## 秘塔AI搜索结果\n\n`;
+      resultText += `**查询**: ${params.query}\n`;
+      resultText += `**当前页**: ${params.page || 1}\n`;
+      resultText += `**返回结果数**: ${webpages.length}\n`;
+      resultText += `**总匹配数**: ${total}\n`;
+      resultText += `**消耗积分**: ${data.credits || 0}\n`;
+      
+      // 显示启用的增强选项
+      const enabledOptions: string[] = [];
+      if (params.includeSummary !== false) enabledOptions.push('AI摘要');
+      if (params.includeRawContent) enabledOptions.push('完整原文');
+      if (params.conciseSnippet) enabledOptions.push('精简片段');
+      if (enabledOptions.length > 0) {
+        resultText += `**启用选项**: ${enabledOptions.join('、')}\n`;
+      }
+      
+      resultText += `\n---\n\n`;
 
       if (webpages && webpages.length > 0) {
         webpages.forEach((item: any, index: number) => {
           resultText += `### ${index + 1}. ${item.title || '无标题'}\n\n`;
+          
           if (item.link) {
             resultText += `🔗 **链接**: ${item.link}\n\n`;
           }
-          if (item.snippet) {
+          
+          // 精简片段（原文匹配信息）
+          if (item.snippet && params.conciseSnippet) {
+            resultText += `📌 **关键片段**: ${item.snippet}\n\n`;
+          } else if (item.snippet && !params.conciseSnippet) {
             resultText += `📝 **摘要**: ${item.snippet}\n\n`;
           }
+          
+          // AI生成的摘要（召回增强）
+          if (item.summary && params.includeSummary !== false) {
+            resultText += `💡 **AI总结**: ${item.summary}\n\n`;
+          }
+          
+          // 完整原文内容
+          if (item.rawContent && params.includeRawContent) {
+            resultText += `📄 **完整原文**:\n\`\`\`\n${item.rawContent}\n\`\`\`\n\n`;
+          }
+          
           if (item.score) {
             resultText += `⭐ **相关度**: ${item.score}\n\n`;
           }
@@ -178,8 +293,9 @@ export class MetasoSearchServer {
             resultText += `📅 **日期**: ${item.date}\n\n`;
           }
           if (item.authors && item.authors.length > 0) {
-            resultText += `� **作者**: ${item.authors.join(', ')}\n\n`;
+            resultText += `👤 **作者**: ${item.authors.join(', ')}\n\n`;
           }
+          
           resultText += `---\n\n`;
         });
       } else {
@@ -187,6 +303,15 @@ export class MetasoSearchServer {
       }
 
       resultText += `*数据来源: 秘塔AI搜索 (metaso.cn)*`;
+      
+      // 分页提示
+      if (total > webpages.length) {
+        const totalPages = Math.ceil(total / (params.size || 10));
+        const currentPage = params.page || 1;
+        if (currentPage < totalPages) {
+          resultText += `\n\n💡 提示：还有更多结果，可以设置 page=${currentPage + 1} 查看下一页`;
+        }
+      }
 
       return {
         content: [
@@ -281,6 +406,220 @@ ${content}
           {
             type: 'text',
             text: `秘塔AI阅读器失败: ${error instanceof Error ? error.message : '未知错误'}`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * AI智能对话（支持多种知识范围和模型）
+   */
+  private async chat(
+    params: {
+      query: string;
+      scope?: string;
+      model?: string;
+      stream?: boolean;
+    }
+  ): Promise<{
+    content: Array<{ type: string; text: string }>;
+    isError?: boolean;
+  }> {
+    try {
+      // 检查 API Key
+      if (!this.apiKey) {
+        throw new Error(
+          '未配置秘塔AI搜索API Key。请访问秘塔AI开放平台 (https://metaso.cn/open-app) 申请 API Key'
+        );
+      }
+
+      const model = params.model || 'fast';
+      const scope = params.scope || 'webpage';
+      const useStream = params.stream === true;
+
+      // 构建请求体
+      const requestBody = {
+        model,
+        stream: useStream,
+        messages: [
+          {
+            role: 'user',
+            content: params.query
+          }
+        ]
+      };
+
+      // 记录API调用参数
+      console.log('[Metaso Chat] API请求参数:', {
+        query: params.query,
+        model,
+        scope,
+        stream: useStream
+      });
+
+      // 构建请求头
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+
+      // 发送请求
+      const response = await universalFetch(this.chatEndpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`秘塔AI对话请求失败 (${response.status}): ${errorText}`);
+      }
+
+      // MCP中使用非流式，直接获取完整响应
+      if (!useStream) {
+        const data = await response.json();
+        const answer = data.choices?.[0]?.message?.content || '未获取到回答';
+        const citations = data.choices?.[0]?.message?.citations || [];
+        
+        // 格式化结果
+        let resultText = `## 秘塔AI智能回答\n\n`;
+        resultText += `**问题**: ${params.query}\n`;
+        resultText += `**模型**: ${model}\n`;
+        resultText += `**知识范围**: ${scope}\n\n`;
+        resultText += `---\n\n${answer}\n\n`;
+        
+        // 添加引用来源
+        if (citations && citations.length > 0) {
+          resultText += `## 📚 引用来源\n\n`;
+          citations.forEach((cite: any, index: number) => {
+            resultText += `${index + 1}. **${cite.title || '未知标题'}**\n`;
+            if (cite.link) resultText += `   🔗 ${cite.link}\n`;
+            if (cite.date) resultText += `   📅 ${cite.date}\n`;
+            if (cite.authors && cite.authors.length > 0) {
+              resultText += `   👤 ${cite.authors.join(', ')}\n`;
+            }
+            resultText += `\n`;
+          });
+        }
+        
+        resultText += `\n*数据来源: 秘塔AI (metaso.cn)*`;
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: resultText
+            }
+          ]
+        };
+      } else {
+        // 流式响应处理
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('无法获取响应流');
+        }
+
+        const decoder = new TextDecoder();
+        let fullAnswer = '';
+        let citations: any[] = [];
+        let highlights: string[] = [];
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith('data:')) {
+                const jsonStr = trimmedLine.substring(5).trim();
+                if (jsonStr === '[DONE]') {
+                  break;
+                }
+                if (jsonStr) {
+                  try {
+                    const parsed = JSON.parse(jsonStr);
+                    
+                    // 提取内容
+                    const delta = parsed.choices?.[0]?.delta;
+                    if (delta?.content) {
+                      fullAnswer += delta.content;
+                    }
+                    
+                    // 提取引用
+                    if (delta?.citations && delta.citations.length > 0) {
+                      citations = delta.citations;
+                    }
+                    
+                    // 提取高亮
+                    if (delta?.highlights && delta.highlights.length > 0) {
+                      highlights = delta.highlights;
+                    }
+                  } catch (e) {
+                    // 忽略解析错误
+                  }
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        // 格式化流式结果
+        let resultText = `## 秘塔AI智能回答（流式）\n\n`;
+        resultText += `**问题**: ${params.query}\n`;
+        resultText += `**模型**: ${model}\n`;
+        resultText += `**知识范围**: ${scope}\n\n`;
+        resultText += `---\n\n${fullAnswer}\n\n`;
+        
+        // 添加高亮摘要
+        if (highlights.length > 0) {
+          resultText += `## ✨ 关键要点\n\n`;
+          highlights.forEach((highlight, index) => {
+            resultText += `${index + 1}. ${highlight}\n`;
+          });
+          resultText += `\n`;
+        }
+        
+        // 添加引用来源
+        if (citations.length > 0) {
+          resultText += `## 📚 引用来源\n\n`;
+          citations.forEach((cite: any, index: number) => {
+            resultText += `${index + 1}. **${cite.title || '未知标题'}**\n`;
+            if (cite.link) resultText += `   🔗 ${cite.link}\n`;
+            if (cite.date) resultText += `   📅 ${cite.date}\n`;
+            if (cite.authors && cite.authors.length > 0) {
+              resultText += `   👤 ${cite.authors.join(', ')}\n`;
+            }
+            resultText += `\n`;
+          });
+        }
+        
+        resultText += `\n*数据来源: 秘塔AI (metaso.cn)*`;
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: resultText
+            }
+          ]
+        };
+      }
+    } catch (error) {
+      console.error('[Metaso Chat] 对话失败:', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `秘塔AI对话失败: ${error instanceof Error ? error.message : '未知错误'}`
           }
         ],
         isError: true

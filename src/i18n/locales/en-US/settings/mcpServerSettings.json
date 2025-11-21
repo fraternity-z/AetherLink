@@ -93,12 +93,12 @@
           }
         },
         "@aether/metaso-search": {
-          "description": "Metaso AI Official API. Provides web search and content reader. Search returns structured results, reader extracts webpage text. Requires METASO_API_KEY from official platform",
+          "description": "Metaso AI Official API with web search, content reader & AI chat. Support 5 knowledge scopes, 3 AI models, citations & highlights. Requires METASO_API_KEY from official platform",
           "tags": {
             "搜索": "Search",
             "AI": "AI",
+            "对话": "Chat",
             "阅读器": "Reader",
-            "网络": "Web",
             "工具": "Tool"
           }
         }
