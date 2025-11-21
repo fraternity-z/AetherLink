@@ -7,16 +7,13 @@ import { ChunkType } from '../../types/chunk';
 
 // 导入拆分后的处理器
 import {
-  createResponseChunkProcessor,
+  createResponseChunkProcessorV2,
   ToolResponseHandler,
   ComparisonResultHandler,
   KnowledgeSearchHandler,
   ResponseCompletionHandler,
   ResponseErrorHandler
 } from './responseHandlers';
-import { dexieStorage } from '../storage/DexieStorageService';
-import { updateOneBlock, addOneBlock } from '../../store/slices/messageBlocksSlice';
-import { getHighPerformanceUpdateInterval } from '../../utils/performanceSettings';
 
 /**
  * 响应处理器配置类型
@@ -44,15 +41,12 @@ export class ApiError extends Error {
  * 处理API流式响应的接收、更新和完成
  */
 export function createResponseHandler({ messageId, blockId, topicId }: ResponseHandlerConfig) {
-  // 创建各个专门的处理器实例
-  const chunkProcessor = createResponseChunkProcessor(
-    messageId,
-    blockId,
-    store,
-    dexieStorage,
-    { updateOneBlock, addOneBlock, upsertBlockReference: newMessagesActions.upsertBlockReference },
-    getHighPerformanceUpdateInterval() // 根据节流强度设置动态调整
-  );
+  console.log('[ResponseHandler] 使用 BlockManager V2');
+  
+  // 创建块处理器（使用 BlockManager V2）
+  const chunkProcessor = createResponseChunkProcessorV2(messageId, blockId);
+  
+  // 创建其他专门的处理器实例
   const toolHandler = new ToolResponseHandler(messageId);
   const comparisonHandler = new ComparisonResultHandler(messageId);
   const knowledgeHandler = new KnowledgeSearchHandler(messageId);
@@ -215,6 +209,7 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
      */
     cleanup: () => {
       eventCleanupFunctions.forEach(cleanup => cleanup());
+      chunkProcessor.cleanup();
     }
   };
 
