@@ -71,8 +71,8 @@ const MotionSidebar = React.memo(function MotionSidebar({
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md')); // 与ChatPageUI保持一致
   const [showSidebar, setShowSidebar] = useState(!isSmallScreen);
   
-  // 🎯 滑动进度状态 - 用于实时跟随手指移动
-  const [swipeProgress, setSwipeProgress] = useState(0);
+  // 🎯 滑动偏移量状态 - 用于实时跟随手指移动（像素值）
+  const [swipeDeltaX, setSwipeDeltaX] = useState(0);
   
   // 获取触觉反馈设置
   const hapticSettings = useAppSelector((state) => state.settings.hapticFeedback);
@@ -173,7 +173,6 @@ const MotionSidebar = React.memo(function MotionSidebar({
     // 打开侧边栏（右滑）
     () => {
       console.log('📱 右滑手势触发 - 打开侧边栏');
-      // 不立即重置进度，让动画完成后再重置
       if (onMobileToggleRef.current) {
         onMobileToggleRef.current();
       } else {
@@ -183,29 +182,30 @@ const MotionSidebar = React.memo(function MotionSidebar({
     // 关闭侧边栏（左滑）
     () => {
       console.log('📱 左滑手势触发 - 关闭侧边栏');
-      // 不立即重置进度，让动画完成后再重置
       handleClose();
     },
-    isSmallScreen && !finalOpen, // 只在移动端且侧边栏关闭时启用右滑打开
-    // 🎯 滑动进度回调 - 实时更新侧边栏位置
-    (progress, direction) => {
-      if (direction === 'right' && !finalOpen) {
-        console.log('📊 滑动进度:', progress);
-        setSwipeProgress(progress);
+    isSmallScreen, // 移动端始终启用手势
+    // 🎯 滑动进度回调 - 实时更新侧边栏位置（传入实际像素偏移量）
+    (deltaX, direction) => {
+      // 打开状态：支持左滑关闭
+      // 关闭状态：支持右滑打开
+      if ((direction === 'right' && !finalOpen) || (direction === 'left' && finalOpen)) {
+        setSwipeDeltaX(deltaX);
       }
-    }
+    },
+    drawerWidth
   );
 
-  // 🎯 当侧边栏完全打开后，延迟重置滑动进度，避免抖动
+  // 🎯 当侧边栏状态改变时，立即重置滑动偏移量
   useEffect(() => {
-    if (finalOpen && swipeProgress > 0) {
-      // 等待过渡动画完成后再重置
-      const timer = setTimeout(() => {
-        setSwipeProgress(0);
-      }, 300); // 稍微长于 transition 时间（250ms）
-      return () => clearTimeout(timer);
+    if (swipeDeltaX !== 0) {
+      // 使用 requestAnimationFrame 确保在下一帧重置，避免闪烁
+      const rafId = requestAnimationFrame(() => {
+        setSwipeDeltaX(0);
+      });
+      return () => cancelAnimationFrame(rafId);
     }
-  }, [finalOpen, swipeProgress]);
+  }, [finalOpen]);
 
 
   // 优化：减少 drawer 的依赖项，避免频繁重新渲染
@@ -290,7 +290,7 @@ const MotionSidebar = React.memo(function MotionSidebar({
               position: 'fixed',
               left: 0,
               top: 0,
-              width: 30, // 30px触发区域
+              width: 50, // 50px触发区域，更容易触发
               height: '100vh',
               zIndex: 1300,
               backgroundColor: 'transparent',
@@ -302,11 +302,11 @@ const MotionSidebar = React.memo(function MotionSidebar({
                 top: '50%',
                 transform: 'translateY(-50%)',
                 width: 3,
-                height: 40,
-                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                height: 60,
+                backgroundColor: 'rgba(255, 255, 255, 0.4)',
                 borderRadius: '0 3px 3px 0',
                 opacity: 0,
-                transition: 'opacity 0.3s ease',
+                transition: 'opacity 0.2s ease',
               },
               '&:active::after': {
                 opacity: 1,
@@ -315,10 +315,27 @@ const MotionSidebar = React.memo(function MotionSidebar({
           />
         )}
 
+        {/* 🎯 手势覆盖层 - 在侧边栏打开时也能捕获手势 */}
+        {finalOpen && (
+          <Box
+            {...swipeHandlers}
+            sx={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              width: drawerWidth,
+              height: '100vh',
+              zIndex: 1301, // 高于Drawer
+              backgroundColor: 'transparent',
+              pointerEvents: swipeDeltaX !== 0 ? 'auto' : 'none', // 只在滑动时拦截事件
+            }}
+          />
+        )}
+
         <Drawer
           variant="temporary"
           anchor="left"
-          open={finalOpen || swipeProgress > 0}
+          open={finalOpen || swipeDeltaX !== 0}
           onClose={handleClose}
           ModalProps={{
             keepMounted: true, // 保持DOM挂载，提升性能
@@ -326,29 +343,33 @@ const MotionSidebar = React.memo(function MotionSidebar({
             // 🔧 优化背景遮罩性能
             BackdropProps: {
               sx: {
-                backgroundColor: `rgba(0, 0, 0, ${swipeProgress > 0 ? Math.min(0.5, swipeProgress / 100 * 0.5) : 0.5})`,
-                // 🚀 使用GPU加速的opacity动画
-                transition: swipeProgress > 0 ? 'none' : 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+                // 根据滑动偏移量动态计算透明度
+                backgroundColor: swipeDeltaX !== 0
+                  ? `rgba(0, 0, 0, ${Math.min(0.5, Math.max(0, (drawerWidth + swipeDeltaX) / drawerWidth) * 0.5)})`
+                  : 'rgba(0, 0, 0, 0.5)',
+                // 🚀 滑动时禁用过渡，实现即时响应
+                transition: swipeDeltaX !== 0 ? 'none' : 'opacity 225ms cubic-bezier(0.4, 0, 0.2, 1)',
               }
             },
             // 🔧 移动端性能优化
-            disableScrollLock: true, // 避免滚动锁定开销
-            disableEnforceFocus: true, // 减少焦点管理开销
-            disableAutoFocus: true, // 避免自动聚焦开销
+            disableScrollLock: true,
+            disableEnforceFocus: true,
+            disableAutoFocus: true,
           }}
           sx={{
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               borderRadius: '0 16px 16px 0',
               boxShadow: theme.shadows[16],
-              // 🚀 关键优化：根据滑动进度实时更新位置
-              transform: swipeProgress > 0
-                ? `translateX(${-drawerWidth + (drawerWidth * swipeProgress / 100)}px)`
+              // 🚀 关键优化：根据滑动偏移量实时更新位置
+              transform: swipeDeltaX !== 0
+                ? `translateX(${finalOpen ? swipeDeltaX : -drawerWidth + swipeDeltaX}px)`
                 : (finalOpen ? 'translateX(0)' : `translateX(-${drawerWidth}px)`),
-              transition: swipeProgress > 0 ? 'none' : 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-              // 🔧 移动端优化
-              willChange: 'transform', // 提示浏览器优化
-              backfaceVisibility: 'hidden', // 避免闪烁
+              // 🚀 滑动时完全禁用过渡，实现丝滑跟随
+              transition: swipeDeltaX !== 0 ? 'none' : 'transform 225ms cubic-bezier(0.4, 0, 0.2, 1)',
+              // 🔧 GPU加速
+              willChange: 'transform',
+              backfaceVisibility: 'hidden',
             },
           }}
         >

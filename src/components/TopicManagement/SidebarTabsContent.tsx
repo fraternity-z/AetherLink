@@ -1,16 +1,22 @@
-import React, { useMemo, startTransition, useDeferredValue } from 'react';
+import React, { startTransition, useDeferredValue } from 'react';
 import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
 import { useSidebarContext } from './SidebarContext';
 import TabPanel, { a11yProps } from './TabPanel';
 import AssistantTab from './AssistantTab/index';
 import TopicTab from './TopicTab/index';
 import SettingsTab from './SettingsTab/index';
-import { Bot, MessageSquare, Settings } from 'lucide-react';
+import NoteTab from './NoteTab/index';
+import { Bot, MessageSquare, Settings, FileText } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../shared/store';
+import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
 
 /**
  * 侧边栏标签页内容组件 - 使用memo优化性能
  */
 const SidebarTabsContent = React.memo(function SidebarTabsContent() {
+  const showNoteTab = useSelector((state: RootState) => (state.settings as any)[ENABLE_NOTE_SIDEBAR_KEY]);
+
   const {
     loading,
     value,
@@ -99,18 +105,42 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               value={value}
               onChange={handleChange}
               aria-label="sidebar tabs"
-              variant="fullWidth"
+              variant={showNoteTab ? "scrollable" : "fullWidth"}
+              scrollButtons={showNoteTab ? false : "auto"}
               sx={{
-                minHeight: '48px',
-                margin: '0 10px',
-                padding: '10px 0',
+                minHeight: showNoteTab ? '50px' : '48px',
+                margin: showNoteTab ? '0' : '0 10px',
+                padding: showNoteTab ? '8px 2px' : '10px 0',
                 '& .MuiTabs-indicator': {
-                  display: 'none', // 隐藏底部指示器
+                  display: 'none',
                 },
+                ...(showNoteTab ? {
+                  '& .MuiTabs-flexContainer': {
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '1px',
+                    width: '100%',
+                  },
+                } : {}),
                 '& .MuiTab-root': {
-                  minHeight: '32px',
-                  borderRadius: '8px',
-                  // 移除transition，减少动画计算开销
+                  ...(showNoteTab ? {
+                    flex: 1,
+                    minWidth: 0,
+                    minHeight: '42px',
+                    padding: '3px 1px',
+                    fontSize: '0.75rem',
+                    borderRadius: '4px',
+                    '& .MuiTab-iconWrapper': {
+                      margin: '0 auto 1px auto',
+                      display: 'block',
+                    },
+                  } : {
+                    minHeight: '32px',
+                    borderRadius: '8px',
+                    '& .MuiTab-iconWrapper': {
+                      marginBottom: '2px',
+                    },
+                  }),
                   transition: 'none',
                   '&.Mui-selected': {
                     backgroundColor: 'var(--theme-selected-color)',
@@ -122,59 +152,124 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               }}
             >
               <Tab
-                icon={<Bot size={18} />}
+                icon={<Bot size={showNoteTab ? 14 : 18} />}
                 label="助手"
                 {...a11yProps(0)}
                 sx={{
-                  minHeight: '32px',
-                  borderRadius: '8px',
-                  color: 'var(--theme-text-primary)', // 使用 CSS Variables
-                  '& .MuiTab-iconWrapper': {
-                    marginBottom: '2px',
-                  },
+                  ...(showNoteTab ? {
+                    flex: 1,
+                    minHeight: '42px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    padding: '3px 1px',
+                    '& .MuiTab-iconWrapper': {
+                      margin: '0 auto 1px auto',
+                      display: 'block',
+                    },
+                  } : {
+                    minHeight: '32px',
+                    borderRadius: '8px',
+                    '& .MuiTab-iconWrapper': {
+                      marginBottom: '2px',
+                    },
+                  }),
+                  color: 'var(--theme-text-primary)',
+                  fontWeight: '500',
                   '&.Mui-selected': {
-                    color: 'var(--theme-text-primary)', // 选中状态保持文字颜色
+                    color: 'var(--theme-text-primary)',
                   },
                   '&:hover': {
-                    color: 'var(--theme-text-primary)', // 悬停状态保持文字颜色
+                    color: 'var(--theme-text-primary)',
                   },
                 }}
               />
               <Tab
-                icon={<MessageSquare size={18} />}
+                icon={<MessageSquare size={showNoteTab ? 14 : 18} />}
                 label="话题"
                 {...a11yProps(1)}
                 sx={{
-                  minHeight: '32px',
-                  borderRadius: '8px',
-                  color: 'var(--theme-text-primary)', // 使用 CSS Variables
-                  '& .MuiTab-iconWrapper': {
-                    marginBottom: '2px',
-                  },
+                  ...(showNoteTab ? {
+                    flex: 1,
+                    minHeight: '42px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    padding: '3px 1px',
+                    '& .MuiTab-iconWrapper': {
+                      margin: '0 auto 1px auto',
+                      display: 'block',
+                    },
+                  } : {
+                    minHeight: '32px',
+                    borderRadius: '8px',
+                    '& .MuiTab-iconWrapper': {
+                      marginBottom: '2px',
+                    },
+                  }),
+                  color: 'var(--theme-text-primary)',
+                  fontWeight: '500',
                   '&.Mui-selected': {
-                    color: 'var(--theme-text-primary)', // 选中状态保持文字颜色
+                    color: 'var(--theme-text-primary)',
                   },
                   '&:hover': {
-                    color: 'var(--theme-text-primary)', // 悬停状态保持文字颜色
+                    color: 'var(--theme-text-primary)',
                   },
                 }}
               />
+              {showNoteTab && (
+                <Tab
+                  icon={<FileText size={14} />}
+                  label="笔记"
+                  {...a11yProps(2)}
+                  sx={{
+                    flex: 1,
+                    minHeight: '42px',
+                    borderRadius: '4px',
+                    color: 'var(--theme-text-primary)',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    padding: '3px 1px',
+                    '& .MuiTab-iconWrapper': {
+                      margin: '0 auto 1px auto',
+                      display: 'block',
+                    },
+                    '&.Mui-selected': {
+                      color: 'var(--theme-text-primary)',
+                    },
+                    '&:hover': {
+                      color: 'var(--theme-text-primary)',
+                    },
+                  }}
+                />
+              )}
               <Tab
-                icon={<Settings size={18} />}
+                icon={<Settings size={showNoteTab ? 14 : 18} />}
                 label="设置"
-                {...a11yProps(2)}
+                {...a11yProps(showNoteTab ? 3 : 2)}
                 sx={{
-                  minHeight: '32px',
-                  borderRadius: '8px',
-                  color: 'var(--theme-text-primary)', // 使用 CSS Variables
-                  '& .MuiTab-iconWrapper': {
-                    marginBottom: '2px',
-                  },
+                  ...(showNoteTab ? {
+                    flex: 1,
+                    minHeight: '42px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    padding: '3px 1px',
+                    '& .MuiTab-iconWrapper': {
+                      margin: '0 auto 1px auto',
+                      display: 'block',
+                    },
+                  } : {
+                    minHeight: '32px',
+                    borderRadius: '8px',
+                    '& .MuiTab-iconWrapper': {
+                      marginBottom: '2px',
+                    },
+                  }),
+                  color: 'var(--theme-text-primary)',
+                  fontWeight: '500',
                   '&.Mui-selected': {
-                    color: 'var(--theme-text-primary)', // 选中状态保持文字颜色
+                    color: 'var(--theme-text-primary)',
                   },
                   '&:hover': {
-                    color: 'var(--theme-text-primary)', // 悬停状态保持文字颜色
+                    color: 'var(--theme-text-primary)',
                   },
                 }}
               />
@@ -206,7 +301,13 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
             />
           </TabPanel>
 
-          <TabPanel value={deferredValue} index={2}>
+          {showNoteTab && (
+            <TabPanel value={deferredValue} index={2}>
+              <NoteTab />
+            </TabPanel>
+          )}
+
+          <TabPanel value={deferredValue} index={showNoteTab ? 3 : 2}>
             <SettingsTab
               settings={settingsArray}
               onSettingChange={handleSettingChange}
@@ -217,7 +318,7 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               initialMathRenderer={settings.mathRenderer}
               onMathRendererChange={handleMathRendererChange}
               initialThinkingEffort={settings.defaultThinkingEffort}
-              onThinkingEffortChange={handleThinkingEffortChange}
+              onThinkingEffortChange={(value: string) => handleThinkingEffortChange(value as any)}
               mcpMode={mcpMode}
               toolsEnabled={toolsEnabled}
               onMCPModeChange={handleMCPModeChange}

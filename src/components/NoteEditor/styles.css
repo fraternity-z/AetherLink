@@ -1,0 +1,216 @@
+/* RichEditor 样式 */
+.rich-editor-container {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.rich-editor-container .ProseMirror {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.rich-editor-container .ProseMirror:focus {
+  outline: none;
+}
+
+/* 代码块样式 */
+.rich-editor-container .code-block {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 1em;
+  font-family: 'Courier New', Courier, monospace;
+  overflow-x: auto;
+}
+
+/* 列表样式 */
+.rich-editor-container .bullet-list,
+.rich-editor-container .ordered-list {
+  padding-left: 2em;
+}
+
+/* 引用样式 */
+.rich-editor-container .blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 1em;
+  margin: 1em 0;
+  color: #666;
+}
+
+/* 分割线样式 */
+.rich-editor-container .horizontal-rule {
+  border: none;
+  border-top: 2px solid #ddd;
+  margin: 2em 0;
+}
+
+/* 图片样式 */
+.rich-editor-container .editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* 选中文本高亮 */
+.rich-editor-container .ProseMirror ::selection {
+  background-color: rgba(66, 165, 245, 0.3);
+}
+
+/* 占位符样式 */
+.rich-editor-container .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* ========== 格式高亮样式 ========== */
+
+/* 粗体高亮 */
+.rich-editor-container .ProseMirror strong {
+  font-weight: 700;
+  color: #2c3e50;
+  background-color: rgba(255, 193, 7, 0.1);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* 斜体高亮 */
+.rich-editor-container .ProseMirror em {
+  font-style: italic;
+  color: #34495e;
+  background-color: rgba(156, 39, 176, 0.08);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* 下划线高亮 */
+.rich-editor-container .ProseMirror u {
+  text-decoration: underline;
+  text-decoration-color: #3498db;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  background-color: rgba(52, 152, 219, 0.05);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* 删除线高亮 */
+.rich-editor-container .ProseMirror s,
+.rich-editor-container .ProseMirror del {
+  text-decoration: line-through;
+  text-decoration-color: #e74c3c;
+  text-decoration-thickness: 2px;
+  color: #95a5a6;
+  background-color: rgba(231, 76, 60, 0.05);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* 行内代码高亮 */
+.rich-editor-container .ProseMirror code {
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  background-color: #f8f9fa;
+  color: #e83e8c;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  border: 1px solid #e9ecef;
+}
+
+/* 标题高亮 */
+.rich-editor-container .ProseMirror h1,
+.rich-editor-container .ProseMirror h2,
+.rich-editor-container .ProseMirror h3,
+.rich-editor-container .ProseMirror h4,
+.rich-editor-container .ProseMirror h5,
+.rich-editor-container .ProseMirror h6 {
+  position: relative;
+  padding-left: 8px;
+}
+
+.rich-editor-container .ProseMirror h1::before,
+.rich-editor-container .ProseMirror h2::before,
+.rich-editor-container .ProseMirror h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* 链接高亮 */
+.rich-editor-container .ProseMirror a {
+  color: #3498db;
+  text-decoration: underline;
+  text-decoration-color: rgba(52, 152, 219, 0.4);
+  text-underline-offset: 2px;
+  transition: all 0.2s ease;
+}
+
+.rich-editor-container .ProseMirror a:hover {
+  color: #2980b9;
+  background-color: rgba(52, 152, 219, 0.1);
+  text-decoration-color: #2980b9;
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .rich-editor-container .ProseMirror strong {
+    color: #ecf0f1;
+    background-color: rgba(255, 193, 7, 0.15);
+  }
+
+  .rich-editor-container .ProseMirror em {
+    color: #bdc3c7;
+    background-color: rgba(156, 39, 176, 0.12);
+  }
+
+  .rich-editor-container .ProseMirror u {
+    text-decoration-color: #5dade2;
+    background-color: rgba(52, 152, 219, 0.1);
+  }
+
+  .rich-editor-container .ProseMirror s,
+  .rich-editor-container .ProseMirror del {
+    text-decoration-color: #ec7063;
+    color: #7f8c8d;
+    background-color: rgba(231, 76, 60, 0.1);
+  }
+
+  .rich-editor-container .ProseMirror code {
+    background-color: #2c3e50;
+    color: #ff79c6;
+    border-color: #34495e;
+  }
+
+  .rich-editor-container .ProseMirror a {
+    color: #5dade2;
+  }
+
+  .rich-editor-container .ProseMirror a:hover {
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.15);
+  }
+}
+
+/* 组合格式高亮 */
+.rich-editor-container .ProseMirror strong em,
+.rich-editor-container .ProseMirror em strong {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 193, 7, 0.1) 0%,
+    rgba(156, 39, 176, 0.08) 100%
+  );
+}
+
+/* 编辑器激活状态高亮 */
+.rich-editor-container:focus-within .ProseMirror strong {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+.rich-editor-container:focus-within .ProseMirror em {
+  background-color: rgba(156, 39, 176, 0.12);
+}

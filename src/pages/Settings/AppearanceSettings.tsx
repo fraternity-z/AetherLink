@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -20,12 +20,18 @@ import {
   ListItemText,
   Avatar,
   Divider,
-  alpha
+  alpha,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
-import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles } from 'lucide-react';
+import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles, Share2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor, setShowDevToolsFloatingButton } from '../../shared/store/settingsSlice';
+import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor, setShowDevToolsFloatingButton, updateSettings } from '../../shared/store/settingsSlice';
 import { fontOptions, fontCategoryLabels, getFontById } from '../../shared/config/fonts';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useLanguageSettings } from '../../i18n/useLanguageSettings';
@@ -33,6 +39,10 @@ import { supportedLanguages } from '../../i18n';
 import { Globe } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import CustomSwitch from '../../components/CustomSwitch';
+import ShareAppearanceDialog from '../../components/dialogs/ShareAppearanceDialog';
+import ImportAppearanceDialog from '../../components/dialogs/ImportAppearanceDialog';
+import { extractAppearanceConfig, extractShareConfigFromUrl } from '../../shared/utils/appearanceConfig';
+import type { AppearanceConfig } from '../../shared/utils/appearanceConfig';
 
 const AppearanceSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -40,6 +50,12 @@ const AppearanceSettings: React.FC = () => {
   const settings = useAppSelector((state) => state.settings);
   const { currentLanguage, changeLanguage } = useLanguageSettings();
   const { t } = useTranslation();
+
+  // 对话框状态
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingConfig, setPendingConfig] = useState<AppearanceConfig | null>(null);
 
   // 使用滚动位置保存功能
   const {
@@ -50,8 +66,50 @@ const AppearanceSettings: React.FC = () => {
     restoreDelay: 100
   });
 
+  // 检查 URL 中是否有分享配置
+  useEffect(() => {
+    const sharedConfig = extractShareConfigFromUrl();
+    if (sharedConfig) {
+      setPendingConfig(sharedConfig);
+      setConfirmDialogOpen(true);
+      // 清除 URL 参数
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash.split('?')[0]);
+    }
+  }, []);
+
   const handleBack = () => {
     navigate('/settings');
+  };
+
+  // 分享外观设置
+  const handleShareAppearance = () => {
+    setShareDialogOpen(true);
+  };
+
+  // 导入外观设置
+  const handleImportAppearance = () => {
+    setImportDialogOpen(true);
+  };
+
+  // 应用导入的配置
+  const handleApplyConfig = (config: AppearanceConfig) => {
+    setPendingConfig(config);
+    setConfirmDialogOpen(true);
+  };
+
+  // 确认应用配置
+  const handleConfirmApply = () => {
+    if (pendingConfig) {
+      dispatch(updateSettings(pendingConfig));
+      setConfirmDialogOpen(false);
+      setPendingConfig(null);
+    }
+  };
+
+  // 取消应用配置
+  const handleCancelApply = () => {
+    setConfirmDialogOpen(false);
+    setPendingConfig(null);
   };
 
   // 字体大小处理函数
@@ -168,6 +226,27 @@ const AppearanceSettings: React.FC = () => {
           >
             {t('settings.appearance.title')}
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={handleImportAppearance}
+            aria-label="import"
+            sx={{
+              color: (theme) => theme.palette.primary.main,
+              mr: 1,
+            }}
+          >
+            <Upload size={20} />
+          </IconButton>
+          <IconButton
+            color="inherit"
+            onClick={handleShareAppearance}
+            aria-label="share"
+            sx={{
+              color: (theme) => theme.palette.primary.main,
+            }}
+          >
+            <Share2 size={20} />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
@@ -812,6 +891,50 @@ const AppearanceSettings: React.FC = () => {
           </Box>
         </Paper>
       </Box>
+
+      {/* 分享外观设置对话框 */}
+      <ShareAppearanceDialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        config={extractAppearanceConfig(settings)}
+      />
+
+      {/* 导入外观设置对话框 */}
+      <ImportAppearanceDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImport={handleApplyConfig}
+      />
+
+      {/* 确认应用配置对话框 */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={handleCancelApply}
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>
+          确认应用外观设置
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            你确定要应用这个外观配置吗？这将覆盖你当前的外观设置。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCancelApply} variant="text">
+            取消
+          </Button>
+          <Button onClick={handleConfirmApply} variant="contained" autoFocus>
+            确认应用
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

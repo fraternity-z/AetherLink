@@ -3,13 +3,14 @@ import { useCallback, useRef, useState } from 'react';
 interface SwipeGestureOptions {
   onSwipeRight?: () => void;
   onSwipeLeft?: () => void;
-  onSwipeProgress?: (progress: number, direction: 'left' | 'right') => void; // 滑动进度回调
+  onSwipeProgress?: (deltaX: number, direction: 'left' | 'right') => void; // 滑动进度回调（实际像素值）
   threshold?: number; // 触发手势的最小距离
   velocityThreshold?: number; // 触发手势的最小速度
   preventDefaultOnSwipe?: boolean; // 是否在滑动时阻止默认行为
   enabled?: boolean; // 是否启用手势
   edgeThreshold?: number; // 边缘触发区域宽度（像素）
   enableEdgeDetection?: boolean; // 是否启用边缘检测
+  maxSwipeDistance?: number; // 最大滑动距离（像素），用于限制滑动范围
 }
 
 interface SwipeState {
@@ -35,7 +36,8 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
     preventDefaultOnSwipe = false,
     enabled = true,
     edgeThreshold = 50, // 边缘区域宽度50px
-    enableEdgeDetection = false // 默认不启用边缘检测
+    enableEdgeDetection = false, // 默认不启用边缘检测
+    maxSwipeDistance = 320 // 默认最大滑动距离320px（侧边栏宽度）
   } = options;
 
   const swipeStateRef = useRef<SwipeState>({
@@ -102,8 +104,8 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
       return;
     }
 
-    // 计算滑动进度并触发回调
-    if (onSwipeProgress && Math.abs(deltaX) > 10) {
+    // 计算滑动进度并触发回调（传递实际像素值）
+    if (onSwipeProgress && Math.abs(deltaX) > 5) {
       // 如果启用边缘检测，只在有效的边缘区域内才显示进度
       let shouldShowProgress = true;
 
@@ -117,9 +119,10 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
       }
 
       if (shouldShowProgress) {
-        const progress = Math.min(Math.abs(deltaX), threshold * 2) / threshold * 50;
+        // 限制滑动距离在 0 到 maxSwipeDistance 之间
+        const clampedDeltaX = Math.max(-maxSwipeDistance, Math.min(maxSwipeDistance, deltaX));
         const direction = deltaX > 0 ? 'right' : 'left';
-        onSwipeProgress(progress, direction);
+        onSwipeProgress(clampedDeltaX, direction);
       }
     }
 
@@ -174,7 +177,7 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
 
     // 重置进度
     if (onSwipeProgress) {
-      onSwipeProgress(0, 'right');
+      onSwipeProgress(0, deltaX > 0 ? 'right' : 'left');
     }
 
     resetSwipeState();
@@ -182,9 +185,11 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
 
   // 触摸取消
   const handleTouchCancel = useCallback(() => {
+    const state = swipeStateRef.current;
+    const deltaX = state.currentX - state.startX;
     // 重置进度
     if (onSwipeProgress) {
-      onSwipeProgress(0, 'right');
+      onSwipeProgress(0, deltaX > 0 ? 'right' : 'left');
     }
     resetSwipeState();
   }, [resetSwipeState, onSwipeProgress]);
@@ -238,17 +243,19 @@ export const useSidebarSwipeGesture = (
   onOpenSidebar?: () => void,
   onCloseSidebar?: () => void,
   enabled: boolean = true,
-  onSwipeProgress?: (progress: number, direction: 'left' | 'right') => void
+  onSwipeProgress?: (deltaX: number, direction: 'left' | 'right') => void,
+  drawerWidth: number = 320
 ) => {
   return useSwipeGesture({
     onSwipeRight: onOpenSidebar,
     onSwipeLeft: onCloseSidebar,
     onSwipeProgress,
-    threshold: 80, // 侧边栏需要更大的滑动距离
-    velocityThreshold: 0.5, // 更高的速度要求
+    threshold: drawerWidth * 0.4, // 滑动超过40%宽度才触发
+    velocityThreshold: 0.3, // 降低速度要求，让手势更灵敏
     preventDefaultOnSwipe: true, // 阻止默认行为
     enabled,
     enableEdgeDetection: true, // 启用边缘检测
-    edgeThreshold: 30 // 边缘区域30px，比较小的区域更精确
+    edgeThreshold: 50, // 增大边缘区域到50px，更容易触发
+    maxSwipeDistance: drawerWidth // 最大滑动距离等于侧边栏宽度
   });
 };

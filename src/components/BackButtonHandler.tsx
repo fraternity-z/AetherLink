@@ -9,6 +9,22 @@ import { useAppState } from '../shared/hooks/useAppState';
  * @param navigate 导航函数
  */
 const handleSettingsBack = (pathname: string, navigate: (path: string) => void) => {
+  // 去除查询参数，只保留路径部分
+  const pathWithoutQuery = pathname.split('?')[0];
+  
+  // 特殊处理：笔记编辑页面根据 from 参数决定返回位置
+  if (pathWithoutQuery === '/settings/notes/edit') {
+    const urlParams = new URLSearchParams(pathname.split('?')[1] || '');
+    const from = urlParams.get('from');
+    if (from === 'chat') {
+      navigate('/chat');
+      return;
+    }
+    // 默认返回到笔记设置页面
+    navigate('/settings/notes');
+    return;
+  }
+  
   // 设置页面的层级关系映射
   const settingsRoutes: { [key: string]: string } = {
     // 主设置页面返回聊天页面
@@ -32,6 +48,7 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/voice': '/settings',
     '/settings/about': '/settings',
     '/settings/assistant-settings': '/settings',
+    '/settings/notes': '/settings',
     
     // 开发者工具(三级页面) - 从关于我们进入
     '/devtools': '/settings/about',
@@ -57,9 +74,9 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
   };
 
   // 处理动态路由（如 /settings/model-provider/:providerId）
-  if (pathname.startsWith('/settings/model-provider/')) {
+  if (pathWithoutQuery.startsWith('/settings/model-provider/')) {
     // 检查是否是四级页面（如 /settings/model-provider/:providerId/advanced-api）
-    const modelProviderMatch = pathname.match(/^\/settings\/model-provider\/([^/]+)(?:\/(.+))?$/);
+    const modelProviderMatch = pathWithoutQuery.match(/^\/settings\/model-provider\/([^/]+)(?:\/(.+))?$/);
     if (modelProviderMatch) {
       const providerId = modelProviderMatch[1];
       const subPath = modelProviderMatch[2];
@@ -77,17 +94,17 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     navigate('/settings/default-model');
     return;
   }
-  if (pathname.startsWith('/settings/mcp-server/') && pathname !== '/settings/mcp-server') {
+  if (pathWithoutQuery.startsWith('/settings/mcp-server/') && pathWithoutQuery !== '/settings/mcp-server') {
     navigate('/settings/mcp-server');
     return;
   }
-  if (pathname.startsWith('/settings/workspace/') && pathname !== '/settings/workspace') {
+  if (pathWithoutQuery.startsWith('/settings/workspace/') && pathWithoutQuery !== '/settings/workspace') {
     navigate('/settings/workspace');
     return;
   }
 
   // 查找对应的返回路径
-  const backPath = settingsRoutes[pathname];
+  const backPath = settingsRoutes[pathWithoutQuery];
   if (backPath) {
     navigate(backPath);
   } else {

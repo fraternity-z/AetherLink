@@ -1,0 +1,206 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Paper,
+  Switch,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Button,
+  Divider,
+  alpha,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft as ArrowBackIcon, FolderOpen as FolderIcon } from 'lucide-react';
+import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
+import { advancedFileManagerService } from '../../shared/services/AdvancedFileManagerService';
+import { toastManager } from '../../components/EnhancedToast';
+import { useDispatch } from 'react-redux';
+import { updateSettings } from '../../shared/store/slices/settingsSlice';
+import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
+
+const NoteSettings: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [storagePath, setStoragePath] = useState<string>('');
+  const [sidebarEnabled, setSidebarEnabled] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const path = await simpleNoteService.getStoragePath();
+    const enabled = await simpleNoteService.isSidebarEnabled();
+    setStoragePath(path || '');
+    setSidebarEnabled(enabled);
+  };
+
+  const handleBack = () => {
+    navigate('/settings');
+  };
+
+  const handleSelectPath = async () => {
+    try {
+      const result = await advancedFileManagerService.openSystemFilePicker({
+        type: 'directory',
+        multiple: false,
+        title: '选择笔记存储目录'
+      });
+
+      if (!result.cancelled && result.directories && result.directories.length > 0) {
+        const selectedDir = result.directories[0];
+
+        console.log('选择的目录信息:', selectedDir);
+
+        // 学习工作区的做法：优先使用转换后的友好路径，如果没有则使用原始路径
+        const pathToUse = selectedDir.displayPath || selectedDir.path || selectedDir.uri;
+        
+        if (!pathToUse) {
+           toastManager.error('无法获取有效的目录路径', '错误');
+           return;
+        }
+
+        await simpleNoteService.setStoragePath(pathToUse);
+        setStoragePath(pathToUse);
+        toastManager.success('存储路径已更新', '设置成功');
+      }
+    } catch (error) {
+      console.error('选择目录失败:', error);
+      toastManager.error('选择目录失败: ' + (error instanceof Error ? error.message : String(error)), '错误');
+    }
+  };
+
+  const handleSidebarToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    await simpleNoteService.setSidebarEnabled(enabled);
+    
+    // 更新 Redux store
+    dispatch(updateSettings({ [ENABLE_NOTE_SIDEBAR_KEY]: enabled }));
+    
+    setSidebarEnabled(enabled);
+    toastManager.success(`侧边栏入口已${enabled ? '启用' : '禁用'}`, '设置成功');
+  };
+
+  return (
+    <Box sx={{
+      flexGrow: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100vh',
+      bgcolor: (theme) => theme.palette.mode === 'light'
+        ? alpha(theme.palette.primary.main, 0.02)
+        : alpha(theme.palette.background.default, 0.9),
+    }}>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          borderBottom: 1,
+          borderColor: 'divider',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={handleBack}
+            aria-label="back"
+            sx={{
+              color: (theme) => theme.palette.primary.main,
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography
+            variant="h6"
+            component="div"
+              sx={{
+                flexGrow: 1,
+                fontWeight: 600,
+              }}
+            >
+            笔记设置
+          </Typography>
+        </Toolbar>
+      </AppBar>
+
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          p: { xs: 1, sm: 2 },
+          mt: 8,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <List>
+            <ListItem>
+              <ListItemText
+                primary="存储位置"
+                secondary={storagePath || "未设置，请选择存储目录"}
+                secondaryTypographyProps={{
+                   sx: { 
+                     wordBreak: 'break-all',
+                     color: !storagePath ? 'error.main' : 'text.secondary'
+                   }
+                }}
+              />
+              <ListItemSecondaryAction>
+                <Button
+                  variant="outlined"
+                  startIcon={<FolderIcon size={16} />}
+                  onClick={handleSelectPath}
+                  size="small"
+                >
+                  选择目录
+                </Button>
+              </ListItemSecondaryAction>
+            </ListItem>
+            
+            <Divider />
+            
+            <ListItem>
+              <ListItemText
+                primary="侧边栏入口"
+                secondary="在聊天界面侧边栏显示笔记 Tab"
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  checked={sidebarEnabled}
+                  onChange={handleSidebarToggle}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
+        </Paper>
+        
+        <Typography variant="caption" color="text.secondary" sx={{ p: 1, display: 'block' }}>
+          注意：笔记功能依赖于本地文件系统访问权限。请确保已授予应用相应的存储权限。
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
+export default NoteSettings;
