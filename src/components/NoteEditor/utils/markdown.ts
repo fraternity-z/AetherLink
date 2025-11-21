@@ -1,15 +1,19 @@
-import MarkdownIt from 'markdown-it';
 import TurndownService from 'turndown';
 import { gfm } from '@truto/turndown-plugin-gfm';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
+import rehypeRaw from 'rehype-raw';
 
-// 创建 markdown-it 实例
-const md = new MarkdownIt({
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  linkify: false,
-  typographer: false
-});
+// 创建 unified 处理器用于 Markdown → HTML
+const markdownProcessor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeRaw)
+  .use(rehypeStringify);
 
 // 创建 Turndown 实例用于 HTML 转 Markdown
 const turndownService = new TurndownService({
@@ -70,7 +74,8 @@ export function markdownToHtml(markdown: string): string {
   }
 
   try {
-    return md.render(markdown);
+    const result = markdownProcessor.processSync(markdown);
+    return String(result);
   } catch (error) {
     console.error('Error converting Markdown to HTML:', error);
     return markdown;
