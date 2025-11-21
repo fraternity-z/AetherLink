@@ -102,6 +102,12 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     navigate('/settings/workspace');
     return;
   }
+  
+  // 处理知识库详情页面（/knowledge/:id）
+  if (pathWithoutQuery.startsWith('/knowledge/') && pathWithoutQuery !== '/knowledge') {
+    navigate('/settings/knowledge');
+    return;
+  }
 
   // 查找对应的返回路径
   const backPath = settingsRoutes[pathWithoutQuery];
@@ -179,8 +185,8 @@ const BackButtonHandler: React.FC = () => {
     } else if (currentPath === '/welcome') {
       // 在欢迎页面，显示退出确认对话框
       setShowExitConfirm(true);
-    } else if (currentPath.startsWith('/settings') || currentPath === '/devtools') {
-      // 在设置页面或开发者工具页面，智能返回到上级页面
+    } else if (currentPath.startsWith('/settings') || currentPath === '/devtools' || currentPath.startsWith('/knowledge/')) {
+      // 在设置页面、开发者工具页面或知识库详情页面，智能返回到上级页面
       handleSettingsBack(currentPath, navigate);
     } else {
       // 在其他页面，返回到聊天页面

@@ -676,7 +676,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           position: 'fixed',
           top: 0,
           right: 0,
-          zIndex: 1,
+          zIndex: 1100, // 提高z-index，确保在移动端手势层之下但在其他内容之上
         }}
       >
         {/* 顶部应用栏 */}

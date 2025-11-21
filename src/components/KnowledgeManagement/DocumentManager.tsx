@@ -357,7 +357,6 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                           {doc.content.substring(0, 100)}
                           {doc.content.length > 100 ? '...' : ''}
                         </Typography>
-                        <br />
                         <Box mt={0.5}>
                           <Chip
                             label={`块 #${doc.metadata.chunkIndex || 0}`}
@@ -372,6 +371,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                         </Box>
                       </Box>
                     }
+                    secondaryTypographyProps={{ component: 'div' }}
                   />
                 </ListItem>
               </React.Fragment>

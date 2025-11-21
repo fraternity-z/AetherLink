@@ -14,7 +14,7 @@ const ChatInterfaceSettings = lazy(() => import('../pages/Settings/ChatInterface
 const TopToolbarDIYSettings = lazy(() => import('../pages/Settings/TopToolbarDIYSettings'));
 const DefaultModelSettings = lazy(() => import('../pages/Settings/DefaultModelSettings'));
 // 导入知识库页面
-const KnowledgeBasePage = lazy(() => import('../pages/KnowledgeBase'));
+const KnowledgeBaseDetail = lazy(() => import('../pages/KnowledgeBase/KnowledgeBaseDetail'));
 const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings'));
 
 const TopicNamingSettings = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
@@ -181,7 +181,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/assistant-settings" element={<AssistantSettings />} />
         <Route path="/settings/assistant-model-settings" element={<AssistantModelSettings />} />
         <Route path="/devtools" element={<DevToolsPage />} />
-        <Route path="/knowledge/*" element={<KnowledgeBasePage />} />
+        {/* 知识库详情页 - 从设置页跳转 */}
+        <Route path="/knowledge/:id" element={<KnowledgeBaseDetail />} />
       </Routes>
     </Suspense>
   );

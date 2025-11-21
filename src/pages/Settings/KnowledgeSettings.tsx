@@ -1,30 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  AppBar,
-  Toolbar,
-  IconButton,
   Typography,
-  Paper,
   Button,
-  Alert,
   CircularProgress,
+  Paper,
   Card,
   CardContent,
+  CardActions,
+  Divider,
+  Avatar,
+  IconButton,
+  AppBar,
+  Toolbar,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
-  alpha,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft as ArrowBackIcon, Trash2 as DeleteIcon, Download as DownloadIcon, Database as StorageIcon, Plus as AddIcon, ExternalLink as LaunchIcon } from 'lucide-react';
+import { styled } from '@mui/material/styles';
+import {
+  Folder,
+  Trash2,
+  Plus,
+  Eye,
+  ArrowLeft,
+  Download,
+  Upload,
+  AlertTriangle
+} from 'lucide-react';
 import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
-import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
+import { useNavigate } from 'react-router-dom';
+import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProvider';
+import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import { toastManager } from '../../components/EnhancedToast';
+
+const Container = styled(Box)(() => ({
+  flexGrow: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: '100vh',
+  position: 'relative',
+  overflow: 'hidden',
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'transform 0.2s, box-shadow 0.2s',
+  cursor: 'pointer',
+  borderRadius: (theme.shape.borderRadius as number) * 2,
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[4],
+  },
+}));
 
 interface KnowledgeStats {
   totalKnowledgeBases: number;
@@ -35,7 +68,12 @@ interface KnowledgeStats {
 
 const KnowledgeSettings: React.FC = () => {
   const navigate = useNavigate();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<KnowledgeStats>({
     totalKnowledgeBases: 0,
     totalDocuments: 0,
@@ -43,46 +81,41 @@ const KnowledgeSettings: React.FC = () => {
     storageSize: '0 MB'
   });
 
+  const {
+    knowledgeBases,
+    isLoading,
+    refreshKnowledgeBases
+  } = useKnowledge();
 
+  // 导航到详情页
+  const handleViewDetails = (id: string) => {
+    navigate(`/knowledge/${id}`);
+  };
 
-  // 对话框状态
-  const [clearDialogOpen, setClearDialogOpen] = useState(false);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-
+  // 返回到设置页面
   const handleBack = () => {
-    navigate('/settings');
+    navigate('/settings'); // 直接导航到设置页面
   };
 
   // 加载统计信息
   const loadStats = async () => {
     try {
       setLoading(true);
-
-      // 获取知识库数量
-      const knowledgeBases = await dexieStorage.knowledge_bases.toArray();
-      const totalKnowledgeBases = knowledgeBases.length;
-
-      // 获取文档数量
       const documents = await dexieStorage.knowledge_documents.toArray();
       const totalDocuments = documents.length;
-
-      // 计算向量数量（每个文档都有向量）
       const totalVectors = totalDocuments;
-
-      // 估算存储大小（简化计算）
-      const avgVectorSize = 1536 * 4; // 假设1536维向量，每个float 4字节
+      const avgVectorSize = 1536 * 4;
       const estimatedSize = totalVectors * avgVectorSize;
       const storageSize = formatBytes(estimatedSize);
 
       setStats({
-        totalKnowledgeBases,
+        totalKnowledgeBases: knowledgeBases.length,
         totalDocuments,
         totalVectors,
         storageSize
       });
     } catch (error) {
-      console.error('加载知识库统计信息失败:', error);
+      console.error('加载统计信息失败:', error);
     } finally {
       setLoading(false);
     }
@@ -97,43 +130,31 @@ const KnowledgeSettings: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // 清理所有知识库数据
-  const handleClearAllData = async () => {
-    try {
-      setLoading(true);
-
-      // 清理知识库相关表
-      await dexieStorage.knowledge_bases.clear();
-      await dexieStorage.knowledge_documents.clear();
-
-      // 重新加载统计信息
-      await loadStats();
-
-      setClearDialogOpen(false);
-      toastManager.success('知识库数据已清理完成', '清理成功');
-    } catch (error) {
-      console.error('清理知识库数据失败:', error);
-      toastManager.error('清理失败，请重试', '清理失败');
-    } finally {
-      setLoading(false);
+  // 初始化加载
+  useEffect(() => {
+    if (knowledgeBases.length > 0) {
+      loadStats();
     }
-  };
+  }, [knowledgeBases]);
 
-  // 创建知识库
-  const handleCreateKnowledge = () => {
+  // 打开创建对话框
+  const handleOpenDialog = () => {
     setCreateDialogOpen(true);
   };
 
-  // 处理知识库创建
+  // 关闭对话框
+  const handleCloseDialog = () => {
+    setCreateDialogOpen(false);
+  };
+
+  // 提交表单
   const handleSubmitKnowledgeBase = async (formData: Partial<KnowledgeBase>) => {
     try {
       setLoading(true);
       await MobileKnowledgeService.getInstance().createKnowledgeBase(formData as any);
-      setCreateDialogOpen(false);
-      await loadStats(); // 重新加载统计信息
+      handleCloseDialog();
+      refreshKnowledgeBases();
       toastManager.success('知识库创建成功！', '创建成功');
-      // 可以选择导航到知识库详情页
-      // navigate(`/knowledge/${createdKB.id}`);
     } catch (error) {
       console.error('创建知识库失败:', error);
       toastManager.error('创建失败，请重试', '创建失败');
@@ -142,18 +163,33 @@ const KnowledgeSettings: React.FC = () => {
     }
   };
 
+  // 删除知识库
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('确认要删除这个知识库吗？此操作将删除所有相关文档，无法撤销。')) {
+      return;
+    }
+    try {
+      await MobileKnowledgeService.getInstance().deleteKnowledgeBase(id);
+      refreshKnowledgeBases();
+      toastManager.success('知识库删除成功', '删除成功');
+    } catch (error) {
+      console.error('删除知识库失败:', error);
+      toastManager.error('删除失败，请重试', '删除失败');
+    }
+  };
+
   // 导出知识库数据
   const handleExportData = async () => {
     try {
       setLoading(true);
-
-      const knowledgeBases = await dexieStorage.knowledge_bases.toArray();
+      const kbs = await dexieStorage.knowledge_bases.toArray();
       const documents = await dexieStorage.knowledge_documents.toArray();
 
       const exportData = {
         version: '1.0',
         timestamp: new Date().toISOString(),
-        knowledgeBases,
+        knowledgeBases: kbs,
         documents
       };
 
@@ -180,20 +216,69 @@ const KnowledgeSettings: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  // 导入知识库数据
+  const handleImportData = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      const text = await file.text();
+      const importData = JSON.parse(text);
+
+      // 验证数据格式
+      if (!importData.version || !importData.knowledgeBases || !importData.documents) {
+        throw new Error('无效的备份文件格式');
+      }
+
+      // 导入知识库
+      for (const kb of importData.knowledgeBases) {
+        await dexieStorage.knowledge_bases.put(kb);
+      }
+
+      // 导入文档
+      for (const doc of importData.documents) {
+        await dexieStorage.knowledge_documents.put(doc);
+      }
+
+      refreshKnowledgeBases();
+      setImportDialogOpen(false);
+      toastManager.success(`成功导入 ${importData.knowledgeBases.length} 个知识库和 ${importData.documents.length} 个文档`, '导入成功');
+    } catch (error) {
+      console.error('导入知识库数据失败:', error);
+      toastManager.error('导入失败，请检查文件格式', '导入失败');
+    } finally {
+      setLoading(false);
+      // 重置文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // 清理所有知识库数据
+  const handleClearAllData = async () => {
+    try {
+      setLoading(true);
+      await dexieStorage.knowledge_bases.clear();
+      await dexieStorage.knowledge_documents.clear();
+      refreshKnowledgeBases();
+      setClearDialogOpen(false);
+      toastManager.success('知识库数据已清理完成', '清理成功');
+    } catch (error) {
+      console.error('清理知识库数据失败:', error);
+      toastManager.error('清理失败，请重试', '清理失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <Container>
       <AppBar
         position="fixed"
         elevation={0}
@@ -203,376 +288,229 @@ const KnowledgeSettings: React.FC = () => {
           color: 'text.primary',
           borderBottom: 1,
           borderColor: 'divider',
-          backdropFilter: 'blur(8px)',
         }}
       >
         <Toolbar>
           <IconButton
             edge="start"
-            color="inherit"
             onClick={handleBack}
             aria-label="back"
-            sx={{
-              color: (theme) => theme.palette.primary.main,
-            }}
+            sx={{ color: (theme) => theme.palette.primary.main }}
           >
-            <ArrowBackIcon />
+            <ArrowLeft size={20} />
           </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
-              sx={{
-                flexGrow: 1,
-                fontWeight: 600,
-              }}
-            >
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             知识库设置
           </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={20} />}
+            onClick={handleOpenDialog}
+            sx={{
+              background: 'linear-gradient(45deg, #059669 30%, #10b981 90%)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #047857 30%, #059669 90%)',
+              }
+            }}
+          >
+            创建知识库
+          </Button>
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
-          flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 1, sm: 2 },
-          mt: 8,
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
-        }}
-      >
+      <Box sx={{ flexGrow: 1, overflow: 'auto', px: 2, py: 2, mt: 8 }}>
         {/* 统计信息卡片 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' },
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              <StorageIcon size={20} color="#059669" />
-              知识库统计
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              查看知识库的使用情况和存储统计
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-
-          {loading ? (
-            <Box display="flex" justifyContent="center" py={3}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
-              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                <Card variant="outlined">
-                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      {stats.totalKnowledgeBases}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      知识库数量
-                    </Typography>
-                  </CardContent>
-                </Card>
+        <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>知识库统计</Typography>
+            {loading ? (
+              <Box display="flex" justifyContent="center" py={3}>
+                <CircularProgress />
               </Box>
-              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                <Card variant="outlined">
-                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                    <Typography variant="h4" color="success.main" fontWeight="bold">
-                      {stats.totalDocuments}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      文档数量
-                    </Typography>
-                  </CardContent>
-                </Card>
+            ) : (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
+                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                  <Card variant="outlined">
+                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography variant="h4" color="primary" fontWeight="bold">{stats.totalKnowledgeBases}</Typography>
+                      <Typography variant="body2" color="textSecondary">知识库数量</Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                  <Card variant="outlined">
+                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography variant="h4" color="success.main" fontWeight="bold">{stats.totalDocuments}</Typography>
+                      <Typography variant="body2" color="textSecondary">文档数量</Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                  <Card variant="outlined">
+                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography variant="h4" color="warning.main" fontWeight="bold">{stats.totalVectors}</Typography>
+                      <Typography variant="body2" color="textSecondary">向量数量</Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                  <Card variant="outlined">
+                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography variant="h4" color="info.main" fontWeight="bold">{stats.storageSize}</Typography>
+                      <Typography variant="body2" color="textSecondary">存储大小</Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
               </Box>
-              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                <Card variant="outlined">
-                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                    <Typography variant="h4" color="warning.main" fontWeight="bold">
-                      {stats.totalVectors}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      向量数量
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Box>
-              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                <Card variant="outlined">
-                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                    <Typography variant="h4" color="info.main" fontWeight="bold">
-                      {stats.storageSize}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      存储大小
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Box>
-          )}
+            )}
           </Box>
         </Paper>
 
-        {/* 快速操作 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' }
-              }}
-            >
-              快速操作
+        {/* 知识库列表 */}
+        <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>已添加的知识库 ({knowledgeBases.length})</Typography>
+            {isLoading ? (
+              <Box display="flex" justifyContent="center" py={3}>
+                <CircularProgress />
+              </Box>
+            ) : knowledgeBases.length === 0 ? (
+          <Paper sx={{ p: 4, textAlign: 'center', my: 5, borderRadius: 2 }}>
+            <Typography variant="body1" color="textSecondary" gutterBottom>
+              暂无知识库
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              创建和管理知识库的快捷操作
+            <Typography variant="body2" color="textSecondary">
+              点击右上角"创建知识库"按钮开始使用
             </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-
+          </Paper>
+        ) : (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
-            <Box sx={{ width: { xs: '100%', sm: '50%' }, p: 1 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleCreateKnowledge}
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  background: 'linear-gradient(45deg, #059669 30%, #10b981 90%)',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #047857 30%, #059669 90%)',
-                  }
-                }}
-              >
-                创建知识库
-              </Button>
-            </Box>
+            {knowledgeBases.map((kb) => (
+              <Box key={kb.id} sx={{ width: { xs: '100%', sm: '50%', md: '33.33%' }, p: 1 }}>
+                <StyledCard onClick={() => handleViewDetails(kb.id)}>
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <Avatar sx={{ mr: 1, bgcolor: 'primary.main' }}>
+                        <Folder size={20} />
+                      </Avatar>
+                      <Typography variant="h6" noWrap>{kb.name}</Typography>
+                    </Box>
 
-            <Box sx={{ width: { xs: '100%', sm: '50%' }, p: 1 }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<LaunchIcon />}
-                onClick={() => navigate('/knowledge')}
-                sx={{ py: 1.5 }}
-              >
-                管理知识库
-              </Button>
-            </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{
+                      mb: 2,
+                      height: 40,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                    }}>
+                      {kb.description || '无描述'}
+                    </Typography>
+
+                    <Box display="flex" flexWrap="wrap" gap={0.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        模型: {kb.model}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        • 创建: {formatDate(kb.created_at)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                  <Divider />
+                  <CardActions>
+                    <IconButton size="small" onClick={(e) => handleDelete(kb.id, e)}>
+                      <Trash2 size={16} />
+                    </IconButton>
+                    <Box flexGrow={1} />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Eye size={16} />}
+                      onClick={() => handleViewDetails(kb.id)}
+                    >
+                      查看
+                    </Button>
+                  </CardActions>
+                </StyledCard>
+              </Box>
+            ))}
           </Box>
-
-          {stats.totalKnowledgeBases === 0 && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              您还没有创建任何知识库。点击"创建知识库"开始使用知识库功能。
-            </Alert>
-          )}
-          </Box>
-        </Paper>
-
-        {/* 知识库配置说明 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' }
-              }}
-            >
-              知识库配置说明
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              了解知识库的各项配置参数和使用说明
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-
-          <Alert severity="info" sx={{ mb: 2 }}>
-            知识库的嵌入模型、分块大小、相似度阈值等参数在创建知识库时设置，每个知识库可以有不同的配置。
-          </Alert>
-
-          <Typography variant="body2" color="text.secondary">
-            • <strong>嵌入模型</strong>：用于将文本转换为向量，不同模型有不同的效果和维度<br/>
-            • <strong>分块大小</strong>：文档分割的块大小，影响搜索精度和上下文长度<br/>
-            • <strong>相似度阈值</strong>：搜索结果的最低相似度，越高结果越精确<br/>
-            • <strong>文档数量</strong>：搜索时返回的文档段数量，影响回答的详细程度
-          </Typography>
+        )}
           </Box>
         </Paper>
 
         {/* 数据管理 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' }
-              }}
-            >
-              数据管理
+        <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>数据管理</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              导入、导出备份和清理知识库数据
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              导出备份和清理知识库数据
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-
-          {stats.totalKnowledgeBases === 0 ? (
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              您还没有创建任何知识库。请先创建知识库后再进行数据管理操作。
-            </Alert>
-          ) : (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              数据管理操作会影响所有知识库，请谨慎操作。建议在操作前先导出备份。
-            </Alert>
-          )}
-
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {stats.totalKnowledgeBases === 0 ? (
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleCreateKnowledge}
+                variant="outlined"
+                startIcon={<Upload size={18} />}
+                onClick={() => setImportDialogOpen(true)}
                 disabled={loading}
-                sx={{
-                  background: 'linear-gradient(45deg, #059669 30%, #10b981 90%)',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #047857 30%, #059669 90%)',
-                  }
-                }}
               >
-                创建第一个知识库
+                导入数据
               </Button>
-            ) : (
-              <>
-                <Button
-                  variant="outlined"
-                  startIcon={<DownloadIcon />}
-                  onClick={() => setExportDialogOpen(true)}
-                  disabled={loading}
-                >
-                  导出数据
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => setClearDialogOpen(true)}
-                  disabled={loading}
-                >
-                  清理所有数据
-                </Button>
-              </>
-            )}
-          </Box>
+              <Button
+                variant="outlined"
+                startIcon={<Download size={18} />}
+                onClick={() => setExportDialogOpen(true)}
+                disabled={loading || knowledgeBases.length === 0}
+              >
+                导出数据
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<AlertTriangle size={18} />}
+                onClick={() => setClearDialogOpen(true)}
+                disabled={loading || knowledgeBases.length === 0}
+              >
+                清理所有数据
+              </Button>
+            </Box>
           </Box>
         </Paper>
       </Box>
 
-      {/* 清理确认对话框 */}
-      <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
-        <DialogTitle>确认清理所有知识库数据</DialogTitle>
+      {/* 创建知识库对话框 */}
+      <CreateKnowledgeDialog
+        open={createDialogOpen}
+        onClose={handleCloseDialog}
+        onSave={handleSubmitKnowledgeBase}
+        isEditing={false}
+      />
+
+      {/* 导入对话框 */}
+      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
+        <DialogTitle>导入知识库数据</DialogTitle>
         <DialogContent>
-          <Typography>
-            此操作将删除所有知识库、文档和向量数据，且无法恢复。确定要继续吗？
+          <Typography sx={{ mb: 2 }}>
+            选择之前导出的 JSON 备份文件进行导入。导入的数据将与现有数据合并。
           </Typography>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportData}
+            style={{ display: 'none' }}
+          />
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={20} /> : '选择文件'}
+          </Button>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setClearDialogOpen(false)}>取消</Button>
-          <Button onClick={handleClearAllData} color="error" disabled={loading}>
-            {loading ? <CircularProgress size={20} /> : '确认清理'}
-          </Button>
+          <Button onClick={() => setImportDialogOpen(false)}>关闭</Button>
         </DialogActions>
       </Dialog>
 
@@ -586,20 +524,28 @@ const KnowledgeSettings: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setExportDialogOpen(false)}>取消</Button>
-          <Button onClick={handleExportData} disabled={loading}>
+          <Button onClick={handleExportData} disabled={loading} variant="contained">
             {loading ? <CircularProgress size={20} /> : '确认导出'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* 创建知识库对话框 */}
-      <CreateKnowledgeDialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        onSave={handleSubmitKnowledgeBase}
-        isEditing={false}
-      />
-    </Box>
+      {/* 清理确认对话框 */}
+      <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
+        <DialogTitle>确认清理所有知识库数据</DialogTitle>
+        <DialogContent>
+          <Typography>
+            此操作将删除所有知识库、文档和向量数据，且无法恢复。确定要继续吗？
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearDialogOpen(false)}>取消</Button>
+          <Button onClick={handleClearAllData} color="error" disabled={loading} variant="contained">
+            {loading ? <CircularProgress size={20} /> : '确认清理'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };
 

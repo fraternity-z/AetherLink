@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box } from '@mui/material';
+import KnowledgeChip from '../chat/KnowledgeChip';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
+import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
 
@@ -69,6 +72,9 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 基础状态
   const [isIOS, setIsIOS] = useState(false); // 新增: 是否是iOS设备
 
+  // 知识库状态刷新标记
+  const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
+
 
 
   // 文件和图片状态
@@ -99,6 +105,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   // 使用共享的 hooks
   const { styles, isDarkMode, inputBoxStyle } = useInputStyles();
+  const { hasKnowledgeContext, getStoredKnowledgeContext, clearStoredKnowledgeContext } = useKnowledgeContext();
 
   // 获取AI辩论按钮显示设置
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
@@ -161,6 +168,18 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   useEffect(() => {
     const unsubscribe = toastManager.subscribe(setToastMessages);
     return unsubscribe;
+  }, []);
+
+  // 监听知识库选择事件，刷新显示
+  useEffect(() => {
+    const handleKnowledgeBaseSelected = () => {
+      setKnowledgeRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
+    return () => {
+      window.removeEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
+    };
   }, []);
 
   // 从 useInputStyles hook 获取样式
@@ -398,6 +417,23 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   return expandableContainer.renderContainer(
     <>
+      {/* 知识库状态显示 */}
+      {hasKnowledgeContext() && (() => {
+        const contextData = getStoredKnowledgeContext();
+        const knowledgeBaseName = contextData?.knowledgeBase?.name || '未知知识库';
+        return (
+          <Box key={`knowledge-${knowledgeRefreshKey}`} sx={{ px: 1, mb: 1 }}>
+            <KnowledgeChip
+              knowledgeBaseName={knowledgeBaseName}
+              onRemove={() => {
+                clearStoredKnowledgeContext();
+                setKnowledgeRefreshKey(prev => prev + 1);
+              }}
+            />
+          </Box>
+        );
+      })()}
+
       {/* 文件上传管理器 - 包含文件预览、拖拽上传、粘贴处理等功能 */}
       <FileUploadManager
         ref={fileUploadManagerRef}

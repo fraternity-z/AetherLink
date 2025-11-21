@@ -61,6 +61,11 @@ const KnowledgeButton: React.FC<KnowledgeButtonProps> = ({
 
     console.log(`[知识库选择] 已选择知识库: ${knowledgeBase.name}，将在发送消息时自动搜索相关内容`);
 
+    // 触发自定义事件，通知输入框组件刷新显示
+    window.dispatchEvent(new CustomEvent('knowledgeBaseSelected', {
+      detail: { knowledgeBase }
+    }));
+
     // 关闭知识库选择器
     setShowKnowledgeSelector(false);
   }, []);

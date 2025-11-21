@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Box, IconButton, Typography, Collapse, Chip } from '@mui/material';
+import { Box, IconButton, Typography, Collapse } from '@mui/material';
+import KnowledgeChip from '../chat/KnowledgeChip';
 import { MCPToolsButton, WebSearchButton, KnowledgeButton } from './buttons';
 import AIDebateButton from '../AIDebateButton';
 import QuickPhraseButton from '../QuickPhraseButton';
@@ -19,7 +20,6 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../shared/types';
 import type { DebateConfig } from '../../shared/services/AIDebateService';
-import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 import { VoiceButton, EnhancedVoiceInput } from '../VoiceRecognition';
 
@@ -88,13 +88,16 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   const [files, setFiles] = useState<FileContent[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
+  // 知识库状态刷新标记
+  const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
+
   // 获取当前话题状态
   const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
   const [currentTopicState, setCurrentTopicState] = useState<any>(null);
 
   // 使用自定义hooks
   const { styles, isDarkMode, inputBoxStyle } = useInputStyles();
-  const { hasKnowledgeContext, getKnowledgeContextSummary, clearStoredKnowledgeContext } = useKnowledgeContext();
+  const { hasKnowledgeContext, getStoredKnowledgeContext, clearStoredKnowledgeContext } = useKnowledgeContext();
 
   // 获取设置控制状态
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
@@ -192,6 +195,18 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                        (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
     setIsIOS(isIOSDevice);
+  }, []);
+
+  // 监听知识库选择事件，刷新显示
+  useEffect(() => {
+    const handleKnowledgeBaseSelected = () => {
+      setKnowledgeRefreshKey(prev => prev + 1);
+    };
+
+    window.addEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
+    return () => {
+      window.removeEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
+    };
   }, []);
 
 
@@ -669,24 +684,21 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
       } : {})
     }}>
       {/* 知识库状态显示 */}
-      {hasKnowledgeContext() && (
-        <Box sx={{ mb: 1, px: 1 }}>
-          <Chip
-            label={`📚 ${getKnowledgeContextSummary()}`}
-            onDelete={() => clearStoredKnowledgeContext()}
-            size="small"
-            color="primary"
-            variant="outlined"
-            sx={{
-              fontSize: '0.75rem',
-              height: 24,
-              '& .MuiChip-label': {
-                px: 1
-              }
-            }}
-          />
-        </Box>
-      )}
+      {hasKnowledgeContext() && (() => {
+        const contextData = getStoredKnowledgeContext();
+        const knowledgeBaseName = contextData?.knowledgeBase?.name || '未知知识库';
+        return (
+          <Box key={`knowledge-${knowledgeRefreshKey}`} sx={{ px: 1 }}>
+            <KnowledgeChip
+              knowledgeBaseName={knowledgeBaseName}
+              onRemove={() => {
+                clearStoredKnowledgeContext();
+                setKnowledgeRefreshKey(prev => prev + 1);
+              }}
+            />
+          </Box>
+        );
+      })()}
 
       {/* 输入框区域 */}
       {isVoiceMode ? (
@@ -700,6 +712,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
             setIsVoiceMode(false);
           }}
           startRecognition={startRecognition}
+          currentMessage={message}
         />
       ) : (
         /* 文本输入模式 */

@@ -669,6 +669,7 @@ const MCPServerSettings: React.FC = () => {
                             )}
                           </Box>
                         }
+                        secondaryTypographyProps={{ component: 'div' }}
                       />
                     </ListItemButton>
 
@@ -780,6 +781,7 @@ const MCPServerSettings: React.FC = () => {
                       {t('settings.mcpServer.quickActions.import.description')}
                     </Typography>
                   }
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             </ListItem>
@@ -820,6 +822,7 @@ const MCPServerSettings: React.FC = () => {
                       {t('settings.mcpServer.quickActions.builtin.description')}
                     </Typography>
                   }
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             </ListItem>

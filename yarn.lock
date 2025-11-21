@@ -3985,10 +3985,10 @@ capacitor-advanced-file-manager@^0.1.5:
   resolved "https://registry.npmjs.org/capacitor-advanced-file-manager/-/capacitor-advanced-file-manager-0.1.5.tgz"
   integrity sha512-K0WCGlEUoNAdoRTWkAh9TKggHFMvTgZ7xRM1bflxu/UOYmnmnQnrGfhsNV2GmmVfmmTuZ+MZstHU3IuAg59Alw==
 
-capacitor-cors-bypass-enhanced@^1.0.9:
-  version "1.0.9"
-  resolved "https://registry.npmjs.org/capacitor-cors-bypass-enhanced/-/capacitor-cors-bypass-enhanced-1.0.9.tgz"
-  integrity sha512-gfmCqVUU5iCsKeKV4H7RVVs5A+5zgCHtiZmIAuO82+fan4x5x/Qi1suf2s1PI0hm1uvYf2Tyq7Pq5+HZdK8Rqg==
+capacitor-cors-bypass-enhanced@^1.0.11:
+  version "1.0.11"
+  resolved "https://registry.npmjs.org/capacitor-cors-bypass-enhanced/-/capacitor-cors-bypass-enhanced-1.0.11.tgz"
+  integrity sha512-GB5WVQDC+ctqJvIaLV/YSjnyHcUDmaV3hGbRwvB04iS5IfWZtrjhObe4PBiEiPJruqcY47sDA2BOYT1VOXuc3Q==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.12.1"
 
@@ -8865,11 +8865,6 @@ proxy-addr@^2.0.7:
     forwarded "0.2.0"
     ipaddr.js "1.9.1"
 
-proxy-compare@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.npmjs.org/proxy-compare/-/proxy-compare-3.0.1.tgz"
-  integrity sha512-V9plBAt3qjMlS1+nC8771KNf6oJ12gExvaxnNzN/9yVRLdTv/lc+oJlnSzrdYDAvBfTStPCoiaCOTmTs0adv7Q==
-
 proxy-from-env@^1.1.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/proxy-from-env/-/proxy-from-env-1.1.0.tgz"
@@ -10565,13 +10560,6 @@ validate-npm-package-license@^3.0.1:
   dependencies:
     spdx-correct "^3.0.0"
     spdx-expression-parse "^3.0.0"
-
-valtio@^2.2.0:
-  version "2.2.0"
-  resolved "https://registry.npmjs.org/valtio/-/valtio-2.2.0.tgz"
-  integrity sha512-l/zzQahUIm+dfUUP9fIecNVEWJLea9shMC1Bb1aK+v4XNOEzoq796Qax+yzMemmqpltuxfH7kPJy62FVGJDEtw==
-  dependencies:
-    proxy-compare "^3.0.1"
 
 vary@^1, vary@^1.1.2:
   version "1.1.2"

@@ -537,6 +537,7 @@ const MCPServerDetail: React.FC = () => {
                             </Typography>
                           </Box>
                         }
+                        secondaryTypographyProps={{ component: 'div' }}
                       />
                     </ListItem>
                   ))}
