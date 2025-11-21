@@ -82,7 +82,6 @@
     "@capacitor-community/safe-area": "^7.0.0-alpha.1",
     "@capacitor-community/speech-recognition": "^7.0.0",
     "@capacitor-community/text-to-speech": "^6.1.0",
-    "@capacitor-mlkit/barcode-scanning": "^7.3.0",
     "@capacitor/android": "^7.4.4",
     "@capacitor/app": "^7.1.0",
     "@capacitor/browser": "^7.0.2",

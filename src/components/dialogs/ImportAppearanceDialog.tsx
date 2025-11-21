@@ -18,11 +18,9 @@ import {
   ListItemText,
   Chip
 } from '@mui/material';
-import { X, Upload, FileText, Link as LinkIcon, Camera } from 'lucide-react';
+import { X, Upload, FileText, Link as LinkIcon } from 'lucide-react';
 import type { AppearanceConfig } from '../../shared/utils/appearanceConfig';
 import { decodeAppearanceConfig, validateAppearanceConfig, importAppearanceConfigFromFile } from '../../shared/utils/appearanceConfig';
-import { Capacitor } from '@capacitor/core';
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 interface ImportAppearanceDialogProps {
   open: boolean;
@@ -36,7 +34,6 @@ const ImportAppearanceDialog: React.FC<ImportAppearanceDialogProps> = ({ open, o
   const [shareLink, setShareLink] = useState('');
   const [error, setError] = useState('');
   const [previewConfig, setPreviewConfig] = useState<AppearanceConfig | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
 
   const handleShareCodeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setShareCode(event.target.value);
@@ -85,58 +82,6 @@ const ImportAppearanceDialog: React.FC<ImportAppearanceDialogProps> = ({ open, o
     } catch (err) {
       setError('解析失败，请检查链接是否正确');
       setPreviewConfig(null);
-    }
-  };
-
-  // 扫码功能
-  const handleScanQRCode = async () => {
-    if (!Capacitor.isNativePlatform()) {
-      setError('扫码功能仅在移动端可用');
-      return;
-    }
-
-    try {
-      setIsScanning(true);
-      setError('');
-
-      // 请求相机权限
-      const { camera } = await BarcodeScanner.requestPermissions();
-      if (camera !== 'granted') {
-        setError('需要相机权限才能扫码');
-        setIsScanning(false);
-        return;
-      }
-
-      // 开始扫码
-      const result = await BarcodeScanner.scan();
-      
-      if (result.barcodes && result.barcodes.length > 0) {
-        const scannedUrl = result.barcodes[0].rawValue;
-        
-        // 从扫描的 URL 中提取分享码
-        const match = scannedUrl.match(/[?&]share=([^&]+)/);
-        if (!match) {
-          setError('扫描的二维码不是有效的分享链接');
-          return;
-        }
-
-        const code = match[1];
-        const config = decodeAppearanceConfig(code);
-        
-        if (!validateAppearanceConfig(config)) {
-          setError('无效的外观配置');
-          return;
-        }
-
-        setPreviewConfig(config);
-        setShareLink(scannedUrl);
-        setError('');
-      }
-    } catch (err) {
-      console.error('扫码失败:', err);
-      setError('扫码失败，请重试');
-    } finally {
-      setIsScanning(false);
     }
   };
 
@@ -344,24 +289,8 @@ const ImportAppearanceDialog: React.FC<ImportAppearanceDialogProps> = ({ open, o
         {tabValue === 1 && (
           <Box>
             <Alert severity="info" sx={{ mb: 2 }}>
-              {Capacitor.isNativePlatform() 
-                ? '可以扫描分享链接的二维码或直接粘贴链接' 
-                : '粘贴好友分享的完整链接'}
+              粘贴好友分享的完整链接
             </Alert>
-            
-            {/* 移动端显示扫码按钮 */}
-            {Capacitor.isNativePlatform() && (
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Camera size={18} />}
-                onClick={handleScanQRCode}
-                disabled={isScanning}
-                sx={{ mb: 2 }}
-              >
-                {isScanning ? '扫码中...' : '扫描分享链接二维码'}
-              </Button>
-            )}
             
             <TextField
               fullWidth
