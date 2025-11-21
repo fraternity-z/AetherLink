@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { Image, Camera, FileText, ArrowLeftRight } from 'lucide-react';
+import { Image, Camera, FileText, ArrowLeftRight, BookOpen } from 'lucide-react';
 import { CustomIcon } from '../icons';
 
 interface UploadMenuProps {
@@ -18,6 +18,9 @@ interface UploadMenuProps {
   // 快捷短语相关
   onQuickPhrase?: () => void;
   showQuickPhrase?: boolean;
+  // 笔记相关
+  onNoteSelect?: () => void;
+  showNote?: boolean;
 }
 
 const UploadMenu: React.FC<UploadMenuProps> = ({
@@ -35,6 +38,9 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
   // 快捷短语相关
   onQuickPhrase,
   showQuickPhrase = false,
+  // 笔记相关
+  onNoteSelect,
+  showNote = false,
 }) => {
   return (
     <Menu
@@ -117,6 +123,33 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
         </ListItemIcon>
         <ListItemText primary="上传文件" />
       </MenuItem>
+
+      {/* 笔记选项 */}
+      {showNote && onNoteSelect && [
+        <Divider key="note-divider" sx={{ my: 0.5 }} />,
+        <MenuItem
+          key="note-item"
+          onClick={() => {
+            onNoteSelect();
+            onClose();
+          }}
+          sx={{ py: 1.5 }}
+        >
+          <ListItemIcon>
+            <BookOpen size={20} color="#ff9800" />
+          </ListItemIcon>
+          <ListItemText
+            primary="添加笔记"
+            secondary="从笔记中选择内容发送"
+            sx={{
+              '& .MuiListItemText-secondary': {
+                fontSize: '0.75rem',
+                color: 'text.secondary'
+              }
+            }}
+          />
+        </MenuItem>
+      ]}
 
       {/* AI辩论选项 */}
       {showAIDebate && onAIDebate && [

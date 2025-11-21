@@ -56,6 +56,9 @@ const AssistantModelSettings = lazy(() => import('../components/TopicManagement/
 // 导入工作区页面
 const WorkspaceSettings = lazy(() => import('../pages/Settings/WorkspaceSettings'));
 const WorkspaceDetail = lazy(() => import('../pages/Settings/WorkspaceDetail'));
+// 导入笔记设置页面
+const NoteSettings = lazy(() => import('../pages/Settings/NoteSettings'));
+const NoteEditor = lazy(() => import('../pages/Settings/NoteEditor'));
 // 导入权限管理页面
 const FilePermissionPage = lazy(() => import('../pages/Settings/FilePermissionPage'));
 // 导入思考过程设置页面
@@ -172,6 +175,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/knowledge" element={<KnowledgeSettings />} />
         <Route path="/settings/workspace" element={<WorkspaceSettings />} />
         <Route path="/settings/workspace/:workspaceId" element={<WorkspaceDetail />} />
+        <Route path="/settings/notes" element={<NoteSettings />} />
+        <Route path="/settings/notes/edit" element={<NoteEditor />} />
         <Route path="/settings/file-permission" element={<FilePermissionPage />} />
         <Route path="/settings/assistant-settings" element={<AssistantSettings />} />
         <Route path="/settings/assistant-model-settings" element={<AssistantModelSettings />} />

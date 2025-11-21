@@ -4,8 +4,10 @@ import UploadMenu from '../UploadMenu';
 import ToolsMenu from '../ToolsMenu';
 import AIDebateButton from '../../AIDebateButton';
 import QuickPhraseButton from '../../QuickPhraseButton';
+import NoteSelector from '../../NoteSelector';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../../shared/types';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 
 interface MenuManagerProps {
   // 基础状态
@@ -92,6 +94,7 @@ const useMenuManager = ({
   const [multiModelSelectorOpen, setMultiModelSelectorOpen] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [toolsMenuAnchorEl, setToolsMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [noteSelectorOpen, setNoteSelectorOpen] = useState(false);
 
   // 组件引用
   const aiDebateButtonRef = useRef<any>(null);
@@ -213,6 +216,52 @@ const useMenuManager = ({
     }
   }, []);
 
+  // 笔记选择处理函数
+  const handleNoteSelect = useCallback(() => {
+    setNoteSelectorOpen(true);
+  }, []);
+
+  const handleNoteSelected = useCallback(async (path: string, content: string, fileName: string) => {
+    // 将笔记作为文件添加到 files 数组
+    const noteId = `note-${Date.now()}`;
+    const base64Content = btoa(unescape(encodeURIComponent(content)));
+    
+    const fileRecord = {
+      id: noteId,
+      name: fileName,
+      origin_name: fileName,
+      path: '', // 笔记不需要物理路径
+      size: new Blob([content]).size,
+      ext: 'md',
+      type: 'text', // 使用 'text' 类型，这样 MobileFileStorageService 会解码 base64Data
+      created_at: new Date().toISOString(),
+      count: 1,
+      base64Data: base64Content, // 确保 base64Data 存在
+      mimeType: 'text/markdown'
+    };
+    
+    // 保存到数据库，这样 readFile 可以读取到
+    try {
+      await dexieStorage.files.put(fileRecord);
+    } catch (error) {
+      console.error('保存笔记文件到数据库失败:', error);
+    }
+    
+    const noteFile: FileContent = {
+      id: noteId,
+      name: fileName,
+      mimeType: 'text/markdown',
+      extension: 'md',
+      size: new Blob([content]).size,
+      url: `note://${path}`,
+      base64Data: base64Content,
+      fileRecord: fileRecord
+    };
+    
+    setFiles([...files, noteFile]);
+    setNoteSelectorOpen(false);
+  }, [files, setFiles]);
+
   // 渲染所有菜单
   const renderMenus = useCallback(() => {
     return (
@@ -231,6 +280,15 @@ const useMenuManager = ({
           isDebating={isDebating}
           onQuickPhrase={handleQuickPhraseClickForUploadMenu}
           showQuickPhrase={showQuickPhraseButton}
+          onNoteSelect={handleNoteSelect}
+          showNote={true}
+        />
+
+        {/* 笔记选择器 */}
+        <NoteSelector
+          open={noteSelectorOpen}
+          onClose={() => setNoteSelectorOpen(false)}
+          onSelectNote={handleNoteSelected}
         />
 
         {/* 多模型选择器 */}

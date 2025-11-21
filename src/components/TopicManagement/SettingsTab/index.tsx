@@ -39,6 +39,22 @@ interface SettingsTabProps {
   settings: Setting[];
   /** 设置变更回调函数 */
   onSettingChange: (settingId: string, value: boolean | string) => void;
+  /** 初始上下文长度 */
+  initialContextLength?: number;
+  /** 上下文长度变更回调 */
+  onContextLengthChange?: (value: number) => void;
+  /** 初始上下文计数 */
+  initialContextCount?: number;
+  /** 上下文计数变更回调 */
+  onContextCountChange?: (value: number) => void;
+  /** 初始数学渲染器 */
+  initialMathRenderer?: string;
+  /** 数学渲染器变更回调 */
+  onMathRendererChange?: (value: string) => void;
+  /** 初始思考努力程度 */
+  initialThinkingEffort?: string;
+  /** 思考努力程度变更回调 */
+  onThinkingEffortChange?: (value: string) => void;
   /** MCP 模式 */
   mcpMode?: 'prompt' | 'function';
   /** MCP 工具是否启用 */

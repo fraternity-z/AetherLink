@@ -18,6 +18,7 @@ import {
   BookOpen as MenuBookIcon,
   Folder as WorkspaceIcon,
   Database as DatabaseIcon,
+  FileText as NoteIcon,
 } from 'lucide-react';
 import {
   SafeAreaContainer,
@@ -211,6 +212,14 @@ const SettingsPage: React.FC = () => {
           icon: <MenuBookIcon size={24} />,
           path: '/settings/knowledge',
           onClick: () => navigateTo('/settings/knowledge'),
+        },
+        {
+          id: 'note-settings',
+          title: '笔记设置',
+          description: '配置本地笔记存储路径和显示选项',
+          icon: <NoteIcon size={24} />,
+          path: '/settings/notes',
+          onClick: () => navigateTo('/settings/notes'),
         },
         {
           id: 'data-settings',
