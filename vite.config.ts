@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-oxc'  // 使用 OXC 处理 React，更适配 rolldown-vite
+import react from '@vitejs/plugin-react'  // Rolldown-Vite 官方推荐，已内置 OXC 优化
 import solidPlugin from 'vite-plugin-solid'
 
 // Rolldown-Vite + OXC + SolidJS 混合配置
@@ -8,35 +8,15 @@ import solidPlugin from 'vite-plugin-solid'
 export default defineConfig({
   plugins: [
     // SolidJS 插件 - 必须在 React 之前，处理 .solid.tsx 文件
+    // 注意：vite-plugin-solid 尚未完全兼容 Rolldown，会有 esbuildOptions 警告（不影响功能）
     solidPlugin({
       include: /\.solid\.(tsx|jsx|ts|js)$/,
     }),
-    // 使用 OXC 处理 React - rolldown-vite 推荐方案
+    // Rolldown-Vite 官方 React 插件（已内置 OXC 优化）
     react({
       include: /^(?!.*\.solid\.(tsx|jsx|ts|js)$).*\.(tsx|jsx)$/,
     }),
-    {
-      name: 'rolldown-clean-optimize-deps',
-      enforce: 'post',
-      config: () => ({
-        optimizeDeps: {
-          // 删除已废弃的 esbuildOptions，避免 rolldown-vite 警告
-          esbuildOptions: undefined
-        }
-      }),
-      configResolved(resolvedConfig) {
-        // 清理 esbuildOptions
-        if (resolvedConfig.optimizeDeps?.esbuildOptions) {
-          delete resolvedConfig.optimizeDeps.esbuildOptions
-        }
-        // 清理 rollupOptions.jsx（Rolldown 不支持此选项）
-        const optimizeDeps = resolvedConfig.optimizeDeps as any
-        if (optimizeDeps?.rollupOptions?.jsx) {
-          delete optimizeDeps.rollupOptions.jsx
-        }
-      }
-    }
-    // 注意：Rolldown-Vite 内置了类型检查，不需要额外的 checker 插件
+    // 注意：Rolldown-Vite 内置了类型检查和优化，不需要额外插件
   ],
 
   // 开发服务器配置
@@ -73,6 +53,7 @@ export default defineConfig({
     target: 'es2022', // 现代浏览器目标，生成更小的代码
     outDir: 'dist',
     rollupOptions: {
+      // Rolldown 自动启用多线程优化，无需手动配置
       output: {
         // 使用 static 目录结构
         chunkFileNames: 'static/js/[name]-[hash].js',
@@ -80,7 +61,8 @@ export default defineConfig({
         assetFileNames: 'static/[ext]/[name]-[hash].[ext]',
       },
     },
-    chunkSizeWarningLimit: 500
+    chunkSizeWarningLimit: 500,
+    // 注意：Rolldown 已自动启用持久化缓存（通过 cacheDir）
   },
   // 优化依赖预构建 - Rolldown-Vite 会自动优化
   optimizeDeps: {
@@ -101,10 +83,18 @@ export default defineConfig({
     // 移除 force: true，避免每次都重新构建
     // force: true
     // 注意：Rolldown-Vite 使用内置优化，不需要 esbuildOptions
+    // 启用持久化缓存
+    holdUntilCrawlEnd: false, // 提前开始预构建，不等待所有依赖扫描完成
   },
 
-  // 缓存配置
+  // 缓存配置 - 持久化缓存目录
   cacheDir: 'node_modules/.vite',
+  
+  // Rolldown 性能优化配置
+  experimental: {
+    // 启用 Rolldown 的实验性优化特性
+    hmrPartialAccept: true, // HMR 部分接受优化
+  },
 
   // 解析配置
   resolve: {

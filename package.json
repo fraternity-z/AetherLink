@@ -222,7 +222,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@types/react-katex": "^3.0.4",
-    "@vitejs/plugin-react-oxc": "^0.1.0",
+    "@vitejs/plugin-react": "^5.1.1",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "@vitejs/plugin-vue": "^5.2.1",
     "concurrently": "^9.1.2",
