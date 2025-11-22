@@ -56,7 +56,6 @@ interface StreamProcessingState {
   content: string;
   reasoning: string;
   reasoningStartTime: number;
-  previousCompleteResponse: string;
 }
 
 /**
@@ -68,12 +67,8 @@ export class UnifiedStreamProcessor {
   private state: StreamProcessingState = {
     content: '',
     reasoning: '',
-    reasoningStartTime: 0,
-    previousCompleteResponse: ''
+    reasoningStartTime: 0
   };
-
-  // DeepSeek特殊处理
-  private isDeepSeekProvider: boolean = false;
 
   // AbortController管理
   private abortController?: AbortController;
@@ -82,16 +77,19 @@ export class UnifiedStreamProcessor {
   constructor(options: UnifiedStreamOptions) {
     this.options = options;
 
-    // 检查是否为DeepSeek提供商
-    this.isDeepSeekProvider = options.model.provider === 'deepseek' ||
-                             (typeof options.model.id === 'string' && options.model.id.includes('deepseek'));
-
     // 设置AbortController
     if (options.messageId) {
       const { abortController, cleanup } = createAbortController(options.messageId, true);
       this.abortController = abortController;
       this.cleanup = cleanup;
     }
+  }
+
+  /**
+   * 检查是否已中断
+   */
+  private isAborted(): boolean {
+    return this.options.abortSignal?.aborted || this.abortController?.signal.aborted || false;
   }
 
   /**
@@ -125,7 +123,7 @@ export class UnifiedStreamProcessor {
     console.log(`[UnifiedStreamProcessor] 处理流式响应，模型: ${this.options.model.id}`);
 
     // 检查中断
-    if (this.options.abortSignal?.aborted || this.abortController?.signal.aborted) {
+    if (this.isAborted()) {
       throw new DOMException('Operation aborted', 'AbortError');
     }
 
@@ -146,7 +144,7 @@ export class UnifiedStreamProcessor {
 
     // 处理流
     for await (const chunk of readableStreamAsyncIterable(processedStream)) {
-      if (this.options.abortSignal?.aborted || this.abortController?.signal.aborted) {
+      if (this.isAborted()) {
         break;
       }
       await this.handleAdvancedChunk(chunk);
@@ -158,35 +156,12 @@ export class UnifiedStreamProcessor {
 
 
   /**
-   * DeepSeek重复内容检测
-   */
-  private shouldSkipDeepSeekContent(newContent: string): boolean {
-    if (!this.isDeepSeekProvider) {
-      return false;
-    }
-
-    const potentialCompleteResponse = this.state.content + newContent;
-
-    if (this.state.previousCompleteResponse &&
-        potentialCompleteResponse.length < this.state.previousCompleteResponse.length &&
-        this.state.previousCompleteResponse.startsWith(potentialCompleteResponse)) {
-      console.log('[UnifiedStreamProcessor] 跳过疑似重复内容块');
-      return true;
-    }
-
-    this.state.previousCompleteResponse = potentialCompleteResponse;
-    return false;
-  }
-
-  /**
    * 处理高级模式的chunk
    */
   private async handleAdvancedChunk(chunk: any): Promise<void> {
     if (chunk.type === 'text-delta') {
-      // DeepSeek重复内容检测
-      if (this.shouldSkipDeepSeekContent(chunk.textDelta)) {
-        return;
-      }
+      // 注意：DeepSeek 的重复检测已经在 streamUtils.ts 的 openAIChunkToTextDelta 中处理
+      // 这里接收到的 textDelta 已经是经过去重的增量内容
 
       // 检查是否是推理阶段结束（第一次收到内容）
       const isFirstContent = this.state.content === '' && this.state.reasoning !== '';

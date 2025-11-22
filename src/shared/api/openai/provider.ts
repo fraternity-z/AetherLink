@@ -507,6 +507,30 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 
 
   /**
+   * 创建迭代回调函数
+   * 处理多轮工具调用时的内容累积逻辑
+   */
+  private createIterationCallback(
+    iteration: number,
+    accumulatedContent: { value: string },
+    onUpdate?: (content: string, reasoning?: string) => void
+  ): (content: string, reasoning?: string) => void {
+    return (content: string, reasoning?: string) => {
+      if (iteration === 1) {
+        // 第一次迭代，直接使用内容
+        accumulatedContent.value = content;
+        if (onUpdate) onUpdate(content, reasoning);
+      } else {
+        // 后续迭代，添加分隔符并传递新增的内容
+        const separator = accumulatedContent.value.trim() ? '\n\n' : '';
+        const newContent = separator + content;
+        accumulatedContent.value += newContent;
+        if (onUpdate) onUpdate(newContent, reasoning); // 传递包含分隔符的新增内容
+      }
+    };
+  }
+
+  /**
    * 处理流式响应
    * @param params 请求参数
    * @param onUpdate 更新回调
@@ -527,26 +551,14 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     // 工具调用循环处理（类似非流式响应）
     let currentMessages = [...params.messages];
     let iteration = 0;
-    let accumulatedContent = ''; // 累积的内容
+    const accumulatedContent = { value: '' }; // 使用对象便于引用传递
 
     while (true) {
       iteration++;
       console.log(`[OpenAIProvider] 流式工具调用迭代 ${iteration}`);
 
-      // 创建当前迭代的回调函数
-      const enhancedCallback = (content: string, reasoning?: string) => {
-        if (iteration === 1) {
-          // 第一次迭代，直接使用内容
-          accumulatedContent = content;
-          onUpdate(content, reasoning);
-        } else {
-          // 后续迭代，添加分隔符并传递新增的内容
-          const separator = accumulatedContent.trim() ? '\n\n' : '';
-          const newContent = separator + content;
-          accumulatedContent += newContent;
-          onUpdate(newContent, reasoning); // 传递包含分隔符的新增内容
-        }
-      };
+      // 使用公共方法创建迭代回调
+      const enhancedCallback = this.createIterationCallback(iteration, accumulatedContent, onUpdate);
 
       // 准备请求参数，确保工具配置正确
       const iterationParams = {
@@ -649,41 +661,15 @@ export class OpenAIProvider extends BaseOpenAIProvider {
       // 工具调用循环处理
       let currentMessages = [...params.messages];
       let iteration = 0;
-      let accumulatedContent = ''; // 累积的内容
+      const accumulatedContent = { value: '' }; // 使用对象便于引用传递
 
       while (true) {
         iteration++;
         console.log(`[OpenAIProvider] 无回调流式工具调用迭代 ${iteration}`);
 
-        // 创建一个虚拟回调函数，用于处理流式响应
-        let fullResponse = '';
-        let lastUpdateTime = Date.now();
-        const updateInterval = 50; // 50毫秒更新一次，避免过于频繁的更新
-
-        // 创建一个虚拟回调函数
-        const virtualCallback = (content: string) => {
-          // 只在内容有变化且距离上次更新超过指定时间间隔时才触发回调
-          if (content !== fullResponse && (Date.now() - lastUpdateTime) > updateInterval) {
-            // 处理内容累积
-            if (iteration === 1) {
-              // 第一次迭代，直接使用内容
-              accumulatedContent = content;
-              fullResponse = content;
-            } else {
-              // 后续迭代，添加分隔符并追加内容
-              const separator = accumulatedContent.trim() ? '\n\n' : '';
-              const newContent = separator + content;
-              accumulatedContent += newContent;
-              fullResponse = accumulatedContent;
-            }
-
-            // 更新最后更新时间
-            lastUpdateTime = Date.now();
-
-            // 这里我们可以添加其他处理逻辑，例如更新UI
-            console.log(`[OpenAIProvider.virtualCallback] 更新内容，当前长度: ${fullResponse.length}`);
-          }
-        };
+        // 使用公共方法创建迭代回调（传入 undefined 作为 onUpdate）
+        // 这里不需要实际的 UI 更新回调，只需要累积内容
+        const virtualCallback = this.createIterationCallback(iteration, accumulatedContent, undefined);
 
         // 准备请求参数，确保工具配置正确
         const iterationParams = {
