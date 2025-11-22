@@ -26,7 +26,6 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
   showModelAvatar,
   showModelName,
   settings,
-  themeColors,
   themeStyle,
   theme,
   getProviderName,

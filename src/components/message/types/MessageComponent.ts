@@ -25,6 +25,8 @@ export interface MessageSettings {
   messageBubbleMaxWidth?: number;
   messageBubbleMinWidth?: number;
   showMicroBubbles?: boolean;
+  hideUserBubble?: boolean;
+  hideAIBubble?: boolean;
 }
 
 export interface ThemeColors {
