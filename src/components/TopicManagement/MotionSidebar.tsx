@@ -290,7 +290,7 @@ const MotionSidebar = React.memo(function MotionSidebar({
               position: 'fixed',
               left: 0,
               top: 64, // 避开顶部工具栏，从AppBar下方开始
-              width: 50, // 50px触发区域，更容易触发
+              width: 25, // 🔧 修复：调整为25px，平衡手势触发和按钮点击
               height: 'calc(100vh - 64px)', // 调整高度，不覆盖顶部工具栏
               zIndex: 1300,
               backgroundColor: 'transparent',
