@@ -11,23 +11,14 @@ import './i18n/config';
 // 移除旧的系统提示词slice引用
 // import { loadSystemPrompts } from './shared/store/slices/systemPromptsSlice';
 
-// 导入 EventSource polyfill 以支持移动端 SSE
-import { EventSourcePolyfill } from 'event-source-polyfill';
-import { Capacitor } from '@capacitor/core';
-
 // 🚀 性能优化：初始化性能追踪系统
 import { initPerformanceTracking } from './utils/performanceMetrics';
+import { Capacitor } from '@capacitor/core';
 
 //  保存原生fetch引用，防止被拦截器覆盖
 if (typeof globalThis !== 'undefined' && globalThis.fetch) {
   (globalThis as any).__originalFetch = globalThis.fetch.bind(globalThis);
   console.log('[Fetch Backup] 原生fetch已备份');
-}
-
-// 全局替换 EventSource
-if (typeof window !== 'undefined') {
-  (window as any).EventSource = EventSourcePolyfill;
-  console.log('[SSE Polyfill] EventSource polyfill 已加载');
 }
 
 

@@ -10,6 +10,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { universalFetch } from '../../../utils/universalFetch';
 import { Capacitor } from '@capacitor/core';
+import { MobileSSETransport } from './MobileSSETransport';
 
 export interface MCPClientOptions {
   baseUrl: string;
@@ -126,16 +127,31 @@ export class MCPClientAdapter {
     // SSE 传输（默认）
     console.log('[MCP Client] 使用 SSE 传输');
     console.log('[MCP Client] Headers:', JSON.stringify(prepareHeaders()));
+    console.log('[MCP Client] 平台检测:', Capacitor.isNativePlatform() ? '移动端（MobileSSETransport）' : 'Web 端（SSEClientTransport）');
     
-    return new SSEClientTransport(new URL(baseUrl), {
-      fetch: customFetch, // 添加顶层 fetch（用于消息发送）
-      eventSourceInit: {
-        fetch: customFetch
-      },
-      requestInit: {
-        headers: prepareHeaders()
-      }
-    });
+    // 移动端：使用自定义的 MobileSSETransport（基于 CorsBypass.startSSE）
+    // Web 端：使用标准的 SSEClientTransport
+    if (Capacitor.isNativePlatform()) {
+      console.log('[MCP Client] 移动端：使用 MobileSSETransport（CorsBypass.startSSE）');
+      const headers = prepareHeaders();
+      console.log('[MCP Client] 准备传递给 MobileSSETransport 的 headers:', JSON.stringify(headers));
+      
+      return new MobileSSETransport(new URL(baseUrl), {
+        headers,
+        fetch: customFetch  // 用于发送消息（HTTP POST）
+      });
+    } else {
+      console.log('[MCP Client] Web 端：使用标准 SSE 配置');
+      return new SSEClientTransport(new URL(baseUrl), {
+        fetch: customFetch,
+        eventSourceInit: {
+          fetch: customFetch
+        },
+        requestInit: {
+          headers: prepareHeaders()
+        }
+      });
+    }
   }
 
   /**
