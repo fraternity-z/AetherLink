@@ -1,63 +1,44 @@
 /**
- * MCP 客户端适配器
- * 基于官方 @modelcontextprotocol/sdk
- * 支持 SSE 和 HTTP Stream 传输
+ * AI SDK MCP 客户端适配器（移动端专用）
+ * 
+ * 移动端特点：
+ * - 使用 @modelcontextprotocol/sdk 底层客户端
+ * - 通过 universalFetch（包含 CorsBypass 插件）绕过 CORS
+ * - 移动端 WebView 仍然有 CORS 限制，需要插件支持
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { universalFetch } from '../../../utils/universalFetch';
-import { Capacitor } from '@capacitor/core';
+import type { MCPClientOptions, MCPTool, MCPCallToolResponse } from './MCPClientAdapter';
 
-export interface MCPClientOptions {
-  baseUrl: string;
-  headers?: Record<string, string>;
-  timeout?: number;
-  type?: 'sse' | 'streamableHttp';
-}
-
-export interface MCPTool {
-  name: string;
-  description: string;
-  inputSchema: any;
-}
-
-export interface MCPCallToolResponse {
-  content: Array<{
-    type: 'text' | 'image' | 'resource';
-    text?: string;
-    data?: string;
-    mimeType?: string;
-  }>;
-  isError: boolean;
-}
-
-export class MCPClientAdapter {
+export class AiSdkMCPClient {
   private client: Client | null = null;
   private transport: Transport | null = null;
   private options: MCPClientOptions;
 
   constructor(options: MCPClientOptions) {
     this.options = options;
-    console.log(`[MCP Client] 创建客户端适配器`);
-    console.log(`[MCP Client] 基础URL: ${options.baseUrl}`);
-    console.log(`[MCP Client] 类型: ${options.type || 'sse'}`);
-    console.log(`[MCP Client] 平台: ${Capacitor.isNativePlatform() ? '移动端' : 'Web端'}`);
+    
+    console.log(`[Mobile MCP Client] 创建客户端适配器（移动端 - CorsBypass 插件）`);
+    console.log(`[Mobile MCP Client] 基础URL: ${options.baseUrl}`);
+    console.log(`[Mobile MCP Client] 类型: ${options.type || 'streamableHttp'}`);
+    console.log(`[Mobile MCP Client] 让 SDK 自动管理 session`);
   }
 
   /**
    * 初始化连接
    */
   async initialize(): Promise<void> {
-    console.log(`[MCP Client] 开始初始化连接`);
+    console.log(`[Mobile MCP Client] 开始初始化连接`);
 
     try {
       // 创建客户端
       this.client = new Client(
         {
-          name: 'AetherLink',
+          name: 'AetherLink Mobile',
           version: '1.0.0'
         },
         {
@@ -70,67 +51,67 @@ export class MCPClientAdapter {
         }
       );
       
-      console.log('[MCP Client] 客户端创建完成');
+      console.log('[Mobile MCP Client] 客户端创建完成');
 
-      // 创建传输层
+      // 创建传输层（移动端直接使用原生 fetch，无需 CORS 处理）
       this.transport = await this.createTransport();
 
-      // 连接
+      // 连接（会自动发送初始化请求，不带 sessionId）
       await this.client.connect(this.transport);
 
-      console.log(`[MCP Client] 连接成功`);
+      console.log(`[Mobile MCP Client] 连接成功（已发送初始化请求）`);
     } catch (error) {
-      console.error('[MCP Client] 初始化失败:', error);
+      console.error('[Mobile MCP Client] 初始化失败:', error);
       throw error;
     }
   }
 
   /**
-   * 创建传输层
+   * 创建传输层（移动端专用，使用 universalFetch + CorsBypass）
    */
   private async createTransport(): Promise<Transport> {
     const { baseUrl, headers, type } = this.options;
 
-    // 创建自定义 fetch 函数，完全模仿 Cherry Studio 的方式
+    // 移动端使用 universalFetch（自动使用 CorsBypass 插件绕过 CORS）
+    console.log('[Mobile MCP Client] 使用 universalFetch + CorsBypass 插件');
+
+    // 创建自定义 fetch 函数（完全模仿 Web 端的 MCPClientAdapter）
     const customFetch = async (url: string | URL, init?: RequestInit) => {
       const urlString = typeof url === 'string' ? url : url.toString();
-      console.log(`[MCP Client] Fetch: ${urlString}`);
-      console.log(`[MCP Client] Fetch init:`, init);
+      console.log(`[Mobile MCP Client] Fetch: ${urlString}`);
+      console.log(`[Mobile MCP Client] Fetch init:`, init);
       
-      // 直接传递所有参数给 universalFetch，不修改
+      // 直接传递所有参数给 universalFetch，不修改（与 Web 端完全一致）
       return universalFetch(urlString, init);
     };
 
-    // 准备 headers（添加 MCP 协议版本）
+    // 准备 headers（完全模仿 Web 端，不添加默认 headers）
     const prepareHeaders = () => ({
-      'mcp-protocol-version': '2025-03-26',  // MCP 协议版本（必需）
       ...headers
     });
 
     // StreamableHTTP 传输
     if (type === 'streamableHttp') {
-      console.log('[MCP Client] 使用 StreamableHTTP 传输');
-      console.log('[MCP Client] Headers:', JSON.stringify(prepareHeaders()));
+      console.log('[Mobile MCP Client] 使用 StreamableHTTP 传输（CorsBypass）');
+      console.log(`[Mobile MCP Client] SDK 将自动管理 session（初始化请求不带 sessionId）`);
+      console.log('[Mobile MCP Client] Headers:', JSON.stringify(headers || {}));
       
-      const transport = new StreamableHTTPClientTransport(new URL(baseUrl), {
-        fetch: customFetch,
+      return new StreamableHTTPClientTransport(new URL(baseUrl), {
+        fetch: customFetch,  // 使用自定义 fetch
+        // 不提供 sessionId - SDK 会在初始化后自动生成和使用
         requestInit: {
           headers: prepareHeaders()
         }
       });
-      
-      console.log('[MCP Client] StreamableHTTP 传输创建完成');
-      return transport;
     }
 
     // SSE 传输（默认）
-    console.log('[MCP Client] 使用 SSE 传输');
-    console.log('[MCP Client] Headers:', JSON.stringify(prepareHeaders()));
+    console.log('[Mobile MCP Client] 使用 SSE 传输（CorsBypass）');
     
     return new SSEClientTransport(new URL(baseUrl), {
-      fetch: customFetch, // 添加顶层 fetch（用于消息发送）
+      fetch: customFetch,  // 使用自定义 fetch（用于消息发送）
       eventSourceInit: {
-        fetch: customFetch
+        fetch: customFetch  // EventSource 也使用自定义 fetch
       },
       requestInit: {
         headers: prepareHeaders()
@@ -146,9 +127,9 @@ export class MCPClientAdapter {
       throw new Error('客户端未初始化');
     }
 
-    console.log('[MCP Client] 列出工具');
+    console.log('[Mobile MCP Client] 列出工具');
     const result = await this.client.listTools();
-    console.log(`[MCP Client] 找到 ${result.tools.length} 个工具`);
+    console.log(`[Mobile MCP Client] 找到 ${result.tools.length} 个工具`);
     
     return result.tools as MCPTool[];
   }
@@ -161,14 +142,14 @@ export class MCPClientAdapter {
       throw new Error('客户端未初始化');
     }
 
-    console.log(`[MCP Client] 调用工具: ${name}`, arguments_);
+    console.log(`[Mobile MCP Client] 调用工具: ${name}`, arguments_);
     
     const result = await this.client.callTool({
       name,
       arguments: arguments_
     });
 
-    console.log(`[MCP Client] 工具调用完成: ${name}`);
+    console.log(`[Mobile MCP Client] 工具调用完成: ${name}`);
     
     return {
       content: (result.content || []) as Array<{
@@ -189,9 +170,9 @@ export class MCPClientAdapter {
       throw new Error('客户端未初始化');
     }
 
-    console.log('[MCP Client] 列出提示词');
+    console.log('[Mobile MCP Client] 列出提示词');
     const result = await this.client.listPrompts();
-    console.log(`[MCP Client] 找到 ${result.prompts?.length || 0} 个提示词`);
+    console.log(`[Mobile MCP Client] 找到 ${result.prompts?.length || 0} 个提示词`);
     
     return result.prompts || [];
   }
@@ -204,7 +185,7 @@ export class MCPClientAdapter {
       throw new Error('客户端未初始化');
     }
 
-    console.log(`[MCP Client] 获取提示词: ${name}`);
+    console.log(`[Mobile MCP Client] 获取提示词: ${name}`);
     const result = await this.client.getPrompt({
       name,
       arguments: arguments_
@@ -221,9 +202,9 @@ export class MCPClientAdapter {
       throw new Error('客户端未初始化');
     }
 
-    console.log('[MCP Client] 列出资源');
+    console.log('[Mobile MCP Client] 列出资源');
     const result = await this.client.listResources();
-    console.log(`[MCP Client] 找到 ${result.resources?.length || 0} 个资源`);
+    console.log(`[Mobile MCP Client] 找到 ${result.resources?.length || 0} 个资源`);
     
     return result.resources || [];
   }
@@ -236,7 +217,7 @@ export class MCPClientAdapter {
       throw new Error('客户端未初始化');
     }
 
-    console.log(`[MCP Client] 读取资源: ${uri}`);
+    console.log(`[Mobile MCP Client] 读取资源: ${uri}`);
     const result = await this.client.readResource({ uri });
     
     return result;
@@ -247,7 +228,7 @@ export class MCPClientAdapter {
    */
   async close(): Promise<void> {
     if (this.client) {
-      console.log('[MCP Client] 关闭连接');
+      console.log('[Mobile MCP Client] 关闭连接');
       await this.client.close();
       this.client = null;
       this.transport = null;

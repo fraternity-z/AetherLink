@@ -63,7 +63,7 @@ export async function streamCompletionAISDK(
       model: aiSdkClient(modelId),
       messages: processedMessages,
       temperature: temperature || 1.0,
-      maxTokens: maxTokens || 2000,
+      maxOutputTokens: maxTokens || 2000,  // AI SDK 5.0: maxTokens → maxOutputTokens
       abortSignal: signal
     });
 

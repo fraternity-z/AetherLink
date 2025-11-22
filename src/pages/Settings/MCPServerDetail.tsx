@@ -24,7 +24,8 @@ import {
   ListItemText,
   Snackbar,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Stack
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -38,7 +39,9 @@ import {
   Settings as SettingsIcon,
   Wrench as BuildIcon,
   FileText as DescriptionIcon,
-  Folder as FolderIcon
+  Folder as FolderIcon,
+  Plus as PlusIcon,
+  Trash2 as DeleteIcon
 } from 'lucide-react';
 import type { MCPServer, MCPServerType, MCPTool, MCPPrompt, MCPResource } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
@@ -60,6 +63,35 @@ const MCPServerDetail: React.FC = () => {
     message: '',
     severity: 'success'
   });
+
+  // 请求头和环境变量的内部状态（带唯一 ID）
+  type KeyValuePair = { id: string; key: string; value: string };
+  const [headerPairs, setHeaderPairs] = useState<KeyValuePair[]>([]);
+  const [envPairs, setEnvPairs] = useState<KeyValuePair[]>([]);
+
+  // 从 server.headers 初始化 headerPairs
+  useEffect(() => {
+    if (server?.headers) {
+      const pairs = Object.entries(server.headers).map(([key, value]) => ({
+        id: Math.random().toString(36).substring(7),
+        key,
+        value
+      }));
+      setHeaderPairs(pairs);
+    }
+  }, [server?.id]); // 只在服务器 ID 变化时重新初始化
+
+  // 从 server.env 初始化 envPairs
+  useEffect(() => {
+    if (server?.env) {
+      const pairs = Object.entries(server.env).map(([key, value]) => ({
+        id: Math.random().toString(36).substring(7),
+        key,
+        value
+      }));
+      setEnvPairs(pairs);
+    }
+  }, [server?.id]); // 只在服务器 ID 变化时重新初始化
 
   useEffect(() => {
     if (location.state?.server) {
@@ -372,55 +404,211 @@ const MCPServerDetail: React.FC = () => {
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <TextField
-              fullWidth
-              label={t('settings.mcpServer.detail.advanced.headers')}
-              value={JSON.stringify(server.headers || {}, null, 2)}
-              onChange={(e) => {
-                try {
-                  const headers = JSON.parse(e.target.value);
-                  setServer({ ...server, headers });
-                } catch (error) {
-                  // 忽略无效的 JSON
-                }
-              }}
-              multiline
-              rows={4}
-              sx={{ mb: 2 }}
-              placeholder={t('settings.mcpServer.detail.advanced.placeholders.headers')}
-            />
+            {/* 自定义请求头 */}
+            <Typography variant="subtitle2" gutterBottom sx={{ mt: 1, mb: 1, fontWeight: 600 }}>
+              {t('settings.mcpServer.detail.advanced.headers')}
+            </Typography>
+            <Stack spacing={1.5} sx={{ mb: 3 }}>
+              {headerPairs.map((pair) => (
+                <Stack 
+                  key={pair.id} 
+                  direction={{ xs: 'column', sm: 'row' }} 
+                  spacing={1} 
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  sx={{
+                    p: { xs: 1.5, sm: 0 },
+                    bgcolor: { xs: 'background.paper', sm: 'transparent' },
+                    borderRadius: { xs: 1, sm: 0 },
+                    border: { xs: 1, sm: 0 },
+                    borderColor: { xs: 'divider', sm: 'transparent' }
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    label={t('settings.mcpServer.detail.advanced.placeholders.headerKey')}
+                    placeholder={t('settings.mcpServer.detail.advanced.placeholders.headerKey')}
+                    value={pair.key}
+                    onChange={(e) => {
+                      const newPairs = headerPairs.map(p => 
+                        p.id === pair.id ? { ...p, key: e.target.value } : p
+                      );
+                      setHeaderPairs(newPairs);
+                      // 更新 server.headers
+                      const newHeaders: Record<string, string> = {};
+                      newPairs.forEach(p => {
+                        if (p.key.trim()) newHeaders[p.key] = p.value;
+                      });
+                      setServer({ ...server, headers: newHeaders });
+                    }}
+                    sx={{ flex: { xs: 'auto', sm: 1 } }}
+                  />
+                  <TextField
+                    size="small"
+                    label={t('settings.mcpServer.detail.advanced.placeholders.headerValue')}
+                    placeholder={t('settings.mcpServer.detail.advanced.placeholders.headerValue')}
+                    value={pair.value}
+                    onChange={(e) => {
+                      const newPairs = headerPairs.map(p => 
+                        p.id === pair.id ? { ...p, value: e.target.value } : p
+                      );
+                      setHeaderPairs(newPairs);
+                      // 更新 server.headers
+                      const newHeaders: Record<string, string> = {};
+                      newPairs.forEach(p => {
+                        if (p.key.trim()) newHeaders[p.key] = p.value;
+                      });
+                      setServer({ ...server, headers: newHeaders });
+                    }}
+                    sx={{ flex: { xs: 'auto', sm: 2 } }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => {
+                      const newPairs = headerPairs.filter(p => p.id !== pair.id);
+                      setHeaderPairs(newPairs);
+                      // 更新 server.headers
+                      const newHeaders: Record<string, string> = {};
+                      newPairs.forEach(p => {
+                        if (p.key.trim()) newHeaders[p.key] = p.value;
+                      });
+                      setServer({ ...server, headers: newHeaders });
+                    }}
+                    sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}
+                  >
+                    <DeleteIcon size={18} />
+                  </IconButton>
+                </Stack>
+              ))}
+              <Button
+                startIcon={<PlusIcon size={16} />}
+                onClick={() => {
+                  setHeaderPairs([
+                    ...headerPairs,
+                    { id: Math.random().toString(36).substring(7), key: '', value: '' }
+                  ]);
+                }}
+                variant="outlined"
+                size="small"
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                {t('settings.mcpServer.detail.advanced.addHeader')}
+              </Button>
+            </Stack>
 
-            <TextField
-              fullWidth
-              label={t('settings.mcpServer.detail.advanced.env')}
-              value={JSON.stringify(server.env || {}, null, 2)}
-              onChange={(e) => {
-                try {
-                  const env = JSON.parse(e.target.value);
-                  setServer({ ...server, env });
-                } catch (error) {
-                  // 忽略无效的 JSON
-                }
-              }}
-              multiline
-              rows={4}
-              sx={{ mb: 2 }}
-              placeholder={t('settings.mcpServer.detail.advanced.placeholders.env')}
-            />
+            {/* 环境变量 */}
+            <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+              {t('settings.mcpServer.detail.advanced.env')}
+            </Typography>
+            <Stack spacing={1.5} sx={{ mb: 3 }}>
+              {envPairs.map((pair) => (
+                <Stack 
+                  key={pair.id} 
+                  direction={{ xs: 'column', sm: 'row' }} 
+                  spacing={1} 
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  sx={{
+                    p: { xs: 1.5, sm: 0 },
+                    bgcolor: { xs: 'background.paper', sm: 'transparent' },
+                    borderRadius: { xs: 1, sm: 0 },
+                    border: { xs: 1, sm: 0 },
+                    borderColor: { xs: 'divider', sm: 'transparent' }
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    label={t('settings.mcpServer.detail.advanced.placeholders.envKey')}
+                    placeholder={t('settings.mcpServer.detail.advanced.placeholders.envKey')}
+                    value={pair.key}
+                    onChange={(e) => {
+                      const newPairs = envPairs.map(p => 
+                        p.id === pair.id ? { ...p, key: e.target.value } : p
+                      );
+                      setEnvPairs(newPairs);
+                      // 更新 server.env
+                      const newEnv: Record<string, string> = {};
+                      newPairs.forEach(p => {
+                        if (p.key.trim()) newEnv[p.key] = p.value;
+                      });
+                      setServer({ ...server, env: newEnv });
+                    }}
+                    sx={{ flex: { xs: 'auto', sm: 1 } }}
+                  />
+                  <TextField
+                    size="small"
+                    label={t('settings.mcpServer.detail.advanced.placeholders.envValue')}
+                    placeholder={t('settings.mcpServer.detail.advanced.placeholders.envValue')}
+                    value={pair.value}
+                    onChange={(e) => {
+                      const newPairs = envPairs.map(p => 
+                        p.id === pair.id ? { ...p, value: e.target.value } : p
+                      );
+                      setEnvPairs(newPairs);
+                      // 更新 server.env
+                      const newEnv: Record<string, string> = {};
+                      newPairs.forEach(p => {
+                        if (p.key.trim()) newEnv[p.key] = p.value;
+                      });
+                      setServer({ ...server, env: newEnv });
+                    }}
+                    sx={{ flex: { xs: 'auto', sm: 2 } }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => {
+                      const newPairs = envPairs.filter(p => p.id !== pair.id);
+                      setEnvPairs(newPairs);
+                      // 更新 server.env
+                      const newEnv: Record<string, string> = {};
+                      newPairs.forEach(p => {
+                        if (p.key.trim()) newEnv[p.key] = p.value;
+                      });
+                      setServer({ ...server, env: newEnv });
+                    }}
+                    sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}
+                  >
+                    <DeleteIcon size={18} />
+                  </IconButton>
+                </Stack>
+              ))}
+              <Button
+                startIcon={<PlusIcon size={16} />}
+                onClick={() => {
+                  setEnvPairs([
+                    ...envPairs,
+                    { id: Math.random().toString(36).substring(7), key: '', value: '' }
+                  ]);
+                }}
+                variant="outlined"
+                size="small"
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                {t('settings.mcpServer.detail.advanced.addEnv')}
+              </Button>
+            </Stack>
 
-            <TextField
-              fullWidth
-              label={t('settings.mcpServer.detail.advanced.args')}
-              value={(server.args || []).join('\n')}
-              onChange={(e) => {
-                const value = e.target.value || '';
-                const args = value.split('\n').filter(arg => arg.trim());
-                setServer({ ...server, args });
-              }}
-              multiline
-              rows={3}
-              placeholder={t('settings.mcpServer.detail.advanced.placeholders.args')}
-            />
+            {/* 启动参数（仅 inMemory 类型需要） */}
+            {server.type === 'inMemory' && (
+              <>
+                <Typography variant="subtitle2" gutterBottom sx={{ mt: 2, mb: 1, fontWeight: 600 }}>
+                  {t('settings.mcpServer.detail.advanced.args')}
+                </Typography>
+                <TextField
+                  fullWidth
+                  value={(server.args || []).join('\n')}
+                  onChange={(e) => {
+                    const value = e.target.value || '';
+                    const args = value.split('\n').filter(arg => arg.trim());
+                    setServer({ ...server, args });
+                  }}
+                  multiline
+                  rows={3}
+                  placeholder={t('settings.mcpServer.detail.advanced.placeholders.args')}
+                  size="small"
+                />
+              </>
+            )}
           </AccordionDetails>
         </Accordion>
 

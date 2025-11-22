@@ -47,16 +47,45 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
   // 移动端：根据配置决定是否使用 CorsBypass 插件
   // 插件现已支持流式响应！
   if (Capacitor.isNativePlatform()) {
+    // 检查是否是 MCP 请求
+    const isMcpRequest = url.includes('/mcp') || 
+                        (fetchOptions.body && typeof fetchOptions.body === 'string' &&
+                         fetchOptions.body.includes('"jsonrpc"'));
+    
+    // MCP 请求：直接连接（插件 v1.1.2+ 已彻底修复 OkHttp charset 问题）
+    if (isMcpRequest) {
+      console.log(`[Universal Fetch] 移动端 MCP 请求直连: ${url}`);
+      
+      // 提取并修复 headers
+      const headers = extractHeaders(fetchOptions.headers);
+      headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+      
+      // 使用 CorsBypass 直接访问 MCP 服务器（v1.1.2+ 已完全移除 charset）
+      const requestOptions = {
+        url,
+        method: (fetchOptions.method || 'GET') as any,
+        headers,
+        data: serializeRequestBody(fetchOptions.body),
+        timeout,
+        responseType: 'text' as any
+      };
+      
+      console.log('[Universal Fetch] MCP 请求详情:', JSON.stringify(requestOptions, null, 2));
+      
+      const response = await CorsBypass.request(requestOptions);
+      return createCompatibleResponse(response, url);
+    }
+    
     // 使用从 options 中提取的 useCorsPlugin 参数
     if (useCorsPlugin) {
       console.log('[Universal Fetch] 移动端使用 CorsBypass 插件（支持流式输出）:', url);
       
       try {
         // 检查是否是流式请求（通过 Content-Type 或 URL 判断）
-        const isChatStreamRequest = url.includes('/chat/completions') ||
-                                   url.includes('/v1/completions') ||
-                                   (fetchOptions.body && typeof fetchOptions.body === 'string' &&
-                                    fetchOptions.body.includes('"stream":true'));
+        const isChatStreamRequest = url.includes('/chat/completions') || 
+                                     url.includes('/v1/completions') ||
+                                     (fetchOptions.body && typeof fetchOptions.body === 'string' &&
+                                      fetchOptions.body.includes('"stream":true'));
         
         // MCP 请求不使用流式模式（使用普通 HTTP 请求即可）
         const isMcpRequest = url.includes('/mcp') || 
@@ -71,10 +100,26 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
           // MCP 请求使用 text 响应类型，避免自动 JSON 解析
           const finalResponseType = isMcpRequest ? 'text' : validateResponseType(responseType);
           
+          // 提取 headers
+          let headers = extractHeaders(fetchOptions.headers);
+          
+          // MCP 请求：移除 origin 和 referer（模仿代理服务器行为）
+          if (isMcpRequest) {
+            const filteredHeaders: Record<string, string> = {};
+            for (const [key, value] of Object.entries(headers)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey !== 'origin' && lowerKey !== 'referer') {
+                filteredHeaders[key] = value;
+              }
+            }
+            headers = filteredHeaders;
+            console.log('[Universal Fetch] MCP 请求已移除 origin/referer headers');
+          }
+          
           const requestOptions = {
             url,
             method: (fetchOptions.method || 'GET') as any,
-            headers: extractHeaders(fetchOptions.headers),
+            headers,
             data: serializeRequestBody(fetchOptions.body),
             timeout,
             responseType: finalResponseType

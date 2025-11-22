@@ -13,7 +13,6 @@ export { createInMemoryMCPServer } from './core/MCPServerFactory';
 
 // 客户端实现
 export { MCPClientAdapter } from './clients/MCPClientAdapter';
-export { NativeMCPClient } from './clients/NativeMCPClient';
 
 // 内置服务器
 export { TimeServer } from './servers/TimeServer.js';

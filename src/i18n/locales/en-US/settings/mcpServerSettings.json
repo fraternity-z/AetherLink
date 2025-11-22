@@ -155,12 +155,16 @@
       },
       "advanced": {
         "title": "Advanced",
-        "headers": "Headers (JSON)",
-        "env": "Env Variables (JSON)",
+        "headers": "Custom Headers",
+        "env": "Environment Variables",
         "args": "Arguments (one per line)",
+        "addHeader": "Add Header",
+        "addEnv": "Add Environment Variable",
         "placeholders": {
-          "headers": "{\n  \"Authorization\": \"Bearer token\",\n  \"Content-Type\": \"application/json\"\n}",
-          "env": "{\n  \"API_KEY\": \"your-api-key\",\n  \"DEBUG\": \"true\"\n}",
+          "headerKey": "e.g. Authorization",
+          "headerValue": "e.g. Bearer xxxxxx",
+          "envKey": "e.g. API_KEY",
+          "envValue": "e.g. your-api-key",
           "args": "--verbose\n--config=/path/to/config"
         }
       },

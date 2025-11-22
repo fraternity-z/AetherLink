@@ -157,12 +157,16 @@
       },
       "advanced": {
         "title": "高级设置",
-        "headers": "请求头（JSON 格式）",
-        "env": "环境变量（JSON 格式）",
-        "args": "参数（每行一个）",
+        "headers": "自定义请求头",
+        "env": "环境变量",
+        "args": "启动参数（每行一个）",
+        "addHeader": "添加请求头",
+        "addEnv": "添加环境变量",
         "placeholders": {
-          "headers": "{\n  \"Authorization\": \"Bearer token\",\n  \"Content-Type\": \"application/json\"\n}",
-          "env": "{\n  \"API_KEY\": \"your-api-key\",\n  \"DEBUG\": \"true\"\n}",
+          "headerKey": "如 Authorization",
+          "headerValue": "如 Bearer xxxxxx",
+          "envKey": "如 API_KEY",
+          "envValue": "如 your-api-key",
           "args": "--verbose\n--config=/path/to/config"
         }
       },

@@ -5,7 +5,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createInMemoryMCPServer } from './MCPServerFactory';
 import { getBuiltinMCPServers, isBuiltinServer } from '../../../config/builtinMCPServers';
 import { MCPClientAdapter } from '../clients/MCPClientAdapter';
-import { NativeMCPClient } from '../clients/NativeMCPClient';
+import { AiSdkMCPClient } from '../clients/AiSdkMCPClient';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -90,8 +90,9 @@ export class MCPService {
   private pendingClients: Map<string, Promise<Client>> = new Map();
 
   // MCP 客户端适配器缓存（用于 HTTP/SSE 传输）
-  private mcpClientAdapters: Map<string, MCPClientAdapter> = new Map();
-  private pendingMcpClientAdapters: Map<string, Promise<MCPClientAdapter>> = new Map();
+  // 移动端使用 AiSdkMCPClient（AI SDK 5.0），Web 端使用 MCPClientAdapter（代理服务器）
+  private mcpClientAdapters: Map<string, MCPClientAdapter | AiSdkMCPClient> = new Map();
+  private pendingMcpClientAdapters: Map<string, Promise<MCPClientAdapter | AiSdkMCPClient>> = new Map();
 
   // 添加服务器状态保存字段
   private savedActiveServerIds: Set<string> = new Set();
@@ -359,7 +360,7 @@ export class MCPService {
   /**
    * 初始化 MCP 客户端适配器（基于官方 SDK）
    */
-  private async initMcpClientAdapter(server: MCPServer): Promise<MCPClientAdapter | NativeMCPClient> {
+  private async initMcpClientAdapter(server: MCPServer): Promise<MCPClientAdapter | AiSdkMCPClient> {
     const serverKey = this.getServerKey(server);
 
     // 检查是否已有客户端连接
@@ -377,33 +378,40 @@ export class MCPService {
     }
 
     // 创建初始化 Promise
-    const initPromise = (async (): Promise<MCPClientAdapter | NativeMCPClient> => {
+    const initPromise = (async (): Promise<MCPClientAdapter | AiSdkMCPClient> => {
       try {
         // 规范化类型
         const normalizedType = normalizeServerType(server);
         const transportType = normalizedType === 'streamableHttp' ? 'streamableHttp' : 'sse';
         
-        console.log(`[MCP] 创建 MCP 客户端，传输类型: ${transportType}，平台: ${Capacitor.isNativePlatform() ? '移动端' : 'Web端'}`);
+        const isMobile = Capacitor.isNativePlatform();
+        console.log(`[MCP] 创建 MCP 客户端，传输类型: ${transportType}，平台: ${isMobile ? '移动端' : 'Web端'}`);
         
-        let client: MCPClientAdapter | NativeMCPClient;
+        let client: MCPClientAdapter | AiSdkMCPClient;
         
-        // 移动端使用原生 MCP 客户端（CorsBypass 插件）
-        if (Capacitor.isNativePlatform()) {
-          client = new NativeMCPClient({
-            baseUrl: server.baseUrl!,
-            headers: server.headers,
-            timeout: (server.timeout || 60) * 1000,
-            type: transportType
-          });
-        } else {
-          // Web 端使用官方 SDK 客户端（通过代理）
-          client = new MCPClientAdapter({
-            baseUrl: server.baseUrl!,
-            headers: server.headers,
-            timeout: (server.timeout || 60) * 1000,
-            type: transportType
-          });
+        console.log(`[MCP] ${isMobile ? '移动端' : 'Web端'} 使用 MCPClientAdapter`);
+        
+        // 移动端：确保 headers 中没有 origin 和 referer（模仿代理服务器的行为）
+        let finalHeaders = server.headers || {};
+        if (isMobile && finalHeaders) {
+          const filteredHeaders: Record<string, string> = {};
+          for (const [key, value] of Object.entries(finalHeaders)) {
+            const lowerKey = key.toLowerCase();
+            // 过滤掉 origin 和 referer（代理服务器会移除这些）
+            if (lowerKey !== 'origin' && lowerKey !== 'referer') {
+              filteredHeaders[key] = value;
+            }
+          }
+          finalHeaders = filteredHeaders;
+          console.log(`[MCP] 移动端过滤 headers，移除 origin/referer`);
         }
+        
+        client = new MCPClientAdapter({
+          baseUrl: server.baseUrl!,
+          headers: finalHeaders,
+          timeout: (server.timeout || 60) * 1000,
+          type: transportType
+        });
 
         await client.initialize();
 
