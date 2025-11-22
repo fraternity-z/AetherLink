@@ -26,8 +26,10 @@
       }
     },
     "serverTypes": {
-      "httpStream": "HTTP Stream",
-      "inMemory": "内存",
+      "sse": "服务器发送事件 (sse)",
+      "streamableHttp": "可流式传输的 HTTP (streamableHttp)",
+      "httpStream": "HTTP Stream (已废弃)",
+      "inMemory": "内存服务器",
       "unknown": "未知"
     },
     "status": {
@@ -39,14 +41,14 @@
       "serverType": "服务器类型",
       "serverUrl": "服务器 URL",
       "description": "描述（可选）",
-      "enableSSE": "启用SSE流（Server-Sent Events）",
       "cancel": "取消",
       "add": "添加",
       "placeholders": {
         "url": "https://example.com/mcp"
       },
       "types": {
-        "httpStream": "HTTP Stream (支持SSE+HTTP)",
+        "sse": "服务器发送事件 (sse)",
+        "streamableHttp": "可流式传输的 HTTP (streamableHttp)",
         "inMemory": "内存服务器"
       }
     },
@@ -144,9 +146,9 @@
         "serverUrl": "服务器 URL",
         "description": "描述",
         "timeout": "超时时间（秒）",
-        "enableSSE": "启用SSE流（Server-Sent Events）",
         "types": {
-          "httpStream": "HTTP Stream (支持SSE+HTTP)",
+          "sse": "服务器发送事件 (sse)",
+          "streamableHttp": "可流式传输的 HTTP (streamableHttp)",
           "inMemory": "内存服务器"
         },
         "placeholders": {

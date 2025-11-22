@@ -4,10 +4,42 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createInMemoryMCPServer } from './MCPServerFactory';
 import { getBuiltinMCPServers, isBuiltinServer } from '../../../config/builtinMCPServers';
-import { HttpStreamMCPClient } from '../clients/HttpStreamMCPClient';
-import { CapacitorCorsMCPClient } from '../clients/CapacitorCorsMCPClient';
+import { MCPClientAdapter } from '../clients/MCPClientAdapter';
+import { NativeMCPClient } from '../clients/NativeMCPClient';
 
 import { Capacitor } from '@capacitor/core';
+
+/**
+ * 根据 URL 推断 MCP 服务器类型
+ * @param url - 服务器 URL
+ * @returns 服务器类型
+ */
+function getMcpServerType(url: string): 'streamableHttp' | 'sse' {
+  // 如果 URL 以 /mcp 结尾，使用 streamableHttp，否则使用 sse
+  return url.endsWith('/mcp') ? 'streamableHttp' : 'sse';
+}
+
+/**
+ * 规范化服务器类型（处理向后兼容）
+ * @param server - MCP 服务器配置
+ * @returns 规范化后的类型
+ */
+function normalizeServerType(server: MCPServer): MCPServer['type'] {
+  // httpStream 已废弃，自动转换为 sse
+  if (server.type === 'httpStream') {
+    console.log(`[MCP] 检测到废弃的 httpStream 类型，自动转换为 sse: ${server.name}`);
+    return 'sse';
+  }
+  
+  // 如果没有指定类型但有 baseUrl，根据 URL 推断
+  if (!server.type && server.baseUrl) {
+    const inferredType = getMcpServerType(server.baseUrl);
+    console.log(`[MCP] 根据 URL 推断类型: ${server.name} -> ${inferredType}`);
+    return inferredType;
+  }
+  
+  return server.type;
+}
 
 /**
  * 构建函数调用工具名称 - 参考最佳实例逻辑
@@ -57,13 +89,9 @@ export class MCPService {
   private clients: Map<string, Client> = new Map();
   private pendingClients: Map<string, Promise<Client>> = new Map();
 
-  // HTTP Stream 客户端缓存
-  private httpStreamClients: Map<string, HttpStreamMCPClient> = new Map();
-  private pendingHttpStreamClients: Map<string, Promise<HttpStreamMCPClient>> = new Map();
-
-  // Capacitor CORS 客户端缓存
-  private capacitorCorsClients: Map<string, CapacitorCorsMCPClient> = new Map();
-  private pendingCapacitorCorsClients: Map<string, Promise<CapacitorCorsMCPClient>> = new Map();
+  // MCP 客户端适配器缓存（用于 HTTP/SSE 传输）
+  private mcpClientAdapters: Map<string, MCPClientAdapter> = new Map();
+  private pendingMcpClientAdapters: Map<string, Promise<MCPClientAdapter>> = new Map();
 
   // 添加服务器状态保存字段
   private savedActiveServerIds: Set<string> = new Set();
@@ -251,19 +279,20 @@ export class MCPService {
 
         transport = clientTransport;
 
-      } else if (server.type === 'httpStream') {
-        // 使用新的 HTTP Stream Transport (mcp-framework)
+      } else if (server.type === 'sse' || server.type === 'streamableHttp' || server.type === 'httpStream') {
+        // 规范化类型（处理向后兼容）
+        const normalizedType = normalizeServerType(server);
+        
+        // 使用官方 SDK 的传输层
         if (!server.baseUrl) {
-          throw new Error('HTTP Stream 服务器需要提供 baseUrl');
+          throw new Error(`${normalizedType} 服务器需要提供 baseUrl`);
         }
 
-        console.log(`[MCP] 创建 HTTP Stream 传输: ${server.baseUrl}`);
+        console.log(`[MCP] 创建 ${normalizedType} 传输: ${server.baseUrl}`);
 
-        // 对于 httpStream 类型，我们需要使用不同的处理方式
-        // 在移动端使用 CapacitorCorsMCPClient，Web端使用 HttpStreamMCPClient
-        const httpStreamClient = Capacitor.isNativePlatform()
-          ? await this.initCapacitorCorsClient(server)
-          : await this.initHttpStreamClient(server);
+        // Web 端和移动端都使用 MCPClientAdapter（官方 SDK）
+        // universalFetch 会自动处理平台差异：Web 端用代理，移动端用 CORS 插件
+        const httpStreamClient = await this.initMcpClientAdapter({ ...server, type: normalizedType });
 
         // 创建一个兼容的 Client 对象
         const compatClient = {
@@ -328,107 +357,72 @@ export class MCPService {
   }
 
   /**
-   * 初始化 HTTP Stream 客户端
+   * 初始化 MCP 客户端适配器（基于官方 SDK）
    */
-  private async initHttpStreamClient(server: MCPServer): Promise<HttpStreamMCPClient> {
+  private async initMcpClientAdapter(server: MCPServer): Promise<MCPClientAdapter | NativeMCPClient> {
     const serverKey = this.getServerKey(server);
 
     // 检查是否已有客户端连接
-    const existingClient = this.httpStreamClients.get(serverKey);
+    const existingClient = this.mcpClientAdapters.get(serverKey);
     if (existingClient) {
-      console.log(`[MCP] 复用现有 HTTP Stream 连接: ${server.name}`);
+      console.log(`[MCP] 复用现有 MCP 客户端: ${server.name}`);
       return existingClient;
     }
 
     // 检查是否有正在初始化的客户端
-    const pendingClient = this.pendingHttpStreamClients.get(serverKey);
+    const pendingClient = this.pendingMcpClientAdapters.get(serverKey);
     if (pendingClient) {
-      console.log(`[MCP] 等待正在初始化的 HTTP Stream 连接: ${server.name}`);
+      console.log(`[MCP] 等待正在初始化的 MCP 客户端: ${server.name}`);
       return pendingClient;
     }
 
     // 创建初始化 Promise
-    const initPromise = (async (): Promise<HttpStreamMCPClient> => {
+    const initPromise = (async (): Promise<MCPClientAdapter | NativeMCPClient> => {
       try {
-        // HttpStreamMCPClient内部会处理代理URL
-        const client = new HttpStreamMCPClient({
-          baseUrl: server.baseUrl!,
-          headers: server.headers,
-          timeout: (server.timeout || 60) * 1000,
-          enableSSE: server.enableSSE // 传递SSE配置
-        });
+        // 规范化类型
+        const normalizedType = normalizeServerType(server);
+        const transportType = normalizedType === 'streamableHttp' ? 'streamableHttp' : 'sse';
+        
+        console.log(`[MCP] 创建 MCP 客户端，传输类型: ${transportType}，平台: ${Capacitor.isNativePlatform() ? '移动端' : 'Web端'}`);
+        
+        let client: MCPClientAdapter | NativeMCPClient;
+        
+        // 移动端使用原生 MCP 客户端（CorsBypass 插件）
+        if (Capacitor.isNativePlatform()) {
+          client = new NativeMCPClient({
+            baseUrl: server.baseUrl!,
+            headers: server.headers,
+            timeout: (server.timeout || 60) * 1000,
+            type: transportType
+          });
+        } else {
+          // Web 端使用官方 SDK 客户端（通过代理）
+          client = new MCPClientAdapter({
+            baseUrl: server.baseUrl!,
+            headers: server.headers,
+            timeout: (server.timeout || 60) * 1000,
+            type: transportType
+          });
+        }
 
         await client.initialize();
 
         // 缓存客户端
-        this.httpStreamClients.set(serverKey, client);
-        console.log(`[MCP] HTTP Stream 客户端初始化成功: ${server.name}`);
+        this.mcpClientAdapters.set(serverKey, client as any);
+        console.log(`[MCP] MCP 客户端初始化成功: ${server.name}`);
 
         return client;
       } catch (error) {
-        console.error(`[MCP] HTTP Stream 客户端初始化失败: ${server.name}`, error);
+        console.error(`[MCP] MCP 客户端初始化失败: ${server.name}`, error);
         throw error;
       } finally {
         // 清理 pending 状态
-        this.pendingHttpStreamClients.delete(serverKey);
+        this.pendingMcpClientAdapters.delete(serverKey);
       }
     })();
 
     // 缓存初始化 Promise
-    this.pendingHttpStreamClients.set(serverKey, initPromise);
-
-    return initPromise;
-  }
-
-  /**
-   * 初始化 Capacitor CORS 客户端
-   */
-  private async initCapacitorCorsClient(server: MCPServer): Promise<CapacitorCorsMCPClient> {
-    const serverKey = this.getServerKey(server);
-
-    // 检查是否已有客户端连接
-    const existingClient = this.capacitorCorsClients.get(serverKey);
-    if (existingClient) {
-      console.log(`[MCP] 复用现有 Capacitor CORS 连接: ${server.name}`);
-      return existingClient;
-    }
-
-    // 检查是否有正在初始化的客户端
-    const pendingClient = this.pendingCapacitorCorsClients.get(serverKey);
-    if (pendingClient) {
-      console.log(`[MCP] 等待正在初始化的 Capacitor CORS 连接: ${server.name}`);
-      return pendingClient;
-    }
-
-    // 创建初始化 Promise
-    const initPromise = (async (): Promise<CapacitorCorsMCPClient> => {
-      try {
-        // CapacitorCorsMCPClient 内部会使用 CorsBypass 插件
-        const client = new CapacitorCorsMCPClient({
-          baseUrl: server.baseUrl!,
-          headers: server.headers,
-          timeout: (server.timeout || 60) * 1000,
-          enableSSE: server.enableSSE // 传递SSE配置
-        });
-
-        await client.initialize();
-
-        // 缓存客户端
-        this.capacitorCorsClients.set(serverKey, client);
-        console.log(`[MCP] Capacitor CORS 客户端初始化成功: ${server.name}`);
-
-        return client;
-      } catch (error) {
-        console.error(`[MCP] Capacitor CORS 客户端初始化失败: ${server.name}`, error);
-        throw error;
-      } finally {
-        // 清理 pending 状态
-        this.pendingCapacitorCorsClients.delete(serverKey);
-      }
-    })();
-
-    // 缓存初始化 Promise
-    this.pendingCapacitorCorsClients.set(serverKey, initPromise);
+    this.pendingMcpClientAdapters.set(serverKey, initPromise as any);
 
     return initPromise;
   }
@@ -448,34 +442,21 @@ export class MCPService {
       this.clients.delete(serverKey);
     }
 
-    // 关闭 HTTP Stream 客户端
-    const httpStreamClient = this.httpStreamClients.get(serverKey);
-    if (httpStreamClient) {
+    // 关闭 MCP 客户端适配器
+    const mcpClientAdapter = this.mcpClientAdapters.get(serverKey);
+    if (mcpClientAdapter) {
       try {
-        await httpStreamClient.close();
-        console.log(`[MCP] 已关闭 HTTP Stream 连接: ${serverKey}`);
+        await mcpClientAdapter.close();
+        console.log(`[MCP] 已关闭 MCP 客户端: ${serverKey}`);
       } catch (error) {
-        console.error(`[MCP] 关闭 HTTP Stream 客户端连接失败:`, error);
+        console.error(`[MCP] 关闭 MCP 客户端连接失败:`, error);
       }
-      this.httpStreamClients.delete(serverKey);
-    }
-
-    // 关闭 Capacitor CORS 客户端
-    const capacitorCorsClient = this.capacitorCorsClients.get(serverKey);
-    if (capacitorCorsClient) {
-      try {
-        await capacitorCorsClient.close();
-        console.log(`[MCP] 已关闭 Capacitor CORS 连接: ${serverKey}`);
-      } catch (error) {
-        console.error(`[MCP] 关闭 Capacitor CORS 客户端连接失败:`, error);
-      }
-      this.capacitorCorsClients.delete(serverKey);
+      this.mcpClientAdapters.delete(serverKey);
     }
 
     // 同时清理 pending 状态
     this.pendingClients.delete(serverKey);
-    this.pendingHttpStreamClients.delete(serverKey);
-    this.pendingCapacitorCorsClients.delete(serverKey);
+    this.pendingMcpClientAdapters.delete(serverKey);
   }
 
   /**

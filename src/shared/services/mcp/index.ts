@@ -12,8 +12,8 @@ export { MCPService, mcpService } from './core/MCPService';
 export { createInMemoryMCPServer } from './core/MCPServerFactory';
 
 // 客户端实现
-export { HttpStreamMCPClient } from './clients/HttpStreamMCPClient';
-export { CapacitorCorsMCPClient } from './clients/CapacitorCorsMCPClient';
+export { MCPClientAdapter } from './clients/MCPClientAdapter';
+export { NativeMCPClient } from './clients/NativeMCPClient';
 
 // 内置服务器
 export { TimeServer } from './servers/TimeServer.js';

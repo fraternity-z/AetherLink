@@ -26,10 +26,9 @@ import {
   MenuItem,
   Snackbar,
   Alert,
-  Divider,
-  FormControlLabel,
-  Checkbox
+  Divider
 } from '@mui/material';
+import { nanoid } from 'nanoid';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -67,12 +66,12 @@ const MCPServerSettings: React.FC = () => {
 
   // 新服务器表单状态
   const [newServer, setNewServer] = useState<Partial<MCPServer>>({
+    id: nanoid(),
     name: '',
-    type: 'httpStream',
+    type: 'sse',
     description: '',
     baseUrl: '',
-    isActive: false,
-    enableSSE: false // 默认禁用SSE，避免不必要的错误
+    isActive: false
   });
 
   useEffect(() => {
@@ -126,7 +125,7 @@ const MCPServerSettings: React.FC = () => {
       return;
     }
 
-    if (newServer.type === 'httpStream' && !newServer.baseUrl) {
+    if ((newServer.type === 'sse' || newServer.type === 'streamableHttp' || newServer.type === 'httpStream') && !newServer.baseUrl) {
       setSnackbar({
         open: true,
         message: t('settings.mcpServer.messages.urlRequired'),
@@ -152,12 +151,12 @@ const MCPServerSettings: React.FC = () => {
       loadServers();
       setAddDialogOpen(false);
       setNewServer({
+        id: nanoid(),
         name: '',
-        type: 'httpStream',
+        type: 'sse',
         description: '',
         baseUrl: '',
-        isActive: false,
-        enableSSE: false // 默认禁用SSE，避免不必要的错误
+        isActive: false
       });
       setSnackbar({
         open: true,
@@ -305,6 +304,8 @@ const MCPServerSettings: React.FC = () => {
 
   const getServerTypeIcon = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+      case 'streamableHttp':
       case 'httpStream':
         return <HttpIcon />;
       case 'inMemory':
@@ -316,6 +317,10 @@ const MCPServerSettings: React.FC = () => {
 
   const getServerTypeLabel = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+        return t('settings.mcpServer.serverTypes.sse');
+      case 'streamableHttp':
+        return t('settings.mcpServer.serverTypes.streamableHttp');
       case 'httpStream':
         return t('settings.mcpServer.serverTypes.httpStream');
       case 'inMemory':
@@ -327,10 +332,14 @@ const MCPServerSettings: React.FC = () => {
 
   const getServerTypeColor = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+        return '#2196f3'; // 蓝色
+      case 'streamableHttp':
+        return '#9c27b0'; // 紫色
       case 'httpStream':
-        return '#9c27b0';
+        return '#ff5722'; // 橙红色 (废弃标记)
       case 'inMemory':
-        return '#ff9800';
+        return '#ff9800'; // 橙色
       default:
         return '#9e9e9e';
     }
@@ -856,11 +865,12 @@ const MCPServerSettings: React.FC = () => {
               label={t('settings.mcpServer.addDialog.serverType')}
               onChange={(e) => setNewServer({ ...newServer, type: e.target.value as MCPServerType })}
             >
-              <MenuItem value="httpStream">{t('settings.mcpServer.addDialog.types.httpStream')}</MenuItem>
+              <MenuItem value="sse">{t('settings.mcpServer.addDialog.types.sse')}</MenuItem>
+              <MenuItem value="streamableHttp">{t('settings.mcpServer.addDialog.types.streamableHttp')}</MenuItem>
               <MenuItem value="inMemory">{t('settings.mcpServer.addDialog.types.inMemory')}</MenuItem>
             </Select>
           </FormControl>
-          {newServer.type === 'httpStream' && (
+          {(newServer.type === 'sse' || newServer.type === 'streamableHttp' || newServer.type === 'httpStream') && (
             <TextField
               margin="dense"
               label={t('settings.mcpServer.addDialog.serverUrl')}
@@ -882,18 +892,6 @@ const MCPServerSettings: React.FC = () => {
             value={newServer.description}
             onChange={(e) => setNewServer({ ...newServer, description: e.target.value })}
           />
-          {newServer.type === 'httpStream' && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={newServer.enableSSE === true} // 默认禁用
-                  onChange={(e) => setNewServer({ ...newServer, enableSSE: e.target.checked })}
-                />
-              }
-              label={t('settings.mcpServer.addDialog.enableSSE')}
-              sx={{ mt: 1 }}
-            />
-          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddDialogOpen(false)}>{t('settings.mcpServer.addDialog.cancel')}</Button>

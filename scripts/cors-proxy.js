@@ -119,6 +119,9 @@ function handleProxyRequest(req, res, redirectCount = 0) {
 
   log.request(req.method, targetUrl);
 
+  // 记录请求头
+  console.log(`${colors.cyan}[Request Headers]${colors.reset}`, JSON.stringify(req.headers, null, 2));
+
   // 准备代理请求选项
   const isHttps = parsedUrl.protocol === 'https:';
   const httpModule = isHttps ? https : http;
@@ -131,6 +134,9 @@ function handleProxyRequest(req, res, redirectCount = 0) {
       proxyHeaders[key] = value;
     }
   }
+
+  // 记录转发的请求头
+  console.log(`${colors.yellow}[Proxy Headers]${colors.reset}`, JSON.stringify(proxyHeaders, null, 2));
 
   // 设置必要的请求头
   // proxyHeaders['host'] = parsedUrl.host; // 让 Node.js 自动设置 Host 头，避免与 SNI 冲突

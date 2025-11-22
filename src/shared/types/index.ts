@@ -372,7 +372,14 @@ export interface QuickPhrase {
 }
 
 // MCP 相关类型定义
-export type MCPServerType = 'inMemory' | 'httpStream';
+/**
+ * MCP 服务器传输类型
+ * - inMemory: 内存传输（用于内置服务器）
+ * - sse: Server-Sent Events 传输（HTTP 服务器）
+ * - streamableHttp: 可流式传输的 HTTP（支持双向流）
+ * - httpStream: 已废弃，向后兼容（将自动转换为 sse）
+ */
+export type MCPServerType = 'inMemory' | 'sse' | 'streamableHttp' | 'httpStream';
 
 export interface MCPServer {
   id: string;
@@ -390,8 +397,6 @@ export interface MCPServer {
   logoUrl?: string;
   tags?: string[];
   timeout?: number;
-  // HTTP Stream 特定配置
-  enableSSE?: boolean; // 是否启用SSE流（仅对httpStream类型有效）
 }
 
 export interface MCPTool {

@@ -24,8 +24,7 @@ import {
   ListItemText,
   Snackbar,
   Alert,
-  CircularProgress,
-  Checkbox
+  CircularProgress
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -325,12 +324,13 @@ const MCPServerDetail: React.FC = () => {
               label={t('settings.mcpServer.detail.basicInfo.serverType')}
               onChange={(e) => setServer({ ...server, type: e.target.value as MCPServerType })}
             >
-              <MenuItem value="httpStream">{t('settings.mcpServer.detail.basicInfo.types.httpStream')}</MenuItem>
+              <MenuItem value="sse">{t('settings.mcpServer.detail.basicInfo.types.sse')}</MenuItem>
+              <MenuItem value="streamableHttp">{t('settings.mcpServer.detail.basicInfo.types.streamableHttp')}</MenuItem>
               <MenuItem value="inMemory">{t('settings.mcpServer.detail.basicInfo.types.inMemory')}</MenuItem>
             </Select>
           </FormControl>
 
-          {server.type === 'httpStream' && (
+          {(server.type === 'sse' || server.type === 'streamableHttp' || server.type === 'httpStream') && (
             <TextField
               fullWidth
               label={t('settings.mcpServer.detail.basicInfo.serverUrl')}
@@ -361,17 +361,6 @@ const MCPServerDetail: React.FC = () => {
             sx={{ mb: 2 }}
           />
 
-          {server.type === 'httpStream' && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={server.enableSSE === true} // 默认禁用
-                  onChange={(e) => setServer({ ...server, enableSSE: e.target.checked })}
-                />
-              }
-              label={t('settings.mcpServer.detail.basicInfo.enableSSE')}
-            />
-          )}
         </Paper>
 
         {/* 高级设置 */}

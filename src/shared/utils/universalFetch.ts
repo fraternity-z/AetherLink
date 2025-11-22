@@ -29,7 +29,9 @@ export interface UniversalResponse extends Response {
  * @returns Promise<Response>
  */
 export async function universalFetch(url: string, options: UniversalFetchOptions = {}): Promise<UniversalResponse> {
-  const { timeout = 30000, responseType = 'json', useCorsPlugin = false, ...fetchOptions } = options;
+  // 移动端默认启用 CORS 插件（因为标准 fetch 也有 CORS 限制）
+  const defaultUseCorsPlugin = Capacitor.isNativePlatform();
+  const { timeout = 30000, responseType = 'json', useCorsPlugin = defaultUseCorsPlugin, ...fetchOptions } = options;
 
   // Tauri 桌面端使用 Tauri HTTP 插件绕过CORS
   if (isTauri()) {
@@ -51,24 +53,38 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
       
       try {
         // 检查是否是流式请求（通过 Content-Type 或 URL 判断）
-        const isStreamRequest = url.includes('/chat/completions') ||
-                               url.includes('/v1/completions') ||
-                               (fetchOptions.body && typeof fetchOptions.body === 'string' &&
-                                fetchOptions.body.includes('"stream":true'));
+        const isChatStreamRequest = url.includes('/chat/completions') ||
+                                   url.includes('/v1/completions') ||
+                                   (fetchOptions.body && typeof fetchOptions.body === 'string' &&
+                                    fetchOptions.body.includes('"stream":true'));
         
-        if (isStreamRequest) {
+        // MCP 请求不使用流式模式（使用普通 HTTP 请求即可）
+        const isMcpRequest = url.includes('/mcp') || 
+                            (fetchOptions.body && typeof fetchOptions.body === 'string' &&
+                             fetchOptions.body.includes('"jsonrpc"'));
+        
+        if (isChatStreamRequest && !isMcpRequest) {
           // 使用流式 API
           return await corsPluginStreamFetch(url, fetchOptions, timeout);
         } else {
           // 使用普通请求
-          const response = await CorsBypass.request({
+          // MCP 请求使用 text 响应类型，避免自动 JSON 解析
+          const finalResponseType = isMcpRequest ? 'text' : validateResponseType(responseType);
+          
+          const requestOptions = {
             url,
             method: (fetchOptions.method || 'GET') as any,
             headers: extractHeaders(fetchOptions.headers),
             data: serializeRequestBody(fetchOptions.body),
             timeout,
-            responseType: validateResponseType(responseType)
-          });
+            responseType: finalResponseType
+          };
+          
+          if (isMcpRequest) {
+            console.log('[Universal Fetch] MCP 请求详情:', JSON.stringify(requestOptions, null, 2));
+          }
+          
+          const response = await CorsBypass.request(requestOptions);
 
           // 创建兼容的Response对象
           const compatibleResponse = createCompatibleResponse(response, url);
