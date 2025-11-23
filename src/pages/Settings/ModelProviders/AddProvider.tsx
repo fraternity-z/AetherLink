@@ -17,9 +17,9 @@ import {
 } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../shared/store';
-import { addProvider } from '../../shared/store/settingsSlice';
-import { generateId } from '../../shared/utils';
+import { useAppDispatch } from '../../../shared/store';
+import { addProvider } from '../../../shared/store/settingsSlice';
+import { generateId } from '../../../shared/utils';
 
 // 供应商类型列表
 const providerTypes = [

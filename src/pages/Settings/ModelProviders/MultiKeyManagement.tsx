@@ -10,11 +10,11 @@ import {
 } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { updateProvider } from '../../shared/store/settingsSlice';
+import { useAppSelector, useAppDispatch } from '../../../shared/store';
+import { updateProvider } from '../../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
-import MultiKeyManager from '../../components/settings/MultiKeyManager';
-import type { ApiKeyConfig, LoadBalanceStrategy } from '../../shared/config/defaultModels';
+import MultiKeyManager from '../../../components/settings/MultiKeyManager';
+import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../shared/config/defaultModels';
 
 const MultiKeyManagementPage: React.FC = () => {
   const { providerId } = useParams<{ providerId: string }>();
@@ -55,8 +55,10 @@ const MultiKeyManagementPage: React.FC = () => {
       id: provider.id,
       updates: {
         keyManagement: {
-          ...provider.keyManagement,
           strategy,
+          maxFailuresBeforeDisable: provider.keyManagement?.maxFailuresBeforeDisable || 3,
+          failureRecoveryTime: provider.keyManagement?.failureRecoveryTime || 5,
+          enableAutoRecovery: provider.keyManagement?.enableAutoRecovery ?? true,
         }
       }
     }));

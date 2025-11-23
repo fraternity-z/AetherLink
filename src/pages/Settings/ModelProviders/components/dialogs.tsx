@@ -22,9 +22,8 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
-import { providerTypeOptions } from '../constants';
+import { providerTypeOptions } from './constants';
 import { useTranslation } from 'react-i18next';
-
 // ============================================================================
 // 类型定义
 // ============================================================================

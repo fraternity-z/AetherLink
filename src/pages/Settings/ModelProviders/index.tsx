@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -14,12 +14,11 @@ import {
   Avatar,
   Divider,
   FormControlLabel,
-  CircularProgress,
   InputAdornment,
   Tooltip,
   useTheme as useMuiTheme,
 } from '@mui/material';
-import CustomSwitch from '../../components/CustomSwitch';
+import CustomSwitch from '../../../components/CustomSwitch';
 import {
   ArrowLeft,
   Plus,
@@ -33,16 +32,16 @@ import {
   Info
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { updateSettings, updateProvider } from '../../shared/store/settingsSlice';
+import { useAppSelector, useAppDispatch } from '../../../shared/store';
+import { updateSettings, updateProvider } from '../../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
-import ModelManagementDialog from '../../components/ModelManagementDialog';
-import SimpleModelDialog from '../../components/settings/SimpleModelDialog';
-import ModelGroup from '../../components/settings/ModelGroup';
+import ModelManagementDialogSolid from '../../../components/ModelManagementDialogSolid';
+import SimpleModelDialog from '../../../components/settings/SimpleModelDialog';
+import ModelGroup from '../../../components/settings/ModelGroup';
 import {
   isOpenAIProvider,
   getCompleteApiUrl
-} from './ModelProviderSettings/constants';
+} from './components/constants';
 import {
   AddModelDialog,
   DeleteDialog,
@@ -50,15 +49,20 @@ import {
   CustomEndpointDialog,
   TestResultSnackbar,
   TestResultDialog
-} from './ModelProviderSettings/dialogs';
-import { useProviderSettings } from './ModelProviderSettings/hooks';
+} from './components/dialogs';
+import { useProviderSettings } from './components/hooks';
+import ModelItemSignals from './components/ModelItemSignals';
+import { testModeEnabled, showApiKey } from './components/providerSignals';
+import { useSignals } from '@preact/signals-react/runtime';
 import { useTranslation } from 'react-i18next';
-import type { Model } from '../../shared/types';
-import { getDefaultGroupName } from '../../shared/utils/modelUtils';
-import useScrollPosition from '../../hooks/useScrollPosition';
-import { getProviderIcon } from '../../shared/utils/providerIcons';
+import type { Model } from '../../../shared/types';
+import { getDefaultGroupName } from '../../../shared/utils/modelUtils';
+import useScrollPosition from '../../../hooks/useScrollPosition';
+import { getProviderIcon } from '../../../shared/utils/providerIcons';
 
 const ModelProviderSettings: React.FC = () => {
+  useSignals();
+  
   const { t } = useTranslation();
   const { providerId } = useParams<{ providerId: string }>();
   const navigate = useNavigate();
@@ -74,9 +78,6 @@ const ModelProviderSettings: React.FC = () => {
     restoreDelay: 0
   });
   
-  // 测试模式开关
-  const [testModeEnabled, setTestModeEnabled] = useState(false);
-
   const provider = useAppSelector(state =>
     state.settings.providers.find(p => p.id === providerId)
   );
@@ -117,7 +118,6 @@ const ModelProviderSettings: React.FC = () => {
     setOpenModelManagementDialog,
     testResult,
     setTestResult,
-    testingModelId,
     testResultDialogOpen,
     setTestResultDialogOpen,
     openEditProviderDialog,
@@ -135,7 +135,6 @@ const ModelProviderSettings: React.FC = () => {
     customEndpointError,
     setCustomEndpointError,
     multiKeyEnabled,
-    showApiKey,
     buttonStyles,
     handleToggleMultiKey,
     toggleShowApiKey,
@@ -185,9 +184,9 @@ const ModelProviderSettings: React.FC = () => {
     const group = groupedModels.find(([name]) => name === groupName);
     if (!group) return;
     
-    group[1].forEach(model => {
-      handleDeleteModel(model.id);
-    });
+    // 收集要删除的模型ID，使用批量删除方法避免多次状态更新
+    const modelIds = group[1].map(model => model.id);
+    handleBatchRemoveModels(modelIds);
   };
 
   // 如果没有找到对应的提供商，显示错误信息
@@ -466,7 +465,7 @@ const ModelProviderSettings: React.FC = () => {
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       variant="outlined"
-                      type={showApiKey ? 'text' : 'password'}
+                      type={showApiKey.value ? 'text' : 'password'}
                       size="small"
                       sx={{
                         '& .MuiOutlinedInput-root': {
@@ -492,7 +491,7 @@ const ModelProviderSettings: React.FC = () => {
                                   transition: 'all 0.2s ease-in-out',
                                 }}
                               >
-                                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                                {showApiKey.value ? <EyeOff size={16} /> : <Eye size={16} />}
                               </IconButton>
                             </InputAdornment>
                           ),
@@ -603,23 +602,23 @@ const ModelProviderSettings: React.FC = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                   <Button
-                    variant={testModeEnabled ? "contained" : "outlined"}
+                    variant={testModeEnabled.value ? "contained" : "outlined"}
                     startIcon={<CheckCircle size={16} />}
-                    onClick={() => setTestModeEnabled(!testModeEnabled)}
+                    onClick={() => { testModeEnabled.value = !testModeEnabled.value; }}
                     sx={{
                       borderRadius: 2,
                       borderColor: (theme) => alpha(theme.palette.success.main, 0.5),
-                      color: testModeEnabled ? 'white' : 'success.main',
-                      bgcolor: testModeEnabled ? 'success.main' : 'transparent',
+                      color: testModeEnabled.value ? 'white' : 'success.main',
+                      bgcolor: testModeEnabled.value ? 'success.main' : 'transparent',
                       '&:hover': {
                         borderColor: 'success.main',
-                        bgcolor: testModeEnabled 
+                        bgcolor: testModeEnabled.value 
                           ? (theme) => alpha(theme.palette.success.main, 0.8)
                           : (theme) => alpha(theme.palette.success.main, 0.1),
                       },
                     }}
                   >
-                    {testModeEnabled ? t('modelSettings.provider.exitTestMode') : t('modelSettings.provider.testMode')}
+                    {testModeEnabled.value ? t('modelSettings.provider.exitTestMode') : t('modelSettings.provider.testMode')}
                   </Button>
                   
                   {/* 长期显示测试按钮开关 */}
@@ -868,129 +867,14 @@ const ModelProviderSettings: React.FC = () => {
                 emptyStateKey={t('modelSettings.provider.noModels')}
                 defaultExpanded={[]}
                 renderModelItem={(model) => (
-                  <Box
+                  <ModelItemSignals
                     key={model.id}
-                    sx={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      py: { xs: 1.5, sm: 1 },
-                      pl: { xs: 2.5, sm: 2 },
-                      pr: { xs: (testModeEnabled || alwaysShowModelTestButton) ? 15 : 11, sm: (testModeEnabled || alwaysShowModelTestButton) ? 13 : 9.5 },
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                      },
-                    }}
-                  >
-                    <Typography 
-                      variant="subtitle2" 
-                      sx={{ 
-                        fontWeight: 600,
-                        fontSize: { xs: '0.95rem', sm: '0.875rem' },
-                        flex: 1,
-                        mr: 1
-                      }}
-                    >
-                      {model.name}
-                    </Typography>
-                    {model.isDefault && (
-                      <Box
-                        sx={{
-                          px: { xs: 1.25, sm: 1 },
-                          py: { xs: 0.5, sm: 0.25 },
-                          borderRadius: 1,
-                          fontSize: { xs: '0.75rem', sm: '0.7rem' },
-                          fontWeight: 600,
-                          bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
-                          color: 'success.main',
-                          mr: 1
-                        }}
-                      >
-                        {t('modelSettings.provider.defaultBadge')}
-                      </Box>
-                    )}
-
-                    {/* 按钮组 - 绝对定位 */}
-                    <Box 
-                      sx={{ 
-                        position: 'absolute',
-                        right: { xs: 2.5, sm: 2 },
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: { xs: 1, sm: 0.75 }
-                      }}
-                    >
-                      {(testModeEnabled || alwaysShowModelTestButton) && (
-                        <IconButton
-                          aria-label="test"
-                          onClick={() => handleTestModelConnection(model)}
-                          disabled={testingModelId !== null}
-                          sx={{
-                            width: { xs: 40, sm: 36 },
-                            height: { xs: 40, sm: 36 },
-                            minWidth: { xs: 40, sm: 36 },
-                            borderRadius: 1.5,
-                            p: 0,
-                            bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
-                            color: 'success.main',
-                            '&:hover': {
-                              bgcolor: (theme) => alpha(theme.palette.success.main, 0.2),
-                            },
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          {testingModelId === model.id ? (
-                            <CircularProgress size={16} color="success" />
-                          ) : (
-                            <CheckCircle size={18} />
-                          )}
-                        </IconButton>
-                      )}
-
-                      <IconButton
-                        aria-label="edit"
-                        onClick={() => openModelEditDialog(model)}
-                        sx={{
-                          width: { xs: 40, sm: 36 },
-                          height: { xs: 40, sm: 36 },
-                          minWidth: { xs: 40, sm: 36 },
-                          borderRadius: 1.5,
-                          p: 0,
-                          bgcolor: (theme) => alpha(theme.palette.info.main, 0.12),
-                          color: 'info.main',
-                          '&:hover': {
-                            bgcolor: (theme) => alpha(theme.palette.info.main, 0.2),
-                          },
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <Edit size={18} />
-                      </IconButton>
-
-                      <IconButton
-                        aria-label="delete"
-                        onClick={() => handleDeleteModel(model.id)}
-                        sx={{
-                          width: { xs: 40, sm: 36 },
-                          height: { xs: 40, sm: 36 },
-                          minWidth: { xs: 40, sm: 36 },
-                          borderRadius: 1.5,
-                          p: 0,
-                          bgcolor: (theme) => alpha(theme.palette.error.main, 0.12),
-                          color: 'error.main',
-                          '&:hover': {
-                            bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
-                          },
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
-                    </Box>
-                  </Box>
+                    model={model}
+                    alwaysShowTestButton={alwaysShowModelTestButton || false}
+                    onEdit={openModelEditDialog}
+                    onDelete={handleDeleteModel}
+                    onTest={handleTestModelConnection}
+                  />
                 )}
                 renderGroupButton={(groupName, models) => (
                   <IconButton
@@ -1090,9 +974,9 @@ const ModelProviderSettings: React.FC = () => {
         onSave={handleSaveCustomEndpoint}
       />
 
-      {/* 自动获取模型对话框 */}
+      {/* 自动获取模型对话框 - SolidJS 增强版 */}
       {provider && (
-        <ModelManagementDialog
+        <ModelManagementDialogSolid
           open={openModelManagementDialog}
           onClose={() => setOpenModelManagementDialog(false)}
           provider={provider}

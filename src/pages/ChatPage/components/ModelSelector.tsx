@@ -35,10 +35,10 @@ export const ModelSelector: React.FC<ModelSelectorProps> = (props) => {
     );
   }
 
-  // 使用 SolidJS 版本的弹窗式选择器（通过 SolidBridge）
+  // 使用增强版 SolidJS 弹窗式选择器（支持响应式 Props 和状态保持）
   return (
     <SolidBridge
-      component={SolidDialogModelSelector}
+      component={SolidDialogModelSelector as any}  // TypeScript 类型系统限制：SolidJS JSX vs React JSX
       props={{
         selectedModel: props.selectedModel,
         availableModels: props.availableModels,
@@ -48,6 +48,11 @@ export const ModelSelector: React.FC<ModelSelectorProps> = (props) => {
         providers: providers,
         themeMode: themeMode as 'light' | 'dark',
         fullScreen: fullScreen,
+      }}
+      debugName="DialogModelSelector"
+      debug={process.env.NODE_ENV === 'development'}
+      onError={(error) => {
+        console.error('[ModelSelector] SolidJS 组件错误:', error);
       }}
     />
   );

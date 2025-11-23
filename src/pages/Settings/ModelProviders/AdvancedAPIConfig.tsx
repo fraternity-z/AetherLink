@@ -14,8 +14,8 @@ import {
 } from '@mui/material';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../../shared/store';
-import { updateProvider } from '../../shared/store/settingsSlice';
+import { useAppSelector, useAppDispatch } from '../../../shared/store';
+import { updateProvider } from '../../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 

@@ -1,14 +1,34 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../../shared/store';
-import { updateProvider, deleteProvider } from '../../../shared/store/settingsSlice';
-import type { Model } from '../../../shared/types';
-import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../shared/config/defaultModels';
-import { isValidUrl } from '../../../shared/utils';
-import ApiKeyManager from '../../../shared/services/ApiKeyManager';
-import { testApiConnection } from '../../../shared/api';
-import { modelMatchesIdentity } from '../../../shared/utils/modelUtils';
+import { useAppDispatch } from '../../../../shared/store';
+import { updateProvider, deleteProvider } from '../../../../shared/store/settingsSlice';
+import type { Model } from '../../../../shared/types';
+import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../../shared/config/defaultModels';
+import { isValidUrl } from '../../../../shared/utils';
+import ApiKeyManager from '../../../../shared/services/ApiKeyManager';
+import { testApiConnection } from '../../../../shared/api';
+import { modelMatchesIdentity } from '../../../../shared/utils/modelUtils';
 import { CONSTANTS, STYLES, useDebounce } from './constants';
+import { 
+  testingModelId, 
+  showApiKey, 
+  startTestingModel, 
+  finishTestingModel,
+  resetProviderSignals 
+} from './providerSignals';
+
+// ============================================================================
+// 调试工具函数
+// ============================================================================
+
+/**
+ * 调试日志 - 模型操作
+ */
+const logModelOperation = (operation: string, details: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[ModelProvider] ${operation}:`, details);
+  }
+};
 
 // ============================================================================
 // 类型定义
@@ -61,7 +81,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   const [openModelManagementDialog, setOpenModelManagementDialog] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [testingModelId, setTestingModelId] = useState<string | null>(null);
+  // testingModelId 已改用 Signals 管理
   const [testResultDialogOpen, setTestResultDialogOpen] = useState(false);
 
   // 编辑供应商相关状态
@@ -85,7 +105,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
 
   // 多 Key 管理相关状态
   const [multiKeyEnabled, setMultiKeyEnabled] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
+  // showApiKey 已改用 Signals 管理
   const keyManager = ApiKeyManager.getInstance();
 
   // 防抖处理的URL输入
@@ -115,12 +135,13 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     }
   }, [provider]);
 
-  // 组件卸载时取消正在进行的异步操作
+  // 组件卸载时取消正在进行的异步操作并重置 Signals
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      resetProviderSignals();
     };
   }, []);
 
@@ -215,7 +236,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   };
 
   const toggleShowApiKey = () => {
-    setShowApiKey(!showApiKey);
+    showApiKey.value = !showApiKey.value;
   };
 
   // ========================================================================
@@ -449,6 +470,19 @@ export const useProviderSettings = (provider: Provider | undefined) => {
 
   const handleAddModel = () => {
     if (provider && newModelName && newModelValue) {
+      logModelOperation('添加模型', { name: newModelName, value: newModelValue, provider: provider.id });
+      
+      // 检查模型是否已存在
+      const modelExists = provider.models.some(m => 
+        modelMatchesIdentity(m, { id: newModelValue, provider: provider.id }, provider.id)
+      );
+
+      if (modelExists) {
+        logModelOperation('添加失败 - 模型已存在', { modelId: newModelValue });
+        setTestResult({ success: false, message: '模型已存在，请勿重复添加' });
+        return;
+      }
+
       // 创建新模型对象
       const newModel: Model = {
         id: newModelValue,
@@ -464,26 +498,28 @@ export const useProviderSettings = (provider: Provider | undefined) => {
 
       // 验证并更新所有配置
       if (validateAndUpdateProvider({ models: updatedModels })) {
+        logModelOperation('添加成功', { modelId: newModel.id, totalModels: updatedModels.length });
         // 清理状态
         setNewModelName('');
         setNewModelValue('');
         setOpenAddModelDialog(false);
+        setTestResult({ success: true, message: '模型添加成功' });
       }
     }
   };
 
   const handleEditModel = (updatedModel: Model) => {
-    if (provider && updatedModel) {
-      // 从provider的models数组中删除旧模型
-      const updatedModels = provider.models.filter(m =>
-        modelToEdit ? m.id !== modelToEdit.id : true
+    if (provider && updatedModel && modelToEdit) {
+      logModelOperation('编辑模型', { oldId: modelToEdit.id, newId: updatedModel.id, name: updatedModel.name });
+      
+      // 查找并替换原有模型（保持位置不变）
+      const updatedModels = provider.models.map(m =>
+        modelMatchesIdentity(m, modelToEdit, provider.id) ? updatedModel : m
       );
-
-      // 添加更新后的模型到provider的models数组
-      updatedModels.push(updatedModel);
 
       // 验证并更新所有配置
       if (validateAndUpdateProvider({ models: updatedModels })) {
+        logModelOperation('编辑成功', { modelId: updatedModel.id });
         // 清理状态
         setModelToEdit(undefined);
         setOpenEditModelDialog(false);
@@ -493,8 +529,19 @@ export const useProviderSettings = (provider: Provider | undefined) => {
 
   const handleDeleteModel = (modelId: string) => {
     if (provider) {
-      // 使用provider的更新方法，直接从provider的models数组中删除模型
-      const updatedModels = provider.models.filter(model => model.id !== modelId);
+      logModelOperation('删除模型', { modelId, provider: provider.id });
+      
+      // 使用精确匹配删除模型（匹配 id + provider 组合）
+      const beforeCount = provider.models.length;
+      const updatedModels = provider.models.filter(model => 
+        !modelMatchesIdentity(model, { id: modelId, provider: provider.id }, provider.id)
+      );
+      
+      logModelOperation('删除结果', { 
+        beforeCount, 
+        afterCount: updatedModels.length, 
+        deleted: beforeCount - updatedModels.length 
+      });
 
       // 验证并更新所有配置
       validateAndUpdateProvider({ models: updatedModels });
@@ -538,6 +585,8 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   // 批量添加多个模型
   const handleBatchAddModels = useCallback((addedModels: Model[]) => {
     if (provider && addedModels.length > 0) {
+      logModelOperation('批量添加', { count: addedModels.length });
+      
       // 获取所有不存在的模型（使用精确匹配：{id, provider}组合）
       const newModels = addedModels.filter(model =>
         !provider.models.some(m => 
@@ -550,7 +599,12 @@ export const useProviderSettings = (provider: Provider | undefined) => {
         enabled: true
       }));
 
-      if (newModels.length === 0) return;
+      if (newModels.length === 0) {
+        logModelOperation('批量添加跳过 - 无新模型', {});
+        return;
+      }
+      
+      logModelOperation('批量添加实际数量', { newCount: newModels.length });
 
       // 创建更新后的模型数组
       const updatedModels = [...provider.models, ...newModels];
@@ -563,8 +617,20 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   // 批量删除多个模型
   const handleBatchRemoveModels = useCallback((modelIds: string[]) => {
     if (provider && modelIds.length > 0) {
-      // 过滤掉要删除的模型
-      const updatedModels = provider.models.filter(model => !modelIds.includes(model.id));
+      logModelOperation('批量删除', { count: modelIds.length, modelIds });
+      
+      // 使用精确匹配过滤要删除的模型（使用 Set 优化查找性能）
+      const deleteSet = new Set(modelIds);
+      const beforeCount = provider.models.length;
+      const updatedModels = provider.models.filter(model => 
+        !deleteSet.has(model.id) || model.provider !== provider.id
+      );
+      
+      logModelOperation('批量删除结果', { 
+        beforeCount, 
+        afterCount: updatedModels.length, 
+        deleted: beforeCount - updatedModels.length 
+      });
 
       // 验证并更新所有配置
       validateAndUpdateProvider({ models: updatedModels });
@@ -688,8 +754,8 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   const handleTestModelConnection = async (model: Model) => {
     if (!provider) return;
 
-    // 保存当前测试的模型ID
-    setTestingModelId(model.id);
+    // 使用 Signals 管理测试状态
+    startTestingModel(model.id);
     setTestResult(null);
 
     try {
@@ -726,13 +792,14 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       const success = await testApiConnection(testModel);
 
       if (success) {
-        // 显示成功信息
+        // 使用 Signals 更新测试结果
+        finishTestingModel(true, `模型 ${model.name} 连接成功！`);
         setTestResult({
           success: true,
           message: `模型 ${model.name} 连接成功！`
         });
       } else {
-        // 显示失败信息
+        finishTestingModel(false, `模型 ${model.name} 连接失败，请检查API密钥和基础URL是否正确。`);
         setTestResult({
           success: false,
           message: `模型 ${model.name} 连接失败，请检查API密钥和基础URL是否正确。`
@@ -740,12 +807,12 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       }
     } catch (error) {
       console.error('测试模型连接时出错:', error);
+      const errorMsg = `连接错误: ${error instanceof Error ? error.message : String(error)}`;
+      finishTestingModel(false, errorMsg);
       setTestResult({
         success: false,
-        message: `连接错误: ${error instanceof Error ? error.message : String(error)}`
+        message: errorMsg
       });
-    } finally {
-      setTestingModelId(null);
     }
   };
 
@@ -780,7 +847,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     isTesting,
     testResult,
     setTestResult,
-    testingModelId,
+    testingModelId: testingModelId.value, // 从 Signals 导出
     testResultDialogOpen,
     setTestResultDialogOpen,
     openEditProviderDialog,
@@ -811,8 +878,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     setCustomEndpointError,
     multiKeyEnabled,
     setMultiKeyEnabled,
-    showApiKey,
-    setShowApiKey,
+    // showApiKey 不再从这里返回，直接在组件中导入使用
     keyManager,
     buttonStyles,
 

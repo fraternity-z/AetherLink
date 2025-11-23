@@ -1,0 +1,119 @@
+/**
+ * ModelManagementDialog - SolidJS 版本的 React 包装器
+ * 使用 SolidBridge 桥接 SolidJS 组件
+ */
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTheme, alpha } from '@mui/material';
+import { SolidBridge } from '../shared/bridges/SolidBridge';
+import { ModelManagementDrawer } from '../solid/components/ModelManagementDrawer.solid';
+import { fetchModels } from '../shared/services/network/APIService';
+import type { Model } from '../shared/types';
+
+interface ModelManagementDialogSolidProps {
+  open: boolean;
+  onClose: () => void;
+  provider: any;
+  onAddModel: (model: Model) => void;
+  onAddModels?: (models: Model[]) => void;
+  onRemoveModel: (modelId: string) => void;
+  onRemoveModels?: (modelIds: string[]) => void;
+  existingModels: Model[];
+}
+
+/**
+ * ModelManagementDialog - SolidJS 增强版
+ * 
+ * 特点：
+ * - ✅ 使用 SolidJS 细粒度响应式系统
+ * - ✅ 性能优于 React 版本
+ * - ✅ 原生 HTML + CSS，无 Material-UI 依赖
+ * - ✅ 完全向后兼容的 API
+ */
+const ModelManagementDialogSolid: React.FC<ModelManagementDialogSolidProps> = ({
+  open,
+  onClose,
+  provider,
+  onAddModel,
+  onAddModels,
+  onRemoveModel,
+  onRemoveModels,
+  existingModels
+}) => {
+  const theme = useTheme();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [models, setModels] = useState<Model[]>([]);
+  const initialProviderRef = useRef<any>(null);
+
+  // 加载模型列表
+  const loadModels = async () => {
+    try {
+      setLoading(true);
+      const providerToUse = initialProviderRef.current || provider;
+      const fetchedModels = await fetchModels(providerToUse);
+      setModels(fetchedModels);
+    } catch (error) {
+      console.error('加载模型失败:', error);
+      setModels([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 当对话框打开时加载模型
+  useEffect(() => {
+    if (open && provider && (!initialProviderRef.current || initialProviderRef.current.id !== provider.id)) {
+      initialProviderRef.current = provider;
+      loadModels();
+    }
+  }, [open, provider]);
+
+  // 主题模式
+  const themeMode = useMemo(() => theme.palette.mode as 'light' | 'dark', [theme.palette.mode]);
+
+  // 动态注入 MUI 主题颜色到 CSS 变量
+  useEffect(() => {
+    if (open) {
+      const root = document.documentElement;
+      root.style.setProperty('--theme-bg-paper', theme.palette.background.paper);
+      root.style.setProperty('--theme-bg-default', theme.palette.background.default);
+      root.style.setProperty('--theme-text-primary', theme.palette.text.primary);
+      root.style.setProperty('--theme-text-secondary', theme.palette.text.secondary);
+      root.style.setProperty('--theme-primary', theme.palette.primary.main);
+      root.style.setProperty('--theme-success', theme.palette.success.main);
+      root.style.setProperty('--theme-error', theme.palette.error.main);
+      root.style.setProperty('--theme-border-default', alpha(theme.palette.text.primary, 0.12));
+      root.style.setProperty('--theme-hover-bg', alpha(theme.palette.text.primary, 0.04));
+      root.style.setProperty('--theme-active-bg', alpha(theme.palette.text.primary, 0.08));
+      root.style.setProperty('--theme-success-bg', alpha(theme.palette.success.main, 0.12));
+      root.style.setProperty('--theme-error-bg', alpha(theme.palette.error.main, 0.12));
+      root.style.setProperty('--theme-success-hover', alpha(theme.palette.success.main, 0.2));
+      root.style.setProperty('--theme-error-hover', alpha(theme.palette.error.main, 0.2));
+    }
+  }, [open, theme]);
+
+  return (
+    <SolidBridge
+      component={ModelManagementDrawer as any}
+      props={{
+        open,
+        onClose,
+        provider,
+        models,
+        loading,
+        existingModels,
+        onAddModel,
+        onAddModels,
+        onRemoveModel,
+        onRemoveModels,
+        themeMode
+      }}
+      debugName="ModelManagementDrawer"
+      debug={process.env.NODE_ENV === 'development'}
+      onError={(error) => {
+        console.error('[ModelManagementDialog] SolidJS 组件错误:', error);
+      }}
+    />
+  );
+};
+
+export default ModelManagementDialogSolid;

@@ -18,10 +18,10 @@ const KnowledgeBaseDetail = lazy(() => import('../pages/KnowledgeBase/KnowledgeB
 const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings'));
 
 const TopicNamingSettings = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
-const ModelProviderSettings = lazy(() => import('../pages/Settings/ModelProviderSettings'));
-const MultiKeyManagementPage = lazy(() => import('../pages/Settings/MultiKeyManagementPage'));
-const AdvancedAPIConfigPage = lazy(() => import('../pages/Settings/AdvancedAPIConfigPage'));
-const AddProviderPage = lazy(() => import('../pages/Settings/AddProviderPage'));
+const ModelProviderSettings = lazy(() => import('../pages/Settings/ModelProviders'));
+const MultiKeyManagementPage = lazy(() => import('../pages/Settings/ModelProviders/MultiKeyManagement'));
+const AdvancedAPIConfigPage = lazy(() => import('../pages/Settings/ModelProviders/AdvancedAPIConfig'));
+const AddProviderPage = lazy(() => import('../pages/Settings/ModelProviders/AddProvider'));
 const AboutPage = lazy(() => import('../pages/Settings/AboutPage'));
 // 导入语音设置页面
 const VoiceSettings = lazy(() => import('../pages/Settings/VoiceSettingsV2'));

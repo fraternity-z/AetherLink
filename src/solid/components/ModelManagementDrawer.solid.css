@@ -1,0 +1,422 @@
+/* ModelManagementDrawer - SolidJS 版本样式 */
+/* 使用 CSS Variables 主题系统 */
+/* 主题颜色由 React 包装器动态注入，确保与 MUI 主题一致 */
+
+/* ==================== 主题变量（后备值） ==================== */
+:root {
+  --theme-bg-paper: #ffffff;
+  --theme-bg-default: #fafafa;
+  --theme-bg-elevated: #f5f5f5;
+  --theme-text-primary: rgba(0, 0, 0, 0.87);
+  --theme-text-secondary: rgba(0, 0, 0, 0.6);
+  --theme-border-default: rgba(0, 0, 0, 0.12);
+  --theme-hover-bg: rgba(0, 0, 0, 0.04);
+  --theme-active-bg: rgba(0, 0, 0, 0.08);
+  --theme-primary: #1976d2;
+  --theme-success: #2e7d32;
+  --theme-error: #d32f2f;
+  --theme-success-bg: rgba(46, 125, 50, 0.12);
+  --theme-error-bg: rgba(211, 47, 47, 0.12);
+  --theme-success-hover: rgba(46, 125, 50, 0.2);
+  --theme-error-hover: rgba(211, 47, 47, 0.2);
+}
+
+/* ==================== 动画 ==================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ==================== 背景遮罩 ==================== */
+.model-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1300;
+  animation: fadeIn 0.2s ease-out;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* ==================== 抽屉容器 ==================== */
+.model-drawer {
+  width: 100%;
+  max-height: 80vh;
+  background-color: var(--theme-bg-paper);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* ==================== 拖拽指示器 ==================== */
+.model-drawer-handle {
+  padding-top: 8px;
+  padding-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+}
+
+.model-drawer-handle:active {
+  cursor: grabbing;
+}
+
+.model-drawer-handle-bar {
+  width: 40px;
+  height: 4px;
+  background-color: var(--theme-text-secondary);
+  opacity: 0.3;
+  border-radius: 999px;
+  transition: opacity 0.2s;
+}
+
+.model-drawer-handle:hover .model-drawer-handle-bar {
+  opacity: 0.5;
+}
+
+/* ==================== 搜索栏 ==================== */
+.model-drawer-search {
+  padding: 0 16px 8px;
+}
+
+.model-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--theme-bg-default);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.model-search-icon {
+  color: var(--theme-text-secondary);
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.model-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--theme-text-primary);
+  font-size: 14px;
+  padding: 0;
+}
+
+.model-search-input::placeholder {
+  color: var(--theme-text-secondary);
+  opacity: 0.7;
+}
+
+/* ==================== 内容区域 ==================== */
+.model-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 16px;
+}
+
+/* 自定义滚动条 */
+.model-drawer-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.model-drawer-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.model-drawer-content::-webkit-scrollbar-thumb {
+  background-color: var(--theme-text-secondary);
+  opacity: 0.3;
+  border-radius: 3px;
+}
+
+.model-drawer-content::-webkit-scrollbar-thumb:hover {
+  opacity: 0.5;
+}
+
+/* ==================== 加载和空状态 ==================== */
+.model-drawer-loading,
+.model-drawer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--theme-text-secondary);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--theme-border-default);
+  border-top-color: var(--theme-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.model-drawer-loading p,
+.model-drawer-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ==================== 分组列表 ==================== */
+.model-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ==================== 分组 ==================== */
+.model-group {
+  border: 1px solid var(--theme-border-default);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--theme-bg-paper);
+}
+
+.model-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.model-group-header:hover {
+  background-color: var(--theme-hover-bg);
+}
+
+.model-group-header:active {
+  background-color: var(--theme-active-bg);
+}
+
+.model-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--theme-text-primary);
+}
+
+.model-group-arrow {
+  transition: transform 0.2s;
+  color: var(--theme-text-secondary);
+  flex-shrink: 0;
+}
+
+.model-group-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.model-group-count {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--theme-text-secondary);
+  margin-left: 4px;
+}
+
+.model-group-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.model-group-action-btn.action-add {
+  background-color: var(--theme-success-bg);
+  color: var(--theme-success);
+}
+
+.model-group-action-btn.action-add:hover {
+  background-color: var(--theme-success-hover);
+}
+
+.model-group-action-btn.action-remove {
+  background-color: var(--theme-error-bg);
+  color: var(--theme-error);
+}
+
+.model-group-action-btn.action-remove:hover {
+  background-color: var(--theme-error-hover);
+}
+
+/* ==================== 分组内容 ==================== */
+.model-group-content {
+  border-top: 1px solid var(--theme-border-default);
+  padding: 4px;
+}
+
+/* ==================== 触感按钮 ==================== */
+.tactile-button {
+  transform: scale(1);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tactile-button.pressed {
+  transform: scale(0.97);
+}
+
+.model-item-wrapper {
+  width: 100%;
+  cursor: pointer;
+}
+
+/* ==================== 模型项 ==================== */
+.model-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  padding-right: 60px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.model-item:hover {
+  background-color: var(--theme-hover-bg);
+}
+
+/* ==================== 模型头像 ==================== */
+.model-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+/* ==================== 模型信息 ==================== */
+.model-item-info {
+  flex: 1;
+  margin-left: 12px;
+  min-width: 0;
+}
+
+.model-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--theme-text-primary);
+  margin-bottom: 2px;
+}
+
+.model-item-id {
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================== 模型操作按钮 ==================== */
+.model-item-action-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.model-item-action-btn.action-add {
+  background-color: var(--theme-success-bg);
+  color: var(--theme-success);
+}
+
+.model-item-action-btn.action-add:hover {
+  background-color: var(--theme-success-hover);
+}
+
+.model-item-action-btn.action-remove {
+  background-color: var(--theme-error-bg);
+  color: var(--theme-error);
+}
+
+.model-item-action-btn.action-remove:hover {
+  background-color: var(--theme-error-hover);
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 600px) {
+  .model-drawer {
+    max-height: 90vh;
+  }
+
+  .model-group-header {
+    padding: 10px 12px;
+  }
+
+  .model-group-title {
+    font-size: 13px;
+  }
+
+  .model-group-action-btn,
+  .model-item-action-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .model-item {
+    padding: 14px 12px;
+    padding-right: 64px;
+  }
+
+  .model-item-name {
+    font-size: 15px;
+  }
+
+  .model-item-id {
+    font-size: 13px;
+  }
+}
