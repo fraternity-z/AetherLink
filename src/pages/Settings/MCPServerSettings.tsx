@@ -250,21 +250,47 @@ const MCPServerSettings: React.FC = () => {
         throw new Error(t('settings.mcpServer.messages.jsonFormatError'));
       }
 
+      // 类型规范化函数：支持多种格式
+      const normalizeType = (type: string | undefined): MCPServerType => {
+        if (!type) return 'sse';
+        
+        // 转换为小写便于比较
+        const lowerType = type.toLowerCase().replace(/[-_]/g, '');
+        
+        // 映射各种格式到标准类型
+        if (lowerType === 'streamablehttp' || lowerType === 'streamable') {
+          return 'streamableHttp';
+        }
+        if (lowerType === 'httpstream') {
+          return 'httpStream';
+        }
+        if (lowerType === 'inmemory' || lowerType === 'memory') {
+          return 'inMemory';
+        }
+        if (lowerType === 'sse' || lowerType === 'serversent' || lowerType === 'serversentevents') {
+          return 'sse';
+        }
+        
+        // 默认返回 sse
+        return 'sse';
+      };
+
       let importCount = 0;
       const errors: string[] = [];
 
       for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
         try {
+          const configAny = serverConfig as any;
           const server: MCPServer = {
             id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
             name: serverName,
-            type: (serverConfig as any).type || 'sse',
-            baseUrl: (serverConfig as any).url,
+            type: normalizeType(configAny.type),
+            baseUrl: configAny.url || configAny.baseUrl,
             description: t('settings.mcpServer.messages.importFromJson', { name: serverName }),
             isActive: false,
-            headers: {},
-            env: {},
-            args: []
+            headers: configAny.headers || {},
+            env: configAny.env || {},
+            args: configAny.args || []
           };
 
           await mcpService.addServer(server);

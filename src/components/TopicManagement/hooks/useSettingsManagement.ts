@@ -51,7 +51,7 @@ export function useSettingsManagement() {
     { id: 'renderUserInputAsMarkdown', name: '渲染用户输入', defaultValue: settings.renderUserInputAsMarkdown, description: '是否渲染用户输入的Markdown格式（关闭后用户消息将显示为纯文本）' },
     { id: 'autoScrollToBottom', name: '自动下滑', defaultValue: settings.autoScrollToBottom, description: '新消息时自动滚动到聊天底部' },
     { id: 'messageStyle', name: '消息样式', defaultValue: settings.messageStyle, description: '选择聊天消息的显示样式', type: 'select' as const, options: messageStyleOptions},
-    { id: 'messageNavigation', name: '对话导航', defaultValue: settings.messageNavigation, description: '显示上下按钮快速跳转到上一条/下一条消息', type: 'select' as const, options: messageNavigationOptions},
+    { id: 'messageNavigation', name: '对话导航', defaultValue: settings.messageNavigation, description: '显示上下按钮快速跳转到上一条/下一条消息（对呼吸灯左滑显示）', type: 'select' as const, options: messageNavigationOptions},
   ];
 
   // 设置相关函数

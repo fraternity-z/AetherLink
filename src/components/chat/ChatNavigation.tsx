@@ -16,6 +16,9 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
   const lastMoveTime = useRef(0);
   const scrollTimer = useRef<NodeJS.Timeout | null>(null);
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const touchStartTime = useRef<number>(0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -220,29 +223,69 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      // 移动端点击逻辑
+      // 移动端左滑显示导航：在呼吸灯区域左滑触发
       if (!isMobile) return;
 
       const touch = e.touches[0];
       if (!touch) return;
 
-      const triggerWidth = 80; // 移动端触发区域稍小一些
+      const triggerWidth = 80; // 移动端触发区域（呼吸灯区域）
       const triggerHeight = 200; // 中间区域高度
       const centerY = window.innerHeight / 2;
 
+      // 检查是否在呼吸灯区域（右侧边缘）
       const isInTriggerArea = touch.clientX > window.innerWidth - triggerWidth &&
                              touch.clientY > centerY - triggerHeight / 2 &&
                              touch.clientY < centerY + triggerHeight / 2;
 
       if (isInTriggerArea) {
-        setIsVisible(true);
-        setIsNearButtons(false); // 移动端强制重置状态
-        resetHideTimer();
+        // 记录触摸起始位置和时间
+        touchStartX.current = touch.clientX;
+        touchStartY.current = touch.clientY;
+        touchStartTime.current = Date.now();
       }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // 检测左滑显示：从右侧呼吸灯向左滑动显示导航面板
+      if (!isMobile) return;
+      if (touchStartX.current === 0) return; // 没有在触发区域开始触摸
+
+      const touch = e.touches[0];
+      if (!touch) return;
+
+      const deltaX = touch.clientX - touchStartX.current;
+      const deltaY = Math.abs(touch.clientY - touchStartY.current);
+      const deltaTime = Date.now() - touchStartTime.current;
+
+      // 左滑显示条件：向左滑动至少50px，垂直偏移小于30px，时间小于500ms
+      if (deltaX < -50 && deltaY < 30 && deltaTime < 500) {
+        setIsVisible(true);
+        setIsNearButtons(false);
+        resetHideTimer();
+        // 触发触觉反馈
+        if (isNavigationHapticEnabled) {
+          Haptics.light();
+        }
+        // 重置触摸状态
+        touchStartX.current = 0;
+        touchStartY.current = 0;
+        touchStartTime.current = 0;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // 重置触摸状态
+      if (!isMobile) return;
+      touchStartX.current = 0;
+      touchStartY.current = 0;
+      touchStartTime.current = 0;
     };
 
     if (isMobile) {
       window.addEventListener('touchstart', handleTouchStart, { passive: true });
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+      window.addEventListener('touchend', handleTouchEnd, { passive: true });
     } else {
       window.addEventListener('mousemove', handleMouseMove);
     }
@@ -250,12 +293,14 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
         hideTimer.current = null;
       }
     };
-  }, [containerId, isNearButtons, resetHideTimer, isMobile]);
+  }, [containerId, isNearButtons, resetHideTimer, isMobile, isNavigationHapticEnabled]);
 
   // 监听滚动事件
   useEffect(() => {
@@ -309,7 +354,7 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
 
   return (
     <>
-      {/* 移动端触发区域提示 */}
+      {/* 移动端触发区域提示：呼吸灯（左滑显示导航） */}
       {isMobile && !isVisible && (
         <Box
           sx={{
