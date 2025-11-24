@@ -52,38 +52,26 @@ export default defineConfig(({ mode }) => ({
   ],
 
 
+  // 🚀 性能优化：减少日志输出
+  logLevel: 'warn', // 只显示警告和错误，减少控制台输出
+  
   // 开发服务器配置
   server: {
     port: 5173,
     host: process.env.TAURI_DEV_HOST || '0.0.0.0', // 使用 Tauri 提供的主机地址
     cors: false, // 完全禁用 CORS 检查
     strictPort: true, // 严格端口模式
-    // 🚀 性能优化：预热关键文件，提升首次加载速度
+    open: false, // 🚀 不自动打开浏览器，减少启动开销
+    // 🚀 性能优化：预热关键文件（只预热最核心的，避免首次启动慢）
     warmup: {
       clientFiles: [
         // 核心入口
         './src/main.tsx',
         './src/App.tsx',
-        
-        // 关键组件
         './src/components/AppContent.tsx',
-        './src/routes/index.tsx',
         
-        // 首屏路由 (用户最常访问)
-        './src/pages/ChatPage/index.tsx',
-        './src/pages/WelcomePage/index.tsx',
-        
-        // 核心状态管理
+        // 核心状态（最重要）
         './src/shared/store/index.ts',
-        './src/shared/store/settingsSlice.ts',
-        './src/shared/store/slices/newMessagesSlice.ts',
-        
-        // 关键 Hooks
-        './src/hooks/useAppInitialization.ts',
-        './src/hooks/useTheme.ts',
-        
-        // 性能追踪
-        './src/utils/performanceMetrics.ts',
       ],
     },
     headers: {
@@ -97,8 +85,11 @@ export default defineConfig(({ mode }) => ({
       host: process.env.TAURI_DEV_HOST,
       port: 5174,
     } : {
+      // 🚀 性能优化：localhost 连接更快
+      protocol: 'ws',
+      host: 'localhost',
       port: 5174,
-      host: '0.0.0.0'
+      timeout: 5000, // 5秒超时
     }
     // 注意：CORS 代理已迁移到独立的 scripts/cors-proxy.js
     // 所有跨域请求通过 http://localhost:8888/proxy 统一处理
@@ -121,40 +112,23 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 500,
     // 注意：Rolldown 已自动启用持久化缓存（通过 cacheDir）
   },
-  // 🚀 优化依赖预构建 - 提升首次加载速度
+  // 优化依赖预构建 - Rolldown-Vite 会自动优化
   optimizeDeps: {
     include: [
-      // React 核心
       'react',
       'react-dom',
-      'react-dom/client',
-      'react/jsx-runtime',
-      
-      // 路由和状态管理
       'react-router-dom',
       '@reduxjs/toolkit',
       'redux-persist',
-      'redux-persist/integration/react',
       'react-redux',
-      
-      // UI 库
-      '@mui/material',
-      '@mui/system',
+      'lodash',
       '@emotion/react',
       '@emotion/styled',
-      'notistack',
-      
-      // 工具库
-      'lodash',
       'axios',
-      'dayjs',
-      'uuid',
-      
-      // SolidJS
       'solid-js',
       'solid-js/web',
     ],
-    // 🚀 性能优化：不等待所有依赖扫描完成，提前开始预构建
+    // 🚀 性能优化：立即开始预构建，不等待扫描完成
     holdUntilCrawlEnd: false,
   },
 
@@ -171,7 +145,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': '/src'
-    }
+    },
+    // 🚀 优化：减少文件扩展名猜测，加快解析速度
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],  // 只保留常用的，去掉 .mjs .mts .json
   },
 
   // 定义全局常量
