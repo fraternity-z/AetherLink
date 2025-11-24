@@ -43,14 +43,76 @@ jobs:
           # 初始化 iOS 项目（创建 Xcode 项目）
           tauri ios init
       
+      - name: Disable Code Signing
+        run: |
+          cd src-tauri/gen/apple
+          # 禁用代码签名
+          cat > disable_signing.py << 'EOF'
+          import re
+          import sys
+          
+          def disable_signing(file_path):
+              try:
+                  with open(file_path, 'r') as f:
+                      content = f.read()
+                  
+                  # 禁用代码签名的设置
+                  content = re.sub(r'CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;', content)
+                  content = re.sub(r'DEVELOPMENT_TEAM = [^;]*;', 'DEVELOPMENT_TEAM = "";', content)
+                  content = re.sub(r'CODE_SIGN_IDENTITY = [^;]*;', 'CODE_SIGN_IDENTITY = "";', content)
+                  content = re.sub(r'PROVISIONING_PROFILE_SPECIFIER = [^;]*;', 'PROVISIONING_PROFILE_SPECIFIER = "";', content)
+                  
+                  # 添加禁用代码签名的设置（如果不存在）
+                  if 'CODE_SIGNING_ALLOWED' not in content:
+                      content = re.sub(
+                          r'(buildSettings = \{[^}]*)',
+                          r'\1\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;',
+                          content,
+                          count=10
+                      )
+                  else:
+                      content = re.sub(r'CODE_SIGNING_ALLOWED = YES;', 'CODE_SIGNING_ALLOWED = NO;', content)
+                  
+                  # 禁用自动签名
+                  content = re.sub(r'CODE_SIGNING_REQUIRED = YES;', 'CODE_SIGNING_REQUIRED = NO;', content)
+                  if 'CODE_SIGNING_REQUIRED' not in content:
+                      content = re.sub(
+                          r'(buildSettings = \{[^}]*)',
+                          r'\1\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;',
+                          content,
+                          count=10
+                      )
+                  
+                  with open(file_path, 'w') as f:
+                      f.write(content)
+                  
+                  print(f"✓ Disabled code signing in {file_path}")
+                  return True
+              except Exception as e:
+                  print(f"✗ Error: {e}")
+                  return False
+          
+          if __name__ == "__main__":
+              success = disable_signing("aetherlink.xcodeproj/project.pbxproj")
+              sys.exit(0 if success else 1)
+          EOF
+          
+          python3 disable_signing.py
+      
       - name: Build iOS App (Debugging - Unsigned)
+        env:
+          # 禁用代码签名的环境变量
+          CODE_SIGNING_ALLOWED: "NO"
+          CODE_SIGNING_REQUIRED: "NO"
+          CODE_SIGN_IDENTITY: ""
+          DEVELOPMENT_TEAM: ""
         run: |
           cd src-tauri
-          # 设置为开发模式（允许无签名构建）
-          export APPLE_DEVELOPMENT_TEAM="-"
-          export APPLE_SIGNING_IDENTITY="-"
           # 使用 debugging 导出方法构建（CI/CD 无签名）
           echo "Starting Tauri iOS build (debugging export)..."
+          echo "Code signing settings:"
+          echo "  CODE_SIGNING_ALLOWED=$CODE_SIGNING_ALLOWED"
+          echo "  CODE_SIGNING_REQUIRED=$CODE_SIGNING_REQUIRED"
           tauri ios build --export-method debugging || {
             echo "❌ Tauri iOS build failed!"
             echo "Checking for error logs..."
