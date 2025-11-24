@@ -23,7 +23,7 @@ import AIDebateButton from '../AIDebateButton';
 import type { DebateConfig } from '../../shared/services/AIDebateService';
 import QuickPhraseButton from '../QuickPhraseButton';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition';
-import { useKeyboardManager } from '../../shared/hooks/useKeyboardManager';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { EnhancedVoiceInput } from '../VoiceRecognition';
 
 interface ChatInputProps {
@@ -76,7 +76,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [voiceState, setVoiceState] = useState<'normal' | 'voice-mode' | 'recording'>('normal');
   const [shouldHideVoiceButton, setShouldHideVoiceButton] = useState(false); // 是否隐藏语音按钮
   const [expanded, setExpanded] = useState(false); // 展开状态
-  const [expandedHeight, setExpandedHeight] = useState(Math.floor(window.innerHeight * 0.7)); // 展开时的高度
   const [showExpandButton, setShowExpandButton] = useState(false); // 是否显示展开按钮
 
   // 文件和图片状态
@@ -153,14 +152,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
     stopRecognition,
   } = useVoiceRecognition();
 
-  // 键盘管理功能
-  const {
-    isKeyboardVisible,
-    isPageTransitioning,
-    shouldHandleFocus
-  } = useKeyboardManager();
+  // 极简键盘管理 - 模仿 rikkahub 的 WindowInsets.isImeVisible
+  const { isKeyboardVisible, hideKeyboard } = useKeyboard();
 
+  // 包装 handleSubmit，在发送时隐藏键盘 - 模仿 rikkahub 的 sendMessage
+  const wrappedHandleSubmit = useCallback(() => {
+    hideKeyboard();  // 类似 keyboardController?.hide()
+    handleSubmit();
+  }, [hideKeyboard, handleSubmit]);
 
+  /**
+   * 键盘弹出时自动折叠输入框 - 模仿 rikkahub 的逻辑
+   * 
+   * 参考 rikkahub 的实现（ChatInput.kt 第 189-194 行）：
+   * ```kotlin
+   * val imeVisile = WindowInsets.isImeVisible
+   * LaunchedEffect(imeVisile) {
+   *     if (imeVisile) {
+   *         expand = ExpandState.Collapsed  // 键盘弹出时自动折叠
+   *     }
+   * }
+   * ```
+   * 
+   * 原因：
+   * 1. 展开的输入框通常很高（70vh），键盘弹出后屏幕空间不足
+   * 2. 自动折叠可以给用户更多的可视空间来查看输入内容
+   * 3. 避免展开的输入框遮挡大部分屏幕，影响用户体验
+   */
+  useEffect(() => {
+    if (isKeyboardVisible && expanded) {
+      setExpanded(false);
+    }
+  }, [isKeyboardVisible, expanded]);
 
   // Toast消息订阅
   useEffect(() => {
@@ -280,15 +303,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // 输入处理逻辑现在由 useChatInputLogic 和 useUrlScraper hooks 提供
 
-  // 监听窗口大小变化，更新展开高度
-  useEffect(() => {
-    const updateExpandedHeight = () => {
-      setExpandedHeight(Math.floor(window.innerHeight * 0.7));
-    };
-
-    window.addEventListener('resize', updateExpandedHeight);
-    return () => window.removeEventListener('resize', updateExpandedHeight);
-  }, []);
+  // 窗口大小监听已移除，将重新实现
 
   // 性能优化：使用useMemo缓存按钮可见性计算结果，避免重复计算
   const buttonVisibility = React.useMemo(() => {
@@ -599,8 +614,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         zIndex: 1000,
         boxShadow: 'none',
         transition: 'all 0.3s ease',
-        marginBottom: isKeyboardVisible ? '0' : (isMobile ? '0' : isTablet ? '0' : '0'),
-        paddingBottom: isKeyboardVisible && isMobile ? 'env(safe-area-inset-bottom)' : (isIOS ? '34px' : '0'), // 为iOS设备增加底部安全区域
+        marginBottom: '0',
+        paddingBottom: isIOS ? '34px' : '0', // 为iOS设备增加底部安全区域
         // 确保没有任何背景色或边框
         border: 'none',
         position: 'relative'
@@ -774,10 +789,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             isDarkMode={isDarkMode}
             shouldHideVoiceButton={shouldHideVoiceButton}
             expanded={expanded}
-            expandedHeight={expandedHeight}
             onExpandToggle={handleExpandToggle}
-            isPageTransitioning={isPageTransitioning}
-            shouldHandleFocus={shouldHandleFocus}
           />
         )}
 
@@ -796,7 +808,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             isTablet={isTablet}
             disabledColor={disabledColor}
             handleOpenUploadMenu={handleOpenUploadMenu}
-            handleSubmit={handleSubmit}
+            handleSubmit={wrappedHandleSubmit}
             onStopResponse={onStopResponse}
             canSendMessage={canSendMessage}
           />

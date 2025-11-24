@@ -3,6 +3,7 @@ import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
+import { Capacitor } from '@capacitor/core';
 
 import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../../components/input';
@@ -13,7 +14,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat, ChatTopic, Message, Model } from '../../../shared/types';
 import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
-import { generateBackgroundStyle } from '../../../shared/utils/backgroundUtils';
+import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
@@ -48,7 +49,7 @@ const BUTTON_ANIMATION_CONFIG = {
   duration: 0.1
 } as const;
 
-// 🚀 预计算的布局配置 - 避免运行时计算
+// 预计算的布局配置 - 避免运行时计算
 const LAYOUT_CONFIGS = {
   // 侧边栏关闭时的布局
   SIDEBAR_CLOSED: {
@@ -141,7 +142,7 @@ interface ChatPageUIProps {
 
 
 
-// 🚀 使用React.memo优化性能，避免不必要的重新渲染
+// 使用React.memo优化性能，避免不必要的重新渲染
 const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   currentTopic,
   currentMessages,
@@ -185,10 +186,13 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
 
-  // 🔧 稳定化的回调函数，避免重复渲染 - 使用函数式更新
+  // 键盘管理 - 获取键盘高度用于调整输入框位置（模仿 rikkahub 的 imePadding）
+  const { keyboardHeight } = useKeyboard();
+
+  // 稳定化的回调函数，避免重复渲染 - 使用函数式更新
   const handleToggleDrawer = useCallback(() => {
-    console.log('🔘 侧边栏切换开始', { current: drawerOpen });
-    // 🔧 使用startTransition + 函数式更新，完全避免依赖项
+    console.log('侧边栏切换开始', { current: drawerOpen });
+    // 使用startTransition + 函数式更新，完全避免依赖项
     startTransition(() => {
       setDrawerOpen(prev => !prev);
     });
@@ -248,9 +252,9 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   const isDIYLayout = Boolean(mergedTopToolbarSettings.componentPositions?.length);
   const shouldShowToolbar = settings.inputLayoutStyle === 'default';
 
-  // 生成背景样式
-  const backgroundStyle = useMemo(() =>
-    generateBackgroundStyle(settings.chatBackground),
+  // 检查是否启用了背景图片 - 用于控制 UI 透明度
+  const hasBackgroundImage = useMemo(() => 
+    settings.chatBackground?.enabled && settings.chatBackground?.imageUrl,
     [settings.chatBackground]
   );
 
@@ -263,10 +267,11 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       bgcolor: 'var(--theme-bg-default)'
     },
     appBar: {
-      bgcolor: 'var(--theme-bg-paper)',
+      // 模仿 rikkahub：有背景图时 AppBar 完全透明，否则正常
+      bgcolor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-paper)',
       color: 'var(--theme-text-primary)',
-      borderBottom: '1px solid',
-      borderColor: 'var(--theme-border-default)',
+      borderBottom: hasBackgroundImage ? 'none' : '1px solid',
+      borderColor: hasBackgroundImage ? 'transparent' : 'var(--theme-border-default)',
     },
     messageContainer: {
       flexGrow: 1,
@@ -275,7 +280,13 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       flexDirection: 'column',
       width: '100%',
       maxWidth: '100%',
-      backgroundColor: 'var(--theme-bg-default)',
+      // 模仿 rikkahub：有背景图时消息容器透明，让背景透出来
+      backgroundColor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
+      // 🚀 为固定定位的输入框预留空间，防止消息被遮挡
+      // 动态计算：基础输入框高度 + 工具栏高度(如果显示) + 安全间距
+      paddingBottom: shouldShowToolbar ? '90px' : '60px',
+      // 平滑过渡动画
+      transition: 'padding-bottom 0.2s ease-out',
     },
     welcomeContainer: {
       display: 'flex',
@@ -285,14 +296,14 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       height: '80%',
       p: 3,
       textAlign: 'center',
-      bgcolor: 'var(--theme-bg-default)',
+      bgcolor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
     },
     welcomeText: {
       fontWeight: 400,
       color: 'var(--theme-text-primary)',
       mb: 1,
     }
-  }), []);
+  }), [hasBackgroundImage, shouldShowToolbar]);
 
   // contentContainerStyle已移除，样式直接在motion.div中定义
 
@@ -476,7 +487,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     availableModels,
     menuOpen,
     showSearch,
-    // 🔧 使用稳定的函数引用
+    // 使用稳定的函数引用
     handleToggleDrawer,
     handleCreateTopic,
     handleClearTopic,
@@ -579,7 +590,18 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       transition={ANIMATION_CONFIG}
       style={{
         position: 'fixed',
-        bottom: 0,
+        /**
+         * 键盘管理 - 模仿 rikkahub 的 imePadding() 修饰符
+         * 
+         * 原理：
+         * - keyboardHeight 由 useKeyboard hook 提供，监听 Capacitor Keyboard 事件获取键盘实际高度
+         * - 键盘弹出时（keyboardHeight > 0）：bottom = 键盘高度，输入框自动上移到键盘上方
+         * - 键盘隐藏时（keyboardHeight = 0）：bottom = 0，输入框回到底部
+         * 
+         * 参考：docs/rikkahub-master/app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt
+         * rikkahub 使用：Column(modifier.imePadding()) 自动处理键盘间距
+         */
+        bottom: keyboardHeight,
         right: 0,
         zIndex: 2,
         backgroundColor: 'transparent',
@@ -588,6 +610,31 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: 0,
+        /**
+         * 安全区域处理 - 动态切换 paddingBottom
+         * 
+         * 重要：避免双重间距问题！
+         * 
+         * 场景 1 - 键盘隐藏时（keyboardHeight = 0）：
+         *   bottom: 0
+         *   paddingBottom: env(safe-area-inset-bottom) // 需要安全区域，防止被 Home Indicator 遮挡
+         * 
+         * 场景 2 - 键盘弹出时（keyboardHeight > 0）：
+         *   bottom: keyboardHeight (例如 336px)
+         *   paddingBottom: 0 // ❌ 不能有额外 padding！否则输入框和键盘之间会有很大间隔
+         * 
+         * 错误示例（会导致双重间距）：
+         *   bottom: 336px
+         *   paddingBottom: 34px
+         *   结果：输入框离键盘 34px，中间有明显空隙 ❌
+         * 
+         * 正确做法：
+         *   bottom: 336px
+         *   paddingBottom: 0
+         *   结果：输入框紧贴键盘 ✅
+         */
+        paddingBottom: keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 8px)',
+        transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // 平滑动画
       }}
     >
       {shouldShowToolbar && (
@@ -621,11 +668,12 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       </Box>
     </motion.div>
   ), [
-    // 🔧 只包含真正影响InputContainer的关键依赖
+    // 只包含真正影响InputContainer的关键依赖
     isDrawerVisible,
     shouldShowToolbar,
     inputComponent,
     isMobile,
+    keyboardHeight, // 键盘高度变化时重新渲染
     // 添加这些依赖确保工具栏状态变化时正确更新
     handleClearTopic,
     imageGenerationMode,
@@ -642,8 +690,53 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
   return (
     <Box
-      sx={baseStyles.mainContainer}
+      sx={{
+        ...baseStyles.mainContainer,
+        position: 'relative', // 为背景层提供定位上下文
+      }}
     >
+      {/* 背景层 - 模仿 rikkahub 的 AssistantBackground，让背景延伸到状态栏 */}
+      {settings.chatBackground?.enabled && settings.chatBackground?.imageUrl && (
+        <>
+          {/* 背景图片层 - opacity 直接控制背景图透明度 */}
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 0, // 在最底层
+              backgroundImage: `url(${settings.chatBackground.imageUrl})`,
+              backgroundSize: settings.chatBackground.size || 'cover',
+              backgroundPosition: settings.chatBackground.position || 'center',
+              backgroundRepeat: settings.chatBackground.repeat || 'no-repeat',
+              backgroundAttachment: 'fixed', // 固定背景，不随滚动
+              opacity: settings.chatBackground.opacity || 0.7, // 透明度直接应用到背景图
+            }}
+          />
+          {/* 渐变遮罩层 - 提高文字可读性，可通过设置开关控制 */}
+          {settings.chatBackground.showOverlay !== false && (
+            <Box
+              sx={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 1, // 在背景图上方，内容下方
+                // 固定渐变：顶部较浅，底部稍深
+                background: `linear-gradient(to bottom, 
+                  rgba(255, 255, 255, 0.3), 
+                  rgba(255, 255, 255, 0.5)
+                )`,
+                pointerEvents: 'none', // 不阻止用户交互
+              }}
+            />
+          )}
+        </>
+      )}
+
       {/* 统一的侧边栏组件 - 使用Framer Motion优化 */}
       <Sidebar
         mcpMode={mcpMode}
@@ -671,26 +764,41 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           flexDirection: 'column',
           height: '100vh',
           overflow: 'hidden',
-          backgroundColor: 'var(--theme-bg-default)',
+          // 模仿 rikkahub Scaffold(containerColor = Color.Transparent)：有背景图时透明
+          backgroundColor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
           // 🔧 固定定位，避免被Drawer推开
           position: 'fixed',
           top: 0,
           right: 0,
-          zIndex: 1100, // 提高z-index，确保在移动端手势层之下但在其他内容之上
+          zIndex: 2, // 确保在背景和遮罩之上（背景 z-index: 0, 遮罩 z-index: 1）
         }}
       >
-        {/* 顶部应用栏 */}
+        {/* 顶部应用栏 - 模仿 rikkahub TopAppBar(containerColor = Color.Transparent) */}
         <AppBar
           position="static"
           elevation={0}
           className="status-bar-safe-area"
-          sx={baseStyles.appBar}
+          sx={{
+            ...baseStyles.appBar,
+            // 🚀 安全区域只在移动端应用
+            paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+            // 强制移除所有可能的阴影和边框
+            boxShadow: 'none',
+            backgroundImage: 'none',
+            '&::before': { display: 'none' },
+            '&::after': { display: 'none' },
+            // 🚀 模糊效果跟随遮罩开关：只有开启遮罩时才显示模糊
+            backdropFilter: (hasBackgroundImage && settings.chatBackground?.showOverlay !== false) 
+              ? 'blur(8px)' 
+              : 'none',
+          }}
         >
           <Toolbar sx={{
             position: 'relative',
             minHeight: '56px !important',
             justifyContent: isDIYLayout ? 'center' : 'space-between',
             userSelect: 'none', // 禁止工具栏文本选择
+            backgroundColor: 'transparent', // Toolbar 也要透明
           }}>
             {/* 如果有DIY布局，使用绝对定位渲染组件 */}
             {isDIYLayout ? (
@@ -743,17 +851,18 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          height: 'calc(100vh - 64px)',
+          flex: 1,
           width: '100%',
           position: 'relative',
           overflow: 'hidden',
+          // 确保与工具栏无缝衔接
+          backgroundColor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
         }}>
           {currentTopic ? (
             <>
               {/* 消息列表应该有固定的可滚动区域，不会被输入框覆盖 */}
               <Box sx={{
-                ...baseStyles.messageContainer,
-                ...backgroundStyle
+                ...baseStyles.messageContainer
               }}>
                 <ErrorBoundary>
                   <MessageList
@@ -779,8 +888,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               <Box
                 sx={{
                   ...baseStyles.messageContainer,
-                  ...backgroundStyle,
-                  marginBottom: '100px', // 为输入框留出足够空间
+                  // paddingBottom 已在 baseStyles.messageContainer 中定义
                 }}
               >
                 <Box sx={baseStyles.welcomeContainer}>

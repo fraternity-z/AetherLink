@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../../shared/store';
-import { useTheme } from '@mui/material/styles';
 
 // 添加自定义滚动条样式
 const addCustomScrollbarStyles = (isDarkMode: boolean) => {
@@ -56,10 +53,7 @@ interface InputTextAreaProps {
   isDarkMode: boolean;
   shouldHideVoiceButton: boolean;
   expanded: boolean;
-  expandedHeight: number;
   onExpandToggle: () => void;
-  isPageTransitioning: boolean;
-  shouldHandleFocus: () => boolean;
 }
 
 const InputTextArea: React.FC<InputTextAreaProps> = ({
@@ -82,10 +76,7 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   isDarkMode,
   shouldHideVoiceButton,
   expanded,
-  expandedHeight,
-  onExpandToggle,
-  isPageTransitioning,
-  shouldHandleFocus
+  onExpandToggle
 }) => {
   const [isIOS, setIsIOS] = useState(false);
 
@@ -153,21 +144,12 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
         // 标记为已初始化
         currentTextarea.dataset.initialized = 'true';
 
-        // 初始化完成，不输出日志避免控制台噪音
-
-        // 只有在非页面切换状态下才执行焦点操作
-        if (!isPageTransitioning) {
-          // 这里可以添加额外的焦点处理逻辑
-        }
+        // 初始化完成
       }
     }, 100); // 减少延迟时间
 
     // 添加键盘显示检测
     const handleFocus = () => {
-      // 只有在允许处理焦点时才执行特殊逻辑
-      if (!shouldHandleFocus()) {
-        return;
-      }
 
       // iOS设备特殊处理
       if (isIOS && textareaRef.current) {
@@ -259,9 +241,9 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
           fontFamily: 'inherit',
           resize: 'none',
           overflow: message.trim().length > 0 ? 'auto' : 'hidden',
-          minHeight: expanded ? `${expandedHeight}px` : `${isMobile ? 32 : isTablet ? 36 : 34}px`,
-          height: expanded ? `${expandedHeight}px` : `${textareaHeight}px`,
-          maxHeight: expanded ? `${expandedHeight}px` : `${isMobile ? 200 : 250}px`,
+          minHeight: expanded ? '70vh' : `${isMobile ? 32 : isTablet ? 36 : 34}px`,
+          height: expanded ? '70vh' : `${textareaHeight}px`,
+          maxHeight: expanded ? '70vh' : `${isMobile ? 200 : 250}px`,
           color: 'var(--theme-text-primary)',
           transition: 'height 0.3s ease-out, min-height 0.3s ease-out, max-height 0.3s ease',
           // Firefox 滚动条样式

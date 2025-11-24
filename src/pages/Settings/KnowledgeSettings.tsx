@@ -38,10 +38,9 @@ import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKn
 import { toastManager } from '../../components/EnhancedToast';
 
 const Container = styled(Box)(() => ({
-  flexGrow: 1,
   display: 'flex',
   flexDirection: 'column',
-  minHeight: '100vh',
+  height: '100vh',
   position: 'relative',
   overflow: 'hidden',
 }));
@@ -50,13 +49,8 @@ const StyledCard = styled(Card)(({ theme }) => ({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  transition: 'transform 0.2s, box-shadow 0.2s',
   cursor: 'pointer',
   borderRadius: (theme.shape.borderRadius as number) * 2,
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[4],
-  },
 }));
 
 interface KnowledgeStats {
@@ -318,7 +312,21 @@ const KnowledgeSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ flexGrow: 1, overflow: 'auto', px: 2, py: 2, mt: 8 }}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflow: 'auto', 
+        px: 2, 
+        py: 2, 
+        mt: 8,
+        WebkitOverflowScrolling: 'touch',
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'rgba(0,0,0,0.2)',
+          borderRadius: '3px',
+        },
+      }}>
         {/* 统计信息卡片 */}
         <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ p: 2 }}>

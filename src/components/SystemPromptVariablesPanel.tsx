@@ -7,7 +7,6 @@ import {
   Divider,
   Chip,
   FormControlLabel,
-  Collapse,
   IconButton,
   Alert,
   alpha
@@ -151,24 +150,25 @@ const SystemPromptVariablesPanel: React.FC = () => {
       </Box>
 
       {/* 配置内容 */}
-      <Collapse in={expanded}>
-        <Divider />
-        <Box sx={{ p: 2 }}>
-          {/* 说明信息 */}
-          <Alert
-            severity="info"
-            icon={<InfoIcon />}
-            sx={{ mb: 2, fontSize: '0.85rem' }}
-          >
-            {t('settings.systemPromptVariables.infoMessage')}
-          </Alert>
+      {expanded && (
+        <>
+          <Divider />
+          <Box sx={{ p: 2 }}>
+            {/* 说明信息 */}
+            <Alert
+              severity="info"
+              icon={<InfoIcon />}
+              sx={{ mb: 2, fontSize: '0.85rem' }}
+            >
+              {t('settings.systemPromptVariables.infoMessage')}
+            </Alert>
 
           {/* 时间变量配置 */}
           <Box sx={{ mb: 3 }}>
             <FormControlLabel
               control={
                 <CustomSwitch
-                  checked={variableConfig.enableTimeVariable}
+                  checked={variableConfig.enableTimeVariable ?? false}
                   onChange={(e) => handleTimeVariableToggle(e.target.checked)}
                 />
               }
@@ -199,7 +199,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
             <FormControlLabel
               control={
                 <CustomSwitch
-                  checked={variableConfig.enableLocationVariable}
+                  checked={variableConfig.enableLocationVariable ?? false}
                   onChange={(e) => handleLocationVariableToggle(e.target.checked)}
                 />
               }
@@ -242,7 +242,7 @@ const SystemPromptVariablesPanel: React.FC = () => {
             <FormControlLabel
               control={
                 <CustomSwitch
-                  checked={variableConfig.enableOSVariable}
+                  checked={variableConfig.enableOSVariable ?? false}
                   onChange={(e) => handleOSVariableToggle(e.target.checked)}
                 />
               }
@@ -268,7 +268,8 @@ const SystemPromptVariablesPanel: React.FC = () => {
             )}
           </Box>
         </Box>
-      </Collapse>
+        </>
+      )}
     </Paper>
   );
 };

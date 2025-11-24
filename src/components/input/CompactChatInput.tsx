@@ -12,7 +12,7 @@ import { useFileUpload } from '../../shared/hooks/useFileUpload';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition'; // 导入 useVoiceRecognition
-import { useKeyboardManager } from '../../shared/hooks/useKeyboardManager';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { getBasicIcons, getExpandedIcons } from '../../shared/config/inputIcons';
 
 import { Plus, X, Send, Square, Paperclip, ChevronUp, ChevronDown } from 'lucide-react';
@@ -71,7 +71,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   // 注意：网络搜索和知识库选择器已集成到独立按钮组件中
   const [showExpandButton, setShowExpandButton] = useState(false); // 是否显示展开按钮
   const [textareaExpanded, setTextareaExpanded] = useState(false); // 文本区域展开状态
-  const [expandedHeight, setExpandedHeight] = useState(Math.floor(window.innerHeight * 0.7)); // 展开时的高度
   const [inputHeight, setInputHeight] = useState(40); // 输入框容器高度
   const [isFullExpanded, setIsFullExpanded] = useState(false); // 是否全展开
   const [isActivated, setIsActivated] = useState(false); // 冷激活状态
@@ -153,10 +152,26 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     stopRecognition,
   } = useVoiceRecognition();
 
-  // 键盘管理功能
-  const {
-    shouldHandleFocus
-  } = useKeyboardManager();
+  // 极简键盘管理 - 模仿 rikkahub
+  const { isKeyboardVisible, hideKeyboard } = useKeyboard();
+
+  // 包装 handleSubmit，在发送时隐藏键盘
+  const wrappedHandleSubmit = useCallback(() => {
+    hideKeyboard();
+    handleSubmit();
+  }, [hideKeyboard, handleSubmit]);
+
+  /**
+   * 键盘弹出时自动折叠输入框 - 模仿 rikkahub 的逻辑
+   * 
+   * 参考：rikkahub ChatInput.kt - LaunchedEffect(imeVisible)
+   * 原因：展开的输入框（70vh）+ 键盘会占满整个屏幕，自动折叠提供更好的用户体验
+   */
+  useEffect(() => {
+    if (isKeyboardVisible && textareaExpanded) {
+      setTextareaExpanded(false);
+    }
+  }, [isKeyboardVisible, textareaExpanded]);
 
   // 使用重命名的变量来消除未使用警告
   useEffect(() => {
@@ -211,15 +226,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
 
 
 
-  // 监听窗口大小变化，更新展开高度
-  useEffect(() => {
-    const updateExpandedHeight = () => {
-      setExpandedHeight(Math.floor(window.innerHeight * 0.7));
-    };
-
-    window.addEventListener('resize', updateExpandedHeight);
-    return () => window.removeEventListener('resize', updateExpandedHeight);
-  }, []);
+  // 窗口大小监听已移除，将重新实现
 
   // 注意：网络搜索和知识库功能已集成到独立按钮组件中
 
@@ -258,7 +265,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
 
       const scrollHeight = textareaRef.current.scrollHeight;
       const minHeight = 24; // 最小高度（单行）
-      const maxHeight = textareaExpanded ? expandedHeight : isFullExpanded ? 200 : 120; // 文本区域展开时使用屏幕高度的70%
+      const maxHeight = textareaExpanded ? (window.innerHeight * 0.7) : isFullExpanded ? 200 : 120; // 文本区域展开时使用屏幕高度的70%
 
       // 计算textarea的实际高度
       let textareaHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
@@ -274,18 +281,18 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
       }
 
       // 计算容器高度（textarea高度 + padding）
-      const containerHeight = textareaExpanded ? expandedHeight + 16 : textareaHeight + 16; // 8px上下padding
+      const containerHeight = textareaExpanded ? (window.innerHeight * 0.7 + 16) : textareaHeight + 16; // 8px上下padding
       setInputHeight(containerHeight);
     }
-  }, [message, isFullExpanded, isActivated, textareaExpanded, expandedHeight]);
+  }, [message, isFullExpanded, isActivated, textareaExpanded]);
 
   // 处理输入框激活
   const handleInputFocus = () => {
-    console.log('[CompactChatInput] 输入框获得焦点, shouldHandleFocus:', shouldHandleFocus());
+    console.log('[CompactChatInput] 输入框获得焦点');
     setIsActivated(true);
 
-    // 只有在非页面切换状态下才执行iOS特殊处理
-    if (isIOS && textareaRef.current && shouldHandleFocus()) {
+    // iOS特殊处理
+    if (isIOS && textareaRef.current) {
       // 延迟执行，确保输入法已弹出
       setTimeout(() => {
         if (!textareaRef.current) return;
@@ -800,9 +807,9 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
               lineHeight: '1.4',
               fontFamily: 'inherit',
               color: isDarkMode ? '#ffffff' : '#000000',
-              minHeight: textareaExpanded ? `${expandedHeight}px` : (isActivated ? '24px' : '40px'), // 展开时使用大高度
-              height: textareaExpanded ? `${expandedHeight}px` : 'auto', // 展开时固定高度
-              maxHeight: textareaExpanded ? `${expandedHeight}px` : (isActivated ? '120px' : '40px'), // 展开时使用大高度
+              minHeight: textareaExpanded ? '70vh' : (isActivated ? '24px' : '40px'), // 展开时使用大高度
+              height: textareaExpanded ? '70vh' : 'auto', // 展开时固定高度
+              maxHeight: textareaExpanded ? '70vh' : (isActivated ? '120px' : '40px'), // 展开时使用大高度
               overflow: textareaExpanded || isActivated ? 'auto' : 'hidden', // 展开或激活时显示滚动条
               padding: '0',
               transition: 'all 0.3s ease', // 添加过渡动画
@@ -860,7 +867,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
 
           {/* 发送按钮 */}
           <IconButton
-            onClick={isStreaming && onStopResponse ? onStopResponse : handleSubmit}
+            onClick={isStreaming && onStopResponse ? onStopResponse : wrappedHandleSubmit}
             disabled={!isStreaming && (!canSendMessage() || (isLoading && !allowConsecutiveMessages))}
             sx={{
               backgroundColor: isStreaming

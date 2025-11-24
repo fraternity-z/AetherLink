@@ -11,7 +11,6 @@ apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
     implementation project(':capacitor-community-file-opener')
     implementation project(':capacitor-community-native-audio')
-    implementation project(':capacitor-community-safe-area')
     implementation project(':capacitor-community-speech-recognition')
     implementation project(':capacitor-community-text-to-speech')
     implementation project(':capacitor-app')
@@ -28,10 +27,10 @@ dependencies {
     implementation project(':capacitor-splash-screen')
     implementation project(':capacitor-status-bar')
     implementation project(':capacitor-toast')
-    implementation project(':capawesome-capacitor-android-edge-to-edge-support')
     implementation project(':capawesome-capacitor-file-picker')
     implementation project(':capacitor-advanced-file-manager')
     implementation project(':capacitor-cors-bypass-enhanced')
+    implementation project(':capacitor-edge-to-edge')
 
 }
 

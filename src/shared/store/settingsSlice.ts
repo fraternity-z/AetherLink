@@ -150,6 +150,7 @@ interface SettingsState {
     size: 'cover' | 'contain' | 'auto'; // 背景尺寸
     position: 'center' | 'top' | 'bottom' | 'left' | 'right'; // 背景位置
     repeat: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y'; // 背景重复
+    showOverlay?: boolean; // 是否显示渐变遮罩
   };
 
   // Notion集成设置
@@ -350,10 +351,11 @@ const getInitialState = (): SettingsState => {
     chatBackground: {
       enabled: false, // 默认不启用自定义背景
       imageUrl: '', // 默认无背景图片
-      opacity: 0.3, // 默认透明度30%
+      opacity: 0.7, // 默认透明度70% - 直接控制背景图不透明度
       size: 'cover', // 默认覆盖整个区域
       position: 'center', // 默认居中
-      repeat: 'no-repeat' // 默认不重复
+      repeat: 'no-repeat', // 默认不重复
+      showOverlay: true, // 默认显示渐变遮罩
     },
 
     // 性能监控默认设置

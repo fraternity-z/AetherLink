@@ -8,9 +8,6 @@ project(':capacitor-community-file-opener').projectDir = new File('../node_modul
 include ':capacitor-community-native-audio'
 project(':capacitor-community-native-audio').projectDir = new File('../node_modules/@capacitor-community/native-audio/android')
 
-include ':capacitor-community-safe-area'
-project(':capacitor-community-safe-area').projectDir = new File('../node_modules/@capacitor-community/safe-area/android')
-
 include ':capacitor-community-speech-recognition'
 project(':capacitor-community-speech-recognition').projectDir = new File('../node_modules/@capacitor-community/speech-recognition/android')
 
@@ -59,9 +56,6 @@ project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacit
 include ':capacitor-toast'
 project(':capacitor-toast').projectDir = new File('../node_modules/@capacitor/toast/android')
 
-include ':capawesome-capacitor-android-edge-to-edge-support'
-project(':capawesome-capacitor-android-edge-to-edge-support').projectDir = new File('../node_modules/@capawesome/capacitor-android-edge-to-edge-support/android')
-
 include ':capawesome-capacitor-file-picker'
 project(':capawesome-capacitor-file-picker').projectDir = new File('../node_modules/@capawesome/capacitor-file-picker/android')
 
@@ -70,3 +64,6 @@ project(':capacitor-advanced-file-manager').projectDir = new File('../node_modul
 
 include ':capacitor-cors-bypass-enhanced'
 project(':capacitor-cors-bypass-enhanced').projectDir = new File('../node_modules/capacitor-cors-bypass-enhanced/android')
+
+include ':capacitor-edge-to-edge'
+project(':capacitor-edge-to-edge').projectDir = new File('../../capacitor-edge-to-edge/capacitor-edge-to-edge/android')

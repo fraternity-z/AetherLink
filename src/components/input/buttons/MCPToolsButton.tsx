@@ -39,6 +39,16 @@ const SERVER_TYPE_CONFIG = {
     color: '#9c27b0',
     label: 'HTTP Stream'
   },
+  sse: {
+    icon: Globe,
+    color: '#2196f3',
+    label: 'SSE'
+  },
+  streamableHttp: {
+    icon: Globe,
+    color: '#00bcd4',
+    label: 'Streamable HTTP'
+  },
   inMemory: {
     icon: Database,
     color: '#4CAF50',
@@ -184,13 +194,13 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
 
   // 使用配置常量的服务器类型函数
   const getServerTypeIcon = useCallback((type: MCPServerType) => {
-    const config = SERVER_TYPE_CONFIG[type] || SERVER_TYPE_CONFIG.default;
+    const config = SERVER_TYPE_CONFIG[type as keyof typeof SERVER_TYPE_CONFIG] || SERVER_TYPE_CONFIG.default;
     const IconComponent = config.icon;
     return <IconComponent size={16} />;
   }, []);
 
   const getServerTypeColor = useCallback((type: MCPServerType) => {
-    const config = SERVER_TYPE_CONFIG[type] || SERVER_TYPE_CONFIG.default;
+    const config = SERVER_TYPE_CONFIG[type as keyof typeof SERVER_TYPE_CONFIG] || SERVER_TYPE_CONFIG.default;
     return config.color;
   }, []);
 
@@ -354,6 +364,7 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
         onClose={handleClose}
         maxWidth="sm"
         fullWidth
+        transitionDuration={0}
         slotProps={{
           paper: {
             sx: {

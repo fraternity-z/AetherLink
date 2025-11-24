@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 
 interface ExpandableContainerProps {
   // 基础状态
@@ -8,7 +9,6 @@ interface ExpandableContainerProps {
   isMobile: boolean;
   isTablet: boolean;
   isIOS: boolean;
-  isKeyboardVisible: boolean;
   
   // 样式相关
   isDarkMode: boolean;
@@ -30,7 +30,6 @@ const useExpandableContainer = ({
   isMobile,
   isTablet,
   isIOS,
-  isKeyboardVisible,
   isDarkMode,
   iconColor,
   inputBoxStyle,
@@ -41,18 +40,24 @@ const useExpandableContainer = ({
 }: Omit<ExpandableContainerProps, 'children'>) => {
   // 展开状态管理
   const [expanded, setExpanded] = useState(false);
-  const [expandedHeight, setExpandedHeight] = useState(Math.floor(window.innerHeight * 0.7));
   const [showExpandButton, setShowExpandButton] = useState(false);
 
-  // 监听窗口大小变化，更新展开高度
-  useEffect(() => {
-    const updateExpandedHeight = () => {
-      setExpandedHeight(Math.floor(window.innerHeight * 0.7));
-    };
+  // 键盘管理 - 模仿 rikkahub
+  const { isKeyboardVisible } = useKeyboard();
 
-    window.addEventListener('resize', updateExpandedHeight);
-    return () => window.removeEventListener('resize', updateExpandedHeight);
-  }, []);
+  /**
+   * 键盘弹出时自动折叠输入框 - 模仿 rikkahub 的逻辑
+   * 
+   * 参考：rikkahub ChatInput.kt - LaunchedEffect(imeVisible)
+   * 原因：展开的输入框（70vh）+ 键盘会占满整个屏幕，自动折叠提供更好的用户体验
+   */
+  useEffect(() => {
+    if (isKeyboardVisible && expanded) {
+      setExpanded(false);
+    }
+  }, [isKeyboardVisible, expanded]);
+
+  // 窗口大小监听已移除，将重新实现
 
   // 性能优化：使用useMemo缓存按钮可见性计算结果，避免重复计算
   const buttonVisibility = useMemo(() => {
@@ -205,8 +210,8 @@ const useExpandableContainer = ({
           justifyContent: 'center',
           boxShadow: 'none',
           transition: 'all 0.3s ease',
-          marginBottom: isKeyboardVisible ? '0' : (isMobile ? '0' : isTablet ? '0' : '0'),
-          paddingBottom: isKeyboardVisible && isMobile ? 'env(safe-area-inset-bottom)' : (isIOS ? '34px' : '0'),
+          marginBottom: '0',
+          paddingBottom: isIOS ? '34px' : '0',
           border: 'none'
         }}
       >
@@ -238,13 +243,12 @@ const useExpandableContainer = ({
       </div>
     );
   }, [
-    getResponsiveStyles, isKeyboardVisible, isMobile, isTablet, isIOS,
+    getResponsiveStyles, isMobile, isTablet, isIOS,
     border, boxShadow, inputBoxStyle, borderRadius, renderExpandButton
   ]);
 
   return {
     expanded,
-    expandedHeight,
     showExpandButton,
     enhancedHandleChange,
     handleExpandToggle,

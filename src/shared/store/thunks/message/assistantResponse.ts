@@ -45,10 +45,45 @@ export const processAssistantResponse = async (
       console.error('[processAssistantResponse] 获取助手信息失败:', error);
     }
 
-    // 1. 获取 MCP 工具（如果启用）
+    // 1. 立即设置消息状态为处理中并创建占位符块，让用户看到反馈
+    dispatch(newMessagesActions.updateMessage({
+      id: assistantMessage.id,
+      changes: {
+        status: AssistantMessageStatus.PROCESSING
+      }
+    }));
+
+    // 2. 创建占位符块（参考最佳实例逻辑）
+    const placeholderBlock: MessageBlock = {
+      id: uuid(),
+      messageId: assistantMessage.id,
+      type: MessageBlockType.UNKNOWN,
+      content: '',
+      createdAt: new Date().toISOString(),
+      status: MessageBlockStatus.PROCESSING
+    };
+
+    console.log(`[sendMessage] 创建占位符块: ${placeholderBlock.id}`);
+
+    // 添加占位符块到Redux
+    dispatch(upsertOneBlock(placeholderBlock));
+
+    // 保存占位符块到数据库
+    await dexieStorage.saveMessageBlock(placeholderBlock);
+
+    // 3. 关联占位符块到消息
+    dispatch(newMessagesActions.updateMessage({
+      id: assistantMessage.id,
+      changes: {
+        blocks: [placeholderBlock.id]
+      }
+    }));
+
+    // 4. 获取 MCP 工具（如果启用）- 现在用户已经能看到加载状态了
     let mcpTools: MCPTool[] = [];
     if (toolsEnabled) {
       try {
+        console.log(`[MCP] 开始获取工具，可能需要连接网络服务器...`);
         mcpTools = await mcpService.getAllAvailableTools();
         console.log(`[MCP] 获取到 ${mcpTools.length} 个可用工具`);
         if (mcpTools.length > 0) {
@@ -84,42 +119,7 @@ export const processAssistantResponse = async (
       return messageTime < assistantMessageTime;
     });
 
-// 3. 设置消息状态为处理中，避免显示错误消息
-    dispatch(newMessagesActions.updateMessage({
-      id: assistantMessage.id,
-      changes: {
-        status: AssistantMessageStatus.PROCESSING
-      }
-    }));
-
-// 4. 创建占位符块（参考最佳实例逻辑）
-    // 这避免了重复创建块的问题，通过动态转换块类型来处理不同的内容
-    const placeholderBlock: MessageBlock = {
-      id: uuid(),
-      messageId: assistantMessage.id,
-      type: MessageBlockType.UNKNOWN,
-      content: '',
-      createdAt: new Date().toISOString(),
-      status: MessageBlockStatus.PROCESSING
-    };
-
-    console.log(`[sendMessage] 创建占位符块: ${placeholderBlock.id}`);
-
-    // 添加占位符块到Redux
-    dispatch(upsertOneBlock(placeholderBlock));
-
-    // 保存占位符块到数据库
-    await dexieStorage.saveMessageBlock(placeholderBlock);
-
-// 5. 关联占位符块到消息
-    dispatch(newMessagesActions.updateMessage({
-      id: assistantMessage.id,
-      changes: {
-        blocks: [placeholderBlock.id]
-      }
-    }));
-
-// 6. 更新消息数据库（同时更新messages表和topic.messages数组）
+// 5. 更新消息数据库（同时更新messages表和topic.messages数组）
     await dexieStorage.transaction('rw', [
       dexieStorage.messages,
       dexieStorage.topics
@@ -143,25 +143,25 @@ export const processAssistantResponse = async (
       }
     });
 
-// 7. 创建AbortController
+// 6. 创建AbortController
     const { abortController, cleanup } = createAbortController(assistantMessage.askId, true);
 
 
 
-// 8. 创建响应处理器，使用占位符块ID
+// 7. 创建响应处理器，使用占位符块ID
     const responseHandler = createResponseHandler({
       messageId: assistantMessage.id,
       blockId: placeholderBlock.id,
       topicId
     });
 
-    // 8.1. 现在ResponseHandler已创建，可以进行知识库搜索了
+    // 7.1. 现在ResponseHandler已创建，可以进行知识库搜索了
     await performKnowledgeSearchIfNeeded(topicId, assistantMessage.id);
 
-// 9. 获取API提供者
+// 8. 获取API提供者
     const apiProvider = ApiProviderRegistry.get(model);
 
-// 10. 检查是否为图像生成模型
+// 9. 检查是否为图像生成模型
     // 优先检查模型编辑界面中的"输出能力"标签（modelTypes）
     const isImageGenerationModel =
       // 1. 优先检查 modelTypes 中是否包含图像生成类型（对应编辑界面的"输出能力"）
@@ -186,7 +186,7 @@ export const processAssistantResponse = async (
       model.id === 'gemini-2.0-flash-preview-image-generation' ||
       (model.id === 'gemini-2.0-flash-exp' && model.imageGeneration);
 
-// 11. 发送API请求
+// 10. 发送API请求
     try {
       let response: any;
 

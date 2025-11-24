@@ -13,6 +13,9 @@ import {
   getHighPerformanceUpdateInterval
 } from '../../../shared/utils/performanceSettings';
 
+// 避免每次渲染创建新的空数组引用
+const EMPTY_TOOL_BLOCKS: ToolMessageBlock[] = [];
+
 interface Props {
   block: MainTextMessageBlock;
   role: string;
@@ -25,23 +28,24 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
   const isUserMessage = role === 'user';
   const isStreaming = block.status === MessageBlockStatus.STREAMING;
 
-  // 获取当前消息的工具块，使用 useMemo 优化性能
-  // 🔥 关键修复：按照消息的 blocks 数组顺序排序工具块
-  const toolBlocks = useSelector((state: RootState) => {
-    if (!messageId) return [];
-    const entities = messageBlocksSelectors.selectEntities(state);
+  // 获取 Redux 状态
+  const entities = useSelector((state: RootState) => messageBlocksSelectors.selectEntities(state));
+  const message = useSelector((state: RootState) => messageId ? state.messages.entities[messageId] : null);
+  
+  // 🔥 关键修复：使用 useMemo 缓存工具块计算，避免每次渲染创建新数组
+  const toolBlocks = useMemo(() => {
+    if (!messageId) return EMPTY_TOOL_BLOCKS;
     
-    // 获取消息对象，以便按照 blocks 数组顺序排序
-    const message = state.messages.entities[messageId];
     if (!message?.blocks) {
       // 如果没有消息或 blocks 数组，按创建时间排序
-      return Object.values(entities)
+      const blocks = Object.values(entities)
         .filter(
           (block): block is ToolMessageBlock =>
             block?.type === MessageBlockType.TOOL &&
             block.messageId === messageId
         )
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      return blocks.length === 0 ? EMPTY_TOOL_BLOCKS : blocks;
     }
     
     // 🔥 按照消息的 blocks 数组顺序排序工具块
@@ -61,8 +65,8 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
       }
     }
     
-    return sortedToolBlocks;
-  });
+    return sortedToolBlocks.length === 0 ? EMPTY_TOOL_BLOCKS : sortedToolBlocks;
+  }, [messageId, entities, message?.blocks]);
 
   // 获取用户输入渲染设置
   const renderUserInputAsMarkdown = useSelector((state: RootState) => state.settings.renderUserInputAsMarkdown);

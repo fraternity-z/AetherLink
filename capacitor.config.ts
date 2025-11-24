@@ -1,4 +1,4 @@
-/// <reference types="@capawesome/capacitor-android-edge-to-edge-support" />
+/// <reference types="capacitor-edge-to-edge" />
 
 import { CapacitorConfig } from '@capacitor/cli';
 
@@ -51,7 +51,7 @@ const config: CapacitorConfig = {
       // 移除硬编码的背景色，由StatusBarService动态设置
       // backgroundColor: '#475569',
       style: 'DEFAULT', // 使用默认样式，由StatusBarService动态控制
-      overlaysWebView: false // 确保背景色生效，避免内容被覆盖
+      overlaysWebView: true // 启用！让内容延伸到状态栏下方，实现"打通"效果（模仿 rikkahub）
     },
     SplashScreen: {
       launchShowDuration: 0, // 立即隐藏原生启动画面
@@ -63,9 +63,7 @@ const config: CapacitorConfig = {
       splashFullScreen: false, // 禁用全屏模式
       splashImmersive: false // 非沉浸式模式
     },
-    EdgeToEdge: {
-      backgroundColor: '#ffffff' // 【Android 15 底部导航栏默认背景颜色】：白色，运行时由StatusBarService动态更新
-    }
+    // EdgeToEdge: 新插件通过代码动态控制，无需静态配置
   }
 };
 

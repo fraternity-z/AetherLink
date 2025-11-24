@@ -1,12 +1,13 @@
-import { StatusBar, Style } from '@capacitor/status-bar';
+import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
-import { EdgeToEdge } from '@capawesome/capacitor-android-edge-to-edge-support';
+import { EdgeToEdge } from 'capacitor-edge-to-edge';
 import { themeConfigs, type ThemeStyle } from '../config/themes';
 
 /**
- * 状态栏管理服务
- * 提供统一的状态栏样式管理
- * 使用动态主题颜色，避免硬编码
+ * 状态栏管理服务 (Rikkahub 风格)
+ * 提供统一的状态栏和导航栏样式管理
+ * 实现 Edge-to-Edge 效果，状态栏和导航栏完全透明
+ * 图标颜色根据主题自动切换
  */
 export class StatusBarService {
   private static instance: StatusBarService;
@@ -24,17 +25,15 @@ export class StatusBarService {
   }
 
   /**
-   * 初始化状态栏
+   * 初始化状态栏 (Rikkahub 风格)
    * @param theme 当前主题模式
    * @param themeStyle 主题风格
    */
   public async initialize(theme: 'light' | 'dark', themeStyle: ThemeStyle = 'default'): Promise<void> {
-    // 无论任何平台，先设置初始状态
     this.currentTheme = theme;
     this.currentThemeStyle = themeStyle;
 
     if (!Capacitor.isNativePlatform()) {
-      // Web平台也需要执行初始化设置，并标记为已初始化
       console.log('[StatusBarService] Web平台，执行Web状态栏初始化');
       this.updateWebStatusBar();
       this.isInitialized = true;
@@ -43,21 +42,27 @@ export class StatusBarService {
 
     // --- Native Platform Only ---
     try {
-      // Android平台：不启用EdgeToEdge模式，只用来设置导航栏颜色
-      if (Capacitor.getPlatform() === 'android') {
-        console.log('[StatusBarService] Android平台，将使用EdgeToEdge插件设置导航栏颜色');
-      }
+      // 1. 启用 Edge-to-Edge 模式（内容延伸到系统栏后面）
+      await EdgeToEdge.enable();
+      console.log('[StatusBarService] ✅ Edge-to-Edge 模式已启用');
 
-      // 设置状态栏不覆盖WebView
-      await StatusBar.setOverlaysWebView({ overlay: false });
+      // 2. 设置系统栏完全透明
+      await EdgeToEdge.setTransparentSystemBars({
+        statusBar: true,
+        navigationBar: true
+      });
+      console.log('[StatusBarService] ✅ 系统栏已设置为透明');
 
-      // 根据主题设置样式，使用抽取的方法
+      // 3. 设置状态栏覆盖WebView（允许内容延伸到状态栏区域）
+      await StatusBar.setOverlaysWebView({ overlay: true });
+
+      // 4. 根据主题设置图标颜色
       await this.applyNativeThemeStyle();
 
       this.isInitialized = true;
-      console.log(`[StatusBarService] 状态栏初始化完成 - 主题: ${theme}, 风格: ${themeStyle}`);
+      console.log(`[StatusBarService] ✅ 状态栏初始化完成 (Rikkahub 风格) - 主题: ${theme}, 风格: ${themeStyle}`);
     } catch (error) {
-      console.error('[StatusBarService] 状态栏初始化失败:', error);
+      console.error('[StatusBarService] ❌ 状态栏初始化失败:', error);
       throw error;
     }
   }
@@ -189,6 +194,39 @@ export class StatusBarService {
   }
 
   /**
+   * 获取系统栏安全区域（用于 UI 布局调整）
+   * 返回状态栏和导航栏的高度信息
+   */
+  public async getSystemBarInsets() {
+    if (!Capacitor.isNativePlatform()) {
+      return {
+        statusBar: 0,
+        navigationBar: 0,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      };
+    }
+
+    try {
+      const insets = await EdgeToEdge.getSystemBarInsets();
+      console.log('[StatusBarService] 系统栏安全区域:', insets);
+      return insets;
+    } catch (error) {
+      console.error('[StatusBarService] 获取系统栏安全区域失败:', error);
+      return {
+        statusBar: 0,
+        navigationBar: 0,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      };
+    }
+  }
+
+  /**
    * 获取当前主题配置和颜色信息
    */
   private getThemeColors(): { themeConfig: any; backgroundColor: string; isDark: boolean } | null {
@@ -208,34 +246,29 @@ export class StatusBarService {
   }
 
   /**
-   * 抽取 Native 平台设置样式的公共逻辑，供 initialize 和 updateTheme 复用
+   * 应用 Native 平台主题样式 (Rikkahub 风格)
+   * 只控制图标颜色，背景色由页面内容决定
    */
   private async applyNativeThemeStyle(): Promise<void> {
     const themeColors = this.getThemeColors();
     if (!themeColors) return;
 
-    const { backgroundColor, isDark } = themeColors;
+    const { isDark } = themeColors;
 
-    // 设置状态栏样式
-    if (isDark) {
-      // 深色模式：深色背景，需要浅色文字
-      await StatusBar.setStyle({ style: Style.Dark }); // 文字/图标为浅色（白色）
-    } else {
-      // 浅色模式：浅色背景，需要深色文字
-      await StatusBar.setStyle({ style: Style.Light }); // 文字/图标为深色（黑色）
-    }
+    // 根据主题设置图标颜色（与 rikkahub 完全一致）
+    // 'light' = 浅色图标（深色背景）
+    // 'dark' = 深色图标（浅色背景）
+    const iconStyle = isDark ? 'light' : 'dark';
 
-    // 设置状态栏背景色
-    await StatusBar.setBackgroundColor({ color: backgroundColor });
-
-    // Android平台：使用EdgeToEdge插件设置底部导航栏背景色（解决Android 15白色导航栏问题）
-    if (Capacitor.getPlatform() === 'android') {
-      try {
-        await EdgeToEdge.setBackgroundColor({ color: backgroundColor });
-        console.log(`[StatusBarService] Android底部导航栏背景色已设置: ${backgroundColor}`);
-      } catch (error) {
-        console.warn('[StatusBarService] 设置导航栏背景色失败:', error);
-      }
+    try {
+      // 使用新插件的 setSystemBarAppearance 方法
+      await EdgeToEdge.setSystemBarAppearance({
+        statusBarStyle: iconStyle,
+        navigationBarStyle: iconStyle
+      });
+      console.log(`[StatusBarService] ✅ 系统栏图标颜色已更新: ${iconStyle} (深色模式: ${isDark})`);
+    } catch (error) {
+      console.warn('[StatusBarService] ⚠️ 设置系统栏图标颜色失败:', error);
     }
   }
 

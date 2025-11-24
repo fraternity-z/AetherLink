@@ -12,6 +12,7 @@ import {
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { Capacitor } from '@capacitor/core';
 
 // SafeAreaContainer - 安全区域容器
 export const SafeAreaContainer = styled(Box)(({ theme }) => ({
@@ -64,52 +65,50 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     <AppBar
       position="static"
       elevation={0}
+      className="status-bar-safe-area"
       sx={{
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        height: 44,
-        minHeight: 44,
+        // 🚀 安全区域只在移动端应用
+        paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+        backdropFilter: 'blur(8px)', // 统一UI风格：添加模糊效果
       }}
     >
       <Toolbar
         sx={{
-          minHeight: '44px !important',
-          height: '44px',
+          minHeight: '56px !important',
+          height: '56px',
           paddingX: 2,
-          justifyContent: 'space-between',
         }}
       >
-        <Box sx={{ minWidth: 40, display: 'flex', alignItems: 'center' }}>
-          {showBackButton && (
-            <IconButton
-              onClick={onBackPress}
-              size="small"
-              sx={{
-                color: theme.palette.text.primary,
-              }}
-            >
-              <ArrowLeft size={24} />
-            </IconButton>
-          )}
-        </Box>
+        {showBackButton && (
+          <IconButton
+            edge="start"
+            onClick={onBackPress}
+            aria-label="back"
+            sx={{
+              color: theme.palette.primary.main, // 使用主题色，与子级页面保持一致
+            }}
+          >
+            <ArrowLeft size={24} />
+          </IconButton>
+        )}
 
         <Typography
           variant="h6"
+          component="div"
           sx={{
-            flex: 1,
-            textAlign: 'center',
+            flexGrow: 1, // 左对齐，与子级页面保持一致
             fontSize: 'calc(var(--global-font-size) * 1.125)',
-            fontWeight: 700,
+            fontWeight: 600, // 与子级页面保持一致
             color: theme.palette.text.primary,
           }}
         >
           {title}
         </Typography>
 
-        <Box sx={{ minWidth: 40, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          {rightButton || <Box sx={{ width: 40 }} />}
-        </Box>
+        {rightButton}
       </Toolbar>
     </AppBar>
   );

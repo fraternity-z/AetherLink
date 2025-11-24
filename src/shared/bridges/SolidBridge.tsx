@@ -61,6 +61,39 @@ function shallowEqual<T extends Record<string, any>>(obj1: T, obj2: T): boolean 
 }
 
 /**
+ * 序列化对象，移除 SolidJS 代理包装
+ * 用于确保从 SolidJS 传回 React 的数据是普通对象
+ */
+function serializeValue(value: any): any {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== 'object') return value;
+  if (value instanceof Date) return value;
+  if (value instanceof Error) return value;
+  if (typeof value === 'function') return value;
+  if (value instanceof Array) return value.map(serializeValue);
+  
+  try {
+    // 使用 JSON 序列化/反序列化来移除 SolidJS 代理
+    return JSON.parse(JSON.stringify(value));
+  } catch (error) {
+    // 如果序列化失败，返回浅拷贝
+    return { ...value };
+  }
+}
+
+/**
+ * 包装回调函数，自动序列化参数
+ * 防止 SolidJS 代理对象传递到 React/Redux
+ */
+function wrapCallback(callback: Function): Function {
+  return (...args: any[]) => {
+    // 序列化所有参数，移除 SolidJS 代理
+    const serializedArgs = args.map(serializeValue);
+    return callback(...serializedArgs);
+  };
+}
+
+/**
  * 创建事件总线实例
  */
 export function createEventBus(): EventBus {
@@ -173,8 +206,21 @@ export function SolidBridge<T extends Record<string, any>>({
     log(`初始化 SolidJS 组件 (渲染次数: ${renderCountRef.current})`);
 
     try {
+      // 序列化并包装 props，防止 SolidJS 代理传递到 React/Redux
+      const processedProps: any = {};
+      for (const key in props) {
+        const value = props[key];
+        if (typeof value === 'function') {
+          // 包装回调函数，自动序列化参数
+          processedProps[key] = wrapCallback(value);
+        } else {
+          // 序列化非函数值，确保进入 Store 的是普通对象
+          processedProps[key] = serializeValue(value);
+        }
+      }
+
       // 创建响应式 Store 来管理 props
-      const [store, setStore] = createStore<T>(props);
+      const [store, setStore] = createStore<T>(processedProps);
       propsStoreRef.current = { store, setStore };
 
       // 渲染 SolidJS 组件，传入响应式 store
@@ -227,11 +273,18 @@ export function SolidBridge<T extends Record<string, any>>({
     log('响应式更新 Props', { prev: prevProps, next: props });
 
     try {
-      // 批量更新所有变化的 props
-      const updates: Partial<T> = {};
+      // 批量更新所有变化的 props，序列化并包装
+      const updates: any = {};
       for (const key in props) {
         if (props[key] !== prevProps[key]) {
-          updates[key] = props[key];
+          const value = props[key];
+          if (typeof value === 'function') {
+            // 包装回调函数
+            updates[key] = wrapCallback(value);
+          } else {
+            // 序列化非函数值
+            updates[key] = serializeValue(value);
+          }
           if (debug) {
             log(`  - ${key}:`, prevProps[key], '→', props[key]);
           }

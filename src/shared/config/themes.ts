@@ -2,6 +2,7 @@ import { createTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { getFontFamilyString } from './fonts';
 import { cssVar } from '../utils/cssVariables';
+import { Capacitor } from '@capacitor/core';
 
 // 主题风格类型
 export type ThemeStyle = 'default' | 'claude' | 'nature' | 'tech' | 'soft' | 'ocean' | 'sunset' | 'cinnamonSlate' | 'horizonGreen' | 'cherryCoded';
@@ -487,6 +488,21 @@ export const createCustomTheme = (
             ...(themeStyle !== 'default' && {
               opacity: 0.95,
             }),
+            // 🚀 全局适配状态栏安全区域：只在移动端（iOS/Android）添加顶部间距
+            '&.MuiAppBar-positionFixed': {
+              paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+            },
+          },
+        },
+      },
+      MuiToolbar: {
+        styleOverrides: {
+          root: {
+            // 🚀 全局统一 Toolbar 高度为 56px，确保所有页面工具栏高度一致
+            minHeight: '56px !important',
+            '@media (min-width: 600px)': {
+              minHeight: '56px !important', // 覆盖 MUI 在 sm 断点的默认 64px
+            },
           },
         },
       },

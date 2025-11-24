@@ -13,12 +13,12 @@ import {
   Toolbar,
   Divider,
   alpha,
-  FormControlLabel,
   Button,
   Slider,
-  FormGroup
+  Stack,
+  useTheme
 } from '@mui/material';
-import { ArrowLeft, Info } from 'lucide-react';
+import { ArrowLeft, Info, Palette, Sliders, User, Bot, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import CustomSwitch from '../../components/CustomSwitch';
@@ -32,6 +32,7 @@ const MessageBubbleSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
+  const theme = useTheme();
 
   // 获取版本切换样式设置，默认为'popup'
   const versionSwitchStyle = (settings as any).versionSwitchStyle || 'popup';
@@ -169,6 +170,36 @@ const MessageBubbleSettings: React.FC = () => {
     }));
   };
 
+  // 根据全局字体大小计算图标大小
+  const getIconSize = (baseSize: number = 20) => {
+    const scale = settings.fontSize / 16; // 16px 是基准字体大小
+    return Math.round(baseSize * scale);
+  };
+
+  // 通用卡片样式
+  const cardStyle = {
+    mb: 2,
+    p: 2.5,
+    borderRadius: 3,
+    border: '1px solid',
+    borderColor: 'divider',
+    bgcolor: 'background.paper',
+    boxShadow: 'none', // 移除阴影，更扁平
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+      borderColor: alpha(theme.palette.primary.main, 0.3),
+      bgcolor: alpha(theme.palette.background.paper, 0.8),
+    }
+  };
+
+  // 设置项行样式
+  const settingRowStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 2
+  };
+
   return (
     <Box sx={{
       flexGrow: 1,
@@ -178,6 +209,7 @@ const MessageBubbleSettings: React.FC = () => {
       bgcolor: (theme) => theme.palette.mode === 'light'
         ? alpha(theme.palette.primary.main, 0.02)
         : alpha(theme.palette.background.default, 0.9),
+      fontSize: `${settings.fontSize}px`,
     }}>
       <AppBar
         position="fixed"
@@ -199,18 +231,19 @@ const MessageBubbleSettings: React.FC = () => {
             aria-label="back"
             sx={{
               color: (theme) => theme.palette.primary.main,
+              mr: 1
             }}
           >
-            <ArrowLeft />
+            <ArrowLeft size={getIconSize(20)} />
           </IconButton>
           <Typography
             variant="h6"
             component="div"
-              sx={{
-                flexGrow: 1,
-                fontWeight: 600,
-              }}
-            >
+            sx={{
+              flexGrow: 1,
+              fontWeight: 600,
+            }}
+          >
             {t('settings.appearance.messageBubble.title')}
           </Typography>
         </Toolbar>
@@ -220,7 +253,7 @@ const MessageBubbleSettings: React.FC = () => {
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
-          p: { xs: 1, sm: 2 },
+          p: { xs: 2, sm: 3 },
           mt: 8,
           '&::-webkit-scrollbar': {
             width: { xs: '4px', sm: '6px' },
@@ -231,191 +264,143 @@ const MessageBubbleSettings: React.FC = () => {
           },
         }}
       >
-        {/* 版本切换样式设置和小功能气泡显示设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: { xs: '1rem', sm: '1.1rem' }
-                }}
-              >
-                {t('settings.appearance.messageBubble.function.title')}
-              </Typography>
-              <Tooltip title={t('settings.appearance.messageBubble.function.tooltip')}>
-                <IconButton size="small" sx={{ ml: 1 }}>
-                  <Info />
-                </IconButton>
-              </Tooltip>
+        {/* 功能设置 */}
+        <Paper sx={cardStyle}>
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              p: 1, 
+              borderRadius: 2, 
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main 
+            }}>
+              <Sliders size={getIconSize(20)} />
             </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('settings.appearance.messageBubble.function.description')}
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            {/* 消息操作显示模式设置 */}
-            <FormControl fullWidth variant="outlined" sx={{ mb: 3 }}>
-              <InputLabel>{t('settings.appearance.messageBubble.function.actionMode.label')}</InputLabel>
-              <Select
-                value={messageActionMode}
-                onChange={handleMessageActionModeChange}
-                label={t('settings.appearance.messageBubble.function.actionMode.label')}
-              >
-                <MenuItem value="bubbles">{t('settings.appearance.messageBubble.function.actionMode.bubbles')}</MenuItem>
-                <MenuItem value="toolbar">{t('settings.appearance.messageBubble.function.actionMode.toolbar')}</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mb: 3,
-                fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                lineHeight: 1.5
-              }}
-            >
-              {t('settings.appearance.messageBubble.function.actionMode.description')}
-              <br />{t('settings.appearance.messageBubble.function.actionMode.bubblesDesc')}
-              <br />{t('settings.appearance.messageBubble.function.actionMode.toolbarDesc')}
-            </Typography>
-
-            {/* 分隔线 */}
-            <Divider sx={{ my: 2 }} />
-
-            {/* 小功能气泡显示设置 - 仅在气泡模式下显示 */}
-            {messageActionMode === 'bubbles' && (
-              <>
-                <FormControlLabel
-                  control={
-                    <CustomSwitch
-                      checked={showMicroBubbles}
-                      onChange={handleMicroBubblesChange}
-                    />
-                  }
-                  label={
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {t('settings.appearance.messageBubble.function.showMicroBubbles.label')}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                        {t('settings.appearance.messageBubble.function.showMicroBubbles.description')}
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    mb: 2,
-                    mt: 1
-                  }}
-                />
-
-                {/* 分隔线 */}
-                <Divider sx={{ my: 2 }} />
-              </>
-            )}
-
-            {/* 版本切换样式设置 - 仅在气泡模式且显示功能气泡时显示 */}
-            {messageActionMode === 'bubbles' && showMicroBubbles && (
-              <>
-                <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                  <InputLabel>{t('settings.appearance.messageBubble.function.versionSwitch.label')}</InputLabel>
-                  <Select
-                    value={versionSwitchStyle}
-                    onChange={handleVersionSwitchStyleChange}
-                    label={t('settings.appearance.messageBubble.function.versionSwitch.label')}
-                  >
-                    <MenuItem value="popup">{t('settings.appearance.messageBubble.function.versionSwitch.popup')}</MenuItem>
-                    <MenuItem value="arrows">{t('settings.appearance.messageBubble.function.versionSwitch.arrows')}</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    mt: 1,
-                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                    lineHeight: 1.5
-                  }}
-                >
-                  {t('settings.appearance.messageBubble.function.versionSwitch.description')}
-                  <br />{t('settings.appearance.messageBubble.function.versionSwitch.popupDesc')}
-                  <br />{t('settings.appearance.messageBubble.function.versionSwitch.arrowsDesc')}
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {t('settings.appearance.messageBubble.function.title')}
                 </Typography>
-              </>
-            )}
+                <Tooltip title={t('settings.appearance.messageBubble.function.tooltip')}>
+                  <Info size={getIconSize(16)} className="text-gray-400 hover:text-gray-600 cursor-help" />
+                </Tooltip>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.appearance.messageBubble.function.description')}
+              </Typography>
+            </Box>
           </Box>
+
+          <FormControl fullWidth variant="outlined" size="small" sx={{ mb: 2 }}>
+            <InputLabel>{t('settings.appearance.messageBubble.function.actionMode.label')}</InputLabel>
+            <Select
+              value={messageActionMode}
+              onChange={handleMessageActionModeChange}
+              label={t('settings.appearance.messageBubble.function.actionMode.label')}
+              sx={{ borderRadius: 2 }}
+            >
+              <MenuItem value="bubbles">{t('settings.appearance.messageBubble.function.actionMode.bubbles')}</MenuItem>
+              <MenuItem value="toolbar">{t('settings.appearance.messageBubble.function.actionMode.toolbar')}</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('settings.appearance.messageBubble.function.actionMode.description')}
+          </Typography>
+
+          {/* 小功能气泡显示设置 - 仅在气泡模式下显示 */}
+          {messageActionMode === 'bubbles' && (
+            <>
+              <Divider sx={{ my: 2 }} />
+              <Box sx={settingRowStyle}>
+                <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
+                  <Box sx={{ 
+                    p: 1, 
+                    height: 'fit-content',
+                    borderRadius: 2, 
+                    bgcolor: alpha('#6366f1', 0.1),
+                    color: '#6366f1' 
+                  }}>
+                    <Sliders size={getIconSize(20)} />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {t('settings.appearance.messageBubble.function.showMicroBubbles.label')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {t('settings.appearance.messageBubble.function.showMicroBubbles.description')}
+                    </Typography>
+                  </Box>
+                </Box>
+                <CustomSwitch
+                  checked={showMicroBubbles}
+                  onChange={handleMicroBubblesChange}
+                />
+              </Box>
+
+              {/* 版本切换样式设置 - 仅在气泡模式且显示功能气泡时显示 */}
+              {showMicroBubbles && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <FormControl fullWidth variant="outlined" size="small">
+                    <InputLabel>{t('settings.appearance.messageBubble.function.versionSwitch.label')}</InputLabel>
+                    <Select
+                      value={versionSwitchStyle}
+                      onChange={handleVersionSwitchStyleChange}
+                      label={t('settings.appearance.messageBubble.function.versionSwitch.label')}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <MenuItem value="popup">{t('settings.appearance.messageBubble.function.versionSwitch.popup')}</MenuItem>
+                      <MenuItem value="arrows">{t('settings.appearance.messageBubble.function.versionSwitch.arrows')}</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {t('settings.appearance.messageBubble.function.versionSwitch.description')}
+                  </Typography>
+                </>
+              )}
+            </>
+          )}
         </Paper>
 
-        {/* 消息气泡宽度设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: { xs: '1rem', sm: '1.1rem' }
-                }}
-              >
-                {t('settings.appearance.messageBubble.width.title')}
-              </Typography>
-              <Tooltip title={t('settings.appearance.messageBubble.width.tooltip')}>
-                <IconButton size="small" sx={{ ml: 1 }}>
-                  <Info />
-                </IconButton>
-              </Tooltip>
+        {/* 气泡宽度设置 */}
+        <Paper sx={cardStyle}>
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ 
+              p: 1, 
+              borderRadius: 2, 
+              bgcolor: alpha('#10b981', 0.1),
+              color: '#10b981' 
+            }}>
+              <Maximize2 size={getIconSize(20)} />
             </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('settings.appearance.messageBubble.width.description')}
-            </Typography>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {t('settings.appearance.messageBubble.width.title')}
+                </Typography>
+                <Tooltip title={t('settings.appearance.messageBubble.width.tooltip')}>
+                  <Info size={getIconSize(16)} className="text-gray-400 hover:text-gray-600 cursor-help" />
+                </Tooltip>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.appearance.messageBubble.width.description')}
+              </Typography>
+            </Box>
           </Box>
 
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+          <Stack spacing={3}>
             {/* AI消息最大宽度 */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                {t('settings.appearance.messageBubble.width.aiMaxWidth')}: {messageBubbleMaxWidth}%
-              </Typography>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Bot size={getIconSize(16)} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {t('settings.appearance.messageBubble.width.aiMaxWidth')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({messageBubbleMaxWidth}%)
+                </Typography>
+              </Box>
               <Slider
                 value={messageBubbleMaxWidth}
                 onChange={handleMessageBubbleMaxWidthChange}
@@ -429,25 +414,20 @@ const MessageBubbleSettings: React.FC = () => {
                 ]}
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
-                sx={{
-                  '& .MuiSlider-thumb': {
-                    bgcolor: 'primary.main',
-                  },
-                  '& .MuiSlider-track': {
-                    bgcolor: 'primary.main',
-                  },
-                  '& .MuiSlider-rail': {
-                    bgcolor: 'divider',
-                  }
-                }}
               />
             </Box>
 
             {/* 用户消息最大宽度 */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                {t('settings.appearance.messageBubble.width.userMaxWidth')}: {userMessageMaxWidth}%
-              </Typography>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <User size={getIconSize(16)} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {t('settings.appearance.messageBubble.width.userMaxWidth')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({userMessageMaxWidth}%)
+                </Typography>
+              </Box>
               <Slider
                 value={userMessageMaxWidth}
                 onChange={handleUserMessageMaxWidthChange}
@@ -461,25 +441,20 @@ const MessageBubbleSettings: React.FC = () => {
                 ]}
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
-                sx={{
-                  '& .MuiSlider-thumb': {
-                    bgcolor: 'secondary.main',
-                  },
-                  '& .MuiSlider-track': {
-                    bgcolor: 'secondary.main',
-                  },
-                  '& .MuiSlider-rail': {
-                    bgcolor: 'divider',
-                  }
-                }}
               />
             </Box>
 
             {/* 消息最小宽度 */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" gutterBottom sx={{ fontWeight: 500 }}>
-                {t('settings.appearance.messageBubble.width.minWidth')}: {messageBubbleMinWidth}%
-              </Typography>
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Minimize2 size={getIconSize(16)} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {t('settings.appearance.messageBubble.width.minWidth')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({messageBubbleMinWidth}%)
+                </Typography>
+              </Box>
               <Slider
                 value={messageBubbleMinWidth}
                 onChange={handleMessageBubbleMinWidthChange}
@@ -495,376 +470,290 @@ const MessageBubbleSettings: React.FC = () => {
                 ]}
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
-                sx={{
-                  '& .MuiSlider-thumb': {
-                    bgcolor: 'success.main',
-                  },
-                  '& .MuiSlider-track': {
-                    bgcolor: 'success.main',
-                  },
-                  '& .MuiSlider-rail': {
-                    bgcolor: 'divider',
-                  }
-                }}
               />
             </Box>
+          </Stack>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mt: 2,
-                fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                lineHeight: 1.5,
-                p: 2,
-                bgcolor: 'rgba(0,0,0,0.02)',
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'divider'
-              }}
-            >
-              <strong>{t('settings.appearance.messageBubble.width.instructions.title')}</strong>
-              <br />{t('settings.appearance.messageBubble.width.instructions.aiMaxWidth')}
-              <br />{t('settings.appearance.messageBubble.width.instructions.userMaxWidth')}
-              <br />{t('settings.appearance.messageBubble.width.instructions.minWidth')}
-              <br />{t('settings.appearance.messageBubble.width.instructions.note')}
-            </Typography>
-          </Box>
-        </Paper>
-
-        {/* 头像和名称显示设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
+          <Typography variant="body2" color="text.secondary" sx={{ 
+            mt: 3, 
+            p: 2, 
+            bgcolor: alpha(theme.palette.background.default, 0.5),
             borderRadius: 2,
             border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: { xs: '1rem', sm: '1.1rem' }
-                }}
-              >
-                {t('settings.appearance.messageBubble.avatar.title')}
-              </Typography>
-              <Tooltip title={t('settings.appearance.messageBubble.avatar.tooltip')}>
-                <IconButton size="small" sx={{ ml: 1 }}>
-                  <Info />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('settings.appearance.messageBubble.avatar.description')}
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={showUserAvatar}
-                    onChange={handleShowUserAvatarChange}
-                  />
-                }
-                label={t('settings.appearance.messageBubble.avatar.showUserAvatar')}
-              />
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={showUserName}
-                    onChange={handleShowUserNameChange}
-                  />
-                }
-                label={t('settings.appearance.messageBubble.avatar.showUserName')}
-              />
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={showModelAvatar}
-                    onChange={handleShowModelAvatarChange}
-                  />
-                }
-                label={t('settings.appearance.messageBubble.avatar.showModelAvatar')}
-              />
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={showModelName}
-                    onChange={handleShowModelNameChange}
-                  />
-                }
-                label={t('settings.appearance.messageBubble.avatar.showModelName')}
-              />
-            </FormGroup>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {t('settings.appearance.messageBubble.avatar.hint')}
-            </Typography>
-          </Box>
+            borderColor: 'divider'
+          }}>
+            <strong>{t('settings.appearance.messageBubble.width.instructions.title')}</strong>
+            <br />{t('settings.appearance.messageBubble.width.instructions.aiMaxWidth')}
+            <br />{t('settings.appearance.messageBubble.width.instructions.userMaxWidth')}
+            <br />{t('settings.appearance.messageBubble.width.instructions.minWidth')}
+            <br />{t('settings.appearance.messageBubble.width.instructions.note')}
+          </Typography>
         </Paper>
 
-        {/* 隐藏气泡设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: { xs: '1rem', sm: '1.1rem' }
-                }}
-              >
-                {t('settings.appearance.messageBubble.hideBubble.title')}
-              </Typography>
-              <Tooltip title={t('settings.appearance.messageBubble.hideBubble.tooltip')}>
-                <IconButton size="small" sx={{ ml: 1 }}>
-                  <Info />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('settings.appearance.messageBubble.hideBubble.description')}
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={hideUserBubble}
-                    onChange={handleHideUserBubbleChange}
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {t('settings.appearance.messageBubble.hideBubble.hideUserBubble')}
+        {/* 开关类设置组 */}
+        <Stack spacing={2} mb={3}>
+          {/* 头像和名称显示设置 */}
+          <Paper sx={cardStyle}>
+            <Box sx={settingRowStyle}>
+              <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
+                <Box sx={{ 
+                  p: 1, 
+                  height: 'fit-content',
+                  borderRadius: 2, 
+                  bgcolor: alpha('#f59e0b', 0.1),
+                  color: '#f59e0b' 
+                }}>
+                  <User size={getIconSize(20)} />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {t('settings.appearance.messageBubble.avatar.title')}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      {t('settings.appearance.messageBubble.hideBubble.hideUserBubbleDesc')}
-                    </Typography>
+                    <Tooltip title={t('settings.appearance.messageBubble.avatar.tooltip')}>
+                      <Info size={getIconSize(16)} className="text-gray-400 hover:text-gray-600 cursor-help" />
+                    </Tooltip>
                   </Box>
-                }
-                sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  mb: 2
-                }}
-              />
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={hideAIBubble}
-                    onChange={handleHideAIBubbleChange}
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {t('settings.appearance.messageBubble.hideBubble.hideAIBubble')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      {t('settings.appearance.messageBubble.hideBubble.hideAIBubbleDesc')}
-                    </Typography>
-                  </Box>
-                }
-                sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  mb: 1
-                }}
-              />
-            </FormGroup>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {t('settings.appearance.messageBubble.hideBubble.hint')}
-            </Typography>
-          </Box>
-        </Paper>
-
-        {/* 自定义气泡颜色设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: '1rem', sm: '1.1rem' }
-                  }}
-                >
-                  {t('settings.appearance.messageBubble.colors.title')}
-                </Typography>
-                <Tooltip title={t('settings.appearance.messageBubble.colors.tooltip')}>
-                  <IconButton size="small" sx={{ ml: 1 }}>
-                    <Info />
-                  </IconButton>
-                </Tooltip>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {t('settings.appearance.messageBubble.avatar.description')}
+                  </Typography>
+                </Box>
               </Box>
-              <Button
-                size="small"
-                onClick={handleResetColors}
-                variant="outlined"
-                sx={{ fontSize: '0.8rem' }}
-              >
-                {t('settings.appearance.messageBubble.colors.reset')}
-              </Button>
             </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('settings.appearance.messageBubble.colors.description')}
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' } }}>
-              {/* 左侧：颜色设置 */}
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                {/* 表头 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                  <Typography variant="body2" sx={{ minWidth: '80px' }}>
-                    {/* 空白占位 */}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontSize: '0.85rem', minWidth: '80px', textAlign: 'center', fontWeight: 500 }}>
-                    {t('settings.appearance.messageBubble.colors.backgroundColor')}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontSize: '0.85rem', minWidth: '80px', textAlign: 'center', fontWeight: 500 }}>
-                    {t('settings.appearance.messageBubble.colors.textColor')}
-                  </Typography>
-                </Box>
-
-                {/* 用户消息颜色设置 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, minWidth: '80px' }}>
-                    {t('settings.appearance.messageBubble.colors.userMessage')}
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: '80px' }}>
-                    <ColorPicker
-                      value={customBubbleColors.userBubbleColor || '#1976d2'}
-                      onChange={(color) => handleColorChange('userBubbleColor', color)}
-                      size="small"
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: '80px' }}>
-                    <ColorPicker
-                      value={customBubbleColors.userTextColor || '#ffffff'}
-                      onChange={(color) => handleColorChange('userTextColor', color)}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-
-                {/* AI消息颜色设置 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600, minWidth: '80px' }}>
-                    {t('settings.appearance.messageBubble.colors.aiReply')}
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: '80px' }}>
-                    <ColorPicker
-                      value={customBubbleColors.aiBubbleColor || '#f5f5f5'}
-                      onChange={(color) => handleColorChange('aiBubbleColor', color)}
-                      size="small"
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', minWidth: '80px' }}>
-                    <ColorPicker
-                      value={customBubbleColors.aiTextColor || '#333333'}
-                      onChange={(color) => handleColorChange('aiTextColor', color)}
-                      size="small"
-                    />
-                  </Box>
-                </Box>
-
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{
-                    mt: 1,
-                    fontSize: '0.8rem',
-                    lineHeight: 1.4
-                  }}
-                >
-                  {t('settings.appearance.messageBubble.colors.hint')}
+            
+            <Divider sx={{ my: 2 }} />
+            
+            <Stack spacing={2}>
+              <Box sx={settingRowStyle}>
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {t('settings.appearance.messageBubble.avatar.showUserAvatar')}
                 </Typography>
-              </Box>
-
-              {/* 右侧：实时预览 */}
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <MessageBubblePreview
-                  customBubbleColors={customBubbleColors}
-                  messageActionMode={messageActionMode}
-                  showMicroBubbles={showMicroBubbles}
-                  messageBubbleMinWidth={messageBubbleMinWidth}
-                  messageBubbleMaxWidth={messageBubbleMaxWidth}
-                  userMessageMaxWidth={userMessageMaxWidth}
-                  showUserAvatar={showUserAvatar}
-                  showUserName={showUserName}
-                  showModelAvatar={showModelAvatar}
-                  showModelName={showModelName}
-                  hideUserBubble={hideUserBubble}
-                  hideAIBubble={hideAIBubble}
+                <CustomSwitch
+                  checked={showUserAvatar}
+                  onChange={handleShowUserAvatarChange}
                 />
               </Box>
+              <Box sx={settingRowStyle}>
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {t('settings.appearance.messageBubble.avatar.showUserName')}
+                </Typography>
+                <CustomSwitch
+                  checked={showUserName}
+                  onChange={handleShowUserNameChange}
+                />
+              </Box>
+              <Box sx={settingRowStyle}>
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {t('settings.appearance.messageBubble.avatar.showModelAvatar')}
+                </Typography>
+                <CustomSwitch
+                  checked={showModelAvatar}
+                  onChange={handleShowModelAvatarChange}
+                />
+              </Box>
+              <Box sx={settingRowStyle}>
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {t('settings.appearance.messageBubble.avatar.showModelName')}
+                </Typography>
+                <CustomSwitch
+                  checked={showModelName}
+                  onChange={handleShowModelNameChange}
+                />
+              </Box>
+            </Stack>
+          </Paper>
+
+          {/* 隐藏气泡设置 */}
+          <Paper sx={cardStyle}>
+            <Box sx={settingRowStyle}>
+              <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
+                <Box sx={{ 
+                  p: 1, 
+                  height: 'fit-content',
+                  borderRadius: 2, 
+                  bgcolor: alpha('#ef4444', 0.1),
+                  color: '#ef4444' 
+                }}>
+                  <EyeOff size={getIconSize(20)} />
+                </Box>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {t('settings.appearance.messageBubble.hideBubble.title')}
+                    </Typography>
+                    <Tooltip title={t('settings.appearance.messageBubble.hideBubble.tooltip')}>
+                      <Info size={getIconSize(16)} className="text-gray-400 hover:text-gray-600 cursor-help" />
+                    </Tooltip>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {t('settings.appearance.messageBubble.hideBubble.description')}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+            
+            <Divider sx={{ my: 2 }} />
+            
+            <Stack spacing={2}>
+              <Box sx={settingRowStyle}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" fontWeight={500}>
+                    {t('settings.appearance.messageBubble.hideBubble.hideUserBubble')}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('settings.appearance.messageBubble.hideBubble.hideUserBubbleDesc')}
+                  </Typography>
+                </Box>
+                <CustomSwitch
+                  checked={hideUserBubble}
+                  onChange={handleHideUserBubbleChange}
+                />
+              </Box>
+              <Box sx={settingRowStyle}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" fontWeight={500}>
+                    {t('settings.appearance.messageBubble.hideBubble.hideAIBubble')}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('settings.appearance.messageBubble.hideBubble.hideAIBubbleDesc')}
+                  </Typography>
+                </Box>
+                <CustomSwitch
+                  checked={hideAIBubble}
+                  onChange={handleHideAIBubbleChange}
+                />
+              </Box>
+            </Stack>
+          </Paper>
+        </Stack>
+
+        {/* 自定义气泡颜色设置 */}
+        <Paper sx={cardStyle}>
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ 
+                p: 1, 
+                borderRadius: 2, 
+                bgcolor: alpha('#ec4899', 0.1),
+                color: '#ec4899' 
+              }}>
+                <Palette size={getIconSize(20)} />
+              </Box>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {t('settings.appearance.messageBubble.colors.title')}
+                  </Typography>
+                  <Tooltip title={t('settings.appearance.messageBubble.colors.tooltip')}>
+                    <Info size={getIconSize(16)} className="text-gray-400 hover:text-gray-600 cursor-help" />
+                  </Tooltip>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  {t('settings.appearance.messageBubble.colors.description')}
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              size="small"
+              onClick={handleResetColors}
+              variant="outlined"
+              sx={{ borderRadius: 2 }}
+            >
+              {t('settings.appearance.messageBubble.colors.reset')}
+            </Button>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' } }}>
+            {/* 左侧：颜色设置 */}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '120px 80px 80px', gap: 2, alignItems: 'center', mb: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {/* 空白占位 */}
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 600 }}>
+                  {t('settings.appearance.messageBubble.colors.backgroundColor')}
+                </Typography>
+                <Typography variant="body2" sx={{ textAlign: 'center', fontWeight: 600 }}>
+                  {t('settings.appearance.messageBubble.colors.textColor')}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '120px 80px 80px', gap: 2, alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <User size={getIconSize(16)} />
+                  <Typography variant="body2" fontWeight={600}>
+                    {t('settings.appearance.messageBubble.colors.userMessage')}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <ColorPicker
+                    value={customBubbleColors.userBubbleColor || '#1976d2'}
+                    onChange={(color) => handleColorChange('userBubbleColor', color)}
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <ColorPicker
+                    value={customBubbleColors.userTextColor || '#ffffff'}
+                    onChange={(color) => handleColorChange('userTextColor', color)}
+                    size="small"
+                  />
+                </Box>
+              </Box>
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '120px 80px 80px', gap: 2, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Bot size={getIconSize(16)} />
+                  <Typography variant="body2" fontWeight={600}>
+                    {t('settings.appearance.messageBubble.colors.aiReply')}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <ColorPicker
+                    value={customBubbleColors.aiBubbleColor || '#f5f5f5'}
+                    onChange={(color) => handleColorChange('aiBubbleColor', color)}
+                    size="small"
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <ColorPicker
+                    value={customBubbleColors.aiTextColor || '#333333'}
+                    onChange={(color) => handleColorChange('aiTextColor', color)}
+                    size="small"
+                  />
+                </Box>
+              </Box>
+
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                {t('settings.appearance.messageBubble.colors.hint')}
+              </Typography>
+            </Box>
+
+            {/* 右侧：实时预览 */}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <MessageBubblePreview
+                customBubbleColors={customBubbleColors}
+                messageActionMode={messageActionMode}
+                showMicroBubbles={showMicroBubbles}
+                messageBubbleMinWidth={messageBubbleMinWidth}
+                messageBubbleMaxWidth={messageBubbleMaxWidth}
+                userMessageMaxWidth={userMessageMaxWidth}
+                showUserAvatar={showUserAvatar}
+                showUserName={showUserName}
+                showModelAvatar={showModelAvatar}
+                showModelName={showModelName}
+                hideUserBubble={hideUserBubble}
+                hideAIBubble={hideAIBubble}
+              />
             </Box>
           </Box>
         </Paper>
 
         {/* 底部间距 */}
-        <Box sx={{ height: '20px' }} />
+        <Box sx={{ height: '40px' }} />
       </Box>
     </Box>
   );
 };
 
-export default MessageBubbleSettings; 
+export default MessageBubbleSettings;

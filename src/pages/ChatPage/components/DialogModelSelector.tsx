@@ -215,6 +215,9 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
         fullScreen={fullScreen}
         maxWidth="sm"
         fullWidth
+        disableEnforceFocus
+        disableAutoFocus
+        disableRestoreFocus
         slotProps={{
           paper: {
             sx: DIALOG_STYLES.dialogPaper(fullScreen)
@@ -261,7 +264,6 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
                   isSelected={selectedIdentity === getIdentityValue(model)}
                   onSelect={() => handleModelSelectWithClose(model)}
                   providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                  providers={providers}
                 />
               ))
             ) : activeTab === 'frequently-used' && currentProviderId ? (
@@ -273,7 +275,6 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
                   isSelected={selectedIdentity === getIdentityValue(model)}
                   onSelect={() => handleModelSelectWithClose(model)}
                   providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                  providers={providers}
                 />
               ))
             ) : (
@@ -285,7 +286,6 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
                   isSelected={selectedIdentity === getIdentityValue(model)}
                   onSelect={() => handleModelSelectWithClose(model)}
                   providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                  providers={providers}
                 />
               ))
             )}
@@ -300,7 +300,6 @@ interface ModelItemProps {
   isSelected: boolean;
   onSelect: () => void;
   providerDisplayName: string;
-  providers: any[]; // 传入 providers 避免在组件内部使用 useSelector
 }
 
 // 优化 ModelItem 组件 - 使用 React.memo 避免不必要的重新渲染
@@ -308,8 +307,7 @@ const ModelItem: React.FC<ModelItemProps> = React.memo(({
   model,
   isSelected,
   onSelect,
-  providerDisplayName,
-  providers
+  providerDisplayName
 }) => {
   const theme = useTheme();
 

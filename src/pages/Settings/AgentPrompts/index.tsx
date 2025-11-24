@@ -9,7 +9,6 @@ import {
   InputAdornment,
   Chip,
   Button,
-  Collapse,
   Divider,
   Paper,
   alpha
@@ -80,11 +79,6 @@ const AgentPromptsSettings: React.FC = () => {
         borderColor: 'divider',
         overflow: 'hidden',
         bgcolor: 'background.paper',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-1px)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        }
       }}
     >
       <Box sx={{ p: 1.2 }}>
@@ -184,42 +178,44 @@ const AgentPromptsSettings: React.FC = () => {
           {isExpanded ? <ExpandLessIcon size={20} /> : <ExpandMoreIcon size={20} />}
         </Box>
 
-        <Collapse in={isExpanded}>
-          <Divider />
-          <Box sx={{ p: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {category.description}
-            </Typography>
-            
-            {/* 🚀 性能优化：根据提示词数量选择渲染方式 */}
-            {shouldVirtualize ? (
-              <VirtualScroller<AgentPrompt>
-                items={category.prompts}
-                itemHeight={PROMPT_CARD_HEIGHT}
-                renderItem={(prompt) => (
-                  <Box sx={{ mb: 1 }}>
-                    {renderPromptCard(prompt)}
-                  </Box>
-                )}
-                itemKey={getPromptKey}
-                height={Math.min(500, category.prompts.length * PROMPT_CARD_HEIGHT)}
-                overscanCount={3}
-                style={{
-                  borderRadius: '8px',
-                  border: '1px solid rgba(0,0,0,0.05)',
-                }}
-              />
-            ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {category.prompts.map((prompt) => (
-                  <Box key={prompt.id}>
-                    {renderPromptCard(prompt)}
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-        </Collapse>
+        {isExpanded && (
+          <>
+            <Divider />
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {category.description}
+              </Typography>
+              
+              {/* 🚀 性能优化：根据提示词数量选择渲染方式 */}
+              {shouldVirtualize ? (
+                <VirtualScroller<AgentPrompt>
+                  items={category.prompts}
+                  itemHeight={PROMPT_CARD_HEIGHT}
+                  renderItem={(prompt) => (
+                    <Box sx={{ mb: 1 }}>
+                      {renderPromptCard(prompt)}
+                    </Box>
+                  )}
+                  itemKey={getPromptKey}
+                  height={Math.min(500, category.prompts.length * PROMPT_CARD_HEIGHT)}
+                  overscanCount={3}
+                  style={{
+                    borderRadius: '8px',
+                    border: '1px solid rgba(0,0,0,0.05)',
+                  }}
+                />
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {category.prompts.map((prompt) => (
+                    <Box key={prompt.id}>
+                      {renderPromptCard(prompt)}
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          </>
+        )}
       </Paper>
     );
   };

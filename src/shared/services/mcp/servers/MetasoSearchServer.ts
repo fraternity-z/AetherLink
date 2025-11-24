@@ -30,19 +30,9 @@ const METASO_SEARCH_TOOL: Tool = {
         description: '页码，从1开始，用于分页获取更多结果',
         default: 1
       },
-      includeSummary: {
-        type: 'boolean',
-        description: '是否包含AI生成的摘要（召回增强），推荐开启以获得更丰富的上下文',
-        default: true
-      },
       includeRawContent: {
         type: 'boolean',
         description: '是否抓取所有来源网页的原文内容（完整文本），开启后返回完整网页内容但响应较慢',
-        default: false
-      },
-      conciseSnippet: {
-        type: 'boolean',
-        description: '是否返回精简的原文匹配信息（代码片段），开启后只返回关键匹配部分',
         default: false
       }
     },
@@ -153,9 +143,7 @@ export class MetasoSearchServer {
           query: string; 
           size?: number; 
           page?: number;
-          includeSummary?: boolean;
           includeRawContent?: boolean;
-          conciseSnippet?: boolean;
         });
       } else if (name === 'metaso_reader') {
         return this.reader(args as { url: string });
@@ -180,9 +168,7 @@ export class MetasoSearchServer {
       query: string; 
       size?: number;
       page?: number;
-      includeSummary?: boolean;
       includeRawContent?: boolean;
-      conciseSnippet?: boolean;
     }
   ): Promise<{
     content: Array<{ type: string; text: string }>;
@@ -202,9 +188,7 @@ export class MetasoSearchServer {
         scope: 'webpage',
         size: String(params.size || 10),
         page: String(params.page || 1),
-        includeSummary: params.includeSummary !== false,  // 默认开启AI摘要
-        includeRawContent: params.includeRawContent === true,  // 默认关闭完整原文
-        conciseSnippet: params.conciseSnippet === true  // 默认关闭精简片段
+        includeRawContent: params.includeRawContent === true  // 默认关闭完整原文
       };
 
       // 记录API调用参数（便于调试）
@@ -212,9 +196,7 @@ export class MetasoSearchServer {
         query: params.query,
         size: requestBody.size,
         page: requestBody.page,
-        includeSummary: requestBody.includeSummary,
-        includeRawContent: requestBody.includeRawContent,
-        conciseSnippet: requestBody.conciseSnippet
+        includeRawContent: requestBody.includeRawContent
       });
 
       // 构建请求头
@@ -251,12 +233,8 @@ export class MetasoSearchServer {
       resultText += `**消耗积分**: ${data.credits || 0}\n`;
       
       // 显示启用的增强选项
-      const enabledOptions: string[] = [];
-      if (params.includeSummary !== false) enabledOptions.push('AI摘要');
-      if (params.includeRawContent) enabledOptions.push('完整原文');
-      if (params.conciseSnippet) enabledOptions.push('精简片段');
-      if (enabledOptions.length > 0) {
-        resultText += `**启用选项**: ${enabledOptions.join('、')}\n`;
+      if (params.includeRawContent) {
+        resultText += `**启用选项**: 完整原文\n`;
       }
       
       resultText += `\n---\n\n`;
@@ -269,16 +247,9 @@ export class MetasoSearchServer {
             resultText += `🔗 **链接**: ${item.link}\n\n`;
           }
           
-          // 精简片段（原文匹配信息）
-          if (item.snippet && params.conciseSnippet) {
-            resultText += `📌 **关键片段**: ${item.snippet}\n\n`;
-          } else if (item.snippet && !params.conciseSnippet) {
+          // 摘要信息
+          if (item.snippet) {
             resultText += `📝 **摘要**: ${item.snippet}\n\n`;
-          }
-          
-          // AI生成的摘要（召回增强）
-          if (item.summary && params.includeSummary !== false) {
-            resultText += `💡 **AI总结**: ${item.summary}\n\n`;
           }
           
           // 完整原文内容

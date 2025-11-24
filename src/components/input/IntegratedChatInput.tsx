@@ -16,7 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { toggleWebSearchEnabled, setWebSearchProvider } from '../../shared/store/slices/webSearchSlice';
 import type { DebateConfig } from '../../shared/services/AIDebateService';
-import { useKeyboardManager } from '../../shared/hooks/useKeyboardManager';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import useVoiceInputManager from './IntegratedChatInput/VoiceInputManager';
 import useMenuManager from './IntegratedChatInput/MenuManager';
 import useButtonToolbar from './IntegratedChatInput/ButtonToolbar';
@@ -157,12 +157,14 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
 
 
-  // 键盘管理功能
-  const {
-    isKeyboardVisible,
-    isPageTransitioning,
-    shouldHandleFocus
-  } = useKeyboardManager();
+  // 极简键盘管理 - 模仿 rikkahub
+  const { hideKeyboard } = useKeyboard();
+
+  // 包装 handleSubmit，在发送时隐藏键盘
+  const wrappedHandleSubmit = useCallback(() => {
+    hideKeyboard();
+    handleSubmit();
+  }, [hideKeyboard, handleSubmit]);
 
   // Toast消息订阅
   useEffect(() => {
@@ -372,7 +374,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     isMobile,
     isTablet,
     isIOS,
-    isKeyboardVisible,
     isDarkMode,
     iconColor,
     inputBoxStyle,
@@ -394,7 +395,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     toolsEnabled,
     images,
     files,
-    handleSubmit,
+    handleSubmit: wrappedHandleSubmit,
     onStopResponse,
     handleImageUploadLocal,
     handleFileUploadLocal,
@@ -489,10 +490,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
               isDarkMode={isDarkMode}
               shouldHideVoiceButton={false}
               expanded={expandableContainer.expanded}
-              expandedHeight={expandableContainer.expandedHeight}
               onExpandToggle={expandableContainer.handleExpandToggle}
-              isPageTransitioning={isPageTransitioning}
-              shouldHandleFocus={shouldHandleFocus}
             />
           )}
         </div>

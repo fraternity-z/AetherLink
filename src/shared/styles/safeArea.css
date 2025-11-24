@@ -1,63 +1,42 @@
 /**
- * 全局安全区域样式
- * 处理 Android 15 底部导航栏和各平台安全区域
+ * Edge-to-Edge 安全区域样式
+ * 适配透明系统栏，内容延伸到状态栏和导航栏后面
+ * 使用 EdgeToEdge 插件提供的精确安全区域值
  */
 
-/* 基础安全区域变量 - 由 SafeAreaService 动态设置 */
+/* Rikkahub 风格 - 纯CSS安全区域变量 */
 :root {
-  --safe-area-inset-top: 0px;
-  --safe-area-inset-right: 0px;
-  --safe-area-inset-bottom: 0px;
-  --safe-area-inset-left: 0px;
+  /* 使用浏览器原生 env() 变量作为基础 */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
   
-  /* 常用组合变量 */
-  --safe-area-top: var(--safe-area-inset-top);
-  --safe-area-bottom: var(--safe-area-inset-bottom);
-  
-  /* Android 15 专用变量 */
-  --android-nav-bar-height: 0px;
+  /* 聊天界面专用 */
   --chat-input-bottom-padding: 8px;
-  
-  /* 聊天界面专用变量 */
-  --chat-container-padding-top: var(--safe-area-inset-top);
-  --chat-container-padding-bottom: var(--safe-area-inset-bottom);
 }
 
 /* 全局容器安全区域适配 */
 .safe-area-container {
-  padding-top: var(--safe-area-inset-top);
-  padding-right: var(--safe-area-inset-right);
-  padding-bottom: var(--safe-area-inset-bottom);
-  padding-left: var(--safe-area-inset-left);
+  padding-top: var(--safe-area-top);
+  padding-right: var(--safe-area-right);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
 }
 
-/* 只适配顶部安全区域 */
-.safe-area-top {
-  padding-top: var(--safe-area-inset-top);
-}
+/* 只适配顶部安全区域 (常用于AppBar) */
+/* 注意：安全区域的 paddingTop 已通过 JavaScript 动态设置（仅移动端），CSS 不再需要 */
+/* .safe-area-top,
+.status-bar-safe-area {
+  padding-top: 25px;
+  background-clip: padding-box;
+} */
 
-/* 只适配底部安全区域 */
-.safe-area-bottom {
-  padding-bottom: var(--safe-area-inset-bottom);
-}
-
-/* 聊天页面主容器 */
-.chat-page-container {
-  min-height: 100vh;
-  min-height: 100dvh; /* 动态视口高度 */
-  padding-top: var(--chat-container-padding-top);
-  padding-bottom: var(--chat-container-padding-bottom);
-  box-sizing: border-box;
-}
-
-/* 聊天消息列表容器 */
-.chat-messages-container {
-  /* 确保消息列表不被状态栏和底部导航栏遮挡 */
-  padding-top: calc(var(--safe-area-inset-top) + 8px);
-  padding-bottom: calc(var(--safe-area-inset-bottom) + 80px); /* 80px 为输入框高度 */
-  min-height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
-  min-height: calc(100dvh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
-}
+/* 注意：MUI AppBar 的状态栏适配已在以下位置动态配置（仅移动端）：
+   - ChatPageUI.tsx: AppBar 的 sx.paddingTop
+   - SettingComponents.tsx: HeaderBar 的 sx.paddingTop
+   - themes.ts: MuiAppBar.styleOverrides 全局配置
+*/
 
 /* 聊天输入框容器 */
 .chat-input-container {
@@ -67,89 +46,94 @@
   right: 0;
   z-index: 1000;
   
-  /* 使用安全区域变量确保不被底部导航栏遮挡 */
-  padding-bottom: var(--chat-input-bottom-padding);
-  padding-left: var(--safe-area-inset-left);
-  padding-right: var(--safe-area-inset-right);
+  /* 使用 env() 直接获取安全区域，确保不被底部导航栏遮挡 */
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   
   /* 背景和边框 */
   background: var(--mui-palette-background-paper);
+  /* 移除顶部边框，改用阴影或其他方式，避免底部出现多余线条 */
   border-top: 1px solid var(--mui-palette-divider);
   
-  /* 确保在 Android 15 上正确显示 */
+  /* 关键：确保背景色延伸到底部安全区域 */
+  /* 有时候系统导航栏会有半透明遮罩，确保我们的背景色是实色的 */
+  
   box-sizing: border-box;
 }
 
-/* Android 15 特殊处理 */
+/* 确保至少有基础 padding */
 @supports (padding: max(0px)) {
   .chat-input-container {
-    /* 使用 max() 确保至少有基础 padding */
-    padding-bottom: max(var(--chat-input-bottom-padding), 8px);
+    /* 底部 padding 至少要有导航栏高度，如果没有导航栏则为 8px */
+    /* 注意：在 Android 上 env(safe-area-inset-bottom) 可能包含导航栏高度 */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
   }
 }
 
 /* 工具栏安全区域适配 */
 .toolbar-container {
-  padding-top: var(--safe-area-inset-top);
-  padding-left: var(--safe-area-inset-left);
-  padding-right: var(--safe-area-inset-right);
+  padding-top: var(--safe-area-top);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
 }
 
 /* 抽屉/侧边栏安全区域适配 */
 .drawer-container {
-  padding-top: var(--safe-area-inset-top);
-  padding-bottom: var(--safe-area-inset-bottom);
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
 }
 
 /* 模态框安全区域适配 */
 .modal-container {
-  margin-top: var(--safe-area-inset-top);
-  margin-bottom: var(--safe-area-inset-bottom);
-  margin-left: var(--safe-area-inset-left);
-  margin-right: var(--safe-area-inset-right);
+  margin-top: var(--safe-area-top);
+  margin-bottom: var(--safe-area-bottom);
+  margin-left: var(--safe-area-left);
+  margin-right: var(--safe-area-right);
 }
 
 /* 全屏内容适配 */
 .fullscreen-content {
-  height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
-  height: calc(100dvh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
-  margin-top: var(--safe-area-inset-top);
-  margin-bottom: var(--safe-area-inset-bottom);
+  height: calc(100vh - var(--safe-area-top) - var(--safe-area-bottom));
+  height: calc(100dvh - var(--safe-area-top) - var(--safe-area-bottom));
+  margin-top: var(--safe-area-top);
+  margin-bottom: var(--safe-area-bottom);
 }
 
 /* 底部固定按钮适配 */
 .bottom-fixed-button {
-  bottom: calc(var(--safe-area-inset-bottom) + 16px);
-  left: calc(var(--safe-area-inset-left) + 16px);
-  right: calc(var(--safe-area-inset-right) + 16px);
+  bottom: calc(var(--safe-area-bottom) + 16px);
+  left: calc(var(--safe-area-left) + 16px);
+  right: calc(var(--safe-area-right) + 16px);
 }
 
 /* 浮动操作按钮适配 */
 .fab-container {
-  bottom: calc(var(--safe-area-inset-bottom) + 80px); /* 80px 为输入框高度 */
-  right: calc(var(--safe-area-inset-right) + 16px);
+  bottom: calc(var(--safe-area-bottom) + 80px);
+  right: calc(var(--safe-area-right) + 16px);
 }
 
 /* 响应式适配 */
 @media (orientation: landscape) {
-  /* 横屏时可能需要不同的适配策略 */
   .chat-input-container {
-    padding-bottom: max(var(--safe-area-inset-bottom), 8px);
+    padding-bottom: max(var(--safe-area-bottom), 8px);
   }
 }
 
 /* 特定平台适配 */
 .platform-android .chat-input-container {
-  /* Android 特殊处理 */
   padding-bottom: var(--chat-input-bottom-padding);
 }
 
 .platform-ios .chat-input-container {
-  /* iOS 特殊处理 */
-  padding-bottom: max(var(--safe-area-inset-bottom), 8px);
+  padding-bottom: max(var(--safe-area-bottom), 8px);
 }
 
-/* 调试样式（开发时可用） */
+/* ============================================
+   调试工具 - Edge-to-Edge 安全区域可视化
+   ============================================ */
+
+/* 调试容器 */
 .debug-safe-area {
   position: fixed;
   top: 0;
@@ -158,34 +142,49 @@
   bottom: 0;
   pointer-events: none;
   z-index: 9999;
+  display: none; /* 默认隐藏 */
 }
 
+/* 顶部安全区域（红色） */
 .debug-safe-area::before {
-  content: '';
+  content: 'Safe Area Top: ' attr(data-top);
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--safe-area-inset-top);
+  height: var(--safe-area-top);
   background: rgba(255, 0, 0, 0.3);
+  border-bottom: 2px solid rgba(255, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 0 0 2px black;
 }
 
+/* 底部安全区域（绿色） */
 .debug-safe-area::after {
-  content: '';
+  content: 'Safe Area Bottom: ' attr(data-bottom);
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--safe-area-inset-bottom);
+  height: var(--safe-area-bottom);
   background: rgba(0, 255, 0, 0.3);
-}
-
-/* 隐藏调试样式（默认） */
-.debug-safe-area {
-  display: none;
+  border-top: 2px solid rgba(0, 255, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 0 0 2px black;
 }
 
 /* 启用调试模式 */
-.debug-mode .debug-safe-area {
-  display: block;
+.debug-mode .debug-safe-area,
+body[data-debug-safe-area="true"] .debug-safe-area {
+  display: block !important;
 }
