@@ -43,14 +43,19 @@ jobs:
       - name: Build frontend
         run: npm run build
       
-      - name: Initialize Tauri iOS project (if not exists)
+      - name: Verify iOS project exists
         run: |
-          # Tauri v2 使用 apple/ 目录
-          if [ ! -d "src-tauri/gen/apple" ]; then
-            echo "初始化 Tauri iOS 项目..."
-            npx @tauri-apps/cli ios init || echo "iOS init failed, may already exist"
+          # 检查 iOS 项目是否存在（应该已经在代码库中）
+          if [ -d "src-tauri/gen/apple" ]; then
+            echo "✅ iOS 项目已存在，使用现有源码"
+            echo "=== Xcode 项目信息 ==="
+            ls -la src-tauri/gen/apple/
+            find src-tauri/gen/apple -name "*.xcodeproj" -maxdepth 1
           else
-            echo "✅ iOS 项目已存在"
+            echo "❌ 错误：iOS 项目不存在！"
+            echo "请先运行 'Initialize Tauri iOS Project' workflow 初始化项目"
+            echo "或者手动运行: npx @tauri-apps/cli ios init"
+            exit 1
           fi
       
       - name: Build iOS App (直接使用 Tauri CLI)
