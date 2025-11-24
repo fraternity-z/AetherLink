@@ -150,6 +150,9 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
     const isDistanceEnough = Math.abs(deltaX) > threshold;
     const isVelocityEnough = velocity > velocityThreshold;
 
+    // 标记是否触发了操作
+    let triggered = false;
+
     if (isHorizontalSwipe && (isDistanceEnough || isVelocityEnough)) {
       // 如果启用边缘检测，还需要验证滑动方向和起始位置的匹配
       if (enableEdgeDetection) {
@@ -159,24 +162,29 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
         if (deltaX > 0 && onSwipeRight && isStartInLeftEdge) {
           // 右滑：从左边缘开始，用于打开侧边栏
           onSwipeRight();
+          triggered = true;
         } else if (deltaX < 0 && onSwipeLeft) {
           // 左滑：任意位置都可以，用于关闭侧边栏
           onSwipeLeft();
+          triggered = true;
         }
       } else {
         // 不启用边缘检测时的原有逻辑
         if (deltaX > 0 && onSwipeRight) {
           // 右滑
           onSwipeRight();
+          triggered = true;
         } else if (deltaX < 0 && onSwipeLeft) {
           // 左滑
           onSwipeLeft();
+          triggered = true;
         }
       }
     }
 
-    // 重置进度
-    if (onSwipeProgress) {
+    // 只在未触发操作时重置进度，避免回弹
+    // 如果触发了操作，让状态变化自然地完成动画
+    if (!triggered && onSwipeProgress) {
       onSwipeProgress(0, deltaX > 0 ? 'right' : 'left');
     }
 
