@@ -59,28 +59,39 @@ jobs:
 
       - name: Verify iOS project creation
         run: |
-          echo "检查 iOS 目录..."
-          if [ -d "src-tauri/gen/ios" ]; then
+          echo "检查 iOS/Apple 目录..."
+          if [ -d "src-tauri/gen/apple" ]; then
+            echo "✅ Apple (iOS) 目录已创建"
+            ls -la src-tauri/gen/apple/
+            echo ""
+            echo "=== Xcode 项目文件 ==="
+            find src-tauri/gen/apple -name "*.xcodeproj" -o -name "*.xcworkspace"
+          elif [ -d "src-tauri/gen/ios" ]; then
             echo "✅ iOS 目录已创建"
             ls -la src-tauri/gen/ios/
           else
-            echo "❌ iOS 目录未创建，列出 gen 目录内容："
+            echo "❌ iOS/Apple 目录未创建"
+            echo "列出 gen 目录内容："
             ls -la src-tauri/gen/ || echo "gen 目录不存在"
-            
-            echo "尝试查找 iOS 相关文件..."
-            find src-tauri -name "*ios*" -o -name "*.xcodeproj" || echo "未找到 iOS 文件"
             exit 1
           fi
 
       - name: Package iOS project files
         run: |
           cd src-tauri/gen
-          if [ -d "ios" ]; then
+          # Tauri v2 将 iOS 项目放在 apple/ 目录
+          if [ -d "apple" ]; then
+            echo "✅ 打包 Apple (iOS) 项目..."
+            tar -czf ios-project.tar.gz apple/
+            mv ios-project.tar.gz ../../
+            echo "✅ iOS 项目已打包"
+          elif [ -d "ios" ]; then
+            echo "✅ 打包 iOS 项目..."
             tar -czf ios-project.tar.gz ios/
             mv ios-project.tar.gz ../../
             echo "✅ iOS 项目已打包"
           else
-            echo "❌ iOS 目录不存在，无法打包"
+            echo "❌ 未找到 iOS/Apple 目录"
             exit 1
           fi
 

@@ -45,8 +45,12 @@ jobs:
       
       - name: Initialize Tauri iOS project (if not exists)
         run: |
-          if [ ! -d "src-tauri/gen/ios" ]; then
-            npm run tauri ios init || echo "iOS init failed, may already exist"
+          # Tauri v2 使用 apple/ 目录
+          if [ ! -d "src-tauri/gen/apple" ]; then
+            echo "初始化 Tauri iOS 项目..."
+            npx @tauri-apps/cli ios init || echo "iOS init failed, may already exist"
+          else
+            echo "✅ iOS 项目已存在"
           fi
       
       - name: Build iOS App (直接使用 Tauri CLI)
@@ -58,16 +62,19 @@ jobs:
       - name: Find and upload IPA
         run: |
           echo "Searching for IPA files..."
-          find src-tauri/gen/ios -name "*.ipa" -type f
+          # Tauri v2 使用 apple/ 目录
+          find src-tauri/gen/apple -name "*.ipa" -type f || echo "未在 apple/ 目录找到 IPA"
+          find src-tauri/gen -name "*.ipa" -type f || echo "未在 gen/ 目录找到任何 IPA"
           
           # 创建输出目录
           mkdir -p ios-artifacts
           
-          # 复制所有 IPA 文件
-          find src-tauri/gen/ios -name "*.ipa" -type f -exec cp {} ios-artifacts/ \;
+          # 复制所有 IPA 文件（搜索整个 gen 目录）
+          find src-tauri/gen -name "*.ipa" -type f -exec cp {} ios-artifacts/ \; || echo "未找到 IPA 文件"
           
           # 列出找到的文件
-          ls -lh ios-artifacts/
+          echo "=== 找到的 IPA 文件 ==="
+          ls -lh ios-artifacts/ || echo "ios-artifacts 目录为空"
       
       - name: Upload iOS artifacts
         uses: actions/upload-artifact@v4
