@@ -36,21 +36,42 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
       
-      - name: Build iOS App (Development)
+      - name: Initialize iOS Project
         run: |
           cd src-tauri
-          # 构建开发版本（无签名，用于测试）
-          tauri ios build
+          # 初始化 iOS 项目（创建 Xcode 项目）
+          tauri ios init
       
-      - name: Find IPA files
+      - name: Build iOS App (Unsigned)
         run: |
-          echo "Searching for IPA and APP files..."
-          find src-tauri -name "*.ipa" -o -name "*.app" -type d
+          cd src-tauri
+          # 设置为不签名模式
+          export APPLE_DEVELOPMENT_TEAM="-"
+          export APPLE_SIGNING_IDENTITY="-"
+          # 构建 Release 版本（不打开 Xcode）
+          tauri ios build --open false || true
       
-      - name: Upload iOS Artifacts
+      - name: Package Unsigned IPA
+        run: |
+          cd src-tauri/gen/apple/build/Release-iphoneos
+          # 查找 .app 文件
+          APP_NAME=$(ls -d *.app | head -n 1)
+          if [ -n "$APP_NAME" ]; then
+            echo "Found app: $APP_NAME"
+            # 创建 Payload 目录
+            mkdir -p Payload
+            cp -r "$APP_NAME" Payload/
+            # 打包为 IPA
+            zip -r "${APP_NAME%.app}-unsigned.ipa" Payload
+            mv "${APP_NAME%.app}-unsigned.ipa" ../../../../../
+            echo "IPA created: ${APP_NAME%.app}-unsigned.ipa"
+          else
+            echo "No .app file found"
+            exit 1
+          fi
+      
+      - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-bundle
-          path: |
-            src-tauri/gen/apple/build/Release-iphoneos/*.app
-            src-tauri/gen/apple/*.ipa
+          name: ios-unsigned-ipa
+          path: src-tauri/*-unsigned.ipa
