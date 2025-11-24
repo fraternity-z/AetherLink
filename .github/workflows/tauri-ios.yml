@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
       
       - name: Setup Rust
@@ -119,8 +119,8 @@ jobs:
             if [ -n "$APP_FOUND" ]; then
               echo "✅ 在 DerivedData 中找到 .app: $APP_FOUND"
               # 复制到标准位置
-              mkdir -p src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
-              cp -R "$APP_FOUND" src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
+              mkdir -p src-tauri/gen/apple/build/aetherlink_iOS.xcarchive/Products/Applications/
+              cp -R "$APP_FOUND" src-tauri/gen/apple/build/aetherlink_iOS.xcarchive/Products/Applications/
               exit 0
             fi
             
@@ -135,9 +135,9 @@ jobs:
             APP_PATH=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "AetherLink.app" -type d 2>/dev/null | grep -v Intermediates | head -n 1)
             if [ -n "$APP_PATH" ]; then
               # 复制到标准位置
-              mkdir -p src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
-              cp -R "$APP_PATH" src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
-              APP_PATH="src-tauri/gen/apple/build/App.xcarchive/Products/Applications/AetherLink.app"
+              mkdir -p src-tauri/gen/apple/build/aetherlink_iOS.xcarchive/Products/Applications/
+              cp -R "$APP_PATH" src-tauri/gen/apple/build/aetherlink_iOS.xcarchive/Products/Applications/
+              APP_PATH="src-tauri/gen/apple/build/aetherlink_iOS.xcarchive/Products/Applications/AetherLink.app"
             fi
           fi
           
@@ -154,7 +154,7 @@ jobs:
         run: |
           echo "=== 从 xcarchive 打包无签名 IPA ==="
           
-          APP_PATH="src-tauri/gen/apple/build/App.xcarchive/Products/Applications/AetherLink.app"
+          APP_PATH="src-tauri/gen/apple/build/aetherlink_iOS.xcarchive/Products/Applications/AetherLink.app"
           OUTPUT_DIR="ios-artifacts"
           mkdir -p "$OUTPUT_DIR"
           
@@ -232,4 +232,4 @@ jobs:
           echo "- ⚠️ 该 IPA 为**无签名版本**，仅用于测试/内部分发" >> $GITHUB_STEP_SUMMARY
           echo "- 🔧 安装方式：AltStore、SideStore、爱思助手、PP助手等" >> $GITHUB_STEP_SUMMARY
           echo "- 🚫 **无法**通过 App Store 或 TestFlight 安装" >> $GITHUB_STEP_SUMMARY
-          echo "- 📲 支持设备：iOS 13.0+" >> $GITHUB_STEP_SUMMARY
+          echo "- 📲 支持设备：iOS 14.0+" >> $GITHUB_STEP_SUMMARY
