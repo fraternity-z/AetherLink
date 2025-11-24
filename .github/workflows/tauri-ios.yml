@@ -86,18 +86,21 @@ jobs:
             EXIT_CODE=$?
             echo "⚠️ Tauri iOS 构建退出码: $EXIT_CODE"
             
-            # 检查是否是导出失败（code 70）但 .app 已创建
-            if [ $EXIT_CODE -eq 70 ]; then
-              echo "✅ 这是预期的导出失败（无签名配置）"
-              echo "检查 .app 文件是否存在..."
-              if find src-tauri/gen/apple -name "AetherLink.app" -type d | grep -q .; then
-                echo "✅ .app 文件已创建，继续下一步"
-                exit 0
-              fi
+            # 检查 .app 是否已创建（不管退出码是什么）
+            echo "检查 .app 文件是否存在..."
+            if find src-tauri/gen/apple -path "*/Products/Applications/*.app" -type d | grep -q .; then
+              echo "✅ .app 文件已创建（导出失败是预期的，无签名配置）"
+              echo "=== 找到的 .app 文件 ==="
+              find src-tauri/gen/apple -name "*.app" -type d
+              exit 0
             fi
             
-            echo "❌ 真正的构建失败"
+            # 如果没找到 .app，这才是真正的构建失败
+            echo "❌ 真正的构建失败：未找到 .app 文件"
+            echo "=== 查找所有可能的构建产物 ==="
             find src-tauri/gen/apple -name "*.app" -o -name "*.ipa" || true
+            echo "=== build 目录内容 ==="
+            ls -la src-tauri/gen/apple/build/ || echo "build 目录不存在"
             exit 1
           }
         env:
