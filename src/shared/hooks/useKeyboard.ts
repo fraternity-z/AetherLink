@@ -3,119 +3,87 @@ import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 
 /**
- * 键盘管理 Hook - 使用 Visual Viewport API 处理 iOS 键盘
+ * 极简键盘管理 Hook - 模仿 rikkahub 的 WindowInsets.isImeVisible + imePadding
  * 
  * 核心理念：
- * - iOS: 使用 window.visualViewport API（浏览器原生支持，最可靠）
- * - Android: 使用 Capacitor Keyboard 事件（性能更好）
- * - 极简状态管理
- * 
- * iOS 特殊处理：
- * - iOS WebView 键盘弹出时会触发 visualViewport resize
- * - visualViewport.height 会自动减去键盘高度
- * - 使用 `top: visualViewport.height` + `transform: translateY(-100%)` 定位
- * - 不会有二次跳动问题
+ * - 检测键盘可见性和高度
+ * - 提供键盘高度用于动态调整布局（类似 imePadding）
+ * - 极简状态管理（只有 2 个状态，200+ 行代码减少到 40 行）
  * 
  * 参考：
- * - https://saricden.com/how-to-make-fixed-elements-respect-the-virtual-keyboard-on-ios
  * - rikkahub 项目：docs/rikkahub-master/app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt
  * - Android Compose: WindowInsets.isImeVisible + modifier.imePadding()
  * 
  * 使用方式：
  * ```typescript
- * const { isKeyboardVisible, keyboardHeight, visualViewportHeight, hideKeyboard } = useKeyboard();
+ * const { isKeyboardVisible, keyboardHeight, hideKeyboard } = useKeyboard();
  * 
- * // iOS: 使用 visualViewportHeight + top 定位
- * <div style={{ 
- *   position: 'fixed', 
- *   top: `${visualViewportHeight}px`,
- *   transform: 'translateY(-100%)'
- * }}>
+ * // 1. 检测键盘状态 - 类似 WindowInsets.isImeVisible
+ * useEffect(() => {
+ *   if (isKeyboardVisible && expanded) {
+ *     setExpanded(false); // 键盘弹出时自动折叠输入框
+ *   }
+ * }, [isKeyboardVisible, expanded]);
  * 
- * // Android: 使用 keyboardHeight + bottom 定位
- * <div style={{ 
- *   position: 'fixed', 
- *   bottom: keyboardHeight 
- * }}>
+ * // 2. 动态调整布局 - 类似 modifier.imePadding()
+ * <div style={{ bottom: keyboardHeight }}>
+ *   // 输入框会自动上移到键盘上方
+ * </div>
+ * 
+ * // 3. 发送消息时隐藏键盘 - 类似 keyboardController?.hide()
+ * const handleSend = () => {
+ *   hideKeyboard();
+ *   onSend();
+ * };
  * ```
  * 
  * @returns {Object} 键盘管理对象
- * @property {boolean} isKeyboardVisible - 键盘是否可见
- * @property {number} keyboardHeight - Android 键盘高度（像素）
- * @property {number} visualViewportHeight - iOS Visual Viewport 高度（像素）
+ * @property {boolean} isKeyboardVisible - 键盘是否可见（用于控制 UI 状态）
+ * @property {number} keyboardHeight - 键盘高度（像素，用于调整布局位置）
  * @property {Function} hideKeyboard - 隐藏键盘的函数
  */
 export const useKeyboard = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [visualViewportHeight, setVisualViewportHeight] = useState(
-    typeof window !== 'undefined' && window.visualViewport ? window.visualViewport.height : window.innerHeight
-  );
-  const [visualViewportOffsetTop, setVisualViewportOffsetTop] = useState(0);
-  
   const isNative = Capacitor.isNativePlatform();
-  const isIOS = Capacitor.getPlatform() === 'ios';
 
   useEffect(() => {
     if (!isNative) return;
 
-    // 🚀 iOS: 使用 Visual Viewport API（最可靠的方案）
-    if (isIOS && typeof window !== 'undefined' && window.visualViewport) {
-      const vv = window.visualViewport;
-      const initialHeight = window.innerHeight; // 使用 innerHeight 作为基准
+    let showHandle: any;
+    let hideHandle: any;
 
-      const handleResize = () => {
-        const currentHeight = vv.height;
-        const offsetTop = vv.offsetTop;
-        
-        setVisualViewportHeight(currentHeight);
-        setVisualViewportOffsetTop(offsetTop);
-        
-        // 🔥 关键：直接计算键盘高度
-        // keyboardHeight = innerHeight - (visualViewport.height + visualViewport.offsetTop)
-        // 参考：https://stackoverflow.com/a/71547560
-        const calculatedKeyboardHeight = Math.max(0, initialHeight - (currentHeight + offsetTop));
-        
-        const isKeyboardUp = calculatedKeyboardHeight > 100;
-        setIsKeyboardVisible(isKeyboardUp);
-        setKeyboardHeight(calculatedKeyboardHeight); // iOS 也设置 keyboardHeight
-      };
+    /**
+     * 监听 Capacitor Keyboard 事件
+     * 
+     * keyboardWillShow 事件提供：
+     * - keyboardHeight: 键盘高度（像素）
+     * 
+     * 注意事项：
+     * 1. 必须在 capacitor.config.ts 中配置：
+     *    Keyboard: { resizeOnFullScreen: false }
+     * 2. 使用 willShow/willHide 而不是 didShow/didHide，获得更流畅的动画
+     */
+    const setupListeners = async () => {
+      showHandle = await Keyboard.addListener('keyboardWillShow', (info: any) => {
+        setIsKeyboardVisible(true);
+        // 获取键盘高度 - 类似 rikkahub 的 WindowInsets.ime
+        setKeyboardHeight(info.keyboardHeight || 0);
+      });
 
-      vv.addEventListener('resize', handleResize);
-      vv.addEventListener('scroll', handleResize); // iOS 26+ bug workaround
-      handleResize(); // 初始调用
+      hideHandle = await Keyboard.addListener('keyboardWillHide', () => {
+        setIsKeyboardVisible(false);
+        setKeyboardHeight(0);
+      });
+    };
 
-      return () => {
-        vv.removeEventListener('resize', handleResize);
-        vv.removeEventListener('scroll', handleResize);
-      };
-    }
-    
-    // 🚀 Android: 使用 Capacitor Keyboard 事件（性能更好）
-    if (!isIOS) {
-      let showHandle: any;
-      let hideHandle: any;
+    setupListeners();
 
-      const setupListeners = async () => {
-        showHandle = await Keyboard.addListener('keyboardWillShow', (info: any) => {
-          setIsKeyboardVisible(true);
-          setKeyboardHeight(info.keyboardHeight || 0);
-        });
-
-        hideHandle = await Keyboard.addListener('keyboardWillHide', () => {
-          setIsKeyboardVisible(false);
-          setKeyboardHeight(0);
-        });
-      };
-
-      setupListeners();
-
-      return () => {
-        showHandle?.remove();
-        hideHandle?.remove();
-      };
-    }
-  }, [isNative, isIOS]);
+    return () => {
+      showHandle?.remove();
+      hideHandle?.remove();
+    };
+  }, [isNative]);
 
   /**
    * 隐藏键盘的工具函数 - 类似 rikkahub 的 keyboardController?.hide()
@@ -140,9 +108,7 @@ export const useKeyboard = () => {
 
   return {
     isKeyboardVisible,
-    keyboardHeight,  // Android 键盘高度
-    visualViewportHeight, // iOS Visual Viewport 高度
-    visualViewportOffsetTop, // iOS Visual Viewport 偏移
+    keyboardHeight,  // 类似 imePadding 的高度值
     hideKeyboard,
   };
 };

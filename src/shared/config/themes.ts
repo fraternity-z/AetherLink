@@ -2,7 +2,6 @@ import { createTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { getFontFamilyString } from './fonts';
 import { cssVar } from '../utils/cssVariables';
-import { Capacitor } from '@capacitor/core';
 
 // 主题风格类型
 export type ThemeStyle = 'default' | 'claude' | 'nature' | 'tech' | 'soft' | 'ocean' | 'sunset' | 'cinnamonSlate' | 'horizonGreen' | 'cherryCoded';
@@ -488,9 +487,9 @@ export const createCustomTheme = (
             ...(themeStyle !== 'default' && {
               opacity: 0.95,
             }),
-            // 🚀 全局适配状态栏安全区域：只在移动端（iOS/Android）添加顶部间距
+            // 🚀 全局适配状态栏安全区域：固定定位的 AppBar 自动添加 25px 顶部间距
             '&.MuiAppBar-positionFixed': {
-              paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+              paddingTop: '25px',
             },
           },
         },

@@ -17,9 +17,7 @@ const config: CapacitorConfig = {
     scheme: 'AetherLink',
     webContentsDebuggingEnabled: true,
     allowsLinkPreview: false,
-    handleApplicationNotifications: false,
-    // 🚀 修复 iOS 键盘二次弹起问题
-    contentInset: 'never', // 禁用自动内容插入，防止 iOS 自动调整布局
+    handleApplicationNotifications: false
   },
   server: {
     androidScheme: 'https',  // 保持https以避免数据丢失

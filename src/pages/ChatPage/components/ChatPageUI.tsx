@@ -3,7 +3,6 @@ import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
 import { Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
-import { Capacitor } from '@capacitor/core';
 
 import MessageList from '../../../components/message/MessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../../components/input';
@@ -186,8 +185,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
 
-  // 键盘管理 - iOS 和 Android 都使用 keyboardHeight（统一处理）
-  const { keyboardHeight, isKeyboardVisible } = useKeyboard();
+  // 键盘管理 - 获取键盘高度用于调整输入框位置（模仿 rikkahub 的 imePadding）
+  const { keyboardHeight } = useKeyboard();
 
   // 稳定化的回调函数，避免重复渲染 - 使用函数式更新
   const handleToggleDrawer = useCallback(() => {
@@ -591,17 +590,15 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       style={{
         position: 'fixed',
         /**
-         * 🚀 统一键盘处理 - iOS 和 Android 都使用 bottom 定位
+         * 键盘管理 - 模仿 rikkahub 的 imePadding() 修饰符
          * 
-         * iOS：
-         * - 通过 Visual Viewport API 计算键盘高度
-         * - keyboardHeight = innerHeight - (visualViewport.height + visualViewport.offsetTop)
-         * - 参考：https://stackoverflow.com/a/71547560
+         * 原理：
+         * - keyboardHeight 由 useKeyboard hook 提供，监听 Capacitor Keyboard 事件获取键盘实际高度
+         * - 键盘弹出时（keyboardHeight > 0）：bottom = 键盘高度，输入框自动上移到键盘上方
+         * - 键盘隐藏时（keyboardHeight = 0）：bottom = 0，输入框回到底部
          * 
-         * Android：
-         * - 通过 Capacitor Keyboard 事件获取键盘高度
-         * 
-         * 统一使用 bottom 定位，简单可靠
+         * 参考：docs/rikkahub-master/app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt
+         * rikkahub 使用：Column(modifier.imePadding()) 自动处理键盘间距
          */
         bottom: keyboardHeight,
         right: 0,
@@ -613,18 +610,30 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         flexDirection: 'column',
         gap: 0,
         /**
-         * 🚀 关键修复：iOS safe-area-inset-bottom 不会在键盘弹出时更新
+         * 安全区域处理 - 动态切换 paddingBottom
          * 
-         * 问题：env(safe-area-inset-bottom) 在键盘可见时仍然返回底部安全区域值（如 34px）
-         * 导致输入框和键盘之间有间距
+         * 重要：避免双重间距问题！
          * 
-         * 解决方案：键盘弹出时强制设为 0，完全忽略 safe-area-inset-bottom
-         * 参考：https://webventures.rejh.nl/blog/2025/safe-area-inset-bottom-does-not-update/
+         * 场景 1 - 键盘隐藏时（keyboardHeight = 0）：
+         *   bottom: 0
+         *   paddingBottom: env(safe-area-inset-bottom) // 需要安全区域，防止被 Home Indicator 遮挡
+         * 
+         * 场景 2 - 键盘弹出时（keyboardHeight > 0）：
+         *   bottom: keyboardHeight (例如 336px)
+         *   paddingBottom: 0 // ❌ 不能有额外 padding！否则输入框和键盘之间会有很大间隔
+         * 
+         * 错误示例（会导致双重间距）：
+         *   bottom: 336px
+         *   paddingBottom: 34px
+         *   结果：输入框离键盘 34px，中间有明显空隙 ❌
+         * 
+         * 正确做法：
+         *   bottom: 336px
+         *   paddingBottom: 0
+         *   结果：输入框紧贴键盘 ✅
          */
-        paddingBottom: isKeyboardVisible 
-          ? '0' // 🔥 键盘弹出：强制为 0，忽略 safe-area-inset-bottom
-          : 'max(env(safe-area-inset-bottom, 0px), 8px)', // 键盘隐藏：使用安全区域
-        transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out'
+        paddingBottom: keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 8px)',
+        transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // 平滑动画
       }}
     >
       {shouldShowToolbar && (
@@ -663,8 +672,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     shouldShowToolbar,
     inputComponent,
     isMobile,
-    keyboardHeight, // iOS 和 Android 统一的键盘高度
-    isKeyboardVisible, // 键盘可见性
+    keyboardHeight, // 键盘高度变化时重新渲染
     // 添加这些依赖确保工具栏状态变化时正确更新
     handleClearTopic,
     imageGenerationMode,
@@ -771,8 +779,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           className="status-bar-safe-area"
           sx={{
             ...baseStyles.appBar,
-            // 🚀 安全区域只在移动端应用
-            paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+            paddingTop: '25px',
             // 强制移除所有可能的阴影和边框
             boxShadow: 'none',
             backgroundImage: 'none',

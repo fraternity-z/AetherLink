@@ -12,7 +12,6 @@ import {
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { Capacitor } from '@capacitor/core';
 
 // SafeAreaContainer - 安全区域容器
 export const SafeAreaContainer = styled(Box)(({ theme }) => ({
@@ -70,8 +69,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        // 🚀 安全区域只在移动端应用
-        paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+        paddingTop: '25px',
         backdropFilter: 'blur(8px)', // 统一UI风格：添加模糊效果
       }}
     >
