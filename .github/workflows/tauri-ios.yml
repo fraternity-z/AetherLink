@@ -75,20 +75,45 @@ jobs:
         run: |
           cd src-tauri/gen/apple
           
+          # 创建构建目录
+          mkdir -p build
+          
+          # 列出可用的 schemes
+          echo "=== 可用的 Schemes ==="
+          xcodebuild -project aetherlink.xcodeproj -list
+          
           # 确保使用 Release 配置构建
+          set -eo pipefail  # 遇到错误立即退出，管道也检查错误
+          
           xcodebuild archive \
             -project aetherlink.xcodeproj \
             -scheme aetherlink_iOS \
             -configuration release \
             -archivePath ./build/App.xcarchive \
-            -destination generic/platform=iOS \
+            -destination 'generic/platform=iOS' \
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE="" \
             DEVELOPMENT_TEAM="" \
             GCC_PREPROCESSOR_DEFINITIONS="" \
-            | tee build.log
+            2>&1 | tee build.log || {
+              echo "❌ xcodebuild 构建失败"
+              echo "=== 构建日志尾部 ==="
+              tail -200 build.log
+              exit 1
+            }
+          
+          echo "✅ xcodebuild 构建成功"
+          
+          # 验证 archive 已创建
+          if [ ! -d "./build/App.xcarchive" ]; then
+            echo "❌ 警告：构建完成但 archive 不存在"
+            ls -la ./build/
+            exit 1
+          fi
+          
+          echo "✅ Archive 已创建"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
