@@ -25,14 +25,14 @@
 }
 
 /* 只适配顶部安全区域 (常用于AppBar) */
-/* 注意：安全区域的 paddingTop 已通过 JavaScript 动态设置（仅移动端，iOS: 30px），CSS 不再需要 */
+/* 注意：安全区域的 paddingTop 已通过 JavaScript 动态设置（仅移动端），CSS 不再需要 */
 /* .safe-area-top,
 .status-bar-safe-area {
-  padding-top: 30px;
+  padding-top: 25px;
   background-clip: padding-box;
 } */
 
-/* 注意：MUI AppBar 的状态栏适配已在以下位置动态配置（仅移动端，iOS: 30px）：
+/* 注意：MUI AppBar 的状态栏适配已在以下位置动态配置（仅移动端）：
    - ChatPageUI.tsx: AppBar 的 sx.paddingTop
    - SettingComponents.tsx: HeaderBar 的 sx.paddingTop
    - themes.ts: MuiAppBar.styleOverrides 全局配置

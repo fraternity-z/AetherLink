@@ -488,9 +488,9 @@ export const createCustomTheme = (
             ...(themeStyle !== 'default' && {
               opacity: 0.95,
             }),
-            // 🚀 全局适配状态栏安全区域：只在移动端（iOS/Android）添加顶部间距（iOS: 30px）
+            // 🚀 全局适配状态栏安全区域：只在移动端（iOS/Android）添加顶部间距
             '&.MuiAppBar-positionFixed': {
-              paddingTop: Capacitor.isNativePlatform() ? '30px' : '0px',
+              paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
             },
           },
         },

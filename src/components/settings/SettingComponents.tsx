@@ -70,8 +70,8 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        // 🚀 安全区域只在移动端应用（iOS: 30px）
-        paddingTop: Capacitor.isNativePlatform() ? '30px' : '0px',
+        // 🚀 安全区域只在移动端应用
+        paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
         backdropFilter: 'blur(8px)', // 统一UI风格：添加模糊效果
       }}
     >
