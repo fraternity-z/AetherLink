@@ -144,7 +144,7 @@
     "buffer": "6.0.3",
     "capacitor-advanced-file-manager": "^0.1.5",
     "capacitor-cors-bypass-enhanced": "^1.1.2",
-    "capacitor-edge-to-edge": "^1.1.0",
+    "capacitor-edge-to-edge": "^1.1.1",
     "chart.js": "^4.4.9",
     "cheerio": "^1.1.0",
     "codemirror": "^6.0.1",

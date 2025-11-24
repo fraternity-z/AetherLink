@@ -66,4 +66,4 @@ include ':capacitor-cors-bypass-enhanced'
 project(':capacitor-cors-bypass-enhanced').projectDir = new File('../node_modules/capacitor-cors-bypass-enhanced/android')
 
 include ':capacitor-edge-to-edge'
-project(':capacitor-edge-to-edge').projectDir = new File('../../capacitor-edge-to-edge/capacitor-edge-to-edge/android')
+project(':capacitor-edge-to-edge').projectDir = new File('../node_modules/capacitor-edge-to-edge/android')
