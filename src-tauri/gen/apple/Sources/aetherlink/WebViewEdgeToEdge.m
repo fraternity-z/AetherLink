@@ -3,13 +3,46 @@
 #import <objc/runtime.h>
 
 /**
- * iOS 沉浸式 (Edge-to-Edge) - 学习 Capacitor 的实现方式
+ * iOS 沉浸式 (Edge-to-Edge) - 真正的全屏实现
  * 
- * Capacitor 的秘密: WebView 直接是 ViewController 的 view
- * 而不是添加到 view 上再用 SafeArea 约束
- * 
- * 参考: CAPBridgeViewController.swift - view = webView
+ * 关键：
+ * 1. UIViewController.edgesForExtendedLayout = UIRectEdgeAll
+ * 2. UIViewController.extendedLayoutIncludesOpaqueBars = YES
+ * 3. WebView 约束到 superview 边缘（不是 safeAreaLayoutGuide）
  */
+
+#pragma mark - UIViewController 扩展 (关键！)
+
+@implementation UIViewController (EdgeToEdge)
+
++ (void)load {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        Method original = class_getInstanceMethod(self, @selector(viewDidLoad));
+        Method swizzled = class_getInstanceMethod(self, @selector(e2e_viewDidLoad));
+        method_exchangeImplementations(original, swizzled);
+    });
+}
+
+- (void)e2e_viewDidLoad {
+    [self e2e_viewDidLoad];
+    
+    // 关键！让视图延伸到所有边缘（包括状态栏和 Home 指示器区域）
+    self.edgesForExtendedLayout = UIRectEdgeAll;
+    self.extendedLayoutIncludesOpaqueBars = YES;
+    
+    // iOS 11+ 禁用自动调整滚动视图内边距
+    if (@available(iOS 11.0, *)) {
+        // 遍历所有子视图，禁用 contentInsetAdjustmentBehavior
+        for (UIView *subview in self.view.subviews) {
+            if ([subview isKindOfClass:[UIScrollView class]]) {
+                ((UIScrollView *)subview).contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+            }
+        }
+    }
+}
+
+@end
 
 #pragma mark - WKWebView 扩展
 
@@ -29,14 +62,13 @@
     
     if (!self.superview) return;
     
-    // 1. WebView 配置 (学习 Capacitor)
+    // WebView 配置
     self.opaque = NO;
     self.backgroundColor = UIColor.clearColor;
     self.scrollView.backgroundColor = UIColor.clearColor;
-    self.scrollView.bounces = NO;  // Capacitor 默认禁用弹跳
+    self.scrollView.bounces = NO;
     
     if (@available(iOS 11.0, *)) {
-        // 关键！Capacitor 使用 .never 让 WebView 全屏
         self.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     }
     
@@ -50,13 +82,22 @@
     UIView *superview = self.superview;
     if (!superview) return;
     
-    // 2. 移除所有现有约束
+    // 确保 ViewController 设置正确
+    UIViewController *vc = [self findViewController];
+    if (vc) {
+        vc.edgesForExtendedLayout = UIRectEdgeAll;
+        vc.extendedLayoutIncludesOpaqueBars = YES;
+    }
+    
+    // 移除所有现有约束
     [self removeAllConstraints];
     
-    // 3. 设置 WebView frame 为全屏 (学习 Capacitor: view = webView)
-    self.translatesAutoresizingMaskIntoConstraints = NO;
+    // 方法1：直接设置 frame 为全屏
+    self.frame = superview.bounds;
+    self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     
-    // 关键：约束到 superview 的边缘，而不是 safeAreaLayoutGuide
+    // 方法2：约束到 superview 边缘（备用）
+    self.translatesAutoresizingMaskIntoConstraints = NO;
     [NSLayoutConstraint activateConstraints:@[
         [self.topAnchor constraintEqualToAnchor:superview.topAnchor],
         [self.leadingAnchor constraintEqualToAnchor:superview.leadingAnchor],
@@ -64,18 +105,34 @@
         [self.bottomAnchor constraintEqualToAnchor:superview.bottomAnchor]
     ]];
     
-    // 4. 设置背景色 (支持深色模式)
+    // 设置背景色
     [self setupBackgroundColors];
 }
 
+- (UIViewController *)findViewController {
+    UIResponder *responder = self;
+    while (responder) {
+        if ([responder isKindOfClass:[UIViewController class]]) {
+            return (UIViewController *)responder;
+        }
+        responder = [responder nextResponder];
+    }
+    return nil;
+}
+
 - (void)removeAllConstraints {
-    // 移除所有与此 WebView 相关的约束
     NSMutableArray *constraintsToRemove = [NSMutableArray array];
     
+    // 移除 superview 中与 WebView 相关的约束
     for (NSLayoutConstraint *constraint in self.superview.constraints) {
         if (constraint.firstItem == self || constraint.secondItem == self) {
             [constraintsToRemove addObject:constraint];
         }
+    }
+    
+    // 也移除 WebView 自身的约束
+    for (NSLayoutConstraint *constraint in self.constraints) {
+        [constraintsToRemove addObject:constraint];
     }
     
     [NSLayoutConstraint deactivateConstraints:constraintsToRemove];
@@ -93,7 +150,6 @@
         bgColor = [UIColor colorWithRed:248/255.0 green:250/255.0 blue:252/255.0 alpha:1];
     }
     
-    // 设置窗口和根视图背景色
     UIWindow *window = self.window;
     if (window) {
         window.backgroundColor = bgColor;
