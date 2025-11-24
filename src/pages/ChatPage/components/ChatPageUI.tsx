@@ -632,7 +632,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
          *   paddingBottom: 0
          *   结果：输入框紧贴键盘 ✅
          */
-        paddingBottom: keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 8px)',
+        paddingBottom: keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 48px)',
         transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // 平滑动画
       }}
     >

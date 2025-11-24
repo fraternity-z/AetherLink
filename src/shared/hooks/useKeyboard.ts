@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Keyboard } from '@capacitor/keyboard';
+import { EdgeToEdge } from 'capacitor-edge-to-edge';
 import { Capacitor } from '@capacitor/core';
 
 /**
@@ -13,6 +13,7 @@ import { Capacitor } from '@capacitor/core';
  * 参考：
  * - rikkahub 项目：docs/rikkahub-master/app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt
  * - Android Compose: WindowInsets.isImeVisible + modifier.imePadding()
+ * - 官方 Capacitor Keyboard 实现（已整合到 capacitor-edge-to-edge）
  * 
  * 使用方式：
  * ```typescript
@@ -39,7 +40,7 @@ import { Capacitor } from '@capacitor/core';
  * 
  * @returns {Object} 键盘管理对象
  * @property {boolean} isKeyboardVisible - 键盘是否可见（用于控制 UI 状态）
- * @property {number} keyboardHeight - 键盘高度（像素，用于调整布局位置）
+ * @property {number} keyboardHeight - 键盘高度（Android: DP，iOS: 像素）
  * @property {Function} hideKeyboard - 隐藏键盘的函数
  */
 export const useKeyboard = () => {
@@ -54,24 +55,24 @@ export const useKeyboard = () => {
     let hideHandle: any;
 
     /**
-     * 监听 Capacitor Keyboard 事件
+     * 监听 EdgeToEdge Keyboard 事件（整合自官方 Capacitor Keyboard）
      * 
      * keyboardWillShow 事件提供：
-     * - keyboardHeight: 键盘高度（像素）
+     * - keyboardHeight: 键盘高度（Android: DP，iOS: 像素）
      * 
      * 注意事项：
-     * 1. 必须在 capacitor.config.ts 中配置：
-     *    Keyboard: { resizeOnFullScreen: false }
-     * 2. 使用 willShow/willHide 而不是 didShow/didHide，获得更流畅的动画
+     * 1. Android 返回 DP 单位（跨设备一致）
+     * 2. iOS 返回完整键盘高度（包含 safe area）
+     * 3. 使用 willShow/willHide 获得更流畅的动画
      */
     const setupListeners = async () => {
-      showHandle = await Keyboard.addListener('keyboardWillShow', (info: any) => {
+      showHandle = await EdgeToEdge.addListener('keyboardWillShow', (info: any) => {
         setIsKeyboardVisible(true);
         // 获取键盘高度 - 类似 rikkahub 的 WindowInsets.ime
         setKeyboardHeight(info.keyboardHeight || 0);
       });
 
-      hideHandle = await Keyboard.addListener('keyboardWillHide', () => {
+      hideHandle = await EdgeToEdge.addListener('keyboardWillHide', () => {
         setIsKeyboardVisible(false);
         setKeyboardHeight(0);
       });
@@ -102,7 +103,8 @@ export const useKeyboard = () => {
    */
   const hideKeyboard = () => {
     if (isNative) {
-      Keyboard.hide();
+      // 使用 EdgeToEdge 的原生 hide() 方法
+      EdgeToEdge.hide();
     }
   };
 

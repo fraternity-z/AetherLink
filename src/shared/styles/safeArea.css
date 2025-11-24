@@ -60,9 +60,9 @@
 /* 确保至少有基础 padding */
 @supports (padding: max(0px)) {
   .chat-input-container {
-    /* 底部 padding 至少要有导航栏高度，如果没有导航栏则为 8px */
+    /* 底部 padding 至少要有导航栏高度，如果没有导航栏则为 48px */
     /* 注意：在 Android 上 env(safe-area-inset-bottom) 可能包含导航栏高度 */
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 48px);
   }
 }
 

@@ -389,11 +389,6 @@
   resolved "https://registry.npmjs.org/@capacitor/ios/-/ios-7.4.4.tgz"
   integrity sha512-Xp3bGWlSQAwsZGngRMWTdoD2agdMV12Whnm+/xsYPxfQSj+Tksbr7r/8Mso7VWkpnTKO4iMlx762g3PjW+wi4w==
 
-"@capacitor/keyboard@^7.0.3":
-  version "7.0.3"
-  resolved "https://registry.npmjs.org/@capacitor/keyboard/-/keyboard-7.0.3.tgz"
-  integrity sha512-BIBKjmky5rOYNhvYhNeDi0MMvjwYZ6YF9JoCYcGKvKY+XLJKtezsEL78XfOlgWZBkbfR8uq3tzktY6PqgoYLKA==
-
 "@capacitor/local-notifications@^7.0.3":
   version "7.0.3"
   resolved "https://registry.npmjs.org/@capacitor/local-notifications/-/local-notifications-7.0.3.tgz"
@@ -4125,10 +4120,10 @@ capacitor-cors-bypass-enhanced@^1.1.2:
   dependencies:
     "@modelcontextprotocol/sdk" "^1.12.1"
 
-capacitor-edge-to-edge@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.npmjs.org/capacitor-edge-to-edge/-/capacitor-edge-to-edge-1.2.1.tgz"
-  integrity sha512-8jZa1MFt2OuD1S7VRvEIZOFXiEWLT0bX4Q57I3jQPzVbOj2okyqvp7qe1+782Car9LZg3EshANxs5fRaEH6SNQ==
+capacitor-edge-to-edge@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.npmjs.org/capacitor-edge-to-edge/-/capacitor-edge-to-edge-1.6.0.tgz"
+  integrity sha512-Y1BP9mNXPxxzn2aC337sFhrfTlcuTVEQkdo9gWn4pdNurv7SmkdEWWlDa8WCSMS/IADNQHlHZ8jbddcWs4Rlgw==
 
 caseless@~0.12.0:
   version "0.12.0"
