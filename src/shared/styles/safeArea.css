@@ -27,7 +27,7 @@
 /* 只适配顶部安全区域 (常用于AppBar) */
 .safe-area-top,
 .status-bar-safe-area {
-  padding-top: 25px;
+  padding-top: 30px;
   background-clip: padding-box;
 }
 
@@ -60,9 +60,9 @@
 /* 确保至少有基础 padding */
 @supports (padding: max(0px)) {
   .chat-input-container {
-    /* 底部 padding 至少要有导航栏高度，如果没有导航栏则为 48px */
+    /* 底部 padding 至少要有导航栏高度，iOS 安全区域为 34px */
     /* 注意：在 Android 上 env(safe-area-inset-bottom) 可能包含导航栏高度 */
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 48px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 34px);
   }
 }
 

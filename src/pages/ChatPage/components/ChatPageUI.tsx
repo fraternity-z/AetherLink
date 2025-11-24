@@ -779,7 +779,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           className="status-bar-safe-area"
           sx={{
             ...baseStyles.appBar,
-            paddingTop: '25px',
+            // paddingTop 由 themes.ts 全局配置
             // 强制移除所有可能的阴影和边框
             boxShadow: 'none',
             backgroundImage: 'none',

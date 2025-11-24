@@ -80,12 +80,14 @@ const DevToolsPage: React.FC = () => {
       <AppBar 
         position="static" 
         elevation={0}
+        className="status-bar-safe-area"
         sx={{
           bgcolor: theme.palette.mode === 'dark' 
             ? alpha(theme.palette.background.paper, 0.8)
             : theme.palette.background.paper,
           borderBottom: `1px solid ${theme.palette.divider}`,
           backdropFilter: 'blur(8px)',
+          // paddingTop 由 themes.ts 全局配置
         }}
       >
         <Toolbar variant={isMobile ? 'dense' : 'regular'} sx={{ gap: 1 }}>
@@ -215,7 +217,12 @@ const DevToolsPage: React.FC = () => {
       </Paper>
 
       {/* 主内容区域 */}
-      <Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        overflow: 'hidden', 
+        position: 'relative',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}>
         {tabValue === 0 && <ConsolePanel autoScroll={autoScroll} />}
         {tabValue === 1 && <NetworkPanel />}
       </Box>

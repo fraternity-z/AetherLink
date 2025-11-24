@@ -487,9 +487,9 @@ export const createCustomTheme = (
             ...(themeStyle !== 'default' && {
               opacity: 0.95,
             }),
-            // 🚀 全局适配状态栏安全区域：固定定位的 AppBar 自动添加 25px 顶部间距
-            '&.MuiAppBar-positionFixed': {
-              paddingTop: '25px',
+            // 🚀 全局适配状态栏安全区域：所有 AppBar 自动添加 30px 顶部间距
+            '&.MuiAppBar-positionFixed, &.MuiAppBar-positionStatic, &.MuiAppBar-positionAbsolute': {
+              paddingTop: '30px',
             },
           },
         },

@@ -69,7 +69,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        paddingTop: '25px',
+        // paddingTop 由 themes.ts 全局配置
         backdropFilter: 'blur(8px)', // 统一UI风格：添加模糊效果
       }}
     >
