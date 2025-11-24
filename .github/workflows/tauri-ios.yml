@@ -113,12 +113,24 @@ jobs:
           echo "Code signing settings:"
           echo "  CODE_SIGNING_ALLOWED=$CODE_SIGNING_ALLOWED"
           echo "  CODE_SIGNING_REQUIRED=$CODE_SIGNING_REQUIRED"
-          tauri ios build --export-method debugging || {
+          
+          # 启用详细输出以查看 Rust 编译错误
+          tauri ios build --export-method debugging --verbose 2>&1 | tee build.log || {
+            echo ""
             echo "❌ Tauri iOS build failed!"
-            echo "Checking for error logs..."
+            echo ""
+            echo "=== Last 100 lines of build output ==="
+            tail -n 100 build.log || true
+            echo ""
+            echo "=== Checking for Rust build errors ==="
+            if [ -d "target" ]; then
+              echo "Rust target directory exists"
+              find target -name "*.log" -exec echo "Found log: {}" \; -exec tail -n 50 {} \; || true
+            fi
+            echo ""
+            echo "=== Checking Xcode build logs ==="
             if [ -d "gen/apple" ]; then
-              echo "=== Apple directory contents ==="
-              find gen/apple -type f -name "*.log" -exec echo "Found log: {}" \; -exec cat {} \;
+              find gen/apple -type f -name "*.log" -exec echo "Found log: {}" \; -exec tail -n 50 {} \; || true
             fi
             exit 1
           }

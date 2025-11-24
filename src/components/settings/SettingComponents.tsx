@@ -14,6 +14,8 @@ import { useTheme } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { Capacitor } from '@capacitor/core';
 
+const isIOS = Capacitor.getPlatform() === 'ios';
+
 // SafeAreaContainer - 安全区域容器
 export const SafeAreaContainer = styled(Box)(({ theme }) => ({
   flex: 1,
@@ -70,8 +72,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        // 🚀 安全区域只在移动端应用
-        paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+        // 🚀 安全区域只在移动端应用：iOS 35px，Android 25px
+        paddingTop: Capacitor.isNativePlatform() 
+          ? (isIOS ? '35px' : '25px')
+          : '0px',
         backdropFilter: 'blur(8px)', // 统一UI风格：添加模糊效果
       }}
     >

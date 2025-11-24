@@ -625,12 +625,14 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         flexDirection: 'column',
         gap: 0,
         /**
-         * 安全区域处理 - 只在 Android 需要动态切换
-         * iOS 由 visualViewport 自动处理，不需要额外的 paddingBottom
+         * 安全区域处理 - 动态切换避免间距
+         * 
+         * iOS: visualViewport 已自动减去键盘高度，键盘弹出时不需要 padding
+         * Android: 同样的逻辑，键盘弹出时不需要 padding
          */
         paddingBottom: isIOS 
-          ? '8px' // iOS 固定 padding
-          : (keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 8px)'), // Android 动态切换
+          ? (visualViewportHeight < window.innerHeight - 100 ? '0' : '8px') // iOS: 键盘弹出时为0，否则8px
+          : (keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 8px)'), // Android: 动态切换
         transition: isIOS 
           ? 'top 0.2s ease-out' // iOS 只需过渡 top
           : 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // Android 过渡 bottom 和 padding
@@ -781,8 +783,10 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           className="status-bar-safe-area"
           sx={{
             ...baseStyles.appBar,
-            // 🚀 安全区域只在移动端应用
-            paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+            // 🚀 安全区域只在移动端应用：iOS 35px，Android 25px
+            paddingTop: Capacitor.isNativePlatform() 
+              ? (isIOS ? '35px' : '25px')
+              : '0px',
             // 强制移除所有可能的阴影和边框
             boxShadow: 'none',
             backgroundImage: 'none',
