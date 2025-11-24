@@ -58,107 +58,58 @@ jobs:
             exit 1
           fi
       
-      - name: Disable code signing (for CI build)
+      - name: Build iOS App with Tauri CLI (no signing)
         run: |
-          cd src-tauri/gen/apple
-          # 禁用代码签名
-          /usr/libexec/PlistBuddy -c "Set :objects:PRODUCT_BUNDLE_IDENTIFIER com.aetherlink.app" aetherlink.xcodeproj/project.pbxproj || true
-          
-          # 使用 sed 修改项目文件，禁用代码签名
-          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' aetherlink.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "";/g' aetherlink.xcodeproj/project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = [^;]*;/DEVELOPMENT_TEAM = "";/g' aetherlink.xcodeproj/project.pbxproj
-          
-          echo "✅ 已禁用代码签名"
-      
-      - name: Build iOS App with xcodebuild
-        run: |
-          cd src-tauri/gen/apple
-          
-          # 创建构建目录
-          mkdir -p build
-          
-          # 列出可用的 schemes
-          echo "=== 可用的 Schemes ==="
-          xcodebuild -project aetherlink.xcodeproj -list
-          
-          # 确保使用 Release 配置构建
-          set -eo pipefail  # 遇到错误立即退出，管道也检查错误
-          
-          xcodebuild archive \
-            -project aetherlink.xcodeproj \
-            -scheme aetherlink_iOS \
-            -configuration release \
-            -archivePath ./build/App.xcarchive \
-            -destination 'generic/platform=iOS' \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE="" \
-            DEVELOPMENT_TEAM="" \
-            GCC_PREPROCESSOR_DEFINITIONS="" \
-            2>&1 | tee build.log || {
-              echo "❌ xcodebuild 构建失败"
-              echo "=== 构建日志尾部 ==="
-              tail -200 build.log
-              exit 1
-            }
-          
-          echo "✅ xcodebuild 构建成功"
-          
-          # 验证 archive 已创建
-          if [ ! -d "./build/App.xcarchive" ]; then
-            echo "❌ 警告：构建完成但 archive 不存在"
-            ls -la ./build/
+          # 使用 Tauri CLI 构建 iOS，但不打开 Xcode
+          # 这会正确处理 Rust 编译和前端资源打包
+          npm run tauri ios build -- --ci || {
+            echo "❌ Tauri iOS 构建失败"
+            echo "尝试查找构建产物..."
+            find src-tauri/gen/apple -name "*.app" -o -name "*.ipa" || true
             exit 1
-          fi
-          
-          echo "✅ Archive 已创建"
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 禁用代码签名
+          APPLE_DEVELOPMENT_TEAM: ""
+          APPLE_SIGNING_IDENTITY: ""
       
-      - name: Export IPA from archive
+      - name: Find and package IPA
         run: |
-          cd src-tauri/gen/apple
+          echo "=== 查找 IPA 文件 ==="
+          find src-tauri -name "*.ipa" -type f || echo "未找到 IPA 文件"
+          find src-tauri -name "*.app" -type d || echo "未找到 APP 文件"
           
-          # 检查归档是否存在
-          if [ ! -d "./build/App.xcarchive" ]; then
-            echo "❌ Archive 不存在"
-            exit 1
-          fi
-          
-          # 从 archive 中提取 app 并打包成 IPA
-          echo "提取应用..."
-          if [ -d "./build/App.xcarchive/Products/Applications" ]; then
-            mkdir -p ./build/Payload
-            cp -r ./build/App.xcarchive/Products/Applications/*.app ./build/Payload/
-            cd ./build
-            zip -r AetherLink-iOS-unsigned.ipa Payload/
-            echo "✅ IPA 创建成功"
-            ls -lh AetherLink-iOS-unsigned.ipa
-          else
-            echo "❌ 无法在 archive 中找到 app"
-            ls -la ./build/App.xcarchive/
-            exit 1
-          fi
-      
-      - name: Upload IPA artifact
-        run: |
           # 创建输出目录
           mkdir -p ios-artifacts
           
-          # 复制 IPA 文件
-          if [ -f "src-tauri/gen/apple/build/AetherLink-iOS-unsigned.ipa" ]; then
-            cp src-tauri/gen/apple/build/AetherLink-iOS-unsigned.ipa ios-artifacts/
-            echo "✅ IPA 文件已复制"
-          else
-            echo "❌ IPA 文件不存在"
-            exit 1
-          fi
+          # 查找并复制 IPA 文件
+          IPA_FILE=$(find src-tauri/gen/apple -name "*.ipa" -type f | head -n 1)
           
-          # 列出文件
-          echo "=== IPA 文件信息 ==="
-          ls -lh ios-artifacts/
+          if [ -n "$IPA_FILE" ] && [ -f "$IPA_FILE" ]; then
+            echo "✅ 找到 IPA: $IPA_FILE"
+            cp "$IPA_FILE" ios-artifacts/AetherLink-iOS.ipa
+            ls -lh ios-artifacts/AetherLink-iOS.ipa
+          else
+            echo "⚠️ 未找到 IPA，尝试从 .app 创建"
+            APP_FILE=$(find src-tauri/gen/apple -name "*.app" -type d | grep -v "Build/Intermediates" | head -n 1)
+            
+            if [ -n "$APP_FILE" ] && [ -d "$APP_FILE" ]; then
+              echo "✅ 找到 APP: $APP_FILE"
+              mkdir -p ios-artifacts/Payload
+              cp -r "$APP_FILE" ios-artifacts/Payload/
+              cd ios-artifacts
+              zip -r AetherLink-iOS.ipa Payload/
+              rm -rf Payload/
+              echo "✅ IPA 创建成功"
+              ls -lh AetherLink-iOS.ipa
+            else
+              echo "❌ 无法找到 .app 或 .ipa 文件"
+              echo "=== src-tauri/gen/apple 目录结构 ==="
+              ls -R src-tauri/gen/apple/ || true
+              exit 1
+            fi
+          fi
       
       - name: Upload iOS artifacts
         uses: actions/upload-artifact@v4
