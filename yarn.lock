@@ -4120,10 +4120,10 @@ capacitor-cors-bypass-enhanced@^1.1.2:
   dependencies:
     "@modelcontextprotocol/sdk" "^1.12.1"
 
-capacitor-edge-to-edge@^1.6.1:
-  version "1.6.1"
-  resolved "https://registry.npmjs.org/capacitor-edge-to-edge/-/capacitor-edge-to-edge-1.6.1.tgz"
-  integrity sha512-0F6WyNW72Xw1+eyCh4hJoOUIP623oCpNzeL2qTWzq60HU/i9JW06klKmFcE22uTeEnFx0SSE458ZkxAwvgYezg==
+capacitor-edge-to-edge@^1.6.2:
+  version "1.6.2"
+  resolved "https://registry.npmjs.org/capacitor-edge-to-edge/-/capacitor-edge-to-edge-1.6.2.tgz"
+  integrity sha512-g8aEnaR0N2LYXX73iR10NcQ9JRyKe2uCCM6CPrmBzTZMbZJ6mC69/PB9IoBxZahuOac5Ehl5+wWRJbjWGhzC2Q==
 
 caseless@~0.12.0:
   version "0.12.0"
