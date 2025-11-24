@@ -81,7 +81,7 @@ jobs:
         run: |
           echo "=== 构建已签名的 Release APK ==="
           echo "Keystore 路径: $TAURI_SIGNING_STORE_PATH"
-          tauri android build --apk --split-per-abi
+          tauri android build --apk true --split-per-abi
         env:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
           NDK_HOME: ${{ env.NDK_HOME }}
