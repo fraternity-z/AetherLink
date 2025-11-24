@@ -134,6 +134,7 @@ const AppRouter: React.FC = () => {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
+        {/* 🚀 性能优化：首屏路由优先渲染 */}
         <Route path="/" element={isFirstTimeUser ? <Navigate to="/welcome" replace /> : <Navigate to="/chat" replace />} />
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/chat" element={<ChatPage />} />

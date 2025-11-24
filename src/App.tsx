@@ -1,38 +1,38 @@
 
 import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
 import { SnackbarProvider } from 'notistack';
 import { HashRouter } from 'react-router-dom';
 
 import store, { persistor } from './shared/store';
 import KnowledgeProvider from './components/KnowledgeManagement/KnowledgeProvider';
 import AppContent from './components/AppContent';
-import LoadingScreen from './components/LoadingScreen';
 import LoggerService from './shared/services/LoggerService';
 import { loadSettings } from './shared/store/settingsSlice';
 
 // 初始化日志拦截器
 LoggerService.log('INFO', '应用初始化');
 
-// 在应用启动时加载设置
+// 🚀 性能优化：非阻塞式恢复 Redux 状态
+// 在后台恢复状态，不阻塞渲染
+persistor.persist();
+
+// 在应用启动时加载设置（异步）
 store.dispatch(loadSettings());
 
 function App() {
   return (
     <Provider store={store}>
-      <PersistGate loading={<LoadingScreen progress={0} step="正在加载..." isFirstInstall={false} />} persistor={persistor}>
-        <KnowledgeProvider>
-          <SnackbarProvider
-            maxSnack={3}
-            autoHideDuration={3000}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          >
-            <HashRouter>
-              <AppContent />
-            </HashRouter>
-          </SnackbarProvider>
-        </KnowledgeProvider>
-      </PersistGate>
+      <KnowledgeProvider>
+        <SnackbarProvider
+          maxSnack={3}
+          autoHideDuration={3000}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <HashRouter>
+            <AppContent />
+          </HashRouter>
+        </SnackbarProvider>
+      </KnowledgeProvider>
     </Provider>
   );
 }

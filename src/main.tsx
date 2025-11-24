@@ -6,8 +6,8 @@ import App from './App';
 import './index.css';
 import { initStorageService, dexieStorage } from './shared/services/storage/storageService';
 import { initializeServices } from './shared/services';
-// 初始化i18n
-import './i18n/config';
+// 🚀 性能优化：延迟 i18n 初始化，避免阻塞首屏渲染
+// import './i18n/config';
 // 移除旧的系统提示词slice引用
 // import { loadSystemPrompts } from './shared/store/slices/systemPromptsSlice';
 
@@ -128,19 +128,40 @@ async function initializeInBackground() {
     // 等待数据库打开，但不等待其他初始化
     await dbPromise;
 
-    // 其他初始化在后台继续，不阻塞页面渲染
-    Promise.all([
-      cleanupPromise,
-      initStorageService().then(() => console.log('Dexie存储服务初始化成功')),
-      initializeServices().then(() => console.log('所有服务初始化完成'))
-    ]).then(() => {
-      console.log('[App] 后台初始化完成');
-      if (Capacitor.isNativePlatform()) {
-        console.log('移动端：原生层已禁用CORS，直接使用标准fetch');
-      }
-    }).catch(error => {
-      console.error('[ERROR] 后台初始化失败:', error);
-    });
+    // 🚀 性能优化：使用 requestIdleCallback 延迟非关键初始化
+    // 确保主线程尽快可交互
+    const deferredInit = () => {
+      Promise.all([
+        cleanupPromise,
+        initStorageService().then(() => console.log('Dexie存储服务初始化成功')),
+        initializeServices().then(() => console.log('所有服务初始化完成'))
+      ]).then(() => {
+        console.log('[App] 后台初始化完成');
+        if (Capacitor.isNativePlatform()) {
+          console.log('移动端：原生层已禁用CORS，直接使用标准fetch');
+        }
+      }).catch(error => {
+        console.error('[ERROR] 后台初始化失败:', error);
+      });
+    };
+
+    // 使用 requestIdleCallback 或 setTimeout 作为备选
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(deferredInit, { timeout: 2000 });
+    } else {
+      setTimeout(deferredInit, 100);
+    }
+
+    // 🚀 性能优化：延迟加载 i18n 配置
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        import('./i18n/config').then(() => console.log('[App] i18n 配置已加载'));
+      }, { timeout: 3000 });
+    } else {
+      setTimeout(() => {
+        import('./i18n/config').then(() => console.log('[App] i18n 配置已加载'));
+      }, 200);
+    }
 
   } catch (error) {
     console.error('[ERROR] 关键初始化失败:', error);
