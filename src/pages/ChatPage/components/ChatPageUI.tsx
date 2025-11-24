@@ -186,9 +186,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
 
-  // 键盘管理 - iOS 使用 visualViewport，Android 使用 keyboardHeight
-  const { keyboardHeight, visualViewportHeight, visualViewportOffsetTop, isKeyboardVisible } = useKeyboard();
-  const isIOS = Capacitor.getPlatform() === 'ios';
+  // 键盘管理 - iOS 和 Android 都使用 keyboardHeight（统一处理）
+  const { keyboardHeight, isKeyboardVisible } = useKeyboard();
 
   // 稳定化的回调函数，避免重复渲染 - 使用函数式更新
   const handleToggleDrawer = useCallback(() => {
@@ -592,37 +591,19 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       style={{
         position: 'fixed',
         /**
-         * 🚀 iOS vs Android 键盘处理 - 使用不同的定位策略
+         * 🚀 统一键盘处理 - iOS 和 Android 都使用 bottom 定位
          * 
-         * iOS（使用 Visual Viewport API）：
-         * - top: visualViewportHeight + transform: translateY(-100%)
-         * - visualViewport.height 会自动减去键盘高度
-         * - 不会有二次跳动问题
-         * - 参考：https://saricden.com/how-to-make-fixed-elements-respect-the-virtual-keyboard-on-ios
+         * iOS：
+         * - 通过 Visual Viewport API 计算键盘高度
+         * - keyboardHeight = innerHeight - (visualViewport.height + visualViewport.offsetTop)
+         * - 参考：https://stackoverflow.com/a/71547560
          * 
-         * Android（使用 Capacitor Keyboard 事件）：
-         * - bottom: keyboardHeight
-         * - 监听 keyboardWillShow 事件获取键盘高度
-         * - 性能更好，无需额外计算
+         * Android：
+         * - 通过 Capacitor Keyboard 事件获取键盘高度
          * 
-         * 参考：rikkahub 的 imePadding() 修饰符
+         * 统一使用 bottom 定位，简单可靠
          */
-        ...(isIOS ? {
-          // iOS: 使用 top + transform 定位
-          // 🔥 完整公式：top = visualViewport.height + visualViewport.offsetTop
-          // 参考：https://stackoverflow.com/questions/43833049/how-to-make-fixed-content-go-above-ios-keyboard
-          // - visualViewport.height: 可见区域高度（已减去键盘）
-          // - visualViewport.offsetTop: 视口相对于layout viewport的偏移
-          // - 键盘弹出时还需减去 safe-area-inset-bottom (34px) 避免间距
-          top: isKeyboardVisible 
-            ? `calc(${visualViewportHeight + visualViewportOffsetTop}px - env(safe-area-inset-bottom, 0px))` 
-            : `${visualViewportHeight + visualViewportOffsetTop}px`,
-          transform: 'translateY(-100%)',
-          left: 0,
-        } : {
-          // Android: 使用 bottom 定位
-          bottom: keyboardHeight,
-        }),
+        bottom: keyboardHeight,
         right: 0,
         zIndex: 2,
         backgroundColor: 'transparent',
@@ -643,9 +624,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         paddingBottom: isKeyboardVisible 
           ? '0' // 🔥 键盘弹出：强制为 0，忽略 safe-area-inset-bottom
           : 'max(env(safe-area-inset-bottom, 0px), 8px)', // 键盘隐藏：使用安全区域
-        transition: isIOS 
-          ? 'top 0.2s ease-out' // iOS 只需过渡 top
-          : 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // Android 过渡 bottom 和 padding
+        transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out'
       }}
     >
       {shouldShowToolbar && (
@@ -684,11 +663,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     shouldShowToolbar,
     inputComponent,
     isMobile,
-    keyboardHeight, // Android 键盘高度
-    visualViewportHeight, // iOS Visual Viewport 高度
-    visualViewportOffsetTop, // iOS Visual Viewport 偏移
+    keyboardHeight, // iOS 和 Android 统一的键盘高度
     isKeyboardVisible, // 键盘可见性
-    isIOS, // 平台判断
     // 添加这些依赖确保工具栏状态变化时正确更新
     handleClearTopic,
     imageGenerationMode,

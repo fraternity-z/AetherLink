@@ -62,7 +62,7 @@ export const useKeyboard = () => {
     // 🚀 iOS: 使用 Visual Viewport API（最可靠的方案）
     if (isIOS && typeof window !== 'undefined' && window.visualViewport) {
       const vv = window.visualViewport;
-      const initialHeight = vv.height;
+      const initialHeight = window.innerHeight; // 使用 innerHeight 作为基准
 
       const handleResize = () => {
         const currentHeight = vv.height;
@@ -71,10 +71,14 @@ export const useKeyboard = () => {
         setVisualViewportHeight(currentHeight);
         setVisualViewportOffsetTop(offsetTop);
         
-        // 如果 viewport 高度明显减小，说明键盘弹出
-        // 通常键盘会占用 200-400px
-        const isKeyboardUp = (initialHeight - currentHeight) > 100;
+        // 🔥 关键：直接计算键盘高度
+        // keyboardHeight = innerHeight - (visualViewport.height + visualViewport.offsetTop)
+        // 参考：https://stackoverflow.com/a/71547560
+        const calculatedKeyboardHeight = Math.max(0, initialHeight - (currentHeight + offsetTop));
+        
+        const isKeyboardUp = calculatedKeyboardHeight > 100;
         setIsKeyboardVisible(isKeyboardUp);
+        setKeyboardHeight(calculatedKeyboardHeight); // iOS 也设置 keyboardHeight
       };
 
       vv.addEventListener('resize', handleResize);
