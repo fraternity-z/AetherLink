@@ -58,6 +58,26 @@ jobs:
             exit 1
           fi
       
+      - name: Disable code signing in Xcode project
+        run: |
+          cd src-tauri/gen/apple
+          
+          # 修改 Xcode 项目，禁用代码签名
+          echo "=== 禁用代码签名 ==="
+          
+          # 修改 project.pbxproj
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' aetherlink.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "";/g' aetherlink.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer";/CODE_SIGN_IDENTITY = "";/g' aetherlink.xcodeproj/project.pbxproj
+          sed -i '' 's/DEVELOPMENT_TEAM = XXXXXXXXXX;/DEVELOPMENT_TEAM = "";/g' aetherlink.xcodeproj/project.pbxproj
+          
+          # 添加 CODE_SIGNING_ALLOWED = NO
+          if ! grep -q "CODE_SIGNING_ALLOWED" aetherlink.xcodeproj/project.pbxproj; then
+            sed -i '' 's/buildSettings = {/buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;/g' aetherlink.xcodeproj/project.pbxproj
+          fi
+          
+          echo "✅ 代码签名已禁用"
+      
       - name: Build iOS App with Tauri CLI (no signing)
         run: |
           # 使用 Tauri CLI 构建 iOS，但不打开 Xcode
@@ -70,9 +90,6 @@ jobs:
           }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # 禁用代码签名
-          APPLE_DEVELOPMENT_TEAM: ""
-          APPLE_SIGNING_IDENTITY: ""
       
       - name: Find and package IPA
         run: |
