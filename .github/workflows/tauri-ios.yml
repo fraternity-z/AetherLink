@@ -75,17 +75,20 @@ jobs:
         run: |
           cd src-tauri/gen/apple
           
-          # 构建 iOS 应用（不签名）
+          # 确保使用 Release 配置构建
           xcodebuild archive \
             -project aetherlink.xcodeproj \
             -scheme aetherlink_iOS \
-            -configuration Release \
+            -configuration release \
             -archivePath ./build/App.xcarchive \
             -destination generic/platform=iOS \
+            -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE="" \
-            DEVELOPMENT_TEAM=""
+            DEVELOPMENT_TEAM="" \
+            GCC_PREPROCESSOR_DEFINITIONS="" \
+            | tee build.log
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
