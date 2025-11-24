@@ -1,0 +1,63 @@
+name: Initialize Tauri iOS Project
+
+on:
+  workflow_dispatch: # 手动触发
+
+jobs:
+  init-ios:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios, x86_64-apple-ios
+
+      - name: Install iOS targets
+        run: |
+          rustup target add aarch64-apple-ios
+          rustup target add x86_64-apple-ios
+          rustup target add aarch64-apple-ios-sim
+
+      - name: Initialize Tauri iOS project
+        run: npm run tauri ios init
+
+      - name: Package iOS project files
+        run: |
+          cd src-tauri/gen
+          tar -czf ios-project.tar.gz ios/
+          mv ios-project.tar.gz ../../
+
+      - name: Upload iOS project as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-ios-project
+          path: ios-project.tar.gz
+          retention-days: 7
+
+      - name: Create summary
+        run: |
+          echo "## ✅ Tauri iOS 项目初始化完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 下载步骤：" >> $GITHUB_STEP_SUMMARY
+          echo "1. 点击上方的 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. 下载 \`tauri-ios-project\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. 解压到项目根目录" >> $GITHUB_STEP_SUMMARY
+          echo "4. 运行: \`tar -xzf ios-project.tar.gz -C src-tauri/gen/\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📂 生成的文件：" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la src-tauri/gen/ios/ || echo "iOS 目录未生成" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

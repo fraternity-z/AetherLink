@@ -2,7 +2,9 @@ package com.aetherlink.app
 
 import android.os.Build
 import android.os.Bundle
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * AetherLink MainActivity - Rikkahub 风格沉浸式体验
@@ -30,11 +32,42 @@ class MainActivity : TauriActivity() {
             window.isNavigationBarContrastEnforced = false
         }
 
+        // ⌨️ 处理软键盘显示/隐藏（Edge-to-Edge 模式必需）
+        setupKeyboardInsets()
+
         // ⚡ 启用高刷新率支持
         setupHighRefreshRate()
 
         // 🎨 设置系统栏图标颜色（根据主题自适应）
         setupSystemBarAppearance()
+    }
+
+    /**
+     * 处理软键盘的 WindowInsets
+     * 
+     * 关键：在 Edge-to-Edge 模式下，adjustResize 失效，必须手动监听键盘 insets
+     * 
+     * 参考：
+     * - https://stackoverflow.com/questions/68003131/soft-input-adjust-resize-deprecated-starting-android-30
+     * - Android 官方文档：WindowInsetsCompat
+     */
+    private fun setupKeyboardInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
+            // 获取键盘（IME）的高度
+            val imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
+            val imeHeight = imeInsets.bottom
+            
+            // 获取导航栏的高度（避免重复计算）
+            val navInsets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val navHeight = navInsets.bottom
+            
+            // 设置底部 padding = 键盘高度 - 导航栏高度（避免双重间距）
+            val bottomPadding = maxOf(0, imeHeight - navHeight)
+            view.setPadding(0, 0, 0, bottomPadding)
+            
+            // 返回 insets，让子 View 也能接收到
+            windowInsets
+        }
     }
 
     /**
