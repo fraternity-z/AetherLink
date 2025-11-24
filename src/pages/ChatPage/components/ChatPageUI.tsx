@@ -187,7 +187,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   const { handleCreateTopic } = useTopicManagement();
 
   // 键盘管理 - iOS 使用 visualViewport，Android 使用 keyboardHeight
-  const { keyboardHeight, visualViewportHeight, isKeyboardVisible } = useKeyboard();
+  const { keyboardHeight, visualViewportHeight, visualViewportOffsetTop, isKeyboardVisible } = useKeyboard();
   const isIOS = Capacitor.getPlatform() === 'ios';
 
   // 稳定化的回调函数，避免重复渲染 - 使用函数式更新
@@ -609,11 +609,14 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
          */
         ...(isIOS ? {
           // iOS: 使用 top + transform 定位
-          // 🔥 关键：visualViewportHeight 已减去键盘，但没减去 safe-area (34px)
-          // 所以键盘弹出时需要再减去 safe-area-inset-bottom 避免间距
+          // 🔥 完整公式：top = visualViewport.height + visualViewport.offsetTop
+          // 参考：https://stackoverflow.com/questions/43833049/how-to-make-fixed-content-go-above-ios-keyboard
+          // - visualViewport.height: 可见区域高度（已减去键盘）
+          // - visualViewport.offsetTop: 视口相对于layout viewport的偏移
+          // - 键盘弹出时还需减去 safe-area-inset-bottom (34px) 避免间距
           top: isKeyboardVisible 
-            ? `calc(${visualViewportHeight}px - env(safe-area-inset-bottom, 0px))` 
-            : `${visualViewportHeight}px`,
+            ? `calc(${visualViewportHeight + visualViewportOffsetTop}px - env(safe-area-inset-bottom, 0px))` 
+            : `${visualViewportHeight + visualViewportOffsetTop}px`,
           transform: 'translateY(-100%)',
           left: 0,
         } : {
@@ -683,6 +686,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     isMobile,
     keyboardHeight, // Android 键盘高度
     visualViewportHeight, // iOS Visual Viewport 高度
+    visualViewportOffsetTop, // iOS Visual Viewport 偏移
     isKeyboardVisible, // 键盘可见性
     isIOS, // 平台判断
     // 添加这些依赖确保工具栏状态变化时正确更新

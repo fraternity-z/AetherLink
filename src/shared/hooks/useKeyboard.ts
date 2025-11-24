@@ -51,6 +51,7 @@ export const useKeyboard = () => {
   const [visualViewportHeight, setVisualViewportHeight] = useState(
     typeof window !== 'undefined' && window.visualViewport ? window.visualViewport.height : window.innerHeight
   );
+  const [visualViewportOffsetTop, setVisualViewportOffsetTop] = useState(0);
   
   const isNative = Capacitor.isNativePlatform();
   const isIOS = Capacitor.getPlatform() === 'ios';
@@ -65,7 +66,10 @@ export const useKeyboard = () => {
 
       const handleResize = () => {
         const currentHeight = vv.height;
+        const offsetTop = vv.offsetTop;
+        
         setVisualViewportHeight(currentHeight);
+        setVisualViewportOffsetTop(offsetTop);
         
         // 如果 viewport 高度明显减小，说明键盘弹出
         // 通常键盘会占用 200-400px
@@ -74,10 +78,12 @@ export const useKeyboard = () => {
       };
 
       vv.addEventListener('resize', handleResize);
+      vv.addEventListener('scroll', handleResize); // iOS 26+ bug workaround
       handleResize(); // 初始调用
 
       return () => {
         vv.removeEventListener('resize', handleResize);
+        vv.removeEventListener('scroll', handleResize);
       };
     }
     
@@ -132,6 +138,7 @@ export const useKeyboard = () => {
     isKeyboardVisible,
     keyboardHeight,  // Android 键盘高度
     visualViewportHeight, // iOS Visual Viewport 高度
+    visualViewportOffsetTop, // iOS Visual Viewport 偏移
     hideKeyboard,
   };
 };
