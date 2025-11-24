@@ -150,7 +150,7 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
     const isDistanceEnough = Math.abs(deltaX) > threshold;
     const isVelocityEnough = velocity > velocityThreshold;
 
-    // 标记是否触发了操作
+    // 追踪是否触发了操作
     let triggered = false;
 
     if (isHorizontalSwipe && (isDistanceEnough || isVelocityEnough)) {
@@ -182,8 +182,8 @@ export const useSwipeGesture = (options: SwipeGestureOptions = {}) => {
       }
     }
 
-    // 只在未触发操作时重置进度，避免回弹
-    // 如果触发了操作，让状态变化自然地完成动画
+    // 只有在未触发操作时才重置进度，避免回弹
+    // 如果触发了操作，让状态变化自然完成动画
     if (!triggered && onSwipeProgress) {
       onSwipeProgress(0, deltaX > 0 ? 'right' : 'left');
     }

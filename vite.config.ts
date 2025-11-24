@@ -52,27 +52,15 @@ export default defineConfig(({ mode }) => ({
   ],
 
 
-  // 🚀 性能优化：减少日志输出
-  logLevel: 'warn', // 只显示警告和错误，减少控制台输出
-  
   // 开发服务器配置
   server: {
     port: 5173,
     host: process.env.TAURI_DEV_HOST || '0.0.0.0', // 使用 Tauri 提供的主机地址
     cors: false, // 完全禁用 CORS 检查
     strictPort: true, // 严格端口模式
-    open: false, // 🚀 不自动打开浏览器，减少启动开销
-    // 🚀 性能优化：预热关键文件（只预热最核心的，避免首次启动慢）
+    // 预热常用文件，提升首次加载速度
     warmup: {
-      clientFiles: [
-        // 核心入口
-        './src/main.tsx',
-        './src/App.tsx',
-        './src/components/AppContent.tsx',
-        
-        // 核心状态（最重要）
-        './src/shared/store/index.ts',
-      ],
+      clientFiles: ['./src/main.tsx', './src/App.tsx', './src/shared/store/index.ts'],
     },
     headers: {
       'Access-Control-Allow-Origin': '*',
@@ -85,11 +73,8 @@ export default defineConfig(({ mode }) => ({
       host: process.env.TAURI_DEV_HOST,
       port: 5174,
     } : {
-      // 🚀 性能优化：localhost 连接更快
-      protocol: 'ws',
-      host: 'localhost',
       port: 5174,
-      timeout: 5000, // 5秒超时
+      host: '0.0.0.0'
     }
     // 注意：CORS 代理已迁移到独立的 scripts/cors-proxy.js
     // 所有跨域请求通过 http://localhost:8888/proxy 统一处理
@@ -108,15 +93,6 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: 'static/js/[name]-[hash].js',
         assetFileNames: 'static/[ext]/[name]-[hash].[ext]',
       },
-      // 外部化 Capacitor 插件，避免打包到 bundle 中
-      external: [
-        'capacitor-edge-to-edge',
-        '@capacitor/core',
-        '@capacitor/status-bar',
-        '@capacitor/app',
-        '@capacitor/keyboard',
-        '@capacitor/haptics'
-      ]
     },
     chunkSizeWarningLimit: 500,
     // 注意：Rolldown 已自动启用持久化缓存（通过 cacheDir）
@@ -137,8 +113,11 @@ export default defineConfig(({ mode }) => ({
       'solid-js',
       'solid-js/web',
     ],
-    // 🚀 性能优化：立即开始预构建，不等待扫描完成
-    holdUntilCrawlEnd: false,
+    // 移除 force: true，避免每次都重新构建
+    // force: true
+    // 注意：Rolldown-Vite 使用内置优化，不需要 esbuildOptions
+    // 启用持久化缓存
+    holdUntilCrawlEnd: false, // 提前开始预构建，不等待所有依赖扫描完成
   },
 
   // 缓存配置 - 持久化缓存目录
@@ -154,9 +133,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': '/src'
-    },
-    // 🚀 优化：减少文件扩展名猜测，加快解析速度
-    extensions: ['.tsx', '.ts', '.jsx', '.js'],  // 只保留常用的，去掉 .mjs .mts .json
+    }
   },
 
   // 定义全局常量
