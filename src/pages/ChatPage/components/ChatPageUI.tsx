@@ -187,7 +187,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   const { handleCreateTopic } = useTopicManagement();
 
   // 键盘管理 - iOS 使用 visualViewport，Android 使用 keyboardHeight
-  const { keyboardHeight, visualViewportHeight } = useKeyboard();
+  const { keyboardHeight, visualViewportHeight, isKeyboardVisible } = useKeyboard();
   const isIOS = Capacitor.getPlatform() === 'ios';
 
   // 稳定化的回调函数，避免重复渲染 - 使用函数式更新
@@ -625,14 +625,17 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         flexDirection: 'column',
         gap: 0,
         /**
-         * 安全区域处理 - 动态切换避免间距
+         * 🚀 关键修复：iOS safe-area-inset-bottom 不会在键盘弹出时更新
          * 
-         * iOS: visualViewport 已自动减去键盘高度，键盘弹出时不需要 padding
-         * Android: 同样的逻辑，键盘弹出时不需要 padding
+         * 问题：env(safe-area-inset-bottom) 在键盘可见时仍然返回底部安全区域值（如 34px）
+         * 导致输入框和键盘之间有间距
+         * 
+         * 解决方案：键盘弹出时强制设为 0，完全忽略 safe-area-inset-bottom
+         * 参考：https://webventures.rejh.nl/blog/2025/safe-area-inset-bottom-does-not-update/
          */
-        paddingBottom: isIOS 
-          ? (visualViewportHeight < window.innerHeight - 100 ? '0' : '8px') // iOS: 键盘弹出时为0，否则8px
-          : (keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 8px)'), // Android: 动态切换
+        paddingBottom: isKeyboardVisible 
+          ? '0' // 🔥 键盘弹出：强制为 0，忽略 safe-area-inset-bottom
+          : 'max(env(safe-area-inset-bottom, 0px), 8px)', // 键盘隐藏：使用安全区域
         transition: isIOS 
           ? 'top 0.2s ease-out' // iOS 只需过渡 top
           : 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // Android 过渡 bottom 和 padding
@@ -676,6 +679,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     isMobile,
     keyboardHeight, // Android 键盘高度
     visualViewportHeight, // iOS Visual Viewport 高度
+    isKeyboardVisible, // 键盘可见性
     isIOS, // 平台判断
     // 添加这些依赖确保工具栏状态变化时正确更新
     handleClearTopic,
@@ -783,10 +787,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           className="status-bar-safe-area"
           sx={{
             ...baseStyles.appBar,
-            // 🚀 安全区域只在移动端应用：iOS 35px，Android 25px
-            paddingTop: Capacitor.isNativePlatform() 
-              ? (isIOS ? '35px' : '25px')
-              : '0px',
+            // 🚀 安全区域只在移动端应用
+            paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
             // 强制移除所有可能的阴影和边框
             boxShadow: 'none',
             backgroundImage: 'none',

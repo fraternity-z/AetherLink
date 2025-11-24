@@ -4,8 +4,6 @@ import { getFontFamilyString } from './fonts';
 import { cssVar } from '../utils/cssVariables';
 import { Capacitor } from '@capacitor/core';
 
-const isIOS = Capacitor.getPlatform() === 'ios';
-
 // 主题风格类型
 export type ThemeStyle = 'default' | 'claude' | 'nature' | 'tech' | 'soft' | 'ocean' | 'sunset' | 'cinnamonSlate' | 'horizonGreen' | 'cherryCoded';
 
@@ -490,11 +488,9 @@ export const createCustomTheme = (
             ...(themeStyle !== 'default' && {
               opacity: 0.95,
             }),
-            // 🚀 全局适配状态栏安全区域：iOS 35px，Android 25px，Web 0px
+            // 🚀 全局适配状态栏安全区域：只在移动端（iOS/Android）添加顶部间距
             '&.MuiAppBar-positionFixed': {
-              paddingTop: Capacitor.isNativePlatform() 
-                ? (isIOS ? '35px' : '25px')
-                : '0px',
+              paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
             },
           },
         },
