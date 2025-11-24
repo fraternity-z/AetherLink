@@ -1,9 +1,18 @@
-name: Tauri iOS Build
+name: Tauri iOS Build (No Signing)
+
+# 注意：
+# - Tauri CLI 2.9+ 的 --no-sign 标志仅适用于桌面平台（Windows/macOS/Linux）
+# - iOS 构建通过 xcodebuild 参数禁用代码签名（不直接修改 pbxproj）
+# - 构建输出标准无签名 IPA，可通过 AltStore/爱思助手安装
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+    paths:
+      - 'src-tauri/**'
+      - 'src/**'
+      - '.github/workflows/tauri-ios.yml'
 
 permissions:
   contents: write
@@ -11,6 +20,10 @@ permissions:
 jobs:
   build-ios:
     runs-on: macos-14
+    
+    env:
+      TAURI_PROJECT_NAME: "aetherlink"
+      IPA_OUTPUT_NAME: "AetherLink-iOS-unsigned.ipa"
     
     steps:
       - name: Checkout repository
@@ -58,82 +71,141 @@ jobs:
             exit 1
           fi
       
-      - name: Build iOS App with Tauri CLI (using --no-sign)
+      - name: Build Rust for iOS (编译 Tauri 后端)
         run: |
-          # 使用 Tauri 2.9+ 的 --no-sign 标志跳过代码签名
-          echo "=== 使用 --no-sign 标志构建 iOS ==="
-          npm run tauri ios build -- --ci --no-sign
+          echo "=== 编译 Tauri Rust 代码 ==="
+          # 先用 Tauri CLI 编译 Rust 部分，生成库文件
+          cd src-tauri
+          
+          # 为 iOS 真机架构编译
+          cargo build --release --target aarch64-apple-ios --lib
+          
+          echo "✅ Rust 库文件编译完成"
+          ls -lh target/aarch64-apple-ios/release/*.a || true
+      
+      - name: Build iOS App with xcodebuild (禁用签名)
+        run: |
+          cd src-tauri/gen/apple
+          
+          echo "=== 使用 xcodebuild 直接构建（禁用签名）==="
+          
+          # 直接使用 xcodebuild 构建，传递签名禁用参数
+          xcodebuild archive \
+            -project "${TAURI_PROJECT_NAME}.xcodeproj" \
+            -scheme "${TAURI_PROJECT_NAME}_iOS" \
+            -configuration Release \
+            -archivePath ./build/App.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            -allowProvisioningUpdates \
+            | tee build.log
+          
+          # 检查构建结果
+          if [ -d "./build/App.xcarchive" ]; then
+            echo "✅ Archive 构建成功"
+            ls -la ./build/App.xcarchive/Products/Applications/
+            
+            # 获取 .app 大小
+            APP_PATH="./build/App.xcarchive/Products/Applications/AetherLink.app"
+            if [ -d "$APP_PATH" ]; then
+              APP_SIZE=$(du -sh "$APP_PATH" | awk '{print $1}')
+              echo "APP_SIZE=$APP_SIZE" >> $GITHUB_ENV
+              echo ".app 大小: $APP_SIZE"
+            fi
+          else
+            echo "❌ Archive 构建失败"
+            tail -100 build.log
+            exit 1
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Find and package IPA
+      - name: Package Unsigned IPA (标准流程)
         run: |
-          echo "=== 查找构建产物 ==="
-          find src-tauri/gen/apple -name "*.ipa" -type f || echo "未找到 IPA 文件"
-          find src-tauri/gen/apple -name "*.app" -type d | head -5 || echo "未找到 APP 文件"
+          echo "=== 从 xcarchive 打包无签名 IPA ==="
           
-          # 创建输出目录
-          mkdir -p ios-artifacts
+          APP_PATH="src-tauri/gen/apple/build/App.xcarchive/Products/Applications/AetherLink.app"
+          OUTPUT_DIR="ios-artifacts"
+          mkdir -p "$OUTPUT_DIR"
           
-          # 优先查找 IPA 文件
-          IPA_FILE=$(find src-tauri/gen/apple -name "*.ipa" -type f | head -n 1)
+          # 验证 .app 存在
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ .app 文件不存在: $APP_PATH"
+            echo "查找可能的 .app 位置："
+            find src-tauri/gen/apple -name "*.app" -type d || true
+            exit 1
+          fi
           
-          if [ -n "$IPA_FILE" ] && [ -f "$IPA_FILE" ]; then
-            echo "✅ 找到 IPA: $IPA_FILE"
-            cp "$IPA_FILE" ios-artifacts/AetherLink-iOS.ipa
-            ls -lh ios-artifacts/AetherLink-iOS.ipa
+          echo "✅ 找到 .app: $APP_PATH"
+          
+          # 创建标准 IPA 结构：Payload 目录
+          PAYLOAD_DIR="${OUTPUT_DIR}/Payload"
+          mkdir -p "$PAYLOAD_DIR"
+          
+          # 复制 .app 到 Payload（保持完整目录结构）
+          echo "复制 .app 到 Payload..."
+          cp -R "$APP_PATH" "$PAYLOAD_DIR/"
+          
+          # 修复 .app 权限（避免安装失败）
+          echo "修复文件权限..."
+          chmod -R 755 "$PAYLOAD_DIR/AetherLink.app"
+          find "$PAYLOAD_DIR/AetherLink.app" -type f -exec chmod 644 {} \;
+          find "$PAYLOAD_DIR/AetherLink.app" -type d -exec chmod 755 {} \;
+          
+          # 打包为 IPA（使用 zip，-r 递归，-q 安静模式）
+          echo "打包 IPA..."
+          cd "$OUTPUT_DIR"
+          zip -r -q "${IPA_OUTPUT_NAME}" Payload/
+          
+          # 清理临时 Payload 目录
+          rm -rf Payload/
+          
+          # 验证 IPA
+          if [ -f "${IPA_OUTPUT_NAME}" ]; then
+            IPA_SIZE=$(du -sh "${IPA_OUTPUT_NAME}" | awk '{print $1}')
+            echo "IPA_SIZE=$IPA_SIZE" >> $GITHUB_ENV
+            echo "✅ 无签名 IPA 创建成功"
+            echo "文件名: ${IPA_OUTPUT_NAME}"
+            echo "大小: $IPA_SIZE"
+            
+            # 显示 IPA 结构
+            echo ""
+            echo "=== IPA 内容预览 ==="
+            unzip -l "${IPA_OUTPUT_NAME}" | head -30
           else
-            echo "⚠️ 未找到 IPA，从 .app 创建"
-            
-            # 查找 .app 文件（优先从 xcarchive 中查找）
-            APP_FILE=$(find src-tauri/gen/apple -path "*/Products/Applications/*.app" -type d | head -n 1)
-            
-            if [ -z "$APP_FILE" ]; then
-              APP_FILE=$(find src-tauri/gen/apple -name "AetherLink.app" -type d | grep -v "Intermediates" | head -n 1)
-            fi
-            
-            if [ -n "$APP_FILE" ] && [ -d "$APP_FILE" ]; then
-              echo "✅ 找到 APP: $APP_FILE"
-              
-              # 创建 Payload 目录并复制 .app
-              mkdir -p ios-artifacts/Payload
-              cp -r "$APP_FILE" ios-artifacts/Payload/
-              
-              # 打包为 IPA
-              cd ios-artifacts
-              zip -r -q AetherLink-iOS.ipa Payload/
-              rm -rf Payload/
-              
-              echo "✅ IPA 创建成功"
-              ls -lh AetherLink-iOS.ipa
-              
-              # 显示 IPA 内容
-              echo "=== IPA 内容 ==="
-              unzip -l AetherLink-iOS.ipa | head -20
-            else
-              echo "❌ 无法找到 .app 文件"
-              echo "=== 查找所有 .app ==="
-              find src-tauri/gen/apple -name "*.app" -type d || true
-              exit 1
-            fi
+            echo "❌ IPA 打包失败"
+            exit 1
           fi
       
-      - name: Upload iOS artifacts
+      - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: tauri-ios-ipa
-          path: ios-artifacts/*.ipa
-          if-no-files-found: warn
+          name: tauri-ios-unsigned-ipa
+          path: ios-artifacts/${{ env.IPA_OUTPUT_NAME }}
+          if-no-files-found: error
           retention-days: 30
       
-      - name: Create build summary
+      - name: Generate Build Summary
+        if: always()
         run: |
-          echo "## Tauri iOS " >> $GITHUB_STEP_SUMMARY
+          echo "## 🍎 Tauri iOS 无签名构建结果" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### " >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ls -lh ios-artifacts/ || echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "| 项目 | 详情 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 产物名称 | ${{ env.IPA_OUTPUT_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📊 IPA 大小 | ${{ env.IPA_SIZE || '未知' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📱 .app 大小 | ${{ env.APP_SIZE || '未知' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔖 版本 | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌿 分支 | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### " >> $GITHUB_STEP_SUMMARY
-          echo "Actions " >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 说明" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚠️ 该 IPA 为**无签名版本**，仅用于测试/内部分发" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔧 安装方式：AltStore、SideStore、爱思助手、PP助手等" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚫 **无法**通过 App Store 或 TestFlight 安装" >> $GITHUB_STEP_SUMMARY
+          echo "- 📲 支持设备：iOS 13.0+" >> $GITHUB_STEP_SUMMARY
