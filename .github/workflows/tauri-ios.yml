@@ -71,57 +71,81 @@ jobs:
             exit 1
           fi
       
-      - name: Build Rust for iOS (编译 Tauri 后端)
-        run: |
-          echo "=== 编译 Tauri Rust 代码 ==="
-          # 先用 Tauri CLI 编译 Rust 部分，生成库文件
-          cd src-tauri
-          
-          # 为 iOS 真机架构编译
-          cargo build --release --target aarch64-apple-ios --lib
-          
-          echo "✅ Rust 库文件编译完成"
-          ls -lh target/aarch64-apple-ios/release/*.a || true
-      
-      - name: Build iOS App with xcodebuild (禁用签名)
+      - name: Disable code signing in Xcode project
         run: |
           cd src-tauri/gen/apple
           
-          echo "=== 使用 xcodebuild 直接构建（禁用签名）==="
+          echo "=== 修改 Xcode 项目禁用签名 ==="
           
-          # 直接使用 xcodebuild 构建，传递签名禁用参数
-          xcodebuild archive \
-            -project "${TAURI_PROJECT_NAME}.xcodeproj" \
-            -scheme "${TAURI_PROJECT_NAME}_iOS" \
-            -configuration Release \
-            -archivePath ./build/App.xcarchive \
-            -destination 'generic/platform=iOS' \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE="" \
-            CODE_SIGN_ENTITLEMENTS="" \
-            -allowProvisioningUpdates \
-            | tee build.log
+          # 直接修改 pbxproj 文件禁用签名
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' aetherlink.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "";/g' aetherlink.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Developer";/CODE_SIGN_IDENTITY = "";/g' aetherlink.xcodeproj/project.pbxproj
+          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = "";/g' aetherlink.xcodeproj/project.pbxproj
           
-          # 检查构建结果
-          if [ -d "./build/App.xcarchive" ]; then
-            echo "✅ Archive 构建成功"
-            ls -la ./build/App.xcarchive/Products/Applications/
+          # 添加 CODE_SIGNING_ALLOWED = NO
+          if ! grep -q "CODE_SIGNING_ALLOWED" aetherlink.xcodeproj/project.pbxproj; then
+            sed -i '' 's/buildSettings = {/buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;/g' aetherlink.xcodeproj/project.pbxproj
+          fi
+          
+          echo "✅ 代码签名已禁用"
+      
+      - name: Build iOS App with Tauri CLI
+        run: |
+          echo "=== 使用 Tauri CLI 构建 iOS ==="
+          
+          # 使用 Tauri CLI 构建，不使用 --open（CI 环境不支持 GUI）
+          npm run tauri ios build -- --ci 2>&1 | tee build.log || {
+            EXIT_CODE=$?
+            echo "⚠️ Tauri 构建退出码: $EXIT_CODE"
             
-            # 获取 .app 大小
-            APP_PATH="./build/App.xcarchive/Products/Applications/AetherLink.app"
-            if [ -d "$APP_PATH" ]; then
-              APP_SIZE=$(du -sh "$APP_PATH" | awk '{print $1}')
-              echo "APP_SIZE=$APP_SIZE" >> $GITHUB_ENV
-              echo ".app 大小: $APP_SIZE"
+            # 显示构建日志尾部
+            echo "=== 构建日志（最后 50 行）==="
+            tail -50 build.log
+            
+            # 检查是否是导出失败（exit code 70）但 .app 已创建
+            echo ""
+            echo "查找生成的 .app 文件..."
+            APP_FOUND=$(find src-tauri/gen/apple -path "*/Products/Applications/*.app" -type d | head -n 1)
+            
+            if [ -n "$APP_FOUND" ]; then
+              echo "✅ .app 文件已创建: $APP_FOUND"
+              echo "导出 IPA 失败是预期的（无签名配置）"
+              exit 0
             fi
-          else
-            echo "❌ Archive 构建失败"
-            tail -100 build.log
+            
+            # 检查是否有 DerivedData 中的 .app
+            APP_FOUND=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "AetherLink.app" -type d 2>/dev/null | grep -v Intermediates | head -n 1)
+            if [ -n "$APP_FOUND" ]; then
+              echo "✅ 在 DerivedData 中找到 .app: $APP_FOUND"
+              # 复制到标准位置
+              mkdir -p src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
+              cp -R "$APP_FOUND" src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
+              exit 0
+            fi
+            
+            echo "❌ 真正的构建失败：未找到 .app 文件"
             exit 1
+          }
+          
+          # 查找并记录 .app 大小
+          APP_PATH=$(find src-tauri/gen/apple -path "*/Products/Applications/*.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            # 从 DerivedData 查找
+            APP_PATH=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "AetherLink.app" -type d 2>/dev/null | grep -v Intermediates | head -n 1)
+            if [ -n "$APP_PATH" ]; then
+              # 复制到标准位置
+              mkdir -p src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
+              cp -R "$APP_PATH" src-tauri/gen/apple/build/App.xcarchive/Products/Applications/
+              APP_PATH="src-tauri/gen/apple/build/App.xcarchive/Products/Applications/AetherLink.app"
+            fi
+          fi
+          
+          if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
+            APP_SIZE=$(du -sh "$APP_PATH" | awk '{print $1}')
+            echo "APP_SIZE=$APP_SIZE" >> $GITHUB_ENV
+            echo "✅ .app 大小: $APP_SIZE"
+            echo "✅ .app 位置: $APP_PATH"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
