@@ -16,6 +16,28 @@ val tauriProperties = Properties().apply {
 android {
     compileSdk = 34
     namespace = "com.aetherlink.app"
+    
+    // Release 签名配置 - 从环境变量读取
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("TAURI_SIGNING_STORE_PATH")
+                ?: System.getenv("TAURI_ANDROID_SIGNING_KEY_STORE_PATH")
+            val keystorePassword = System.getenv("TAURI_SIGNING_STORE_PASSWORD")
+                ?: System.getenv("TAURI_ANDROID_SIGNING_KEY_STORE_PASSWORD")
+            val keyAlias = System.getenv("TAURI_SIGNING_KEY_ALIAS")
+                ?: System.getenv("TAURI_ANDROID_SIGNING_KEY_ALIAS")
+            val keyPassword = System.getenv("TAURI_SIGNING_KEY_PASSWORD")
+                ?: System.getenv("TAURI_ANDROID_SIGNING_KEY_PASSWORD")
+            
+            if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        }
+    }
+    
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.aetherlink.app"
@@ -43,7 +65,13 @@ android {
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
                     .toList().toTypedArray()
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // 优先使用 release 签名，如果未配置则回退到 debug
+            val releaseSigningConfig = signingConfigs.findByName("release")
+            signingConfig = if (releaseSigningConfig?.storeFile != null) {
+                releaseSigningConfig
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
     compileOptions {

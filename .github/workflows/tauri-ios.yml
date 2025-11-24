@@ -44,6 +44,42 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+          # 基于 Cargo.lock 生成缓存 key
+          shared-key: "ios-rust-${{ hashFiles('**/Cargo.lock') }}"
+          cache-on-failure: true
+      
+      # Xcode DerivedData 缓存 - 大幅加速增量构建
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            src-tauri/gen/apple/build
+          key: xcode-deriveddata-${{ runner.os }}-${{ hashFiles('src-tauri/gen/apple/**/*.swift', 'src-tauri/gen/apple/project.yml', 'src-tauri/Cargo.lock') }}
+          restore-keys: |
+            xcode-deriveddata-${{ runner.os }}-
+      
+      # CocoaPods 缓存（如果存在 Podfile）
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            src-tauri/gen/apple/Pods
+            ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('src-tauri/gen/apple/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+      
+      # Vite 构建缓存
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.vite
+            node_modules/.cache
+          key: vite-${{ runner.os }}-${{ hashFiles('package-lock.json', 'vite.config.*') }}
+          restore-keys: |
+            vite-${{ runner.os }}-
       
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
