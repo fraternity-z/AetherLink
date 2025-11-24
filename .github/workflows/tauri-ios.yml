@@ -80,11 +80,23 @@ jobs:
       
       - name: Build iOS App with Tauri CLI (no signing)
         run: |
-          # 使用 Tauri CLI 构建 iOS，但不打开 Xcode
-          # 这会正确处理 Rust 编译和前端资源打包
+          # 使用 Tauri CLI 构建 iOS，导出失败是正常的（因为没有签名）
+          # 但 .app 文件会被创建
           npm run tauri ios build -- --ci || {
-            echo "❌ Tauri iOS 构建失败"
-            echo "尝试查找构建产物..."
+            EXIT_CODE=$?
+            echo "⚠️ Tauri iOS 构建退出码: $EXIT_CODE"
+            
+            # 检查是否是导出失败（code 70）但 .app 已创建
+            if [ $EXIT_CODE -eq 70 ]; then
+              echo "✅ 这是预期的导出失败（无签名配置）"
+              echo "检查 .app 文件是否存在..."
+              if find src-tauri/gen/apple -name "AetherLink.app" -type d | grep -q .; then
+                echo "✅ .app 文件已创建，继续下一步"
+                exit 0
+              fi
+            fi
+            
+            echo "❌ 真正的构建失败"
             find src-tauri/gen/apple -name "*.app" -o -name "*.ipa" || true
             exit 1
           }
@@ -93,14 +105,14 @@ jobs:
       
       - name: Find and package IPA
         run: |
-          echo "=== 查找 IPA 文件 ==="
-          find src-tauri -name "*.ipa" -type f || echo "未找到 IPA 文件"
-          find src-tauri -name "*.app" -type d || echo "未找到 APP 文件"
+          echo "=== 查找构建产物 ==="
+          find src-tauri/gen/apple -name "*.ipa" -type f || echo "未找到 IPA 文件"
+          find src-tauri/gen/apple -name "*.app" -type d | head -5 || echo "未找到 APP 文件"
           
           # 创建输出目录
           mkdir -p ios-artifacts
           
-          # 查找并复制 IPA 文件
+          # 优先查找 IPA 文件
           IPA_FILE=$(find src-tauri/gen/apple -name "*.ipa" -type f | head -n 1)
           
           if [ -n "$IPA_FILE" ] && [ -f "$IPA_FILE" ]; then
@@ -108,22 +120,37 @@ jobs:
             cp "$IPA_FILE" ios-artifacts/AetherLink-iOS.ipa
             ls -lh ios-artifacts/AetherLink-iOS.ipa
           else
-            echo "⚠️ 未找到 IPA，尝试从 .app 创建"
-            APP_FILE=$(find src-tauri/gen/apple -name "*.app" -type d | grep -v "Build/Intermediates" | head -n 1)
+            echo "⚠️ 未找到 IPA，从 .app 创建"
+            
+            # 查找 .app 文件（优先从 xcarchive 中查找）
+            APP_FILE=$(find src-tauri/gen/apple -path "*/Products/Applications/*.app" -type d | head -n 1)
+            
+            if [ -z "$APP_FILE" ]; then
+              APP_FILE=$(find src-tauri/gen/apple -name "AetherLink.app" -type d | grep -v "Intermediates" | head -n 1)
+            fi
             
             if [ -n "$APP_FILE" ] && [ -d "$APP_FILE" ]; then
               echo "✅ 找到 APP: $APP_FILE"
+              
+              # 创建 Payload 目录并复制 .app
               mkdir -p ios-artifacts/Payload
               cp -r "$APP_FILE" ios-artifacts/Payload/
+              
+              # 打包为 IPA
               cd ios-artifacts
-              zip -r AetherLink-iOS.ipa Payload/
+              zip -r -q AetherLink-iOS.ipa Payload/
               rm -rf Payload/
+              
               echo "✅ IPA 创建成功"
               ls -lh AetherLink-iOS.ipa
+              
+              # 显示 IPA 内容
+              echo "=== IPA 内容 ==="
+              unzip -l AetherLink-iOS.ipa | head -20
             else
-              echo "❌ 无法找到 .app 或 .ipa 文件"
-              echo "=== src-tauri/gen/apple 目录结构 ==="
-              ls -R src-tauri/gen/apple/ || true
+              echo "❌ 无法找到 .app 文件"
+              echo "=== 查找所有 .app ==="
+              find src-tauri/gen/apple -name "*.app" -type d || true
               exit 1
             fi
           fi
