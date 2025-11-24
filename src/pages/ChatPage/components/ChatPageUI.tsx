@@ -609,7 +609,11 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
          */
         ...(isIOS ? {
           // iOS: 使用 top + transform 定位
-          top: `${visualViewportHeight}px`,
+          // 🔥 关键：visualViewportHeight 已减去键盘，但没减去 safe-area (34px)
+          // 所以键盘弹出时需要再减去 safe-area-inset-bottom 避免间距
+          top: isKeyboardVisible 
+            ? `calc(${visualViewportHeight}px - env(safe-area-inset-bottom, 0px))` 
+            : `${visualViewportHeight}px`,
           transform: 'translateY(-100%)',
           left: 0,
         } : {
