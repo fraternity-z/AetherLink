@@ -49,9 +49,46 @@ jobs:
           export APPLE_DEVELOPMENT_TEAM="-"
           export APPLE_SIGNING_IDENTITY="-"
           # 构建 Release 版本（不打开 Xcode）
-          tauri ios build --open false || true
+          echo "Starting Tauri iOS build..."
+          tauri ios build --open false || {
+            echo "❌ Tauri iOS build failed!"
+            echo "Checking for error logs..."
+            if [ -d "gen/apple" ]; then
+              echo "=== Apple directory contents ==="
+              find gen/apple -type f -name "*.log" -exec echo "Found log: {}" \; -exec cat {} \;
+            fi
+            exit 1
+          }
+      
+      - name: Check Build Output
+        run: |
+          echo "Checking build directory structure..."
+          if [ -d "src-tauri/gen/apple" ]; then
+            echo "✓ Apple directory exists"
+            ls -la src-tauri/gen/apple/
+            if [ -d "src-tauri/gen/apple/build" ]; then
+              echo "✓ Build directory exists"
+              ls -la src-tauri/gen/apple/build/
+              if [ -d "src-tauri/gen/apple/build/Release-iphoneos" ]; then
+                echo "✓ Release-iphoneos directory exists"
+                ls -la src-tauri/gen/apple/build/Release-iphoneos/
+              else
+                echo "✗ Release-iphoneos directory not found"
+                echo "Available directories in build:"
+                ls -la src-tauri/gen/apple/build/ || echo "Build directory empty"
+                exit 1
+              fi
+            else
+              echo "✗ Build directory not found"
+              exit 1
+            fi
+          else
+            echo "✗ Apple directory not found"
+            exit 1
+          fi
       
       - name: Package Unsigned IPA
+        if: success()
         run: |
           cd src-tauri/gen/apple/build/Release-iphoneos
           # 查找 .app 文件
