@@ -47,9 +47,26 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
       
+      - name: Generate Signing Keystore
+        run: |
+          echo "Generating keystore for signing..."
+          keytool -genkey -v -keystore ${{ github.workspace }}/release-keystore.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias aetherlink \
+            -storepass aetherlink2024 \
+            -keypass aetherlink2024 \
+            -dname "CN=AetherLink, OU=Development, O=LLMHouse, L=Unknown, ST=Unknown, C=CN"
+          echo "Keystore created successfully"
+      
       - name: Build Android APK (Release)
         run: |
           cd src-tauri
+          # 配置签名信息到Tauri
+          export TAURI_ANDROID_SIGNING_KEY_STORE_PATH="${{ github.workspace }}/release-keystore.jks"
+          export TAURI_ANDROID_SIGNING_KEY_STORE_PASSWORD="aetherlink2024"
+          export TAURI_ANDROID_SIGNING_KEY_ALIAS="aetherlink"
+          export TAURI_ANDROID_SIGNING_KEY_PASSWORD="aetherlink2024"
+          
           tauri android build --apk true --split-per-abi
         env:
           ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
