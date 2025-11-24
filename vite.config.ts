@@ -108,6 +108,15 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: 'static/js/[name]-[hash].js',
         assetFileNames: 'static/[ext]/[name]-[hash].[ext]',
       },
+      // 外部化 Capacitor 插件，避免打包到 bundle 中
+      external: [
+        'capacitor-edge-to-edge',
+        '@capacitor/core',
+        '@capacitor/status-bar',
+        '@capacitor/app',
+        '@capacitor/keyboard',
+        '@capacitor/haptics'
+      ]
     },
     chunkSizeWarningLimit: 500,
     // 注意：Rolldown 已自动启用持久化缓存（通过 cacheDir）
