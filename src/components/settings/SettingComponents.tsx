@@ -30,6 +30,8 @@ export const Container = styled(Box, {
 })(({ theme }) => ({
   flex: 1,
   padding: theme.spacing(2),
+  // 底部安全区域：确保内容不被 Home Indicator 遮挡
+  paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
   gap: theme.spacing(3), // gap-6 (24px)
   display: 'flex',
   flexDirection: 'column',
