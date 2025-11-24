@@ -59,11 +59,29 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* Tauri iOS 安全区域背景色修复 */
+html {
+  /* 让背景色延伸到安全区域外 */
+  background-color: var(--color-gray-50);
+  /* 确保内容可以延伸到安全区域 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
 body {
   margin: 0;
   padding: 0;
   background-color: var(--color-gray-50);
   color: var(--color-gray-800);
+  /* 确保 body 也有背景色，覆盖可能的白色区域 */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* 深色模式下的安全区域背景色 */
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: var(--color-primary-900, #0F172A);
+  }
 }
 
 /* 输入框样式覆盖，确保复制粘贴在移动端正常工作 */
