@@ -59,12 +59,9 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* Tauri iOS 安全区域背景色修复 */
+/* iOS 安全区域 - 不要加 padding，让内容全屏 */
 html {
-  /* 让背景色延伸到安全区域外 */
   background-color: var(--color-gray-50);
-  /* 确保内容可以延伸到安全区域 */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 body {
@@ -72,15 +69,13 @@ body {
   padding: 0;
   background-color: var(--color-gray-50);
   color: var(--color-gray-800);
-  /* 确保 body 也有背景色，覆盖可能的白色区域 */
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
+  min-height: 100%;
 }
 
-/* 深色模式下的安全区域背景色 */
+/* 深色模式 */
 @media (prefers-color-scheme: dark) {
-  html {
-    background-color: var(--color-primary-900, #0F172A);
+  html, body {
+    background-color: var(--color-primary-900);
   }
 }
 
