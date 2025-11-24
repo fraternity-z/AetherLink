@@ -47,9 +47,6 @@
       "entitlements": "entitlements.plist",
       "signingIdentity": null,
       "hardenedRuntime": false
-    },
-    "iOS": {
-      "developmentTeam": "XXXXXXXXXX"
     }
   }
 }
