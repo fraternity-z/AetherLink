@@ -42,15 +42,15 @@ jobs:
           # 初始化 iOS 项目（创建 Xcode 项目）
           tauri ios init
       
-      - name: Build iOS App (Development - Unsigned)
+      - name: Build iOS App (Debugging - Unsigned)
         run: |
           cd src-tauri
           # 设置为开发模式（允许无签名构建）
           export APPLE_DEVELOPMENT_TEAM="-"
           export APPLE_SIGNING_IDENTITY="-"
-          # 使用 development 导出方法构建
-          echo "Starting Tauri iOS build (development export)..."
-          tauri ios build --export-method development || {
+          # 使用 debugging 导出方法构建（CI/CD 无签名）
+          echo "Starting Tauri iOS build (debugging export)..."
+          tauri ios build --export-method debugging || {
             echo "❌ Tauri iOS build failed!"
             echo "Checking for error logs..."
             if [ -d "gen/apple" ]; then

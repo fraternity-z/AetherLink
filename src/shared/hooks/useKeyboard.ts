@@ -46,12 +46,14 @@ export const useKeyboard = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const isNative = Capacitor.isNativePlatform();
+  const isIOS = Capacitor.getPlatform() === 'ios';
 
   useEffect(() => {
     if (!isNative) return;
 
     let showHandle: any;
     let hideHandle: any;
+    let debounceTimer: NodeJS.Timeout | null = null;
 
     /**
      * 监听 Capacitor Keyboard 事件
@@ -59,19 +61,43 @@ export const useKeyboard = () => {
      * keyboardWillShow 事件提供：
      * - keyboardHeight: 键盘高度（像素）
      * 
+     * iOS 特殊处理：
+     * - iOS 键盘弹出时会触发两次布局调整
+     * - 第一次：keyboardWillShow 正常定位
+     * - 第二次：iOS WebView 自动调整（约 100-200ms 后）
+     * - 解决方案：使用防抖，只采用第一次的值，忽略后续调整
+     * 
      * 注意事项：
      * 1. 必须在 capacitor.config.ts 中配置：
      *    Keyboard: { resizeOnFullScreen: false }
+     *    ios: { contentInset: 'never' }
      * 2. 使用 willShow/willHide 而不是 didShow/didHide，获得更流畅的动画
      */
     const setupListeners = async () => {
       showHandle = await Keyboard.addListener('keyboardWillShow', (info: any) => {
+        // 🚀 iOS 防抖：只采用第一次的键盘高度，忽略二次调整
+        if (isIOS && debounceTimer) {
+          return; // 忽略二次触发
+        }
+
         setIsKeyboardVisible(true);
         // 获取键盘高度 - 类似 rikkahub 的 WindowInsets.ime
         setKeyboardHeight(info.keyboardHeight || 0);
+
+        // iOS 设置防抖锁，300ms 内忽略后续事件
+        if (isIOS) {
+          debounceTimer = setTimeout(() => {
+            debounceTimer = null;
+          }, 300);
+        }
       });
 
       hideHandle = await Keyboard.addListener('keyboardWillHide', () => {
+        // 清除防抖锁
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+          debounceTimer = null;
+        }
         setIsKeyboardVisible(false);
         setKeyboardHeight(0);
       });
@@ -80,10 +106,13 @@ export const useKeyboard = () => {
     setupListeners();
 
     return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       showHandle?.remove();
       hideHandle?.remove();
     };
-  }, [isNative]);
+  }, [isNative, isIOS]);
 
   /**
    * 隐藏键盘的工具函数 - 类似 rikkahub 的 keyboardController?.hide()

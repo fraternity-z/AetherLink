@@ -780,8 +780,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           className="status-bar-safe-area"
           sx={{
             ...baseStyles.appBar,
-            // 🚀 安全区域只在移动端应用
-            paddingTop: Capacitor.isNativePlatform() ? '25px' : '0px',
+            // 🚀 安全区域只在移动端应用（iOS: 30px）
+            paddingTop: Capacitor.isNativePlatform() ? '30px' : '0px',
             // 强制移除所有可能的阴影和边框
             boxShadow: 'none',
             backgroundImage: 'none',
