@@ -69,6 +69,7 @@ const InputBoxSettings = lazy(() => import('../pages/Settings/InputBoxSettings')
 const ThemeStyleSettings = lazy(() => import('../pages/Settings/ThemeStyleSettings'));
 // 导入Notion设置页面
 const NotionSettings = lazy(() => import('../pages/Settings/NotionSettings'));
+const NetworkProxySettings = lazy(() => import('../pages/Settings/NetworkProxySettings'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -169,6 +170,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/data" element={<DataSettingsPage />} />
         <Route path="/settings/data/advanced-backup" element={<AdvancedBackupPage />} />
         <Route path="/settings/notion" element={<NotionSettings />} />
+        <Route path="/settings/network-proxy" element={<NetworkProxySettings />} />
         <Route path="/settings/web-search" element={<WebSearchSettings />} />
         <Route path="/settings/mcp-server" element={<MCPServerSettings />} />
         <Route path="/settings/mcp-server/:serverId" element={<MCPServerDetail />} />

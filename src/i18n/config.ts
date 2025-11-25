@@ -28,6 +28,7 @@ import enAppearanceSettings from './locales/en-US/settings/appearanceSettings.js
 import enVoiceSettings from './locales/en-US/settings/voiceSettings.json';
 import enWebSearchSettings from './locales/en-US/settings/webSearchSettings.json';
 import enMcpServerSettings from './locales/en-US/settings/mcpServerSettings.json';
+import enNetworkProxySettings from './locales/en-US/settings/networkProxySettings.json';
 import zhModelSettings from './locales/zh-CN/modelSettings.json';
 import zhAiDebate from './locales/zh-CN/aiDebate.json';
 import zhDataSettings from './locales/zh-CN/dataSettings.json';
@@ -36,6 +37,7 @@ import zhAppearanceSettings from './locales/zh-CN/settings/appearanceSettings.js
 import zhVoiceSettings from './locales/zh-CN/settings/voiceSettings.json';
 import zhWebSearchSettings from './locales/zh-CN/settings/webSearchSettings.json';
 import zhMcpServerSettings from './locales/zh-CN/settings/mcpServerSettings.json';
+import zhNetworkProxySettings from './locales/zh-CN/settings/networkProxySettings.json';
 
 // 深度合并函数，用于合并 settings 相关模块
 const deepMerge = (target: any, source: any) => {
@@ -69,7 +71,7 @@ const resources = {
       { chat: zhChat },
       { notifications: zhNotifications },
       { errors: zhErrors },
-      { settings: mergeSettingsModules(zhSettings, zhAppearanceSettings, zhVoiceSettings, zhWebSearchSettings, zhMcpServerSettings) },
+      { settings: mergeSettingsModules(zhSettings, zhAppearanceSettings, zhVoiceSettings, zhWebSearchSettings, zhMcpServerSettings, { networkProxy: zhNetworkProxySettings }) },
       { modelSettings: zhModelSettings },
       { aiDebate: zhAiDebate },
       { dataSettings: zhDataSettings },
@@ -83,7 +85,7 @@ const resources = {
       { chat: enChat },
       { notifications: enNotifications },
       { errors: enErrors },
-      { settings: mergeSettingsModules(enSettings, enAppearanceSettings, enVoiceSettings, enWebSearchSettings, enMcpServerSettings) },
+      { settings: mergeSettingsModules(enSettings, enAppearanceSettings, enVoiceSettings, enWebSearchSettings, enMcpServerSettings, { networkProxy: enNetworkProxySettings }) },
       { modelSettings: enModelSettings },
       { aiDebate: enAiDebate },
       { dataSettings: enDataSettings },

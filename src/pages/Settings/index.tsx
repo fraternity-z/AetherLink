@@ -19,6 +19,7 @@ import {
   Folder as WorkspaceIcon,
   Database as DatabaseIcon,
   FileText as NoteIcon,
+  Shield as ShieldIcon,
 } from 'lucide-react';
 import {
   SafeAreaContainer,
@@ -244,6 +245,14 @@ const SettingsPage: React.FC = () => {
           icon: <RecordVoiceOverIcon size={24} />,
           path: '/settings/voice',
           onClick: () => navigateTo('/settings/voice'),
+        },
+        {
+          id: 'network-proxy',
+          title: t('settings.items.networkProxy.title'),
+          description: t('settings.items.networkProxy.description'),
+          icon: <ShieldIcon size={24} />,
+          path: '/settings/network-proxy',
+          onClick: () => navigateTo('/settings/network-proxy'),
         },
         {
           id: 'features',

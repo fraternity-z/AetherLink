@@ -1,0 +1,44 @@
+{
+  "title": "Network Proxy",
+  "status": {
+    "enabled": "Proxy Enabled",
+    "disabled": "Proxy Disabled",
+    "directConnection": "Direct network connection"
+  },
+  "basic": {
+    "title": "Basic Settings",
+    "type": "Proxy Type",
+    "host": "Server Address",
+    "port": "Port"
+  },
+  "auth": {
+    "title": "Authentication",
+    "description": "Fill in username and password if the proxy server requires authentication",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username (optional)",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password (optional)"
+  },
+  "bypass": {
+    "title": "Proxy Bypass List",
+    "description": "These domains will bypass the proxy and connect directly. Wildcards supported (e.g., *.local)",
+    "placeholder": "Enter domain, e.g., localhost or *.example.com"
+  },
+  "test": {
+    "title": "Connection Test",
+    "description": "Test if the proxy connection is working properly",
+    "url": "Test URL",
+    "button": "Test Connection",
+    "testing": "Testing...",
+    "success": "Proxy connection successful!",
+    "failed": "Proxy connection failed",
+    "responseTime": "Response time: {{time}}ms",
+    "externalIp": "External IP: {{ip}}"
+  },
+  "platformSupport": {
+    "title": "Platform Support",
+    "android": "Full support via OkHttp Proxy",
+    "ios": "Full support via URLSessionConfiguration proxy",
+    "web": "Limited support via CORS proxy server (browser restrictions)"
+  }
+}

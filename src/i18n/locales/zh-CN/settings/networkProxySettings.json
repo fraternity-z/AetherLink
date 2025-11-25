@@ -1,0 +1,44 @@
+{
+  "title": "网络代理",
+  "status": {
+    "enabled": "代理已启用",
+    "disabled": "代理已禁用",
+    "directConnection": "直接连接网络"
+  },
+  "basic": {
+    "title": "基础设置",
+    "type": "代理类型",
+    "host": "服务器地址",
+    "port": "端口"
+  },
+  "auth": {
+    "title": "认证设置",
+    "description": "如果代理服务器需要身份验证，请填写用户名和密码",
+    "username": "用户名",
+    "usernamePlaceholder": "输入用户名（可选）",
+    "password": "密码",
+    "passwordPlaceholder": "输入密码（可选）"
+  },
+  "bypass": {
+    "title": "代理跳过列表",
+    "description": "以下域名将不通过代理直接访问，支持通配符（如 *.local）",
+    "placeholder": "输入域名，如 localhost 或 *.example.com"
+  },
+  "test": {
+    "title": "连接测试",
+    "description": "测试代理连接是否正常工作",
+    "url": "测试 URL",
+    "button": "测试连接",
+    "testing": "正在测试...",
+    "success": "代理连接成功！",
+    "failed": "代理连接失败",
+    "responseTime": "响应时间：{{time}}ms",
+    "externalIp": "外部IP：{{ip}}"
+  },
+  "platformSupport": {
+    "title": "平台支持说明",
+    "android": "完整支持，使用 OkHttp Proxy 实现",
+    "ios": "完整支持，使用 URLSessionConfiguration 代理配置",
+    "web": "通过 CORS 代理服务器支持（受浏览器限制）"
+  }
+}

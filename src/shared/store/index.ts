@@ -18,6 +18,7 @@ import assistantsReducer from './slices/assistantsSlice';
 import messageBlocksReducer from './slices/messageBlocksSlice';
 import uiReducer from './slices/uiSlice';
 import runtimeReducer from './slices/runtimeSlice';
+import networkProxyReducer, { loadNetworkProxySettings } from './slices/networkProxySlice';
 import { eventMiddleware } from './middleware/eventMiddleware';
 import { useDispatch, useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
@@ -27,13 +28,13 @@ import { debounce } from 'lodash';
 const rootReducer = combineReducers({
   messages: messagesReducer,
   settings: settingsReducer,
-
   groups: groupsReducer,
   webSearch: webSearchReducer,
   assistants: assistantsReducer,
   messageBlocks: messageBlocksReducer,
   ui: uiReducer,
-  runtime: runtimeReducer
+  runtime: runtimeReducer,
+  networkProxy: networkProxyReducer,
 });
 
 // 配置Redux持久化
@@ -97,6 +98,9 @@ initializeWebSearchSettings().then(settings => {
 }).catch(error => {
   console.error('初始化网络搜索设置失败:', error);
 });
+
+// 初始化网络代理设置
+store.dispatch(loadNetworkProxySettings() as any);
 
 // 导出类型
 export type RootState = ReturnType<typeof rootReducer>;

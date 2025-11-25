@@ -86,6 +86,10 @@
     "about": {
       "title": "About Us",
       "description": "Application information and technical support"
+    },
+    "networkProxy": {
+      "title": "Network Proxy",
+      "description": "Configure HTTP/SOCKS proxy server"
     }
   },
   "about": {
