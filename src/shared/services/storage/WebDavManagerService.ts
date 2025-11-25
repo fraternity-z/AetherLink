@@ -1,6 +1,21 @@
 import type { WebDavConfig, WebDavConnectionResult, WebDavUploadResult, WebDavDownloadResult, WebDavBackupFile } from '../../types';
 import { corsService } from '../network/CORSBypassService';
 import { getPlatformInfo, RuntimeType } from '../../utils/platformDetection';
+import { getStorageItem } from '../../utils/storage';
+
+// 代理配置接口
+interface ProxyConfig {
+  enabled: boolean;
+  type: 'http' | 'https' | 'socks4' | 'socks5';
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+}
+
+interface NetworkProxySettings {
+  globalProxy: ProxyConfig;
+}
 
 /**
  * 基于 webdav-manager.js 的 WebDAV 服务
@@ -104,7 +119,41 @@ export class WebDavManagerService {
   }
 
   /**
+   * 获取 Tauri 代理配置
+   */
+  private async getTauriProxyConfig(): Promise<{ url: string; basicAuth?: { username: string; password: string } } | undefined> {
+    try {
+      const settings = await getStorageItem<NetworkProxySettings>('network-proxy-settings');
+      if (!settings?.globalProxy?.enabled) {
+        return undefined;
+      }
+
+      const { type, host, port, username, password } = settings.globalProxy;
+      
+      // 构建代理 URL
+      let proxyUrl: string;
+      if (type === 'socks5' || type === 'socks4') {
+        proxyUrl = `socks5://${host}:${port}`;
+      } else {
+        proxyUrl = `http://${host}:${port}`;
+      }
+
+      const result: { url: string; basicAuth?: { username: string; password: string } } = { url: proxyUrl };
+      
+      if (username && password) {
+        result.basicAuth = { username, password };
+      }
+
+      return result;
+    } catch (error) {
+      console.error('🖥️ [WebDAV] 获取 Tauri 代理配置失败:', error);
+      return undefined;
+    }
+  }
+
+  /**
    * Tauri 桌面端直接请求（使用Tauri HTTP客户端绕过CORS）
+   * 支持网络代理配置
    */
   private async tauriDirectFetch(options: {
     url: string;
@@ -121,12 +170,26 @@ export class WebDavManagerService {
         ...options.headers
       };
 
-      // 使用Tauri的HTTP客户端
-      const response = await tauriFetch(options.url, {
+      // 获取代理配置
+      const proxyConfig = await this.getTauriProxyConfig();
+
+      // 构建请求选项
+      const fetchOptions: any = {
         method: options.method as any,
         headers,
         body: options.data ? (typeof options.data === 'string' ? options.data : options.data) : undefined
-      });
+      };
+
+      // 如果有代理配置，添加到请求选项
+      if (proxyConfig) {
+        fetchOptions.proxy = {
+          all: proxyConfig,
+        };
+        console.log('🖥️ [WebDAV] Tauri 使用代理:', proxyConfig.url);
+      }
+
+      // 使用Tauri的HTTP客户端
+      const response = await tauriFetch(options.url, fetchOptions);
 
       // Tauri的fetch返回标准的Response对象，需要调用text()方法获取内容
       const responseText = await response.text();
@@ -189,8 +252,6 @@ export class WebDavManagerService {
     let useProxy = false;
 
     if (options.url.startsWith('http')) {
-      const originalUrl = new URL(options.url);
-      
       // 所有 WebDAV 服务都使用通用 CORS 代理
       proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(options.url)}`;
       useProxy = true;

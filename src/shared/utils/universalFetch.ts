@@ -9,6 +9,57 @@
 import { Capacitor } from '@capacitor/core';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
 import { isTauri } from './platformDetection';
+import { getStorageItem } from './storage';
+
+// 代理配置接口（与 networkProxySlice 保持一致）
+interface ProxyConfig {
+  enabled: boolean;
+  type: 'http' | 'https' | 'socks4' | 'socks5';
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+  bypass?: string[];
+}
+
+interface NetworkProxySettings {
+  globalProxy: ProxyConfig;
+}
+
+/**
+ * 获取当前代理配置
+ */
+async function getTauriProxyConfig(): Promise<{ url: string; basicAuth?: { username: string; password: string } } | undefined> {
+  try {
+    const settings = await getStorageItem<NetworkProxySettings>('network-proxy-settings');
+    if (!settings?.globalProxy?.enabled) {
+      return undefined;
+    }
+
+    const { type, host, port, username, password } = settings.globalProxy;
+    
+    // 构建代理 URL
+    // Tauri HTTP 插件支持 http/https/socks5 代理
+    let proxyUrl: string;
+    if (type === 'socks5' || type === 'socks4') {
+      proxyUrl = `socks5://${host}:${port}`;
+    } else {
+      proxyUrl = `http://${host}:${port}`;
+    }
+
+    const result: { url: string; basicAuth?: { username: string; password: string } } = { url: proxyUrl };
+    
+    // 添加认证信息
+    if (username && password) {
+      result.basicAuth = { username, password };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('[Universal Fetch] 获取 Tauri 代理配置失败:', error);
+    return undefined;
+  }
+}
 
 // 请求选项接口
 export interface UniversalFetchOptions extends RequestInit {
@@ -199,18 +250,34 @@ function createCompatibleResponse(corsBypassResponse: any, _originalUrl: string)
 
 /**
  * Tauri fetch 函数，使用 Tauri HTTP 插件绕过 CORS
+ * 支持网络代理配置
  */
 async function tauriFetch(url: string, options: RequestInit & { timeout?: number }): Promise<UniversalResponse> {
   try {
     // 动态导入 Tauri HTTP 插件
     const { fetch: tauriHttpFetch } = await import('@tauri-apps/plugin-http');
     
-    // Tauri 的 fetch 函数与标准 fetch 兼容
-    const response = await tauriHttpFetch(url, {
+    // 获取代理配置
+    const proxyConfig = await getTauriProxyConfig();
+    
+    // 构建请求选项
+    const fetchOptions: any = {
       method: options.method as any,
       headers: options.headers as any,
       body: options.body as any,
-    });
+      connectTimeout: options.timeout || 30000,
+    };
+    
+    // 如果有代理配置，添加到请求选项
+    if (proxyConfig) {
+      fetchOptions.proxy = {
+        all: proxyConfig,
+      };
+      console.log('[Universal Fetch] Tauri HTTP 使用代理:', proxyConfig.url);
+    }
+    
+    // Tauri 的 fetch 函数与标准 fetch 兼容
+    const response = await tauriHttpFetch(url, fetchOptions);
     
     console.log('[Universal Fetch] Tauri HTTP 请求成功:', response.status, response.statusText);
     return response as UniversalResponse;
