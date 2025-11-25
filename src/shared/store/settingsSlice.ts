@@ -41,6 +41,7 @@ interface SettingsState {
   // 在代码块设置接口中添加 mermaid 开关
   codeDefaultCollapsed: boolean; // 代码块默认收起
   mermaidEnabled: boolean; // 是否启用 Mermaid 图表渲染
+  useNewCodeBlockView: boolean; // 是否使用新版代码块视图
   showSystemPromptBubble: boolean; // 是否显示系统提示词气泡
   showUserAvatar: boolean; // 是否显示用户头像
   showUserName: boolean; // 是否显示用户名称
@@ -250,6 +251,7 @@ const getInitialState = (): SettingsState => {
     // 在默认设置中添加 mermaid 默认值
     codeDefaultCollapsed: false, // 默认展开代码块
     mermaidEnabled: true, // 默认启用 Mermaid 图表渲染
+    useNewCodeBlockView: true, // 默认使用新版代码块视图
     showSystemPromptBubble: true, // 默认显示系统提示词气泡
     showUserAvatar: true, // 默认显示用户头像
     showUserName: true, // 默认显示用户名称
@@ -495,6 +497,11 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       // 如果没有代码块主题设置，使用默认值
       if (!savedSettings.codeStyle) {
         savedSettings.codeStyle = 'auto';
+      }
+
+      // 如果没有新版代码块视图设置，使用默认值
+      if (savedSettings.useNewCodeBlockView === undefined) {
+        savedSettings.useNewCodeBlockView = true;
       }
 
       // 如果没有小功能气泡显示设置，使用默认值

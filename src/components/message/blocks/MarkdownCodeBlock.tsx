@@ -5,6 +5,8 @@ import CodeBlock from './CodeBlock';
 import EnhancedCodeBlock from './EnhancedCodeBlock';
 import MermaidBlock from './MermaidBlock';
 import Markdown from '../Markdown';
+import { CodeBlockView } from '../../CodeBlockView';
+import HtmlArtifactsCard from '../../CodeBlockView/HtmlArtifactsCard';
 import type { CodeMessageBlock } from '../../../shared/types/newMessage';
 
 // 需要接收并传递 messageRole
@@ -31,7 +33,13 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   const isDarkMode = theme.palette.mode === 'dark';
 
   // 从 Redux store 获取代码块设置
-  const { codeEditor, codeShowLineNumbers, codeCollapsible, codeWrappable } = useAppSelector(state => state.settings);
+  const { 
+    codeEditor, 
+    codeShowLineNumbers, 
+    codeCollapsible, 
+    codeWrappable,
+    useNewCodeBlockView = true  // 默认使用新版代码块视图
+  } = useAppSelector(state => state.settings);
 
   // 判断是否使用增强版代码块（当启用了任何高级功能时）
   const useEnhancedCodeBlock = codeEditor || codeShowLineNumbers || codeCollapsible || codeWrappable;
@@ -107,6 +115,18 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
     return <MermaidBlock code={safeChildren} id={id} messageRole={messageRole} />;
   }
 
+  // HTML Artifacts 卡片（当启用新版代码块视图时）
+  if (useNewCodeBlockView && (language === 'html' || language === 'htm')) {
+    return (
+      <HtmlArtifactsCard
+        html={safeChildren}
+        onSave={(newContent) => {
+          console.log('保存 HTML:', id, newContent);
+        }}
+      />
+    );
+  }
+
   // 如果检测到表格内容，使用Markdown组件渲染而不是代码块
   if (isTableContent) {
     return (
@@ -140,6 +160,23 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   // 移除数学公式特殊处理，统一由 Markdown 层面处理
 
   // 根据设置选择使用哪个代码块组件
+  // 如果启用新版代码块视图，优先使用 CodeBlockView
+  if (useNewCodeBlockView) {
+    return (
+      <CodeBlockView
+        language={language}
+        onSave={(newContent) => {
+          // TODO: 实现保存逻辑
+          console.log('保存代码块:', id, newContent);
+        }}
+        messageRole={messageRole}
+      >
+        {safeChildren}
+      </CodeBlockView>
+    );
+  }
+
+  // 否则使用旧版代码块组件
   if (useEnhancedCodeBlock) {
     return <EnhancedCodeBlock block={codeBlock} />;
   } else {

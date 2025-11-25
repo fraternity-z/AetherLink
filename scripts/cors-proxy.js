@@ -285,8 +285,8 @@ const server = http.createServer((req, res) => {
   }));
 });
 
-// 启动服务器
-server.listen(PROXY_PORT, '0.0.0.0', () => {
+// 启动服务器 - 使用 127.0.0.1 而非 0.0.0.0 以避免网络接口枚举延迟
+server.listen(PROXY_PORT, '127.0.0.1', () => {
   console.log('\n' + colors.bright + colors.green + '═'.repeat(60) + colors.reset);
   console.log(colors.bright + colors.green + '  🚀 通用 CORS 代理服务器已启动' + colors.reset);
   console.log(colors.bright + colors.green + '═'.repeat(60) + colors.reset + '\n');
