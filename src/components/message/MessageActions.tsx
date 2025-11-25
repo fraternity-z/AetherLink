@@ -34,7 +34,8 @@ import TokenDisplay from '../chat/TokenDisplay';
 import type { Message, MessageVersion } from '../../shared/types/newMessage.ts';
 import MessageEditor from './MessageEditor';
 import ExportMenu from './ExportMenu';
-import { TTSService } from '../../shared/services/TTSService';
+// 使用 TTS V2 新架构
+import { TTSManager } from '../../shared/services/tts-v2';
 import { getMainTextContent } from '../../shared/utils/messageUtils';
 import { toastManager } from '../EnhancedToast';
 import { formatDistanceToNow } from 'date-fns';
@@ -209,41 +210,32 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     loadTTSEnabled();
   }, []);
 
-  // 播放状态管理 - 使用事件驱动，避免轮询
+  // 播放状态管理 - 使用 TTSManager 事件系统
   useEffect(() => {
-    const ttsService = TTSService.getInstance();
+    const tts = TTSManager.getInstance();
 
     // 检查当前播放状态
     const checkPlayingStatus = () => {
       if (!mountedRef.current) return;
-
-      const currentId = ttsService.getCurrentMessageId();
-      const isServicePlaying = ttsService.getIsPlaying();
-      const shouldBePlaying = isServicePlaying && currentId === message.id;
-
+      const shouldBePlaying = tts.isPlaying && tts.currentMessageId === message.id;
       setIsPlaying(shouldBePlaying);
     };
 
     // 初始检查
     checkPlayingStatus();
 
-    // 监听 TTS 状态变化事件
-    const handleTTSStateChange = () => {
-      checkPlayingStatus();
-    };
-
-    // 订阅事件
-    EventEmitter.on('tts:playStateChanged', handleTTSStateChange);
-    EventEmitter.on('tts:playbackEnded', handleTTSStateChange);
-    EventEmitter.on('tts:playbackStarted', handleTTSStateChange);
+    // 监听 TTSManager 事件
+    const unsubscribe = tts.addEventListener((event) => {
+      if (!mountedRef.current) return;
+      if (event.type === 'start' || event.type === 'end' || event.type === 'error') {
+        checkPlayingStatus();
+      }
+    });
 
     return () => {
-      // 取消订阅
-      EventEmitter.off('tts:playStateChanged', handleTTSStateChange);
-      EventEmitter.off('tts:playbackEnded', handleTTSStateChange);
-      EventEmitter.off('tts:playbackStarted', handleTTSStateChange);
+      unsubscribe();
     };
-  }, [message.id]); // 只依赖message.id
+  }, [message.id]);
 
   // 打开菜单 - 优化：使用useCallback
   const handleMenuClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -429,56 +421,32 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [handleMenuClose, messageIndex]);
 
-  // 文本转语音 - 简化：使用TTSService的全局配置
+  // 文本转语音 - 使用 TTSManager
   const handleTextToSpeech = useCallback(async () => {
     try {
-      const ttsService = TTSService.getInstance();
+      const tts = TTSManager.getInstance();
       const content = getMainTextContent(message);
 
       // 检查当前是否正在播放这条消息
-      const currentPlayingId = ttsService.getCurrentMessageId();
-      const isCurrentlyPlaying = currentPlayingId === message.id && ttsService.getIsPlaying();
-
-      if (isCurrentlyPlaying) {
-        // 停止播放
-        ttsService.stop();
+      if (tts.isPlaying && tts.currentMessageId === message.id) {
+        tts.stop();
         setIsPlaying(false);
         return;
-      }
-
-      // 停止其他消息的播放
-      if (ttsService.getIsPlaying()) {
-        ttsService.stop();
       }
 
       // 立即设置播放状态
       setIsPlaying(true);
 
-      // 使用TTSService的全局配置，无需重复初始化
-      const success = await ttsService.speak(content);
+      // 使用 TTSManager 播放
+      const success = await tts.speak(content, message.id);
 
       // 检查组件是否已卸载
       if (!mountedRef.current) return;
 
       if (!success) {
-        // 播放失败，重置状态
         setIsPlaying(false);
         alert('文本转语音失败');
       }
-
-      // 启动播放结束检测
-      const checkPlaybackEnd = () => {
-        if (!mountedRef.current) return;
-
-        if (!ttsService.getIsPlaying() || ttsService.getCurrentMessageId() !== message.id) {
-          setIsPlaying(false);
-        } else {
-          setTimeout(checkPlaybackEnd, 500);
-        }
-      };
-
-      setTimeout(checkPlaybackEnd, 1000);
-
     } catch (error) {
       console.error('TTS错误:', error);
       setIsPlaying(false);

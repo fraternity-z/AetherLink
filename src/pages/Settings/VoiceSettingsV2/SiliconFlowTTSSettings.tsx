@@ -15,7 +15,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TTSService } from '../../../shared/services/TTSService';
+import { TTSManager, type SiliconFlowTTSConfig } from '../../../shared/services/tts-v2';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { cssVar } from '../../../shared/utils/cssVariables';
 import {
@@ -30,7 +30,7 @@ import { SafeAreaContainer } from '../../../components/settings/SettingComponent
 const SiliconFlowTTSSettings: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const ttsService = useMemo(() => TTSService.getInstance(), []);
+  const ttsManager = useMemo(() => TTSManager.getInstance(), []);
   
   // 定时器引用
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,12 +77,15 @@ const SiliconFlowTTSSettings: React.FC = () => {
         setEnableTTS(storedEnableTTS);
         setIsEnabled(storedSelectedTTSService === 'siliconflow');
 
-        // 设置TTSService
-        ttsService.setApiKey(storedApiKey);
-        ttsService.setUseSiliconFlowStream(storedUseStream);
-        if (storedModel && storedVoice) {
-          ttsService.setDefaultVoice(storedModel, `${storedModel}:${storedVoice}`);
-        }
+        // 设置 TTSManager
+        ttsManager.configureEngine('siliconflow', {
+          enabled: true,
+          apiKey: storedApiKey,
+          model: storedModel,
+          voice: `${storedModel}:${storedVoice}`,
+          useStream: storedUseStream
+        } as Partial<SiliconFlowTTSConfig>);
+        
         // 加载测试文本
         const defaultTestText = t('settings.voice.siliconflow.testText');
         setTestText(defaultTestText);
@@ -92,10 +95,10 @@ const SiliconFlowTTSSettings: React.FC = () => {
     };
 
     loadSettings();
-  }, [ttsService, t]);
+  }, [ttsManager, t]);
 
   // 保存配置
-  const saveConfig = useCallback((): boolean => {
+  const saveConfig = useCallback(async (): Promise<boolean> => {
     try {
       // 验证必要字段
       if (isEnabled && !settings.apiKey.trim()) {
@@ -107,30 +110,25 @@ const SiliconFlowTTSSettings: React.FC = () => {
       }
 
       // 保存设置到存储
-      setStorageItem('siliconflow_api_key', settings.apiKey);
-      setStorageItem('tts_model', settings.selectedModel);
-      setStorageItem('tts_voice', settings.selectedVoice);
-      setStorageItem('siliconflow_tts_stream', settings.useStream.toString());
-      setStorageItem('enable_tts', enableTTS.toString());
-      setStorageItem('use_capacitor_tts', 'false');
+      await setStorageItem('siliconflow_api_key', settings.apiKey);
+      await setStorageItem('tts_model', settings.selectedModel);
+      await setStorageItem('tts_voice', settings.selectedVoice);
+      await setStorageItem('siliconflow_tts_stream', settings.useStream.toString());
+      await setStorageItem('enable_tts', enableTTS.toString());
+      await setStorageItem('use_capacitor_tts', 'false');
 
       // 只有启用时才设置为当前服务
       if (isEnabled) {
-        setStorageItem('selected_tts_service', 'siliconflow');
-        // 禁用其他TTS服务
-        setStorageItem('use_openai_tts', 'false');
-        setStorageItem('use_azure_tts', 'false');
-      }
-
-      // 更新TTSService
-      ttsService.setApiKey(settings.apiKey);
-      ttsService.setUseSiliconFlowStream(settings.useStream);
-      ttsService.setDefaultVoice(settings.selectedModel, `${settings.selectedModel}:${settings.selectedVoice}`);
-
-      if (isEnabled) {
-        ttsService.setUseOpenAI(false);
-        ttsService.setUseAzure(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('selected_tts_service', 'siliconflow');
+        await setStorageItem('use_siliconflow_tts', 'true');
+        await setStorageItem('use_openai_tts', 'false');
+        await setStorageItem('use_azure_tts', 'false');
+        await setStorageItem('use_capacitor_tts', 'false');
+        
+        ttsManager.setActiveEngine('siliconflow');
+      } else {
+        await setStorageItem('use_siliconflow_tts', 'false');
+        ttsManager.configureEngine('siliconflow', { enabled: false });
       }
 
       // 清除错误信息
@@ -148,11 +146,12 @@ const SiliconFlowTTSSettings: React.FC = () => {
       }));
       return false;
     }
-  }, [settings, enableTTS, isEnabled, ttsService, t]);
+  }, [settings, enableTTS, isEnabled, ttsManager, navigate, t]);
 
   // 手动保存
-  const handleSave = useCallback(() => {
-    if (saveConfig()) {
+  const handleSave = useCallback(async () => {
+    const success = await saveConfig();
+    if (success) {
       // 保存成功后返回上级页面
       setTimeout(() => {
         navigate('/settings/voice');
@@ -168,7 +167,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
   // 测试TTS
   const handleTestTTS = useCallback(async () => {
     if (uiState.isTestPlaying) {
-      ttsService.stop();
+      ttsManager.stop();
       if (playCheckIntervalRef.current) {
         clearInterval(playCheckIntervalRef.current);
       }
@@ -176,40 +175,40 @@ const SiliconFlowTTSSettings: React.FC = () => {
       return;
     }
 
-    setUIState(prev => ({ ...prev, isTestPlaying: true }));
-
-    // 设置为使用硅基流动TTS
-    ttsService.setUseOpenAI(false);
-    ttsService.setUseAzure(false);
-    ttsService.setUseCapacitorTTS(false);
-    ttsService.setApiKey(settings.apiKey);
-    ttsService.setUseSiliconFlowStream(settings.useStream);
-    ttsService.setDefaultVoice(settings.selectedModel, `${settings.selectedModel}:${settings.selectedVoice}`);
-
-    const success = await ttsService.speak(testText);
-
-    if (!success) {
-      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+    if (!settings.apiKey) {
+      setUIState(prev => ({ ...prev, saveError: t('settings.voice.common.apiKeyRequired') }));
+      return;
     }
 
-    if (playCheckIntervalRef.current) {
-      clearInterval(playCheckIntervalRef.current);
+    setUIState(prev => ({ ...prev, isTestPlaying: true }));
+
+    // 设置为使用 SiliconFlow TTS
+    ttsManager.configureEngine('siliconflow', {
+      enabled: true,
+      apiKey: settings.apiKey,
+      model: settings.selectedModel,
+      voice: `${settings.selectedModel}:${settings.selectedVoice}`,
+      useStream: settings.useStream
+    } as Partial<SiliconFlowTTSConfig>);
+    ttsManager.setActiveEngine('siliconflow');
+
+    const success = await ttsManager.speak(testText);
+    if (!success) {
+      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+      return;
     }
 
     const checkPlaybackStatus = () => {
-      if (!ttsService.getIsPlaying()) {
+      if (!ttsManager.isPlaying) {
         setUIState(prev => ({ ...prev, isTestPlaying: false }));
         if (playCheckIntervalRef.current) {
           clearInterval(playCheckIntervalRef.current);
-          playCheckIntervalRef.current = null;
         }
-      } else {
-        playCheckIntervalRef.current = setTimeout(checkPlaybackStatus, 1000);
       }
     };
-
-    setTimeout(checkPlaybackStatus, 1000);
-  }, [uiState.isTestPlaying, settings, testText, ttsService]);
+    
+    playCheckIntervalRef.current = setInterval(checkPlaybackStatus, 100);
+  }, [settings, testText, ttsManager, uiState.isTestPlaying, t]);
 
   const handleBack = () => {
     navigate('/settings/voice');
@@ -228,10 +227,10 @@ const SiliconFlowTTSSettings: React.FC = () => {
         clearTimeout(autoSaveTimeoutRef.current);
       }
       if (uiState.isTestPlaying) {
-        ttsService.stop();
+        ttsManager.stop();
       }
     };
-  }, [uiState.isTestPlaying, ttsService]);
+  }, [uiState.isTestPlaying, ttsManager]);
 
   // 获取主题变量
   const toolbarBg = cssVar('toolbar-bg');

@@ -8,6 +8,9 @@
   "basic": {
     "title": "基础设置",
     "type": "代理类型",
+    "quickInput": "快速填入",
+    "quickInputHint": "支持格式: host:port, http://host:port, socks5://host:port",
+    "fill": "填入",
     "host": "服务器地址",
     "port": "端口"
   },

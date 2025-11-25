@@ -203,12 +203,66 @@ export async function initializeServices(): Promise<void> {
       console.warn('开发者工具服务初始化失败:', devToolsError);
     }
 
-    // 初始化TTS服务配置
+    // 初始化TTS服务配置 (使用 V2 新架构)
     try {
-      const { TTSService } = await import('./TTSService');
-      const ttsService = TTSService.getInstance();
-      await ttsService.initializeConfig();
-      console.log('TTS服务配置初始化完成');
+      const { TTSManager } = await import('./tts-v2');
+      const { getStorageItem } = await import('../utils/storage');
+      
+      const tts = TTSManager.getInstance();
+      
+      // 加载用户选择的 TTS 服务
+      const selectedService = await getStorageItem<string>('selected_tts_service') || 'siliconflow';
+      const enableTTS = (await getStorageItem<string>('enable_tts')) !== 'false';
+      
+      if (enableTTS) {
+        // 根据选择配置引擎
+        switch (selectedService) {
+          case 'capacitor': {
+            const language = await getStorageItem<string>('capacitor_tts_language') || 'zh-CN';
+            const rate = parseFloat(await getStorageItem<string>('capacitor_tts_rate') || '1.0');
+            const pitch = parseFloat(await getStorageItem<string>('capacitor_tts_pitch') || '1.0');
+            const volume = parseFloat(await getStorageItem<string>('capacitor_tts_volume') || '1.0');
+            tts.configureEngine('capacitor', { enabled: true, language, rate, pitch, volume });
+            tts.setActiveEngine('capacitor');
+            break;
+          }
+          case 'openai': {
+            const apiKey = await getStorageItem<string>('openai_tts_api_key') || '';
+            const model = await getStorageItem<string>('openai_tts_model') || 'tts-1';
+            const voice = await getStorageItem<string>('openai_tts_voice') || 'alloy';
+            tts.configureEngine('openai', { enabled: true, apiKey, model, voice });
+            tts.setActiveEngine('openai');
+            break;
+          }
+          case 'azure': {
+            const apiKey = await getStorageItem<string>('azure_tts_api_key') || '';
+            const region = await getStorageItem<string>('azure_tts_region') || 'eastus';
+            const voiceName = await getStorageItem<string>('azure_tts_voice_name') || 'zh-CN-XiaoxiaoNeural';
+            tts.configureEngine('azure', { enabled: true, apiKey, region, voiceName });
+            tts.setActiveEngine('azure');
+            break;
+          }
+          case 'gemini': {
+            const apiKey = await getStorageItem<string>('gemini_tts_api_key') || '';
+            const model = await getStorageItem<string>('gemini_tts_model') || 'gemini-2.5-flash-preview-tts';
+            const voice = await getStorageItem<string>('gemini_tts_voice') || 'Kore';
+            tts.configureEngine('gemini', { enabled: true, apiKey, model, voice });
+            tts.setActiveEngine('gemini');
+            break;
+          }
+          case 'siliconflow':
+          default: {
+            const apiKey = await getStorageItem<string>('siliconflow_api_key') || '';
+            const model = await getStorageItem<string>('tts_model') || 'FunAudioLLM/CosyVoice2-0.5B';
+            const voice = await getStorageItem<string>('tts_voice') || 'FunAudioLLM/CosyVoice2-0.5B:alex';
+            tts.configureEngine('siliconflow', { enabled: true, apiKey, model, voice });
+            tts.setActiveEngine('siliconflow');
+            break;
+          }
+        }
+      }
+      
+      console.log('🎵 TTS V2 初始化完成, 使用引擎:', selectedService);
     } catch (ttsError) {
       console.warn('TTS服务配置初始化失败:', ttsError);
     }

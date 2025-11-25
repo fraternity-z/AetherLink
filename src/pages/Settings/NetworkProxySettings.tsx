@@ -77,6 +77,7 @@ const NetworkProxySettings: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [testUrl, setTestUrl] = useState('https://www.google.com');
   const [newBypassDomain, setNewBypassDomain] = useState('');
+  const [quickInput, setQuickInput] = useState('');
 
   // 加载设置
   useEffect(() => {
@@ -143,10 +144,76 @@ const NetworkProxySettings: React.FC = () => {
     dispatch(clearTestResult());
   };
 
+  // 快速填入 host:port 格式
+  const handleQuickInput = () => {
+    const input = quickInput.trim();
+    if (!input) return;
+
+    // 支持多种格式: host:port, http://host:port, socks5://host:port
+    let host = '';
+    let port = 0;
+    let type: ProxyType | null = null;
+
+    // 检查是否有协议前缀
+    const protocolMatch = input.match(/^(https?|socks[45]):\/\//i);
+    let addressPart = input;
+    
+    if (protocolMatch) {
+      const protocol = protocolMatch[1].toLowerCase();
+      if (protocol === 'http') type = 'http';
+      else if (protocol === 'https') type = 'https';
+      else if (protocol === 'socks4') type = 'socks4';
+      else if (protocol === 'socks5') type = 'socks5';
+      addressPart = input.slice(protocolMatch[0].length);
+    }
+
+    // 解析 host:port
+    const lastColon = addressPart.lastIndexOf(':');
+    if (lastColon !== -1) {
+      host = addressPart.slice(0, lastColon);
+      const portStr = addressPart.slice(lastColon + 1);
+      port = parseInt(portStr, 10);
+      
+      if (isNaN(port) || port < 1 || port > 65535) {
+        port = 0;
+      }
+    } else {
+      host = addressPart;
+    }
+
+    // 更新状态
+    if (host) {
+      dispatch(setProxyHost(host));
+    }
+    if (port > 0) {
+      dispatch(setProxyPort(port));
+    }
+    if (type) {
+      dispatch(setProxyType(type));
+    }
+    
+    dispatch(clearTestResult());
+    setQuickInput('');
+  };
+
   // 处理端口变更
   const handlePortChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const port = parseInt(event.target.value, 10);
-    if (!isNaN(port) && port > 0 && port <= 65535) {
+    const value = event.target.value;
+    
+    // 允许空值（用户正在删除）
+    if (value === '') {
+      dispatch(setProxyPort(0));
+      dispatch(clearTestResult());
+      return;
+    }
+    
+    // 只允许数字
+    if (!/^\d+$/.test(value)) {
+      return;
+    }
+    
+    const port = parseInt(value, 10);
+    if (port >= 0 && port <= 65535) {
       dispatch(setProxyPort(port));
       dispatch(clearTestResult());
     }
@@ -311,6 +378,36 @@ const NetworkProxySettings: React.FC = () => {
               </FormControl>
             </Box>
 
+            {/* 快速填入 */}
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {t('settings.networkProxy.basic.quickInput', '快速填入')}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="18.162.158.218:80 或 socks5://127.0.0.1:1080"
+                  value={quickInput}
+                  onChange={(e) => setQuickInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleQuickInput()}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleQuickInput}
+                  disabled={!quickInput.trim()}
+                  sx={{ borderRadius: 2, minWidth: 'auto', px: 2 }}
+                >
+                  {t('settings.networkProxy.basic.fill', '填入')}
+                </Button>
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                {t('settings.networkProxy.basic.quickInputHint', '支持格式: host:port, http://host:port, socks5://host:port')}
+              </Typography>
+            </Box>
+
             {/* 服务器地址 */}
             <Box sx={{ p: 2 }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -334,11 +431,11 @@ const NetworkProxySettings: React.FC = () => {
               <TextField
                 fullWidth
                 size="small"
-                type="number"
+                type="text"
                 placeholder="8080"
-                value={globalProxy.port}
+                value={globalProxy.port || ''}
                 onChange={handlePortChange}
-                inputProps={{ min: 1, max: 65535 }}
+                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Box>

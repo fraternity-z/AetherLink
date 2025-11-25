@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TTSService } from '../../../shared/services/TTSService';
+import { TTSManager, type CapacitorTTSConfig } from '../../../shared/services/tts-v2';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
@@ -26,7 +26,7 @@ import { SafeAreaContainer } from '../../../components/settings/SettingComponent
 const CapacitorTTSSettings: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const ttsService = useMemo(() => TTSService.getInstance(), []);
+  const ttsManager = useMemo(() => TTSManager.getInstance(), []);
 
   const [settings, setSettings] = useState({
     language: 'zh-CN',
@@ -75,17 +75,20 @@ const CapacitorTTSSettings: React.FC = () => {
         setEnableTTS(storedEnableTTS);
         setIsEnabled(storedSelectedTTSService === 'capacitor');
 
-        ttsService.setCapacitorTTSLanguage(storedLanguage);
-        ttsService.setCapacitorTTSRate(storedRate);
-        ttsService.setCapacitorTTSPitch(storedPitch);
-        ttsService.setCapacitorTTSVolume(storedVolume);
+        ttsManager.configureEngine('capacitor', {
+          enabled: true,
+          language: storedLanguage,
+          rate: storedRate,
+          pitch: storedPitch,
+          volume: storedVolume
+        } as Partial<CapacitorTTSConfig>);
       } catch (error) {
         console.error('加载Capacitor TTS设置失败:', error);
       }
     };
 
     loadSettings();
-  }, [ttsService, t]);
+  }, [ttsManager, t]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -100,21 +103,19 @@ const CapacitorTTSSettings: React.FC = () => {
         await setStorageItem('use_capacitor_tts', 'true');
         await setStorageItem('use_openai_tts', 'false');
         await setStorageItem('use_azure_tts', 'false');
+
+        // 更新管理器
+        ttsManager.configureEngine('capacitor', {
+          enabled: true,
+          language: settings.language,
+          rate: settings.rate,
+          pitch: settings.pitch,
+          volume: settings.volume
+        } as Partial<CapacitorTTSConfig>);
+        ttsManager.setActiveEngine('capacitor');
       } else {
         await setStorageItem('use_capacitor_tts', 'false');
-      }
-
-      ttsService.setCapacitorTTSLanguage(settings.language);
-      ttsService.setCapacitorTTSRate(settings.rate);
-      ttsService.setCapacitorTTSPitch(settings.pitch);
-      ttsService.setCapacitorTTSVolume(settings.volume);
-
-      if (isEnabled) {
-        ttsService.setUseCapacitorTTS(true);
-        ttsService.setUseOpenAI(false);
-        ttsService.setUseAzure(false);
-      } else {
-        ttsService.setUseCapacitorTTS(false);
+        ttsManager.configureEngine('capacitor', { enabled: false });
       }
 
       navigate('/settings/voice');
@@ -125,39 +126,42 @@ const CapacitorTTSSettings: React.FC = () => {
         saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [settings, enableTTS, isEnabled, ttsService, navigate, t]);
+  }, [settings, enableTTS, isEnabled, ttsManager, navigate, t]);
 
   const handleTestTTS = useCallback(async () => {
     if (uiState.isTestPlaying) {
-      ttsService.stop();
+      ttsManager.stop();
       setUIState(prev => ({ ...prev, isTestPlaying: false }));
       return;
     }
 
     setUIState(prev => ({ ...prev, isTestPlaying: true }));
 
-    ttsService.setUseCapacitorTTS(true);
-    ttsService.setUseOpenAI(false);
-    ttsService.setUseAzure(false);
-    ttsService.setCapacitorTTSLanguage(settings.language);
-    ttsService.setCapacitorTTSRate(settings.rate);
-    ttsService.setCapacitorTTSPitch(settings.pitch);
-    ttsService.setCapacitorTTSVolume(settings.volume);
+    // 临时配置用于测试
+    ttsManager.configureEngine('capacitor', {
+      enabled: true,
+      language: settings.language,
+      rate: settings.rate,
+      pitch: settings.pitch,
+      volume: settings.volume
+    } as Partial<CapacitorTTSConfig>);
+    ttsManager.setActiveEngine('capacitor');
 
-    const success = await ttsService.speak(testText);
+    const success = await ttsManager.speak(testText);
     if (!success) {
       setUIState(prev => ({ ...prev, isTestPlaying: false }));
     }
 
+    // 监听播放结束
     const checkPlaybackStatus = () => {
-      if (!ttsService.getIsPlaying()) {
+      if (!ttsManager.isPlaying) {
         setUIState(prev => ({ ...prev, isTestPlaying: false }));
       } else {
         setTimeout(checkPlaybackStatus, 100);
       }
     };
     setTimeout(checkPlaybackStatus, 100);
-  }, [settings, testText, ttsService, uiState.isTestPlaying]);
+  }, [settings, testText, ttsManager, uiState.isTestPlaying]);
 
   return (
     <SafeAreaContainer sx={{ backgroundColor: bgDefault, color: textPrimary }}>

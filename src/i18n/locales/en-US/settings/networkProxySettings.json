@@ -8,6 +8,9 @@
   "basic": {
     "title": "Basic Settings",
     "type": "Proxy Type",
+    "quickInput": "Quick Input",
+    "quickInputHint": "Formats: host:port, http://host:port, socks5://host:port",
+    "fill": "Fill",
     "host": "Server Address",
     "port": "Port"
   },

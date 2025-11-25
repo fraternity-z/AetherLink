@@ -15,7 +15,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TTSService } from '../../../shared/services/TTSService';
+import { TTSManager, type AzureTTSConfig } from '../../../shared/services/tts-v2';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { cssVar } from '../../../shared/utils/cssVariables';
 import {
@@ -30,7 +30,7 @@ import { SafeAreaContainer } from '../../../components/settings/SettingComponent
 const AzureTTSSettings: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const ttsService = useMemo(() => TTSService.getInstance(), []);
+  const ttsManager = useMemo(() => TTSManager.getInstance(), []);
   
   // 定时器引用
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -101,26 +101,28 @@ const AzureTTSSettings: React.FC = () => {
         setEnableTTS(storedEnableTTS);
         setIsEnabled(storedSelectedTTSService === 'azure');
 
-        // 设置TTSService
-        ttsService.setAzureApiKey(storedAzureApiKey);
-        ttsService.setAzureRegion(storedAzureRegion);
-        ttsService.setAzureVoiceName(storedAzureVoiceName);
-        ttsService.setAzureLanguage(storedAzureLanguage);
-        ttsService.setAzureOutputFormat(storedAzureOutputFormat);
-        ttsService.setAzureRate(storedAzureRate);
-        ttsService.setAzurePitch(storedAzurePitch);
-        ttsService.setAzureVolume(storedAzureVolume);
-        ttsService.setAzureStyle(storedAzureStyle);
-        ttsService.setAzureStyleDegree(storedAzureStyleDegree);
-        ttsService.setAzureRole(storedAzureRole);
-        ttsService.setAzureUseSSML(storedAzureUseSSML);
+        // 设置 TTSManager
+        ttsManager.configureEngine('azure', {
+          enabled: true,
+          apiKey: storedAzureApiKey,
+          region: storedAzureRegion,
+          voiceName: storedAzureVoiceName,
+          language: storedAzureLanguage,
+          rate: storedAzureRate,
+          pitch: storedAzurePitch,
+          volume: storedAzureVolume,
+          style: storedAzureStyle,
+          styleDegree: storedAzureStyleDegree,
+          role: storedAzureRole,
+          useSSML: storedAzureUseSSML
+        } as Partial<AzureTTSConfig>);
       } catch (error) {
         console.error(t('settings.voice.common.loadingError', { service: 'Azure TTS' }), error);
       }
     };
 
     loadSettings();
-  }, [ttsService, t]);
+  }, [ttsManager, t]);
 
   // 保存设置
   const handleSave = useCallback(async () => {
@@ -150,27 +152,32 @@ const AzureTTSSettings: React.FC = () => {
         await setStorageItem('use_azure_tts', 'false');
       }
 
-      // 更新TTSService
-      ttsService.setAzureApiKey(settings.apiKey);
-      ttsService.setAzureRegion(settings.region);
-      ttsService.setAzureVoiceName(settings.voiceName);
-      ttsService.setAzureLanguage(settings.language);
-      ttsService.setAzureOutputFormat(settings.outputFormat);
-      ttsService.setAzureRate(settings.rate);
-      ttsService.setAzurePitch(settings.pitch);
-      ttsService.setAzureVolume(settings.volume);
-      ttsService.setAzureStyle(settings.style);
-      ttsService.setAzureStyleDegree(settings.styleDegree);
-      ttsService.setAzureRole(settings.role);
-      ttsService.setAzureUseSSML(settings.useSSML);
+      // 更新 TTSManager
+      ttsManager.configureEngine('azure', {
+        enabled: true,
+        apiKey: settings.apiKey,
+        region: settings.region,
+        voiceName: settings.voiceName,
+        language: settings.language,
+        rate: settings.rate,
+        pitch: settings.pitch,
+        volume: settings.volume,
+        style: settings.style,
+        styleDegree: settings.styleDegree,
+        role: settings.role,
+        useSSML: settings.useSSML
+      } as Partial<AzureTTSConfig>);
 
       if (isEnabled) {
-        ttsService.setUseAzure(true);
-        ttsService.setUseOpenAI(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('selected_tts_service', 'azure');
+        await setStorageItem('use_azure_tts', 'true');
+        await setStorageItem('use_openai_tts', 'false');
+        await setStorageItem('use_capacitor_tts', 'false');
+        
+        ttsManager.setActiveEngine('azure');
       } else {
-        ttsService.setUseAzure(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('use_azure_tts', 'false');
+        ttsManager.configureEngine('azure', { enabled: false });
       }
 
       if (saveTimeoutRef.current) {
@@ -190,7 +197,7 @@ const AzureTTSSettings: React.FC = () => {
         saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [settings, enableTTS, isEnabled, ttsService, navigate, t]);
+  }, [settings, enableTTS, isEnabled, ttsManager, navigate, t]);
 
   // 处理启用状态变化
   const handleEnableChange = useCallback((enabled: boolean) => {
@@ -200,7 +207,7 @@ const AzureTTSSettings: React.FC = () => {
   // 测试TTS
   const handleTestTTS = useCallback(async () => {
     if (uiState.isTestPlaying) {
-      ttsService.stop();
+      ttsManager.stop();
       if (playCheckIntervalRef.current) {
         clearInterval(playCheckIntervalRef.current);
       }
@@ -208,49 +215,47 @@ const AzureTTSSettings: React.FC = () => {
       return;
     }
 
-    setUIState(prev => ({ ...prev, isTestPlaying: true }));
-
-    // 设置为使用Azure TTS
-    ttsService.setUseAzure(true);
-    ttsService.setUseOpenAI(false);
-    ttsService.setUseCapacitorTTS(false);
-    ttsService.setAzureApiKey(settings.apiKey);
-    ttsService.setAzureRegion(settings.region);
-    ttsService.setAzureVoiceName(settings.voiceName);
-    ttsService.setAzureLanguage(settings.language);
-    ttsService.setAzureOutputFormat(settings.outputFormat);
-    ttsService.setAzureRate(settings.rate);
-    ttsService.setAzurePitch(settings.pitch);
-    ttsService.setAzureVolume(settings.volume);
-    ttsService.setAzureStyle(settings.style);
-    ttsService.setAzureStyleDegree(settings.styleDegree);
-    ttsService.setAzureRole(settings.role);
-    ttsService.setAzureUseSSML(settings.useSSML);
-
-    const success = await ttsService.speak(testText);
-
-    if (!success) {
-      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+    if (!settings.apiKey) {
+      setUIState(prev => ({ ...prev, saveError: t('settings.voice.common.apiKeyRequired') }));
+      return;
     }
 
-    if (playCheckIntervalRef.current) {
-      clearInterval(playCheckIntervalRef.current);
+    setUIState(prev => ({ ...prev, isTestPlaying: true }));
+
+    // 设置为使用 Azure TTS
+    ttsManager.configureEngine('azure', {
+      enabled: true,
+      apiKey: settings.apiKey,
+      region: settings.region,
+      voiceName: settings.voiceName,
+      language: settings.language,
+      rate: settings.rate,
+      pitch: settings.pitch,
+      volume: settings.volume,
+      style: settings.style,
+      styleDegree: settings.styleDegree,
+      role: settings.role,
+      useSSML: settings.useSSML
+    } as Partial<AzureTTSConfig>);
+    ttsManager.setActiveEngine('azure');
+
+    const success = await ttsManager.speak(testText);
+    if (!success) {
+      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+      return;
     }
 
     const checkPlaybackStatus = () => {
-      if (!ttsService.getIsPlaying()) {
+      if (!ttsManager.isPlaying) {
         setUIState(prev => ({ ...prev, isTestPlaying: false }));
         if (playCheckIntervalRef.current) {
           clearInterval(playCheckIntervalRef.current);
-          playCheckIntervalRef.current = null;
         }
-      } else {
-        playCheckIntervalRef.current = setTimeout(checkPlaybackStatus, 1000);
       }
     };
-
-    setTimeout(checkPlaybackStatus, 1000);
-  }, [uiState.isTestPlaying, settings, testText, ttsService]);
+    
+    playCheckIntervalRef.current = setInterval(checkPlaybackStatus, 100);
+  }, [settings, testText, ttsManager, uiState.isTestPlaying, t]);
 
   const handleBack = () => {
     navigate('/settings/voice');
@@ -269,10 +274,10 @@ const AzureTTSSettings: React.FC = () => {
         clearTimeout(autoSaveTimeoutRef.current);
       }
       if (uiState.isTestPlaying) {
-        ttsService.stop();
+        ttsManager.stop();
       }
     };
-  }, [uiState.isTestPlaying, ttsService]);
+  }, [uiState.isTestPlaying, ttsManager]);
 
   // 获取主题变量
   const toolbarBg = cssVar('toolbar-bg');

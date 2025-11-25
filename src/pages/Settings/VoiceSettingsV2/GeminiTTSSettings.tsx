@@ -20,7 +20,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TTSService } from '../../../shared/services/TTSService';
+import { TTSManager, type GeminiTTSConfig } from '../../../shared/services/tts-v2';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
@@ -43,7 +43,7 @@ interface GeminiTTSSettingsType {
 const GeminiTTSSettings: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const ttsService = useMemo(() => TTSService.getInstance(), []);
+  const ttsManager = useMemo(() => TTSManager.getInstance(), []);
   
   // 定时器引用
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -103,20 +103,23 @@ const GeminiTTSSettings: React.FC = () => {
         setEnableTTS(storedEnableTTS);
         setIsEnabled(storedSelectedTTSService === 'gemini');
 
-        // 设置TTSService
-        ttsService.setGeminiApiKey(storedApiKey);
-        ttsService.setGeminiModel(storedModel);
-        ttsService.setGeminiVoice(storedVoice);
-        ttsService.setGeminiStylePrompt(storedStylePrompt);
-        ttsService.setUseGeminiMultiSpeaker(storedUseMultiSpeaker);
-        ttsService.setGeminiSpeakers(storedSpeakers);
+        // 设置 TTSManager
+        ttsManager.configureEngine('gemini', {
+          enabled: true,
+          apiKey: storedApiKey,
+          model: storedModel,
+          voice: storedVoice,
+          stylePrompt: storedStylePrompt,
+          useMultiSpeaker: storedUseMultiSpeaker,
+          speakers: storedSpeakers
+        } as Partial<GeminiTTSConfig>);
       } catch (error) {
         console.error('加载 Gemini TTS 设置失败:', error);
       }
     };
 
     loadSettings();
-  }, [ttsService]);
+  }, [ttsManager, t]);
 
   // 处理启用状态变更
   const handleEnableChange = useCallback((checked: boolean) => {
@@ -144,22 +147,28 @@ const GeminiTTSSettings: React.FC = () => {
         await setStorageItem('use_azure_tts', 'false');
       }
 
-      // 更新TTSService
-      ttsService.setGeminiApiKey(settings.apiKey);
-      ttsService.setGeminiModel(settings.model);
-      ttsService.setGeminiVoice(settings.voice);
-      ttsService.setGeminiStylePrompt(settings.stylePrompt);
-      ttsService.setUseGeminiMultiSpeaker(settings.useMultiSpeaker);
-      ttsService.setGeminiSpeakers(settings.speakers);
+      // 更新 TTSManager
+      ttsManager.configureEngine('gemini', {
+        enabled: true,
+        apiKey: settings.apiKey,
+        model: settings.model,
+        voice: settings.voice,
+        stylePrompt: settings.stylePrompt,
+        useMultiSpeaker: settings.useMultiSpeaker,
+        speakers: settings.speakers
+      } as Partial<GeminiTTSConfig>);
 
       if (isEnabled) {
-        ttsService.setUseGemini(true);
-        ttsService.setUseOpenAI(false);
-        ttsService.setUseAzure(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('selected_tts_service', 'gemini');
+        await setStorageItem('use_gemini_tts', 'true');
+        await setStorageItem('use_openai_tts', 'false');
+        await setStorageItem('use_azure_tts', 'false');
+        await setStorageItem('use_capacitor_tts', 'false');
+        
+        ttsManager.setActiveEngine('gemini');
       } else {
-        ttsService.setUseGemini(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('use_gemini_tts', 'false');
+        ttsManager.configureEngine('gemini', { enabled: false });
       }
 
       setUIState(prev => ({
@@ -179,54 +188,55 @@ const GeminiTTSSettings: React.FC = () => {
         saveError: t('settings.voice.common.saveErrorText', { service: 'Gemini TTS' })
       }));
     }
-  }, [settings, enableTTS, isEnabled, ttsService, navigate, t]);
+  }, [settings, enableTTS, isEnabled, ttsManager, navigate, t]);
 
   // 测试TTS
   const handleTestTTS = useCallback(async () => {
     if (uiState.isTestPlaying) {
-      ttsService.stop();
-      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+      ttsManager.stop();
       if (playCheckIntervalRef.current) {
         clearInterval(playCheckIntervalRef.current);
-        playCheckIntervalRef.current = null;
       }
+      setUIState(prev => ({ ...prev, isTestPlaying: false }));
       return;
     }
 
-    // 设置为使用Gemini TTS
-    ttsService.setUseGemini(true);
-    ttsService.setUseOpenAI(false);
-    ttsService.setUseAzure(false);
-    ttsService.setUseCapacitorTTS(false);
-    ttsService.setGeminiApiKey(settings.apiKey);
-    ttsService.setGeminiModel(settings.model);
-    ttsService.setGeminiVoice(settings.voice);
-    ttsService.setGeminiStylePrompt(settings.stylePrompt);
-    ttsService.setUseGeminiMultiSpeaker(settings.useMultiSpeaker);
-    ttsService.setGeminiSpeakers(settings.speakers);
+    if (!settings.apiKey) {
+      setUIState(prev => ({ ...prev, saveError: t('settings.voice.common.apiKeyRequired') }));
+      return;
+    }
 
     setUIState(prev => ({ ...prev, isTestPlaying: true }));
 
-    try {
-      await ttsService.speak(testText);
-    } catch (error) {
-      console.error('测试播放失败:', error);
+    // 设置为使用 Gemini TTS
+    ttsManager.configureEngine('gemini', {
+      enabled: true,
+      apiKey: settings.apiKey,
+      model: settings.model,
+      voice: settings.voice,
+      stylePrompt: settings.stylePrompt,
+      useMultiSpeaker: settings.useMultiSpeaker,
+      speakers: settings.speakers
+    } as Partial<GeminiTTSConfig>);
+    ttsManager.setActiveEngine('gemini');
+
+    const success = await ttsManager.speak(testText);
+    if (!success) {
+      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+      return;
     }
 
     const checkPlaybackStatus = () => {
-      if (!ttsService.getIsPlaying()) {
+      if (!ttsManager.isPlaying) {
         setUIState(prev => ({ ...prev, isTestPlaying: false }));
         if (playCheckIntervalRef.current) {
           clearInterval(playCheckIntervalRef.current);
-          playCheckIntervalRef.current = null;
         }
-      } else {
-        playCheckIntervalRef.current = setTimeout(checkPlaybackStatus, 1000);
       }
     };
-
-    setTimeout(checkPlaybackStatus, 1000);
-  }, [settings, testText, ttsService, uiState.isTestPlaying]);
+    
+    playCheckIntervalRef.current = setInterval(checkPlaybackStatus, 100);
+  }, [settings, testText, ttsManager, uiState.isTestPlaying, t]);
 
   const handleBack = () => {
     navigate('/settings/voice');
@@ -239,10 +249,10 @@ const GeminiTTSSettings: React.FC = () => {
       if (playCheckIntervalRef.current) clearInterval(playCheckIntervalRef.current);
       if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
       if (uiState.isTestPlaying) {
-        ttsService.stop();
+        ttsManager.stop();
       }
     };
-  }, [uiState.isTestPlaying, ttsService]);
+  }, [uiState.isTestPlaying, ttsManager]);
 
   // 所有30种语音选项
   const voiceOptions: GeminiVoiceName[] = [

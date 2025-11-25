@@ -15,7 +15,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TTSService } from '../../../shared/services/TTSService';
+import { TTSManager, type OpenAITTSConfig } from '../../../shared/services/tts-v2';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { cssVar } from '../../../shared/utils/cssVariables';
 import {
@@ -30,7 +30,7 @@ import { SafeAreaContainer } from '../../../components/settings/SettingComponent
 const OpenAITTSSettings: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const ttsService = useMemo(() => TTSService.getInstance(), []);
+  const ttsManager = useMemo(() => TTSManager.getInstance(), []);
   
   // 定时器引用
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,13 +84,16 @@ const OpenAITTSSettings: React.FC = () => {
         setEnableTTS(storedEnableTTS);
         setIsEnabled(storedSelectedTTSService === 'openai');
 
-        // 设置TTSService
-        ttsService.setOpenAIApiKey(storedOpenaiApiKey);
-        ttsService.setOpenAIModel(storedOpenaiModel);
-        ttsService.setOpenAIVoice(storedOpenaiVoice);
-        ttsService.setOpenAIResponseFormat(storedOpenaiFormat);
-        ttsService.setOpenAISpeed(storedOpenaiSpeed);
-        ttsService.setUseOpenAIStream(storedUseOpenaiStream);
+        // 设置 TTSManager
+        ttsManager.configureEngine('openai', {
+          enabled: true,
+          apiKey: storedOpenaiApiKey,
+          model: storedOpenaiModel,
+          voice: storedOpenaiVoice,
+          speed: storedOpenaiSpeed,
+          responseFormat: storedOpenaiFormat
+        } as Partial<OpenAITTSConfig>);
+        
         // 加载测试文本
         const defaultTestText = t('settings.voice.openai.testText');
         setTestText(defaultTestText);
@@ -100,7 +103,7 @@ const OpenAITTSSettings: React.FC = () => {
     };
 
     loadSettings();
-  }, [ttsService, t]);
+  }, [ttsManager, t]);
 
   // 保存设置
   const handleSave = useCallback(async () => {
@@ -124,21 +127,26 @@ const OpenAITTSSettings: React.FC = () => {
         await setStorageItem('use_openai_tts', 'false');
       }
 
-      // 更新TTSService
-      ttsService.setOpenAIApiKey(settings.apiKey);
-      ttsService.setOpenAIModel(settings.selectedModel);
-      ttsService.setOpenAIVoice(settings.selectedVoice);
-      ttsService.setOpenAIResponseFormat(settings.selectedFormat);
-      ttsService.setOpenAISpeed(settings.speed);
-      ttsService.setUseOpenAIStream(settings.useStream);
+      // 更新 TTSManager
+      ttsManager.configureEngine('openai', {
+        enabled: true,
+        apiKey: settings.apiKey,
+        model: settings.selectedModel,
+        voice: settings.selectedVoice,
+        speed: settings.speed,
+        responseFormat: settings.selectedFormat
+      } as Partial<OpenAITTSConfig>);
 
       if (isEnabled) {
-        ttsService.setUseOpenAI(true);
-        ttsService.setUseAzure(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('selected_tts_service', 'openai');
+        await setStorageItem('use_openai_tts', 'true');
+        await setStorageItem('use_azure_tts', 'false');
+        await setStorageItem('use_capacitor_tts', 'false');
+        
+        ttsManager.setActiveEngine('openai');
       } else {
-        ttsService.setUseOpenAI(false);
-        ttsService.setUseCapacitorTTS(false);
+        await setStorageItem('use_openai_tts', 'false');
+        ttsManager.configureEngine('openai', { enabled: false });
       }
 
       if (saveTimeoutRef.current) {
@@ -158,7 +166,7 @@ const OpenAITTSSettings: React.FC = () => {
         saveError: t('settings.voice.common.saveError'),
       }));
     }
-  }, [settings, enableTTS, isEnabled, ttsService, navigate, t]);
+  }, [settings, enableTTS, isEnabled, ttsManager, navigate, t]);
 
   // 处理启用状态变化
   const handleEnableChange = useCallback((enabled: boolean) => {
@@ -168,7 +176,7 @@ const OpenAITTSSettings: React.FC = () => {
   // 测试TTS
   const handleTestTTS = useCallback(async () => {
     if (uiState.isTestPlaying) {
-      ttsService.stop();
+      ttsManager.stop();
       if (playCheckIntervalRef.current) {
         clearInterval(playCheckIntervalRef.current);
       }
@@ -176,43 +184,41 @@ const OpenAITTSSettings: React.FC = () => {
       return;
     }
 
-    setUIState(prev => ({ ...prev, isTestPlaying: true }));
-
-    // 设置为使用OpenAI TTS
-    ttsService.setUseOpenAI(true);
-    ttsService.setUseAzure(false);
-    ttsService.setUseCapacitorTTS(false);
-    ttsService.setOpenAIApiKey(settings.apiKey);
-    ttsService.setOpenAIModel(settings.selectedModel);
-    ttsService.setOpenAIVoice(settings.selectedVoice);
-    ttsService.setOpenAIResponseFormat(settings.selectedFormat);
-    ttsService.setOpenAISpeed(settings.speed);
-    ttsService.setUseOpenAIStream(settings.useStream);
-
-    const success = await ttsService.speak(testText);
-
-    if (!success) {
-      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+    if (!settings.apiKey) {
+      setUIState(prev => ({ ...prev, saveError: t('settings.voice.common.apiKeyRequired') }));
+      return;
     }
 
-    if (playCheckIntervalRef.current) {
-      clearInterval(playCheckIntervalRef.current);
+    setUIState(prev => ({ ...prev, isTestPlaying: true }));
+
+    // 设置为使用 OpenAI TTS
+    ttsManager.configureEngine('openai', {
+      enabled: true,
+      apiKey: settings.apiKey,
+      model: settings.selectedModel,
+      voice: settings.selectedVoice,
+      speed: settings.speed,
+      responseFormat: settings.selectedFormat
+    } as Partial<OpenAITTSConfig>);
+    ttsManager.setActiveEngine('openai');
+
+    const success = await ttsManager.speak(testText);
+    if (!success) {
+      setUIState(prev => ({ ...prev, isTestPlaying: false }));
+      return;
     }
 
     const checkPlaybackStatus = () => {
-      if (!ttsService.getIsPlaying()) {
+      if (!ttsManager.isPlaying) {
         setUIState(prev => ({ ...prev, isTestPlaying: false }));
         if (playCheckIntervalRef.current) {
           clearInterval(playCheckIntervalRef.current);
-          playCheckIntervalRef.current = null;
         }
-      } else {
-        playCheckIntervalRef.current = setTimeout(checkPlaybackStatus, 1000);
       }
     };
-
-    setTimeout(checkPlaybackStatus, 1000);
-  }, [uiState.isTestPlaying, settings, testText, ttsService]);
+    
+    playCheckIntervalRef.current = setInterval(checkPlaybackStatus, 100);
+  }, [settings, testText, ttsManager, uiState.isTestPlaying, t]);
 
   const handleBack = () => {
     navigate('/settings/voice');
@@ -231,10 +237,10 @@ const OpenAITTSSettings: React.FC = () => {
         clearTimeout(autoSaveTimeoutRef.current);
       }
       if (uiState.isTestPlaying) {
-        ttsService.stop();
+        ttsManager.stop();
       }
     };
-  }, [uiState.isTestPlaying, ttsService]);
+  }, [uiState.isTestPlaying, ttsManager]);
 
   // 获取主题变量
   const toolbarBg = cssVar('toolbar-bg');
