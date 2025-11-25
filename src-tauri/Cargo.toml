@@ -26,6 +26,10 @@ tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-http = "2"
 
+# 仅桌面端：窗口状态记忆插件
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-window-state = "2"
+
 # 开发时的可选功能
 [features]
 default = []
