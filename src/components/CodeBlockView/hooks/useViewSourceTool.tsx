@@ -1,24 +1,29 @@
 import { useEffect } from 'react';
-import { Code, Eye } from 'lucide-react';
+import { Code, Edit, Eye } from 'lucide-react';
 import type { ActionTool, ViewMode } from '../types';
 
 interface UseViewSourceToolOptions {
   enabled: boolean;
   editable: boolean;
   viewMode: ViewMode;
+  isEditorOpen: boolean; // 新增：编辑器是否打开
   onViewModeChange: (mode: ViewMode) => void;
   setTools: React.Dispatch<React.SetStateAction<ActionTool[]>>;
+  onEdit?: () => void;
 }
 
 /**
  * 查看源码/编辑工具 hook
+ * 重构版本：简化状态管理，基于外部状态计算按钮显示
  */
 export function useViewSourceTool({
   enabled,
   editable,
   viewMode,
+  isEditorOpen,
   onViewModeChange,
-  setTools
+  setTools,
+  onEdit
 }: UseViewSourceToolOptions) {
   useEffect(() => {
     if (!enabled) {
@@ -32,22 +37,41 @@ export function useViewSourceTool({
       return;
     }
 
+    // 计算按钮状态
+    const isCurrentlyEditing = editable && isEditorOpen;
+    
     const getIcon = () => {
-      if (viewMode === 'special') return <Code size={14} />;
-      if (editable) return <Eye size={14} />;
-      return <Eye size={14} />;
+      if (editable) {
+        return isCurrentlyEditing ? <Eye size={14} /> : <Edit size={14} />;
+      }
+      return <Code size={14} />;
     };
 
     const getTitle = () => {
-      if (viewMode === 'special') return editable ? '编辑代码' : '查看源码';
-      return '预览效果';
+      if (editable) {
+        return isCurrentlyEditing ? '查看源码' : '编辑代码';
+      }
+      return '查看源码';
     };
 
     const handleClick = () => {
-      if (viewMode === 'special') {
-        onViewModeChange('source');
+      if (editable) {
+        if (!isCurrentlyEditing) {
+          // 编辑模式：打开编辑器
+          if (onEdit) {
+            onEdit();
+          }
+        } else {
+          // 查看模式：切换到源码视图
+          onViewModeChange('source');
+        }
       } else {
-        onViewModeChange('special');
+        // 非编辑模式：切换视图
+        if (viewMode === 'special') {
+          onViewModeChange('source');
+        } else {
+          onViewModeChange('special');
+        }
       }
     };
 
@@ -56,6 +80,7 @@ export function useViewSourceTool({
       icon: getIcon(),
       title: getTitle(),
       onClick: handleClick,
+      active: isCurrentlyEditing,
       group: 'core'
     };
 
@@ -67,5 +92,8 @@ export function useViewSourceTool({
     return () => {
       setTools(prev => prev.filter(t => t.id !== 'view-source'));
     };
-  }, [enabled, editable, viewMode, onViewModeChange, setTools]);
+  }, [enabled, editable, viewMode, isEditorOpen, onViewModeChange, setTools, onEdit]);
+
+  // 移除内部状态管理，完全依赖外部传入的状态
+  return {};
 }

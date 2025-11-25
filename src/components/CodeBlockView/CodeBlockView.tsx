@@ -1,18 +1,12 @@
-import { memo, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect, memo } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { useAppSelector } from '../../shared/store';
-import CodeViewer from './CodeViewer';
-import CodeToolbar from './CodeToolbar';
+import { useViewSourceTool, useDownloadTool, useCopyTool, useSplitViewTool, useExpandTool, useWrapTool } from './hooks';
+import { CodeViewer } from './CodeViewer';
+import { CodeToolbar } from './CodeToolbar';
 import SvgPreview from './SvgPreview';
-import {
-  useCopyTool,
-  useDownloadTool,
-  useExpandTool,
-  useWrapTool,
-  useViewSourceTool,
-  useSplitViewTool
-} from './hooks';
-import type { ActionTool, ViewMode, BasicPreviewHandles, CodeBlockViewProps } from './types';
+import type { CodeBlockViewProps, ViewMode, ActionTool, BasicPreviewHandles } from './types';
+import CodeEditorDrawer from './CodeEditorDrawer';
 import { SPECIAL_VIEWS } from './types';
 
 // 常量
@@ -70,6 +64,10 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   const [tools, setTools] = useState<ActionTool[]>([]);
   const specialViewRef = useRef<BasicPreviewHandles>(null);
 
+  // 编辑器状态
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [editedContent, setEditedContent] = useState(children);
+
   // 展开/换行状态
   const [isCollapsed, setIsCollapsed] = useState(false); // 是否完全收起
   const [wrapOverride, setWrapOverride] = useState(codeWrappable);
@@ -86,6 +84,11 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   useEffect(() => {
     setWrapOverride(codeWrappable);
   }, [codeWrappable]);
+
+  // 同步编辑内容与原始内容
+  useEffect(() => {
+    setEditedContent(children);
+  }, [children]);
 
   // 计算状态
   const hasSpecialView = useMemo(() => 
@@ -129,6 +132,24 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
     URL.revokeObjectURL(url);
   }, [children, language]);
 
+  // 编辑器处理函数
+  const handleEdit = useCallback(() => {
+    setEditDrawerOpen(true);
+  }, []);
+
+  const handleSaveEdit = useCallback((newContent: string) => {
+    setEditedContent(newContent);
+    setEditDrawerOpen(false);
+    // 如果有保存回调，调用它
+    if (_onSave) {
+      _onSave(newContent);
+    }
+  }, [_onSave]);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditDrawerOpen(false);
+  }, []);
+
   // 注册工具
   useCopyTool({
     showPreviewTools,
@@ -145,11 +166,13 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   });
 
   useViewSourceTool({
-    enabled: hasSpecialView,
+    enabled: codeEditor,
     editable: codeEditor,
     viewMode,
+    isEditorOpen: editDrawerOpen,
     onViewModeChange: setViewMode,
-    setTools
+    setTools,
+    onEdit: handleEdit
   });
 
   useSplitViewTool({
@@ -207,7 +230,7 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
     return (
       <CodeViewer
         className="source-view"
-        value={children}
+        value={editedContent}
         language={language}
         onHeightChange={handleHeightChange}
         expanded={true}
@@ -215,7 +238,7 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
         options={{ lineNumbers: codeShowLineNumbers }}
       />
     );
-  }, [children, language, handleHeightChange, shouldWrap, codeShowLineNumbers, isCollapsed]);
+  }, [editedContent, language, handleHeightChange, shouldWrap, codeShowLineNumbers, isCollapsed]);
 
   // 渲染内容
   const renderContent = useMemo(() => {
@@ -301,13 +324,19 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: isInSpecialView ? '24px' : '34px',
+          height: isInSpecialView ? '32px' : '40px', // 统一增加高度，更协调
           padding: '0 12px',
           backgroundColor: isDarkMode ? 'rgba(40, 40, 40, 0.95)' : 'rgba(240, 240, 240, 0.95)',
           borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+          // 移动端适配
+          '@media (max-width: 600px)': {
+            height: isInSpecialView ? '36px' : '44px', // 移动端进一步增加高度
+            padding: '0 8px',
+          }
         }}
       >
-        {!isInSpecialView && (
+        {/* 左侧：语言标签或占位符 */}
+        {!isInSpecialView ? (
           <Typography
             variant="caption"
             sx={{
@@ -320,14 +349,27 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
           >
             {'<' + (language || 'text').toUpperCase() + '>'}
           </Typography>
+        ) : (
+          // 特殊视图下的占位符，确保工具栏右对齐
+          <Box sx={{ flex: 1 }} />
         )}
+        
+        {/* 右侧：工具栏 - 移到头部内部 */}
+        <CodeToolbar tools={tools} />
       </Box>
-
-      {/* 工具栏 */}
-      <CodeToolbar tools={tools} />
 
       {/* 内容区域 */}
       {renderContent}
+
+      {/* 代码编辑器抽屉 */}
+      <CodeEditorDrawer
+        open={editDrawerOpen}
+        onClose={handleCloseEdit}
+        initialContent={editedContent}
+        language={language}
+        onSave={handleSaveEdit}
+        title={`编辑 ${language.toUpperCase()} 代码`}
+      />
     </Box>
   );
 });

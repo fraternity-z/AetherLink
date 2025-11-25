@@ -131,7 +131,7 @@ const CodeViewer: React.FC<CodeViewerProps> = ({
     getScrollElement,
     getItemKey,
     estimateSize,
-    overscan: 20
+    overscan: 50 // 增加 overscan 确保最后一行完整渲染
   });
 
   const virtualItems = virtualizer.getVirtualItems();
@@ -222,7 +222,7 @@ const plainTokenStyle = {
   color: 'inherit',
   bgColor: 'inherit',
   htmlStyle: {
-    opacity: '0.35'
+    opacity: '1' // 移除透明度，确保最后一行清晰显示
   }
 };
 
@@ -370,4 +370,5 @@ const ScrollContainer = styled('div')<ScrollContainerProps>`
   }
 `;
 
+export { CodeViewer };
 export default memo(CodeViewer);

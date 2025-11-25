@@ -35,6 +35,8 @@ interface SettingsState {
   // 代码块设置
   codeThemeLight: string; // 浅色模式代码主题
   codeThemeDark: string; // 深色模式代码主题
+  editorTheme: string; // 编辑器主题（CodeMirror专用）
+  editorZoomLevel: number; // 编辑器缩放级别
   codeEditor: boolean; // 代码编辑器开关
   codeShowLineNumbers: boolean; // 显示行号
   codeCollapsible: boolean; // 代码可折叠
@@ -246,6 +248,8 @@ const getInitialState = (): SettingsState => {
     // 代码块默认设置
     codeThemeLight: 'one-light', // 默认浅色主题
     codeThemeDark: 'material-theme-darker', // 默认深色主题
+    editorTheme: 'oneDark', // 默认编辑器主题
+    editorZoomLevel: 1.0, // 默认缩放级别 (100%)
     codeEditor: false, // 默认关闭编辑器
     codeShowLineNumbers: true, // 默认显示行号
     codeCollapsible: true, // 默认可折叠
@@ -886,6 +890,12 @@ const settingsSlice = createSlice({
     setCodeThemeDark: (state, action: PayloadAction<string>) => {
       state.codeThemeDark = action.payload;
     },
+    setEditorTheme: (state, action: PayloadAction<string>) => {
+      state.editorTheme = action.payload;
+    },
+    setEditorZoomLevel: (state, action: PayloadAction<number>) => {
+      state.editorZoomLevel = action.payload;
+    },
     setCodeEditor: (state, action: PayloadAction<boolean>) => {
       state.codeEditor = action.payload;
     },
@@ -1098,6 +1108,8 @@ export const {
   // 代码块设置控制
   setCodeThemeLight,
   setCodeThemeDark,
+  setEditorTheme,
+  setEditorZoomLevel,
   setCodeEditor,
   setCodeShowLineNumbers,
   setCodeCollapsible,

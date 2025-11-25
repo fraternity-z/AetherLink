@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-  List,
+  FormControl,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Collapse,
-  IconButton,
-  Box,
-  FormControl,
   Select,
   MenuItem,
   Typography,
-  useTheme
+  useTheme,
+  IconButton,
+  Collapse,
+  List,
+  Box
 } from '@mui/material';
 import CustomSwitch from '../../CustomSwitch';
 import { ChevronDown, ChevronUp, Edit, Palette } from 'lucide-react';
@@ -19,6 +19,7 @@ import { useAppSelector, useAppDispatch } from '../../../shared/store';
 import {
   setCodeThemeLight,
   setCodeThemeDark,
+  setEditorTheme,
   setCodeEditor,
   setCodeShowLineNumbers,
   setCodeCollapsible,
@@ -40,13 +41,14 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [themeNames, setThemeNames] = useState<string[]>(['auto']);
 
   // 从 Redux store 获取设置
   const {
     codeThemeLight,
     codeThemeDark,
+    editorTheme,
     codeEditor,
     codeShowLineNumbers,
     codeCollapsible,
@@ -152,6 +154,48 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
                     {name === 'auto' ? `自动 (${defaultThemeName})` : name}
                   </MenuItem>
                 ))}
+              </Select>
+            </FormControl>
+          </ListItem>
+
+          {/* 编辑器主题 - CodeMirror专用 */}
+          <ListItem sx={{ px: 1, py: 1.5, flexDirection: 'column', alignItems: 'flex-start' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, width: '100%' }}>
+              <Edit size={20} color={isDarkMode ? '#6366f1' : '#f59e0b'} style={{ marginRight: 8 }} />
+              <Typography variant="body2" fontWeight="medium">
+                编辑器主题
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                (CodeMirror专用)
+              </Typography>
+            </Box>
+            <FormControl fullWidth size="small">
+              <Select
+                value={editorTheme}
+                onChange={(e) => dispatch(setEditorTheme(e.target.value))}
+                sx={{ fontSize: '0.875rem' }}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 300 } } }}
+              >
+                {/* 经典主题 */}
+                <MenuItem value="oneDark">One Dark - 经典深色主题</MenuItem>
+                <MenuItem value="githubLight">GitHub Light - GitHub浅色主题</MenuItem>
+                <MenuItem value="githubDark">GitHub Dark - GitHub深色主题</MenuItem>
+                <MenuItem value="vscodeLight">VS Code Light - VS Code浅色主题</MenuItem>
+                <MenuItem value="vscodeDark">VS Code Dark - VS Code深色主题</MenuItem>
+                <MenuItem value="tokyoNight">Tokyo Night - 流行深色主题</MenuItem>
+                
+                {/* 流行主题 */}
+                <MenuItem value="dracula">Dracula - 经典紫色调主题</MenuItem>
+                <MenuItem value="nord">Nord - 北欧风格蓝灰主题</MenuItem>
+                <MenuItem value="monokai">Monokai - 经典深色主题</MenuItem>
+                
+                {/* Material主题 */}
+                <MenuItem value="materialLight">Material Light - Material浅色主题</MenuItem>
+                <MenuItem value="materialDark">Material Dark - Material深色主题</MenuItem>
+                
+                {/* Solarized主题 */}
+                <MenuItem value="solarizedLight">Solarized Light - 护眼浅色主题</MenuItem>
+                <MenuItem value="solarizedDark">Solarized Dark - 护眼深色主题</MenuItem>
               </Select>
             </FormControl>
           </ListItem>
