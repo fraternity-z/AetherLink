@@ -1,15 +1,11 @@
 import React, { useMemo, memo } from 'react';
 import { useTheme } from '@mui/material';
-import { useAppSelector } from '../../../shared/store';
-import CodeBlock from './CodeBlock';
-import EnhancedCodeBlock from './EnhancedCodeBlock';
 import MermaidBlock from './MermaidBlock';
 import Markdown from '../Markdown';
 import { CodeBlockView } from '../../CodeBlockView';
 import HtmlArtifactsCard from '../../CodeBlockView/HtmlArtifactsCard';
-import type { CodeMessageBlock } from '../../../shared/types/newMessage';
 
-// 需要接收并传递 messageRole
+// 需要接收并传递 messageRole 和 isStreaming
 interface MarkdownCodeBlockProps {
   children?: string;
   className?: string;
@@ -17,6 +13,7 @@ interface MarkdownCodeBlockProps {
   onSave?: (id: string, newContent: string) => void;
   [key: string]: any;
   messageRole?: 'user' | 'assistant' | 'system';
+  isStreaming?: boolean;
 }
 
 /**
@@ -27,22 +24,11 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   children,
   className,
   id,
-  messageRole 
+  messageRole,
+  isStreaming = false
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-
-  // 从 Redux store 获取代码块设置
-  const { 
-    codeEditor, 
-    codeShowLineNumbers, 
-    codeCollapsible, 
-    codeWrappable,
-    useNewCodeBlockView = true  // 默认使用新版代码块视图
-  } = useAppSelector(state => state.settings);
-
-  // 判断是否使用增强版代码块（当启用了任何高级功能时）
-  const useEnhancedCodeBlock = codeEditor || codeShowLineNumbers || codeCollapsible || codeWrappable;
 
   // 统一的安全字符串，避免 children 为空时报错
   const safeChildren = children ?? '';
@@ -51,18 +37,6 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   const match = /language-([\w-+]+)/.exec(className || '');
   const language = match?.[1] ?? 'text';
   const isCodeBlock = !!match || safeChildren.includes('\n');
-
-  // 创建适配的代码块对象 - 使用 useMemo 来稳定对象引用
-  // 注意：必须在所有条件判断之前调用 Hook
-  const codeBlock: CodeMessageBlock = useMemo(() => ({
-    id: id || `code-${safeChildren.slice(0, 50).replace(/\W/g, '')}-${language}`,
-    messageId: 'markdown',
-    type: 'code' as const,
-    content: safeChildren,
-    language: language,
-    createdAt: new Date().toISOString(),
-    status: 'success' as const
-  }), [id, safeChildren, language]);
 
   /**
    * 🔧 表格检测和自动转换功能
@@ -115,11 +89,12 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
     return <MermaidBlock code={safeChildren} id={id} messageRole={messageRole} />;
   }
 
-  // HTML Artifacts 卡片（当启用新版代码块视图时）
-  if (useNewCodeBlockView && (language === 'html' || language === 'htm')) {
+  // HTML Artifacts 卡片
+  if (language === 'html' || language === 'htm') {
     return (
       <HtmlArtifactsCard
         html={safeChildren}
+        isStreaming={isStreaming}
         onSave={(newContent) => {
           console.log('保存 HTML:', id, newContent);
         }}
@@ -159,29 +134,18 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
 
   // 移除数学公式特殊处理，统一由 Markdown 层面处理
 
-  // 根据设置选择使用哪个代码块组件
-  // 如果启用新版代码块视图，优先使用 CodeBlockView
-  if (useNewCodeBlockView) {
-    return (
-      <CodeBlockView
-        language={language}
-        onSave={(newContent) => {
-          // TODO: 实现保存逻辑
-          console.log('保存代码块:', id, newContent);
-        }}
-        messageRole={messageRole}
-      >
-        {safeChildren}
-      </CodeBlockView>
-    );
-  }
-
-  // 否则使用旧版代码块组件
-  if (useEnhancedCodeBlock) {
-    return <EnhancedCodeBlock block={codeBlock} />;
-  } else {
-    return <CodeBlock block={codeBlock} />;
-  }
+  // 使用新版 CodeBlockView 组件
+  return (
+    <CodeBlockView
+      language={language}
+      onSave={(newContent) => {
+        console.log('保存代码块:', id, newContent);
+      }}
+      messageRole={messageRole}
+    >
+      {safeChildren}
+    </CodeBlockView>
+  );
 };
 
 export default memo(MarkdownCodeBlock);

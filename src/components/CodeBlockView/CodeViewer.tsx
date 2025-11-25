@@ -1,165 +1,373 @@
-import React, { memo, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Box, useTheme } from '@mui/material';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import {
-  vscDarkPlus,
-  vs,
-  oneDark,
-  oneLight,
-  materialDark,
-  materialLight,
-  nord,
-  dracula,
-  atomDark,
-  solarizedlight
-} from 'react-syntax-highlighter/dist/esm/styles/prism';
+/**
+ * Shiki 流式代码高亮组件
+ * 参考 Cherry Studio 实现
+ * 
+ * - 通过 shiki tokenizer 处理流式响应，高性能
+ * - 使用虚拟滚动和按需高亮，改善页面内有大量长代码块时的响应
+ * - 并发安全
+ */
+import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { Box, styled, useTheme } from '@mui/material';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { debounce } from 'lodash';
+import type { ThemedToken } from 'shiki/core';
 import { useAppSelector } from '../../shared/store';
-
-// 代码高度常量
-const MAX_COLLAPSED_HEIGHT = 300;
+import { useCodeStyle } from '../../context/CodeStyleProvider';
+import { useCodeHighlight } from '../../hooks/useCodeHighlight';
+import { getReactStyleFromToken } from '../../shared/utils/shiki';
+import { v4 as uuid } from 'uuid';
 
 interface CodeViewerProps {
+  /** Code string value. */
   value: string;
+  /**
+   * Code language string.
+   * - Case-insensitive.
+   * - Supports common names: javascript, json, python, etc.
+   */
   language: string;
-  expanded?: boolean;
-  wrapped?: boolean;
-  maxHeight?: string;
-  showLineNumbers?: boolean;
-  onHeightChange?: (height: number) => void;
+  onHeightChange?: (scrollHeight: number) => void;
+  /**
+   * Height of the scroll container.
+   * Only works when expanded is false.
+   */
+  height?: string | number;
+  /**
+   * Maximum height of the scroll container.
+   * Only works when expanded is false.
+   */
+  maxHeight?: string | number;
+  /** Viewer options. */
+  options?: {
+    /**
+     * Whether to show line numbers.
+     */
+    lineNumbers?: boolean;
+  };
+  /** Font size that overrides the app setting. */
+  fontSize?: number;
+  /** CSS class name appended to the default `code-viewer` class. */
   className?: string;
+  /**
+   * Whether the editor is expanded.
+   * If true, the height and maxHeight props are ignored.
+   * @default true
+   */
+  expanded?: boolean;
+  /**
+   * Whether the code lines are wrapped.
+   * @default true
+   */
+  wrapped?: boolean;
 }
 
-// 主题映射
-const getHighlightTheme = (codeStyle: string, isDarkMode: boolean) => {
-  const themeMap: Record<string, any> = {
-    'auto': isDarkMode ? vscDarkPlus : vs,
-    'vs-code-light': vs,
-    'vs-code-dark': vscDarkPlus,
-    'one-dark-pro': oneDark,
-    'one-light': oneLight,
-    'material-dark': materialDark,
-    'material-light': materialLight,
-    'nord': nord,
-    'dracula': dracula,
-    'atom-dark': atomDark,
-    'solarized-light': solarizedlight,
-    // 兼容旧版本
-    'vscDarkPlus': vscDarkPlus,
-    'vs': vs,
-  };
-  return themeMap[codeStyle] || (isDarkMode ? vscDarkPlus : vs);
-};
+// 默认最大折叠高度
+const MAX_COLLAPSED_HEIGHT = 300;
 
 /**
- * 代码查看器组件
- * 使用 react-syntax-highlighter 进行语法高亮
+ * Shiki 流式代码高亮组件
  */
 const CodeViewer: React.FC<CodeViewerProps> = ({
   value,
   language,
-  expanded = true,
-  wrapped = false,
-  maxHeight = `${MAX_COLLAPSED_HEIGHT}px`,
-  showLineNumbers,
+  height,
+  maxHeight = MAX_COLLAPSED_HEIGHT,
   onHeightChange,
-  className
+  options,
+  fontSize: customFontSize,
+  className,
+  expanded = true,
+  wrapped = true
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  // 从设置获取代码主题和行号显示
-  const { codeStyle, codeShowLineNumbers } = useAppSelector(state => state.settings);
-  
-  // 使用 props 或设置中的行号配置
-  const displayLineNumbers = showLineNumbers ?? codeShowLineNumbers;
+  const { codeShowLineNumbers: _lineNumbers, fontSize: _fontSize } = useAppSelector(state => state.settings);
+  const { getShikiPreProperties, isShikiThemeDark } = useCodeStyle();
+  const shikiThemeRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const callerId = useRef(`${Date.now()}-${uuid()}`).current;
 
-  // 获取语法高亮主题
-  const highlightTheme = useMemo(() => {
-    return getHighlightTheme(codeStyle, isDarkMode);
-  }, [codeStyle, isDarkMode]);
+  const fontSize = useMemo(() => customFontSize ?? (_fontSize - 1), [customFontSize, _fontSize]);
+  const lineNumbers = useMemo(() => options?.lineNumbers ?? _lineNumbers, [options?.lineNumbers, _lineNumbers]);
 
-  // 安全的代码内容
-  const safeCode = useMemo(() => {
-    return typeof value === 'string' ? value.trimEnd() : '';
-  }, [value]);
+  const rawLines = useMemo(() => (typeof value === 'string' ? value.trimEnd().split('\n') : []), [value]);
 
-  // 监听高度变化
-  const updateHeight = useCallback(() => {
-    if (containerRef.current && onHeightChange) {
-      const scrollHeight = containerRef.current.scrollHeight;
-      onHeightChange(scrollHeight);
-    }
-  }, [onHeightChange]);
+  // 计算行号数字位数
+  const gutterDigits = useMemo(
+    () => (lineNumbers ? Math.max(rawLines.length.toString().length, 1) : 0),
+    [lineNumbers, rawLines.length]
+  );
 
+  // 设置 pre 标签属性
+  useLayoutEffect(() => {
+    let mounted = true;
+    getShikiPreProperties(language).then((properties) => {
+      if (!mounted) return;
+      const shikiTheme = shikiThemeRef.current;
+      if (shikiTheme) {
+        shikiTheme.className = `${properties.class || 'shiki'} code-viewer ${className ?? ''}`;
+        // 滚动条适应 shiki 主题变化而非应用主题
+        shikiTheme.classList.add(isShikiThemeDark ? 'shiki-dark' : 'shiki-light');
+
+        if (properties.style) {
+          shikiTheme.style.cssText += `${properties.style}`;
+        }
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [language, getShikiPreProperties, isShikiThemeDark, className]);
+
+  // Virtualizer 配置
+  const getScrollElement = useCallback(() => scrollerRef.current, []);
+  const getItemKey = useCallback((index: number) => `${callerId}-${index}`, [callerId]);
+  // `line-height: 1.6` 为全局样式
+  const estimateSize = useCallback(() => Math.round(fontSize * 1.6), [fontSize]);
+
+  // 创建 virtualizer 实例
+  const virtualizer = useVirtualizer({
+    count: rawLines.length,
+    getScrollElement,
+    getItemKey,
+    estimateSize,
+    overscan: 20
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
+  // 使用代码高亮 Hook
+  const { tokenLines, highlightLines } = useCodeHighlight({
+    rawLines,
+    language,
+    callerId
+  });
+
+  // 防抖高亮提高流式响应的性能
+  const debouncedHighlightLines = useMemo(() => debounce(highlightLines, 300), [highlightLines]);
+
+  // 渐进式高亮
   useEffect(() => {
-    updateHeight();
-    // 观察尺寸变化
-    const resizeObserver = new ResizeObserver(updateHeight);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
+    if (virtualItems.length > 0 && shikiThemeRef.current) {
+      const lastIndex = virtualItems[virtualItems.length - 1].index;
+      debouncedHighlightLines(lastIndex + 1);
     }
-    return () => resizeObserver.disconnect();
-  }, [updateHeight, safeCode]);
+  }, [virtualItems, debouncedHighlightLines]);
+
+  // Report scrollHeight when it might change
+  useLayoutEffect(() => {
+    onHeightChange?.(scrollerRef.current?.scrollHeight ?? 0);
+  }, [rawLines.length, onHeightChange]);
 
   return (
     <Box
-      ref={containerRef}
-      className={`code-viewer ${className || ''}`}
+      ref={shikiThemeRef}
       sx={{
-        position: 'relative',
-        maxHeight: expanded ? 'none' : maxHeight,
-        overflow: expanded ? 'visible' : 'hidden',
         borderRadius: '0 0 8px 8px',
-        '& pre': {
-          margin: 0,
-          padding: '12px 16px !important',
-          borderRadius: 'inherit',
-          fontSize: '13px',
-          lineHeight: 1.5,
-          backgroundColor: isDarkMode 
-            ? 'rgba(30, 30, 30, 0.95) !important' 
-            : 'rgba(250, 250, 250, 0.95) !important',
-        },
-        '& code': {
-          fontFamily: '"Fira Code", "JetBrains Mono", Consolas, Monaco, monospace',
-          whiteSpace: wrapped ? 'pre-wrap' : 'pre',
-          wordBreak: wrapped ? 'break-all' : 'normal',
-        },
-        // 折叠时的渐变遮罩
-        ...(!expanded && {
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '60px',
-            background: isDarkMode
-              ? 'linear-gradient(transparent, rgba(30, 30, 30, 0.95))'
-              : 'linear-gradient(transparent, rgba(250, 250, 250, 0.95))',
-            pointerEvents: 'none',
-            borderRadius: '0 0 8px 8px',
-          }
-        })
+        ...(expanded ? {} : { height })
       }}
     >
-      <SyntaxHighlighter
-        language={language || 'text'}
-        style={highlightTheme}
-        showLineNumbers={displayLineNumbers}
-        wrapLines={wrapped}
-        lineNumberStyle={{
-          minWidth: '2.5em',
-          paddingRight: '1em',
-          color: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-          userSelect: 'none',
-        }}
+      <ScrollContainer
+        ref={scrollerRef}
+        className="shiki-scroller"
+        $wrap={wrapped}
+        $expand={expanded}
+        $lineHeight={estimateSize()}
+        $isDark={isDarkMode}
+        style={{
+          '--gutter-width': `${gutterDigits}ch`,
+          fontSize,
+          height: expanded ? undefined : height,
+          maxHeight: expanded ? undefined : maxHeight,
+          overflowY: expanded ? 'hidden' : 'auto'
+        } as React.CSSProperties}
       >
-        {safeCode}
-      </SyntaxHighlighter>
+        <div
+          className="shiki-list"
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative'
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${virtualItems[0]?.start ?? 0}px)`
+            }}
+          >
+            {virtualItems.map((virtualItem) => (
+              <div key={virtualItem.key} data-index={virtualItem.index} ref={virtualizer.measureElement}>
+                <VirtualizedRow
+                  rawLine={rawLines[virtualItem.index]}
+                  tokenLine={tokenLines[virtualItem.index]}
+                  showLineNumbers={lineNumbers}
+                  index={virtualItem.index}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </ScrollContainer>
     </Box>
   );
 };
+
+CodeViewer.displayName = 'CodeViewer';
+
+const plainTokenStyle = {
+  color: 'inherit',
+  bgColor: 'inherit',
+  htmlStyle: {
+    opacity: '0.35'
+  }
+};
+
+interface VirtualizedRowData {
+  rawLine: string;
+  tokenLine?: ThemedToken[];
+  showLineNumbers: boolean;
+}
+
+/**
+ * 单行代码渲染
+ */
+const VirtualizedRow = memo(
+  ({ rawLine, tokenLine, showLineNumbers, index }: VirtualizedRowData & { index: number }) => {
+    // 补全代码行 tokens，把原始内容拼接到高亮内容之后，确保渲染出整行来。
+    const completeTokenLine = useMemo(() => {
+      // 如果出现空行，补一个空元素保证行高
+      if (rawLine.length === 0) {
+        return [
+          {
+            content: '',
+            offset: 0,
+            ...plainTokenStyle
+          }
+        ];
+      }
+
+      const currentTokens = tokenLine ?? [];
+      const themedContentLength = currentTokens.reduce((acc, token) => acc + token.content.length, 0);
+
+      // 已有内容已经全部高亮，直接返回
+      if (themedContentLength >= rawLine.length) {
+        return currentTokens;
+      }
+
+      // 补全剩余内容
+      return [
+        ...currentTokens,
+        {
+          content: rawLine.slice(themedContentLength),
+          offset: themedContentLength,
+          ...plainTokenStyle
+        }
+      ];
+    }, [rawLine, tokenLine]);
+
+    return (
+      <div className="line">
+        {showLineNumbers && <span className="line-number">{index + 1}</span>}
+        <span className="line-content">
+          {completeTokenLine.map((token, tokenIndex) => (
+            <span key={tokenIndex} style={getReactStyleFromToken(token as ThemedToken)}>
+              {token.content}
+            </span>
+          ))}
+        </span>
+      </div>
+    );
+  }
+);
+
+VirtualizedRow.displayName = 'VirtualizedRow';
+
+interface ScrollContainerProps {
+  $wrap?: boolean;
+  $expand?: boolean;
+  $lineHeight?: number;
+  $isDark?: boolean;
+}
+
+const ScrollContainer = styled('div')<ScrollContainerProps>`
+  display: block;
+  overflow-x: auto;
+  position: relative;
+  border-radius: inherit;
+  /* padding right 下沉到 line-content 中 */
+  padding: 0.5em 0 0.5em 1em;
+  font-family: 'Fira Code', 'JetBrains Mono', Consolas, Monaco, monospace;
+
+  .line {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    line-height: ${(props) => props.$lineHeight}px;
+    /* contain 优化 wrap 时滚动性能，will-change 优化 unwrap 时滚动性能 */
+    contain: ${(props) => (props.$wrap ? 'content' : 'none')};
+    will-change: ${(props) => (!props.$wrap && !props.$expand ? 'transform' : 'auto')};
+
+    .line-number {
+      width: var(--gutter-width, 1.2ch);
+      text-align: right;
+      opacity: 0.35;
+      margin-right: 1rem;
+      user-select: none;
+      flex-shrink: 0;
+      overflow: hidden;
+      font-family: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .line-content {
+      flex: 1;
+      padding-right: 1em;
+      white-space: pre;
+      * {
+        white-space: ${(props) => (props.$wrap ? 'pre-wrap' : 'pre')};
+        overflow-wrap: ${(props) => (props.$wrap ? 'break-word' : 'normal')};
+      }
+    }
+  }
+
+  /* 深色/浅色模式滚动条样式 */
+  &.shiki-dark {
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  &.shiki-light {
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
+`;
 
 export default memo(CodeViewer);

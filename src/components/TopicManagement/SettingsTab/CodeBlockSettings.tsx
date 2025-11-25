@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
+  Collapse,
+  IconButton,
+  Box,
   FormControl,
   Select,
   MenuItem,
   Typography,
-  Collapse,
-  IconButton,
-  ListSubheader
+  useTheme
 } from '@mui/material';
-import CustomSwitch from '../../CustomSwitch'; // 导入 CustomSwitch 组件
+import CustomSwitch from '../../CustomSwitch';
 import { ChevronDown, ChevronUp, Edit, Palette } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../../shared/store';
 import {
-  setCodeStyle,
+  setCodeThemeLight,
+  setCodeThemeDark,
   setCodeEditor,
   setCodeShowLineNumbers,
   setCodeCollapsible,
@@ -25,55 +26,7 @@ import {
   setCodeDefaultCollapsed,
   setMermaidEnabled
 } from '../../../shared/store/settingsSlice';
-
-// 代码风格选项 - 大幅扩展主题选择
-const CODE_STYLES = [
-  // 自动和经典主题
-  { value: 'auto', label: 'Auto', description: '自动跟随系统主题' },
-  { value: 'vs-code-light', label: 'VS Code Light', description: 'VS Code 浅色主题' },
-  { value: 'vs-code-dark', label: 'VS Code Dark', description: 'VS Code 深色主题' },
-  { value: 'github-light', label: 'GitHub Light', description: 'GitHub 风格浅色主题' },
-  { value: 'github-dark', label: 'GitHub Dark', description: 'GitHub 风格深色主题' },
-  { value: 'one-dark-pro', label: 'One Dark Pro', description: 'Atom 风格深色主题' },
-  { value: 'one-light', label: 'One Light', description: 'Atom 风格浅色主题' },
-  { value: 'tomorrow', label: 'Tomorrow', description: '清新浅色主题' },
-  { value: 'twilight', label: 'Twilight', description: '暮光深色主题' },
-
-  // 流行编辑器主题
-  { value: 'atom-dark', label: 'Atom Dark', description: 'Atom 编辑器深色主题' },
-  { value: 'darcula', label: 'Darcula', description: 'JetBrains 经典深色主题' },
-  { value: 'nord', label: 'Nord', description: '北欧风格深色主题' },
-  { value: 'dracula', label: 'Dracula', description: '经典深色主题' },
-  { value: 'monokai', label: 'Monokai', description: '经典深色主题' },
-  { value: 'lucario', label: 'Lucario', description: '蓝紫色深色主题' },
-
-  // Material 系列
-  { value: 'material-dark', label: 'Material Dark', description: 'Material Design 深色主题' },
-  { value: 'material-light', label: 'Material Light', description: 'Material Design 浅色主题' },
-  { value: 'material-oceanic', label: 'Material Oceanic', description: 'Material 海洋主题' },
-
-  // Duotone 系列
-  { value: 'duotone-dark', label: 'Duotone Dark', description: '双色调深色主题' },
-  { value: 'duotone-light', label: 'Duotone Light', description: '双色调浅色主题' },
-  { value: 'duotone-earth', label: 'Duotone Earth', description: '双色调大地主题' },
-  { value: 'duotone-forest', label: 'Duotone Forest', description: '双色调森林主题' },
-  { value: 'duotone-sea', label: 'Duotone Sea', description: '双色调海洋主题' },
-  { value: 'duotone-space', label: 'Duotone Space', description: '双色调太空主题' },
-
-  // 特色主题
-  { value: 'synthwave-84', label: 'Synthwave 84', description: '赛博朋克风格主题' },
-  { value: 'shades-of-purple', label: 'Shades of Purple', description: '紫色系主题' },
-  { value: 'hopscotch', label: 'Hopscotch', description: '跳房子主题' },
-  { value: 'coldark-cold', label: 'Coldark Cold', description: '冷色调浅色主题' },
-  { value: 'coldark-dark', label: 'Coldark Dark', description: '冷色调深色主题' },
-  { value: 'solarized-light', label: 'Solarized Light', description: 'Solarized 浅色主题' },
-  { value: 'base16-light', label: 'Base16 Light', description: 'Base16 浅色主题' },
-  { value: 'coy', label: 'Coy', description: '简约浅色主题' },
-  { value: 'cb', label: 'CB', description: '经典黑白主题' },
-  { value: 'pojoaque', label: 'Pojoaque', description: '温暖色调主题' },
-  { value: 'xonokai', label: 'Xonokai', description: 'Monokai 变体主题' },
-  { value: 'z-touch', label: 'Z-Touch', description: '触感风格主题' }
-];
+import type { BundledThemeInfo } from 'shiki/types';
 
 interface CodeBlockSettingsProps {
   // 暂时保留接口以保持兼容性，但不使用参数
@@ -85,12 +38,15 @@ interface CodeBlockSettingsProps {
  */
 const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
   const dispatch = useAppDispatch();
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
   const [expanded, setExpanded] = useState(false);
+  const [themeNames, setThemeNames] = useState<string[]>(['auto']);
 
   // 从 Redux store 获取设置
-  // 从 Redux store 获取设置
   const {
-    codeStyle,
+    codeThemeLight,
+    codeThemeDark,
     codeEditor,
     codeShowLineNumbers,
     codeCollapsible,
@@ -99,7 +55,18 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
     mermaidEnabled
   } = useAppSelector(state => state.settings);
 
-  const selectedStyle = CODE_STYLES.find(style => style.value === codeStyle);
+  // 当前主题值和设置函数
+  const currentCodeTheme = isDarkMode ? codeThemeDark : codeThemeLight;
+  const setCurrentCodeTheme = isDarkMode ? setCodeThemeDark : setCodeThemeLight;
+  const defaultThemeName = isDarkMode ? 'material-theme-darker' : 'one-light';
+
+  // 加载 Shiki 主题列表
+  useEffect(() => {
+    import('shiki').then(({ bundledThemesInfo }) => {
+      const names = ['auto', ...bundledThemesInfo.map((info: BundledThemeInfo) => info.id)];
+      setThemeNames(names);
+    });
+  }, []);
 
   return (
     <>
@@ -161,119 +128,32 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
       {/* 可折叠的设置内容 */}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <List sx={{ pl: 2, pr: 2, py: 0 }}>
-
-          {/* 代码风格选择 */}
+          
+          {/* 代码高亮主题 - 根据当前应用主题显示对应选择器 */}
           <ListItem sx={{ px: 1, py: 1.5, flexDirection: 'column', alignItems: 'flex-start' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, width: '100%' }}>
-              <Palette size={20} color="#666" style={{ marginRight: 8 }} />
+              <Palette size={20} color={isDarkMode ? '#6366f1' : '#f59e0b'} style={{ marginRight: 8 }} />
               <Typography variant="body2" fontWeight="medium">
-                代码风格
+                代码高亮主题
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                ({isDarkMode ? '深色模式' : '浅色模式'})
               </Typography>
             </Box>
-
             <FormControl fullWidth size="small">
               <Select
-                value={codeStyle}
-                onChange={(e) => dispatch(setCodeStyle(e.target.value))}
+                value={currentCodeTheme}
+                onChange={(e) => dispatch(setCurrentCodeTheme(e.target.value))}
                 sx={{ fontSize: '0.875rem' }}
-                MenuProps={{
-                  PaperProps: {
-                    sx: { maxHeight: 400 }
-                  }
-                }}
+                MenuProps={{ PaperProps: { sx: { maxHeight: 300 } } }}
               >
-                {/* 自动和经典主题 */}
-                <ListSubheader sx={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'primary.main' }}>
-                  经典主题
-                </ListSubheader>
-                {CODE_STYLES.slice(0, 9).map((style) => (
-                  <MenuItem key={style.value} value={style.value}>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {style.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {style.description}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-
-                {/* 流行编辑器主题 */}
-                <ListSubheader sx={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'primary.main' }}>
-                  编辑器主题
-                </ListSubheader>
-                {CODE_STYLES.slice(9, 15).map((style) => (
-                  <MenuItem key={style.value} value={style.value}>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {style.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {style.description}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-
-                {/* Material 系列 */}
-                <ListSubheader sx={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'primary.main' }}>
-                  Material 系列
-                </ListSubheader>
-                {CODE_STYLES.slice(15, 18).map((style) => (
-                  <MenuItem key={style.value} value={style.value}>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {style.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {style.description}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-
-                {/* Duotone 系列 */}
-                <ListSubheader sx={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'primary.main' }}>
-                  Duotone 系列
-                </ListSubheader>
-                {CODE_STYLES.slice(18, 24).map((style) => (
-                  <MenuItem key={style.value} value={style.value}>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {style.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {style.description}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-
-                {/* 特色主题 */}
-                <ListSubheader sx={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'primary.main' }}>
-                  特色主题
-                </ListSubheader>
-                {CODE_STYLES.slice(24).map((style) => (
-                  <MenuItem key={style.value} value={style.value}>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {style.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {style.description}
-                      </Typography>
-                    </Box>
+                {themeNames.map((name) => (
+                  <MenuItem key={name} value={name}>
+                    {name === 'auto' ? `自动 (${defaultThemeName})` : name}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
-            {selectedStyle && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                当前: {selectedStyle.description}
-              </Typography>
-            )}
           </ListItem>
 
           {/* 代码编辑 */}

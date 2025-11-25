@@ -35,7 +35,8 @@ export interface AppearanceConfig {
   hideAIBubble?: boolean;
   
   // 代码块设置
-  codeStyle: string;
+  codeThemeLight: string;
+  codeThemeDark: string;
   codeEditor: boolean;
   codeShowLineNumbers: boolean;
   codeCollapsible: boolean;
@@ -126,7 +127,8 @@ export function extractAppearanceConfig(settings: any): AppearanceConfig {
     hideAIBubble: settings.hideAIBubble,
     
     // 代码块设置
-    codeStyle: settings.codeStyle,
+    codeThemeLight: settings.codeThemeLight,
+    codeThemeDark: settings.codeThemeDark,
     codeEditor: settings.codeEditor,
     codeShowLineNumbers: settings.codeShowLineNumbers,
     codeCollapsible: settings.codeCollapsible,

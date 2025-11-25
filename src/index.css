@@ -283,44 +283,6 @@ input:focus, textarea:focus, .RNTextInput:focus {
   }
 }
 
-/* 🎨 语法高亮器样式重置 - 修复间距问题 */
-.react-syntax-highlighter {
-  font-family: var(--code-font-family) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: visible !important;
-}
-
-.react-syntax-highlighter pre {
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: visible !important;
-  background: transparent !important;
-}
-
-.react-syntax-highlighter code {
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  display: block !important;
-}
-
-/* 确保代码块内容不会有额外的间距 */
-.react-syntax-highlighter .token-line {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* 行号样式优化 */
-.react-syntax-highlighter .linenumber {
-  margin: 0 !important;
-  padding: 0 !important;
-  padding-right: 1em !important;
-  text-align: right !important;
-  user-select: none !important;
-  opacity: 0.5 !important;
-}
-
 /* Windows系统专用字体配置 */
 body[os='windows'] {
   --font-family:

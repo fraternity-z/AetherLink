@@ -33,7 +33,8 @@ interface SettingsState {
   inputLayoutStyle: 'default' | 'compact' | 'integrated'; // 输入框布局样式：默认（分离）、聚合或集成
 
   // 代码块设置
-  codeStyle: string; // 代码主题风格
+  codeThemeLight: string; // 浅色模式代码主题
+  codeThemeDark: string; // 深色模式代码主题
   codeEditor: boolean; // 代码编辑器开关
   codeShowLineNumbers: boolean; // 显示行号
   codeCollapsible: boolean; // 代码可折叠
@@ -243,7 +244,8 @@ const getInitialState = (): SettingsState => {
     inputLayoutStyle: 'integrated' as 'default' | 'compact' | 'integrated', // 输入框布局样式：默认（分离）、聚合或集成
 
     // 代码块默认设置
-    codeStyle: 'auto',
+    codeThemeLight: 'one-light', // 默认浅色主题
+    codeThemeDark: 'material-theme-darker', // 默认深色主题
     codeEditor: false, // 默认关闭编辑器
     codeShowLineNumbers: true, // 默认显示行号
     codeCollapsible: true, // 默认可折叠
@@ -492,11 +494,6 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       // 如果没有代码块默认收起设置，使用默认值
       if (savedSettings.codeDefaultCollapsed === undefined) {
         savedSettings.codeDefaultCollapsed = false;
-      }
-
-      // 如果没有代码块主题设置，使用默认值
-      if (!savedSettings.codeStyle) {
-        savedSettings.codeStyle = 'auto';
       }
 
       // 如果没有新版代码块视图设置，使用默认值
@@ -883,8 +880,11 @@ const settingsSlice = createSlice({
     },
 
     // 代码块设置 actions
-    setCodeStyle: (state, action: PayloadAction<string>) => {
-      state.codeStyle = action.payload;
+    setCodeThemeLight: (state, action: PayloadAction<string>) => {
+      state.codeThemeLight = action.payload;
+    },
+    setCodeThemeDark: (state, action: PayloadAction<string>) => {
+      state.codeThemeDark = action.payload;
     },
     setCodeEditor: (state, action: PayloadAction<boolean>) => {
       state.codeEditor = action.payload;
@@ -1096,7 +1096,8 @@ export const {
   // 快捷短语按钮显示控制
   setShowQuickPhraseButton,
   // 代码块设置控制
-  setCodeStyle,
+  setCodeThemeLight,
+  setCodeThemeDark,
   setCodeEditor,
   setCodeShowLineNumbers,
   setCodeCollapsible,

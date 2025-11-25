@@ -29,9 +29,11 @@ interface Props {
   allowHtml?: boolean;
   // 新增：消息角色
   messageRole?: 'user' | 'assistant' | 'system';
+  // 新增：是否正在流式输出
+  isStreaming?: boolean;
 }
 
-const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageRole }) => {
+const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageRole, isStreaming = false }) => {
   // 从用户设置获取数学引擎配置
   // 使用 useState 和 useEffect 来监听设置变化
   const [mathEngine, setMathEngine] = React.useState<string>('KaTeX');
@@ -134,6 +136,7 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
           id={getCodeBlockId(props?.node?.position?.start)}
           onSave={onSaveCodeBlock}
           messageRole={messageRole}
+          isStreaming={isStreaming}
         />
       ),
       img: AdvancedImagePreview,

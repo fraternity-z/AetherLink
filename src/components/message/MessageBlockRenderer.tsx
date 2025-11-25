@@ -12,7 +12,7 @@ import MainTextBlock from './blocks/MainTextBlock';
 import ThinkingBlock from './blocks/ThinkingBlock';
 import ImageBlock from './blocks/ImageBlock';
 import VideoBlock from './blocks/VideoBlock';
-import CodeBlock from './blocks/CodeBlock';
+import { CodeBlockView } from '../CodeBlockView';
 import CitationBlock from './blocks/CitationBlock';
 import ErrorBlock from './blocks/ErrorBlock';
 import TranslationBlock from './blocks/TranslationBlock';
@@ -188,7 +188,15 @@ const MessageBlockRenderer: React.FC<Props> = ({
                 blockComponent = <VideoBlock key={block.id} block={block} />;
                 break;
               case MessageBlockType.CODE:
-                blockComponent = <CodeBlock key={block.id} block={block} />;
+                // 使用新版 CodeBlockView
+                blockComponent = (
+                  <CodeBlockView 
+                    key={block.id} 
+                    language={(block as any).language || 'text'}
+                  >
+                    {(block as any).content || ''}
+                  </CodeBlockView>
+                );
                 break;
               case MessageBlockType.CITATION:
                 blockComponent = <CitationBlock key={block.id} block={block} />;

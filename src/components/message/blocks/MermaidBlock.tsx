@@ -1,11 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@mui/material';
 import { Box, Skeleton, Alert, IconButton, Tooltip, Snackbar, Chip } from '@mui/material';
-import { Copy as ContentCopyIcon, ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Code as CodeIcon, ZoomIn as ZoomInIcon, ZoomOut as ZoomOutIcon, RotateCcw as ResetIcon } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Copy as ContentCopyIcon, ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, ZoomIn as ZoomInIcon, ZoomOut as ZoomOutIcon, RotateCcw as ResetIcon } from 'lucide-react';
 import { useAppSelector } from '../../../shared/store';
 import mermaid from 'mermaid';
+import { CodeBlockView } from '../../CodeBlockView';
 
 interface MermaidBlockProps {
   code: string;
@@ -302,57 +301,10 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ code, id, messageRole }) =>
           </Box>
         </Box>
 
-        {/* 代码内容区域 */}
-        {isCollapsed ? (
-          // 折叠状态：显示简化信息
-          <Box
-            sx={{
-              padding: '16px',
-              color: isDarkMode ? '#94a3b8' : '#64748b',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : 'rgba(248, 250, 252, 0.5)'
-              }
-            }}
-            onClick={toggleCollapse}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CodeIcon size={16} color={isDarkMode ? '#888' : '#666'} />
-              <span style={{
-                color: isDarkMode ? '#ccc' : '#666',
-                fontSize: '14px'
-              }}>
-                Mermaid 代码 ({code.split('\n').length} 行) - 图表渲染已禁用
-              </span>
-            </Box>
-            <ExpandMoreIcon size={16} color={isDarkMode ? '#888' : '#666'} />
-          </Box>
-        ) : (
-          // 展开状态：显示完整代码（带语法高亮）
-          <SyntaxHighlighter
-            language="mermaid"
-            style={isDarkMode ? vscDarkPlus : vs}
-            customStyle={{
-              margin: 0,
-              padding: '1rem',
-              fontSize: '14px',
-              lineHeight: 1.5,
-              border: 'none',
-              borderRadius: 0,
-              overflow: 'auto',
-              maxHeight: '500px',
-              minWidth: '100%'
-            }}
-            codeTagProps={{
-              style: {
-                fontFamily: 'Monaco, Menlo, "Ubuntu Mono", Consolas, source-code-pro, monospace',
-                display: 'block'
-              }
-            }}
-          >
-            {code}
-          </SyntaxHighlighter>
-        )}
+        {/* 代码内容区域 - 使用新版 CodeBlockView */}
+        <CodeBlockView language="mermaid">
+          {code}
+        </CodeBlockView>
 
         <Snackbar
           open={copySuccess}

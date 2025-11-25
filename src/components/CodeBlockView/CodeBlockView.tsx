@@ -16,7 +16,7 @@ import type { ActionTool, ViewMode, BasicPreviewHandles, CodeBlockViewProps } fr
 import { SPECIAL_VIEWS } from './types';
 
 // 常量
-const MAX_COLLAPSED_CODE_HEIGHT = 300;
+const COLLAPSED_PREVIEW_LINES = 3; // 代码超过此行数才可收起
 
 /**
  * 代码块视图组件
@@ -71,13 +71,16 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   const specialViewRef = useRef<BasicPreviewHandles>(null);
 
   // 展开/换行状态
-  const [expandOverride, setExpandOverride] = useState(!codeCollapsible);
+  const [isCollapsed, setIsCollapsed] = useState(false); // 是否完全收起
   const [wrapOverride, setWrapOverride] = useState(codeWrappable);
-  const [sourceScrollHeight, setSourceScrollHeight] = useState(0);
+
+  // 计算代码行数
+  const lineCount = useMemo(() => children.split('\n').length, [children]);
 
   // 响应设置变化
   useEffect(() => {
-    setExpandOverride(!codeCollapsible);
+    // 如果启用了可折叠并且默认收起，则收起
+    // 这里不自动收起，让用户手动控制
   }, [codeCollapsible]);
 
   useEffect(() => {
@@ -91,22 +94,20 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   const isInSpecialView = useMemo(() => 
     hasSpecialView && viewMode === 'special', [hasSpecialView, viewMode]);
   
-  const shouldExpand = useMemo(() => 
-    !codeCollapsible || expandOverride, [codeCollapsible, expandOverride]);
-  
   const shouldWrap = useMemo(() => 
     codeWrappable && wrapOverride, [codeWrappable, wrapOverride]);
   
+  // 可折叠条件：启用了可折叠设置且代码超过 3 行
   const expandable = useMemo(() => 
-    codeCollapsible && sourceScrollHeight > MAX_COLLAPSED_CODE_HEIGHT, 
-    [codeCollapsible, sourceScrollHeight]);
+    codeCollapsible && lineCount > COLLAPSED_PREVIEW_LINES, 
+    [codeCollapsible, lineCount]);
 
   const showPreviewTools = useMemo(() => 
     viewMode !== 'source' && hasSpecialView, [hasSpecialView, viewMode]);
 
   // 处理函数
-  const handleHeightChange = useCallback((height: number) => {
-    setSourceScrollHeight(prev => prev === height ? prev : height);
+  const handleHeightChange = useCallback((_height: number) => {
+    // 高度变化回调，当前未使用
   }, []);
 
   const handleCopySource = useCallback(() => {
@@ -159,10 +160,10 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   });
 
   useExpandTool({
-    enabled: !isInSpecialView,
-    expanded: shouldExpand,
-    expandable,
-    toggle: useCallback(() => setExpandOverride(prev => !prev), []),
+    enabled: !isInSpecialView && expandable,
+    expanded: !isCollapsed,
+    expandable: true, // 只要显示就可以点击
+    toggle: useCallback(() => setIsCollapsed(prev => !prev), []),
     setTools
   });
 
@@ -198,21 +199,54 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
   }, [hasSpecialView, language, children]);
 
   // 渲染源代码视图
-  const sourceView = useMemo(() => (
-    <CodeViewer
-      className="source-view"
-      value={children}
-      language={language}
-      onHeightChange={handleHeightChange}
-      expanded={shouldExpand}
-      wrapped={shouldWrap}
-      maxHeight={`${MAX_COLLAPSED_CODE_HEIGHT}px`}
-      showLineNumbers={codeShowLineNumbers}
-    />
-  ), [children, language, handleHeightChange, shouldExpand, shouldWrap, codeShowLineNumbers]);
+  const sourceView = useMemo(() => {
+    // 完全收起时不渲染代码
+    if (isCollapsed) {
+      return null;
+    }
+    return (
+      <CodeViewer
+        className="source-view"
+        value={children}
+        language={language}
+        onHeightChange={handleHeightChange}
+        expanded={true}
+        wrapped={shouldWrap}
+        options={{ lineNumbers: codeShowLineNumbers }}
+      />
+    );
+  }, [children, language, handleHeightChange, shouldWrap, codeShowLineNumbers, isCollapsed]);
 
   // 渲染内容
   const renderContent = useMemo(() => {
+    // 完全收起时显示收起提示
+    if (isCollapsed) {
+      return (
+        <Box
+          onClick={() => setIsCollapsed(false)}
+          sx={{
+            padding: '12px 16px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)',
+            fontSize: '13px',
+            fontFamily: '"Fira Code", "JetBrains Mono", Consolas, Monaco, monospace',
+            '&:hover': {
+              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+            },
+            '&:active': {
+              backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+            }
+          }}
+        >
+          <span>••• 代码已收起 ({lineCount} 行) •••</span>
+          <span style={{ fontSize: '12px', opacity: 0.7 }}>点击展开</span>
+        </Box>
+      );
+    }
+
     const showSpecialView = !!renderSpecialView && ['special', 'split'].includes(viewMode);
     const showSourceView = !renderSpecialView || viewMode !== 'special';
 
@@ -245,7 +279,7 @@ const CodeBlockView: React.FC<CodeBlockViewProps> = memo(({
         {showSourceView && sourceView}
       </Box>
     );
-  }, [renderSpecialView, sourceView, viewMode, isDarkMode]);
+  }, [renderSpecialView, sourceView, viewMode, isDarkMode, isCollapsed, lineCount]);
 
   return (
     <Box

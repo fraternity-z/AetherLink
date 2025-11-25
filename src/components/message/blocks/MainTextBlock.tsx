@@ -155,7 +155,7 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
 
     if (isUserMessage || !hasTools) {
       // 传递消息角色，使用节流后的内容
-      return <Markdown block={displayBlock} messageRole={role as 'user' | 'assistant' | 'system'} />;
+      return <Markdown block={displayBlock} messageRole={role as 'user' | 'assistant' | 'system'} isStreaming={isStreaming} />;
     }
 
     // 使用已经获取的工具块
