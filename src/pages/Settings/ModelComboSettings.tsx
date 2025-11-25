@@ -11,7 +11,6 @@ import {
   CardContent,
   CardActions,
   Chip,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -20,6 +19,7 @@ import {
   useMediaQuery,
   useTheme
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -536,7 +536,7 @@ const ModelComboSettings: React.FC = () => {
       />
 
       {/* 删除确认对话框 */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <BackButtonDialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>{t('modelSettings.combo.deleteConfirm')}</DialogTitle>
         <DialogContent>
           <Typography>
@@ -549,7 +549,7 @@ const ModelComboSettings: React.FC = () => {
             {t('common.delete')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </SafeAreaContainer>
   );
 };

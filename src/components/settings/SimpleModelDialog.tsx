@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -17,6 +16,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { Image as PhotoIcon } from 'lucide-react';
 import type { Model } from '../../shared/types';
 import { ModelType } from '../../shared/types';
@@ -204,7 +204,7 @@ const SimpleModelDialog: React.FC<SimpleModelDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{editModel ? '编辑模型' : '添加模型'}</DialogTitle>
       <DialogContent>
         <Box sx={{ mb: 3, mt: 1 }}>
@@ -322,7 +322,7 @@ const SimpleModelDialog: React.FC<SimpleModelDialogProps> = ({
           保存
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

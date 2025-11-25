@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -17,6 +16,7 @@ import {
   Alert,
   LinearProgress
 } from '@mui/material';
+import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
 import {
   CheckCircle as CheckCircleIcon,
   AlertTriangle as WarningIcon,
@@ -200,7 +200,7 @@ const DatabaseDiagnosticDialog: React.FC<DatabaseDiagnosticDialogProps> = ({
   }, [open]);
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth="md"
@@ -629,7 +629,7 @@ const DatabaseDiagnosticDialog: React.FC<DatabaseDiagnosticDialogProps> = ({
           )}
         </Box>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

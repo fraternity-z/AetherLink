@@ -7,13 +7,13 @@ import {
   AccordionDetails,
   Menu,
   MenuItem,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
   TextField
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { ChevronDown, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateGroup, deleteGroup } from '../../../shared/store/slices/groupsSlice';
@@ -42,7 +42,7 @@ const VirtualizedTopicGroups = memo(function VirtualizedTopicGroups({
   topicGroups,
   topics,
   topicGroupMap,
-  currentTopic, // 保留兼容性，但不再使用
+  currentTopic: _currentTopic, // 保留兼容性，但不再使用 (eslint-disable-line @typescript-eslint/no-unused-vars)
   onSelectTopic,
   onOpenMenu,
   onDeleteTopic
@@ -302,7 +302,7 @@ const TopicGroupAccordion = memo(function TopicGroupAccordion({
       </Menu>
 
       {/* 编辑分组名称对话框 */}
-      <Dialog open={editDialogOpen} onClose={handleEditCancel} maxWidth="xs" fullWidth>
+      <BackButtonDialog open={editDialogOpen} onClose={handleEditCancel} maxWidth="xs" fullWidth>
         <DialogTitle>编辑分组名称</DialogTitle>
         <DialogContent>
           <TextField
@@ -327,10 +327,10 @@ const TopicGroupAccordion = memo(function TopicGroupAccordion({
           <Button onClick={handleEditCancel}>取消</Button>
           <Button onClick={handleEditSave} variant="contained">保存</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 删除确认对话框 */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} maxWidth="xs" fullWidth>
+      <BackButtonDialog open={deleteDialogOpen} onClose={handleDeleteCancel} maxWidth="xs" fullWidth>
         <DialogTitle>确认删除</DialogTitle>
         <DialogContent>
           <Typography>
@@ -341,7 +341,7 @@ const TopicGroupAccordion = memo(function TopicGroupAccordion({
           <Button onClick={handleDeleteCancel}>取消</Button>
           <Button onClick={handleDeleteConfirm} variant="contained" color="error">删除</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </>
   );
 });

@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   Box,
@@ -12,6 +11,7 @@ import {
   useMediaQuery,
   Chip
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { LUCIDE_ICON_CATEGORIES, COMMON_EMOJIS } from './iconUtils';
 
 interface AssistantIconPickerProps {
@@ -129,7 +129,7 @@ export default function AssistantIconPicker({
   }, [buttonSize, isMobile, handleIconSelect]);
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth={false}
@@ -267,6 +267,6 @@ export default function AssistantIconPicker({
           )}
         </Box>
       </DialogContent>
-    </Dialog>
+    </BackButtonDialog>
   );
 }

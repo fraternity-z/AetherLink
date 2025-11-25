@@ -14,7 +14,6 @@ import {
   Slider,
   Tooltip,
   Alert,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -23,6 +22,7 @@ import {
   InputAdornment,
   IconButton,
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import CustomSwitch from '../../components/CustomSwitch';
 import type { SelectChangeEvent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -938,7 +938,7 @@ const WebSearchSettings: React.FC = () => {
       </Container>
 
       {isEditing && editingProvider && (
-        <Dialog open={isEditing} onClose={handleCancelEdit} maxWidth="sm" fullWidth>
+        <BackButtonDialog open={isEditing} onClose={handleCancelEdit} maxWidth="sm" fullWidth>
           <DialogTitle>
             {editingProvider.id ? t('settings.webSearch.basic.editDialog.editTitle') : t('settings.webSearch.basic.editDialog.addTitle')}
           </DialogTitle>
@@ -996,7 +996,7 @@ const WebSearchSettings: React.FC = () => {
               {t('settings.webSearch.basic.editDialog.save')}
             </Button>
           </DialogActions>
-        </Dialog>
+        </BackButtonDialog>
       )}
     </SafeAreaContainer>
   );

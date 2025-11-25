@@ -2,7 +2,6 @@ import {
   Box,
   List,
   Button,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
@@ -18,6 +17,7 @@ import {
   InputAdornment,
   IconButton,
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import {
   Plus,
   FolderPlus,
@@ -254,7 +254,7 @@ const AssistantTab = React.memo(function AssistantTab({
       />
 
       {/* 助手选择对话框 */}
-      <Dialog open={assistantDialogOpen} onClose={handleCloseAssistantDialog}>
+      <BackButtonDialog open={assistantDialogOpen} onClose={handleCloseAssistantDialog}>
         <DialogTitle>选择助手</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -277,7 +277,7 @@ const AssistantTab = React.memo(function AssistantTab({
             添加
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 分组对话框 */}
       <GroupDialog

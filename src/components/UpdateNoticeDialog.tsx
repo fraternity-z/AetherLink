@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  Dialog, 
   DialogTitle, 
   DialogContent, 
   DialogActions, 
@@ -9,6 +8,7 @@ import {
   Box,
   Paper
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import { MessageCircle, X } from 'lucide-react';
 
 // QQ群链接
@@ -54,15 +54,16 @@ const UpdateNoticeDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
       PaperProps={{
+        elevation: 8,
         sx: {
           borderRadius: 2,
-          boxShadow: 8,
+          bgcolor: 'background.paper',
         }
       }}
     >
@@ -140,7 +141,7 @@ const UpdateNoticeDialog: React.FC = () => {
           我知道了
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

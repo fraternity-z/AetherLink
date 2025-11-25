@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -20,6 +19,7 @@ import {
   CircularProgress,
   Chip
 } from '@mui/material';
+import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
 import {
   Trash2 as DeleteIcon,
   RotateCcw as RestoreIcon,
@@ -159,7 +159,7 @@ const WebDavBackupManager: React.FC<WebDavBackupManagerProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth="md"
@@ -304,7 +304,7 @@ const WebDavBackupManager: React.FC<WebDavBackupManagerProps> = ({
           关闭
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

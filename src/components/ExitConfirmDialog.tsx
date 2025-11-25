@@ -1,12 +1,12 @@
 import React from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
   Button
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import { App } from '@capacitor/app';
 import { useLocation } from 'react-router-dom';
 import { useAppState } from '../shared/hooks/useAppState';
@@ -39,7 +39,7 @@ const ExitConfirmDialog: React.FC = () => {
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={shouldShowDialog}
       onClose={handleCancel}
       aria-labelledby="exit-dialog-title"
@@ -61,7 +61,7 @@ const ExitConfirmDialog: React.FC = () => {
           退出
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

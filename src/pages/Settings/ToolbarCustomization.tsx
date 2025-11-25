@@ -251,6 +251,7 @@ const ToolbarCustomization: React.FC = () => {
       <AppBar
         position="static"
         elevation={0}
+        className="status-bar-safe-area"
         sx={{
           bgcolor: 'background.paper',
           color: 'text.primary',
@@ -312,10 +313,9 @@ const ToolbarCustomization: React.FC = () => {
             borderColor: 'divider',
             overflow: 'hidden',
             bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
               {t('settings.appearance.toolbarCustomization.backgroundStyle.title')}
             </Typography>
@@ -333,17 +333,20 @@ const ToolbarCustomization: React.FC = () => {
               >
                 {/* 毛玻璃效果选项 */}
                 <Card
-                  variant="outlined"
                   sx={{
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     border: settings.toolbarStyle === 'glassmorphism' ? 2 : 1,
+                    borderStyle: 'solid',
                     borderColor: settings.toolbarStyle === 'glassmorphism' 
                       ? 'primary.main' 
                       : 'divider',
+                    bgcolor: 'background.paper',
                     '&:hover': {
                       borderColor: 'primary.main',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      boxShadow: (theme) => theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(0,0,0,0.3)' 
+                        : '0 4px 12px rgba(0,0,0,0.1)',
                     }
                   }}
                   onClick={() => dispatch(setToolbarStyle('glassmorphism'))}
@@ -470,17 +473,20 @@ const ToolbarCustomization: React.FC = () => {
 
                 {/* 透明效果选项 */}
                 <Card
-                  variant="outlined"
                   sx={{
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     border: settings.toolbarStyle === 'transparent' ? 2 : 1,
+                    borderStyle: 'solid',
                     borderColor: settings.toolbarStyle === 'transparent' 
                       ? 'primary.main' 
                       : 'divider',
+                    bgcolor: 'background.paper',
                     '&:hover': {
                       borderColor: 'primary.main',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      boxShadow: (theme) => theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(0,0,0,0.3)' 
+                        : '0 4px 12px rgba(0,0,0,0.1)',
                     }
                   }}
                   onClick={() => dispatch(setToolbarStyle('transparent'))}
@@ -618,10 +624,9 @@ const ToolbarCustomization: React.FC = () => {
             borderColor: 'divider',
             overflow: 'hidden',
             bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
               {t('settings.appearance.toolbarCustomization.displayStyle.title')}
             </Typography>
@@ -814,10 +819,9 @@ const ToolbarCustomization: React.FC = () => {
             borderColor: 'divider',
             overflow: 'hidden',
             bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           }}
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
             <Box sx={{ 
               display: 'flex', 
               alignItems: { xs: 'flex-start', sm: 'center' }, 

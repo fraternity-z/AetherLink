@@ -9,7 +9,6 @@ import {
   IconButton,
 
   Chip,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -23,6 +22,7 @@ import {
   Toolbar,
   alpha
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import {
   Plus,
   Trash2,
@@ -1279,7 +1279,7 @@ const AIDebateSettings: React.FC = () => {
       </Box>
 
       {/* 角色编辑对话框 */}
-      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="md" fullWidth>
+      <BackButtonDialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingRole ? t('aiDebate.roleDialog.editTitle') : t('aiDebate.roleDialog.title')}
         </DialogTitle>
@@ -1396,10 +1396,10 @@ const AIDebateSettings: React.FC = () => {
             {t('common.save')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 分组编辑对话框 */}
-      <Dialog open={groupDialogOpen} onClose={() => setGroupDialogOpen(false)} maxWidth="sm" fullWidth>
+      <BackButtonDialog open={groupDialogOpen} onClose={() => setGroupDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           {editingGroup ? t('aiDebate.groupDialog.editTitle') : t('aiDebate.groupDialog.title')}
         </DialogTitle>
@@ -1442,7 +1442,7 @@ const AIDebateSettings: React.FC = () => {
             {editingGroup ? t('aiDebate.groupDialog.save') : t('aiDebate.groupDialog.create')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </SafeAreaContainer>
   );
 };

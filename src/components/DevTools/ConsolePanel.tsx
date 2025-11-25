@@ -10,7 +10,6 @@ import {
   Chip,
   Collapse,
   Paper,
-  Divider,
   alpha,
   Tooltip,
   Checkbox,

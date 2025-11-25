@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -14,6 +13,7 @@ import {
   AccordionSummary,
   AccordionDetails
 } from '@mui/material';
+import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
 import { ChevronDown, Cloud, HelpCircle } from 'lucide-react';
 import type { WebDavConfig } from '../../../../../shared/types';
 import { WebDavBackupService } from '../../../../../shared/services/storage/WebDavBackupService';
@@ -130,9 +130,9 @@ const WebDavConfigDialog: React.FC<WebDavConfigDialogProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       maxWidth="sm"
       fullWidth
     >
@@ -276,7 +276,7 @@ const WebDavConfigDialog: React.FC<WebDavConfigDialogProps> = ({
           {saving ? '保存中...' : '保存配置'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

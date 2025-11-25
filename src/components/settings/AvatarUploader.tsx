@@ -2,13 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Slider,
   Typography
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { CloudUpload as CloudUploadIcon, Camera as PhotoCameraIcon } from 'lucide-react';
 
 interface AvatarUploaderProps {
@@ -105,7 +105,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -192,7 +192,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
           保存
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -23,6 +22,7 @@ import {
   FormControlLabel,
   Radio
 } from '@mui/material';
+import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
 import {
   Upload as FileUploadIcon,
   CheckCircle as FileDownloadDoneIcon,
@@ -162,10 +162,10 @@ const ImportExternalBackupDialog: React.FC<ImportExternalBackupDialogProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={handleClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
@@ -367,7 +367,7 @@ const ImportExternalBackupDialog: React.FC<ImportExternalBackupDialogProps> = ({
           </Button>
         )}
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

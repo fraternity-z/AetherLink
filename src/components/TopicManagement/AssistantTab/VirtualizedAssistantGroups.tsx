@@ -7,13 +7,13 @@ import {
   AccordionDetails,
   Menu,
   MenuItem,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
   TextField
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { ChevronDown, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { updateGroup, deleteGroup } from '../../../shared/store/slices/groupsSlice';
@@ -300,7 +300,7 @@ const AssistantGroupAccordion = memo(function AssistantGroupAccordion({
       </Menu>
 
       {/* 编辑分组名称对话框 */}
-      <Dialog open={editDialogOpen} onClose={handleEditCancel} maxWidth="xs" fullWidth>
+      <BackButtonDialog open={editDialogOpen} onClose={handleEditCancel} maxWidth="xs" fullWidth>
         <DialogTitle>编辑分组名称</DialogTitle>
         <DialogContent>
           <TextField
@@ -325,10 +325,10 @@ const AssistantGroupAccordion = memo(function AssistantGroupAccordion({
           <Button onClick={handleEditCancel}>取消</Button>
           <Button onClick={handleEditSave} variant="contained">保存</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 删除确认对话框 */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} maxWidth="xs" fullWidth>
+      <BackButtonDialog open={deleteDialogOpen} onClose={handleDeleteCancel} maxWidth="xs" fullWidth>
         <DialogTitle>确认删除</DialogTitle>
         <DialogContent>
           <Typography>
@@ -339,7 +339,7 @@ const AssistantGroupAccordion = memo(function AssistantGroupAccordion({
           <Button onClick={handleDeleteCancel}>取消</Button>
           <Button onClick={handleDeleteConfirm} variant="contained" color="error">删除</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </>
   );
 });

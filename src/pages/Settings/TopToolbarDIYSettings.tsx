@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
 import useScrollPosition from '../../hooks/useScrollPosition';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 interface ComponentPosition {
   id: string;
@@ -390,46 +391,49 @@ const TopToolbarDIYSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      height: '100vh',
+    <SafeAreaContainer sx={{
       backgroundColor: 'background.default',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
     }}>
-      {/* 头部 */}
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: 2,
-        borderBottom: 1,
-        borderColor: 'divider',
-        backgroundColor: 'background.paper',
-        zIndex: 10,
-        flexShrink: 0
-      }}>
-        <ArrowLeft
-          size={20}
-          style={{ marginRight: 16, cursor: 'pointer' }}
-          onClick={handleBack}
-        />
-        <Typography variant="h6" color="primary" sx={{ flexGrow: 1 }}>
-          {t('settings.appearance.topToolbarDIY.title')}
-        </Typography>
-        <Button
-          startIcon={<RotateCcw size={16} />}
-          onClick={handleResetLayout}
-          size="small"
-          variant="outlined"
-        >
-          {t('settings.appearance.topToolbarDIY.resetButton')}
-        </Button>
-      </Box>
+      {/* 头部 - 使用 AppBar + Toolbar 以获得全局安全区域配置 */}
+      <AppBar
+        position="static"
+        elevation={0}
+        sx={{
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          borderBottom: 1,
+          borderColor: 'divider',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={handleBack}
+            aria-label="back"
+            sx={{ color: (theme) => theme.palette.primary.main }}
+          >
+            <ArrowLeft size={20} />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            {t('settings.appearance.topToolbarDIY.title')}
+          </Typography>
+          <Button
+            startIcon={<RotateCcw size={16} />}
+            onClick={handleResetLayout}
+            size="small"
+            variant="outlined"
+          >
+            {t('settings.appearance.topToolbarDIY.resetButton')}
+          </Button>
+        </Toolbar>
+      </AppBar>
 
       <Box
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{ p: 2, flex: 1, overflow: 'auto' }}
+        sx={{ p: 2, flex: 1, overflow: 'auto', pb: 'var(--content-bottom-padding)' }}
       >
         {/* DIY 预览区域和组件面板 - 连在一起 */}
         <Paper elevation={2} sx={{ mb: 3, overflow: 'hidden' }}>
@@ -746,7 +750,7 @@ const TopToolbarDIYSettings: React.FC = () => {
           </Box>
         </Paper>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -18,6 +17,7 @@ import {
   ListItemText,
   Chip
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { X, Upload, FileText, Link as LinkIcon } from 'lucide-react';
 import type { AppearanceConfig } from '../../shared/utils/appearanceConfig';
 import { decodeAppearanceConfig, validateAppearanceConfig, importAppearanceConfigFromFile } from '../../shared/utils/appearanceConfig';
@@ -178,15 +178,14 @@ const ImportAppearanceDialog: React.FC<ImportAppearanceDialogProps> = ({ open, o
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
-      onClose={handleClose}
-      maxWidth="sm"
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          borderRadius: 2,
         }
       }}
     >
@@ -429,7 +428,7 @@ const ImportAppearanceDialog: React.FC<ImportAppearanceDialogProps> = ({ open, o
           取消
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, IconButton, Dialog, DialogContent, CircularProgress } from '@mui/material';
+import { Box, IconButton, DialogContent, CircularProgress } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { Maximize2 as ZoomOutMapIcon, AlertCircle as ErrorOutlineIcon } from 'lucide-react';
 import type { ImageMessageBlock } from '../../../shared/types/newMessage';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
@@ -148,7 +149,7 @@ const ImageBlock: React.FC<Props> = ({ block }) => {
         <ZoomOutMapIcon fontSize="small" />
       </IconButton>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="lg">
+      <BackButtonDialog open={open} onClose={handleClose} maxWidth="lg">
         <DialogContent sx={{ padding: 0 }}>
           <Box
             component="img"
@@ -160,7 +161,7 @@ const ImageBlock: React.FC<Props> = ({ block }) => {
             }}
           />
         </DialogContent>
-      </Dialog>
+      </BackButtonDialog>
     </Box>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LinearProgress, Typography, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import { LinearProgress, Typography, Box, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
 import { useTranslation } from '../../../../../i18n';
 import {
   Save,
@@ -617,7 +618,7 @@ const BackupRestorePanel: React.FC = () => {
       />
 
       {/* 清理确认对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={clearConfirmOpen}
         onClose={cancelClearAll}
         aria-labelledby="clear-dialog-title"
@@ -639,7 +640,7 @@ const BackupRestorePanel: React.FC = () => {
             {t('dataSettings.dataManagement.clearAll.confirm.confirm')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       <NotificationSnackbar
         open={snackbar.open}
@@ -663,7 +664,7 @@ const BackupRestorePanel: React.FC = () => {
       />
 
       {/* WebDAV 设置对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={webdavSettingsOpen}
         onClose={() => setWebdavSettingsOpen(false)}
         maxWidth="md"
@@ -678,7 +679,7 @@ const BackupRestorePanel: React.FC = () => {
             {t('common.close', { defaultValue: '关闭' })}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* WebDAV 配置对话框 */}
       <WebDavConfigDialog

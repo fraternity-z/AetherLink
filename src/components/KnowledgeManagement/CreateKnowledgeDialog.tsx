@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -20,6 +19,7 @@ import {
   Divider,
   Alert,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import type { SelectChangeEvent } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import { getAvailableEmbeddingModels, getModelDimensions } from '../../shared/services/knowledge/MobileEmbeddingService';
@@ -224,7 +224,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <BackButtonDialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>{isEditing ? '编辑知识库' : '创建知识库'}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3}>
@@ -388,7 +388,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
           {isSubmitting ? '保存中...' : isEditing ? '更新' : '创建'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

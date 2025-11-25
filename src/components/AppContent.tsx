@@ -1,5 +1,6 @@
 import React, { memo, useEffect } from 'react';
-import { CssBaseline, ThemeProvider, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { CssBaseline, ThemeProvider, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import { useTheme } from '../hooks/useTheme';
@@ -89,9 +90,11 @@ const AppContent = memo(() => {
       </ErrorBoundary>
 
       {/* 数据重置通知对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={showResetNotice}
         onClose={() => setShowResetNotice(false)}
+        maxWidth="sm"
+        fullWidth
         aria-labelledby="reset-dialog-title"
         aria-describedby="reset-dialog-description"
       >
@@ -108,7 +111,7 @@ const AppContent = memo(() => {
             知道了
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </ThemeProvider>
   );
 });

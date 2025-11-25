@@ -4,7 +4,6 @@
  */
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -15,6 +14,7 @@ import {
   IconButton,
   Paper
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { X as CloseIcon, Copy as CopyIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -104,7 +104,7 @@ const ErrorDetailDialog: React.FC<ErrorDetailDialogProps> = ({ open, onClose, er
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth="md"
@@ -143,7 +143,7 @@ const ErrorDetailDialog: React.FC<ErrorDetailDialogProps> = ({ open, onClose, er
       <DialogActions>
         <Button onClick={onClose}>{t('common.close')}</Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

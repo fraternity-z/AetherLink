@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -13,6 +12,7 @@ import {
   Alert,
   Snackbar
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import {
   X as CloseIcon,
   Save as SaveIcon
@@ -157,7 +157,7 @@ export const MobileFileViewer: React.FC<MobileFileViewerProps> = ({
 
   return (
     <>
-      <Dialog 
+      <BackButtonDialog 
         open={open} 
         onClose={onClose} 
         fullScreen
@@ -401,7 +401,7 @@ export const MobileFileViewer: React.FC<MobileFileViewerProps> = ({
             </Button>
           )}
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       <Snackbar
         open={saveSuccess}

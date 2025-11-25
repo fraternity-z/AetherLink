@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -15,6 +14,7 @@ import {
   Typography,
   Slider,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import type { Model, PresetModel } from '../../shared/types';
 import { ModelType } from '../../shared/types';
 import { presetModels } from '../../shared/data/presetModels';
@@ -199,7 +199,7 @@ const ModelDialog: React.FC<ModelDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>{editModel ? '编辑模型' : '添加模型'}</DialogTitle>
       <DialogContent>
         <Box sx={{ mb: 3, mt: 1 }}>
@@ -353,7 +353,7 @@ const ModelDialog: React.FC<ModelDialogProps> = ({
           保存
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

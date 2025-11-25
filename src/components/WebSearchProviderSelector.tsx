@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Dialog,
   DialogTitle,
   DialogContent,
   List,
@@ -15,6 +14,7 @@ import {
   Divider,
   alpha
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import {
   Globe as LanguageIcon,
   Settings as SettingsIcon,
@@ -59,12 +59,12 @@ const WebSearchProviderSelector: React.FC<WebSearchProviderSelectorProps> = ({
   // 如果providers为空，显示加载状态
   if (!providers || providers.length === 0) {
     return (
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <BackButtonDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogTitle>加载中...</DialogTitle>
         <DialogContent>
           <Typography>正在加载搜索提供商...</Typography>
         </DialogContent>
-      </Dialog>
+      </BackButtonDialog>
     );
   }
 
@@ -140,7 +140,7 @@ const WebSearchProviderSelector: React.FC<WebSearchProviderSelectorProps> = ({
   const allProviders = providers;
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
@@ -300,7 +300,7 @@ const WebSearchProviderSelector: React.FC<WebSearchProviderSelectorProps> = ({
           </ListItem>
         </List>
       </DialogContent>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

@@ -10,7 +10,6 @@ import {
   Typography,
   Button,
   IconButton,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -29,6 +28,7 @@ import {
   ListSubheader,
   alpha
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import {
   Plus as AddIcon,
   Folder as FolderIcon,
@@ -489,7 +489,7 @@ const WorkspaceSettings: React.FC = () => {
       />
 
       {/* 删除确认对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         maxWidth="sm"
@@ -526,7 +526,7 @@ const WorkspaceSettings: React.FC = () => {
             删除
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </Box>
   );
 };

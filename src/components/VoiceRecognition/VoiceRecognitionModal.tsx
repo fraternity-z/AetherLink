@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -12,6 +11,7 @@ import {
   Chip,
   IconButton,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { Mic, MicOff, X, Volume2 } from 'lucide-react';
 
 interface VoiceRecognitionModalProps {
@@ -72,7 +72,7 @@ const VoiceRecognitionModal: React.FC<VoiceRecognitionModalProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
@@ -253,7 +253,7 @@ const VoiceRecognitionModal: React.FC<VoiceRecognitionModalProps> = ({
           </Button>
         )}
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

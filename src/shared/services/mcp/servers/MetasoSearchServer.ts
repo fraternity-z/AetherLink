@@ -410,9 +410,10 @@ ${content}
       const scope = params.scope || 'webpage';
       const useStream = params.stream === true;
 
-      // 构建请求体
+      // 构建请求体 - 必须包含scope参数，否则API会失败
       const requestBody = {
         model,
+        scope,
         stream: useStream,
         messages: [
           {

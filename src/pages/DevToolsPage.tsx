@@ -7,7 +7,6 @@ import {
   Typography,
   Tabs,
   Tab,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -18,6 +17,7 @@ import {
   Divider,
   Paper,
 } from '@mui/material';
+import BackButtonDialog from '../components/common/BackButtonDialog';
 import {
   ArrowLeft as ArrowBackIcon,
   Trash2 as DeleteIcon,
@@ -155,6 +155,7 @@ const DevToolsPage: React.FC = () => {
       <AppBar 
         position="static" 
         elevation={0}
+        className="status-bar-safe-area"
         sx={{
           bgcolor: theme.palette.mode === 'dark' 
             ? alpha(theme.palette.background.paper, 0.8)
@@ -370,7 +371,7 @@ const DevToolsPage: React.FC = () => {
       </Box>
 
       {/* 设置对话框 - 优化设计 */}
-      <Dialog 
+      <BackButtonDialog 
         open={settingsOpen} 
         onClose={() => setSettingsOpen(false)}
         maxWidth="sm"
@@ -443,10 +444,10 @@ const DevToolsPage: React.FC = () => {
             {t('devtools.settingsDialog.close')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 清除确认对话框 - 优化设计 */}
-      <Dialog 
+      <BackButtonDialog 
         open={clearDialogOpen} 
         onClose={() => setClearDialogOpen(false)}
         maxWidth="sm"
@@ -510,7 +511,7 @@ const DevToolsPage: React.FC = () => {
             {t('devtools.clearDialog.clear')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </SafeAreaContainer>
   );
 };

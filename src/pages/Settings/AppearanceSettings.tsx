@@ -22,12 +22,12 @@ import {
   Divider,
   alpha,
   Button,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles, Share2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
@@ -900,7 +900,7 @@ const AppearanceSettings: React.FC = () => {
       />
 
       {/* 确认应用配置对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={confirmDialogOpen}
         onClose={handleCancelApply}
         maxWidth="sm"
@@ -927,7 +927,7 @@ const AppearanceSettings: React.FC = () => {
             确认应用
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </SafeAreaContainer>
   );
 };

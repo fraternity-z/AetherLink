@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Button,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -20,6 +19,7 @@ import {
   Tabs,
   Tab
 } from '@mui/material';
+import BackButtonDialog from '../../../../components/common/BackButtonDialog';
 import { alpha } from '@mui/material/styles';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { providerTypeOptions } from './constants';
@@ -144,7 +144,7 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
   const { t } = useTranslation();
   
   return (
-    <Dialog open={open} onClose={onClose}>
+    <BackButtonDialog open={open} onClose={onClose}>
       <DialogTitle sx={{
         fontWeight: 600,
       }}>
@@ -191,7 +191,7 @@ export const AddModelDialog: React.FC<AddModelDialogProps> = ({
           {t('modelSettings.dialogs.addModel.add')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -208,7 +208,7 @@ export const DeleteDialog: React.FC<DeleteDialogProps> = ({
   const { t } = useTranslation();
   
   return (
-    <Dialog open={open} onClose={onClose}>
+    <BackButtonDialog open={open} onClose={onClose}>
       <DialogTitle fontWeight={600}>{t('modelSettings.dialogs.deleteProvider.title')}</DialogTitle>
       <DialogContent>
         <Typography>
@@ -235,7 +235,7 @@ export const DeleteDialog: React.FC<DeleteDialogProps> = ({
           {t('common.delete')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -255,7 +255,7 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
   const { t } = useTranslation();
   
   return (
-    <Dialog open={open} onClose={onClose}>
+    <BackButtonDialog open={open} onClose={onClose}>
       <DialogTitle sx={{
         fontWeight: 600,
       }}>
@@ -306,7 +306,7 @@ export const EditProviderDialog: React.FC<EditProviderDialogProps> = ({
           {t('common.save')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -375,12 +375,7 @@ export const AdvancedAPIConfigDialog: React.FC<AdvancedAPIConfigDialogProps> = (
   };
   
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
         sx={{
           fontWeight: 600,
@@ -736,7 +731,7 @@ export const AdvancedAPIConfigDialog: React.FC<AdvancedAPIConfigDialogProps> = (
           {t('common.ok')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -762,12 +757,7 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
   const hasHeaders = headersEntries.length > 0;
   
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
         sx={{
           fontWeight: 600,
@@ -982,7 +972,7 @@ export const HeadersDialog: React.FC<HeadersDialogProps> = ({
           {t('common.ok')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -1041,12 +1031,7 @@ export const CustomBodyDialog: React.FC<CustomBodyDialogProps> = ({
   };
   
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
         sx={{
           fontWeight: 600,
@@ -1188,7 +1173,7 @@ export const CustomBodyDialog: React.FC<CustomBodyDialogProps> = ({
           {t('common.ok')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -1207,12 +1192,7 @@ export const CustomEndpointDialog: React.FC<CustomEndpointDialogProps> = ({
   const { t } = useTranslation();
   
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-    >
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{
         fontWeight: 600,
       }}>
@@ -1257,7 +1237,7 @@ export const CustomEndpointDialog: React.FC<CustomEndpointDialogProps> = ({
           {t('common.ok')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 
@@ -1309,20 +1289,7 @@ export const TestResultDialog: React.FC<TestResultDialogProps> = ({
   const { t } = useTranslation();
   
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      slotProps={{
-        paper: {
-          sx: {
-            width: '100%',
-            maxWidth: 500,
-            borderRadius: 2
-          }
-        }
-      }}
-    >
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="md" slotProps={{ paper: { sx: { width: '100%', maxWidth: 500, borderRadius: 2 } } }}>
       <DialogTitle sx={{
         fontWeight: 600,
         color: testResult?.success ? 'success.main' : 'error.main',
@@ -1347,7 +1314,7 @@ export const TestResultDialog: React.FC<TestResultDialogProps> = ({
           {t('common.ok')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

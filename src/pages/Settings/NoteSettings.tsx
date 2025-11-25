@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Collapse,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -26,6 +25,7 @@ import {
   Typography,
   CircularProgress
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft as ArrowBackIcon,
@@ -595,7 +595,7 @@ const NoteSettings: React.FC = () => {
         </MenuItem>
       </Menu>
 
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="xs" fullWidth>
+      <BackButtonDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>新建{createType === 'folder' ? '文件夹' : '笔记'}</DialogTitle>
         <DialogContent>
           <TextField
@@ -616,9 +616,9 @@ const NoteSettings: React.FC = () => {
           <Button onClick={() => setCreateDialogOpen(false)}>取消</Button>
           <Button onClick={handleCreate} variant="contained">创建</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
-      <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} maxWidth="xs" fullWidth>
+      <BackButtonDialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>重命名</DialogTitle>
         <DialogContent>
           <TextField
@@ -634,9 +634,9 @@ const NoteSettings: React.FC = () => {
           <Button onClick={() => setRenameDialogOpen(false)}>取消</Button>
           <Button onClick={handleRename} variant="contained">确定</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs">
+      <BackButtonDialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs">
         <DialogTitle>确认删除</DialogTitle>
         <DialogContent>
           <Typography>
@@ -648,7 +648,7 @@ const NoteSettings: React.FC = () => {
           <Button onClick={() => setDeleteDialogOpen(false)}>取消</Button>
           <Button onClick={handleDelete} color="error" variant="contained">删除</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </SafeAreaContainer>
   );
 };

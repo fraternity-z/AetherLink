@@ -24,6 +24,8 @@ const TabPanel = React.memo(function TabPanel(props: TabPanelProps) {
         // height: 'calc(100% - 48px)', // 移除固定高度
         // overflow: 'auto', // 移除内层滚动
         padding: '10px',
+        // 底部安全区域
+        pb: 'var(--content-bottom-padding)',
         display: value === index ? 'block' : 'none',
         // 性能优化 - 简化样式，减少重排计算
         transform: 'translateZ(0)', // 启用硬件加速

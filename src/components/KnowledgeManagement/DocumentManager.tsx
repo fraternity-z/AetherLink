@@ -11,7 +11,6 @@ import {
   Paper,
   Divider,
   LinearProgress,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
@@ -23,6 +22,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { styled } from '@mui/material/styles';
 import {
   Upload as CloudUploadIcon,
@@ -387,7 +387,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       </Paper>
 
       {/* 一键清理确认对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={clearAllDialogOpen}
         onClose={() => setClearAllDialogOpen(false)}
       >
@@ -405,7 +405,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
             清理全部
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </Box>
   );
 };

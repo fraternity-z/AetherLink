@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { 
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
   Button
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { useDispatch } from 'react-redux';
 import { createGroup } from '../../shared/store/slices/groupsSlice';
 
@@ -59,7 +59,7 @@ export default function GroupDialog({ open, onClose, type, title = '添加分组
   };
   
   return (
-    <Dialog 
+    <BackButtonDialog 
       open={open} 
       onClose={handleClose}
       fullWidth
@@ -91,6 +91,6 @@ export default function GroupDialog({ open, onClose, type, title = '添加分组
           确定
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 } 

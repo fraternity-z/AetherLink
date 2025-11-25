@@ -8,7 +8,6 @@ import {
   ListItemSecondaryAction,
   IconButton,
   Fab,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -23,6 +22,7 @@ import {
   Toolbar,
   alpha
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -334,7 +334,7 @@ const QuickPhraseSettings: React.FC = () => {
         )}
 
         {/* 添加/编辑对话框 */}
-        <Dialog
+        <BackButtonDialog
           open={dialogOpen}
           onClose={handleCloseDialog}
           maxWidth="sm"
@@ -400,7 +400,7 @@ const QuickPhraseSettings: React.FC = () => {
                 : t('settings.quickPhraseManagement.dialog.add.submit')}
             </Button>
           </DialogActions>
-        </Dialog>
+        </BackButtonDialog>
       </Box>
     </Box>
   );

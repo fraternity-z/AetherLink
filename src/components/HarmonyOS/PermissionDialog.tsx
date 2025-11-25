@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -20,10 +19,10 @@ import {
   Chip,
   Divider,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import {
   Shield,
   AlertCircle,
-  Copy,
   CheckCircle,
   Settings,
   Info,
@@ -31,11 +30,9 @@ import {
 import {
   HarmonyOSPermission,
   HARMONYOS_PERMISSION_CONFIG,
-  type PermissionConfig,
 } from '../../shared/config/harmonyOSConfig';
 import {
   harmonyOSPermissionService,
-  type PermissionRequestResult,
 } from '../../shared/services/HarmonyOSPermissionService';
 
 interface PermissionDialogProps {
@@ -98,11 +95,16 @@ export const HarmonyOSPermissionDialog: React.FC<PermissionDialogProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <BackButtonDialog
+      open={open}
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+        }
+      }}
     >
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={1}>
@@ -221,7 +223,7 @@ export const HarmonyOSPermissionDialog: React.FC<PermissionDialogProps> = ({
           </Button>
         )}
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

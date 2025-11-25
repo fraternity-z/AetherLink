@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -22,6 +21,7 @@ import {
   IconButton,
   Alert
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { Plus as AddIcon, Trash2 as DeleteIcon } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
@@ -429,7 +429,7 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={onClose}
       maxWidth="md"
@@ -487,7 +487,7 @@ const ModelComboDialog: React.FC<ModelComboDialogProps> = ({
           </Button>
         )}
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   Box,
@@ -16,6 +15,7 @@ import {
   Avatar,
   useMediaQuery
 } from '@mui/material';
+import BackButtonDialog from '../../../components/common/BackButtonDialog';
 import { X as CloseIcon, Check as CheckIcon } from 'lucide-react';
 import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
@@ -209,89 +209,84 @@ export const DialogModelSelector: React.FC<DialogModelSelectorProps> = ({
   }, [menuOpen, currentProviderId]);
 
   return (
-    <Dialog
-        open={menuOpen}
-        onClose={handleMenuClose}
-        fullScreen={fullScreen}
-        maxWidth="sm"
-        fullWidth
-        disableEnforceFocus
-        disableAutoFocus
-        disableRestoreFocus
-        slotProps={{
-          paper: {
-            sx: DIALOG_STYLES.dialogPaper(fullScreen)
-          }
-        }}
-      >
-        <DialogTitle sx={DIALOG_STYLES.dialogTitle}>
-          选择模型
-          <IconButton edge="end" onClick={handleMenuClose} aria-label="close">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+    <BackButtonDialog
+      open={menuOpen}
+      onClose={handleMenuClose}
+      fullScreen={fullScreen}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: DIALOG_STYLES.dialogPaper(fullScreen)
+      }}
+    >
+      <DialogTitle sx={DIALOG_STYLES.dialogTitle}>
+        选择模型
+        <IconButton edge="end" onClick={handleMenuClose} aria-label="close">
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
 
-        <Divider />
+      <Divider />
 
-        <Box sx={DIALOG_STYLES.tabsContainer}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="model provider tabs"
-          >
-            <Tab label="全部" value="all" />
-            {currentProviderId && groupedModels.groups[currentProviderId] && (
-              <Tab label="常用" value="frequently-used" />
-            )}
-            {groupedModels.providers
-              .filter(provider => provider.id !== currentProviderId)
-              .map(provider => (
-                <Tab key={provider.id} label={provider.displayName} value={provider.id} />
-              ))}
-          </Tabs>
-        </Box>
+      <Box sx={DIALOG_STYLES.tabsContainer}>
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          aria-label="model provider tabs"
+        >
+          <Tab label="全部" value="all" />
+          {currentProviderId && groupedModels.groups[currentProviderId] && (
+            <Tab label="常用" value="frequently-used" />
+          )}
+          {groupedModels.providers
+            .filter(provider => provider.id !== currentProviderId)
+            .map(provider => (
+              <Tab key={provider.id} label={provider.displayName} value={provider.id} />
+            ))}
+        </Tabs>
+      </Box>
 
-        <DialogContent sx={DIALOG_STYLES.dialogContent}>
-          <List sx={DIALOG_STYLES.list}>
-            {activeTab === 'all' ? (
-              // 显示所有模型
-              availableModels.map((model) => (
-                <ModelItem
-                  key={getIdentityValue(model)}
-                  model={model}
-                  isSelected={selectedIdentity === getIdentityValue(model)}
-                  onSelect={() => handleModelSelectWithClose(model)}
-                  providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                />
-              ))
-            ) : activeTab === 'frequently-used' && currentProviderId ? (
-              // 显示常用（上次使用的供应商）的模型
-              groupedModels.groups[currentProviderId]?.map((model) => (
-                <ModelItem
-                  key={getIdentityValue(model)}
-                  model={model}
-                  isSelected={selectedIdentity === getIdentityValue(model)}
-                  onSelect={() => handleModelSelectWithClose(model)}
-                  providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                />
-              ))
-            ) : (
-              // 显示特定提供商的模型
-              groupedModels.groups[activeTab]?.map((model) => (
-                <ModelItem
-                  key={getIdentityValue(model)}
-                  model={model}
-                  isSelected={selectedIdentity === getIdentityValue(model)}
-                  onSelect={() => handleModelSelectWithClose(model)}
-                  providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                />
-              ))
-            )}
-          </List>
-        </DialogContent>
-      </Dialog>
+      <DialogContent sx={DIALOG_STYLES.dialogContent}>
+        <List sx={DIALOG_STYLES.list}>
+          {activeTab === 'all' ? (
+            // 显示所有模型
+            availableModels.map((model) => (
+              <ModelItem
+                key={getIdentityValue(model)}
+                model={model}
+                isSelected={selectedIdentity === getIdentityValue(model)}
+                onSelect={() => handleModelSelectWithClose(model)}
+                providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
+              />
+            ))
+          ) : activeTab === 'frequently-used' && currentProviderId ? (
+            // 显示常用（上次使用的供应商）的模型
+            groupedModels.groups[currentProviderId]?.map((model) => (
+              <ModelItem
+                key={getIdentityValue(model)}
+                model={model}
+                isSelected={selectedIdentity === getIdentityValue(model)}
+                onSelect={() => handleModelSelectWithClose(model)}
+                providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
+              />
+            ))
+          ) : (
+            // 显示特定提供商的模型
+            groupedModels.groups[activeTab]?.map((model) => (
+              <ModelItem
+                key={getIdentityValue(model)}
+                model={model}
+                isSelected={selectedIdentity === getIdentityValue(model)}
+                onSelect={() => handleModelSelectWithClose(model)}
+                providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
+              />
+            ))
+          )}
+        </List>
+      </DialogContent>
+    </BackButtonDialog>
   );
 };
 

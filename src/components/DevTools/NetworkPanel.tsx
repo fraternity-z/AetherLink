@@ -8,7 +8,6 @@ import {
   InputAdornment,
   FormControlLabel,
   Chip,
-  Dialog,
   DialogTitle,
   DialogContent,
   IconButton,
@@ -21,6 +20,7 @@ import {
   Tooltip,
   Checkbox,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import {
   Search as SearchIcon,
   Globe as HttpIcon,
@@ -119,7 +119,7 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
   };
 
   const renderDetailsDialog = () => (
-    <Dialog
+    <BackButtonDialog
       open={showDetails}
       onClose={() => setShowDetails(false)}
       maxWidth="md"
@@ -487,7 +487,7 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
           </Box>
         )}
       </DialogContent>
-    </Dialog>
+    </BackButtonDialog>
   );
 
   return (

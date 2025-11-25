@@ -16,7 +16,6 @@ import {
   Paper,
   ListSubheader,
   alpha,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -28,6 +27,7 @@ import {
   Checkbox,
   useTheme as useMuiTheme,
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import { ArrowLeft as ArrowBackIcon, Plus as AddIcon, ChevronRight as ChevronRightIcon, Settings as SettingsIcon, Trash2 as DeleteIcon, X as CloseIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
@@ -613,7 +613,7 @@ const DefaultModelSettings: React.FC = () => {
       </Box>
 
       {/* 编辑供应商弹窗 */}
-      <Dialog
+      <BackButtonDialog
         open={editDialogOpen}
         onClose={handleCloseEditDialog}
         maxWidth="sm"
@@ -674,10 +674,10 @@ const DefaultModelSettings: React.FC = () => {
             {t('common.save')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 删除确认对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={deleteConfirmOpen}
         onClose={handleCancelDelete}
         maxWidth="sm"
@@ -718,7 +718,7 @@ const DefaultModelSettings: React.FC = () => {
             {t('modelSettings.modelList.confirmDeleteButton')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </SafeAreaContainer>
   );
 };

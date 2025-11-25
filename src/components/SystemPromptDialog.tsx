@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -15,6 +14,7 @@ import {
   ToggleButtonGroup,
   Divider
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import { X as CloseIcon, User, MessageSquare } from 'lucide-react';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
 import { TopicService } from '../shared/services/topics/TopicService';
@@ -299,131 +299,130 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="md"
-      sx={{
-        '& .MuiDialog-paper': {
-          borderRadius: '12px',
-          margin: '16px',
-          minHeight: '600px',
-          width: '90%',
-          maxWidth: '800px',
-        }
-      }}
-    >
-      <DialogTitle sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: `1px solid ${theme.palette.divider}`,
-        pb: 1
-      }}>
-        系统提示词设置
-        <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+  <BackButtonDialog
+    open={open}
+    onClose={handleClose}
+    maxWidth="md"
+    fullWidth
+    PaperProps={{
+      sx: {
+        borderRadius: 2,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(10px)',
+        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+      }
+    }}
+  >
+    <DialogTitle sx={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      pb: 1
+    }}>
+      系统提示词设置
+      <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+        <CloseIcon />
+      </IconButton>
+    </DialogTitle>
 
-      <DialogContent sx={{
-        pt: 2,
-        pb: 0,
-        minHeight: '500px',
-        height: '70vh',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+    <DialogContent sx={{
+      pt: 2,
+      pb: 0,
+      minHeight: '500px',
+      height: '70vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-        {!topic && !saving && (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            保存将创建新话题并应用此系统提示词
-          </Alert>
-        )}
+      {!topic && !saving && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          保存将创建新话题并应用此系统提示词
+        </Alert>
+      )}
 
-        {/* 编辑模式选择器 */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            编辑模式
-          </Typography>
-          <ToggleButtonGroup
-            value={editMode}
-            exclusive
-            onChange={(_, newMode) => newMode && handleEditModeChange(newMode)}
-            size="small"
-            sx={{
-              mb: 1,
-              '& .MuiToggleButton-root': {
-                fontSize: '12px',
-                fontWeight: 600,
-                px: 1.5,
-                py: 0.5,
-                minHeight: '32px',
-                '&.Mui-selected': {
-                  fontWeight: 700,
-                }
-              }
-            }}
-          >
-            <ToggleButton value="combined">
-              <MessageSquare size={14} style={{ marginRight: 3 }} />
-              组合预览
-            </ToggleButton>
-            <ToggleButton value="assistant" disabled={!assistant}>
-              <User size={14} style={{ marginRight: 3 }} />
-              助手提示词
-            </ToggleButton>
-            <ToggleButton value="topic">
-              <MessageSquare size={14} style={{ marginRight: 3 }} />
-              话题提示词
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              fontSize: '11px',
-              fontWeight: 500,
-              color: theme.palette.text.secondary
-            }}
-          >
-            当前编辑: {getSaveTarget()}
-          </Typography>
-        </Box>
-
-        <Divider sx={{ mb: 2 }} />
-
-        <TextField
-          autoFocus
-          multiline
-          fullWidth
-          variant="outlined"
-          placeholder={editMode === 'combined' ? '组合预览（只读）' : '输入系统提示词...'}
-          value={prompt}
-          onChange={handlePromptChange}
-          disabled={editMode === 'combined'}
-          rows={16}
+      {/* 编辑模式选择器 */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          编辑模式
+        </Typography>
+        <ToggleButtonGroup
+          value={editMode}
+          exclusive
+          onChange={(_, newMode) => newMode && handleEditModeChange(newMode)}
+          size="small"
           sx={{
-            mb: 0,
-            flex: 1,
-            '& .MuiInputBase-root': {
-              fontSize: '14px',
-              lineHeight: 1.5,
-              height: '100%',
-            },
-            '& .MuiInputBase-inputMultiline': {
-              height: '100% !important',
-              overflow: 'auto !important',
+            mb: 1,
+            '& .MuiToggleButton-root': {
+              fontSize: '12px',
+              fontWeight: 600,
+              px: 1.5,
+              py: 0.5,
+              minHeight: '32px',
+              '&.Mui-selected': {
+                fontWeight: 700,
+              }
             }
           }}
-        />
+        >
+          <ToggleButton value="combined">
+            <MessageSquare size={14} style={{ marginRight: 3 }} />
+            组合预览
+          </ToggleButton>
+          <ToggleButton value="assistant" disabled={!assistant}>
+            <User size={14} style={{ marginRight: 3 }} />
+            助手提示词
+          </ToggleButton>
+          <ToggleButton value="topic">
+            <MessageSquare size={14} style={{ marginRight: 3 }} />
+            话题提示词
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            fontSize: '11px',
+            fontWeight: 500,
+            color: theme.palette.text.secondary
+          }}
+        >
+          当前编辑: {getSaveTarget()}
+        </Typography>
+      </Box>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <TextField
+        autoFocus
+        multiline
+        fullWidth
+        variant="outlined"
+        placeholder={editMode === 'combined' ? '组合预览（只读）' : '输入系统提示词...'}
+        value={prompt}
+        onChange={handlePromptChange}
+        disabled={editMode === 'combined'}
+        rows={16}
+        sx={{
+          mb: 0,
+          flex: 1,
+          '& .MuiInputBase-root': {
+            fontSize: '14px',
+            lineHeight: 1.5,
+            height: '100%',
+          },
+          '& .MuiInputBase-inputMultiline': {
+            height: '100% !important',
+            overflow: 'auto !important',
+          }
+        }}
+      />
 
         <Box sx={{
           display: 'flex',
@@ -460,7 +459,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           {saving ? '保存中...' : `保存到${getSaveTarget()}`}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

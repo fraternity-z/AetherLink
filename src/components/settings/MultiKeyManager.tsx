@@ -9,7 +9,6 @@ import {
   Typography,
   Button,
   TextField,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -31,6 +30,7 @@ import {
   CardContent,
   InputAdornment,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { alpha } from '@mui/material/styles';
 import {
   Plus,
@@ -381,7 +381,7 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
       )}
 
       {/* 添加/编辑 Key 对话框 */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <BackButtonDialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           {editingKey ? '编辑 API Key' : '添加 API Key'}
         </DialogTitle>
@@ -444,7 +444,7 @@ const MultiKeyManager: React.FC<MultiKeyManagerProps> = ({
             {editingKey ? '保存' : '添加'}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </Box>
   );
 };

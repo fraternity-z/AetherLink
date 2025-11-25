@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   IconButton,
   Tooltip,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -20,6 +19,7 @@ import {
   MenuItem,
   Collapse
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import { Play, Square, FolderOpen, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { CustomIcon } from './icons';
 import { useNavigate } from 'react-router-dom';
@@ -309,7 +309,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
       </Tooltip>
 
       {/* 辩论配置对话框 */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <BackButtonDialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
           <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
             <CustomIcon name="aiDebate" size={20} color="currentColor" />
@@ -551,7 +551,7 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
             {t('aiDebate.dialog.startDebate')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </>
   );
 };

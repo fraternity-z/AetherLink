@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -13,6 +12,7 @@ import {
   Collapse,
   useTheme
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import {
   X as CloseIcon,
   Save as SaveIcon,
@@ -363,7 +363,7 @@ export const DesktopFileViewer: React.FC<DesktopFileViewerProps> = ({
 
   return (
     <>
-      <Dialog
+      <BackButtonDialog
         open={open}
         onClose={handleClose}
         maxWidth={false}
@@ -666,7 +666,7 @@ export const DesktopFileViewer: React.FC<DesktopFileViewerProps> = ({
             </Button>
           </Box>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 保存成功提示 */}
       <Snackbar

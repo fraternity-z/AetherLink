@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, IconButton, Dialog, DialogContent, CircularProgress, Typography } from '@mui/material';
+import { Box, IconButton, DialogContent, CircularProgress, Typography } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { Maximize2 as ZoomOutMapIcon, AlertCircle as ErrorOutlineIcon } from 'lucide-react';
 import type { VideoMessageBlock } from '../../../shared/types/newMessage';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
@@ -156,7 +157,7 @@ const VideoBlock: React.FC<Props> = ({ block }) => {
         <ZoomOutMapIcon fontSize="small" />
       </IconButton>
 
-      <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
+      <BackButtonDialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
         <DialogContent sx={{ padding: 0, backgroundColor: '#000' }}>
           <video
             src={videoSrc}
@@ -173,7 +174,7 @@ const VideoBlock: React.FC<Props> = ({ block }) => {
             </Typography>
           </video>
         </DialogContent>
-      </Dialog>
+      </BackButtonDialog>
     </Box>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogContent,
   DialogActions,
   Box,
@@ -15,6 +14,7 @@ import {
   useTheme,
   type Theme
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { ChevronLeft, User, Sparkles } from 'lucide-react';
 
 // 样式常量
@@ -146,7 +146,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   };
 
   return (
-    <Dialog 
+    <BackButtonDialog 
       open={open} 
       onClose={onClose} 
       maxWidth="md" 
@@ -438,7 +438,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
           保存
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -14,6 +13,7 @@ import {
   Chip,
   Alert,
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { Trash2 as DeleteIcon, Plus as AddIcon } from 'lucide-react';
 import { ModelType } from '../../shared/types';
 import type { ModelTypeRule } from '../../shared/types';
@@ -173,7 +173,7 @@ const ModelTypeManagement: React.FC<ModelTypeManagementProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <BackButtonDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h6">模型类型管理</Typography>
@@ -417,7 +417,7 @@ const ModelTypeManagement: React.FC<ModelTypeManagementProps> = ({
           保存
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

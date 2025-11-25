@@ -8,13 +8,13 @@ import {
   InputAdornment,
   Menu,
   MenuItem,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Divider,
   Tooltip
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 import { debounce } from 'lodash';
 import {
   Plus,
@@ -129,14 +129,14 @@ export default function TopicTab({
   // 获取所有助手列表（用于移动功能）
   const allAssistants = useSelector((state: RootState) => state.assistants.assistants);
 
-  // 🚀 直接从Redux获取当前助手数据，确保立即响应删除操作
+  // 直接从Redux获取当前助手数据，确保立即响应删除操作
   const reduxCurrentAssistant = useSelector((state: RootState) =>
     state.assistants.assistants.find(a => a.id === currentAssistant?.id)
   );
 
   const assistantWithTopics = reduxCurrentAssistant || currentAssistant;
 
-  // 简化的话题排序逻辑 - 🌟 使用Redux数据而不是props数据
+  // 简化的话题排序逻辑 - 使用Redux数据而不是props数据
   const sortedTopics = useMemo(() => {
     const topicsSource = assistantWithTopics?.topics;
     if (!topicsSource || topicsSource.length === 0) return [];
@@ -150,7 +150,7 @@ export default function TopicTab({
       const timeB = new Date(b.lastMessageTime || b.updatedAt || b.createdAt || 0).getTime();
       return timeB - timeA;
     });
-  }, [assistantWithTopics?.topics]); // 🔧 依赖Redux数据
+  }, [assistantWithTopics?.topics]); // 依赖Redux数据
 
   // 简化的自动选择逻辑 - 只处理初始化场景，避免创建话题时的循环
   useEffect(() => {
@@ -268,7 +268,7 @@ export default function TopicTab({
   const handleTopicDelete = useCallback((topicId: string, e: React.MouseEvent) => {
     console.log('[TopicTab] 话题删除图标被点击:', topicId);
 
-    // 🚀 直接调用父组件的删除函数，让SidebarTabs处理所有逻辑
+    // 直接调用父组件的删除函数，让SidebarTabs处理所有逻辑
     startTransition(() => {
       onDeleteTopic(topicId, e);
     });
@@ -772,7 +772,7 @@ export default function TopicTab({
 
                     console.log('[TopicTab] 菜单删除话题:', topic.id, topic.name);
 
-                    // 🚀 简化：直接调用父组件的删除函数，避免重复逻辑
+                    // 直接调用父组件的删除函数，让SidebarTabs处理所有逻辑
                     const mockEvent = {
                       stopPropagation: () => {},
                       preventDefault: () => {},
@@ -834,7 +834,7 @@ export default function TopicTab({
       </Menu>
 
       {/* 编辑话题对话框 */}
-      <Dialog open={dialogState.edit.isOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+      <BackButtonDialog open={dialogState.edit.isOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
         <DialogTitle>编辑话题</DialogTitle>
         <DialogContent>
           <TextField
@@ -870,10 +870,10 @@ export default function TopicTab({
           <Button onClick={handleCloseEditDialog}>取消</Button>
           <Button onClick={handleSaveEdit} color="primary">保存</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 确认对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={dialogState.confirm.isOpen}
         onClose={() => setDialogState(prev => ({
           ...prev,
@@ -895,7 +895,7 @@ export default function TopicTab({
             确认
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </Box>
   );
 }

@@ -5,7 +5,6 @@ import {
   CardContent,
   Typography,
   IconButton,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -17,6 +16,7 @@ import {
   Avatar,
   alpha
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import {
   ExternalLink as LaunchIcon,
   Copy as CopyIcon,
@@ -141,7 +141,7 @@ const CitationsList: React.FC<CitationsListProps> = ({ citations }) => {
       </Card>
 
       {/* 引用详情对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={open}
         onClose={handleCloseDialog}
         maxWidth="md"
@@ -323,7 +323,7 @@ const CitationsList: React.FC<CitationsListProps> = ({ citations }) => {
             </Button>
           </DialogActions>
         )}
-      </Dialog>
+      </BackButtonDialog>
     </>
   );
 };

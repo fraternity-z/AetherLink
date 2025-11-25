@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -28,6 +27,7 @@ import { ModelType } from '../../shared/types';
 import type { ModelProvider } from '../../shared/config/defaultModels';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 import CustomSwitch from '../CustomSwitch';
+import BackButtonDialog from '../common/BackButtonDialog';
 
 interface ImageGenerationDialogProps {
   open: boolean;
@@ -197,17 +197,14 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
-      maxWidth="sm"
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: 2,
-            overflow: 'hidden'
-          }
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
         }
       }}
     >
@@ -400,7 +397,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
           {isGenerating ? '生成中...' : '生成图像'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

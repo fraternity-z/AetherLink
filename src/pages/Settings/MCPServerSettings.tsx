@@ -15,7 +15,6 @@ import {
   Avatar,
   alpha,
   Button,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -28,6 +27,7 @@ import {
   Alert,
   Divider
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import { nanoid } from 'nanoid';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useNavigate } from 'react-router-dom';
@@ -459,10 +459,10 @@ const MCPServerSettings: React.FC = () => {
         sx={{
           flexGrow: 1,
           overflowY: 'auto',
-          p: { xs: 1, sm: 2 },
+          p: 2,
           pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
+            width: '6px',
           },
           '&::-webkit-scrollbar-thumb': {
             backgroundColor: 'rgba(0,0,0,0.1)',
@@ -858,7 +858,7 @@ const MCPServerSettings: React.FC = () => {
       </Box>
 
       {/* 添加服务器对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
         maxWidth="sm"
@@ -915,10 +915,10 @@ const MCPServerSettings: React.FC = () => {
           <Button onClick={() => setAddDialogOpen(false)}>{t('settings.mcpServer.addDialog.cancel')}</Button>
           <Button onClick={handleAddServer} variant="contained">{t('settings.mcpServer.addDialog.add')}</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* JSON 导入对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={importDialogOpen}
         onClose={() => setImportDialogOpen(false)}
         maxWidth="md"
@@ -975,10 +975,10 @@ const MCPServerSettings: React.FC = () => {
             {t('settings.mcpServer.importDialog.import')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 内置服务器对话框 */}
-      <Dialog
+      <BackButtonDialog
         open={builtinDialogOpen}
         onClose={() => setBuiltinDialogOpen(false)}
         maxWidth="md"
@@ -995,6 +995,8 @@ const MCPServerSettings: React.FC = () => {
         <DialogTitle sx={{
           px: { xs: 2, sm: 3 },
           py: { xs: 2, sm: 2.5 },
+          // 移动端全屏时添加顶部安全区域
+          pt: { xs: 'calc(var(--safe-area-top) + 16px)', sm: 2.5 },
           fontSize: { xs: '1.25rem', sm: '1.5rem' },
           fontWeight: 600,
           borderBottom: '1px solid',
@@ -1040,23 +1042,31 @@ const MCPServerSettings: React.FC = () => {
                 <Paper
                   key={builtinServer.id}
                   elevation={0}
-                  sx={{
+                  sx={(theme) => ({
                     border: '1px solid',
-                    borderColor: isAdded ? '#d1fae5' : '#e5e7eb',
+                    borderColor: isAdded 
+                      ? (theme.palette.mode === 'dark' ? alpha('#10b981', 0.3) : '#d1fae5') 
+                      : 'divider',
                     borderRadius: { xs: 2, sm: 2 },
                     transition: 'all 0.2s ease-in-out',
-                    backgroundColor: isAdded ? '#f0fdf4' : '#ffffff',
+                    backgroundColor: isAdded 
+                      ? (theme.palette.mode === 'dark' ? alpha('#10b981', 0.1) : '#f0fdf4') 
+                      : theme.palette.background.paper,
                     cursor: 'pointer',
                     // 移动端触摸优化
                     touchAction: 'manipulation',
                     '&:hover': {
-                      borderColor: isAdded ? '#a7f3d0' : '#10b981',
-                      boxShadow: { xs: '0 2px 8px rgba(0,0,0,0.06)', sm: '0 4px 12px rgba(0,0,0,0.08)' }
+                      borderColor: isAdded 
+                        ? (theme.palette.mode === 'dark' ? alpha('#10b981', 0.5) : '#a7f3d0') 
+                        : '#10b981',
+                      boxShadow: theme.palette.mode === 'dark' 
+                        ? '0 4px 12px rgba(0,0,0,0.3)' 
+                        : { xs: '0 2px 8px rgba(0,0,0,0.06)', sm: '0 4px 12px rgba(0,0,0,0.08)' }
                     },
                     '&:active': {
                       transform: { xs: 'scale(0.98)', sm: 'none' }
                     }
-                  }}
+                  })}
                 >
                 <Box
                   sx={{
@@ -1086,14 +1096,14 @@ const MCPServerSettings: React.FC = () => {
                         <Chip
                           label={t('settings.mcpServer.builtinDialog.added')}
                           size="small"
-                          sx={{
+                          sx={(theme) => ({
                             height: 20,
                             fontSize: '0.7rem',
-                            backgroundColor: '#dcfce7',
-                            color: '#166534',
-                            border: '1px solid #bbf7d0',
+                            backgroundColor: theme.palette.mode === 'dark' ? alpha('#10b981', 0.2) : '#dcfce7',
+                            color: theme.palette.mode === 'dark' ? '#6ee7b7' : '#166534',
+                            border: `1px solid ${theme.palette.mode === 'dark' ? alpha('#10b981', 0.3) : '#bbf7d0'}`,
                             fontWeight: 500
-                          }}
+                          })}
                         />
                       )}
                     </Box>
@@ -1128,12 +1138,12 @@ const MCPServerSettings: React.FC = () => {
                           label={getTagTranslation(tag, builtinServer.name)}
                           size="small"
                           variant="outlined"
-                          sx={{
+                          sx={(theme) => ({
                             fontSize: { xs: '0.7rem', sm: '0.75rem' },
                             height: { xs: 22, sm: 24 },
-                            borderColor: '#e5e7eb',
-                            color: '#6b7280',
-                            backgroundColor: '#f9fafb',
+                            borderColor: 'divider',
+                            color: 'text.secondary',
+                            backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.background.paper, 0.5) : '#f9fafb',
                             fontWeight: 500,
                             '& .MuiChip-label': {
                               px: { xs: 1, sm: 1.5 }
@@ -1142,7 +1152,7 @@ const MCPServerSettings: React.FC = () => {
                               borderColor: '#10b981',
                               backgroundColor: alpha('#10b981', 0.05)
                             }
-                          }}
+                          })}
                         />
                       ))}
                     </Box>
@@ -1162,8 +1172,8 @@ const MCPServerSettings: React.FC = () => {
                         fullWidth={window.innerWidth < 600}
                         disabled
                         sx={{
-                          borderColor: '#d1d5db',
-                          color: '#6b7280',
+                          borderColor: 'divider',
+                          color: 'text.secondary',
                           borderRadius: { xs: 2, sm: 1.5 },
                           px: { xs: 3, sm: 2 },
                           py: { xs: 1, sm: 0.75 },
@@ -1215,6 +1225,8 @@ const MCPServerSettings: React.FC = () => {
         <DialogActions sx={{
           px: { xs: 2, sm: 3 },
           py: { xs: 2, sm: 2.5 },
+          // 移动端全屏时添加底部安全区域
+          pb: { xs: 'calc(var(--safe-area-bottom-computed) + 16px)', sm: 2.5 },
           borderTop: '1px solid',
           borderColor: 'divider',
           gap: { xs: 1, sm: 2 }
@@ -1231,7 +1243,7 @@ const MCPServerSettings: React.FC = () => {
             {t('settings.mcpServer.builtinDialog.close')}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
 
 

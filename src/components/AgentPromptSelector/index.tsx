@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -19,6 +18,7 @@ import {
   ListItemText,
   ListItemButton
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { Search as SearchIcon, ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, X as CloseIcon } from 'lucide-react';
 import { getAgentPromptCategories, searchAgentPrompts } from '../../shared/config/agentPrompts';
 import type { AgentPrompt, AgentPromptCategory } from '../../shared/types/AgentPrompt';
@@ -189,7 +189,7 @@ const AgentPromptSelector: React.FC<AgentPromptSelectorProps> = ({
   };
 
   return (
-    <Dialog
+    <BackButtonDialog
       open={open}
       onClose={handleClose}
       maxWidth="md"
@@ -295,7 +295,7 @@ const AgentPromptSelector: React.FC<AgentPromptSelectorProps> = ({
           使用此提示词
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

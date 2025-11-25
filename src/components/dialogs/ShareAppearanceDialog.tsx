@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -15,6 +14,7 @@ import {
   Snackbar,
   alpha
 } from '@mui/material';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { X, Copy, Download, Share2 } from 'lucide-react';
 import type { AppearanceConfig } from '../../shared/utils/appearanceConfig';
 import { generateShareLink, encodeAppearanceConfig, exportAppearanceConfigToFile, exportAppearanceConfigToFolder } from '../../shared/utils/appearanceConfig';
@@ -103,14 +103,14 @@ const ShareAppearanceDialog: React.FC<ShareAppearanceDialogProps> = ({ open, onC
 
   return (
     <>
-      <Dialog
+      <BackButtonDialog
         open={open}
         onClose={onClose}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: 2,
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
           }
         }}
@@ -239,7 +239,7 @@ const ShareAppearanceDialog: React.FC<ShareAppearanceDialogProps> = ({ open, onC
             关闭
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       <Snackbar
         open={snackbarOpen}

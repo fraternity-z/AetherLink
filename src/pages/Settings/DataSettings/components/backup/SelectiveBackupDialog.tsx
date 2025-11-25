@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -13,6 +12,7 @@ import {
   AlertTitle,
   Chip
 } from '@mui/material';
+import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { useTranslation } from '../../../../../i18n';
 import CustomSwitch from '../../../../../components/CustomSwitch';
@@ -43,7 +43,7 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
   const isAnyOptionSelected = Object.values(options).some(value => value);
   
   return (
-    <Dialog 
+    <BackButtonDialog 
       open={open} 
       onClose={onClose}
       maxWidth="sm"
@@ -140,7 +140,7 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
           {isLoading ? t('dataSettings.selectiveBackupDialog.backingUp') : t('dataSettings.selectiveBackupDialog.createBackup')}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
 

@@ -24,13 +24,13 @@ import {
   Paper,
   Menu,
   MenuItem,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
   Button
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import {
   ArrowLeft as ArrowBackIcon,
   Folder as FolderIcon,
@@ -646,7 +646,7 @@ const WorkspaceDetail: React.FC = () => {
       </Menu>
 
       {/* 创建文件夹对话框 */}
-      <Dialog open={createFolderDialog} onClose={() => setCreateFolderDialog(false)}>
+      <BackButtonDialog open={createFolderDialog} onClose={() => setCreateFolderDialog(false)}>
         <DialogTitle>创建文件夹</DialogTitle>
         <DialogContent>
           <TextField
@@ -664,10 +664,10 @@ const WorkspaceDetail: React.FC = () => {
           <Button onClick={() => setCreateFolderDialog(false)}>取消</Button>
           <Button onClick={handleCreateFolder} variant="contained">创建</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 创建文件对话框 */}
-      <Dialog open={createFileDialog} onClose={() => setCreateFileDialog(false)}>
+      <BackButtonDialog open={createFileDialog} onClose={() => setCreateFileDialog(false)}>
         <DialogTitle>创建文件</DialogTitle>
         <DialogContent>
           <TextField
@@ -686,10 +686,10 @@ const WorkspaceDetail: React.FC = () => {
           <Button onClick={() => setCreateFileDialog(false)}>取消</Button>
           <Button onClick={handleCreateFile} variant="contained">创建</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 重命名对话框 */}
-      <Dialog open={renameDialog.open} onClose={() => setRenameDialog({ open: false, file: null })}>
+      <BackButtonDialog open={renameDialog.open} onClose={() => setRenameDialog({ open: false, file: null })}>
         <DialogTitle>重命名</DialogTitle>
         <DialogContent>
           <TextField
@@ -707,10 +707,10 @@ const WorkspaceDetail: React.FC = () => {
           <Button onClick={() => setRenameDialog({ open: false, file: null })}>取消</Button>
           <Button onClick={handleRenameItem} variant="contained">重命名</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 删除确认对话框 */}
-      <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, file: null })}>
+      <BackButtonDialog open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, file: null })}>
         <DialogTitle>确认删除</DialogTitle>
         <DialogContent>
           <Typography>
@@ -721,7 +721,7 @@ const WorkspaceDetail: React.FC = () => {
           <Button onClick={() => setDeleteDialog({ open: false, file: null })}>取消</Button>
           <Button onClick={handleDeleteItem} variant="contained" color="error">删除</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 文件查看器 */}
       <MobileFileViewer

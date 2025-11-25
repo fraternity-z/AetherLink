@@ -13,11 +13,11 @@ import {
   IconButton,
   AppBar,
   Toolbar,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
+import BackButtonDialog from '../../components/common/BackButtonDialog';
 import { styled } from '@mui/material/styles';
 import {
   Folder,
@@ -484,15 +484,20 @@ const KnowledgeSettings: React.FC = () => {
       </Box>
 
       {/* 创建知识库对话框 */}
-      <CreateKnowledgeDialog
+      <BackButtonDialog
         open={createDialogOpen}
         onClose={handleCloseDialog}
-        onSave={handleSubmitKnowledgeBase}
-        isEditing={false}
-      />
+      >
+        <CreateKnowledgeDialog
+          open={true}
+          onClose={handleCloseDialog}
+          onSave={handleSubmitKnowledgeBase}
+          isEditing={false}
+        />
+      </BackButtonDialog>
 
       {/* 导入对话框 */}
-      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
+      <BackButtonDialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
         <DialogTitle>导入知识库数据</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 2 }}>
@@ -517,10 +522,10 @@ const KnowledgeSettings: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setImportDialogOpen(false)}>关闭</Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 导出确认对话框 */}
-      <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)}>
+      <BackButtonDialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)}>
         <DialogTitle>导出知识库数据</DialogTitle>
         <DialogContent>
           <Typography>
@@ -533,10 +538,10 @@ const KnowledgeSettings: React.FC = () => {
             {loading ? <CircularProgress size={20} /> : '确认导出'}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
 
       {/* 清理确认对话框 */}
-      <Dialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
+      <BackButtonDialog open={clearDialogOpen} onClose={() => setClearDialogOpen(false)}>
         <DialogTitle>确认清理所有知识库数据</DialogTitle>
         <DialogContent>
           <Typography>
@@ -549,7 +554,7 @@ const KnowledgeSettings: React.FC = () => {
             {loading ? <CircularProgress size={20} /> : '确认清理'}
           </Button>
         </DialogActions>
-      </Dialog>
+      </BackButtonDialog>
     </Container>
   );
 };

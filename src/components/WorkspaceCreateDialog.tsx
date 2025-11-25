@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -19,6 +18,7 @@ import {
   CardContent,
   CardActionArea
 } from '@mui/material';
+import BackButtonDialog from './common/BackButtonDialog';
 import {
   FolderOpen as FolderOpenIcon,
   Folder as FolderIcon
@@ -148,7 +148,7 @@ export const WorkspaceCreateDialog: React.FC<WorkspaceCreateDialogProps> = ({
   const canCreate = selectedPath.trim() && workspaceName.trim();
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <BackButtonDialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         <Typography variant="h6">创建新工作区</Typography>
       </DialogTitle>
@@ -251,6 +251,6 @@ export const WorkspaceCreateDialog: React.FC<WorkspaceCreateDialogProps> = ({
           {loading ? '创建中...' : '创建工作区'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </BackButtonDialog>
   );
 };
