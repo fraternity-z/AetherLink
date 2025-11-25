@@ -3,6 +3,10 @@
   "back": "返回",
   "settings": "设置",
   "clear": "清除",
+  "selectMode": "选择模式",
+  "exitSelectMode": "退出选择模式",
+  "selectAll": "全选/取消全选",
+  "copy": "复制选中",
   "tabs": {
     "console": "控制台",
     "network": "网络"

@@ -3,6 +3,10 @@
   "back": "Back",
   "settings": "Settings",
   "clear": "Clear",
+  "selectMode": "Select Mode",
+  "exitSelectMode": "Exit Select Mode",
+  "selectAll": "Select All / Deselect",
+  "copy": "Copy Selected",
   "tabs": {
     "console": "Console",
     "network": "Network"

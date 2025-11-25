@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   Box,
   AppBar,
@@ -24,6 +24,10 @@ import {
   Settings as SettingsIcon,
   Terminal as TerminalIcon,
   Wifi as NetworkCheckIcon,
+  Copy as CopyIcon,
+  CheckSquare as SelectAllIcon,
+  Square as DeselectIcon,
+  MousePointer2 as SelectModeIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -31,7 +35,9 @@ import { useMediaQuery } from '@mui/material';
 import { useTranslation } from '../i18n';
 import CustomSwitch from '../components/CustomSwitch';
 import ConsolePanel from '../components/DevTools/ConsolePanel';
+import type { ConsolePanelRef } from '../components/DevTools/ConsolePanel';
 import NetworkPanel from '../components/DevTools/NetworkPanel';
+import type { NetworkPanelRef } from '../components/DevTools/NetworkPanel';
 import EnhancedConsoleService from '../shared/services/EnhancedConsoleService';
 import EnhancedNetworkService from '../shared/services/network/EnhancedNetworkService';
 import { SafeAreaContainer } from '../components/settings/SettingComponents';
@@ -47,6 +53,13 @@ const DevToolsPage: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [preserveLog, setPreserveLog] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedConsoleIds, setSelectedConsoleIds] = useState<Set<string>>(new Set());
+  const [selectedNetworkIds, setSelectedNetworkIds] = useState<Set<string>>(new Set());
+  
+  // 用于获取面板数据的引用
+  const consolePanelRef = useRef<ConsolePanelRef>(null);
+  const networkPanelRef = useRef<NetworkPanelRef>(null);
 
   const consoleService = EnhancedConsoleService.getInstance();
   const networkService = EnhancedNetworkService.getInstance();
@@ -62,18 +75,82 @@ const DevToolsPage: React.FC = () => {
   const handleClear = () => {
     if (tabValue === 0) {
       consoleService.clear();
+      setSelectedConsoleIds(new Set());
     } else if (tabValue === 1) {
       networkService.clear();
+      setSelectedNetworkIds(new Set());
     }
     setClearDialogOpen(false);
   };
 
+  // 切换选择模式
+  const handleToggleSelectionMode = () => {
+    if (selectionMode) {
+      // 退出选择模式时清空选中
+      setSelectedConsoleIds(new Set());
+      setSelectedNetworkIds(new Set());
+    }
+    setSelectionMode(!selectionMode);
+  };
+
+  // 全选/取消全选
+  const handleSelectAll = useCallback(() => {
+    if (tabValue === 0) {
+      const entries = consolePanelRef.current?.getFilteredEntries() || [];
+      if (selectedConsoleIds.size === entries.length && entries.length > 0) {
+        setSelectedConsoleIds(new Set());
+      } else {
+        setSelectedConsoleIds(new Set(entries.map((e: any) => e.id)));
+      }
+    } else if (tabValue === 1) {
+      const entries = networkPanelRef.current?.getFilteredEntries() || [];
+      if (selectedNetworkIds.size === entries.length && entries.length > 0) {
+        setSelectedNetworkIds(new Set());
+      } else {
+        setSelectedNetworkIds(new Set(entries.map((e: any) => e.id)));
+      }
+    }
+  }, [tabValue, selectedConsoleIds.size, selectedNetworkIds.size]);
+
+  // 复制选中内容
+  const handleCopySelected = useCallback(async () => {
+    let textToCopy = '';
+    
+    if (tabValue === 0) {
+      const entries = consolePanelRef.current?.getFilteredEntries() || [];
+      const selectedEntries = entries.filter((e: any) => selectedConsoleIds.has(e.id));
+      textToCopy = selectedEntries.map((entry: any) => {
+        const time = new Date(entry.timestamp).toLocaleTimeString();
+        const level = entry.level.toUpperCase();
+        const message = entry.args.map((arg: any) => consoleService.formatArg(arg)).join(' ');
+        const stack = entry.stack ? `\n${entry.stack}` : '';
+        return `[${time}] [${level}] ${message}${stack}`;
+      }).join('\n\n');
+    } else if (tabValue === 1) {
+      const entries = networkPanelRef.current?.getFilteredEntries() || [];
+      const selectedEntries = entries.filter((e: any) => selectedNetworkIds.has(e.id));
+      textToCopy = selectedEntries.map((entry: any) => {
+        const time = new Date(entry.startTime).toLocaleTimeString();
+        const duration = entry.duration ? networkService.formatDuration(entry.duration) : 'pending';
+        return `[${time}] ${entry.method} ${entry.url}\nStatus: ${entry.statusCode || entry.status} | Duration: ${duration}`;
+      }).join('\n\n');
+    }
+    
+    if (textToCopy) {
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        // 可选：显示复制成功提示
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  }, [tabValue, selectedConsoleIds, selectedNetworkIds]);
+
+  // 当前选中的数量
+  const selectedCount = tabValue === 0 ? selectedConsoleIds.size : selectedNetworkIds.size;
+
   return (
-    <SafeAreaContainer
-      sx={{ 
-        bgcolor: theme.palette.mode === 'dark' ? 'background.default' : 'grey.50',
-      }}
-    >
+    <SafeAreaContainer>
       {/* 顶部工具栏 - 优化设计 */}
       <AppBar 
         position="static" 
@@ -131,6 +208,60 @@ const DevToolsPage: React.FC = () => {
           </Box>
 
           <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {/* 选择模式切换 */}
+            <Tooltip title={selectionMode ? t('devtools.exitSelectMode') : t('devtools.selectMode')} arrow>
+              <IconButton 
+                onClick={handleToggleSelectionMode}
+                sx={{
+                  color: selectionMode ? 'primary.main' : 'text.secondary',
+                  bgcolor: selectionMode ? alpha(theme.palette.primary.main, 0.12) : 'transparent',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    color: 'primary.main',
+                  },
+                }}
+              >
+                <SelectModeIcon size={18} />
+              </IconButton>
+            </Tooltip>
+
+            {/* 选择模式下的操作按钮 */}
+            {selectionMode && (
+              <>
+                <Tooltip title={t('devtools.selectAll')} arrow>
+                  <IconButton 
+                    onClick={handleSelectAll}
+                    sx={{
+                      color: 'text.secondary',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        color: 'primary.main',
+                      },
+                    }}
+                  >
+                    {selectedCount > 0 ? <DeselectIcon size={18} /> : <SelectAllIcon size={18} />}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={`${t('devtools.copy')} (${selectedCount})`} arrow>
+                  <span>
+                    <IconButton 
+                      onClick={handleCopySelected}
+                      disabled={selectedCount === 0}
+                      sx={{
+                        color: selectedCount > 0 ? 'text.secondary' : 'action.disabled',
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.success.main, 0.08),
+                          color: 'success.main',
+                        },
+                      }}
+                    >
+                      <CopyIcon size={18} />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            )}
+
             <Tooltip title={t('devtools.settings')} arrow>
               <IconButton 
                 onClick={() => setSettingsOpen(true)}
@@ -217,9 +348,25 @@ const DevToolsPage: React.FC = () => {
         flexGrow: 1, 
         overflow: 'hidden', 
         position: 'relative',
+        pb: 'var(--content-bottom-padding)',
       }}>
-        {tabValue === 0 && <ConsolePanel autoScroll={autoScroll} />}
-        {tabValue === 1 && <NetworkPanel />}
+        {tabValue === 0 && (
+          <ConsolePanel 
+            ref={consolePanelRef}
+            autoScroll={autoScroll} 
+            selectionMode={selectionMode}
+            selectedIds={selectedConsoleIds}
+            onSelectionChange={setSelectedConsoleIds}
+          />
+        )}
+        {tabValue === 1 && (
+          <NetworkPanel 
+            ref={networkPanelRef}
+            selectionMode={selectionMode}
+            selectedIds={selectedNetworkIds}
+            onSelectionChange={setSelectedNetworkIds}
+          />
+        )}
       </Box>
 
       {/* 设置对话框 - 优化设计 */}

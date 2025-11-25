@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   List,
@@ -13,6 +13,7 @@ import {
   Divider,
   alpha,
   Tooltip,
+  Checkbox,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -31,9 +32,21 @@ import type { ConsoleEntry, ConsoleLevel, ConsoleFilter } from '../../shared/ser
 
 interface ConsolePanelProps {
   autoScroll?: boolean;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
-const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
+export interface ConsolePanelRef {
+  getFilteredEntries: () => ConsoleEntry[];
+}
+
+const ConsolePanel = forwardRef<ConsolePanelRef, ConsolePanelProps>(({ 
+  autoScroll = true,
+  selectionMode = false,
+  selectedIds = new Set(),
+  onSelectionChange,
+}, ref) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const [entries, setEntries] = useState<ConsoleEntry[]>([]);
@@ -130,6 +143,23 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
 
   const filteredEntries = consoleService.getFilteredEntries(filter);
 
+  // 暴露方法给父组件
+  useImperativeHandle(ref, () => ({
+    getFilteredEntries: () => filteredEntries,
+  }), [filteredEntries]);
+
+  // 切换选中状态
+  const handleToggleSelect = (id: string) => {
+    if (!onSelectionChange) return;
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    onSelectionChange(newSelected);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'transparent' }}>
       {/* 过滤器 - 优化设计 */}
@@ -221,8 +251,8 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
           flexGrow: 1, 
           overflow: 'auto',
           bgcolor: theme.palette.mode === 'dark' 
-            ? alpha(theme.palette.common.black, 0.3)
-            : alpha(theme.palette.common.black, 0.02),
+            ? alpha(theme.palette.background.default, 0.5)
+            : theme.palette.background.default,
           position: 'relative',
         }}
       >
@@ -256,24 +286,47 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
                 const formatted = consoleService.formatArg(arg);
                 return formatted.length > 200 || formatted.split('\n').length > 5;
               });
+              const isSelected = selectedIds.has(entry.id);
               
               return (
                 <ListItem
                   key={entry.id}
+                  onClick={selectionMode ? () => handleToggleSelect(entry.id) : undefined}
                   sx={{
                     py: 1.5,
                     px: 2,
                     borderBottom: index < filteredEntries.length - 1 ? `1px solid ${alpha(theme.palette.divider, 0.5)}` : 'none',
+                    bgcolor: isSelected 
+                      ? alpha(theme.palette.primary.main, 0.08) 
+                      : 'transparent',
                     '&:hover': { 
-                      bgcolor: theme.palette.mode === 'dark'
-                        ? alpha(theme.palette.common.white, 0.05)
-                        : alpha(theme.palette.common.black, 0.02),
+                      bgcolor: isSelected
+                        ? alpha(theme.palette.primary.main, 0.12)
+                        : theme.palette.mode === 'dark'
+                          ? alpha(theme.palette.common.white, 0.05)
+                          : alpha(theme.palette.common.black, 0.02),
                     },
                     alignItems: 'flex-start',
                     transition: 'background-color 0.2s',
+                    cursor: selectionMode ? 'pointer' : 'default',
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', gap: 1.5 }}>
+                    {selectionMode && (
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => handleToggleSelect(entry.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        size="small"
+                        sx={{ 
+                          p: 0, 
+                          mt: 0.25,
+                          '&.Mui-checked': {
+                            color: 'primary.main',
+                          },
+                        }}
+                      />
+                    )}
                     <Box 
                       sx={{ 
                         color: getConsoleColor(entry.level), 
@@ -486,6 +539,8 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ autoScroll = true }) => {
       </Paper>
     </Box>
   );
-};
+});
+
+ConsolePanel.displayName = 'ConsolePanel';
 
 export default ConsolePanel;

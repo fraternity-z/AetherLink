@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   List,
@@ -19,6 +19,7 @@ import {
   Divider,
   alpha,
   Tooltip,
+  Checkbox,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -37,7 +38,21 @@ import EnhancedNetworkService from '../../shared/services/network/EnhancedNetwor
 import type { NetworkEntry, NetworkFilter } from '../../shared/services/network/EnhancedNetworkService';
 import CustomSwitch from '../CustomSwitch';
 
-const NetworkPanel: React.FC = () => {
+interface NetworkPanelProps {
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
+}
+
+export interface NetworkPanelRef {
+  getFilteredEntries: () => NetworkEntry[];
+}
+
+const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
+  selectionMode = false,
+  selectedIds = new Set(),
+  onSelectionChange,
+}, ref) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -64,6 +79,24 @@ const NetworkPanel: React.FC = () => {
   }, []);
 
   const filteredEntries = networkService.getFilteredEntries(filter);
+
+  // 暴露方法给父组件
+  useImperativeHandle(ref, () => ({
+    getFilteredEntries: () => filteredEntries,
+  }), [filteredEntries]);
+
+  // 切换选中状态
+  const handleToggleSelect = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!onSelectionChange) return;
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    onSelectionChange(newSelected);
+  };
 
   const handleEntryClick = (entry: NetworkEntry) => {
     setSelectedEntry(entry);
@@ -545,8 +578,8 @@ const NetworkPanel: React.FC = () => {
           flexGrow: 1, 
           overflow: 'auto',
           bgcolor: theme.palette.mode === 'dark' 
-            ? alpha(theme.palette.common.black, 0.3)
-            : alpha(theme.palette.common.black, 0.02),
+            ? alpha(theme.palette.background.default, 0.5)
+            : theme.palette.background.default,
         }}
       >
         <List dense sx={{ p: 0 }}>
@@ -567,7 +600,9 @@ const NetworkPanel: React.FC = () => {
               </Typography>
             </Box>
           ) : (
-            filteredEntries.map((entry, index) => (
+            filteredEntries.map((entry, index) => {
+              const isSelected = selectedIds.has(entry.id);
+              return (
               <ListItem
                 key={entry.id}
                 sx={{
@@ -576,17 +611,36 @@ const NetworkPanel: React.FC = () => {
                   borderBottom: index < filteredEntries.length - 1 
                     ? `1px solid ${alpha(theme.palette.divider, 0.5)}` 
                     : 'none',
+                  bgcolor: isSelected 
+                    ? alpha(theme.palette.primary.main, 0.08) 
+                    : 'transparent',
                   '&:hover': { 
-                    bgcolor: theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.05)
-                      : alpha(theme.palette.common.black, 0.02),
+                    bgcolor: isSelected
+                      ? alpha(theme.palette.primary.main, 0.12)
+                      : theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.05)
+                        : alpha(theme.palette.common.black, 0.02),
                   },
                   cursor: 'pointer',
                   transition: 'background-color 0.2s',
                 }}
-                onClick={() => handleEntryClick(entry)}
+                onClick={selectionMode ? () => handleToggleSelect(entry.id) : () => handleEntryClick(entry)}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1.5 }}>
+                  {selectionMode && (
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => handleToggleSelect(entry.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      size="small"
+                      sx={{ 
+                        p: 0,
+                        '&.Mui-checked': {
+                          color: 'primary.main',
+                        },
+                      }}
+                    />
+                  )}
                   <Chip
                     label={entry.method}
                     size="small"
@@ -679,7 +733,8 @@ const NetworkPanel: React.FC = () => {
                   </Box>
                 </Box>
               </ListItem>
-            ))
+              );
+            })
           )}
         </List>
       </Box>
@@ -687,6 +742,8 @@ const NetworkPanel: React.FC = () => {
       {renderDetailsDialog()}
     </Box>
   );
-};
+});
+
+NetworkPanel.displayName = 'NetworkPanel';
 
 export default NetworkPanel;
