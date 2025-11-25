@@ -256,7 +256,7 @@ const VoiceSettingsV2: React.FC = () => {
           flex: 1,
           overflow: 'auto',
           overflowX: 'hidden',
-          pt: { xs: 7, sm: 8 },
+          pt: 2,
           // 使用全局统一的底部 padding 变量
           pb: 'var(--content-bottom-padding)',
           px: { xs: 1, sm: 2, md: 3 },

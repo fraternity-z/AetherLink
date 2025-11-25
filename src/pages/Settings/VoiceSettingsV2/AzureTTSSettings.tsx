@@ -362,8 +362,8 @@ const AzureTTSSettings: React.FC = () => {
         sx={{
           flex: 1,
           overflow: 'auto',
-          pt: { xs: 8, sm: 9 },
-          pb: { xs: 2, sm: 3 },
+          pt: 2,
+          pb: 'var(--content-bottom-padding)',
           px: { xs: 1.5, sm: 2.5, md: 4 },
           '&::-webkit-scrollbar': {
             width: '6px',
