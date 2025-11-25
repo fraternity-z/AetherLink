@@ -72,16 +72,6 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     env: {
       METASO_API_KEY: ''
     }
-  },
-  {
-    id: 'builtin-duckduckgo-search',
-    name: '@aether/duckduckgo-search',
-    type: 'inMemory',
-    description: 'DuckDuckGo 隐私搜索引擎，无需 API Key。支持网页搜索和新闻搜索，提供安全搜索、时间范围和区域过滤',
-    isActive: false,
-    provider: 'AetherAI',
-    logoUrl: '',
-    tags: ['搜索', '隐私', '新闻', '网页', '工具']
   }
 ];
 

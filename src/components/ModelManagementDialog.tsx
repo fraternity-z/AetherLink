@@ -304,7 +304,8 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           maxHeight: '80vh',
-          bgcolor: 'background.paper'
+          bgcolor: 'background.paper',
+          pb: 'var(--safe-area-bottom-computed, 0px)'
         }
       }}
     >

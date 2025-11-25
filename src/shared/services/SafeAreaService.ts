@@ -142,22 +142,37 @@ export class SafeAreaService {
     const root = document.documentElement;
     const { top, right, bottom, left } = this.currentInsets;
     
-    // 统一的最小底部安全区域值（与 GlobalStyles.tsx 保持一致）
-    const SAFE_AREA_BOTTOM_MIN = 48;
+    // 检测是否为原生移动平台（iOS/Android）
+    const isNativeMobile = Capacitor.isNativePlatform();
     
-    // 应用自定义 CSS 变量（用于不支持 env() 的旧浏览器）
-    root.style.setProperty('--safe-area-top', `${top}px`);
+    // 安全区域值：
+    // - 移动端：使用系统值或默认值（顶部30px，底部48px）
+    // - Web端：0px（不需要额外空间）
+    const SAFE_AREA_TOP_MIN = isNativeMobile ? 30 : 0;
+    const SAFE_AREA_BOTTOM_MIN = isNativeMobile ? 48 : 0;
+    
+    // 计算实际使用的顶部和底部安全区域
+    const computedTop = isNativeMobile ? Math.max(top, SAFE_AREA_TOP_MIN) : 0;
+    const computedBottom = isNativeMobile ? Math.max(bottom, SAFE_AREA_BOTTOM_MIN) : 0;
+    
+    // 应用自定义 CSS 变量
+    root.style.setProperty('--safe-area-top', `${computedTop}px`);
     root.style.setProperty('--safe-area-right', `${right}px`);
     root.style.setProperty('--safe-area-bottom', `${bottom}px`);
     root.style.setProperty('--safe-area-left', `${left}px`);
     
     // 计算后的底部安全区域（所有页面统一使用）
-    const computedBottom = Math.max(bottom, SAFE_AREA_BOTTOM_MIN);
     root.style.setProperty('--safe-area-bottom-computed', `${computedBottom}px`);
     root.style.setProperty('--safe-area-bottom-min', `${SAFE_AREA_BOTTOM_MIN}px`);
     
+    // 内容区域底部 padding
+    const contentBottomPadding = computedBottom + 16;
+    root.style.setProperty('--content-bottom-padding', `${contentBottomPadding}px`);
+    
     // 标记平台类型
     root.classList.add(`platform-${Capacitor.getPlatform()}`);
+    
+    console.log(`[SafeAreaService] 平台: ${Capacitor.getPlatform()}, 原生: ${isNativeMobile}, 顶部: ${computedTop}px, 底部: ${computedBottom}px`);
   }
 
   /**

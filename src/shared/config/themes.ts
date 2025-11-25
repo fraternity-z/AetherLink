@@ -487,9 +487,9 @@ export const createCustomTheme = (
             ...(themeStyle !== 'default' && {
               opacity: 0.95,
             }),
-            // 🚀 全局适配状态栏安全区域：所有 AppBar 自动添加 30px 顶部间距
+            // 🚀 全局适配状态栏安全区域：使用 CSS 变量，由 SafeAreaService 根据平台动态设置
             '&.MuiAppBar-positionFixed, &.MuiAppBar-positionStatic, &.MuiAppBar-positionAbsolute': {
-              paddingTop: '30px',
+              paddingTop: 'var(--safe-area-top, 0px)',
             },
           },
         },

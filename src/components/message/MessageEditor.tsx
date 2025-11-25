@@ -371,7 +371,8 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           maxHeight: '70vh',
-          bgcolor: 'background.paper'
+          bgcolor: 'background.paper',
+          pb: 'var(--safe-area-bottom-computed, 0px)'
         }
       }}
     >

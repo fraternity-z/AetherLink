@@ -354,7 +354,8 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
           borderTopRightRadius: isSmallMobile ? 0 : 16,
           maxHeight: isSmallMobile ? '100vh' : isMobile ? '85vh' : '70vh',
           height: isSmallMobile ? '100vh' : 'auto',
-          bgcolor: 'background.paper'
+          bgcolor: 'background.paper',
+          pb: 'var(--safe-area-bottom-computed, 0px)'
         }
       }}
       onTouchStart={handleTouchStart}

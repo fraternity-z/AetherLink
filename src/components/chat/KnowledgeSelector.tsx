@@ -278,7 +278,8 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           maxHeight: '60vh',
-          bgcolor: 'background.paper'
+          bgcolor: 'background.paper',
+          pb: 'var(--safe-area-bottom-computed, 0px)'
         }
       }}
     >

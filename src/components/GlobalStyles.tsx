@@ -23,14 +23,14 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
       --safe-area-bottom: env(safe-area-inset-bottom, 0px);
       --safe-area-left: env(safe-area-inset-left, 0px);
       
-      /* 统一的最小底部安全区域值 */
-      --safe-area-bottom-min: 48px;
+      /* 统一的最小底部安全区域值（默认0，由 SafeAreaService 根据平台动态设置） */
+      --safe-area-bottom-min: 0px;
       
-      /* 计算后的底部安全区域（所有页面统一使用） */
-      --safe-area-bottom-computed: max(env(safe-area-inset-bottom, 0px), var(--safe-area-bottom-min));
+      /* 计算后的底部安全区域（所有页面统一使用，由 SafeAreaService 动态设置） */
+      --safe-area-bottom-computed: env(safe-area-inset-bottom, 0px);
       
-      /* 内容区域底部 padding（设置页面统一使用） */
-      --content-bottom-padding: calc(var(--safe-area-bottom-computed) + 16px);
+      /* 内容区域底部 padding（设置页面统一使用，由 SafeAreaService 动态设置） */
+      --content-bottom-padding: 16px;
       
       /* ============================================
          统一工具栏和内容区域间距变量
