@@ -31,6 +31,8 @@ import {
   ZoomIn,
   ZoomOut
 } from 'lucide-react';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface HtmlArtifactsCardProps {
   html: string;
@@ -70,8 +72,6 @@ const HtmlArtifactsCard: React.FC<HtmlArtifactsCardProps> = memo(({
       
       if (Capacitor.isNativePlatform()) {
         // 移动端：保存文件后使用 Share 分享
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
-        const { Share } = await import('@capacitor/share');
         
         // 生成文件名
         const safeTitle = title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '-') || 'html-preview';
@@ -118,7 +118,6 @@ const HtmlArtifactsCard: React.FC<HtmlArtifactsCardProps> = memo(({
       
       if (Capacitor.isNativePlatform()) {
         // 移动端：保存到 Documents 目录并提示用户
-        const { Filesystem, Directory } = await import('@capacitor/filesystem');
         const { Toast } = await import('@capacitor/toast');
         
         // 保存到 Documents 目录

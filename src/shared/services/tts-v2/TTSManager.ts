@@ -185,7 +185,10 @@ export class TTSManager {
    */
   private setupAudioCallbacks(): void {
     this.audioPlayer.onEnd(() => {
-      this.advanceOrFinish();
+      // 只有在使用AudioPlayer时才前进（非directPlay引擎）
+      if (this._state.currentEngine && !this.isDirectPlayEngine(this._state.currentEngine)) {
+        this.advanceOrFinish();
+      }
     });
     
     this.audioPlayer.onError((error) => {
@@ -193,6 +196,14 @@ export class TTSManager {
       this.stopInternal();
       this.emit({ type: 'error', error: error.message });
     });
+  }
+  
+  /**
+   * 检查是否为directPlay引擎
+   */
+  private isDirectPlayEngine(engineType: TTSEngineType): boolean {
+    // Capacitor TTS和WebSpeech API是directPlay引擎
+    return engineType === 'capacitor' || engineType === 'webspeech';
   }
   
   /**
@@ -234,17 +245,23 @@ export class TTSManager {
    * 播放下一个分块
    */
   private async playNextChunk(): Promise<boolean> {
+    console.log(`🎵 [DEBUG] playNextChunk called, currentIndex: ${this.playbackQueue.index}, isFinished: ${this.playbackQueue.isFinished()}`);
+    
     // 检查是否已完成
     if (this.playbackQueue.isFinished()) {
+      console.log(`🎵 [DEBUG] Playback finished, calling finishPlayback()`);
       this.finishPlayback();
       return true;
     }
     
     const chunk = this.playbackQueue.getCurrentChunk();
     if (!chunk) {
+      console.log(`🎵 [DEBUG] No current chunk, calling finishPlayback()`);
       this.finishPlayback();
       return true;
     }
+    
+    console.log(`🎵 [DEBUG] Playing chunk: "${chunk.substring(0, 50)}..."`);
     
     // 如果有指定活动引擎，只使用该引擎
     if (this.activeEngine) {
@@ -257,10 +274,21 @@ export class TTSManager {
           if (result.success) {
             this._state.currentEngine = active.name;
             
-            // directPlay 表示 synthesize 已经播放完毕
+            // directPlay 表示 synthesize 已经播放完毕，需要手动前进
             if (result.directPlay) {
-              this.playbackQueue.advance();
-              return this.playNextChunk();
+              console.log(`🎵 [DEBUG] DirectPlay engine completed, advancing to next chunk...`);
+              
+              // 直接前进到下一块，不需要额外调用speak
+              if (this.playbackQueue.advance()) {
+                console.log(`🎵 [DEBUG] Advanced to next chunk, continuing playback`);
+                // 递归播放下一块
+                return this.playNextChunk();
+              } else {
+                console.log(`🎵 [DEBUG] No more chunks, finishing playback`);
+                // 已完成所有块
+                this.finishPlayback();
+                return true;
+              }
             } else if (result.audioData) {
               const played = await this.audioPlayer.play(result.audioData, result.mimeType);
               if (played) return true;
@@ -286,8 +314,19 @@ export class TTSManager {
           this._state.currentEngine = engine.name;
           
           if (result.directPlay) {
-            this.playbackQueue.advance();
-            return this.playNextChunk();
+            console.log(`🎵 [DEBUG] DirectPlay engine completed, advancing to next chunk...`);
+            
+            // 直接前进到下一块，不需要额外调用speak
+            if (this.playbackQueue.advance()) {
+              console.log(`🎵 [DEBUG] Advanced to next chunk, continuing playback`);
+              // 递归播放下一块
+              return this.playNextChunk();
+            } else {
+              console.log(`🎵 [DEBUG] No more chunks, finishing playback`);
+              // 已完成所有块
+              this.finishPlayback();
+              return true;
+            }
           } else if (result.audioData) {
             const played = await this.audioPlayer.play(result.audioData, result.mimeType);
             if (played) return true;
@@ -309,16 +348,21 @@ export class TTSManager {
    * 前进到下一块或完成
    */
   private advanceOrFinish(): void {
+    console.log(`🎵 [DEBUG] advanceOrFinish called, paused: ${this.playbackQueue.paused}, index: ${this.playbackQueue.index}`);
+    
     // 如果处于暂停状态，不前进
     if (this.playbackQueue.paused) {
+      console.log(`🎵 [DEBUG] Queue is paused, not advancing`);
       return;
     }
     
     // 前进到下一块
     if (this.playbackQueue.advance()) {
+      console.log(`🎵 [DEBUG] Advanced to next chunk, new index: ${this.playbackQueue.index}`);
       // 还有下一块，继续播放
       this.playNextChunk();
     } else {
+      console.log(`🎵 [DEBUG] Cannot advance, calling finishPlayback()`);
       // 已完成所有块
       this.finishPlayback();
     }

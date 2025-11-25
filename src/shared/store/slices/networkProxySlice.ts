@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { getStorageItem, setStorageItem } from '../../utils/storage';
+import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
 
 /**
  * 代理类型枚举
@@ -158,9 +159,6 @@ export const testProxyConnection = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // 动态导入 CorsBypass 插件
-      const { CorsBypass } = await import('capacitor-cors-bypass-enhanced');
-
       const result = await CorsBypass.testProxy(
         {
           enabled: true,
@@ -191,8 +189,6 @@ export const applyGlobalProxy = createAsyncThunk(
   'networkProxy/apply',
   async (config: ProxyConfig, { rejectWithValue }) => {
     try {
-      const { CorsBypass } = await import('capacitor-cors-bypass-enhanced');
-
       if (config.enabled) {
         await CorsBypass.setGlobalProxy({
           enabled: true,
