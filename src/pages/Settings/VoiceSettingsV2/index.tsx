@@ -23,6 +23,7 @@ import { getStorageItem } from '../../../shared/utils/storage';
 import { useTranslation } from '../../../i18n';
 import { cssVar } from '../../../shared/utils/cssVariables';
 import useScrollPosition from '../../../hooks/useScrollPosition';
+import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
 
 // TTS服务配置 - 将在组件内使用 i18n
 const getTTSServices = (t: any) => [
@@ -193,21 +194,12 @@ const VoiceSettingsV2: React.FC = () => {
   const currentServices = activeTab === 0 ? ttsServices : asrServices;
 
   return (
-    <Box sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      width: '100vw',
-      overflow: 'hidden',
-      backgroundColor: cssVar('bg-default'),
-      color: textPrimary,
-    }}>
+    <SafeAreaContainer>
       {/* 顶部导航栏 */}
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           backgroundColor: toolbarBg,
           color: textPrimary,
           borderBottom: `1px solid ${toolbarBorder}`,
@@ -265,7 +257,8 @@ const VoiceSettingsV2: React.FC = () => {
           overflow: 'auto',
           overflowX: 'hidden',
           pt: { xs: 7, sm: 8 },
-          pb: { xs: 2, sm: 3 },
+          // 使用全局统一的底部 padding 变量
+          pb: 'var(--content-bottom-padding)',
           px: { xs: 1, sm: 2, md: 3 },
           WebkitOverflowScrolling: 'touch',
           scrollBehavior: 'auto',
@@ -545,7 +538,7 @@ const VoiceSettingsV2: React.FC = () => {
           </Box>
         </Box>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

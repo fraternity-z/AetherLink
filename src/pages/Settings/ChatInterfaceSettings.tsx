@@ -31,6 +31,7 @@ import {
 } from '../../shared/utils/backgroundUtils';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useTranslation } from '../../i18n';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const ChatInterfaceSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -247,21 +248,11 @@ const ChatInterfaceSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-      fontSize: `${settings.fontSize}px`,
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -302,7 +293,7 @@ const ChatInterfaceSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: { xs: 2, sm: 3 },
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: { xs: '4px', sm: '6px' },
           },
@@ -677,7 +668,7 @@ const ChatInterfaceSettings: React.FC = () => {
         {/* 底部间距 */}
         <Box sx={{ height: '40px' }} />
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

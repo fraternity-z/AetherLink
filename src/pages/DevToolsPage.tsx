@@ -34,6 +34,7 @@ import ConsolePanel from '../components/DevTools/ConsolePanel';
 import NetworkPanel from '../components/DevTools/NetworkPanel';
 import EnhancedConsoleService from '../shared/services/EnhancedConsoleService';
 import EnhancedNetworkService from '../shared/services/network/EnhancedNetworkService';
+import { SafeAreaContainer } from '../components/settings/SettingComponents';
 
 const DevToolsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -68,11 +69,8 @@ const DevToolsPage: React.FC = () => {
   };
 
   return (
-    <Box 
+    <SafeAreaContainer
       sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '100vh',
         bgcolor: theme.palette.mode === 'dark' ? 'background.default' : 'grey.50',
       }}
     >
@@ -80,14 +78,12 @@ const DevToolsPage: React.FC = () => {
       <AppBar 
         position="static" 
         elevation={0}
-        className="status-bar-safe-area"
         sx={{
           bgcolor: theme.palette.mode === 'dark' 
             ? alpha(theme.palette.background.paper, 0.8)
             : theme.palette.background.paper,
           borderBottom: `1px solid ${theme.palette.divider}`,
           backdropFilter: 'blur(8px)',
-          // paddingTop 由 themes.ts 全局配置
         }}
       >
         <Toolbar variant={isMobile ? 'dense' : 'regular'} sx={{ gap: 1 }}>
@@ -221,7 +217,6 @@ const DevToolsPage: React.FC = () => {
         flexGrow: 1, 
         overflow: 'hidden', 
         position: 'relative',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         {tabValue === 0 && <ConsolePanel autoScroll={autoScroll} />}
         {tabValue === 1 && <NetworkPanel />}
@@ -369,7 +364,7 @@ const DevToolsPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

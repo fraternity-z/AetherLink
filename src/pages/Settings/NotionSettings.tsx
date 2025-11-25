@@ -12,8 +12,7 @@ import {
   Divider,
   AppBar,
   Toolbar,
-  IconButton,
-  alpha
+  IconButton
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
 import { ArrowLeft, ExternalLink, Database, Key, CheckCircle } from 'lucide-react';
@@ -24,6 +23,7 @@ import { updateSettings } from '../../shared/store/settingsSlice';
 import { notionApiRequest, NotionApiError } from '../../utils/notionApiUtils';
 import { useTranslation } from '../../i18n';
 import useScrollPosition from '../../hooks/useScrollPosition';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 /**
  * Notion设置页面
@@ -141,20 +141,11 @@ const NotionSettingsPage: React.FC = () => {
 
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -194,7 +185,7 @@ const NotionSettingsPage: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: { xs: 1, sm: 2 },
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: { xs: '4px', sm: '6px' },
           },
@@ -385,7 +376,7 @@ const NotionSettingsPage: React.FC = () => {
           </Box>
         </Paper>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

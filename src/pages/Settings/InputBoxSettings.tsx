@@ -10,7 +10,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  alpha,
   Divider,
   useTheme,
   useMediaQuery
@@ -23,6 +22,7 @@ import { updateSettings } from '../../shared/store/settingsSlice';
 import DraggableButtonConfig from '../../components/DraggableButtonConfig';
 import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../components/input';
 import { useTranslation } from '../../i18n';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 // 输入框预览组件
 const InputBoxPreview: React.FC<{
@@ -285,20 +285,11 @@ const InputBoxSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -336,7 +327,7 @@ const InputBoxSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: { xs: 1, sm: 2 },
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: { xs: '4px', sm: '6px' },
           },
@@ -453,7 +444,7 @@ const InputBoxSettings: React.FC = () => {
         {/* 底部间距 */}
         <Box sx={{ height: '20px' }} />
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

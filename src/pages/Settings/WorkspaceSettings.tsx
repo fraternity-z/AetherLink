@@ -151,10 +151,9 @@ const WorkspaceSettings: React.FC = () => {
         : alpha(theme.palette.background.default, 0.9),
     }}>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -223,7 +222,6 @@ const WorkspaceSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: 2,
-          mt: 8,
           '&::-webkit-scrollbar': {
             width: '6px',
           },

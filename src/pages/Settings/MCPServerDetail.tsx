@@ -46,6 +46,7 @@ import {
 import type { MCPServer, MCPServerType, MCPTool, MCPPrompt, MCPResource } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const MCPServerDetail: React.FC = () => {
   const { t } = useTranslation();
@@ -236,18 +237,11 @@ const MCPServerDetail: React.FC = () => {
   }
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: 'background.default'
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -308,9 +302,9 @@ const MCPServerDetail: React.FC = () => {
         sx={{
           flexGrow: 1,
           overflow: 'auto',
-          mt: 8,
           px: 2,
-          py: 2
+          py: 2,
+          pb: 'var(--content-bottom-padding)'
         }}
       >
         {/* 基本信息 */}
@@ -734,7 +728,7 @@ const MCPServerDetail: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

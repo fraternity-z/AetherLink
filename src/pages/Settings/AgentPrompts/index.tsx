@@ -21,6 +21,7 @@ import type { AgentPrompt, AgentPromptCategory } from '../../../shared/types/Age
 import SystemPromptVariablesPanel from '../../../components/SystemPromptVariablesPanel';
 // 🚀 性能优化：虚拟滚动
 import VirtualScroller from '../../../components/common/VirtualScroller';
+import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
 
 /**
  * 智能体提示词集合 - 主页面组件
@@ -221,21 +222,16 @@ const AgentPromptsSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
+    <SafeAreaContainer sx={{
       bgcolor: (theme) => theme.palette.mode === 'light'
         ? alpha(theme.palette.primary.main, 0.02)
         : alpha(theme.palette.background.default, 0.9),
     }}>
       {/* 顶部导航栏 */}
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -274,7 +270,6 @@ const AgentPromptsSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: 2,
-          mt: 8,
           '&::-webkit-scrollbar': {
             width: '6px',
           },
@@ -418,7 +413,7 @@ const AgentPromptsSettings: React.FC = () => {
         {/* 类别列表 */}
         {!searchQuery.trim() && categories.map(renderCategory)}
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

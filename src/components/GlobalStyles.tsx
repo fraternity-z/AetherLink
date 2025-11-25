@@ -13,6 +13,33 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
       --global-font-scale: ${fontSize / 16};
       --global-font-family: ${theme.typography.fontFamily};
       /* 主题颜色变量已通过 applyCSSVariables() 注入，不再重复定义 */
+      
+      /* ============================================
+         统一安全区域变量 - 全局使用
+         ============================================ */
+      /* 原生安全区域（浏览器 env() 变量） */
+      --safe-area-top: env(safe-area-inset-top, 0px);
+      --safe-area-right: env(safe-area-inset-right, 0px);
+      --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-area-left: env(safe-area-inset-left, 0px);
+      
+      /* 统一的最小底部安全区域值 */
+      --safe-area-bottom-min: 48px;
+      
+      /* 计算后的底部安全区域（所有页面统一使用） */
+      --safe-area-bottom-computed: max(env(safe-area-inset-bottom, 0px), var(--safe-area-bottom-min));
+      
+      /* 内容区域底部 padding（设置页面统一使用） */
+      --content-bottom-padding: calc(var(--safe-area-bottom-computed) + 16px);
+      
+      /* ============================================
+         统一工具栏和内容区域间距变量
+         ============================================ */
+      /* 工具栏高度（与 themes.ts 中 MuiToolbar 配置保持一致） */
+      --toolbar-height: 56px;
+      
+      /* 内容区域顶部间距（工具栏高度 + 额外间距） */
+      --content-top-spacing: calc(var(--toolbar-height) + 16px);
     }
 
     body {

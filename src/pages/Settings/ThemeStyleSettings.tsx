@@ -6,13 +6,13 @@ import {
   Toolbar,
   IconButton,
   Paper,
-  alpha,
 } from '@mui/material';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ThemeStyleSelector from '../../components/settings/ThemeStyleSelector';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useTranslation } from '../../i18n';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const ThemeStyleSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -32,20 +32,11 @@ const ThemeStyleSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -85,7 +76,7 @@ const ThemeStyleSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: { xs: 2, sm: 3 },
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: '6px',
           },
@@ -113,7 +104,7 @@ const ThemeStyleSettings: React.FC = () => {
           </Box>
         </Paper>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

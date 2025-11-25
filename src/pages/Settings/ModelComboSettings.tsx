@@ -39,6 +39,7 @@ import ModelComboDialog from '../../components/settings/ModelComboDialog';
 import { useModelComboSync } from '../../shared/hooks/useModelComboSync';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../hooks/useScrollPosition';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const ModelComboSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -184,20 +185,11 @@ const ModelComboSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -235,7 +227,7 @@ const ModelComboSettings: React.FC = () => {
           overflow: 'auto',
           px: isMobile ? 1 : 2,
           py: isMobile ? 1 : 2,
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
         }}
       >
         {/* 预设模板区域 */}
@@ -558,7 +550,7 @@ const ModelComboSettings: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

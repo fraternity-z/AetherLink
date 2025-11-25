@@ -4,17 +4,13 @@
  * 使用 EdgeToEdge 插件提供的精确安全区域值
  */
 
-/* Rikkahub 风格 - 纯CSS安全区域变量 */
-:root {
-  /* 使用浏览器原生 env() 变量作为基础 */
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
-  
-  /* 聊天界面专用 */
-  --chat-input-bottom-padding: 8px;
-}
+/* 
+ * 安全区域变量说明：
+ * 全局统一的安全区域变量已在 GlobalStyles.tsx 中定义：
+ * - --safe-area-top/right/bottom/left: 原生 env() 值
+ * - --safe-area-bottom-min: 最小底部值 (34px)
+ * - --safe-area-bottom-computed: 计算后的底部值 (所有页面统一使用)
+ */
 
 /* 全局容器安全区域适配 */
 .safe-area-container {
@@ -24,14 +20,13 @@
   padding-left: var(--safe-area-left);
 }
 
-/* 只适配顶部安全区域 (常用于AppBar) */
-.safe-area-top,
-.status-bar-safe-area {
-  padding-top: 30px;
-  background-clip: padding-box;
-}
-
-/* 注意：MUI AppBar 的状态栏适配已在 themes.ts 的 MuiAppBar.styleOverrides 中全局配置 */
+/* 
+ * 安全区域配置说明：
+ * - 顶部安全区域：由 themes.ts 的 MuiAppBar 全局配置 (30px)
+ * - 底部安全区域：由 SafeAreaContainer 组件统一处理
+ * 
+ * 所有设置页面应使用 SafeAreaContainer 组件包装
+ */
 
 /* 聊天输入框容器 */
 .chat-input-container {
@@ -41,29 +36,16 @@
   right: 0;
   z-index: 1000;
   
-  /* 使用 env() 直接获取安全区域，确保不被底部导航栏遮挡 */
-  padding-bottom: env(safe-area-inset-bottom, 8px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  /* 使用全局统一的安全区域变量 */
+  padding-bottom: var(--safe-area-bottom-computed);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
   
   /* 背景和边框 */
   background: var(--mui-palette-background-paper);
-  /* 移除顶部边框，改用阴影或其他方式，避免底部出现多余线条 */
   border-top: 1px solid var(--mui-palette-divider);
   
-  /* 关键：确保背景色延伸到底部安全区域 */
-  /* 有时候系统导航栏会有半透明遮罩，确保我们的背景色是实色的 */
-  
   box-sizing: border-box;
-}
-
-/* 确保至少有基础 padding */
-@supports (padding: max(0px)) {
-  .chat-input-container {
-    /* 底部 padding 至少要有导航栏高度，iOS 安全区域为 34px */
-    /* 注意：在 Android 上 env(safe-area-inset-bottom) 可能包含导航栏高度 */
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 34px);
-  }
 }
 
 /* 工具栏安全区域适配 */

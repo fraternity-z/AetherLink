@@ -38,6 +38,7 @@ import { useLanguageSettings } from '../../i18n/useLanguageSettings';
 import { supportedLanguages } from '../../i18n';
 import { Globe } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 import CustomSwitch from '../../components/CustomSwitch';
 import ShareAppearanceDialog from '../../components/dialogs/ShareAppearanceDialog';
 import ImportAppearanceDialog from '../../components/dialogs/ImportAppearanceDialog';
@@ -183,20 +184,11 @@ const AppearanceSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -257,7 +249,8 @@ const AppearanceSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: 2,
-          mt: 8,
+          // 不需要 margin-top，因为 AppBar 是 static
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: '6px',
           },
@@ -935,7 +928,7 @@ const AppearanceSettings: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

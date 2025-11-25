@@ -25,6 +25,7 @@ import {
 import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
+import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
 
 const SiliconFlowTTSSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -245,21 +246,16 @@ const SiliconFlowTTSSettings: React.FC = () => {
   const primaryColor = cssVar('primary');
 
   return (
-    <Box sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
+    <SafeAreaContainer sx={{
       width: '100vw',
       overflow: 'hidden',
       backgroundColor: bgDefault,
-      color: textPrimary
     }}>
       {/* 顶部导航栏 */}
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           backgroundColor: toolbarBg,
           color: textPrimary,
           borderBottom: `1px solid ${toolbarBorder}`,
@@ -406,7 +402,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
           />
         </Box>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

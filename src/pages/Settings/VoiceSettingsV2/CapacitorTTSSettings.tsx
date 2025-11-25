@@ -21,6 +21,7 @@ import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { cssVar } from '../../../shared/utils/cssVariables';
+import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
 
 const CapacitorTTSSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -37,14 +38,12 @@ const CapacitorTTSSettings: React.FC = () => {
   const toolbarBg = cssVar('toolbar-bg');
   const toolbarBorder = cssVar('toolbar-border');
   const toolbarShadow = cssVar('toolbar-shadow');
-  const gradientPrimary = cssVar('gradient-primary');
-  const bgDefault = cssVar('bg-default');
-  const bgPaper = cssVar('bg-paper');
+  const textPrimary = cssVar('text-primary');
   const borderDefault = cssVar('border-default');
   const borderSubtle = cssVar('border-subtle');
   const hoverBg = cssVar('hover-bg');
-  const textPrimary = cssVar('text-primary');
-  const textSecondary = cssVar('text-secondary');
+  const bgPaper = cssVar('bg-paper');
+  const bgDefault = cssVar('bg-default');
   const primaryColor = cssVar('primary');
 
   const [uiState, setUIState] = useState({
@@ -161,9 +160,9 @@ const CapacitorTTSSettings: React.FC = () => {
   }, [settings, testText, ttsService, uiState.isTestPlaying]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: bgDefault, color: textPrimary }}>
+    <SafeAreaContainer sx={{ backgroundColor: bgDefault, color: textPrimary }}>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
           backgroundColor: toolbarBg,
@@ -218,7 +217,7 @@ const CapacitorTTSSettings: React.FC = () => {
               label={t('settings.voice.capacitorTTS.enableService')}
               sx={{ mb: 2 }}
             />
-            <Typography variant="body2" sx={{ mb: 3, color: textSecondary }}>
+            <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
               {t('settings.voice.capacitorTTS.enableDesc')}
             </Typography>
 
@@ -276,7 +275,7 @@ const CapacitorTTSSettings: React.FC = () => {
           />
         </Box>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

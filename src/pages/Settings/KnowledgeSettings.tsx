@@ -36,11 +36,9 @@ import { useNavigate } from 'react-router-dom';
 import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProvider';
 import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import { toastManager } from '../../components/EnhancedToast';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
-const Container = styled(Box)(() => ({
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100vh',
+const Container = styled(SafeAreaContainer)(() => ({
   position: 'relative',
   overflow: 'hidden',
 }));
@@ -274,10 +272,9 @@ const KnowledgeSettings: React.FC = () => {
   return (
     <Container>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -317,7 +314,7 @@ const KnowledgeSettings: React.FC = () => {
         overflow: 'auto', 
         px: 2, 
         py: 2, 
-        mt: 8,
+        pb: 'var(--content-bottom-padding)',
         WebkitOverflowScrolling: 'touch',
         '&::-webkit-scrollbar': {
           width: '6px',

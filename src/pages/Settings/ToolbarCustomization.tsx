@@ -12,7 +12,6 @@ import {
   IconButton,
   Card,
   CardContent,
-  alpha,
   Chip,
   InputLabel,
   Select,
@@ -30,6 +29,7 @@ import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setToolbarStyle, updateSettings, updateToolbarButtons } from '../../shared/store/settingsSlice';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { useTranslation } from '../../i18n';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const ToolbarCustomization: React.FC = () => {
   const { t } = useTranslation();
@@ -247,20 +247,11 @@ const ToolbarCustomization: React.FC = () => {
   });
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -301,7 +292,7 @@ const ToolbarCustomization: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: 2,
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: '6px',
           },
@@ -1078,7 +1069,7 @@ const ToolbarCustomization: React.FC = () => {
           </Box>
         </Paper>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

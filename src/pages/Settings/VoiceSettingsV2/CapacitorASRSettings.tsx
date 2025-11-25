@@ -24,10 +24,10 @@ import { useNavigate } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { useVoiceRecognition } from '../../../shared/hooks/useVoiceRecognition';
-import { voiceRecognitionService } from '../../../shared/services/VoiceRecognitionService';
 import CustomSwitch from '../../../components/CustomSwitch';
 import type { VoiceRecognitionSettings } from '../../../shared/types/voice';
 import { useTranslation } from '../../../i18n';
+import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
 
 const CapacitorASRSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -49,11 +49,10 @@ const CapacitorASRSettings: React.FC = () => {
     saveError: '',
   });
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isListening] = useState(false);
 
   // 引入语音识别hook
   const {
-    isListening,
     recognitionText,
     permissionStatus,
     error,
@@ -117,15 +116,6 @@ const CapacitorASRSettings: React.FC = () => {
 
 
 
-  // 检查并请求麦克风权限
-  const checkAndRequestPermissions = async () => {
-    try {
-      const result = await voiceRecognitionService.requestPermissions();
-      console.log('权限状态:', result);
-    } catch (error) {
-      console.error('请求权限失败:', error);
-    }
-  };
 
   const handleBack = () => {
     navigate('/settings/voice');
@@ -139,20 +129,16 @@ const CapacitorASRSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
+    <SafeAreaContainer sx={{
       width: '100vw',
       overflow: 'hidden',
       bgcolor: 'background.default'
     }}>
       {/* 顶部导航栏 */}
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -218,7 +204,6 @@ const CapacitorASRSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: 2,
-          mt: 8,
           bgcolor: (theme) => theme.palette.mode === 'light'
             ? alpha(theme.palette.primary.main, 0.02)
             : alpha(theme.palette.background.default, 0.9),
@@ -337,9 +322,12 @@ const CapacitorASRSettings: React.FC = () => {
 
             {/* 权限请求按钮 */}
             <Button
-              variant="outlined"
-              onClick={checkAndRequestPermissions}
-              sx={{ mb: 3 }}
+              variant="contained"
+              startIcon={<Mic size={16} />}
+              onClick={() => startRecognition()}
+              disabled={isListening}
+              color="primary"
+              sx={{ mb: 2 }}
             >
               {t('settings.voice.capacitor.permission.checkAndRequest')}
             </Button>
@@ -367,7 +355,7 @@ const CapacitorASRSettings: React.FC = () => {
               <Button
                 variant={isListening ? "outlined" : "contained"}
                 startIcon={isListening ? <Square size={16} /> : <Mic size={16} />}
-                onClick={isListening ? stopRecognition : startRecognition}
+                onClick={() => isListening ? stopRecognition() : startRecognition()}
                 disabled={!settings.enabled}
                 color={isListening ? "error" : "primary"}
               >
@@ -395,7 +383,7 @@ const CapacitorASRSettings: React.FC = () => {
           </Paper>
         </Box>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

@@ -134,10 +134,16 @@ export class SafeAreaService {
 
   /**
    * 应用安全区域到 CSS 变量
+   * 
+   * 注意：主要的 CSS 变量已在 GlobalStyles.tsx 中定义
+   * 这里作为补充，用于不支持 env() 的旧浏览器
    */
   private applySafeAreaToCSS(): void {
     const root = document.documentElement;
     const { top, right, bottom, left } = this.currentInsets;
+    
+    // 统一的最小底部安全区域值（与 GlobalStyles.tsx 保持一致）
+    const SAFE_AREA_BOTTOM_MIN = 48;
     
     // 应用自定义 CSS 变量（用于不支持 env() 的旧浏览器）
     root.style.setProperty('--safe-area-top', `${top}px`);
@@ -145,9 +151,10 @@ export class SafeAreaService {
     root.style.setProperty('--safe-area-bottom', `${bottom}px`);
     root.style.setProperty('--safe-area-left', `${left}px`);
     
-    // 聊天界面专用变量
-    const chatInputPadding = bottom > 0 ? bottom + 8 : 8;
-    root.style.setProperty('--chat-input-bottom-padding', `${chatInputPadding}px`);
+    // 计算后的底部安全区域（所有页面统一使用）
+    const computedBottom = Math.max(bottom, SAFE_AREA_BOTTOM_MIN);
+    root.style.setProperty('--safe-area-bottom-computed', `${computedBottom}px`);
+    root.style.setProperty('--safe-area-bottom-min', `${SAFE_AREA_BOTTOM_MIN}px`);
     
     // 标记平台类型
     root.classList.add(`platform-${Capacitor.getPlatform()}`);
@@ -249,10 +256,12 @@ export class SafeAreaService {
   }
 
   /**
-   * 获取聊天输入框应该使用的底部边距
+   * 获取计算后的底部安全区域（统一值）
+   * 返回 max(实际安全区域, 34px)
    */
-  public getChatInputBottomPadding(): number {
-    return this.currentInsets.bottom > 0 ? this.currentInsets.bottom + 8 : 8;
+  public getComputedBottomInset(): number {
+    const SAFE_AREA_BOTTOM_MIN = 48;
+    return Math.max(this.currentInsets.bottom, SAFE_AREA_BOTTOM_MIN);
   }
 
   /**

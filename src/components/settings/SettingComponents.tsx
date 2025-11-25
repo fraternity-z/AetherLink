@@ -13,14 +13,28 @@ import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/material/styles';
 
-// SafeAreaContainer - 安全区域容器
-export const SafeAreaContainer = styled(Box)(({ theme }) => ({
+/**
+ * SafeAreaContainer - 安全区域容器
+ * 
+ * 参考 cherry-studio-app-main 的实现：
+ * - 自动适配底部安全区域（顶部由 MuiAppBar 全局配置）
+ * - 所有设置页面统一使用此组件包装
+ * 
+ * 使用方式：
+ * <SafeAreaContainer>
+ *   <HeaderBar />
+ *   <Container>内容</Container>
+ * </SafeAreaContainer>
+ */
+export const SafeAreaContainer = styled(Box)(() => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   height: '100vh',
-  backgroundColor: theme.palette.background.default,
+  // 背景透明，让底部安全区域也透明（模仿 kelivo/rikkahub）
+  backgroundColor: 'transparent',
   overflow: 'hidden',
+  // 不在容器上添加 paddingBottom，改为在 Container 内部处理
 }));
 
 // Container - 内容容器（支持 ref 转发）
@@ -30,8 +44,9 @@ export const Container = styled(Box, {
 })(({ theme }) => ({
   flex: 1,
   padding: theme.spacing(2),
-  // 底部安全区域：确保内容不被 Home Indicator 遮挡
-  paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)',
+  // 底部添加安全区域的 padding，让内容可以滚动到安全区域下方
+  // 使用全局统一变量，方便统一修改
+  paddingBottom: 'var(--content-bottom-padding)',
   gap: theme.spacing(3), // gap-6 (24px)
   display: 'flex',
   flexDirection: 'column',
@@ -71,8 +86,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         backgroundColor: theme.palette.background.paper,
         color: theme.palette.text.primary,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        // paddingTop 由 themes.ts 全局配置
-        backdropFilter: 'blur(8px)', // 统一UI风格：添加模糊效果
+        backdropFilter: 'blur(8px)',
       }}
     >
       <Toolbar

@@ -612,27 +612,19 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         /**
          * 安全区域处理 - 动态切换 paddingBottom
          * 
+         * 使用全局统一的安全区域变量 --safe-area-bottom-computed
+         * 
          * 重要：避免双重间距问题！
          * 
          * 场景 1 - 键盘隐藏时（keyboardHeight = 0）：
          *   bottom: 0
-         *   paddingBottom: env(safe-area-inset-bottom) // 需要安全区域，防止被 Home Indicator 遮挡
+         *   paddingBottom: var(--safe-area-bottom-computed) // 统一安全区域
          * 
          * 场景 2 - 键盘弹出时（keyboardHeight > 0）：
          *   bottom: keyboardHeight (例如 336px)
-         *   paddingBottom: 0 // ❌ 不能有额外 padding！否则输入框和键盘之间会有很大间隔
-         * 
-         * 错误示例（会导致双重间距）：
-         *   bottom: 336px
-         *   paddingBottom: 34px
-         *   结果：输入框离键盘 34px，中间有明显空隙 ❌
-         * 
-         * 正确做法：
-         *   bottom: 336px
-         *   paddingBottom: 0
-         *   结果：输入框紧贴键盘 ✅
+         *   paddingBottom: 0 // 键盘弹出时不需要额外 padding
          */
-        paddingBottom: keyboardHeight > 0 ? '0' : 'max(env(safe-area-inset-bottom, 0px), 48px)',
+        paddingBottom: keyboardHeight > 0 ? '0' : 'var(--safe-area-bottom-computed)',
         transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // 平滑动画
       }}
     >
@@ -772,20 +764,16 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           zIndex: 2, // 确保在背景和遮罩之上（背景 z-index: 0, 遮罩 z-index: 1）
         }}
       >
-        {/* 顶部应用栏 - 模仿 rikkahub TopAppBar(containerColor = Color.Transparent) */}
         <AppBar
           position="static"
           elevation={0}
           className="status-bar-safe-area"
           sx={{
             ...baseStyles.appBar,
-            // paddingTop 由 themes.ts 全局配置
-            // 强制移除所有可能的阴影和边框
             boxShadow: 'none',
             backgroundImage: 'none',
             '&::before': { display: 'none' },
             '&::after': { display: 'none' },
-            // 🚀 模糊效果跟随遮罩开关：只有开启遮罩时才显示模糊
             backdropFilter: (hasBackgroundImage && settings.chatBackground?.showOverlay !== false) 
               ? 'blur(8px)' 
               : 'none',

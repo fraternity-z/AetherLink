@@ -11,6 +11,7 @@ import {
   ArrowLeft as ArrowBackIcon
 } from 'lucide-react';
 import { FilePermissionManager } from '../../components/FilePermissionManager';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const FilePermissionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const FilePermissionPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <SafeAreaContainer>
       {/* 顶部导航栏 */}
       <AppBar position="static" color="default" elevation={1}>
         <Toolbar>
@@ -37,7 +38,7 @@ const FilePermissionPage: React.FC = () => {
       <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
         <FilePermissionManager />
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

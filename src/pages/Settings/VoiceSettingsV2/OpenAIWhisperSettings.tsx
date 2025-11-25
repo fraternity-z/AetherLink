@@ -18,6 +18,7 @@ import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { OpenAIWhisperTab, WhisperTestSection } from '../../../components/VoiceRecognition';
 import type { VoiceRecognitionSettings, OpenAIWhisperSettings as OpenAIWhisperSettingsType } from '../../../shared/types/voice';
 import { useTranslation } from '../../../i18n';
+import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
 
 const OpenAIWhisperSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -135,20 +136,16 @@ const OpenAIWhisperSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
+    <SafeAreaContainer sx={{
       width: '100vw',
       overflow: 'hidden',
       bgcolor: 'background.default'
     }}>
       {/* 顶部导航栏 */}
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -214,7 +211,6 @@ const OpenAIWhisperSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: 2,
-          mt: 8,
           bgcolor: (theme) => theme.palette.mode === 'light'
             ? alpha(theme.palette.primary.main, 0.02)
             : alpha(theme.palette.background.default, 0.9),
@@ -284,7 +280,7 @@ const OpenAIWhisperSettings: React.FC = () => {
           </Paper>
         </Box>
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

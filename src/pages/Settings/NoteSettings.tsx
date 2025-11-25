@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  alpha,
   AppBar,
   Box,
   Button,
@@ -49,6 +48,7 @@ import { useDispatch } from 'react-redux';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
 import { advancedFileManagerService } from '../../shared/services/AdvancedFileManagerService';
 import { toastManager } from '../../components/EnhancedToast';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 import { updateSettings } from '../../shared/store/slices/settingsSlice';
 import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
 import type { NoteFile } from '../../shared/types/note';
@@ -392,22 +392,11 @@ const NoteSettings: React.FC = () => {
   }, [currentPath, filteredItems, handleFileClick, selectedItem?.path, folderCache, loadingPaths, searchQuery]);
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        bgcolor: (theme) => theme.palette.mode === 'light'
-          ? alpha(theme.palette.primary.main, 0.02)
-          : alpha(theme.palette.background.default, 0.9),
-      }}
-    >
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -425,7 +414,7 @@ const NoteSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ flexGrow: 1, overflow: 'auto', p: { xs: 1, sm: 2 }, mt: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto', p: { xs: 1, sm: 2 }, pb: 'var(--content-bottom-padding)', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
           <List>
             <ListItem>
@@ -660,7 +649,7 @@ const NoteSettings: React.FC = () => {
           <Button onClick={handleDelete} color="error" variant="contained">删除</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

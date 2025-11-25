@@ -12,7 +12,6 @@ import {
   AppBar,
   Toolbar,
   Divider,
-  alpha,
   FormControlLabel,
   FormGroup
 } from '@mui/material';
@@ -26,6 +25,7 @@ import type { ThinkingMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
 import { useTranslation } from '../../i18n';
 import CustomSwitch from '../../components/CustomSwitch';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const ThinkingProcessSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -91,20 +91,11 @@ const ThinkingProcessSettings: React.FC = () => {
   };
 
   return (
-    <Box sx={{
-      flexGrow: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      bgcolor: (theme) => theme.palette.mode === 'light'
-        ? alpha(theme.palette.primary.main, 0.02)
-        : alpha(theme.palette.background.default, 0.9),
-    }}>
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -142,7 +133,7 @@ const ThinkingProcessSettings: React.FC = () => {
           flexGrow: 1,
           overflowY: 'auto',
           p: { xs: 1, sm: 2 },
-          mt: 8,
+          pb: 'var(--content-bottom-padding)',
           '&::-webkit-scrollbar': {
             width: { xs: '4px', sm: '6px' },
           },
@@ -341,7 +332,7 @@ const ThinkingProcessSettings: React.FC = () => {
         {/* 底部间距 */}
         <Box sx={{ height: '20px' }} />
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 

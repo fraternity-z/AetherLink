@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  alpha,
   AppBar,
   Box,
   IconButton,
@@ -13,6 +12,7 @@ import { ArrowLeft as ArrowBackIcon, Save } from 'lucide-react';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
 import { toastManager } from '../../components/EnhancedToast';
 import { NoteEditorView } from '../../components/NoteEditor';
+import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const NoteEditor: React.FC = () => {
   const navigate = useNavigate();
@@ -102,40 +102,25 @@ const NoteEditor: React.FC = () => {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          flexDirection: 'column',
-          gap: 2
-        }}
-      >
+      <SafeAreaContainer sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'column',
+        gap: 2
+      }}>
         <CircularProgress />
         <Typography color="text.secondary">加载中...</Typography>
-      </Box>
+      </SafeAreaContainer>
     );
   }
 
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        bgcolor: (theme) =>
-          theme.palette.mode === 'light'
-            ? alpha(theme.palette.primary.main, 0.02)
-            : alpha(theme.palette.background.default, 0.9)
-      }}
-    >
+    <SafeAreaContainer>
       <AppBar
-        position="fixed"
+        position="static"
         elevation={0}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderBottom: 1,
@@ -178,7 +163,7 @@ const NoteEditor: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ flexGrow: 1, overflow: 'hidden', mt: 8 }}>
+      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
         <NoteEditorView
           content={content}
           onContentChange={handleContentChange}
@@ -186,7 +171,7 @@ const NoteEditor: React.FC = () => {
           readOnly={false}
         />
       </Box>
-    </Box>
+    </SafeAreaContainer>
   );
 };
 
