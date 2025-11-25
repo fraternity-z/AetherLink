@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Drawer, Box, CircularProgress, Alert, Chip } from '@mui/material';
+import {
+  Box,
+  Alert,
+  CircularProgress,
+  Chip
+} from '@mui/material';
+import BackButtonDrawer from '../common/BackButtonDrawer';
 import { alpha } from '@mui/material/styles';
 import styled from '@emotion/styled';
 import { useTheme } from '@mui/material/styles';
@@ -269,7 +275,7 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
   }, [open, selectedKB, handleClose, handleConfirm]);
 
   return (
-    <Drawer
+    <BackButtonDrawer
       anchor="bottom"
       open={open}
       onClose={handleClose}
@@ -399,7 +405,7 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
           </KnowledgePanelFooter>
         </KnowledgePanelBody>
       </Box>
-    </Drawer>
+    </BackButtonDrawer>
   );
 };
 

@@ -1,116 +1,312 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { EdgeToEdge } from 'capacitor-edge-to-edge';
 import { Capacitor } from '@capacitor/core';
 
 /**
- * 极简键盘管理 Hook - 模仿 rikkahub 的 WindowInsets.isImeVisible + imePadding
+ * ============================================================================
+ * 键盘管理系统 v2.0 - 支持锁定机制的全局键盘管理
+ * ============================================================================
  * 
- * 核心理念：
- * - 检测键盘可见性和高度
- * - 提供键盘高度用于动态调整布局（类似 imePadding）
- * - 极简状态管理（只有 2 个状态，200+ 行代码减少到 40 行）
+ * 设计理念：
+ * 1. 全局单例管理键盘状态，避免多个组件重复监听
+ * 2. 支持"锁定"机制：模态框可以锁定键盘，其他组件不响应
+ * 3. 支持优先级：后锁定的优先级更高（栈结构）
  * 
- * 参考：
- * - rikkahub 项目：docs/rikkahub-master/app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt
- * - Android Compose: WindowInsets.isImeVisible + modifier.imePadding()
- * - 官方 Capacitor Keyboard 实现（已整合到 capacitor-edge-to-edge）
+ * 使用场景：
+ * - 聊天输入框：普通使用，不锁定
+ * - 编辑框（模态框）：锁定键盘，其他组件不响应
+ * - 嵌套模态框：支持多层锁定
  * 
- * 使用方式：
+ * 使用示例：
  * ```typescript
- * const { isKeyboardVisible, keyboardHeight, hideKeyboard } = useKeyboard();
+ * // 1. 普通组件 - 尊重锁定状态
+ * const { keyboardHeight, isKeyboardVisible } = useKeyboard();
  * 
- * // 1. 检测键盘状态 - 类似 WindowInsets.isImeVisible
- * useEffect(() => {
- *   if (isKeyboardVisible && expanded) {
- *     setExpanded(false); // 键盘弹出时自动折叠输入框
- *   }
- * }, [isKeyboardVisible, expanded]);
+ * // 2. 模态框 - 锁定键盘并独占
+ * const { keyboardHeight, isKeyboardVisible } = useKeyboard({ lock: true });
  * 
- * // 2. 动态调整布局 - 类似 modifier.imePadding()
- * <div style={{ bottom: keyboardHeight }}>
- *   // 输入框会自动上移到键盘上方
- * </div>
- * 
- * // 3. 发送消息时隐藏键盘 - 类似 keyboardController?.hide()
- * const handleSend = () => {
- *   hideKeyboard();
- *   onSend();
- * };
+ * // 3. 获取原始键盘高度（忽略锁定）
+ * const { rawKeyboardHeight } = useKeyboard({ ignoreLocn: true });
  * ```
- * 
- * @returns {Object} 键盘管理对象
- * @property {boolean} isKeyboardVisible - 键盘是否可见（用于控制 UI 状态）
- * @property {number} keyboardHeight - 键盘高度（Android: DP，iOS: 像素）
- * @property {Function} hideKeyboard - 隐藏键盘的函数
  */
-export const useKeyboard = () => {
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const isNative = Capacitor.isNativePlatform();
 
-  useEffect(() => {
-    if (!isNative) return;
+// ============================================================================
+// 全局键盘管理器（单例）
+// ============================================================================
 
-    let showHandle: any;
-    let hideHandle: any;
+type KeyboardListener = (state: KeyboardState) => void;
 
-    /**
-     * 监听 EdgeToEdge Keyboard 事件（整合自官方 Capacitor Keyboard）
-     * 
-     * keyboardWillShow 事件提供：
-     * - keyboardHeight: 键盘高度（Android: DP，iOS: 像素）
-     * 
-     * 注意事项：
-     * 1. Android 返回 DP 单位（跨设备一致）
-     * 2. iOS 返回完整键盘高度（包含 safe area）
-     * 3. 使用 willShow/willHide 获得更流畅的动画
-     */
-    const setupListeners = async () => {
-      showHandle = await EdgeToEdge.addListener('keyboardWillShow', (info: any) => {
-        setIsKeyboardVisible(true);
-        // 获取键盘高度 - 类似 rikkahub 的 WindowInsets.ime
-        setKeyboardHeight(info.keyboardHeight || 0);
-      });
+interface KeyboardState {
+  isVisible: boolean;
+  height: number;
+}
 
-      hideHandle = await EdgeToEdge.addListener('keyboardWillHide', () => {
-        setIsKeyboardVisible(false);
-        setKeyboardHeight(0);
-      });
-    };
+interface LockInfo {
+  id: string;
+  timestamp: number;
+}
 
-    setupListeners();
-
-    return () => {
-      showHandle?.remove();
-      hideHandle?.remove();
-    };
-  }, [isNative]);
-
+class KeyboardManager {
+  private static instance: KeyboardManager;
+  
+  // 键盘状态
+  private state: KeyboardState = { isVisible: false, height: 0 };
+  
+  // 监听器列表
+  private listeners: Set<KeyboardListener> = new Set();
+  
+  // 锁定栈（后进先出）
+  private lockStack: LockInfo[] = [];
+  
+  // 是否已初始化
+  private initialized = false;
+  
+  // 原生事件句柄
+  private showHandle: any = null;
+  private hideHandle: any = null;
+  
+  private constructor() {}
+  
+  static getInstance(): KeyboardManager {
+    if (!KeyboardManager.instance) {
+      KeyboardManager.instance = new KeyboardManager();
+    }
+    return KeyboardManager.instance;
+  }
+  
   /**
-   * 隐藏键盘的工具函数 - 类似 rikkahub 的 keyboardController?.hide()
-   * 
-   * 使用场景：
-   * - 发送消息后自动隐藏键盘
-   * - 点击外部区域隐藏键盘
-   * 
-   * 示例：
-   * ```typescript
-   * const handleSubmit = () => {
-   *   hideKeyboard(); // 先隐藏键盘
-   *   onSend(message); // 再发送消息
-   * };
-   * ```
+   * 初始化键盘监听（只执行一次）
    */
-  const hideKeyboard = () => {
-    if (isNative) {
-      // 使用 EdgeToEdge 的原生 hide() 方法
+  async init(): Promise<void> {
+    if (this.initialized || !Capacitor.isNativePlatform()) return;
+    
+    this.initialized = true;
+    
+    try {
+      this.showHandle = await EdgeToEdge.addListener('keyboardWillShow', (info: any) => {
+        this.updateState({
+          isVisible: true,
+          height: info.keyboardHeight || 0
+        });
+      });
+      
+      this.hideHandle = await EdgeToEdge.addListener('keyboardWillHide', () => {
+        this.updateState({
+          isVisible: false,
+          height: 0
+        });
+      });
+    } catch (error) {
+      console.error('[KeyboardManager] 初始化失败:', error);
+    }
+  }
+  
+  /**
+   * 更新状态并通知所有监听器
+   */
+  private updateState(newState: KeyboardState): void {
+    this.state = newState;
+    this.listeners.forEach(listener => listener(this.state));
+  }
+  
+  /**
+   * 获取当前状态
+   */
+  getState(): KeyboardState {
+    return this.state;
+  }
+  
+  /**
+   * 添加监听器
+   */
+  subscribe(listener: KeyboardListener): () => void {
+    this.listeners.add(listener);
+    // 立即通知当前状态
+    listener(this.state);
+    
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  
+  /**
+   * 锁定键盘（模态框使用）
+   * @returns 锁定 ID，用于解锁
+   */
+  lock(): string {
+    const id = `lock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.lockStack.push({ id, timestamp: Date.now() });
+    return id;
+  }
+  
+  /**
+   * 解锁键盘
+   * @param lockId 锁定时返回的 ID
+   */
+  unlock(lockId: string): void {
+    const index = this.lockStack.findIndex(lock => lock.id === lockId);
+    if (index !== -1) {
+      this.lockStack.splice(index, 1);
+    }
+  }
+  
+  /**
+   * 检查是否被锁定
+   */
+  isLocked(): boolean {
+    return this.lockStack.length > 0;
+  }
+  
+  /**
+   * 检查指定 ID 是否持有锁（是否是当前锁的持有者）
+   */
+  isLockOwner(lockId: string | null): boolean {
+    if (!lockId || this.lockStack.length === 0) return false;
+    // 栈顶的锁是当前持有者
+    return this.lockStack[this.lockStack.length - 1].id === lockId;
+  }
+  
+  /**
+   * 隐藏键盘
+   */
+  hide(): void {
+    if (Capacitor.isNativePlatform()) {
       EdgeToEdge.hide();
     }
-  };
+  }
+  
+  /**
+   * 销毁（通常不需要调用）
+   */
+  destroy(): void {
+    this.showHandle?.remove();
+    this.hideHandle?.remove();
+    this.listeners.clear();
+    this.lockStack = [];
+    this.initialized = false;
+  }
+}
 
+// ============================================================================
+// useKeyboard Hook
+// ============================================================================
+
+export interface UseKeyboardOptions {
+  /**
+   * 是否锁定键盘（模态框使用）
+   * 锁定后，其他未锁定的组件 keyboardHeight 会返回 0
+   */
+  lock?: boolean;
+  
+  /**
+   * 是否忽略锁定状态（始终获取真实键盘高度）
+   * 用于需要知道真实键盘状态但不需要响应的场景
+   */
+  ignoreLock?: boolean;
+}
+
+export interface UseKeyboardResult {
+  /** 键盘是否可见 */
+  isKeyboardVisible: boolean;
+  
+  /** 键盘高度（受锁定影响，可能为 0） */
+  keyboardHeight: number;
+  
+  /** 原始键盘高度（不受锁定影响） */
+  rawKeyboardHeight: number;
+  
+  /** 隐藏键盘 */
+  hideKeyboard: () => void;
+  
+  /** 当前组件是否持有锁 */
+  isLockOwner: boolean;
+}
+
+/**
+ * 键盘管理 Hook
+ * 
+ * @example
+ * // 普通使用（尊重锁定）
+ * const { keyboardHeight } = useKeyboard();
+ * 
+ * @example
+ * // 模态框使用（锁定键盘）
+ * const { keyboardHeight } = useKeyboard({ lock: true });
+ * 
+ * @example
+ * // 获取原始高度（忽略锁定）
+ * const { rawKeyboardHeight } = useKeyboard({ ignoreLock: true });
+ */
+export const useKeyboard = (options: UseKeyboardOptions = {}): UseKeyboardResult => {
+  const { lock = false, ignoreLock = false } = options;
+  
+  const [state, setState] = useState<KeyboardState>({ isVisible: false, height: 0 });
+  const lockIdRef = useRef<string | null>(null);
+  const managerRef = useRef<KeyboardManager | null>(null);
+  
+  // 初始化管理器
+  useEffect(() => {
+    const manager = KeyboardManager.getInstance();
+    managerRef.current = manager;
+    manager.init();
+    
+    // 订阅状态变化
+    const unsubscribe = manager.subscribe((newState) => {
+      setState(newState);
+    });
+    
+    return unsubscribe;
+  }, []);
+  
+  // 处理锁定
+  useEffect(() => {
+    const manager = managerRef.current;
+    if (!manager) return;
+    
+    if (lock) {
+      // 获取锁
+      lockIdRef.current = manager.lock();
+    }
+    
+    return () => {
+      // 释放锁
+      if (lockIdRef.current) {
+        manager?.unlock(lockIdRef.current);
+        lockIdRef.current = null;
+      }
+    };
+  }, [lock]);
+  
+  // 隐藏键盘
+  const hideKeyboard = useCallback(() => {
+    managerRef.current?.hide();
+  }, []);
+  
+  // 计算是否是锁持有者
+  const isLockOwner = managerRef.current?.isLockOwner(lockIdRef.current) ?? false;
+  
+  // 计算有效键盘高度
+  const manager = managerRef.current;
+  const isLocked = manager?.isLocked() ?? false;
+  
+  let effectiveHeight = state.height;
+  
+  if (isLocked && !ignoreLock) {
+    // 键盘被锁定
+    if (lock && isLockOwner) {
+      // 当前组件持有锁，返回真实高度
+      effectiveHeight = state.height;
+    } else {
+      // 当前组件没有锁，返回 0
+      effectiveHeight = 0;
+    }
+  }
+  
   return {
-    isKeyboardVisible,
-    keyboardHeight,  // 类似 imePadding 的高度值
+    isKeyboardVisible: state.isVisible,
+    keyboardHeight: effectiveHeight,
+    rawKeyboardHeight: state.height,
     hideKeyboard,
+    isLockOwner,
   };
 };

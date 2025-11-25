@@ -4,6 +4,7 @@ import { DB_CONFIG } from '../types/DatabaseSchema';
 import { dexieStorage } from './storage/DexieStorageService';
 import { EventEmitter, EVENT_NAMES } from './EventService';
 import Dexie from 'dexie';
+import { getStorageItem } from '../utils/storage';
 
 // 导出所有服务
 export {
@@ -206,7 +207,6 @@ export async function initializeServices(): Promise<void> {
     // 初始化TTS服务配置 (使用 V2 新架构)
     try {
       const { TTSManager } = await import('./tts-v2');
-      const { getStorageItem } = await import('../utils/storage');
       
       const tts = TTSManager.getInstance();
       

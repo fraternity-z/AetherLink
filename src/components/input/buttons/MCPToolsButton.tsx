@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   List,
   ListItem,
   ListItemText,
@@ -21,6 +21,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
+import BackButtonDialog from '../../common/BackButtonDialog';
 // Lucide Icons - 按需导入，高端简约设计
 import { Wrench, Database, Globe, Plus, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -359,7 +360,7 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
     <>
       {renderButton()}
 
-      <Dialog
+      <BackButtonDialog
         open={open}
         onClose={handleClose}
         maxWidth="sm"
@@ -537,7 +538,10 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
             </>
           )}
         </DialogContent>
-      </Dialog>
+      <DialogActions>
+        <Button onClick={handleClose}>关闭</Button>
+      </DialogActions>
+      </BackButtonDialog>
     </>
   );
 };

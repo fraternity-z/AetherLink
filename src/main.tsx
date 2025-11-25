@@ -6,8 +6,8 @@ import App from './App';
 import './index.css';
 import { initStorageService, dexieStorage } from './shared/services/storage/storageService';
 import { initializeServices } from './shared/services';
-// 🚀 性能优化：延迟 i18n 初始化，避免阻塞首屏渲染
-// import './i18n/config';
+// 🚀 性能优化：i18n 初始化改为静态导入，避免动态导入冲突
+import './i18n/config';
 // 移除旧的系统提示词slice引用
 // import { loadSystemPrompts } from './shared/store/slices/systemPromptsSlice';
 
@@ -152,16 +152,7 @@ async function initializeInBackground() {
       setTimeout(deferredInit, 100);
     }
 
-    // 🚀 性能优化：延迟加载 i18n 配置
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => {
-        import('./i18n/config').then(() => console.log('[App] i18n 配置已加载'));
-      }, { timeout: 3000 });
-    } else {
-      setTimeout(() => {
-        import('./i18n/config').then(() => console.log('[App] i18n 配置已加载'));
-      }, 200);
-    }
+    // 🚀 性能优化：i18n 配置已改为静态导入，无需延迟加载
 
   } catch (error) {
     console.error('[ERROR] 关键初始化失败:', error);

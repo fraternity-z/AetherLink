@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { advancedFileManagerService } from '../shared/services/AdvancedFileManagerService';
 import { toastManager } from './EnhancedToast';
+import { Capacitor } from '@capacitor/core';
 
 interface PermissionStatus {
   granted: boolean;
@@ -93,7 +94,6 @@ export const FilePermissionManager: React.FC = () => {
   const openSystemSettings = async () => {
     try {
       // 尝试打开应用设置页面
-      const { Capacitor } = await import('@capacitor/core');
       if (Capacitor.isNativePlatform()) {
         // 在原生平台上，可以尝试打开应用设置
         const { Browser } = await import('@capacitor/browser');

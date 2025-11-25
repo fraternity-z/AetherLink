@@ -16,6 +16,8 @@ import { UserMessageStatus, AssistantMessageStatus } from '../../shared/types/ne
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { clearGetMainTextContentCache } from '../../shared/utils/messageUtils';
 import styled from '@emotion/styled';
+import { Z_INDEX } from '../../shared/constants/zIndex';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 // 开发环境日志工具 - 只保留错误日志
 const isDev = process.env.NODE_ENV === 'development';
 const devError = isDev ? console.error : () => {};
@@ -80,6 +82,10 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
   const dispatch = useDispatch();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // 键盘适配 - 锁定键盘，其他组件不响应键盘事件
+  // 只有在编辑框打开时才锁定键盘，关闭时释放锁
+  const { keyboardHeight, isKeyboardVisible } = useKeyboard({ lock: open });
 
   // 🚀 简化：只在保存时需要查找主文本块，移除不必要的selector
 
@@ -366,15 +372,33 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
       anchor="bottom"
       open={open}
       onClose={handleClose}
+      className="message-editor-drawer"
+      slotProps={{
+        backdrop: {
+          sx: {
+            zIndex: Z_INDEX.MODAL.BACKDROP
+          }
+        }
+      }}
+      sx={{
+        zIndex: Z_INDEX.MODAL.DIALOG
+      }}
       PaperProps={{
         sx: {
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
+          // 键盘弹出时保持固定高度，不随键盘减小
           maxHeight: '70vh',
           bgcolor: 'background.paper',
-          pb: 'var(--safe-area-bottom-computed, 0px)'
+          pb: 'var(--safe-area-bottom-computed, 0px)',
+          zIndex: Z_INDEX.MODAL.DIALOG,
+          // 键盘弹出时，使用 bottom 定位让整个编辑框上移到键盘上方
+          bottom: isKeyboardVisible ? `${keyboardHeight}px` : 0,
+          // 添加过渡动画让布局变化更平滑
+          transition: 'bottom 0.25s ease-out'
         }
       }}
+      disableScrollLock={false}
     >
       <EditorContainer theme={theme}>
         {/* 拖拽指示器 */}

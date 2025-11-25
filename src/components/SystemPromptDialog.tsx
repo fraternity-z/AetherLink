@@ -12,7 +12,8 @@ import {
   useTheme,
   ToggleButton,
   ToggleButtonGroup,
-  Divider
+  Divider,
+  useMediaQuery
 } from '@mui/material';
 import BackButtonDialog from './common/BackButtonDialog';
 import { X as CloseIcon, User, MessageSquare } from 'lucide-react';
@@ -22,6 +23,7 @@ import { updateTopic } from '../shared/store/slices/assistantsSlice';
 import { useAppDispatch } from '../shared/store';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import { useDialogBackHandler } from '../hooks/useDialogBackHandler';
+import { useKeyboard } from '../shared/hooks/useKeyboard';
 
 interface SystemPromptDialogProps {
   open: boolean;
@@ -46,6 +48,11 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
 }) => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // 键盘适配 - 在移动端锁定键盘，避免其他组件响应
+  useKeyboard({ lock: isMobile && open });
+  
   const [prompt, setPrompt] = useState('');
   const [saving, setSaving] = useState(false);
   const [tokensCount, setTokensCount] = useState(0);
@@ -302,14 +309,24 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
   <BackButtonDialog
     open={open}
     onClose={handleClose}
-    maxWidth="md"
-    fullWidth
+    maxWidth={isMobile ? false : "md"}
+    fullWidth={isMobile ? true : false}
+    fullScreen={isMobile}
     PaperProps={{
       sx: {
-        borderRadius: 2,
+        borderRadius: isMobile ? 0 : 2,
         bgcolor: theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(10px)',
         border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+        // 移动端全屏适配
+        ...(isMobile && {
+          margin: 0,
+          maxHeight: '100vh',
+          height: '100vh',
+          // 全屏模式下不随键盘上移，键盘覆盖在内容上方
+          // 底部安全区域适配
+          paddingBottom: 'var(--safe-area-bottom-computed, 0px)'
+        })
       }
     }}
   >
@@ -318,9 +335,16 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
       justifyContent: 'space-between',
       alignItems: 'center',
       borderBottom: `1px solid ${theme.palette.divider}`,
-      pb: 1
+      pb: 1,
+      // 移动端适配顶部安全区域
+      ...(isMobile && {
+        paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
+        minHeight: '64px'
+      })
     }}>
-      系统提示词设置
+      <Typography variant={isMobile ? "h6" : "subtitle1"}>
+        系统提示词设置
+      </Typography>
       <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
         <CloseIcon />
       </IconButton>
@@ -329,10 +353,18 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
     <DialogContent sx={{
       pt: 2,
       pb: 0,
-      minHeight: '500px',
-      height: '70vh',
+      minHeight: isMobile ? 'auto' : '500px',
+      height: isMobile ? 'calc(100dvh - 140px)' : '70vh',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      // 移动端内容区域适配
+      ...(isMobile && {
+        px: 2,
+        // 使用 100dvh 而不是 100vh，避免键盘弹出时高度变化
+        height: 'calc(100dvh - 140px)',
+        // 移除动态高度调整，保持布局稳定
+        overflow: 'auto'
+      })
     }}>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -355,15 +387,16 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           value={editMode}
           exclusive
           onChange={(_, newMode) => newMode && handleEditModeChange(newMode)}
-          size="small"
+          size={isMobile ? "medium" : "small"}
           sx={{
             mb: 1,
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
             '& .MuiToggleButton-root': {
-              fontSize: '12px',
+              fontSize: isMobile ? '14px' : '12px',
               fontWeight: 600,
-              px: 1.5,
-              py: 0.5,
-              minHeight: '32px',
+              px: isMobile ? 2 : 1.5,
+              py: isMobile ? 1 : 0.5,
+              minHeight: isMobile ? '40px' : '32px',
               '&.Mui-selected': {
                 fontWeight: 700,
               }
@@ -371,15 +404,15 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           }}
         >
           <ToggleButton value="combined">
-            <MessageSquare size={14} style={{ marginRight: 3 }} />
+            <MessageSquare size={isMobile ? 16 : 14} style={{ marginRight: 4 }} />
             组合预览
           </ToggleButton>
           <ToggleButton value="assistant" disabled={!assistant}>
-            <User size={14} style={{ marginRight: 3 }} />
+            <User size={isMobile ? 16 : 14} style={{ marginRight: 4 }} />
             助手提示词
           </ToggleButton>
           <ToggleButton value="topic">
-            <MessageSquare size={14} style={{ marginRight: 3 }} />
+            <MessageSquare size={isMobile ? 16 : 14} style={{ marginRight: 4 }} />
             话题提示词
           </ToggleButton>
         </ToggleButtonGroup>
@@ -388,7 +421,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           variant="caption"
           color="text.secondary"
           sx={{
-            fontSize: '11px',
+            fontSize: isMobile ? '12px' : '11px',
             fontWeight: 500,
             color: theme.palette.text.secondary
           }}
@@ -400,7 +433,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
       <Divider sx={{ mb: 2 }} />
 
       <TextField
-        autoFocus
+        autoFocus={!isMobile}
         multiline
         fullWidth
         variant="outlined"
@@ -408,18 +441,20 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
         value={prompt}
         onChange={handlePromptChange}
         disabled={editMode === 'combined'}
-        rows={16}
+        rows={isMobile ? 20 : 16}
         sx={{
           mb: 0,
           flex: 1,
           '& .MuiInputBase-root': {
-            fontSize: '14px',
+            fontSize: isMobile ? '16px' : '14px', // 移动端使用16px防止缩放
             lineHeight: 1.5,
             height: '100%',
           },
           '& .MuiInputBase-inputMultiline': {
             height: '100% !important',
             overflow: 'auto !important',
+            // 移动端防止缩放
+            fontSize: isMobile ? '16px' : '14px',
           }
         }}
       />
@@ -443,11 +478,23 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{
-        padding: '8px 24px 16px 24px',
+        padding: isMobile ? '16px 24px calc(16px + var(--safe-area-bottom-computed, 0px))' : '8px 24px 16px 24px',
         borderTop: `1px solid ${theme.palette.divider}`,
-        mt: 0
+        mt: 0,
+        // 移动端按钮区域适配
+        ...(isMobile && {
+          minHeight: '72px'
+        })
       }}>
-        <Button onClick={onClose} color="inherit">
+        <Button 
+          onClick={onClose} 
+          color="inherit"
+          size={isMobile ? "large" : "medium"}
+          sx={{ 
+            fontSize: isMobile ? '16px' : '14px',
+            px: isMobile ? 3 : 2
+          }}
+        >
           取消
         </Button>
         <Button
@@ -455,6 +502,11 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           variant="contained"
           color="primary"
           disabled={saving || editMode === 'combined'}
+          size={isMobile ? "large" : "medium"}
+          sx={{ 
+            fontSize: isMobile ? '16px' : '14px',
+            px: isMobile ? 3 : 2
+          }}
         >
           {saving ? '保存中...' : `保存到${getSaveTarget()}`}
         </Button>

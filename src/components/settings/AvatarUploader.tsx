@@ -1,15 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Slider,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Slider
 } from '@mui/material';
 import BackButtonDialog from '../common/BackButtonDialog';
 import { CloudUpload as CloudUploadIcon, Camera as PhotoCameraIcon } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import type { Area, Point } from 'react-easy-crop';
+import { getCroppedImg } from './cropImage.ts';
 
 interface AvatarUploaderProps {
   open: boolean;
@@ -26,11 +31,14 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
   currentAvatar,
   title = '上传头像'
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [image, setImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   // 当对话框打开时，检查是否有当前头像
   useEffect(() => {
@@ -43,7 +51,9 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
   useEffect(() => {
     if (!open) {
       setImage(null);
+      setCrop({ x: 0, y: 0 });
       setZoom(1);
+      setCroppedAreaPixels(null);
     }
   }, [open]);
 
@@ -59,61 +69,75 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
     }
   };
 
-  const handleZoomChange = (_event: Event, newValue: number | number[]) => {
-    setZoom(newValue as number);
-  };
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
 
-  const handleSave = () => {
-    if (!image || !canvasRef.current) return;
+  const handleSave = async () => {
+    if (!image || !croppedAreaPixels) return;
 
-    // 创建临时图像
-    const tempImage = new Image();
-    tempImage.onload = () => {
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
-
-      // 设置画布大小
-      canvas.width = 200;
-      canvas.height = 200;
-
-      // 清除画布
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // 计算缩放后的尺寸
-      const size = Math.min(tempImage.width, tempImage.height);
-      const sx = (tempImage.width - size) / 2;
-      const sy = (tempImage.height - size) / 2;
-
-      // 绘制裁剪后的图像
-      ctx.drawImage(
-        tempImage,
-        sx, sy, size, size,
-        0, 0, canvas.width, canvas.height
+    setIsSaving(true);
+    try {
+      const croppedImage = await getCroppedImg(
+        image,
+        croppedAreaPixels,
+        0 // 输出为圆形
       );
-
-      // 转换为 data URL
-      const dataUrl = canvas.toDataURL('image/png');
-      onSave(dataUrl);
+      onSave(croppedImage);
       onClose();
-    };
-
-    tempImage.src = image;
+    } catch (error) {
+      console.error('Error cropping image:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSelectFile = () => {
     fileInputRef.current?.click();
   };
 
+  const handleZoomChange = (zoom: number) => {
+    setZoom(zoom);
+  };
+
   return (
-    <BackButtonDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <BackButtonDialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth={isMobile ? false : "sm"}
+      fullWidth={isMobile ? true : false}
+      fullScreen={isMobile}
+      slotProps={{
+        paper: {
+          sx: {
+            // 移动端全屏适配
+            ...(isMobile && {
+              margin: 0,
+              maxHeight: '100vh',
+              height: '100vh',
+              borderRadius: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              // 顶部安全区域适配
+              paddingTop: 'calc(16px + var(--safe-area-top, 0px))'
+            })
+          }
+        }
+      }}
+    >
       <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ 
+        p: isMobile ? 2 : 3,
+        minHeight: isMobile ? '400px' : 'auto',
+        flex: 1,
+        overflow: 'auto'
+      }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           {!image ? (
             <Box
               sx={{
-                width: 200,
-                height: 200,
+                width: isMobile ? 250 : 200,
+                height: isMobile ? 250 : 200,
                 border: '2px dashed #ccc',
                 borderRadius: '50%',
                 display: 'flex',
@@ -125,33 +149,51 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
               onClick={handleSelectFile}
             >
               <Box sx={{ textAlign: 'center' }}>
-                <PhotoCameraIcon size={48} color="var(--mui-palette-text-secondary)" />
-                <Typography variant="body2" color="text.secondary">
+                <PhotoCameraIcon size={isMobile ? 64 : 48} color="var(--mui-palette-text-secondary)" />
+                <Typography variant={isMobile ? "h6" : "body2"} color="text.secondary">
                   点击上传图片
                 </Typography>
               </Box>
             </Box>
           ) : (
             <>
-              <Box sx={{ position: 'relative', width: 200, height: 200, overflow: 'hidden', borderRadius: '50%' }}>
-                <img
-                  ref={imageRef}
-                  src={image}
-                  alt="Avatar preview"
+              <Box 
+                sx={{ 
+                  position: 'relative', 
+                  width: isMobile ? 300 : 280, 
+                  height: isMobile ? 300 : 280,
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  backgroundColor: '#000'
+                }}
+              >
+                <Cropper
+                  image={image}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                  cropShape="round"
+                  showGrid={false}
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'center'
-                  }}
+                    containerStyle: {
+                      width: '100%',
+                      height: '100%',
+                    },
+                    cropAreaStyle: {
+                      width: isMobile ? 250 : 200,
+                      height: isMobile ? 250 : 200,
+                    },
+                                      }}
                 />
               </Box>
               <Box sx={{ width: '100%', mt: 2 }}>
                 <Typography gutterBottom>缩放</Typography>
                 <Slider
                   value={zoom}
-                  onChange={handleZoomChange}
+                  onChange={(_e, value) => handleZoomChange(value as number)}
                   min={1}
                   max={3}
                   step={0.1}
@@ -162,6 +204,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
                 variant="outlined"
                 startIcon={<CloudUploadIcon />}
                 onClick={handleSelectFile}
+                size={isMobile ? "large" : "medium"}
                 sx={{ mt: 1 }}
               >
                 更换图片
@@ -176,20 +219,24 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
             accept="image/*"
             onChange={handleFileChange}
           />
-
-          {/* 隐藏的画布用于处理图像 */}
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>取消</Button>
+      <DialogActions sx={{
+        // 移动端底部安全区域适配
+        ...(isMobile && {
+          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))',
+          px: 2
+        })
+      }}>
+        <Button onClick={onClose} size={isMobile ? "large" : "medium"}>取消</Button>
         <Button
           onClick={handleSave}
           color="primary"
           variant="contained"
-          disabled={!image}
+          disabled={!image || isSaving}
+          size={isMobile ? "large" : "medium"}
         >
-          保存
+          {isSaving ? '保存中...' : '保存'}
         </Button>
       </DialogActions>
     </BackButtonDialog>

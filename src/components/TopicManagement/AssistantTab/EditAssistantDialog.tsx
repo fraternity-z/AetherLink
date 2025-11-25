@@ -12,10 +12,12 @@ import {
   Tabs,
   Tab,
   useTheme,
+  useMediaQuery,
   type Theme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
 import { ChevronLeft, User, Sparkles } from 'lucide-react';
+import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 
 // 样式常量
 const styles = {
@@ -139,6 +141,11 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   onPromptSelectorClick
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // 键盘适配 - 在移动端锁定键盘，避免其他组件响应
+  useKeyboard({ lock: isMobile && open });
+  
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -149,11 +156,23 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
     <BackButtonDialog 
       open={open} 
       onClose={onClose} 
-      maxWidth="md" 
-      fullWidth
+      maxWidth={isMobile ? false : "md"}
+      fullWidth={isMobile ? true : false}
+      fullScreen={isMobile}
       slotProps={{
         paper: {
-          sx: styles.dialogPaper(theme)
+          sx: {
+            ...styles.dialogPaper(theme),
+            // 移动端全屏适配
+            ...(isMobile && {
+              margin: 0,
+              maxHeight: '100vh',
+              height: '100vh',
+              borderRadius: 0,
+              display: 'flex',
+              flexDirection: 'column'
+            })
+          }
         },
         backdrop: {
           sx: styles.dialogBackdrop
@@ -168,6 +187,11 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         borderBottom: (theme) => 
           `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
         backgroundColor: 'transparent',
+        // 移动端适配顶部安全区域
+        ...(isMobile && {
+          paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
+          minHeight: '64px'
+        })
       }}>
         <IconButton 
           onClick={onClose}
@@ -182,11 +206,12 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             }
           }}
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={isMobile ? 28 : 24} />
         </IconButton>
-        <Typography variant="h6" sx={{ 
+        <Typography variant={isMobile ? "h6" : "subtitle1"} sx={{ 
           color: (theme) => theme.palette.text.primary, 
-          fontWeight: 600 
+          fontWeight: 600,
+          fontSize: isMobile ? '1.25rem' : '1.125rem'
         }}>
           编辑助手
         </Typography>
@@ -197,17 +222,21 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        py: 2,
+        py: isMobile ? 2 : 2, // 减少移动端间距
         backgroundColor: 'transparent'
       }}>
-        <Box sx={styles.avatarContainer(theme)}>
+        <Box sx={{
+          ...styles.avatarContainer(theme),
+          width: isMobile ? 80 : 80, // 减小移动端容器尺寸
+          height: isMobile ? 80 : 80
+        }}>
           <Avatar
             src={assistantAvatar}
             sx={{
-              width: 70,
-              height: 70,
+              width: isMobile ? 60 : 70, // 减小移动端头像尺寸
+              height: isMobile ? 60 : 70,
               bgcolor: assistantAvatar ? 'transparent' : 'primary.main',
-              fontSize: '1.5rem',
+              fontSize: isMobile ? '1.5rem' : '1.5rem', // 调整字体大小
               color: (theme) => theme.palette.primary.contrastText,
               boxShadow: (theme) =>
                 theme.palette.mode === 'dark'
@@ -229,8 +258,8 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               position: 'absolute',
               bottom: 2,
               right: 2,
-              width: 24,
-              height: 24,
+              width: isMobile ? 44 : 24, // 移动端使用 44px 触摸目标
+              height: isMobile ? 44 : 24,
               borderRadius: '50%',
               background: (theme) =>
                 `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
@@ -250,7 +279,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               transition: 'all 0.2s ease-in-out'
             }}
           >
-            <User size={14} color="white" />
+            <User size={isMobile ? 20 : 14} color="white" />
           </IconButton>
         </Box>
       </Box>
@@ -260,7 +289,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         display: 'flex',
         justifyContent: 'center',
         backgroundColor: 'transparent',
-        px: 2,
+        px: isMobile ? 2 : 2,
         pb: 1
       }}>
         <Tabs
@@ -268,15 +297,15 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
           onChange={handleTabChange}
           variant="standard"
           sx={{
-            minHeight: 36,
+            minHeight: isMobile ? 40 : 36, // 减小移动端高度
             '& .MuiTab-root': {
               color: (theme) => theme.palette.text.secondary,
-              fontSize: '0.875rem',
+              fontSize: isMobile ? '0.9rem' : '0.875rem', // 稍微减小字体
               fontWeight: 500,
               textTransform: 'none',
-              minWidth: 80,
-              minHeight: 36,
-              py: 1,
+              minWidth: isMobile ? 80 : 80,
+              minHeight: isMobile ? 40 : 36, // 减小移动端高度
+              py: isMobile ? 1 : 1,
               '&.Mui-selected': {
                 color: (theme) => theme.palette.primary.main
               }
@@ -299,7 +328,13 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         p: 2,
         pt: 1,
         color: (theme) => theme.palette.text.primary,
-        overflow: 'auto'
+        overflow: 'auto',
+        // 移动端内容区域适配 - 使用 flex: 1 自动填充剩余空间
+        ...(isMobile && {
+          px: 2,
+          flex: 1, // 自动填充可用空间，避免硬编码高度
+          overflow: 'auto'
+        })
       }}>
         {tabValue === 0 && (
           <Box>
@@ -307,7 +342,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             <Typography variant="subtitle2" sx={{
               mb: 0.5,
               color: (theme) => theme.palette.text.secondary,
-              fontSize: '0.875rem'
+              fontSize: isMobile ? '1rem' : '0.875rem'
             }}>
               名称
             </Typography>
@@ -317,10 +352,14 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               value={assistantName}
               onChange={onNameChange}
               placeholder="请输入助手名称，例如：法律咨询助手"
-              size="small"
+              size={isMobile ? "medium" : "small"}
               sx={{
                 mb: 2,
-                ...styles.inputField(theme)
+                ...styles.inputField(theme),
+                '& .MuiInputBase-input': {
+                  color: (theme) => theme.palette.text.primary,
+                  fontSize: isMobile ? '16px' : '0.875rem' // 移动端使用16px防止缩放
+                }
               }}
             />
 
@@ -328,18 +367,18 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             <Typography variant="subtitle2" sx={{
               mb: 0.5,
               color: (theme) => theme.palette.text.secondary,
-              fontSize: '0.875rem'
+              fontSize: isMobile ? '1rem' : '0.875rem'
             }}>
               提示词
             </Typography>
             <Paper sx={{
               ...styles.glassomorphism(theme),
               borderRadius: '8px',
-              p: 1.5
+              p: isMobile ? 1.5 : 1.5 // 减少移动端padding
             }}>
               <TextField
                 multiline
-                rows={10}
+                rows={isMobile ? 8 : 10} // 移动端进一步减少到8行
                 fullWidth
                 variant="standard"
                 value={assistantPrompt}
@@ -351,7 +390,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
                 sx={{
                   '& .MuiInput-root': {
                     color: (theme) => theme.palette.text.primary,
-                    fontSize: '0.875rem',
+                    fontSize: isMobile ? '16px' : '0.875rem', // 移动端使用16px防止缩放
                     '&:before': {
                       display: 'none'
                     },
@@ -361,6 +400,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
                   },
                   '& .MuiInputBase-input': {
                     color: (theme) => theme.palette.text.primary,
+                    fontSize: isMobile ? '16px' : '0.875rem', // 移动端使用16px防止缩放
                     '&::placeholder': {
                       color: (theme) => theme.palette.text.secondary,
                       opacity: 1
@@ -382,10 +422,14 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               }}>
                 <Button
                   variant="outlined"
-                  size="small"
-                  startIcon={<Sparkles size={16} />}
+                  size={isMobile ? "medium" : "small"}
+                  startIcon={<Sparkles size={isMobile ? 20 : 16} />}
                   onClick={onPromptSelectorClick}
-                  sx={styles.primaryButton(theme)}
+                  sx={{
+                    ...styles.primaryButton(theme),
+                    fontSize: isMobile ? '14px' : '12px',
+                    py: isMobile ? 1 : 0.5
+                  }}
                 >
                   选择预设提示词
                 </Button>
@@ -397,15 +441,21 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
 
       {/* 底部操作按钮 - 优化空间占用 */}
       <DialogActions sx={{
-        p: 2,
+        p: isMobile ? 3 : 2,
         backgroundColor: 'transparent',
         borderTop: (theme) =>
           `1px solid ${theme.palette.mode === 'dark'
             ? 'rgba(255, 255, 255, 0.1)'
-            : 'rgba(0, 0, 0, 0.1)'}`
+            : 'rgba(0, 0, 0, 0.1)'}`,
+        // 移动端底部安全区域适配
+        ...(isMobile && {
+          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))',
+          minHeight: '60px' // 减少最小高度
+        })
       }}>
         <Button
           onClick={onClose}
+          size={isMobile ? "large" : "medium"}
           sx={{
             color: (theme) => theme.palette.text.secondary,
             backdropFilter: 'blur(10px)',
@@ -413,6 +463,8 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               theme.palette.mode === 'dark'
                 ? 'rgba(255, 255, 255, 0.05)'
                 : 'rgba(0, 0, 0, 0.02)',
+            fontSize: isMobile ? '16px' : '14px',
+            px: isMobile ? 3 : 2,
             '&:hover': {
               backgroundColor: (theme) =>
                 theme.palette.mode === 'dark'
@@ -426,10 +478,13 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         <Button
           onClick={onSave}
           variant="contained"
+          size={isMobile ? "large" : "medium"}
           sx={{
             backgroundColor: (theme) => theme.palette.primary.main,
             color: (theme) => theme.palette.primary.contrastText,
             backdropFilter: 'blur(10px)',
+            fontSize: isMobile ? '16px' : '14px',
+            px: isMobile ? 3 : 2,
             '&:hover': {
               backgroundColor: (theme) => theme.palette.primary.dark
             }

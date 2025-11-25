@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 
 interface HtmlArtifactsCardProps {
   html: string;
@@ -68,8 +69,6 @@ const HtmlArtifactsCard: React.FC<HtmlArtifactsCardProps> = memo(({
   // 在外部浏览器/应用打开
   const handleOpenExternal = useCallback(async () => {
     try {
-      const { Capacitor } = await import('@capacitor/core');
-      
       if (Capacitor.isNativePlatform()) {
         // 移动端：保存文件后使用 Share 分享
         
@@ -114,8 +113,6 @@ const HtmlArtifactsCard: React.FC<HtmlArtifactsCardProps> = memo(({
     const fileName = `${safeTitle}.html`;
     
     try {
-      const { Capacitor } = await import('@capacitor/core');
-      
       if (Capacitor.isNativePlatform()) {
         // 移动端：保存到 Documents 目录并提示用户
         const { Toast } = await import('@capacitor/toast');

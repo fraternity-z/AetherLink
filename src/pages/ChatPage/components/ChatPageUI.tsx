@@ -185,7 +185,8 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
 
-  // 键盘管理 - 获取键盘高度用于调整输入框位置（模仿 rikkahub 的 imePadding）
+  // 键盘管理 - 获取键盘高度用于调整输入框位置
+  // 使用新的锁定机制：当 MessageEditor 锁定键盘时，这里的 keyboardHeight 会自动返回 0
   const { keyboardHeight } = useKeyboard();
 
   // 稳定化的回调函数，避免重复渲染 - 使用函数式更新

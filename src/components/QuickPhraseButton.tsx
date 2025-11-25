@@ -2,9 +2,6 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   IconButton,
   Tooltip,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   TextField,
   FormControl,
@@ -14,9 +11,12 @@ import {
   Radio,
   Box,
   Typography,
-  Drawer
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import BackButtonDialog from './common/BackButtonDialog';
+import BackButtonDrawer from './common/BackButtonDrawer';
 import { Plus, BotMessageSquare } from 'lucide-react';
 import { CustomIcon } from './icons';
 import { useTheme } from '@mui/material/styles';
@@ -314,8 +314,8 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
         </span>
       </Tooltip>
 
-      {/* 从底部向上弹出的面板 - 使用 Drawer 组件 */}
-      <Drawer
+      {/* 快捷短语选择面板 - 使用 BackButtonDrawer 组件 */}
+      <BackButtonDrawer
         anchor="bottom"
         open={panelOpen}
         onClose={handleClose}
@@ -426,7 +426,7 @@ const QuickPhraseButton: React.FC<QuickPhraseButtonProps> = ({
             </QuickPanelFooter>
           </QuickPanelBody>
         </Box>
-      </Drawer>
+      </BackButtonDrawer>
 
       {/* 添加快捷短语对话框 */}
       <BackButtonDialog
