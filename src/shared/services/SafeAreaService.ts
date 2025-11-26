@@ -1,7 +1,17 @@
 /**
  * 安全区域管理服务 (Rikkahub 风格)
- * 纯 CSS 实现，使用浏览器原生的 env(safe-area-inset-*) 变量
- * 不依赖任何插件 API，完全基于标准 Web API
+ * 
+ * 支持两种模式：
+ * 1. CSS env() 模式 - 浏览器原生支持（iOS Safari、Chrome 等）
+ * 2. JavaScript 注入模式 - Tauri 原生应用（通过 MainActivity.kt / WebViewEdgeToEdge.m 注入）
+ * 
+ * Tauri 移动端注入的 CSS 变量：
+ * - --safe-area-inset-top/right/bottom/left（模拟 env()）
+ * - --safe-area-top/right/bottom/left（兼容现有代码）
+ * - --keyboard-height, --keyboard-visible（键盘状态）
+ * 
+ * 自定义事件：
+ * - safeAreaChanged: 当原生层更新安全区域时触发
  */
 import { Capacitor } from '@capacitor/core';
 
@@ -95,7 +105,7 @@ export class SafeAreaService {
   }
 
   /**
-   * 设置监听器 (监听窗口和方向变化)
+   * 设置监听器 (监听窗口、方向变化和 Tauri 原生注入事件)
    */
   private setupListeners(): void {
     // 监听窗口大小变化
@@ -103,6 +113,10 @@ export class SafeAreaService {
     
     // 监听方向变化
     window.addEventListener('orientationchange', this.handleOrientationChange);
+    
+    // 🆕 监听 Tauri 原生层注入的安全区域事件
+    // 由 MainActivity.kt (Android) 或 WebViewEdgeToEdge.m (iOS) 触发
+    window.addEventListener('safeAreaChanged', this.handleSafeAreaChanged as EventListener);
     
     // 使用 ResizeObserver 监听 body 变化
     if ('ResizeObserver' in window) {
@@ -112,8 +126,29 @@ export class SafeAreaService {
       this.resizeObserver.observe(document.body);
     }
     
-    console.log('[SafeAreaService] 👂 监听器已设置');
+    console.log('[SafeAreaService] 👂 监听器已设置（包含 Tauri 原生事件）');
   }
+  
+  /**
+   * 处理 Tauri 原生层注入的安全区域变化事件
+   */
+  private handleSafeAreaChanged = (event: CustomEvent): void => {
+    const detail = event.detail;
+    if (detail) {
+      console.log('[SafeAreaService] 📱 收到 Tauri 原生安全区域更新:', detail);
+      
+      // 更新缓存的安全区域值
+      this.currentInsets = {
+        top: detail.top || 0,
+        right: detail.right || 0,
+        bottom: detail.bottom || 0,
+        left: detail.left || 0
+      };
+      
+      // 通知所有监听器
+      this.notifyListeners();
+    }
+  };
 
   /**
    * 处理窗口大小变化
@@ -285,6 +320,7 @@ export class SafeAreaService {
   public cleanup(): void {
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('orientationchange', this.handleOrientationChange);
+    window.removeEventListener('safeAreaChanged', this.handleSafeAreaChanged as EventListener);
     
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
