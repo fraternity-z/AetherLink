@@ -14,6 +14,8 @@ export type {
   AzureTTSConfig,
   GeminiTTSConfig,
   SiliconFlowTTSConfig,
+  ElevenLabsTTSConfig,
+  MiniMaxTTSConfig,
   WebSpeechTTSConfig,
   ITTSEngine,
   TTSSynthesisResult,
@@ -29,6 +31,8 @@ export { GeminiEngine } from './engines/GeminiEngine';
 export { AzureEngine } from './engines/AzureEngine';
 export { OpenAIEngine } from './engines/OpenAIEngine';
 export { SiliconFlowEngine } from './engines/SiliconFlowEngine';
+export { ElevenLabsEngine, ELEVENLABS_VOICES, ELEVENLABS_MODELS, ELEVENLABS_OUTPUT_FORMATS } from './engines/ElevenLabsEngine';
+export { MiniMaxEngine, MINIMAX_VOICES, MINIMAX_MODELS, MINIMAX_EMOTIONS, MINIMAX_LANGUAGE_BOOST } from './engines/MiniMaxEngine';
 export { WebSpeechEngine } from './engines/WebSpeechEngine';
 
 // 工具

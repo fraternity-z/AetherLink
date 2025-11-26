@@ -53,7 +53,14 @@ export function getDefaultGroupName(id: string, provider?: string): string {
   for (const delimiter of secondDelimiters) {
     if (str.includes(delimiter)) {
       const parts = str.split(delimiter);
-      return parts.length > 1 ? parts[0] + '-' + parts[1] : parts[0];
+      if (parts.length > 1) {
+        // 检查第二部分是否为纯数字，如果是则只使用第一部分作为分组名
+        if (/^\d+$/.test(parts[1])) {
+          return parts[0];
+        }
+        return parts[0] + '-' + parts[1];
+      }
+      return parts[0];
     }
   }
 

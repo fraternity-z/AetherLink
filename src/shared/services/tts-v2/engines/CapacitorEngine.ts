@@ -20,25 +20,65 @@ export class CapacitorEngine extends BaseTTSEngine {
   };
   
   /**
-   * 预热引擎 - 关键优化
+   * 预热引擎 - 使用惰性初始化策略
+   * Android TTS 存在异步初始化问题，getSupportedLanguages() 可能在服务绑定前调用导致空指针
+   * 参考: https://stackoverflow.com/questions/4141567/how-to-wait-for-texttospeech-initialization-on-android
    */
   protected async doInitialize(): Promise<void> {
+    // 策略：不在初始化时调用 getSupportedLanguages()
+    // 而是在首次 speak() 时让 TTS 服务自然绑定
+    // 这样可以避免 Android 上的空指针异常
+    
     try {
-      // 查询支持的语言触发引擎绑定 (参考 Kelivo 的 _kickEngine)
-      const languages = await TextToSpeech.getSupportedLanguages();
-      console.log('Capacitor TTS 预热完成，支持语言数:', languages.languages?.length || 0);
+      // 仅做简单的可用性检查，不触发可能导致空指针的操作
+      // 实际的 TTS 服务绑定会在首次 speak() 调用时自动完成
+      console.log('Capacitor TTS 引擎已注册，将在首次使用时完成初始化');
       
-      // 尝试获取语音列表
-      try {
-        const voices = await TextToSpeech.getSupportedVoices();
-        console.log('Capacitor TTS 语音数:', voices.voices?.length || 0);
-      } catch {
-        // 某些平台可能不支持
-      }
+      // 可选：尝试预热，但失败不影响功能
+      this.warmupAsync();
     } catch (error) {
-      console.warn('Capacitor TTS 预热失败 (可能不在原生环境):', error);
-      throw error;
+      // 即使检查失败也不抛出错误，让引擎保持可用状态
+      console.warn('Capacitor TTS 预检查失败，将在使用时重试:', error);
     }
+  }
+
+  /**
+   * 异步预热（后台执行，不阻塞初始化）
+   */
+  private async warmupAsync(): Promise<void> {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 毫秒
+
+    // 延迟执行预热，给 TTS 服务更多时间绑定
+    await this.delay(500);
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const languages = await TextToSpeech.getSupportedLanguages();
+        console.log('✅ Capacitor TTS 预热完成，支持语言数:', languages.languages?.length || 0);
+        return;
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        
+        // Android 空指针异常 - 继续重试
+        if (errorMsg.includes('null object reference') && attempt < maxRetries) {
+          console.log(`Capacitor TTS 预热重试 (${attempt}/${maxRetries})...`);
+          await this.delay(retryDelay * attempt);
+          continue;
+        }
+        
+        // 预热失败不影响功能，TTS 会在首次 speak() 时初始化
+        console.log('Capacitor TTS 预热跳过，将在首次使用时初始化');
+        return;
+      }
+    }
+  }
+
+  /**
+   * 延迟辅助函数
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
   
   /**

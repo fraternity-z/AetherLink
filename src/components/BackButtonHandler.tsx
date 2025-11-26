@@ -68,6 +68,8 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/voice/tts/openai': '/settings/voice',
     '/settings/voice/tts/azure': '/settings/voice',
     '/settings/voice/tts/gemini': '/settings/voice',
+    '/settings/voice/tts/elevenlabs': '/settings/voice',
+    '/settings/voice/tts/minimax': '/settings/voice',
     '/settings/voice/asr/capacitor': '/settings/voice',
     '/settings/voice/asr/openai-whisper': '/settings/voice',
     '/settings/add-provider': '/settings/default-model',

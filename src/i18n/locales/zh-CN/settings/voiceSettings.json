@@ -48,6 +48,16 @@
         "name": "Google Gemini TTS",
         "description": "Google 最新的高质量文本转语音服务，支持30种语音和风格控制",
         "features": ["30种预设语音", "风格控制", "多说话人", "24种语言"]
+      },
+      "elevenlabs": {
+        "name": "ElevenLabs TTS",
+        "description": "高质量多语言语音合成，支持语音克隆和情感控制",
+        "features": ["高品质语音", "多语言支持", "情感控制", "语音克隆"]
+      },
+      "minimax": {
+        "name": "MiniMax TTS",
+        "description": "专业中文语音合成服务，支持粤语和情感控制",
+        "features": ["中文优化", "粤语支持", "情感控制", "多种音色"]
       }
     },
     "common": {
@@ -92,6 +102,19 @@
       "enableMultiSpeaker": "启用多说话人模式（最多2人）",
       "speakerName": "说话人 {{number}} 名称",
       "multiSpeakerExample": "多说话人模式下，文本格式示例：\nTTS the following conversation between {{speaker1}} and {{speaker2}}:\n{{speaker1}}: 你好！\n{{speaker2}}: 很高兴见到你！"
+    },
+    "elevenlabs": {
+      "title": "ElevenLabs TTS 设置",
+      "enableDesc": "启用后，将使用 ElevenLabs 进行语音合成，提供高质量多语言语音",
+      "testText": "你好，这是 ElevenLabs 语音合成的测试。",
+      "apiKeyHelper": "从 ElevenLabs 控制台获取 API Key: https://elevenlabs.io"
+    },
+    "minimax": {
+      "title": "MiniMax TTS 设置",
+      "enableDesc": "启用后，将使用 MiniMax 进行语音合成，支持高质量中文和粤语",
+      "testText": "你好，这是 MiniMax 语音合成的测试。",
+      "apiKeyHelper": "从 MiniMax 控制台获取 API Key",
+      "groupIdHelper": "从 MiniMax 控制台获取 Group ID"
     },
     "capacitorTTS": {
       "title": "Capacitor TTS 设置",

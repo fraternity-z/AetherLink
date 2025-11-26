@@ -14,10 +14,13 @@ interface TTSTestSectionProps {
   handleTestTTS: () => Promise<void>;
   isTestPlaying: boolean;
   enableTTS: boolean;
-  selectedTTSService: 'siliconflow' | 'openai' | 'azure' | 'capacitor';
-  openaiApiKey: string;
-  azureApiKey: string;
-  siliconFlowApiKey: string;
+  selectedTTSService: 'siliconflow' | 'openai' | 'azure' | 'capacitor' | 'gemini' | 'elevenlabs' | 'minimax' | 'webspeech';
+  openaiApiKey?: string;
+  azureApiKey?: string;
+  siliconFlowApiKey?: string;
+  geminiApiKey?: string;
+  elevenlabsApiKey?: string;
+  minimaxApiKey?: string;
 }
 
 const TTSTestSection: React.FC<TTSTestSectionProps> = ({

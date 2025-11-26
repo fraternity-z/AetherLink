@@ -48,6 +48,16 @@
         "name": "Google Gemini TTS",
         "description": "Google's latest high-quality text-to-speech service, supporting 30 voices and style control",
         "features": ["30 preset voices", "Style control", "Multi-speaker", "24 languages"]
+      },
+      "elevenlabs": {
+        "name": "ElevenLabs TTS",
+        "description": "High-quality multilingual voice synthesis with voice cloning and emotion control",
+        "features": ["Premium Quality", "Multilingual", "Emotion Control", "Voice Cloning"]
+      },
+      "minimax": {
+        "name": "MiniMax TTS",
+        "description": "Professional Chinese voice synthesis with Cantonese and emotion control support",
+        "features": ["Chinese Optimized", "Cantonese Support", "Emotion Control", "Multiple Voices"]
       }
     },
     "common": {
@@ -92,6 +102,19 @@
       "enableMultiSpeaker": "Enable Multi-Speaker Mode (Max 2 speakers)",
       "speakerName": "Speaker {{number}} Name",
       "multiSpeakerExample": "Multi-speaker mode text format example:\nTTS the following conversation between {{speaker1}} and {{speaker2}}:\n{{speaker1}}: Hello!\n{{speaker2}}: Nice to meet you!"
+    },
+    "elevenlabs": {
+      "title": "ElevenLabs TTS Settings",
+      "enableDesc": "When enabled, ElevenLabs will be used for voice synthesis, providing high-quality multilingual voices",
+      "testText": "Hello, this is a test of ElevenLabs text-to-speech.",
+      "apiKeyHelper": "Get API Key from ElevenLabs console: https://elevenlabs.io"
+    },
+    "minimax": {
+      "title": "MiniMax TTS Settings",
+      "enableDesc": "When enabled, MiniMax will be used for voice synthesis, supporting high-quality Chinese and Cantonese",
+      "testText": "Hello, this is a test of MiniMax text-to-speech.",
+      "apiKeyHelper": "Get API Key from MiniMax console",
+      "groupIdHelper": "Get Group ID from MiniMax console"
     },
     "capacitorTTS": {
       "title": "Capacitor TTS Settings",

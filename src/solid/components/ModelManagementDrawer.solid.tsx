@@ -57,7 +57,7 @@ function BrandAvatar(props: { name: string; size?: number }) {
 }
 
 // 触感反馈按钮组件
-function TactileButton(props: { children: any; onClick?: () => void; class?: string }) {
+function TactileButton(props: { children: any; class?: string }) {
   const [pressed, setPressed] = createSignal(false);
 
   return (
@@ -67,7 +67,6 @@ function TactileButton(props: { children: any; onClick?: () => void; class?: str
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       onMouseLeave={() => setPressed(false)}
-      onClick={props.onClick}
     >
       {props.children}
     </div>
@@ -75,7 +74,6 @@ function TactileButton(props: { children: any; onClick?: () => void; class?: str
 }
 
 export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
-  console.log('🚀 [SolidJS] ModelManagementDrawer 已加载');
 
   const [searchTerm, setSearchTerm] = createSignal('');
   const [pendingModels, setPendingModels] = createSignal<Set<string>>(new Set());
@@ -127,29 +125,35 @@ export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
 
   // 处理添加单个模型
   const handleAddModel = (model: Model) => {
-    if (!isModelAdded()(model.id)) {
-      console.log('[handleAddModel] 添加模型:', model.id);
-      setPendingModels(prev => new Set([...prev, model.id]));
-      props.onAddModel(model);
+    const modelId = model.id;
+    if (!isModelAdded()(modelId)) {
+      // 立即更新pending状态，确保UI立即响应
+      setPendingModels(prev => {
+        const newSet = new Set(prev);
+        newSet.add(modelId);
+        return newSet;
+      });
+      // 异步调用父组件回调
+      setTimeout(() => props.onAddModel(model), 0);
     }
   };
 
   // 处理移除单个模型
   const handleRemoveModel = (modelId: string) => {
-    console.log('[handleRemoveModel] 移除模型:', modelId);
+    // 立即更新pending状态，确保UI立即响应
     setPendingModels(prev => {
       const newSet = new Set(prev);
       newSet.delete(modelId);
       return newSet;
     });
-    props.onRemoveModel(modelId);
+    // 异步调用父组件回调
+    setTimeout(() => props.onRemoveModel(modelId), 0);
   };
 
   // 处理添加整组
   const handleAddGroup = (groupName: string) => {
     const modelsInGroup = groupedModels()[groupName] || [];
     const modelsToAdd = modelsInGroup.filter(m => !isModelAdded()(m.id));
-    console.log('[handleAddGroup] 添加整组:', groupName, '模型数:', modelsToAdd.length);
 
     if (modelsToAdd.length > 0) {
       setPendingModels(prev => new Set([...prev, ...modelsToAdd.map(m => m.id)]));
@@ -166,7 +170,6 @@ export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
   const handleRemoveGroup = (groupName: string) => {
     const modelsInGroup = groupedModels()[groupName] || [];
     const modelsToRemove = modelsInGroup.filter(m => isModelAdded()(m.id));
-    console.log('[handleRemoveGroup] 移除整组:', groupName, '模型数:', modelsToRemove.length);
 
     if (modelsToRemove.length > 0) {
       setPendingModels(prev => {
@@ -185,17 +188,13 @@ export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
 
   // 切换分组展开/折叠
   const toggleGroup = (groupName: string) => {
-    console.log('[toggleGroup] 切换分组:', groupName, '当前状态:', expandedGroups().has(groupName));
     setExpandedGroups(prev => {
       const newSet = new Set<string>(prev);
       if (newSet.has(groupName)) {
         newSet.delete(groupName);
-        console.log('[toggleGroup] 折叠分组:', groupName);
       } else {
         newSet.add(groupName);
-        console.log('[toggleGroup] 展开分组:', groupName);
       }
-      console.log('[toggleGroup] 新状态:', Array.from(newSet));
       return newSet;
     });
   };
@@ -282,7 +281,6 @@ export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
                         const isExpanded = () => expandedGroups().has(groupName);
                         const allAdded = () => isGroupFullyAdded()(groupName);
                         
-                        console.log('[Render] 分组:', groupName, '展开状态:', isExpanded(), '模型数:', modelsInGroup.length);
 
                         return (
                           <div class="model-group">
@@ -322,7 +320,6 @@ export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   e.preventDefault();
-                                  console.log(`[批量操作] ${allAdded() ? '移除' : '添加'}整组:`, groupName);
                                   if (allAdded()) {
                                     handleRemoveGroup(groupName);
                                   } else {
@@ -374,7 +371,6 @@ export function ModelManagementDrawer(props: ModelManagementDrawerProps) {
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               e.preventDefault();
-                                              console.log(`[单个操作] ${added() ? '移除' : '添加'}模型:`, model.id);
                                               if (added()) {
                                                 handleRemoveModel(model.id);
                                               } else {

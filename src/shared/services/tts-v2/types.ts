@@ -9,6 +9,8 @@ export type TTSEngineType =
   | 'azure'        // 微软 Azure TTS
   | 'openai'       // OpenAI TTS
   | 'siliconflow'  // 硅基流动 TTS
+  | 'elevenlabs'   // ElevenLabs TTS
+  | 'minimax'      // MiniMax TTS
   | 'webspeech';   // 浏览器 Web Speech API
 
 // 基础配置接口
@@ -67,6 +69,34 @@ export interface SiliconFlowTTSConfig extends TTSBaseConfig {
   useStream: boolean;
 }
 
+// ElevenLabs TTS 配置
+export interface ElevenLabsTTSConfig extends TTSBaseConfig {
+  apiKey: string;
+  baseUrl?: string;          // API 基础 URL，默认 https://api.elevenlabs.io
+  modelId: string;           // 模型 ID (eleven_multilingual_v2, eleven_turbo_v2_5 等)
+  voiceId: string;           // 语音 ID
+  outputFormat: string;      // 输出格式 (mp3_44100_128, mp3_22050_32, pcm_16000 等)
+  stability?: number;        // 稳定性 0-1
+  similarityBoost?: number;  // 相似度增强 0-1
+  style?: number;            // 风格 0-1
+  useSpeakerBoost?: boolean; // 使用说话者增强
+  speed?: number;            // 语速 0.5-2.0
+}
+
+// MiniMax TTS 配置
+export interface MiniMaxTTSConfig extends TTSBaseConfig {
+  apiKey: string;
+  groupId: string;           // MiniMax Group ID
+  baseUrl?: string;          // API 基础 URL，默认 https://api.minimaxi.chat
+  model: string;             // 模型 (speech-02-hd, speech-02 等)
+  voiceId: string;           // 语音 ID
+  emotion?: string;          // 情感 (neutral, happy, sad, angry 等)
+  speed?: number;            // 语速 0.5-2.0
+  pitch?: number;            // 音调 -12 到 12
+  languageBoost?: string;    // 语言增强 (Chinese, Yue, English 等)
+  useStream?: boolean;       // 是否使用流式传输
+}
+
 // Web Speech API 配置
 export interface WebSpeechTTSConfig extends TTSBaseConfig {
   voice?: string;
@@ -82,6 +112,8 @@ export type TTSEngineConfig =
   | { type: 'azure'; config: AzureTTSConfig }
   | { type: 'gemini'; config: GeminiTTSConfig }
   | { type: 'siliconflow'; config: SiliconFlowTTSConfig }
+  | { type: 'elevenlabs'; config: ElevenLabsTTSConfig }
+  | { type: 'minimax'; config: MiniMaxTTSConfig }
   | { type: 'webspeech'; config: WebSpeechTTSConfig };
 
 // TTS 引擎接口

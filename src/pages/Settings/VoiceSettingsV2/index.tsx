@@ -76,6 +76,26 @@ const getTTSServices = (t: any) => [
     features: t('settings.voice.services.gemini.features', { returnObjects: true }),
     status: 'premium',
     path: '/settings/voice/tts/gemini'
+  },
+  {
+    id: 'elevenlabs',
+    name: t('settings.voice.services.elevenlabs.name'),
+    description: t('settings.voice.services.elevenlabs.description'),
+    icon: '🎙️',
+    color: '#00C7B7',
+    features: t('settings.voice.services.elevenlabs.features', { returnObjects: true }),
+    status: 'premium',
+    path: '/settings/voice/tts/elevenlabs'
+  },
+  {
+    id: 'minimax',
+    name: t('settings.voice.services.minimax.name'),
+    description: t('settings.voice.services.minimax.description'),
+    icon: '🐉',
+    color: '#FF6B35',
+    features: t('settings.voice.services.minimax.features', { returnObjects: true }),
+    status: 'premium',
+    path: '/settings/voice/tts/minimax'
   }
 ];
 
