@@ -376,17 +376,63 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       // 移动端使用Capacitor Filesystem
       if (Capacitor.isNativePlatform()) {
         try {
-          await Filesystem.writeFile({
-            path: `Download/${fileName}`,
-            data: textContent,
-            directory: Directory.External,
-            encoding: Encoding.UTF8
-          });
-          alert('消息内容已保存到下载目录');
+          // 使用现有的AdvancedFileManagerService检查并请求权限
+          const { advancedFileManagerService } = await import('../../shared/services/AdvancedFileManagerService');
+          
+          const permissionResult = await advancedFileManagerService.checkPermissions();
+          if (!permissionResult.granted) {
+            const requestResult = await advancedFileManagerService.requestPermissions();
+            if (!requestResult.granted) {
+              throw new Error('需要存储权限才能保存文件：' + requestResult.message);
+            }
+          }
+
+          // 优先尝试保存到Download目录（用户可访问）
+          try {
+            await Filesystem.writeFile({
+              path: `Download/${fileName}`,
+              data: textContent,
+              directory: Directory.External,
+              encoding: Encoding.UTF8
+            });
+            alert(`消息内容已保存到下载目录\n文件名: ${fileName}\n位置: 手机存储/Download/\n可在文件管理器的"下载"文件夹中找到`);
+          } catch (externalError) {
+            console.warn('保存到外部存储失败，尝试保存到应用目录:', externalError);
+            
+            // 如果外部存储失败，保存到Documents目录作为备选
+            try {
+              await Filesystem.writeFile({
+                path: fileName,
+                data: textContent,
+                directory: Directory.Documents,
+                encoding: Encoding.UTF8
+              });
+              alert(`消息内容已保存到应用目录\n文件名: ${fileName}\n位置: 应用内部存储\n(需要通过应用分享功能访问)`);
+            } catch (internalError) {
+              const errorMessage = internalError instanceof Error ? internalError.message : String(internalError);
+              throw new Error('无法保存到任何位置：' + errorMessage);
+            }
+          }
         } catch (capacitorError) {
           console.error('Capacitor保存失败:', capacitorError);
-          // 回退到Web方式
-          throw capacitorError;
+          
+          // 如果权限问题，提供更详细的错误信息
+          if (capacitorError instanceof Error && 
+              (capacitorError.message.includes('permission') || capacitorError.message.includes('权限'))) {
+            alert('保存失败：请授予应用存储权限。您可以在设置中手动开启"存储权限"。');
+          } else {
+            // 回退到Web方式
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert('消息内容已保存（使用浏览器下载）');
+          }
         }
       } else {
         // Web端使用下载链接
@@ -403,7 +449,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       }
     } catch (error) {
       console.error('保存消息内容失败:', error);
-      alert('保存失败');
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`保存失败: ${errorMessage}`);
     }
     handleMenuClose();
   }, [message, handleMenuClose]); // 依赖项已正确

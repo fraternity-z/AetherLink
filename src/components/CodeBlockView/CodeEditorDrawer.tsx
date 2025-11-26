@@ -99,7 +99,8 @@ const CodeEditorDrawer: React.FC<CodeEditorDrawerProps> = ({
   const { editorTheme, editorZoomLevel } = useAppSelector(state => state.settings);
   const dispatch = useAppDispatch();
   
-  // 添加fallback值防止NaN
+  // 添加fallback值防止undefined和NaN
+  const safeEditorTheme = editorTheme || 'oneDark';
   const zoomLevel = editorZoomLevel || 1.0;
   
   // 键盘适配 - 在移动端锁定键盘，避免其他组件响应
@@ -284,10 +285,10 @@ const CodeEditorDrawer: React.FC<CodeEditorDrawerProps> = ({
 
   // 编辑器主题 - 直接从Redux获取，无需复杂映射
   const codeMirrorTheme = useMemo(() => {
-    console.log('🎨 Editor Theme:', editorTheme);
+    console.log('🎨 Editor Theme:', safeEditorTheme);
     
     // 直接返回对应的CodeMirror主题
-    switch (editorTheme) {
+    switch (safeEditorTheme) {
       case 'oneDark':
         return oneDark;
       case 'githubLight':
@@ -318,7 +319,7 @@ const CodeEditorDrawer: React.FC<CodeEditorDrawerProps> = ({
         console.log('→ Using oneDark (fallback)');
         return oneDark;
     }
-  }, [editorTheme]);
+  }, [safeEditorTheme]);
 
   // 优化的事件监听器 - 只依赖doSave，避免频繁重建
   useEffect(() => {

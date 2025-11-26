@@ -127,6 +127,11 @@ const ThinkingBlock: React.FC<Props> = ({ block }) => {
       timer = setInterval(() => {
         setThinkingTime(prev => prev + 100);
       }, 100);
+    } else {
+      // 思考完成时立即设置最终时间，避免竞态条件
+      if (block.thinking_millsec && block.thinking_millsec !== thinkingTime) {
+        setThinkingTime(block.thinking_millsec);
+      }
     }
 
     return () => {
@@ -134,14 +139,7 @@ const ThinkingBlock: React.FC<Props> = ({ block }) => {
         clearInterval(timer);
       }
     };
-  }, [isThinking]);
-
-  // 思考完成时设置最终时间
-  useEffect(() => {
-    if (!isThinking && block.thinking_millsec && block.thinking_millsec !== thinkingTime) {
-      setThinkingTime(block.thinking_millsec);
-    }
-  }, [isThinking, block.thinking_millsec]);
+  }, [isThinking, block.thinking_millsec, thinkingTime]);
 
   // 自动折叠逻辑
   useEffect(() => {

@@ -685,7 +685,7 @@ export const useChatFeatures = (
     } catch (error) {
       console.error('[handleAIAnalysisWithNativeCallbacks] 处理失败:', error);
 
-      // 🚀 错误时也要清除流式状态
+      // 错误时也要清除流式状态
       store.dispatch({
         type: 'normalizedMessages/setTopicStreaming',
         payload: { topicId: currentTopic.id, streaming: false }
@@ -694,16 +694,14 @@ export const useChatFeatures = (
         type: 'normalizedMessages/setTopicLoading',
         payload: { topicId: currentTopic.id, loading: false }
       });
-
-      throw error;
     }
   };
 
-  // 处理停止响应点击事件
+  // 处理停止响应点击事件 - 参考 Cherry Studio 的 pauseMessages 实现
   const handleStopResponseClick = () => {
     if (!currentTopic) return;
 
-    // 找到所有正在处理的助手消息
+    // 找到所有正在处理的助手消息（包括 processing、pending、searching 状态）
     const streamingMessages = currentMessages.filter(
       m => m.role === 'assistant' &&
       (m.status === AssistantMessageStatus.PROCESSING ||
@@ -711,23 +709,18 @@ export const useChatFeatures = (
        m.status === AssistantMessageStatus.SEARCHING)
     );
 
-    // 中断所有正在进行的请求
+    // 收集所有唯一的 askId 并中断
     const askIds = [...new Set(streamingMessages?.map((m) => m.askId).filter((id) => !!id) as string[])];
-
     for (const askId of askIds) {
       abortCompletion(askId);
     }
 
-    // 停止流式响应
-    store.dispatch({
-      type: 'messages/setTopicStreaming',
-      payload: { topicId: currentTopic.id, streaming: false }
-    });
+    // 关键：强制重置 loading 和 streaming 状态（参考 Cherry Studio）
+    dispatch(newMessagesActions.setTopicLoading({ topicId: currentTopic.id, loading: false }));
+    dispatch(newMessagesActions.setTopicStreaming({ topicId: currentTopic.id, streaming: false }));
 
-    // 更新所有正在处理的消息状态为成功，并添加中断标记
+    // 更新所有正在处理的消息状态为成功
     streamingMessages.forEach(message => {
-      console.log(`[handleStopResponseClick] 更新消息状态为成功: ${message.id}`);
-
       dispatch(newMessagesActions.updateMessage({
         id: message.id,
         changes: {

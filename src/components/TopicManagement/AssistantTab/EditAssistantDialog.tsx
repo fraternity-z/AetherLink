@@ -157,7 +157,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
       open={open} 
       onClose={onClose} 
       maxWidth={isMobile ? false : "md"}
-      fullWidth={isMobile ? true : false}
+      fullWidth
       fullScreen={isMobile}
       slotProps={{
         paper: {

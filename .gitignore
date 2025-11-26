@@ -42,6 +42,3 @@ Cargo.lock
 .DS_Store
 Thumbs.db
 
-# Docs reference projects
-docs/kelivo-master/
-docs/cherry-studio-main/

@@ -310,7 +310,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
     open={open}
     onClose={handleClose}
     maxWidth={isMobile ? false : "md"}
-    fullWidth={isMobile ? true : false}
+    fullWidth
     fullScreen={isMobile}
     PaperProps={{
       sx: {
@@ -342,7 +342,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
         minHeight: '64px'
       })
     }}>
-      <Typography variant={isMobile ? "h6" : "subtitle1"}>
+      <Typography component="span" variant={isMobile ? "h6" : "subtitle1"}>
         系统提示词设置
       </Typography>
       <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">

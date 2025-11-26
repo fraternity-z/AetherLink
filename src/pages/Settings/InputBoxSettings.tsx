@@ -11,8 +11,7 @@ import {
   Toolbar,
   IconButton,
   Divider,
-  useTheme,
-  useMediaQuery
+  useTheme
 } from '@mui/material';
 import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, ArrowLeftRight, Send, Mic } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
@@ -24,36 +23,40 @@ import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
-// 输入框预览组件
+// 输入框预览组件 - 模仿真实聊天页面布局
 const InputBoxPreview: React.FC<{
   inputBoxStyle: string;
   inputLayoutStyle: string;
 }> = ({ inputLayoutStyle }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // 通用预览阻止函数
+  const preventAction = (actionName: string) => () => {
+    console.log(`预览模式：阻止${actionName}`);
+  };
 
   // 预览用的空函数
   const previewProps = {
-    onSendMessage: () => {},
-    onSendImagePrompt: () => {},
+    onSendMessage: preventAction('发送消息'),
+    onSendImagePrompt: preventAction('图像生成'),
     isLoading: false,
-    allowConsecutiveMessages: true,
+    allowConsecutiveMessages: false,
     imageGenerationMode: false,
     videoGenerationMode: false,
     webSearchActive: false,
-    onStopResponse: () => {},
+    onStopResponse: preventAction('停止响应'),
     isStreaming: false,
     isDebating: false,
-    toolsEnabled: true,
+    toolsEnabled: false,
     availableModels: [],
-    onClearTopic: () => {},
-    onNewTopic: () => {},
-    toggleImageGenerationMode: () => {},
-    toggleVideoGenerationMode: () => {},
-    toggleWebSearch: () => {},
-    toggleToolsEnabled: () => {},
-    onToolsEnabledChange: () => {},
+    onClearTopic: preventAction('清空话题'),
+    onNewTopic: preventAction('新建话题'),
+    toggleImageGenerationMode: preventAction('切换图像生成模式'),
+    toggleVideoGenerationMode: preventAction('切换视频生成模式'),
+    toggleWebSearch: preventAction('切换网络搜索'),
+    toggleToolsEnabled: preventAction('切换工具启用状态'),
+    onToolsEnabledChange: preventAction('工具启用状态变更'),
   };
 
   // 根据布局样式选择对应的输入框组件
@@ -94,27 +97,30 @@ const InputBoxPreview: React.FC<{
   return (
     <Box
       sx={{
+        // 模仿真实聊天页面的容器结构
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        p: 3,
+        width: '100%',
+        maxWidth: '100%',
+        position: 'relative',
+        // 移除居中对齐和padding限制
+        alignItems: 'stretch',
+        p: 0,
         bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
         borderRadius: 2,
         minHeight: '120px',
-        justifyContent: 'center',
-        position: 'relative',
         overflow: 'hidden',
       }}
     >
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 2, pt: 2 }}>
         {t('settings.appearance.inputBox.preview.label')}
       </Typography>
+      {/* 移除所有宽度限制，让输入框组件使用自己的响应式布局 */}
       <Box
         sx={{
           width: '100%',
-          maxWidth: isMobile ? '100%' : '600px',
-          transform: isMobile ? 'scale(1)' : 'scale(1)',
-          transformOrigin: 'center',
+          maxWidth: '100%',
+          position: 'relative',
         }}
       >
         {renderInputComponent()}
@@ -338,15 +344,15 @@ const InputBoxSettings: React.FC = () => {
         }}
       >
         {/* 实时预览区域 */}
-        <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
+        <Paper elevation={0} sx={{ mb: 3, border: '1px solid #eee', p: 0, overflow: 'hidden' }}>
+          <Typography variant="subtitle1" sx={{ mb: 2, p: 2, pb: 0 }}>
             {t('settings.appearance.inputBox.preview.title')}
           </Typography>
           <InputBoxPreview
             inputBoxStyle={inputBoxStyle}
             inputLayoutStyle={inputLayoutStyle}
           />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center', p: 2, pt: 0 }}>
             {t('settings.appearance.inputBox.preview.currentConfig')} {t(`settings.appearance.inputBox.preview.styles.${inputBoxStyle}`)} + {t(`settings.appearance.inputBox.preview.layouts.${inputLayoutStyle}`)}
           </Typography>
 

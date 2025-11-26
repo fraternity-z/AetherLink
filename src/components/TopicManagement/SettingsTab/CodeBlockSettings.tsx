@@ -57,6 +57,9 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
     mermaidEnabled
   } = useAppSelector(state => state.settings);
 
+  // 添加fallback值防止undefined
+  const safeEditorTheme = editorTheme || 'oneDark';
+
   // 当前主题值和设置函数
   const currentCodeTheme = isDarkMode ? codeThemeDark : codeThemeLight;
   const setCurrentCodeTheme = isDarkMode ? setCodeThemeDark : setCodeThemeLight;
@@ -171,7 +174,7 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
             </Box>
             <FormControl fullWidth size="small">
               <Select
-                value={editorTheme}
+                value={safeEditorTheme}
                 onChange={(e) => dispatch(setEditorTheme(e.target.value))}
                 sx={{ fontSize: '0.875rem' }}
                 MenuProps={{ PaperProps: { sx: { maxHeight: 300 } } }}

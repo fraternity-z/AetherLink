@@ -1,0 +1,5 @@
+# 简易 Git GUI 依赖
+# tkinter 是 Python 标准库，无需安装
+
+# 构建 EXE 需要
+pyinstaller>=5.0
