@@ -23,6 +23,7 @@ class Config:
     # Git 配置
     DEFAULT_REMOTE = "origin"
     PROTECTED_BRANCHES = ['main', 'master', 'dev', 'develop', 'release']
+    STATUS_EXCLUDE_PATTERNS = []  # 在此添加需要从未暂存列表隐藏的相对路径或通配符
     
     # 分支名称验证正则
     INVALID_BRANCH_CHARS = r'\s|~|\^|:|\\|\.\.|\*|\?|\[|@\{'

@@ -12,6 +12,7 @@ import tkinter.filedialog as filedialog
 import os
 import platform
 import re
+import fnmatch
 
 from .config import Config
 from .git_core import GitCore
@@ -134,6 +135,7 @@ class SimpleGitApp:
         status_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
         status_frame.rowconfigure(1, weight=1)
         status_frame.rowconfigure(4, weight=1)
+        status_frame.rowconfigure(7, weight=1)
         status_frame.columnconfigure(0, weight=1)
         
         # 未暂存文件列表
@@ -161,6 +163,9 @@ class SimpleGitApp:
         ttk.Button(unstaged_buttons, text="暂存所有更改", command=self.stage_all).pack(
             side=tk.LEFT, expand=True, fill=tk.X, padx=2
         )
+        ttk.Button(unstaged_buttons, text="排除选中项", command=self.exclude_selected_from_unstaged).pack(
+            side=tk.LEFT, expand=True, fill=tk.X, padx=2
+        )
         
         # 已暂存文件列表
         ttk.Label(status_frame, text="已暂存的更改 (Staged):").grid(
@@ -184,10 +189,31 @@ class SimpleGitApp:
         ttk.Button(staged_buttons, text="取消暂存选中项", command=self.unstage_selected).pack(
             side=tk.LEFT, expand=True, fill=tk.X, padx=2
         )
+        ttk.Button(staged_buttons, text="取消所有暂存", command=self.unstage_all).pack(
+            side=tk.LEFT, expand=True, fill=tk.X, padx=2
+        )
         
         # 刷新按钮
         ttk.Button(status_frame, text="刷新状态", command=self.refresh_status).grid(
             row=6, column=0, columnspan=2, sticky="ew", pady=(15, 0)
+        )
+        
+        ttk.Label(status_frame, text="已排除的路径:").grid(
+            row=7, column=0, columnspan=2, sticky="w", pady=(15, 2)
+        )
+        excluded_frame = ttk.Frame(status_frame)
+        excluded_frame.grid(row=8, column=0, columnspan=2, sticky="nsew")
+        excluded_frame.rowconfigure(0, weight=1)
+        excluded_frame.columnconfigure(0, weight=1)
+        self.excluded_list = tk.Listbox(excluded_frame, selectmode=tk.EXTENDED, height=6)
+        self.excluded_list.grid(row=0, column=0, sticky="nsew")
+        excluded_scroll = ttk.Scrollbar(excluded_frame, orient=tk.VERTICAL, command=self.excluded_list.yview)
+        excluded_scroll.grid(row=0, column=1, sticky="ns")
+        self.excluded_list['yscrollcommand'] = excluded_scroll.set
+        excluded_buttons = ttk.Frame(status_frame)
+        excluded_buttons.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(5, 0))
+        ttk.Button(excluded_buttons, text="移除选中排除", command=self.remove_selected_exclusions).pack(
+            side=tk.LEFT, expand=True, fill=tk.X, padx=2
         )
     
     def _build_operation_frame(self, parent):
@@ -289,6 +315,26 @@ class SimpleGitApp:
         
         self.update_repository_display()
         self.refresh_remotes()
+
+    def _should_hide_unstaged_file(self, filepath: str) -> bool:
+        """判断路径是否需要在未暂存列表中隐藏"""
+        patterns = getattr(Config, 'STATUS_EXCLUDE_PATTERNS', None)
+        if not patterns or not filepath:
+            return False
+        normalized = filepath.replace('\\', '/').lstrip('./')
+        for pattern in patterns:
+            if not pattern:
+                continue
+            normalized_pattern = pattern.replace('\\', '/').lstrip('./')
+            if not normalized_pattern:
+                continue
+            if normalized_pattern.endswith('/'):
+                directory = normalized_pattern.rstrip('/')
+                if normalized.startswith(directory):
+                    return True
+            if fnmatch.fnmatch(normalized, normalized_pattern):
+                return True
+        return False
     
     # ==================== 仓库操作 ====================
     
@@ -333,6 +379,7 @@ class SimpleGitApp:
         if not self.git.is_git_repo(self.git.repo_path):
             self.unstaged_list.delete(0, tk.END)
             self.staged_list.delete(0, tk.END)
+            self._refresh_excluded_list()
             return
         
         self.unstaged_list.delete(0, tk.END)
@@ -340,17 +387,33 @@ class SimpleGitApp:
         
         unstaged, staged = self.git.get_status()
         
-        if not unstaged and not staged:
-            self.output_panel.display("工作区干净，没有变更。", clear_previous=True)
-            return
-        
+        displayed_unstaged = 0
+        excluded_count = 0
         for status_code, filepath in unstaged:
+            if self._should_hide_unstaged_file(filepath):
+                excluded_count += 1
+                continue
             self.unstaged_list.insert(tk.END, f"{status_code} {filepath}")
+            displayed_unstaged += 1
         
         for status_code, filepath in staged:
             self.staged_list.insert(tk.END, f"{status_code} {filepath}")
         
-        self.output_panel.display("状态已刷新。", clear_previous=True)
+        if displayed_unstaged == 0 and not staged:
+            if excluded_count > 0:
+                self.output_panel.display(
+                    f"未暂存更改均已根据 STATUS_EXCLUDE_PATTERNS 隐藏（共 {excluded_count} 项）。",
+                    clear_previous=True
+                )
+            else:
+                self.output_panel.display("工作区干净，没有变更。", clear_previous=True)
+            return
+
+        message = "状态已刷新。"
+        if excluded_count > 0:
+            message += f"（已隐藏 {excluded_count} 项未暂存更改）"
+        self.output_panel.display(message, clear_previous=True)
+        self._refresh_excluded_list()
     
     def _get_selected_files(self, listbox) -> list:
         """获取选中的文件"""
@@ -386,12 +449,113 @@ class SimpleGitApp:
         if not self.git.is_git_repo(self.git.repo_path):
             return
         
+        unstaged, _ = self.git.get_status()
+        files = []
+        skipped = 0
+        seen = set()
+        for _, filepath in unstaged:
+            if self._should_hide_unstaged_file(filepath):
+                skipped += 1
+                continue
+            if filepath in seen:
+                continue
+            seen.add(filepath)
+            files.append(filepath)
+        
+        if not files:
+            message = "没有可暂存的更改。"
+            if skipped:
+                message += f"（已跳过 {skipped} 个排除项）"
+            self.output_panel.display(message, clear_previous=False)
+            return
+        
         def callback(success, stdout, stderr):
             if success:
                 self.pending_refresh = True
         
-        self.git.run_command_async(['git', 'add', '.'], callback, "暂存所有更改")
+        command = ['git', 'add', '--'] + files
+        description = "暂存所有可见更改"
+        if skipped:
+            description += f"（已跳过 {skipped} 个排除项）"
+        self.git.run_command_async(command, callback, description)
     
+    def exclude_selected_from_unstaged(self):
+        """将选中项加入排除列表"""
+        if not self.git.is_git_repo(self.git.repo_path):
+            return
+        
+        files = self._get_selected_files(self.unstaged_list)
+        if not files:
+            messagebox.showinfo("提示", "请先选择需要排除的文件或文件夹。")
+            return
+        
+        apply_folder = messagebox.askyesno(
+            "排除选中项",
+            "是否按所在文件夹进行排除？\n选择“是”会排除整个文件夹，选择“否”仅排除这些文件。",
+            icon=messagebox.QUESTION
+        )
+        added_patterns = []
+        skipped = 0
+        for path in files:
+            normalized = path.replace('\\', '/').lstrip('./')
+            if not normalized:
+                continue
+            pattern = normalized
+            if apply_folder:
+                folder = os.path.dirname(normalized)
+                if folder and folder not in ('.', ''):
+                    pattern = folder.rstrip('/') + '/'
+            if pattern in Config.STATUS_EXCLUDE_PATTERNS:
+                skipped += 1
+                continue
+            Config.STATUS_EXCLUDE_PATTERNS.append(pattern)
+            added_patterns.append(pattern)
+        
+        if not added_patterns:
+            message = "未添加新的排除规则。"
+            if skipped:
+                message += f"（其中 {skipped} 条已存在）"
+            self.output_panel.display(message)
+            return
+        
+        summary = "\n".join(f"- {pattern}" for pattern in added_patterns)
+        self.output_panel.display(
+            "已将以下模式加入 STATUS_EXCLUDE_PATTERNS：\n" + summary,
+            clear_previous=False
+        )
+        self.refresh_status()
+
+    def _refresh_excluded_list(self):
+        """刷新已排除列表显示"""
+        if not hasattr(self, 'excluded_list'):
+            return
+        self.excluded_list.delete(0, tk.END)
+        if not Config.STATUS_EXCLUDE_PATTERNS:
+            return
+        for pattern in Config.STATUS_EXCLUDE_PATTERNS:
+            self.excluded_list.insert(tk.END, pattern)
+    
+    def remove_selected_exclusions(self):
+        """从排除列表中移除选中项"""
+        if not hasattr(self, 'excluded_list'):
+            return
+        selections = self.excluded_list.curselection()
+        if not selections:
+            messagebox.showinfo("提示", "请选择需要移除的排除规则。")
+            return
+        removed = 0
+        values = [self.excluded_list.get(i) for i in selections]
+        for value in values:
+            if value in Config.STATUS_EXCLUDE_PATTERNS:
+                Config.STATUS_EXCLUDE_PATTERNS.remove(value)
+                removed += 1
+        if removed:
+            self.output_panel.display(f"已移除 {removed} 条排除规则。", clear_previous=False)
+        else:
+            self.output_panel.display("未能移除选中的排除规则。", clear_previous=False)
+        self._refresh_excluded_list()
+        self.refresh_status()
+
     def unstage_selected(self):
         """取消暂存选中文件"""
         if not self.git.is_git_repo(self.git.repo_path):
@@ -411,6 +575,18 @@ class SimpleGitApp:
             callback,
             f"取消暂存 {len(files)} 个文件"
         )
+    
+    def unstage_all(self):
+        """取消所有已暂存的更改"""
+        if not self.git.is_git_repo(self.git.repo_path):
+            return
+        
+        def callback(success, stdout, stderr):
+            if success:
+                self.pending_refresh = True
+        
+        description = "取消所有暂存的更改"
+        self.git.run_command_async(['git', 'reset', 'HEAD', '--', '.'], callback, description)
     
     # ==================== 提交和推送 ====================
     
