@@ -42,6 +42,12 @@
     self.backgroundColor = UIColor.clearColor;
     self.scrollView.backgroundColor = UIColor.clearColor;
     
+    // 🚀 关键修复：禁用 ScrollView 的自动安全区域调整
+    // 防止 iOS 自动给底部添加 padding 导致"白色空块"和内容挤压
+    if (@available(iOS 11.0, *)) {
+        self.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    }
+    
     // 设置窗口背景色（支持深色模式）
     UIColor *bgColor;
     if (@available(iOS 13.0, *)) {
