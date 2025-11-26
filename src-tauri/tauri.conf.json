@@ -47,11 +47,6 @@
       "entitlements": "entitlements.plist",
       "signingIdentity": null,
       "hardenedRuntime": false
-    },
-    "iOS": {
-      "minimumSystemVersion": "13.0",
-      "developmentTeam": "",
-      "frameworks": []
     }
   }
 }
