@@ -35,6 +35,7 @@ export class SafeAreaService {
   private isInitialized = false;
   private listeners: Array<(insets: SafeAreaInsets) => void> = [];
   private resizeObserver?: ResizeObserver;
+  private isKeyboardVisible = false;  // 跟踪键盘状态，防止 applySafeAreaToCSS 覆盖原生层设置的值
 
   private constructor() {}
 
@@ -166,6 +167,9 @@ export class SafeAreaService {
     const left = detail.left || 0;
     const keyboardHeight = detail.keyboardHeight || 0;
     
+    // 更新键盘状态
+    this.isKeyboardVisible = keyboardVisible;
+    
     // 键盘显示时：使用原生层传入的值（已经是0）
     // 键盘隐藏时：使用原生层传入的值（已经处理过最小安全区域）
     root.style.setProperty('--safe-area-top', `${top}px`);
@@ -219,7 +223,8 @@ export class SafeAreaService {
     
     // 计算实际使用的顶部和底部安全区域
     const computedTop = isNativeMobile ? Math.max(top, SAFE_AREA_TOP_MIN) : 0;
-    const computedBottom = isNativeMobile ? Math.max(bottom, SAFE_AREA_BOTTOM_MIN) : 0;
+    // 键盘显示时，底部安全区域为 0（由原生层控制）
+    const computedBottom = this.isKeyboardVisible ? 0 : (isNativeMobile ? Math.max(bottom, SAFE_AREA_BOTTOM_MIN) : 0);
     
     // 应用自定义 CSS 变量
     root.style.setProperty('--safe-area-top', `${computedTop}px`);
