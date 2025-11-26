@@ -3,7 +3,7 @@
  * 弹窗式模型选择器，使用细粒度响应式提升性能
  * 使用原生 HTML + CSS，不依赖 Material-UI 组件库
  */
-import { createSignal, createMemo, For, Show, createEffect, on } from 'solid-js';
+import { createSignal, createMemo, For, Show, createEffect, on, onCleanup } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import type { Model } from '../../shared/types';
 import { getModelIdentityKey } from '../../shared/utils/modelUtils';
@@ -227,6 +227,26 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
       props.handleMenuClose();
     }
   };
+
+  // 监听 Escape 键关闭对话框（支持 Android 返回键）
+  createEffect(() => {
+    if (!props.menuOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        props.handleMenuClose();
+        console.log('[SolidJS DialogModelSelector] Escape 键关闭对话框');
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    
+    onCleanup(() => {
+      document.removeEventListener('keydown', handleKeyDown);
+    });
+  });
 
   return (
     <Show when={props.menuOpen}>

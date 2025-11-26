@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../shared/hooks/useAppState';
+import { initBackButtonListener, useBackButton } from '../shared/hooks/useBackButton';
 
 /**
  * 处理设置页面的智能返回逻辑
@@ -121,15 +122,17 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
 };
 
 /**
- * 处理移动端返回键的组件 - Tauri 版本
- * 当用户点击返回键时，根据当前路由和对话框状态决定行为
+ * 处理移动端返回键的组件
  * 
- * 适配改进：
- * 1. 适配 Tauri 平台，使用键盘事件监听替代 Capacitor App 插件
- * 2. 使用 closeLastDialog 方法，保证按 LIFO 顺序关闭对话框
- * 3. 移除自定义事件系统，使用回调模式
- * 4. 修复防抖逻辑，确保事件被正确处理
- * 5. 改进错误处理和状态同步
+ * 统一支持：
+ * - Capacitor Android/iOS: 使用 @capacitor/app 的 backButton 事件
+ * - Tauri Android: 通过 MainActivity.kt 转发的 Escape 键事件
+ * - Tauri Desktop / Web: Escape 键
+ * 
+ * 功能：
+ * 1. 优先关闭打开的对话框（LIFO 顺序）
+ * 2. 根据当前路由智能返回上级页面
+ * 3. 在主页面显示退出确认对话框
  */
 const BackButtonHandler: React.FC = () => {
   const navigate = useNavigate();
@@ -139,90 +142,47 @@ const BackButtonHandler: React.FC = () => {
     closeLastDialog 
   } = useAppState();
 
-  // 防抖机制：防止短时间内重复处理返回键事件
-  const lastBackButtonTime = useRef<number>(0);
-  const DEBOUNCE_DELAY = 300; // 300ms 防抖延迟
-  
-  // 用于追踪组件是否已卸载
-  const isMountedRef = useRef(true);
-  
+  // 初始化全局返回键监听器（只需一次）
+  useEffect(() => {
+    initBackButtonListener();
+  }, []);
+
   // 处理返回键的逻辑
-  const handleBackButton = useCallback(() => {
-    // 检查组件是否已卸载
-    if (!isMountedRef.current) {
-      return;
-    }
-
-    const now = Date.now();
-
-    // 防抖检查：如果距离上次处理时间太短，则忽略此次事件
-    // 注意：虽然我们忽略事件，但不会阻止默认行为（因为 Capacitor 的 backButton 事件没有返回值）
-    if (now - lastBackButtonTime.current < DEBOUNCE_DELAY) {
-      console.log('[BackButtonHandler] 防抖：忽略重复的返回键事件');
-      return;
-    }
-
-    lastBackButtonTime.current = now;
-
-    // 获取当前路径（实时获取，避免闭包问题）
+  const handleBackButton = useCallback((): boolean => {
+    // 获取当前路径
     const currentPath = window.location.hash.replace('#', '') || '/';
+    
+    console.log('[BackButtonHandler] 返回键触发, 当前路径:', currentPath);
 
     // 优先处理对话框关闭
     if (hasOpenDialogs()) {
-      // 关闭最后打开的对话框（栈顶）
       const closed = closeLastDialog();
       if (closed) {
-        console.log('[BackButtonHandler] 已关闭最后一个对话框');
-        // 对话框的关闭回调会在 closeLastDialog 中执行，不需要额外处理
-        return;
+        console.log('[BackButtonHandler] 已关闭对话框');
+        return true; // 已处理
       }
-      // 如果关闭失败，继续执行页面返回逻辑
-      console.warn('[BackButtonHandler] 关闭对话框失败，继续执行页面返回逻辑');
     }
 
     // 根据当前路径决定行为
-    if (currentPath === '/chat') {
-      // 在聊天页面，显示退出确认对话框
+    if (currentPath === '/chat' || currentPath === '/welcome') {
+      // 在主页面，显示退出确认对话框
       setShowExitConfirm(true);
-    } else if (currentPath === '/welcome') {
-      // 在欢迎页面，显示退出确认对话框
-      setShowExitConfirm(true);
-    } else if (currentPath.startsWith('/settings') || currentPath === '/devtools' || currentPath.startsWith('/knowledge/')) {
+      return true;
+    } 
+    
+    if (currentPath.startsWith('/settings') || currentPath === '/devtools' || currentPath.startsWith('/knowledge/')) {
       // 在设置页面、开发者工具页面或知识库详情页面，智能返回到上级页面
       handleSettingsBack(currentPath, navigate);
-    } else {
-      // 在其他页面，返回到聊天页面
-      navigate('/chat');
+      return true;
     }
+    
+    // 在其他页面，返回到聊天页面
+    navigate('/chat');
+    return true;
   }, [navigate, setShowExitConfirm, hasOpenDialogs, closeLastDialog]);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    // Tauri 平台：监听键盘事件
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // 检查组件是否已卸载
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      // Android 返回键：Escape 键或 Android 硬件返回键
-      if (event.key === 'Escape' || event.key === 'AndroidBack') {
-        event.preventDefault();
-        handleBackButton();
-      }
-    };
-
-    // 添加键盘事件监听
-    document.addEventListener('keydown', handleKeyDown);
-
-    // 组件卸载时移除监听器
-    return () => {
-      isMountedRef.current = false;
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleBackButton]);
-
+  // 使用统一的返回键 Hook
+  useBackButton(handleBackButton, [handleBackButton]);
 
   // 这是一个纯逻辑组件，不渲染任何UI
   return null;
