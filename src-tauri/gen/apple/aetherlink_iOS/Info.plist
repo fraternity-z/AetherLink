@@ -48,5 +48,8 @@
 	<string>UIStatusBarStyleDefault</string>
 	<key>UIStatusBarHidden</key>
 	<false/>
+	<!-- 120fps ProMotion 支持（对 CADisplayLink/CAAnimation 有效，WKWebView 效果有限） -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 </dict>
 </plist>
