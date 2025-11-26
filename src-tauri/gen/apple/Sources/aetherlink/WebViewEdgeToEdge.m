@@ -43,9 +43,32 @@
     self.scrollView.backgroundColor = UIColor.clearColor;
     
     // 🚀 关键修复：禁用 ScrollView 的自动安全区域调整
-    // 防止 iOS 自动给底部添加 padding 导致"白色空块"和内容挤压
     if (@available(iOS 11.0, *)) {
         self.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    }
+    
+    // 🚀 核心修复：强制全屏显示 (解决 PageSheet 模式导致的上下留白)
+    // 查找 WebView 所属的 ViewController 并将其设置为全屏
+    UIResponder *responder = self;
+    while ((responder = [responder nextResponder])) {
+        if ([responder isKindOfClass:[UIViewController class]]) {
+            UIViewController *vc = (UIViewController *)responder;
+            
+            // 强制设置为全屏模式
+            if (vc.modalPresentationStyle != UIModalPresentationFullScreen) {
+                vc.modalPresentationStyle = UIModalPresentationFullScreen;
+            }
+            
+            // 如果是在 NavigationController 中，隐藏系统导航栏
+            if (vc.navigationController) {
+                vc.navigationController.navigationBarHidden = YES;
+                vc.navigationController.modalPresentationStyle = UIModalPresentationFullScreen;
+            }
+            
+            // 设置 View 背景色透明
+            vc.view.backgroundColor = UIColor.clearColor;
+            break;
+        }
     }
     
     // 设置窗口背景色（支持深色模式）
