@@ -25,7 +25,7 @@ tauri = { version = "2", features = ["devtools"] }
 
 tauri-plugin-log = "2"
 tauri-plugin-http = "2.5"
-tauri-plugin-edge-to-edge = "0.1.1"
+tauri-plugin-edge-to-edge = "0.1.2"
 
 # 仅桌面端：窗口状态记忆插件
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

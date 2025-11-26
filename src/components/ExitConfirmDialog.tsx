@@ -7,14 +7,15 @@ import {
   Button
 } from '@mui/material';
 import BackButtonDialog from './common/BackButtonDialog';
-import { App } from '@capacitor/app';
 import { useLocation } from 'react-router-dom';
 import { useAppState } from '../shared/hooks/useAppState';
 
 /**
- * 退出确认对话框组件
+ * 退出确认对话框组件 - Tauri 版本
  * 当用户点击返回键时显示，询问用户是否要退出应用
  * 只在聊天页面和欢迎页面显示
+ * 
+ * 适配说明：使用 window.close() 替代 Capacitor 的 App.exitApp()
  */
 const ExitConfirmDialog: React.FC = () => {
   const location = useLocation();
@@ -34,8 +35,8 @@ const ExitConfirmDialog: React.FC = () => {
   // 处理确认退出按钮点击
   const handleConfirm = () => {
     setShowExitConfirm(false);
-    // 使用Capacitor API退出应用
-    App.exitApp();
+    // Tauri 平台：使用 window.close() 退出应用
+    window.close();
   };
 
   return (

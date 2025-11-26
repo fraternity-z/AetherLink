@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { App } from '@capacitor/app';
 import { useNavigate } from 'react-router-dom';
 import { useAppState } from '../shared/hooks/useAppState';
 
@@ -122,14 +121,15 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
 };
 
 /**
- * 处理Android返回键的组件
+ * 处理移动端返回键的组件 - Tauri 版本
  * 当用户点击返回键时，根据当前路由和对话框状态决定行为
  * 
- * 重构改进：
- * 1. 使用 closeLastDialog 方法，保证按 LIFO 顺序关闭对话框
- * 2. 移除自定义事件系统，使用回调模式
- * 3. 修复防抖逻辑，确保事件被正确处理
- * 4. 改进错误处理和状态同步
+ * 适配改进：
+ * 1. 适配 Tauri 平台，使用键盘事件监听替代 Capacitor App 插件
+ * 2. 使用 closeLastDialog 方法，保证按 LIFO 顺序关闭对话框
+ * 3. 移除自定义事件系统，使用回调模式
+ * 4. 修复防抖逻辑，确保事件被正确处理
+ * 5. 改进错误处理和状态同步
  */
 const BackButtonHandler: React.FC = () => {
   const navigate = useNavigate();
@@ -198,47 +198,31 @@ const BackButtonHandler: React.FC = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
-    let listenerCleanup: (() => void) | undefined;
 
-    // 监听返回键事件
-    const setupListener = async () => {
-      try {
-        const listener = await App.addListener('backButton', handleBackButton);
+    // Tauri 平台：监听键盘事件
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // 检查组件是否已卸载
+      if (!isMountedRef.current) {
+        return;
+      }
 
-        // 确保组件仍然挂载
-        if (isMountedRef.current) {
-          listenerCleanup = () => {
-            listener.remove();
-          };
-        } else {
-          // 如果组件已卸载，立即清理
-          listener.remove();
-        }
-      } catch (error) {
-        console.error('[BackButtonHandler] 设置返回键监听器失败:', error);
+      // Android 返回键：Escape 键或 Android 硬件返回键
+      if (event.key === 'Escape' || event.key === 'AndroidBack') {
+        event.preventDefault();
+        handleBackButton();
       }
     };
 
-    // 设置监听器并处理Promise
-    setupListener().catch(error => {
-      console.error('[BackButtonHandler] setupListener error:', error);
-    });
+    // 添加键盘事件监听
+    document.addEventListener('keydown', handleKeyDown);
 
     // 组件卸载时移除监听器
     return () => {
       isMountedRef.current = false;
-      if (listenerCleanup) {
-        listenerCleanup();
-      }
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleBackButton]);
 
-  // 组件卸载时设置标记
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   // 这是一个纯逻辑组件，不渲染任何UI
   return null;
