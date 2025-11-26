@@ -1,7 +1,8 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let builder = tauri::Builder::default()
-    .plugin(tauri_plugin_http::init());
+    .plugin(tauri_plugin_http::init())
+    .plugin(tauri_plugin_edge_to_edge::init());
 
   // 仅桌面端：添加窗口状态记忆插件
   #[cfg(not(any(target_os = "android", target_os = "ios")))]
