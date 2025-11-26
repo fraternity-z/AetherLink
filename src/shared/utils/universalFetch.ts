@@ -39,27 +39,30 @@ async function getTauriProxyConfig(): Promise<{ url: string; basicAuth?: { usern
     const { type, host, port, username, password } = settings.globalProxy;
     
     // 构建代理 URL
-    // Tauri HTTP 插件支持 http/https/socks5 代理
+    // Tauri HTTP 插件基于 reqwest，完全支持 http/https/socks4/socks5 代理
     let proxyUrl: string;
+    
     // 根据代理类型构建正确的协议前缀
     if (type === 'socks5') {
       proxyUrl = `socks5://${host}:${port}`;
     } else if (type === 'socks4') {
-      // 注意：Tauri HTTP 插件可能不完全支持 SOCKS4，尝试使用 SOCKS5
-      console.warn('[Universal Fetch] SOCKS4 代理可能不完全支持，尝试作为 SOCKS5 连接');
-      proxyUrl = `socks5://${host}:${port}`;
+      proxyUrl = `socks4://${host}:${port}`;
+    } else if (type === 'https') {
+      // HTTPS 代理使用 https:// 协议
+      proxyUrl = `https://${host}:${port}`;
     } else {
-      // HTTP 和 HTTPS 代理都使用 http:// 协议
+      // HTTP 代理使用 http:// 协议
       proxyUrl = `http://${host}:${port}`;
     }
 
     const result: { url: string; basicAuth?: { username: string; password: string } } = { url: proxyUrl };
     
-    // 添加认证信息
+    // 添加认证信息（如果有）
     if (username && password) {
       result.basicAuth = { username, password };
     }
 
+    console.log('[Universal Fetch] Tauri 代理配置:', { url: proxyUrl, hasAuth: !!(username && password) });
     return result;
   } catch (error) {
     console.error('[Universal Fetch] 获取 Tauri 代理配置失败:', error);
@@ -279,7 +282,13 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
       fetchOptions.proxy = {
         all: proxyConfig,
       };
-      console.log('[Universal Fetch] Tauri HTTP 使用代理:', proxyConfig.url);
+      console.log('[Universal Fetch] Tauri HTTP 使用代理:', {
+        url: proxyConfig.url,
+        hasAuth: !!proxyConfig.basicAuth,
+        targetUrl: url
+      });
+    } else {
+      console.log('[Universal Fetch] Tauri HTTP 直连（无代理）:', url);
     }
     
     // Tauri 的 fetch 函数与标准 fetch 兼容
@@ -489,8 +498,9 @@ export async function testTauriProxyConnection(
     if (proxyConfig.type === 'socks5') {
       proxyUrl = `socks5://${proxyConfig.host}:${proxyConfig.port}`;
     } else if (proxyConfig.type === 'socks4') {
-      console.warn('[Tauri Proxy Test] SOCKS4 代理可能不完全支持');
-      proxyUrl = `socks5://${proxyConfig.host}:${proxyConfig.port}`;
+      proxyUrl = `socks4://${proxyConfig.host}:${proxyConfig.port}`;
+    } else if (proxyConfig.type === 'https') {
+      proxyUrl = `https://${proxyConfig.host}:${proxyConfig.port}`;
     } else {
       proxyUrl = `http://${proxyConfig.host}:${proxyConfig.port}`;
     }

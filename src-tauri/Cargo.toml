@@ -24,7 +24,8 @@ log = "0.4"
 tauri = { version = "2", features = ["devtools"] }
 
 tauri-plugin-log = "2"
-tauri-plugin-http = "2.5"
+# HTTP 插件，启用 socks 特性以支持 SOCKS4/SOCKS5 代理
+tauri-plugin-http = { version = "2.5", features = ["socks"] }
 tauri-plugin-edge-to-edge = "0.3.3"
 
 # 仅桌面端：窗口状态记忆插件
