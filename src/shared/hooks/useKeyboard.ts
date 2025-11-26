@@ -87,7 +87,7 @@ class KeyboardManager {
     
     try {
       // 监听原生层注入的 safeAreaChanged 事件
-      // 由 Tauri Edge-to-Edge 插件或 Capacitor 插件触发
+      // 由 Tauri Edge-to-Edge 插件或 Capacitor iOS 插件触发
       const handleSafeAreaChanged = (event: CustomEvent) => {
         const detail = event.detail;
         if (detail) {
@@ -101,11 +101,37 @@ class KeyboardManager {
         }
       };
       
+      // 监听 Capacitor Android 的 keyboardWillShow/keyboardDidHide window 事件
+      const handleKeyboardWillShow = (event: any) => {
+        const keyboardHeight = event?.keyboardHeight || event?.detail?.keyboardHeight || 0;
+        this.updateState({
+          isVisible: true,
+          height: keyboardHeight
+        });
+      };
+      
+      const handleKeyboardDidHide = () => {
+        this.updateState({
+          isVisible: false,
+          height: 0
+        });
+      };
+      
       window.addEventListener('safeAreaChanged', handleSafeAreaChanged as EventListener);
+      window.addEventListener('keyboardWillShow', handleKeyboardWillShow as EventListener);
+      window.addEventListener('keyboardDidShow', handleKeyboardWillShow as EventListener);
+      window.addEventListener('keyboardWillHide', handleKeyboardDidHide as EventListener);
+      window.addEventListener('keyboardDidHide', handleKeyboardDidHide as EventListener);
       
       // 保存移除监听器的引用
       this.showHandle = {
-        remove: () => window.removeEventListener('safeAreaChanged', handleSafeAreaChanged as EventListener)
+        remove: () => {
+          window.removeEventListener('safeAreaChanged', handleSafeAreaChanged as EventListener);
+          window.removeEventListener('keyboardWillShow', handleKeyboardWillShow as EventListener);
+          window.removeEventListener('keyboardDidShow', handleKeyboardWillShow as EventListener);
+          window.removeEventListener('keyboardWillHide', handleKeyboardDidHide as EventListener);
+          window.removeEventListener('keyboardDidHide', handleKeyboardDidHide as EventListener);
+        }
       };
       
       console.log('[KeyboardManager] 初始化完成 (Tauri/Capacitor 兼容模式)');
