@@ -6,9 +6,10 @@
  * iOS Edge-to-Edge 沉浸式实现
  * 
  * 功能：
- * 1. 设置背景色，让安全区域外的颜色和应用内一致
- * 2. 注入安全区域 CSS 变量到 WebView（解决 Tauri WebView 不支持 env() 的问题）
- * 3. 监听键盘事件，动态更新键盘高度
+ * 1. 重写 safeAreaInsets 返回 zero，让 WebView 忽略系统安全区域（关键！）
+ * 2. 设置背景色，让安全区域外的颜色和应用内一致
+ * 3. 注入安全区域 CSS 变量到 WebView（解决 Tauri WebView 不支持 env() 的问题）
+ * 4. 监听键盘事件，动态更新键盘高度
  * 
  * 配合 CSS 的 viewport-fit=cover 实现全屏效果
  */
@@ -29,7 +30,25 @@
         if (originalInsets && swizzledInsets) {
             method_exchangeImplementations(originalInsets, swizzledInsets);
         }
+        
+        // 🚀 关键：Hook safeAreaInsets getter，返回 zero 让 WebView 铺满全屏
+        Method originalSafeArea = class_getInstanceMethod(self, @selector(safeAreaInsets));
+        Method swizzledSafeArea = class_getInstanceMethod(self, @selector(e2e_safeAreaInsets));
+        if (originalSafeArea && swizzledSafeArea) {
+            method_exchangeImplementations(originalSafeArea, swizzledSafeArea);
+        }
     });
+}
+
+/**
+ * 🚀 核心修复：重写 safeAreaInsets，返回 zero
+ * 这会让 WKWebView 忽略系统安全区域，真正铺满整个屏幕
+ * 安全区域的处理完全交给 CSS (env(safe-area-inset-*) 或我们注入的变量)
+ */
+- (UIEdgeInsets)e2e_safeAreaInsets {
+    // 返回 zero，让 WebView 铺满全屏
+    // CSS 层会通过我们注入的变量来处理安全区域
+    return UIEdgeInsetsZero;
 }
 
 - (void)e2e_didMoveToWindow {
@@ -48,23 +67,28 @@
     }
     
     // 🚀 核心修复：强制全屏显示 (解决 PageSheet 模式导致的上下留白)
-    // 使用 dispatch_async 确保在 UI 建立后执行
-    dispatch_async(dispatch_get_main_queue(), ^{
-        // 1. 检查 Window 的 RootViewController
-        UIWindow *window = self.window;
-        if (window && window.rootViewController) {
-            [self e2e_forceFullScreen:window.rootViewController];
-        }
-        
-        // 2. 检查响应链 (用于找到当前 WebView 所在的直接 VC)
-        UIResponder *responder = self;
-        while ((responder = [responder nextResponder])) {
-            if ([responder isKindOfClass:[UIViewController class]]) {
-                [self e2e_forceFullScreen:(UIViewController *)responder];
-                break;
+    // 查找 WebView 所属的 ViewController 并将其设置为全屏
+    UIResponder *responder = self;
+    while ((responder = [responder nextResponder])) {
+        if ([responder isKindOfClass:[UIViewController class]]) {
+            UIViewController *vc = (UIViewController *)responder;
+            
+            // 强制设置为全屏模式
+            if (vc.modalPresentationStyle != UIModalPresentationFullScreen) {
+                vc.modalPresentationStyle = UIModalPresentationFullScreen;
             }
+            
+            // 如果是在 NavigationController 中，隐藏系统导航栏
+            if (vc.navigationController) {
+                vc.navigationController.navigationBarHidden = YES;
+                vc.navigationController.modalPresentationStyle = UIModalPresentationFullScreen;
+            }
+            
+            // 设置 View 背景色透明
+            vc.view.backgroundColor = UIColor.clearColor;
+            break;
         }
-    });
+    }
     
     // 设置窗口背景色（支持深色模式）
     UIColor *bgColor;
@@ -90,42 +114,6 @@
         // 启动周期性注入
         [self e2e_startPeriodicInjection];
     });
-}
-
-/**
- * 强制设置 VC 为全屏模式
- */
-- (void)e2e_forceFullScreen:(UIViewController *)vc {
-    if (!vc) return;
-    
-    // 1. 设置当前 VC 为全屏
-    if (vc.modalPresentationStyle != UIModalPresentationFullScreen) {
-        vc.modalPresentationStyle = UIModalPresentationFullScreen;
-    }
-    
-    // 🚀 关键：允许视图延伸到屏幕边缘 (覆盖状态栏和底部安全区域)
-    vc.edgesForExtendedLayout = UIRectEdgeAll;
-    vc.extendedLayoutIncludesOpaqueBars = YES;
-    
-    // 设置背景透明
-    vc.view.backgroundColor = UIColor.clearColor;
-    
-    // 2. 如果是 NavigationController，处理 NavigationBar
-    if ([vc isKindOfClass:[UINavigationController class]]) {
-        UINavigationController *nav = (UINavigationController *)vc;
-        nav.navigationBarHidden = YES;
-        nav.navigationBar.hidden = YES;
-    } else if (vc.navigationController) {
-        vc.navigationController.navigationBarHidden = YES;
-        vc.navigationController.navigationBar.hidden = YES;
-        // 递归处理 NavController
-        [self e2e_forceFullScreen:vc.navigationController];
-    }
-    
-    // 3. 递归处理 PresentedViewController
-    if (vc.presentedViewController) {
-        [self e2e_forceFullScreen:vc.presentedViewController];
-    }
 }
 
 - (void)e2e_startPeriodicInjection {
@@ -193,13 +181,17 @@
 
 - (void)e2e_injectSafeAreaInsetsWithKeyboard:(CGFloat)keyboardHeight visible:(BOOL)keyboardVisible {
     if (@available(iOS 11.0, *)) {
-        UIEdgeInsets safeArea = self.safeAreaInsets;
+        // 🚀 关键：从 Window 获取真正的安全区域，而不是从 WebView (已被重写为 zero)
+        UIEdgeInsets safeArea = UIEdgeInsetsZero;
+        if (self.window) {
+            safeArea = self.window.safeAreaInsets;
+        }
         
         CGFloat top = safeArea.top;
         CGFloat right = safeArea.right;
         CGFloat bottom = safeArea.bottom;
         CGFloat left = safeArea.left;
-        CGFloat computedBottom = MAX(bottom, 48.0);
+        CGFloat computedBottom = MAX(bottom, 34.0);  // iOS 底部 Home Indicator 通常是 34px
         
         NSString *jsCode = [NSString stringWithFormat:@
             "(function() {"
