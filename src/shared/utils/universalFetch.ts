@@ -41,9 +41,15 @@ async function getTauriProxyConfig(): Promise<{ url: string; basicAuth?: { usern
     // 构建代理 URL
     // Tauri HTTP 插件支持 http/https/socks5 代理
     let proxyUrl: string;
-    if (type === 'socks5' || type === 'socks4') {
+    // 根据代理类型构建正确的协议前缀
+    if (type === 'socks5') {
+      proxyUrl = `socks5://${host}:${port}`;
+    } else if (type === 'socks4') {
+      // 注意：Tauri HTTP 插件可能不完全支持 SOCKS4，尝试使用 SOCKS5
+      console.warn('[Universal Fetch] SOCKS4 代理可能不完全支持，尝试作为 SOCKS5 连接');
       proxyUrl = `socks5://${host}:${port}`;
     } else {
+      // HTTP 和 HTTPS 代理都使用 http:// 协议
       proxyUrl = `http://${host}:${port}`;
     }
 
@@ -445,6 +451,128 @@ function validateResponseType(responseType: string): 'json' | 'text' {
   }
   
   return responseType === 'json' ? 'json' : 'text';
+}
+
+/**
+ * Tauri 专用代理测试函数
+ * 直接使用 Tauri HTTP 插件测试代理连接
+ */
+export async function testTauriProxyConnection(
+  proxyConfig: {
+    enabled: boolean;
+    type: 'http' | 'https' | 'socks4' | 'socks5';
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  },
+  testUrl: string = 'https://www.google.com'
+): Promise<{
+  success: boolean;
+  responseTime?: number;
+  error?: string;
+  statusCode?: number;
+  externalIp?: string;
+}> {
+  if (!isTauri()) {
+    return { success: false, error: '此函数仅适用于 Tauri 桌面端' };
+  }
+
+  const startTime = Date.now();
+
+  try {
+    // 动态导入 Tauri HTTP 插件
+    const { fetch: tauriHttpFetch } = await import('@tauri-apps/plugin-http');
+
+    // 构建代理 URL
+    let proxyUrl: string;
+    if (proxyConfig.type === 'socks5') {
+      proxyUrl = `socks5://${proxyConfig.host}:${proxyConfig.port}`;
+    } else if (proxyConfig.type === 'socks4') {
+      console.warn('[Tauri Proxy Test] SOCKS4 代理可能不完全支持');
+      proxyUrl = `socks5://${proxyConfig.host}:${proxyConfig.port}`;
+    } else {
+      proxyUrl = `http://${proxyConfig.host}:${proxyConfig.port}`;
+    }
+
+    console.log(`[Tauri Proxy Test] 测试代理: ${proxyUrl} -> ${testUrl}`);
+
+    // 构建请求选项
+    const fetchOptions: any = {
+      method: 'GET',
+      connectTimeout: 15000, // 15秒超时
+      proxy: {
+        all: {
+          url: proxyUrl,
+          ...(proxyConfig.username && proxyConfig.password ? {
+            basicAuth: {
+              username: proxyConfig.username,
+              password: proxyConfig.password,
+            }
+          } : {})
+        }
+      }
+    };
+
+    // 发送测试请求
+    const response = await tauriHttpFetch(testUrl, fetchOptions);
+    const responseTime = Date.now() - startTime;
+
+    console.log(`[Tauri Proxy Test] 响应状态: ${response.status}, 耗时: ${responseTime}ms`);
+
+    if (response.ok || response.status === 200) {
+      // 尝试获取外部 IP（如果测试 URL 返回 IP 信息）
+      let externalIp: string | undefined;
+      try {
+        if (testUrl.includes('ip') || testUrl.includes('httpbin')) {
+          const text = await response.text();
+          // 尝试从响应中提取 IP
+          const ipMatch = text.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+          if (ipMatch) {
+            externalIp = ipMatch[0];
+          }
+        }
+      } catch {
+        // 忽略 IP 提取错误
+      }
+
+      return {
+        success: true,
+        responseTime,
+        statusCode: response.status,
+        externalIp,
+      };
+    } else {
+      return {
+        success: false,
+        responseTime,
+        statusCode: response.status,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+  } catch (error: any) {
+    const responseTime = Date.now() - startTime;
+    console.error('[Tauri Proxy Test] 测试失败:', error);
+
+    // 解析错误信息
+    let errorMessage = error?.message || '未知错误';
+    
+    if (errorMessage.includes('signal is aborted')) {
+      errorMessage = '代理连接超时或被中止，请检查代理服务器是否可达';
+    } else if (errorMessage.includes('connection refused')) {
+      errorMessage = '代理服务器拒绝连接，请检查代理地址和端口';
+    } else if (errorMessage.includes('timeout')) {
+      errorMessage = '代理连接超时，请检查代理服务器是否正常运行';
+    } else if (errorMessage.includes('SOCKS')) {
+      errorMessage = 'SOCKS 代理连接失败，请检查代理类型是否正确';
+    }
+
+    return {
+      success: false,
+      responseTime,
+      error: errorMessage,
+    };
+  }
 }
 
 /**

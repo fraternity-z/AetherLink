@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { getStorageItem, setStorageItem } from '../../utils/storage';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
+import { isTauri } from '../../utils/platformDetection';
+import { testTauriProxyConnection } from '../../utils/universalFetch';
 
 /**
  * 代理类型枚举
@@ -151,6 +153,7 @@ export const saveNetworkProxySettings = createAsyncThunk(
 
 /**
  * 测试代理连接
+ * Tauri 桌面端使用专用测试函数，移动端使用 CorsBypass 插件
  */
 export const testProxyConnection = createAsyncThunk(
   'networkProxy/test',
@@ -159,6 +162,27 @@ export const testProxyConnection = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
+      const url = testUrl || 'https://www.google.com';
+      
+      // Tauri 桌面端使用专用测试函数
+      if (isTauri()) {
+        console.log('[networkProxySlice] Tauri 桌面端代理测试');
+        const result = await testTauriProxyConnection(
+          {
+            enabled: true,
+            type: config.type,
+            host: config.host,
+            port: config.port,
+            username: config.username,
+            password: config.password,
+          },
+          url
+        );
+        return result as ProxyTestResult;
+      }
+      
+      // 移动端使用 CorsBypass 插件
+      console.log('[networkProxySlice] 移动端代理测试 (CorsBypass)');
       const result = await CorsBypass.testProxy(
         {
           enabled: true,
@@ -169,11 +193,12 @@ export const testProxyConnection = createAsyncThunk(
           password: config.password,
           bypass: config.bypass,
         },
-        testUrl || 'https://www.google.com'
+        url
       );
 
       return result as ProxyTestResult;
     } catch (error: any) {
+      console.error('[networkProxySlice] 代理测试失败:', error);
       return rejectWithValue({
         success: false,
         error: error.message || '代理测试失败',
@@ -184,11 +209,26 @@ export const testProxyConnection = createAsyncThunk(
 
 /**
  * 应用全局代理
+ * Tauri 桌面端：代理配置存储在 storage 中，每次请求时自动读取
+ * 移动端：使用 CorsBypass 插件设置全局代理
  */
 export const applyGlobalProxy = createAsyncThunk(
   'networkProxy/apply',
   async (config: ProxyConfig, { rejectWithValue }) => {
     try {
+      // Tauri 桌面端：代理配置已保存到 storage，universalFetch 会自动读取
+      // 不需要额外操作，但我们记录日志以便调试
+      if (isTauri()) {
+        console.log('[networkProxySlice] Tauri 桌面端代理配置已更新:', {
+          enabled: config.enabled,
+          type: config.type,
+          host: config.host,
+          port: config.port,
+        });
+        return true;
+      }
+      
+      // 移动端使用 CorsBypass 插件
       if (config.enabled) {
         await CorsBypass.setGlobalProxy({
           enabled: true,
