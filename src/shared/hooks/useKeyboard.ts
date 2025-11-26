@@ -38,6 +38,8 @@ type KeyboardListener = (state: KeyboardState) => void;
 interface KeyboardState {
   isVisible: boolean;
   height: number;
+  duration: number;  // 动画时长（秒）
+  isAnimating: boolean;  // 是否正在动画中
 }
 
 interface LockInfo {
@@ -49,7 +51,7 @@ class KeyboardManager {
   private static instance: KeyboardManager;
   
   // 键盘状态
-  private state: KeyboardState = { isVisible: false, height: 0 };
+  private state: KeyboardState = { isVisible: false, height: 0, duration: 0.25, isAnimating: false };
   
   // 监听器列表
   private listeners: Set<KeyboardListener> = new Set();
@@ -93,15 +95,65 @@ class KeyboardManager {
         if (detail) {
           const keyboardVisible = detail.keyboardVisible === true || detail.keyboardVisible === 'true' || detail.keyboardVisible === 1;
           const keyboardHeight = parseFloat(detail.keyboardHeight) || 0;
+          const duration = parseFloat(detail.duration) || 0.25;
           
           this.updateState({
             isVisible: keyboardVisible,
-            height: keyboardHeight
+            height: keyboardHeight,
+            duration: duration,
+            isAnimating: false  // safeAreaChanged 是最终状态
           });
         }
       };
       
+      // 监听 keyboardWillShow 事件（借鉴 tauri-plugin-virtual-keyboard）
+      const handleKeyboardWillShow = (event: CustomEvent) => {
+        const detail = event.detail;
+        if (detail) {
+          const keyboardHeight = parseFloat(detail.height) || 0;
+          const duration = parseFloat(detail.duration) || 0.25;
+          
+          this.updateState({
+            isVisible: true,
+            height: keyboardHeight,
+            duration: duration,
+            isAnimating: true  // 动画开始
+          });
+          
+          // 动画结束后设置 isAnimating = false
+          setTimeout(() => {
+            this.updateState({
+              ...this.state,
+              isAnimating: false
+            });
+          }, duration * 1000);
+        }
+      };
+      
+      // 监听 keyboardWillHide 事件
+      const handleKeyboardWillHide = (event: CustomEvent) => {
+        const detail = event.detail;
+        const duration = parseFloat(detail?.duration) || 0.25;
+        
+        this.updateState({
+          isVisible: false,
+          height: 0,
+          duration: duration,
+          isAnimating: true
+        });
+        
+        // 动画结束后设置 isAnimating = false
+        setTimeout(() => {
+          this.updateState({
+            ...this.state,
+            isAnimating: false
+          });
+        }, duration * 1000);
+      };
+      
       window.addEventListener('safeAreaChanged', handleSafeAreaChanged as EventListener);
+      window.addEventListener('keyboardWillShow', handleKeyboardWillShow as EventListener);
+      window.addEventListener('keyboardWillHide', handleKeyboardWillHide as EventListener);
       
       // 保存移除监听器的引用
       this.showHandle = {
@@ -241,6 +293,12 @@ export interface UseKeyboardResult {
   
   /** 当前组件是否持有锁 */
   isLockOwner: boolean;
+  
+  /** 动画时长（秒） */
+  animationDuration: number;
+  
+  /** 是否正在动画中 */
+  isAnimating: boolean;
 }
 
 /**
@@ -261,7 +319,7 @@ export interface UseKeyboardResult {
 export const useKeyboard = (options: UseKeyboardOptions = {}): UseKeyboardResult => {
   const { lock = false, ignoreLock = false } = options;
   
-  const [state, setState] = useState<KeyboardState>({ isVisible: false, height: 0 });
+  const [state, setState] = useState<KeyboardState>({ isVisible: false, height: 0, duration: 0.25, isAnimating: false });
   const lockIdRef = useRef<string | null>(null);
   const managerRef = useRef<KeyboardManager | null>(null);
   
@@ -329,5 +387,7 @@ export const useKeyboard = (options: UseKeyboardOptions = {}): UseKeyboardResult
     rawKeyboardHeight: state.height,
     hideKeyboard,
     isLockOwner,
+    animationDuration: state.duration,
+    isAnimating: state.isAnimating,
   };
 };
