@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { EdgeToEdge } from 'capacitor-edge-to-edge';
-import { Capacitor } from '@capacitor/core';
+import { getPlatformInfo } from '../utils/platformDetection';
 
 /**
  * ============================================================================
@@ -76,26 +75,40 @@ class KeyboardManager {
   
   /**
    * 初始化键盘监听（只执行一次）
+   * 支持 Tauri 和 Capacitor 两种平台
    */
   async init(): Promise<void> {
-    if (this.initialized || !Capacitor.isNativePlatform()) return;
+    const platformInfo = getPlatformInfo();
+    const isNativeMobile = platformInfo.isMobile && (platformInfo.isTauri || platformInfo.isCapacitor);
+    
+    if (this.initialized || !isNativeMobile) return;
     
     this.initialized = true;
     
     try {
-      this.showHandle = await EdgeToEdge.addListener('keyboardWillShow', (info: any) => {
-        this.updateState({
-          isVisible: true,
-          height: info.keyboardHeight || 0
-        });
-      });
+      // 监听原生层注入的 safeAreaChanged 事件
+      // 由 Tauri Edge-to-Edge 插件或 Capacitor 插件触发
+      const handleSafeAreaChanged = (event: CustomEvent) => {
+        const detail = event.detail;
+        if (detail) {
+          const keyboardVisible = detail.keyboardVisible === true || detail.keyboardVisible === 'true' || detail.keyboardVisible === 1;
+          const keyboardHeight = parseFloat(detail.keyboardHeight) || 0;
+          
+          this.updateState({
+            isVisible: keyboardVisible,
+            height: keyboardHeight
+          });
+        }
+      };
       
-      this.hideHandle = await EdgeToEdge.addListener('keyboardWillHide', () => {
-        this.updateState({
-          isVisible: false,
-          height: 0
-        });
-      });
+      window.addEventListener('safeAreaChanged', handleSafeAreaChanged as EventListener);
+      
+      // 保存移除监听器的引用
+      this.showHandle = {
+        remove: () => window.removeEventListener('safeAreaChanged', handleSafeAreaChanged as EventListener)
+      };
+      
+      console.log('[KeyboardManager] 初始化完成 (Tauri/Capacitor 兼容模式)');
     } catch (error) {
       console.error('[KeyboardManager] 初始化失败:', error);
     }
@@ -168,10 +181,18 @@ class KeyboardManager {
   
   /**
    * 隐藏键盘
+   * 通过 blur 当前聚焦元素来隐藏键盘
    */
   hide(): void {
-    if (Capacitor.isNativePlatform()) {
-      EdgeToEdge.hide();
+    const platformInfo = getPlatformInfo();
+    const isNativeMobile = platformInfo.isMobile && (platformInfo.isTauri || platformInfo.isCapacitor);
+    
+    if (isNativeMobile) {
+      // 移除当前焦点来隐藏键盘
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur();
+      }
     }
   }
   

@@ -13,7 +13,7 @@
  * 自定义事件：
  * - safeAreaChanged: 当原生层更新安全区域时触发
  */
-import { Capacitor } from '@capacitor/core';
+import { getPlatformInfo } from '../utils/platformDetection';
 
 export interface SafeAreaInsets {
   /** 顶部安全区域（px） */
@@ -176,9 +176,10 @@ export class SafeAreaService {
   private applySafeAreaToCSS(): void {
     const root = document.documentElement;
     const { top, right, bottom, left } = this.currentInsets;
+    const platformInfo = getPlatformInfo();
     
     // 检测是否为原生移动平台（iOS/Android）
-    const isNativeMobile = Capacitor.isNativePlatform();
+    const isNativeMobile = platformInfo.isMobile && (platformInfo.isTauri || platformInfo.isCapacitor);
     
     // 安全区域值：
     // - 移动端：使用系统值或默认值（顶部30px，底部48px）
@@ -205,9 +206,12 @@ export class SafeAreaService {
     root.style.setProperty('--content-bottom-padding', `${contentBottomPadding}px`);
     
     // 标记平台类型
-    root.classList.add(`platform-${Capacitor.getPlatform()}`);
+    const platformName = platformInfo.isTauri ? 'tauri' : (platformInfo.isCapacitor ? 'capacitor' : 'web');
+    root.classList.add(`platform-${platformName}`);
+    if (platformInfo.isAndroid) root.classList.add('platform-android');
+    if (platformInfo.isIOS) root.classList.add('platform-ios');
     
-    console.log(`[SafeAreaService] 平台: ${Capacitor.getPlatform()}, 原生: ${isNativeMobile}, 顶部: ${computedTop}px, 底部: ${computedBottom}px`);
+    console.log(`[SafeAreaService] 平台: ${platformName}, 原生: ${isNativeMobile}, 顶部: ${computedTop}px, 底部: ${computedBottom}px`);
   }
 
   /**
