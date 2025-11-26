@@ -137,6 +137,8 @@ export class SafeAreaService {
     if (detail) {
       console.log('[SafeAreaService] 📱 收到 Tauri 原生安全区域更新:', detail);
       
+      const keyboardVisible = detail.keyboardVisible === true || detail.keyboardVisible === 'true' || detail.keyboardVisible === 1;
+      
       // 更新缓存的安全区域值
       this.currentInsets = {
         top: detail.top || 0,
@@ -145,10 +147,38 @@ export class SafeAreaService {
         left: detail.left || 0
       };
       
+      // 直接应用原生层传入的值到 CSS（跳过最小值限制）
+      this.applyNativeSafeArea(detail, keyboardVisible);
+      
       // 通知所有监听器
       this.notifyListeners();
     }
   };
+  
+  /**
+   * 直接应用原生层传入的安全区域（不做额外处理）
+   */
+  private applyNativeSafeArea(detail: any, keyboardVisible: boolean): void {
+    const root = document.documentElement;
+    const top = detail.top || 0;
+    const right = detail.right || 0;
+    const bottom = detail.bottom || 0;
+    const left = detail.left || 0;
+    const keyboardHeight = detail.keyboardHeight || 0;
+    
+    // 键盘显示时：使用原生层传入的值（已经是0）
+    // 键盘隐藏时：使用原生层传入的值（已经处理过最小安全区域）
+    root.style.setProperty('--safe-area-top', `${top}px`);
+    root.style.setProperty('--safe-area-right', `${right}px`);
+    root.style.setProperty('--safe-area-bottom', `${bottom}px`);
+    root.style.setProperty('--safe-area-left', `${left}px`);
+    root.style.setProperty('--safe-area-bottom-computed', `${bottom}px`);
+    root.style.setProperty('--content-bottom-padding', `${bottom}px`);
+    root.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+    root.style.setProperty('--keyboard-visible', keyboardVisible ? '1' : '0');
+    
+    console.log(`[SafeAreaService] 应用原生安全区域: bottom=${bottom}px, keyboard=${keyboardVisible}`);
+  }
 
   /**
    * 处理窗口大小变化
@@ -201,9 +231,8 @@ export class SafeAreaService {
     root.style.setProperty('--safe-area-bottom-computed', `${computedBottom}px`);
     root.style.setProperty('--safe-area-bottom-min', `${SAFE_AREA_BOTTOM_MIN}px`);
     
-    // 内容区域底部 padding
-    const contentBottomPadding = computedBottom + 16;
-    root.style.setProperty('--content-bottom-padding', `${contentBottomPadding}px`);
+    // 内容区域底部 padding（不再额外添加16px，由原生层控制）
+    root.style.setProperty('--content-bottom-padding', `${computedBottom}px`);
     
     // 标记平台类型
     const platformName = platformInfo.isTauri ? 'tauri' : (platformInfo.isCapacitor ? 'capacitor' : 'web');
