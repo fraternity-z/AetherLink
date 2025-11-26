@@ -48,28 +48,23 @@
     }
     
     // 🚀 核心修复：强制全屏显示 (解决 PageSheet 模式导致的上下留白)
-    // 查找 WebView 所属的 ViewController 并将其设置为全屏
-    UIResponder *responder = self;
-    while ((responder = [responder nextResponder])) {
-        if ([responder isKindOfClass:[UIViewController class]]) {
-            UIViewController *vc = (UIViewController *)responder;
-            
-            // 强制设置为全屏模式
-            if (vc.modalPresentationStyle != UIModalPresentationFullScreen) {
-                vc.modalPresentationStyle = UIModalPresentationFullScreen;
-            }
-            
-            // 如果是在 NavigationController 中，隐藏系统导航栏
-            if (vc.navigationController) {
-                vc.navigationController.navigationBarHidden = YES;
-                vc.navigationController.modalPresentationStyle = UIModalPresentationFullScreen;
-            }
-            
-            // 设置 View 背景色透明
-            vc.view.backgroundColor = UIColor.clearColor;
-            break;
+    // 使用 dispatch_async 确保在 UI 建立后执行
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // 1. 检查 Window 的 RootViewController
+        UIWindow *window = self.window;
+        if (window && window.rootViewController) {
+            [self e2e_forceFullScreen:window.rootViewController];
         }
-    }
+        
+        // 2. 检查响应链 (用于找到当前 WebView 所在的直接 VC)
+        UIResponder *responder = self;
+        while ((responder = [responder nextResponder])) {
+            if ([responder isKindOfClass:[UIViewController class]]) {
+                [self e2e_forceFullScreen:(UIViewController *)responder];
+                break;
+            }
+        }
+    });
     
     // 设置窗口背景色（支持深色模式）
     UIColor *bgColor;
@@ -95,6 +90,42 @@
         // 启动周期性注入
         [self e2e_startPeriodicInjection];
     });
+}
+
+/**
+ * 强制设置 VC 为全屏模式
+ */
+- (void)e2e_forceFullScreen:(UIViewController *)vc {
+    if (!vc) return;
+    
+    // 1. 设置当前 VC 为全屏
+    if (vc.modalPresentationStyle != UIModalPresentationFullScreen) {
+        vc.modalPresentationStyle = UIModalPresentationFullScreen;
+    }
+    
+    // 🚀 关键：允许视图延伸到屏幕边缘 (覆盖状态栏和底部安全区域)
+    vc.edgesForExtendedLayout = UIRectEdgeAll;
+    vc.extendedLayoutIncludesOpaqueBars = YES;
+    
+    // 设置背景透明
+    vc.view.backgroundColor = UIColor.clearColor;
+    
+    // 2. 如果是 NavigationController，处理 NavigationBar
+    if ([vc isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *nav = (UINavigationController *)vc;
+        nav.navigationBarHidden = YES;
+        nav.navigationBar.hidden = YES;
+    } else if (vc.navigationController) {
+        vc.navigationController.navigationBarHidden = YES;
+        vc.navigationController.navigationBar.hidden = YES;
+        // 递归处理 NavController
+        [self e2e_forceFullScreen:vc.navigationController];
+    }
+    
+    // 3. 递归处理 PresentedViewController
+    if (vc.presentedViewController) {
+        [self e2e_forceFullScreen:vc.presentedViewController];
+    }
 }
 
 - (void)e2e_startPeriodicInjection {
