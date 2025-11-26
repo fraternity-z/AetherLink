@@ -66,16 +66,11 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
       
-      - name: Generate Signing Keystore
+      - name: Setup Signing Keystore
         run: |
-          echo "Generating keystore for signing..."
-          keytool -genkey -v -keystore ${{ github.workspace }}/release-keystore.jks \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias aetherlink \
-            -storepass aetherlink2024 \
-            -keypass aetherlink2024 \
-            -dname "CN=AetherLink, OU=Development, O=LLMHouse, L=Unknown, ST=Unknown, C=CN"
-          echo "Keystore created successfully"
+          echo "Decoding fixed keystore..."
+          cp ${{ github.workspace }}/src-tauri/release-keystore.jks ${{ github.workspace }}/release-keystore.jks
+          echo "Keystore ready"
       
       - name: Build Android APK (Release)
         run: |

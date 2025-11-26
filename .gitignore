@@ -23,9 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Keystore files
+# Keystore files (排除 release-keystore.jks 用于统一签名)
 *.keystore
 *.jks
+!src-tauri/release-keystore.jks
 keystore.txt
 scripts/keystore/
 
