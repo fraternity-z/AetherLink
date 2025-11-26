@@ -211,7 +211,8 @@ const useExpandableContainer = ({
           boxShadow: 'none',
           transition: 'all 0.3s ease',
           marginBottom: '0',
-          paddingBottom: isIOS ? '34px' : '0',
+          // 键盘显示时移除底部 padding，避免与键盘高度叠加导致双重空白
+          paddingBottom: isIOS ? (isKeyboardVisible ? '0' : '34px') : '0',
           border: 'none'
         }}
       >
