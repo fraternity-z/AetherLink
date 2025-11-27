@@ -9,7 +9,7 @@ import { newMessagesActions } from '../shared/store/slices/newMessagesSlice';
 import { setCurrentAssistant, setAssistants } from '../shared/store/slices/assistantsSlice';
 import { initGroups } from '../shared/store/slices/groupsSlice';
 import { useModelComboSync } from '../shared/hooks/useModelComboSync';
-import { advancedFileManagerService } from '../shared/services/AdvancedFileManagerService';
+import { unifiedFileManager } from '../shared/services/UnifiedFileManagerService';
 
 // 全局初始化标志，防止多个组件实例同时初始化
 let globalInitialized = false;
@@ -54,7 +54,7 @@ const AppInitializer = () => {
       Promise.resolve().then(async () => {
         try {
           console.log('[AppInitializer] 后台检查文件管理器权限状态...');
-          const permissionResult = await advancedFileManagerService.checkPermissions();
+          const permissionResult = await unifiedFileManager.checkPermissions();
           if (permissionResult.granted) {
             console.log('[AppInitializer] 文件管理器权限已授予');
           } else {

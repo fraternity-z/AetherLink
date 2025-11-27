@@ -24,7 +24,7 @@ import {
   FileText,
   Settings
 } from 'lucide-react';
-import { advancedFileManagerService } from '../shared/services/AdvancedFileManagerService';
+import { unifiedFileManager } from '../shared/services/UnifiedFileManagerService';
 import { toastManager } from './EnhancedToast';
 import { Capacitor } from '@capacitor/core';
 
@@ -46,7 +46,7 @@ export const FilePermissionManager: React.FC = () => {
   const checkPermissions = async () => {
     try {
       setPermissionStatus(prev => ({ ...prev, loading: true }));
-      const result = await advancedFileManagerService.checkPermissions();
+      const result = await unifiedFileManager.checkPermissions();
       setPermissionStatus({
         granted: result.granted,
         message: result.message,
@@ -65,7 +65,7 @@ export const FilePermissionManager: React.FC = () => {
   const requestPermissions = async () => {
     try {
       setRequesting(true);
-      const result = await advancedFileManagerService.requestPermissions();
+      const result = await unifiedFileManager.requestPermissions();
       setPermissionStatus({
         granted: result.granted,
         message: result.message,

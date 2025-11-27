@@ -275,10 +275,10 @@ export function exportAppearanceConfigToFile(config: AppearanceConfig, filename:
  */
 export async function exportAppearanceConfigToFolder(config: AppearanceConfig, filename: string = 'appearance-config.json'): Promise<string> {
   try {
-    const { advancedFileManagerService } = await import('../services/AdvancedFileManagerService');
+    const { unifiedFileManager } = await import('../services/UnifiedFileManagerService');
     
     // 选择保存位置
-    const result = await advancedFileManagerService.openSystemFilePicker({
+    const result = await unifiedFileManager.openSystemFilePicker({
       type: 'directory',
       multiple: false,
       title: '选择保存位置'
@@ -299,7 +299,7 @@ export async function exportAppearanceConfigToFolder(config: AppearanceConfig, f
     const json = JSON.stringify(config, null, 2);
     const fullPath = `${dirPath}/${filename}`;
     
-    await advancedFileManagerService.writeFile({
+    await unifiedFileManager.writeFile({
       path: fullPath,
       content: json,
       encoding: 'utf8',

@@ -6,7 +6,7 @@
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { v4 as uuidv4 } from 'uuid';
 import { dexieStorage } from './storage/DexieStorageService';
-import { advancedFileManagerService } from './AdvancedFileManagerService';
+import { unifiedFileManager } from './UnifiedFileManagerService';
 import type {
   Workspace,
   WorkspaceFile,
@@ -173,7 +173,7 @@ class WorkspaceService {
       const fullPath = subPath ? `${workspace.path}/${subPath}` : workspace.path;
 
       // 使用高级文件管理器读取目录内容
-      const result = await advancedFileManagerService.listDirectory({
+      const result = await unifiedFileManager.listDirectory({
         path: fullPath,
         showHidden: false,
         sortBy: 'name',
@@ -281,7 +281,7 @@ class WorkspaceService {
 
       const fullPath = `${folderPath}/${folderName}`;
 
-      await advancedFileManagerService.createDirectory({
+      await unifiedFileManager.createDirectory({
         path: fullPath,
         recursive: false
       });
@@ -306,7 +306,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      await advancedFileManagerService.createTextFile(folderPath, fileName, content);
+      await unifiedFileManager.createTextFile(folderPath, fileName, content);
 
       return { success: true };
     } catch (error) {
@@ -329,9 +329,9 @@ class WorkspaceService {
       }
 
       if (isDirectory) {
-        await advancedFileManagerService.deleteDirectory({ path: itemPath });
+        await unifiedFileManager.deleteDirectory({ path: itemPath });
       } else {
-        await advancedFileManagerService.deleteFile({ path: itemPath });
+        await unifiedFileManager.deleteFile({ path: itemPath });
       }
 
       return { success: true };
@@ -354,7 +354,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      await advancedFileManagerService.renameFile({
+      await unifiedFileManager.renameFile({
         path: itemPath,
         newName: newName
       });
@@ -379,7 +379,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      await advancedFileManagerService.copyFile({
+      await unifiedFileManager.copyFile({
         sourcePath: sourcePath,
         destinationPath: destinationPath,
         overwrite: false
@@ -405,7 +405,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      await advancedFileManagerService.moveFile({
+      await unifiedFileManager.moveFile({
         sourcePath: sourcePath,
         destinationPath: destinationPath
       });
@@ -430,7 +430,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      const result = await advancedFileManagerService.readFile({
+      const result = await unifiedFileManager.readFile({
         path: filePath,
         encoding: 'utf8'
       });
@@ -455,7 +455,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      await advancedFileManagerService.writeFile({
+      await unifiedFileManager.writeFile({
         path: filePath,
         content: content,
         encoding: 'utf8',
@@ -482,7 +482,7 @@ class WorkspaceService {
         return { success: false, error: '工作区不存在' };
       }
 
-      const result = await advancedFileManagerService.searchFiles({
+      const result = await unifiedFileManager.searchFiles({
         directory: workspace.path,
         query: query,
         searchType: searchType,

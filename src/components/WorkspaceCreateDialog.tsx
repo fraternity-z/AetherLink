@@ -24,7 +24,7 @@ import {
   Folder as FolderIcon
 } from 'lucide-react';
 import { workspaceService } from '../shared/services/WorkspaceService';
-import { advancedFileManagerService } from '../shared/services/AdvancedFileManagerService';
+import { unifiedFileManager } from '../shared/services/UnifiedFileManagerService';
 import type { WorkspaceCreateRequest } from '../shared/types/workspace';
 
 interface WorkspaceCreateDialogProps {
@@ -71,19 +71,19 @@ export const WorkspaceCreateDialog: React.FC<WorkspaceCreateDialogProps> = ({
       setSelecting(true);
       setError(null);
 
-      // 首先检查权限
-      const permissionResult = await advancedFileManagerService.checkPermissions();
+      // 首先检查权限（Tauri 桌面端会自动返回 granted）
+      const permissionResult = await unifiedFileManager.checkPermissions();
       if (!permissionResult.granted) {
         console.log('权限未授予，尝试请求权限...');
-        const requestResult = await advancedFileManagerService.requestPermissions();
+        const requestResult = await unifiedFileManager.requestPermissions();
         if (!requestResult.granted) {
-          setError('需要文件访问权限才能选择文件夹。Android 11+需要在设置中授予"所有文件访问权限"。');
+          setError(requestResult.message || '需要文件访问权限才能选择文件夹');
           setSelecting(false);
           return;
         }
       }
 
-      const result = await advancedFileManagerService.openSystemFilePicker({
+      const result = await unifiedFileManager.openSystemFilePicker({
         type: 'directory',
         multiple: false,
         title: '选择工作区文件夹'

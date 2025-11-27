@@ -54,7 +54,7 @@ import {
 } from 'lucide-react';
 import { workspaceService } from '../../shared/services/WorkspaceService';
 import { MobileFileViewer } from '../../components/MobileFileViewer';
-import { advancedFileManagerService } from '../../shared/services/AdvancedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
 import type { Workspace, WorkspaceFile } from '../../shared/types/workspace';
 import dayjs from 'dayjs';
 
@@ -376,7 +376,7 @@ const WorkspaceDetail: React.FC = () => {
     if (!selectedFile) return;
 
     try {
-      await advancedFileManagerService.writeFile({
+      await unifiedFileManager.writeFile({
         path: selectedFile.path,
         content: content,
         encoding: 'utf8',

@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
-import { advancedFileManagerService } from '../../shared/services/AdvancedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
 import { toastManager } from '../../components/EnhancedToast';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 import { updateSettings } from '../../shared/store/slices/settingsSlice';
@@ -113,7 +113,7 @@ const NoteSettings: React.FC = () => {
 
   const handleSelectPath = async () => {
     try {
-      const result = await advancedFileManagerService.openSystemFilePicker({
+      const result = await unifiedFileManager.openSystemFilePicker({
         type: 'directory',
         multiple: false,
         title: '选择笔记存储目录'

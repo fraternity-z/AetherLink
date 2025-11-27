@@ -22,7 +22,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { loadLanguage } from '@uiw/codemirror-extensions-langs';
 import { EditorView } from '@codemirror/view';
 
-import { advancedFileManagerService } from '../../shared/services/AdvancedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
 import { usePinchZoom } from './hooks/usePinchZoom';
 import { FileIcon } from './components/FileIcon';
 import { ZoomControls } from './components/ZoomControls';
@@ -111,7 +111,7 @@ export const MobileFileViewer: React.FC<MobileFileViewerProps> = ({
 
       if (fileType === 'text' || fileType === 'code') {
         // 使用自定义文件读取服务或默认服务
-        const fileReader = customFileReader || advancedFileManagerService;
+        const fileReader = customFileReader || unifiedFileManager;
         const result = await fileReader.readFile({
           path: file.path,
           encoding: 'utf8'

@@ -1,4 +1,4 @@
-import { advancedFileManagerService } from '../AdvancedFileManagerService';
+import { unifiedFileManager } from '../UnifiedFileManagerService';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
 import type { NoteFile } from '../../types/note';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,7 +68,7 @@ class SimpleNoteService {
     const fullPath = await this.getFullPath(subPath);
     
     try {
-      const result = await advancedFileManagerService.listDirectory({
+      const result = await unifiedFileManager.listDirectory({
         path: fullPath,
         showHidden: false,
         sortBy: 'name',
@@ -104,7 +104,7 @@ class SimpleNoteService {
     // 确保文件名以 .md 结尾（如果没有扩展名）
     const fileName = name.endsWith('.md') ? name : `${name}.md`;
     
-    await advancedFileManagerService.createTextFile(fullPath, fileName, content);
+    await unifiedFileManager.createTextFile(fullPath, fileName, content);
   }
 
   /**
@@ -114,7 +114,7 @@ class SimpleNoteService {
     const fullPath = await this.getFullPath(subPath);
     const newFolderPath = `${fullPath}/${name}`;
     
-    await advancedFileManagerService.createDirectory({
+    await unifiedFileManager.createDirectory({
       path: newFolderPath,
       recursive: false
     });
@@ -126,7 +126,7 @@ class SimpleNoteService {
   async readNote(relativePath: string): Promise<string> {
     const fullPath = await this.getFullPath(relativePath);
     
-    const result = await advancedFileManagerService.readFile({
+    const result = await unifiedFileManager.readFile({
       path: fullPath,
       encoding: 'utf8'
     });
@@ -140,7 +140,7 @@ class SimpleNoteService {
   async saveNote(relativePath: string, content: string): Promise<void> {
     const fullPath = await this.getFullPath(relativePath);
     
-    await advancedFileManagerService.writeFile({
+    await unifiedFileManager.writeFile({
       path: fullPath,
       content: content,
       encoding: 'utf8',
@@ -155,11 +155,11 @@ class SimpleNoteService {
     const fullPath = await this.getFullPath(relativePath);
     
     if (isDirectory) {
-      await advancedFileManagerService.deleteDirectory({
+      await unifiedFileManager.deleteDirectory({
         path: fullPath
       });
     } else {
-      await advancedFileManagerService.deleteFile({
+      await unifiedFileManager.deleteFile({
         path: fullPath
       });
     }
@@ -180,7 +180,7 @@ class SimpleNoteService {
     
     try {
       // 检查是否是文件夹
-      await advancedFileManagerService.listDirectory({
+      await unifiedFileManager.listDirectory({
         path: oldFullPath,
         showHidden: false,
         sortBy: 'name',
@@ -197,7 +197,7 @@ class SimpleNoteService {
         const content = await this.readNote(relativePath);
         
         // 2. 写入新文件
-        await advancedFileManagerService.writeFile({
+        await unifiedFileManager.writeFile({
           path: newFullPath,
           content: content,
           encoding: 'utf8',
@@ -205,13 +205,13 @@ class SimpleNoteService {
         });
         
         // 3. 删除原文件
-        await advancedFileManagerService.deleteFile({
+        await unifiedFileManager.deleteFile({
           path: oldFullPath
         });
       } catch (error) {
         // 如果出错，尝试清理新文件
         try {
-          await advancedFileManagerService.deleteFile({
+          await unifiedFileManager.deleteFile({
             path: newFullPath
           });
         } catch (cleanupError) {

@@ -13,6 +13,14 @@
         { "url": "https://**" },
         { "url": "http://**" }
       ]
-    }
+    },
+    {
+      "identifier": "advanced-file-manager:default",
+      "allow": [
+        { "path": "**" }
+      ]
+    },
+    "shell:default",
+    "shell:allow-open"
   ]
 }

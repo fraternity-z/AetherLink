@@ -376,12 +376,12 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       // 移动端使用Capacitor Filesystem
       if (Capacitor.isNativePlatform()) {
         try {
-          // 使用现有的AdvancedFileManagerService检查并请求权限
-          const { advancedFileManagerService } = await import('../../shared/services/AdvancedFileManagerService');
+          // 使用统一的文件管理服务检查并请求权限
+          const { unifiedFileManager } = await import('../../shared/services/UnifiedFileManagerService');
           
-          const permissionResult = await advancedFileManagerService.checkPermissions();
+          const permissionResult = await unifiedFileManager.checkPermissions();
           if (!permissionResult.granted) {
-            const requestResult = await advancedFileManagerService.requestPermissions();
+            const requestResult = await unifiedFileManager.requestPermissions();
             if (!requestResult.granted) {
               throw new Error('需要存储权限才能保存文件：' + requestResult.message);
             }
