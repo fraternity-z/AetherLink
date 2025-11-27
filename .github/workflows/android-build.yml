@@ -67,56 +67,22 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./android/gradlew
 
-      - name: Setup Signing Keystore
-        run: |
-          # 检查是否存在签名密钥文件
-          if [ -f "android/aetherlink.keystore" ]; then
-            echo "Keystore file found in repository"
-            export KEYSTORE_FILE="${{ github.workspace }}/android/aetherlink.keystore"
-          else
-            echo "Creating keystore from secrets or generating new one..."
-            # 如果有 KEYSTORE_BASE64 secret，则解码使用
-            if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-              echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/aetherlink.keystore
-            else
-              # 生成新的 keystore（用于测试构建）
-              keytool -genkey -v \
-                -keystore android/aetherlink.keystore \
-                -alias aetherlink \
-                -keyalg RSA \
-                -keysize 2048 \
-                -validity 10000 \
-                -storepass aetherlink2025 \
-                -keypass aetherlink2025 \
-                -dname "CN=AetherLink, OU=Development, O=LLMHouse, L=Unknown, ST=Unknown, C=CN"
-            fi
-          fi
-          echo "Keystore ready"
-
       - name: Create keystore.properties
         run: |
-          cat > android/keystore.properties << EOF
-          storeFile=aetherlink.keystore
-          storePassword=${{ secrets.KEYSTORE_PASSWORD || 'aetherlink2025' }}
-          keyAlias=${{ secrets.KEY_ALIAS || 'aetherlink' }}
-          keyPassword=${{ secrets.KEY_PASSWORD || 'aetherlink2025' }}
-          EOF
+          # keystore 文件已在仓库中，只需创建 properties 文件
+          cat > android/keystore.properties << 'EOF'
+storeFile=aetherlink.keystore
+storePassword=aetherlink2025
+keyAlias=aetherlink
+keyPassword=aetherlink2025
+EOF
+          echo "Keystore properties created"
 
       - name: Build Debug APK
         run: cd android && ./gradlew assembleDebug
-        env:
-          KEYSTORE_FILE: ${{ github.workspace }}/android/aetherlink.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'aetherlink2025' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'aetherlink' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'aetherlink2025' }}
 
       - name: Build Release APK
         run: cd android && ./gradlew assembleRelease
-        env:
-          KEYSTORE_FILE: ${{ github.workspace }}/android/aetherlink.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'aetherlink2025' }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'aetherlink' }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'aetherlink2025' }}
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
