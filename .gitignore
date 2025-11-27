@@ -43,3 +43,5 @@ Cargo.lock
 .DS_Store
 Thumbs.db
 
+# 忽略参考项目文档
+docs/参考项目/

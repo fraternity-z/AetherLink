@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// 加载签名配置
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.llmhouse.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -22,10 +29,39 @@ android {
         buildConfig = true
     }
 
+    // 统一签名配置 - Debug 和 Release 使用相同签名
+    signingConfigs {
+        // 统一签名配置
+        unified {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file("../${keystoreProperties['storeFile']}")
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else if (System.getenv('KEYSTORE_FILE')) {
+                // GitHub Actions 环境变量
+                storeFile file(System.getenv('KEYSTORE_FILE'))
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Debug 构建也使用统一签名
+            if (keystorePropertiesFile.exists() || System.getenv('KEYSTORE_FILE')) {
+                signingConfig signingConfigs.unified
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Release 构建使用统一签名
+            if (keystorePropertiesFile.exists() || System.getenv('KEYSTORE_FILE')) {
+                signingConfig signingConfigs.unified
+            }
         }
     }
 }

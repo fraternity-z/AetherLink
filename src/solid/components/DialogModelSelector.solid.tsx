@@ -8,6 +8,7 @@ import { Portal } from 'solid-js/web';
 import type { Model } from '../../shared/types';
 import { getModelIdentityKey } from '../../shared/utils/modelUtils';
 import { getModelOrProviderIcon } from '../../shared/utils/providerIcons';
+import { useAppState } from '../../shared/hooks/useAppState';
 import './DialogModelSelector.solid.css';
 
 export interface DialogModelSelectorProps {
@@ -228,23 +229,31 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
     }
   };
 
-  // 监听 Escape 键关闭对话框（支持 Android 返回键）
+  // 集成全局返回键处理系统
+  // 使用 Zustand store 直接访问（不通过 React hook）
+  const dialogId = 'solid-dialog-model-selector';
+  
   createEffect(() => {
-    if (!props.menuOpen) return;
+    const isOpen = props.menuOpen;
+    const { openDialog, closeDialog } = useAppState.getState();
     
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
+    if (isOpen) {
+      // 注册到全局对话框栈，提供关闭回调
+      openDialog(dialogId, () => {
+        console.log('[SolidJS DialogModelSelector] 通过返回键关闭');
         props.handleMenuClose();
-        console.log('[SolidJS DialogModelSelector] Escape 键关闭对话框');
-      }
-    };
+      });
+      console.log('[SolidJS DialogModelSelector] 已注册到全局对话框栈');
+    } else {
+      // 从对话框栈中移除
+      closeDialog(dialogId);
+    }
     
-    document.addEventListener('keydown', handleKeyDown);
-    
+    // 清理函数
     onCleanup(() => {
-      document.removeEventListener('keydown', handleKeyDown);
+      if (isOpen) {
+        closeDialog(dialogId);
+      }
     });
   });
 
