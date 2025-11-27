@@ -160,34 +160,7 @@ export const prepareMessagesForApi = async (
     return timeA - timeB; // 升序排列，最早的在前面
   });
 
-  // 4. 应用上下文消息数量限制（参考 cherry-studio 的 filterContextMessages）
-  // 首先过滤掉 clear 类型的消息之后的内容
-  let contextFilteredMessages = sortedMessages;
-  
-  // 查找最后一个 clear 类型消息的索引
-  let clearIndex = -1;
-  for (let i = sortedMessages.length - 1; i >= 0; i--) {
-    if (sortedMessages[i].type === 'clear') {
-      clearIndex = i;
-      break;
-    }
-  }
-  
-  // 如果找到了 clear 消息，只保留 clear 消息之后的消息
-  if (clearIndex !== -1) {
-    contextFilteredMessages = sortedMessages.slice(clearIndex + 1);
-    console.log(`[prepareMessagesForApi] 发现 clear 消息，过滤后消息数: ${contextFilteredMessages.length}`);
-  }
-
-  // 然后应用 contextCount 限制（使用 takeRight 逻辑）
-  // +2 是为了给新的用户消息和助手消息预留空间（参考 cherry-studio）
-  const limitedMessages = contextCount >= 100000
-    ? contextFilteredMessages  // 无限制
-    : contextFilteredMessages.slice(-(contextCount + 2));
-  
-  console.log(`[prepareMessagesForApi] 应用上下文限制: 原始消息数=${sortedMessages.length}, 限制后消息数=${limitedMessages.length}, contextCount=${contextCount}`);
-
-  // 5. 获取当前助手消息（注意：从原始 sortedMessages 查找，因为 limitedMessages 可能不包含它）
+  // 4. 获取当前助手消息
   const assistantMessage = sortedMessages.find((msg: Message) => msg.id === assistantMessageId);
   if (!assistantMessage) {
     throw new Error(`找不到助手消息 ${assistantMessageId}`);
@@ -195,6 +168,44 @@ export const prepareMessagesForApi = async (
 
   // 获取当前助手消息的创建时间
   const assistantMessageTime = new Date(assistantMessage.createdAt).getTime();
+
+  // 5. 应用上下文消息数量限制（参考 cherry-studio 的 filterContextMessages）
+  // 首先过滤掉当前助手消息和时间更晚的消息，以及 clear 消息之后的内容
+  let contextFilteredMessages = sortedMessages.filter((msg: Message) => {
+    // 排除当前助手消息
+    if (msg.id === assistantMessageId) return false;
+    // 排除 system 消息
+    if (msg.role === 'system') return false;
+    // 排除创建时间晚于当前助手消息的消息
+    const messageTime = new Date(msg.createdAt).getTime();
+    if (messageTime >= assistantMessageTime) return false;
+    return true;
+  });
+  
+  // 查找最后一个 clear 类型消息的索引
+  let clearIndex = -1;
+  for (let i = contextFilteredMessages.length - 1; i >= 0; i--) {
+    if (contextFilteredMessages[i].type === 'clear') {
+      clearIndex = i;
+      break;
+    }
+  }
+  
+  // 如果找到了 clear 消息，只保留 clear 消息之后的消息
+  if (clearIndex !== -1) {
+    contextFilteredMessages = contextFilteredMessages.slice(clearIndex + 1);
+    console.log(`[prepareMessagesForApi] 发现 clear 消息，过滤后消息数: ${contextFilteredMessages.length}`);
+  }
+
+  // 然后应用 contextCount 限制（使用 takeRight 逻辑）
+  // contextCount 代表**轮数**，1轮 = 1条用户消息 + 1条AI回复 = 2条消息
+  // 所以实际取的消息数 = contextCount * 2
+  const actualMessageCount = contextCount * 2;
+  const limitedMessages = contextCount >= 100000
+    ? contextFilteredMessages  // 无限制
+    : contextFilteredMessages.slice(-actualMessageCount);
+  
+  console.log(`[prepareMessagesForApi] 应用上下文限制: 原始消息数=${sortedMessages.length}, 过滤后消息数=${contextFilteredMessages.length}, 限制后消息数=${limitedMessages.length}, 设置轮数=${contextCount}, 实际消息数=${actualMessageCount}`);
 
   // 获取当前助手ID，用于获取系统提示词
   const topic = await dexieStorage.getTopic(topicId);
@@ -230,22 +241,11 @@ export const prepareMessagesForApi = async (
   // 这里不需要获取默认系统提示词，避免循环依赖问题
   // 如果没有助手提示词和话题提示词，使用空字符串也是可以的
 
-  // 6. 转换为API请求格式，只包含当前助手消息之前的消息
-  // 注意：使用 limitedMessages 而不是 sortedMessages，以应用上下文限制
+  // 6. 转换为API请求格式
+  // 注意：limitedMessages 已经过滤掉了当前助手消息和 system 消息
   const apiMessages = [];
 
   for (const message of limitedMessages) {
-    // 跳过当前正在处理的助手消息和所有system消息
-    if (message.id === assistantMessageId || message.role === 'system') {
-      continue;
-    }
-
-    // 只包含创建时间早于当前助手消息的消息
-    const messageTime = new Date(message.createdAt).getTime();
-    if (messageTime >= assistantMessageTime) {
-      continue;
-    }
-
     // 获取消息内容 - 检查是否有知识库缓存（风格）
     let content = getMainTextContent(message);
 
