@@ -94,9 +94,12 @@ dependencies {
 }
 
 // 解决重复类定义问题 - capacitor-android 同时作为项目依赖和 Maven 依赖被引入
+// 某些第三方插件（如 capacitor-cors-bypass-enhanced）使用 Maven 依赖 com.capacitorjs:core
+// 而不是项目依赖 project(':capacitor-android')，导致类重复定义
 configurations.configureEach {
-    // 排除 Maven 仓库中的 capacitor-android，只使用本地项目依赖
+    // 排除 Maven 仓库中的所有 capacitor 相关依赖，只使用本地项目依赖
     exclude group: 'com.capacitorjs', module: 'android'
+    exclude group: 'com.capacitorjs', module: 'core'
 }
 
 apply from: 'capacitor.build.gradle'
