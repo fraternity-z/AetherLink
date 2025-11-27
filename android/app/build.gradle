@@ -93,6 +93,12 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
 }
 
+// 解决重复类定义问题 - capacitor-android 同时作为项目依赖和 Maven 依赖被引入
+configurations.configureEach {
+    // 排除 Maven 仓库中的 capacitor-android，只使用本地项目依赖
+    exclude group: 'com.capacitorjs', module: 'android'
+}
+
 apply from: 'capacitor.build.gradle'
 
 try {

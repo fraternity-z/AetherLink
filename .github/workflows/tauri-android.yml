@@ -1,13 +1,25 @@
-name: Tauri Android Build
+name: Tauri Android Build (Disabled)
 
+# 已禁用 - 保留配置以备将来使用
+# 要重新启用此工作流，请删除下面的注释并恢复原始触发条件
 on:
-  push:
-    branches: [ main, master ]
+  # push:
+  #   branches: [ main, master ]
+  # workflow_dispatch:
+  
+  # 临时禁用所有触发条件 - 只能手动触发且需要特殊分支
   workflow_dispatch:
+    inputs:
+      force_enable:
+        description: '强制启用构建 (输入 "FORCE_ENABLE" 启用)'
+        required: true
+        default: 'disabled'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 只有在手动触发且输入正确的强制启用参数时才运行
+    if: github.event.inputs.force_enable == 'FORCE_ENABLE'
     steps:
       - uses: actions/checkout@v4
       
