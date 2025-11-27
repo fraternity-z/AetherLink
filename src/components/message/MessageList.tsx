@@ -241,13 +241,16 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
         // 使用 requestAnimationFrame 确保在DOM更新后滚动
         requestAnimationFrame(() => {
           try {
-            // 优先使用 messagesEndRef
-            if (messagesEndRef.current) {
-              messagesEndRef.current.scrollIntoView({ behavior });
-              // 移除频繁的滚动成功日志
-            } else if (scrollToBottom) {
+            // 优先使用容器滚动方法，避免 scrollIntoView 导致整个页面滚动
+            // 这样可以防止固定定位的输入框在滚动时位置异常
+            if (scrollToBottom) {
               scrollToBottom();
-              // 移除频繁的滚动成功日志
+            } else if (messagesEndRef.current && containerRef.current) {
+              // 备用方案：使用容器滚动到底部
+              containerRef.current.scrollTo({
+                top: containerRef.current.scrollHeight,
+                behavior
+              });
             }
           } catch (error) {
             handleError(error, `滚动管理器滚动失败 (来源: ${source})`, { showToUser: false });

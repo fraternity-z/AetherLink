@@ -14,6 +14,7 @@ import type { RootState } from '../../../shared/store';
 import type { SiliconFlowImageFormat, ChatTopic, Message, Model } from '../../../shared/types';
 import { useTopicManagement } from '../../../shared/hooks/useTopicManagement';
 import { useKeyboard } from '../../../shared/hooks/useKeyboard';
+import { useVisualViewport } from '../../../shared/hooks/useVisualViewport';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
@@ -188,6 +189,9 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   // 键盘管理 - 获取键盘高度用于调整输入框位置
   // 使用新的锁定机制：当 MessageEditor 锁定键盘时，这里的 keyboardHeight 会自动返回 0
   const { keyboardHeight } = useKeyboard();
+
+  // Visual Viewport 管理 - 解决移动端滚动时输入框跟随移动的问题
+  const { fixedTop, shouldUseVisualViewport } = useVisualViewport();
 
   // 稳定化的回调函数，避免重复渲染 - 使用函数式更新
   const handleToggleDrawer = useCallback(() => {
@@ -591,17 +595,17 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       style={{
         position: 'fixed',
         /**
-         * 键盘管理 - 模仿 rikkahub 的 imePadding() 修饰符
+         * 输入框定位策略 - 解决移动端滚动时输入框跟随移动的问题
          * 
-         * 原理：
-         * - keyboardHeight 由 useKeyboard hook 提供，监听 Capacitor Keyboard 事件获取键盘实际高度
-         * - 键盘弹出时（keyboardHeight > 0）：bottom = 键盘高度，输入框自动上移到键盘上方
-         * - 键盘隐藏时（keyboardHeight = 0）：bottom = 0，输入框回到底部
+         * 使用 visualViewport API 来正确定位固定元素：
+         * - 当键盘弹出且用户滚动时，使用 top + transform 定位到 visual viewport 底部
+         * - 否则使用常规 bottom 定位
          * 
-         * 参考：docs/rikkahub-master/app/src/main/java/me/rerere/rikkahub/ui/components/ai/ChatInput.kt
-         * rikkahub 使用：Column(modifier.imePadding()) 自动处理键盘间距
+         * 参考：https://saricden.com/how-to-make-fixed-elements-respect-the-virtual-keyboard-on-ios
          */
-        bottom: keyboardHeight,
+        top: shouldUseVisualViewport && fixedTop !== null ? fixedTop : 'auto',
+        bottom: shouldUseVisualViewport && fixedTop !== null ? 'auto' : keyboardHeight,
+        transform: shouldUseVisualViewport && fixedTop !== null ? 'translateY(-100%)' : 'none',
         right: 0,
         zIndex: 2,
         backgroundColor: 'transparent',
@@ -612,21 +616,10 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         gap: 0,
         /**
          * 安全区域处理 - 动态切换 paddingBottom
-         * 
-         * 使用全局统一的安全区域变量 --safe-area-bottom-computed
-         * 
-         * 重要：避免双重间距问题！
-         * 
-         * 场景 1 - 键盘隐藏时（keyboardHeight = 0）：
-         *   bottom: 0
-         *   paddingBottom: var(--safe-area-bottom-computed) // 统一安全区域
-         * 
-         * 场景 2 - 键盘弹出时（keyboardHeight > 0）：
-         *   bottom: keyboardHeight (例如 336px)
-         *   paddingBottom: 0 // 键盘弹出时不需要额外 padding
          */
-        paddingBottom: keyboardHeight > 0 ? '0' : 'var(--safe-area-bottom-computed)',
-        transition: 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out', // 平滑动画
+        paddingBottom: (keyboardHeight > 0 || shouldUseVisualViewport) ? '0' : 'var(--safe-area-bottom-computed)',
+        // 使用 visualViewport 时不添加 transition，避免滚动时的延迟感
+        transition: shouldUseVisualViewport ? 'none' : 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out',
       }}
     >
       {shouldShowToolbar && (
@@ -666,6 +659,9 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     inputComponent,
     isMobile,
     keyboardHeight, // 键盘高度变化时重新渲染
+    // visualViewport 相关依赖 - 用于解决滚动时输入框移动的问题
+    fixedTop,
+    shouldUseVisualViewport,
     // 添加这些依赖确保工具栏状态变化时正确更新
     handleClearTopic,
     imageGenerationMode,

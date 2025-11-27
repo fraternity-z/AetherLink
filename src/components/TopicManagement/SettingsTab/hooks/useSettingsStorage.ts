@@ -28,7 +28,7 @@ export interface AppSettings {
 // 默认设置值
 const DEFAULT_SETTINGS: AppSettings = {
   contextLength: 16000,
-  contextCount: 5,
+  contextCount: 20,
   maxOutputTokens: 8192,
   enableMaxOutputTokens: true,
   mathRenderer: 'KaTeX' as MathRendererType,

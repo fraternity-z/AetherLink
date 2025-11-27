@@ -287,44 +287,12 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   }, [message, isFullExpanded, isActivated, textareaExpanded]);
 
   // 处理输入框激活
+  // 注意：移除了 iOS 特殊滚动处理，因为输入框已使用 position: fixed + bottom: keyboardHeight
+  // 通过 useKeyboard hook 正确处理键盘弹出，不需要手动滚动页面
   const handleInputFocus = () => {
     console.log('[CompactChatInput] 输入框获得焦点');
     setIsActivated(true);
-
-    // iOS特殊处理
-    if (isIOS && textareaRef.current) {
-      // 延迟执行，确保输入法已弹出
-      setTimeout(() => {
-        if (!textareaRef.current) return;
-
-        // 滚动到输入框位置
-        textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        // 额外处理：尝试滚动页面到底部
-        window.scrollTo({
-          top: document.body.scrollHeight,
-          behavior: 'smooth'
-        });
-
-        // iOS特有：确保输入框在可视区域内
-        const viewportHeight = window.innerHeight;
-        const keyboardHeight = viewportHeight * 0.4; // 估计键盘高度约为视口的40%
-
-        if (textareaRef.current) {
-          const inputRect = textareaRef.current.getBoundingClientRect();
-          const inputBottom = inputRect.bottom;
-
-          // 如果输入框底部被键盘遮挡，则滚动页面
-          if (inputBottom > viewportHeight - keyboardHeight) {
-            const scrollAmount = inputBottom - (viewportHeight - keyboardHeight) + 20; // 额外20px空间
-            window.scrollBy({
-              top: scrollAmount,
-              behavior: 'smooth'
-            });
-          }
-        }
-      }, 400); // 增加延迟时间，确保键盘完全弹出
-    }
+    // 键盘弹出时的位置调整由 ChatPageUI 的 InputContainer 通过 keyboardHeight 处理
   };
 
   // 处理输入框失活

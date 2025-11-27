@@ -234,7 +234,7 @@ export default function SettingsTab({
       {/* 可折叠的上下文设置 */}
       <ContextSettings
         contextLength={getSetting('contextLength', 16000)}
-        contextCount={getSetting('contextCount', 5)}
+        contextCount={getSetting('contextCount', 20)}
         maxOutputTokens={getSetting('maxOutputTokens', 8192)}
         enableMaxOutputTokens={getSetting('enableMaxOutputTokens', true)}
         thinkingEffort={getSetting('defaultThinkingEffort', 'medium')}

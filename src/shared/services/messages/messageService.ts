@@ -50,7 +50,7 @@ export function applyContextLimits(messages: Message[], contextLength: number, c
  */
 export async function getContextSettings(): Promise<{ contextLength: number; contextCount: number }> {
   let contextLength = 16000; // 默认上下文长度，设置为16K
-  let contextCount = 5;      // 默认上下文数量，与最佳实例DEFAULT_CONTEXTCOUNT保持一致
+  let contextCount = 20;     // 默认上下文数量，设置为20条
 
   try {
     const appSettings = await getStorageItem<any>('appSettings');

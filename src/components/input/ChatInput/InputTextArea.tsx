@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
 
 // 添加自定义滚动条样式
 const addCustomScrollbarStyles = (isDarkMode: boolean) => {
@@ -78,14 +78,8 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   expanded,
   onExpandToggle
 }) => {
-  const [isIOS, setIsIOS] = useState(false);
-
-  // 检测iOS设备
-  useEffect(() => {
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                       (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-    setIsIOS(isIOSDevice);
-  }, []);
+  // 注意：移除了 isIOS 状态和检测，因为不再需要 iOS 特殊滚动处理
+  // 输入框位置调整由 ChatPageUI 的 InputContainer 通过 keyboardHeight 处理
 
   // 添加自定义滚动条样式
   useEffect(() => {
@@ -149,40 +143,11 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
     }, 100); // 减少延迟时间
 
     // 添加键盘显示检测
+    // 注意：移除了 iOS 特殊滚动处理，因为输入框已使用 position: fixed + bottom: keyboardHeight
+    // 通过 useKeyboard hook 正确处理键盘弹出，不需要手动滚动页面
+    // 这样可以避免滚动聊天界面时输入框位置异常的问题
     const handleFocus = () => {
-
-      // iOS设备特殊处理
-      if (isIOS && textareaRef.current) {
-        // 延迟执行，确保输入法已弹出
-        setTimeout(() => {
-          if (!textareaRef.current) return;
-
-          // 滚动到输入框位置
-          textareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-          // 额外处理：尝试滚动页面到底部
-          window.scrollTo({
-            top: document.body.scrollHeight,
-            behavior: 'smooth'
-          });
-
-          // iOS特有：确保输入框在可视区域内
-          const viewportHeight = window.innerHeight;
-          const keyboardHeight = viewportHeight * 0.4; // 估计键盘高度约为视口的40%
-
-          const inputRect = textareaRef.current.getBoundingClientRect();
-          const inputBottom = inputRect.bottom;
-
-          // 如果输入框底部被键盘遮挡，则滚动页面
-          if (inputBottom > viewportHeight - keyboardHeight) {
-            const scrollAmount = inputBottom - (viewportHeight - keyboardHeight) + 20; // 额外20px空间
-            window.scrollBy({
-              top: scrollAmount,
-              behavior: 'smooth'
-            });
-          }
-        }, 300); // 减少延迟时间
-      }
+      // 键盘弹出时的位置调整由 ChatPageUI 的 InputContainer 通过 keyboardHeight 处理
     };
 
     const handleBlur = () => {

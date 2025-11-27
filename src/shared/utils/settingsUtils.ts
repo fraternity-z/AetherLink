@@ -99,7 +99,7 @@ export function getAppSettings(): Record<string, any> {
     showMessageDivider: true,
     copyableCodeBlocks: true,
     contextLength: 16000,
-    contextCount: 5,
+    contextCount: 20,
     mathRenderer: 'KaTeX',
     defaultThinkingEffort: 'medium',
     thinkingBudget: 1024,  // 默认思考预算为1024 tokens

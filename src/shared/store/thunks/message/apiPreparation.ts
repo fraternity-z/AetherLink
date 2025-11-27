@@ -9,6 +9,7 @@ import { AssistantMessageStatus } from '../../../types/newMessage';
 import store, { type RootState } from '../../index';
 import { injectSystemPromptVariables } from '../../../utils/systemPromptVariables';
 import { EventEmitter, EVENT_NAMES } from '../../../services/EventService';
+import { getContextSettings } from '../../../services/messages/messageService';
 
 /**
  * 在API调用前检查是否需要进行知识库搜索（风格：新模式）
@@ -145,10 +146,12 @@ export const prepareMessagesForApi = async (
     console.log('[prepareMessagesForApi] 跳过知识库搜索检查');
   }
 
-  // 2. 获取包含content字段的消息
+  // 2. 获取上下文设置（参考 cherry-studio 的实现）
+  const { contextLength, contextCount } = await getContextSettings();
+  console.log(`[prepareMessagesForApi] 上下文设置: contextLength=${contextLength}, contextCount=${contextCount}`);
+
+  // 3. 获取包含content字段的消息
   const messages = await dexieStorage.getTopicMessages(topicId);
-
-
 
   // 按创建时间排序消息，确保顺序正确
   const sortedMessages = [...messages].sort((a, b) => {
@@ -157,7 +160,34 @@ export const prepareMessagesForApi = async (
     return timeA - timeB; // 升序排列，最早的在前面
   });
 
-  // 获取当前助手消息
+  // 4. 应用上下文消息数量限制（参考 cherry-studio 的 filterContextMessages）
+  // 首先过滤掉 clear 类型的消息之后的内容
+  let contextFilteredMessages = sortedMessages;
+  
+  // 查找最后一个 clear 类型消息的索引
+  let clearIndex = -1;
+  for (let i = sortedMessages.length - 1; i >= 0; i--) {
+    if (sortedMessages[i].type === 'clear') {
+      clearIndex = i;
+      break;
+    }
+  }
+  
+  // 如果找到了 clear 消息，只保留 clear 消息之后的消息
+  if (clearIndex !== -1) {
+    contextFilteredMessages = sortedMessages.slice(clearIndex + 1);
+    console.log(`[prepareMessagesForApi] 发现 clear 消息，过滤后消息数: ${contextFilteredMessages.length}`);
+  }
+
+  // 然后应用 contextCount 限制（使用 takeRight 逻辑）
+  // +2 是为了给新的用户消息和助手消息预留空间（参考 cherry-studio）
+  const limitedMessages = contextCount >= 100000
+    ? contextFilteredMessages  // 无限制
+    : contextFilteredMessages.slice(-(contextCount + 2));
+  
+  console.log(`[prepareMessagesForApi] 应用上下文限制: 原始消息数=${sortedMessages.length}, 限制后消息数=${limitedMessages.length}, contextCount=${contextCount}`);
+
+  // 5. 获取当前助手消息（注意：从原始 sortedMessages 查找，因为 limitedMessages 可能不包含它）
   const assistantMessage = sortedMessages.find((msg: Message) => msg.id === assistantMessageId);
   if (!assistantMessage) {
     throw new Error(`找不到助手消息 ${assistantMessageId}`);
@@ -200,10 +230,11 @@ export const prepareMessagesForApi = async (
   // 这里不需要获取默认系统提示词，避免循环依赖问题
   // 如果没有助手提示词和话题提示词，使用空字符串也是可以的
 
-  // 转换为API请求格式，只包含当前助手消息之前的消息
+  // 6. 转换为API请求格式，只包含当前助手消息之前的消息
+  // 注意：使用 limitedMessages 而不是 sortedMessages，以应用上下文限制
   const apiMessages = [];
 
-  for (const message of sortedMessages) {
+  for (const message of limitedMessages) {
     // 跳过当前正在处理的助手消息和所有system消息
     if (message.id === assistantMessageId || message.role === 'system') {
       continue;
@@ -376,7 +407,7 @@ export const prepareMessagesForApi = async (
     content: processedSystemPrompt
   });
 
-  console.log(`[prepareMessagesForApi] 准备完成，系统提示词长度: ${processedSystemPrompt.length}，API消息数量: ${apiMessages.length}`);
+  console.log(`[prepareMessagesForApi] 准备完成，系统提示词长度: ${processedSystemPrompt.length}，API消息数量: ${apiMessages.length}，上下文限制: ${contextCount}`);
 
   return apiMessages;
 };

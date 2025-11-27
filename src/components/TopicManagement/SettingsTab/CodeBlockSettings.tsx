@@ -41,7 +41,7 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [themeNames, setThemeNames] = useState<string[]>(['auto']);
 
   // 从 Redux store 获取设置

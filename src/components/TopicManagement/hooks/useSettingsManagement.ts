@@ -27,7 +27,7 @@ export function useSettingsManagement() {
     // 对话导航设置
     messageNavigation: messageNavigation, // 从Redux获取对话导航设置
     contextLength: 16000, // 设置为16K，适合大多数模型
-    contextCount: 5,      // 与最佳实例保持一致，DEFAULT_CONTEXTCOUNT = 5
+    contextCount: 20,     // 默认上下文消息数量设置为20条
     mathRenderer: 'KaTeX' as const,
     defaultThinkingEffort: 'medium' as ThinkingOption
   });
