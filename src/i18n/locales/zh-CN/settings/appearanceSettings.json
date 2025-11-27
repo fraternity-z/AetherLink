@@ -68,7 +68,8 @@
         "clearButton": "清空按钮",
         "searchButton": "搜索按钮",
         "modelSelector": "模型选择器",
-        "settingsButton": "设置按钮"
+        "settingsButton": "设置按钮",
+        "condenseButton": "压缩上下文"
       },
       "preview": {
         "title": "DIY 布局预览",

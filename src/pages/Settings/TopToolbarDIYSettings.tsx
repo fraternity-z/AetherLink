@@ -30,7 +30,8 @@ import {
   Hand,
   Wand2,
   RotateCcw,
-  EyeOff
+  EyeOff,
+  Minimize2
 } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
 import useScrollPosition from '../../hooks/useScrollPosition';
@@ -101,6 +102,7 @@ const TopToolbarDIYSettings: React.FC = () => {
     searchButton: { name: t('settings.appearance.topToolbarDIY.components.searchButton'), icon: <CustomIcon name="search" size={20} />, key: 'showSearchButton' },
     modelSelector: { name: t('settings.appearance.topToolbarDIY.components.modelSelector'), icon: <Bot size={20} />, key: 'showModelSelector' },
     settingsButton: { name: t('settings.appearance.topToolbarDIY.components.settingsButton'), icon: <Settings size={20} />, key: 'showSettingsButton' },
+    condenseButton: { name: t('settings.appearance.topToolbarDIY.components.condenseButton'), icon: <Minimize2 size={20} />, key: 'showCondenseButton' },
   };
 
   const handleBack = () => {
@@ -339,6 +341,12 @@ const TopToolbarDIYSettings: React.FC = () => {
         return (
           <IconButton key={componentId} color="inherit" size="small" sx={style}>
             <Settings size={20} />
+          </IconButton>
+        );
+      case 'condenseButton':
+        return (
+          <IconButton key={componentId} color="inherit" size="small" sx={style}>
+            <Minimize2 size={20} />
           </IconButton>
         );
       default:

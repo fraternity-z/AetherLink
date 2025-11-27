@@ -14,6 +14,7 @@ import {
   Sliders as TuneIcon,
   Wand2 as AutoFixHighIcon,
   GitBranch,
+  Minimize2 as CompressIcon,
   MessageSquare as ForumIcon,
   BookOpen as MenuBookIcon,
   Folder as WorkspaceIcon,
@@ -154,6 +155,14 @@ const SettingsPage: React.FC = () => {
           icon: <GitBranch size={24} />,
           path: '/settings/model-combo',
           onClick: () => navigateTo('/settings/model-combo'),
+        },
+        {
+          id: 'context-condense',
+          title: t('settings.items.contextCondense.title', '上下文压缩'),
+          description: t('settings.items.contextCondense.description', '智能压缩对话历史，节省Token成本'),
+          icon: <CompressIcon size={24} />,
+          path: '/settings/context-condense',
+          onClick: () => navigateTo('/settings/context-condense'),
         },
         {
           id: 'web-search',

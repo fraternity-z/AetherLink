@@ -90,7 +90,44 @@
     "networkProxy": {
       "title": "网络代理",
       "description": "配置HTTP/SOCKS代理服务器"
+    },
+    "contextCondense": {
+      "title": "上下文压缩",
+      "description": "智能压缩对话历史，节省Token成本"
     }
+  },
+  "contextCondense": {
+    "title": "上下文压缩",
+    "whatIsThis": "什么是上下文压缩？",
+    "description": "当对话历史过长时，会占用大量的 Token，导致成本增加、响应变慢，甚至超出模型的上下文窗口限制。上下文压缩通过 AI 将冗长的对话历史智能地总结成精简摘要，同时保留关键信息。",
+    "autoCondense": "自动压缩",
+    "autoCondenseDesc": "当上下文占用达到设定阈值时自动进行压缩",
+    "enableAutoCondense": "启用自动压缩",
+    "threshold": "触发阈值",
+    "thresholdDesc": "当上下文窗口占用达到此百分比时触发自动压缩",
+    "currentThreshold": "当前阈值",
+    "thresholdHint": "建议设置在 70%-90% 之间，过低会频繁触发压缩，过高可能导致超出限制",
+    "condenseModel": "压缩模型",
+    "condenseModelDesc": "选择用于压缩对话的模型（可使用更便宜的模型来节省成本）",
+    "selectModel": "选择模型",
+    "useDefaultModel": "使用默认模型",
+    "currentModelPrefix": "当前",
+    "usingDefaultModel": "使用默认模型",
+    "customPrompt": "自定义提示词",
+    "customPromptDesc": "自定义压缩时使用的系统提示词（留空使用内置提示词）",
+    "customPromptPlaceholder": "请输入自定义提示词...\n\n内置提示词会生成包含以下内容的摘要：\n- 之前的对话概述\n- 当前工作详情\n- 关键技术概念\n- 相关文件和代码\n- 问题解决进展\n- 待完成任务",
+    "resetToDefault": "恢复默认",
+    "howItWorks": "工作原理",
+    "step1": "保留首条消息 - 通常包含任务初始指令",
+    "step2": "保留最后3条消息 - 保持最新上下文的完整性",
+    "step3": "压缩中间消息 - 使用 AI 生成结构化摘要",
+    "step4": "重组消息 - [首条消息, 摘要, 最后3条消息]",
+    "manualCondense": "手动压缩",
+    "condenseNow": "立即压缩",
+    "condensing": "压缩中...",
+    "condenseSuccess": "压缩成功！Token 从 {{before}} 减少到 {{after}}",
+    "condenseError": "压缩失败：{{error}}",
+    "noNeedToCondense": "当前对话较短，无需压缩"
   },
   "about": {
     "header": "关于我们",

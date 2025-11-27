@@ -24,6 +24,7 @@ import FileBlock from './blocks/FileBlock';
 import PlaceholderBlock from './blocks/PlaceholderBlock';
 import SearchResultsBlock from './blocks/SearchResultsBlock';
 import KnowledgeReferenceBlock from './blocks/KnowledgeReferenceBlock';
+import ContextSummaryBlock from './blocks/ContextSummaryBlock';
 // import ToolBlock from './blocks/ToolBlock'; // 已移除：工具块在 MainTextBlock 中原位渲染
 
 // 简单的动画块包装器组件（使用 MUI Fade）
@@ -234,6 +235,9 @@ const MessageBlockRenderer: React.FC<Props> = ({
                 break;
               case MessageBlockType.KNOWLEDGE_REFERENCE:
                 blockComponent = <KnowledgeReferenceBlock key={block.id} block={block as any} />;
+                break;
+              case MessageBlockType.CONTEXT_SUMMARY:
+                blockComponent = <ContextSummaryBlock key={block.id} block={block as any} />;
                 break;
               default:
                 console.warn('不支持的块类型:', (block as any).type, block);

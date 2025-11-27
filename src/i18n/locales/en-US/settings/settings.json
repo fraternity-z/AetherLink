@@ -90,7 +90,44 @@
     "networkProxy": {
       "title": "Network Proxy",
       "description": "Configure HTTP/SOCKS proxy server"
+    },
+    "contextCondense": {
+      "title": "Context Condense",
+      "description": "Intelligently compress conversation history to save tokens"
     }
+  },
+  "contextCondense": {
+    "title": "Context Condense",
+    "whatIsThis": "What is Context Condense?",
+    "description": "When conversation history gets too long, it consumes many tokens, increasing costs, slowing responses, and may exceed the model's context window limit. Context condense uses AI to intelligently summarize lengthy conversation history into a concise summary while preserving key information.",
+    "autoCondense": "Auto Condense",
+    "autoCondenseDesc": "Automatically condense when context usage reaches the set threshold",
+    "enableAutoCondense": "Enable Auto Condense",
+    "threshold": "Trigger Threshold",
+    "thresholdDesc": "Trigger auto condense when context window usage reaches this percentage",
+    "currentThreshold": "Current Threshold",
+    "thresholdHint": "Recommended to set between 70%-90%. Too low will trigger frequent condensing, too high may exceed limits",
+    "condenseModel": "Condense Model",
+    "condenseModelDesc": "Select the model for condensing conversations (can use a cheaper model to save costs)",
+    "selectModel": "Select Model",
+    "useDefaultModel": "Use Default Model",
+    "currentModelPrefix": "Current",
+    "usingDefaultModel": "Using Default Model",
+    "customPrompt": "Custom Prompt",
+    "customPromptDesc": "Custom system prompt for condensing (leave empty to use built-in prompt)",
+    "customPromptPlaceholder": "Enter custom prompt...\n\nThe built-in prompt generates summaries containing:\n- Previous conversation overview\n- Current work details\n- Key technical concepts\n- Relevant files and code\n- Problem solving progress\n- Pending tasks",
+    "resetToDefault": "Reset to Default",
+    "howItWorks": "How It Works",
+    "step1": "Keep first message - Usually contains initial task instructions",
+    "step2": "Keep last 3 messages - Maintain latest context integrity",
+    "step3": "Condense middle messages - Use AI to generate structured summary",
+    "step4": "Reorganize messages - [First message, Summary, Last 3 messages]",
+    "manualCondense": "Manual Condense",
+    "condenseNow": "Condense Now",
+    "condensing": "Condensing...",
+    "condenseSuccess": "Condense successful! Tokens reduced from {{before}} to {{after}}",
+    "condenseError": "Condense failed: {{error}}",
+    "noNeedToCondense": "Conversation is short, no need to condense"
   },
   "about": {
     "header": "About Us",

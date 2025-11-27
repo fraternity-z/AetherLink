@@ -64,7 +64,8 @@
         "clearButton": "Clear",
         "searchButton": "Search",
         "modelSelector": "Model",
-        "settingsButton": "Settings"
+        "settingsButton": "Settings",
+        "condenseButton": "Condense"
       },
       "preview": {
         "title": "DIY Layout Preview",

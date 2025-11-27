@@ -183,6 +183,14 @@ interface SettingsState {
     enableOnListItem: boolean; // 列表项点击时的触觉反馈
     enableOnNavigation: boolean; // 上下导航按钮的触觉反馈
   };
+
+  // 上下文压缩设置
+  contextCondense?: {
+    enabled: boolean; // 是否启用自动压缩
+    threshold: number; // 触发阈值百分比 (5-100)
+    modelId?: string; // 用于压缩的模型ID（可选，使用更便宜的模型）
+    customPrompt?: string; // 自定义压缩提示词
+  };
 }
 
 const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {
@@ -382,6 +390,14 @@ const getInitialState = (): SettingsState => {
       enableOnSwitch: true, // 默认启用开关触觉反馈
       enableOnListItem: false, // 默认关闭列表项触觉反馈（避免过于频繁）
       enableOnNavigation: true, // 默认启用导航触觉反馈
+    },
+
+    // 上下文压缩默认设置
+    contextCondense: {
+      enabled: false, // 默认关闭自动压缩
+      threshold: 80, // 默认阈值80%
+      modelId: undefined, // 默认使用当前模型
+      customPrompt: undefined // 默认使用内置提示词
     }
   };
 
@@ -579,6 +595,16 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       } else if (savedSettings.hapticFeedback.enableOnNavigation === undefined) {
         // 兼容旧数据：如果没有enableOnNavigation字段，添加默认值
         savedSettings.hapticFeedback.enableOnNavigation = true;
+      }
+
+      // 如果没有上下文压缩设置，使用默认值
+      if (!savedSettings.contextCondense) {
+        savedSettings.contextCondense = {
+          enabled: false,
+          threshold: 80,
+          modelId: undefined,
+          customPrompt: undefined
+        };
       }
 
       return {
@@ -1030,6 +1056,64 @@ const settingsSlice = createSlice({
         state.hapticFeedback.enableOnNavigation = action.payload;
       }
     },
+
+    // 上下文压缩设置 actions
+    setContextCondenseEnabled: (state, action: PayloadAction<boolean>) => {
+      if (!state.contextCondense) {
+        state.contextCondense = {
+          enabled: action.payload,
+          threshold: 80
+        };
+      } else {
+        state.contextCondense.enabled = action.payload;
+      }
+    },
+    setContextCondenseThreshold: (state, action: PayloadAction<number>) => {
+      if (!state.contextCondense) {
+        state.contextCondense = {
+          enabled: false,
+          threshold: action.payload
+        };
+      } else {
+        state.contextCondense.threshold = action.payload;
+      }
+    },
+    setContextCondenseModelId: (state, action: PayloadAction<string | undefined>) => {
+      if (!state.contextCondense) {
+        state.contextCondense = {
+          enabled: false,
+          threshold: 80,
+          modelId: action.payload
+        };
+      } else {
+        state.contextCondense.modelId = action.payload;
+      }
+    },
+    setContextCondenseCustomPrompt: (state, action: PayloadAction<string | undefined>) => {
+      if (!state.contextCondense) {
+        state.contextCondense = {
+          enabled: false,
+          threshold: 80,
+          customPrompt: action.payload
+        };
+      } else {
+        state.contextCondense.customPrompt = action.payload;
+      }
+    },
+    updateContextCondenseSettings: (state, action: PayloadAction<Partial<NonNullable<SettingsState['contextCondense']>>>) => {
+      if (!state.contextCondense) {
+        state.contextCondense = {
+          enabled: false,
+          threshold: 80,
+          ...action.payload
+        };
+      } else {
+        state.contextCondense = {
+          ...state.contextCondense,
+          ...action.payload
+        };
+      }
+    },
   },
   extraReducers: (builder) => {
     // 处理加载设置
@@ -1134,6 +1218,12 @@ export const {
   setHapticFeedbackOnSwitch,
   setHapticFeedbackOnListItem,
   setHapticFeedbackOnNavigation,
+  // 上下文压缩控制
+  setContextCondenseEnabled,
+  setContextCondenseThreshold,
+  setContextCondenseModelId,
+  setContextCondenseCustomPrompt,
+  updateContextCondenseSettings,
 } = settingsSlice.actions;
 
 // 重用现有的action creators，但添加异步保存

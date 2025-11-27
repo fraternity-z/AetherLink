@@ -11,6 +11,18 @@
   "delete": "删除",
   "edit": "编辑",
   "stop": "停止",
-  "clear": "清空"
+  "clear": "清空",
+  "contextSummary": {
+    "title": "上下文压缩摘要",
+    "compressedCount": "已压缩 {{count}} 条消息",
+    "tokensSaved": "节省 {{saved}} tokens ({{percent}}%)",
+    "cost": "成本: ${{cost}}",
+    "model": "模型: {{model}}",
+    "condenseSuccess": "压缩成功！节省了 {{saved}} tokens",
+    "condenseFailed": "压缩失败",
+    "condenseInProgress": "正在压缩上下文...",
+    "notEnoughMessages": "消息数量不足，无法压缩",
+    "recentlyCondensed": "最近已压缩，请稍后再试"
+  }
 }
 

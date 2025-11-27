@@ -19,7 +19,8 @@ export const MessageBlockType = {
   CHART: 'chart',
   MATH: 'math',
   SEARCH_RESULTS: 'search_results',
-  KNOWLEDGE_REFERENCE: 'knowledge_reference'
+  KNOWLEDGE_REFERENCE: 'knowledge_reference',
+  CONTEXT_SUMMARY: 'context_summary'  // 上下文压缩摘要块
 } as const;
 
 export type MessageBlockType = typeof MessageBlockType[keyof typeof MessageBlockType];
@@ -252,6 +253,19 @@ export interface KnowledgeReferenceMessageBlock extends BaseMessageBlock {
   };
 }
 
+// 上下文压缩摘要块
+export interface ContextSummaryMessageBlock extends BaseMessageBlock {
+  type: typeof MessageBlockType.CONTEXT_SUMMARY;
+  content: string;  // 压缩后的摘要内容
+  originalMessageCount: number;  // 被压缩的消息数量
+  originalTokens: number;  // 原始 Token 数量
+  compressedTokens: number;  // 压缩后 Token 数量
+  tokensSaved: number;  // 节省的 Token 数量
+  cost?: number;  // 压缩成本
+  compressedAt: string;  // 压缩时间
+  modelId?: string;  // 使用的压缩模型
+}
+
 // 消息块联合类型
 export type MessageBlock =
   | PlaceholderMessageBlock
@@ -270,7 +284,8 @@ export type MessageBlock =
   | ChartMessageBlock
   | MathMessageBlock
   | SearchResultsMessageBlock
-  | KnowledgeReferenceMessageBlock;
+  | KnowledgeReferenceMessageBlock
+  | ContextSummaryMessageBlock;
 
 // 助手消息状态枚举
 export const AssistantMessageStatus = {

@@ -11,6 +11,18 @@
   "delete": "Delete",
   "edit": "Edit",
   "stop": "Stop",
-  "clear": "Clear"
+  "clear": "Clear",
+  "contextSummary": {
+    "title": "Context Summary",
+    "compressedCount": "{{count}} messages condensed",
+    "tokensSaved": "Saved {{saved}} tokens ({{percent}}%)",
+    "cost": "Cost: ${{cost}}",
+    "model": "Model: {{model}}",
+    "condenseSuccess": "Condensed successfully! Saved {{saved}} tokens",
+    "condenseFailed": "Condensation failed",
+    "condenseInProgress": "Condensing context...",
+    "notEnoughMessages": "Not enough messages to condense",
+    "recentlyCondensed": "Recently condensed, please try later"
+  }
 }
 

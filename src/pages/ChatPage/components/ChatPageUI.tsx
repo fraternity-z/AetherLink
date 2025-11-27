@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, startTransition, useState, useEffect } from 'react';
-import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
-import { Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { Settings, Plus, Trash2, AlertTriangle, Minimize2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
@@ -19,6 +19,7 @@ import ChatNavigation from '../../../components/chat/ChatNavigation';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import { createSelector } from 'reselect';
+import { contextCondenseService } from '../../../shared/services/ContextCondenseService';
 
 
 
@@ -217,6 +218,14 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   // 本地状态
   // 清空按钮的二次确认状态
   const [clearConfirmMode, setClearConfirmMode] = useState(false);
+  
+  // 上下文压缩状态
+  const [isCondensing, setIsCondensing] = useState(false);
+  const [condenseSnackbar, setCondenseSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'info' });
 
   // 自动重置确认模式（3秒后）
   useEffect(() => {
@@ -321,6 +330,61 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   const handleSearchClick = useCallback(() => {
     onSearchToggle?.();
   }, [onSearchToggle]);
+
+  // 上下文压缩点击处理
+  const handleCondenseClick = useCallback(async () => {
+    if (!currentTopic || currentMessages.length < 5 || isCondensing) {
+      if (!currentTopic) {
+        setCondenseSnackbar({
+          open: true,
+          message: '请先选择一个话题',
+          severity: 'info'
+        });
+      } else if (currentMessages.length < 5) {
+        setCondenseSnackbar({
+          open: true,
+          message: '消息数量不足，至少需要5条消息才能压缩',
+          severity: 'info'
+        });
+      }
+      return;
+    }
+
+    setIsCondensing(true);
+    try {
+      // 调用 ContextCondenseService 进行压缩
+      const result = await contextCondenseService.manualCondense(currentTopic.id);
+      
+      if (result.error) {
+        setCondenseSnackbar({
+          open: true,
+          message: result.error,
+          severity: 'error'
+        });
+      } else {
+        const savedTokens = (result.originalTokens || 0) - (result.compressedTokens || 0);
+        setCondenseSnackbar({
+          open: true,
+          message: `压缩成功！Token 从 ${result.originalTokens?.toLocaleString() || '?'} 减少到 ${result.compressedTokens?.toLocaleString() || '?'}，节省 ${savedTokens.toLocaleString()} tokens`,
+          severity: 'success'
+        });
+      }
+    } catch (error: any) {
+      console.error('[ChatPageUI] 压缩失败:', error);
+      setCondenseSnackbar({
+        open: true,
+        message: `压缩失败: ${error.message || '未知错误'}`,
+        severity: 'error'
+      });
+    } finally {
+      setIsCondensing(false);
+    }
+  }, [currentTopic, currentMessages.length, isCondensing]);
+
+  // 关闭压缩提示
+  const handleCloseCondenseSnackbar = useCallback(() => {
+    setCondenseSnackbar(prev => ({ ...prev, open: false }));
+  }, []);
 
 
 
@@ -483,6 +547,36 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           </motion.div>
         ) : null;
 
+      case 'condenseButton':
+        // DIY 布局中的压缩按钮始终显示（如果被放置）
+        return isDIYLayout ? (
+          <motion.div
+            key={componentId}
+            initial={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={BUTTON_ANIMATION_CONFIG}
+          >
+            <IconButton
+              color="inherit"
+              onClick={handleCondenseClick}
+              disabled={isCondensing || !currentTopic || currentMessages.length < 5}
+              sx={{
+                color: isCondensing ? 'warning.main' : 'inherit',
+                '&:disabled': {
+                  color: 'action.disabled'
+                }
+              }}
+            >
+              {isCondensing ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <Minimize2 size={20} />
+              )}
+            </IconButton>
+          </motion.div>
+        ) : null;
+
       default:
         return null;
     }
@@ -503,7 +597,11 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     handleModelMenuClick,
     handleModelMenuClose,
     navigate,
-    handleSearchClick
+    handleSearchClick,
+    // 压缩相关
+    isCondensing,
+    handleCondenseClick,
+    currentMessages.length
   ]);
 
   // ==================== 消息处理函数 ====================
@@ -905,6 +1003,30 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       </Box>
 
 
+      {/* 压缩结果提示 */}
+      <Snackbar
+        open={condenseSnackbar.open}
+        autoHideDuration={5000}
+        onClose={handleCloseCondenseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{
+          bottom: { xs: 100, sm: 80 }, // 在输入框上方显示
+          zIndex: 9999
+        }}
+      >
+        <Alert
+          onClose={handleCloseCondenseSnackbar}
+          severity={condenseSnackbar.severity}
+          variant="filled"
+          sx={{
+            width: '100%',
+            maxWidth: 400,
+            boxShadow: 3
+          }}
+        >
+          {condenseSnackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
