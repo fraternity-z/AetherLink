@@ -294,3 +294,55 @@ body[os='windows'] {
     'Cascadia Code', 'Fira Code', 'Consolas', 'Sarasa Mono SC', 'Microsoft YaHei UI',
     Courier, monospace;
 }
+
+/* ==================== 聊天界面滚动控制 ==================== */
+/*
+ * 实现聊天界面的滚动控制：
+ * - 消息列表区域：允许滚动 ✅
+ * - 输入框区域：阻止滚动 ❌
+ * - 其他区域：阻止滚动 ❌
+ */
+
+/* 阻止输入框区域的滚动 */
+.chat-input-container {
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: auto;
+}
+
+/* 阻止AppBar/工具栏区域的滚动 */
+.chat-toolbar-no-scroll {
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: auto;
+}
+
+/* 阻止背景区域的滚动 */
+.chat-background-no-scroll {
+  touch-action: none;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+
+/* 消息列表容器 - 允许滚动 */
+.chat-message-list-scrollable {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 主内容区域 - 阻止整体滚动，只允许子元素滚动 */
+.chat-main-content-no-scroll {
+  touch-action: none;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+/* 阻止拖拽导致的页面滚动 */
+.chat-page-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}

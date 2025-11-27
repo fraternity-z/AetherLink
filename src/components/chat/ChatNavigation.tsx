@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Box, IconButton, Tooltip, Paper, Fade, useMediaQuery, useTheme } from '@mui/material';
 import { ChevronUp, ChevronDown, ArrowUp, ArrowDown, Scroll } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { updateSettings } from '../../shared/store/slices/settingsSlice';
 import { Haptics } from '../../shared/utils/hapticFeedback';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 
 interface ChatNavigationProps {
   containerId: string;
@@ -23,6 +24,9 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch();
+  
+  // 获取键盘高度，用于动态调整导航位置
+  const { keyboardHeight } = useKeyboard();
 
   const messageNavigation = useSelector((state: RootState) =>
     (state.settings as any).messageNavigation || 'none'
@@ -352,6 +356,29 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     return null;
   }
 
+  // 计算导航组件的垂直位置
+  // 当键盘弹出时，导航应该在可视消息列表区域的中间
+  const navigationPosition = useMemo(() => {
+    if (keyboardHeight > 0) {
+      // 键盘弹出时：计算可视区域的中心点
+      // 可视区域 = 屏幕高度 - 键盘高度 - 输入框高度（约80px）- AppBar高度（约56px）
+      const visibleHeight = window.innerHeight - keyboardHeight - 80 - 56;
+      const centerY = 56 + visibleHeight / 2; // 从AppBar底部开始计算
+      return {
+        top: `${centerY}px`,
+        transform: 'translateY(-50%)',
+        // 键盘弹出时缩小导航尺寸
+        scale: 0.85
+      };
+    }
+    // 键盘隐藏时：正常居中
+    return {
+      top: '50%',
+      transform: 'translateY(-50%)',
+      scale: 1
+    };
+  }, [keyboardHeight]);
+
   return (
     <>
       {/* 移动端触发区域提示：呼吸灯（左滑显示导航） */}
@@ -360,27 +387,28 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
           sx={{
             position: 'fixed',
             right: 0,
-            top: '50%',
-            transform: 'translateY(-50%)',
+            top: navigationPosition.top,
+            transform: navigationPosition.transform,
             width: 4,
-            height: 100,
+            height: keyboardHeight > 0 ? 60 : 100, // 键盘弹出时缩小呼吸灯
             bgcolor: 'primary.main',
             opacity: 0.3,
             borderRadius: '4px 0 0 4px',
             zIndex: 999,
             pointerEvents: 'none',
+            transition: 'all 0.2s ease-out', // 平滑过渡
             '@keyframes pulse': {
               '0%': {
                 opacity: 0.3,
-                transform: 'translateY(-50%) scaleY(1)'
+                scaleY: 1
               },
               '50%': {
                 opacity: 0.6,
-                transform: 'translateY(-50%) scaleY(1.1)'
+                scaleY: 1.1
               },
               '100%': {
                 opacity: 0.3,
-                transform: 'translateY(-50%) scaleY(1)'
+                scaleY: 1
               }
             },
             animation: 'pulse 2s ease-in-out infinite'
@@ -395,10 +423,11 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
           sx={{
             position: 'fixed',
             right: isMobile ? 8 : 16,
-            top: '50%',
-            transform: 'translateY(-50%)',
+            top: navigationPosition.top,
+            transform: `${navigationPosition.transform} scale(${navigationPosition.scale})`,
             zIndex: 1000,
-            pointerEvents: isVisible ? 'auto' : 'none'
+            pointerEvents: isVisible ? 'auto' : 'none',
+            transition: 'all 0.2s ease-out' // 平滑过渡动画
           }}
         >
         <Paper

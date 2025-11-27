@@ -77,33 +77,43 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://api.openai.com/v1',
     providerType: 'openai',
     models: [
-      // GPT-5 系列 (最新旗舰 - 2025年8月发布)
-      { id: 'gpt-5', name: 'GPT-5', provider: 'openai', enabled: true, isDefault: false, description: '最佳编程和代理任务模型，2025年8月发布' },
+      // ========== GPT-5.1 系列 (2025年11月最新) ==========
+      { id: 'gpt-5.1', name: 'GPT-5.1', provider: 'openai', enabled: true, isDefault: false, description: '最新旗舰模型，2025年11月13日发布，动态思考时间，代理和编程任务最佳' },
+      { id: 'gpt-5.1-mini', name: 'GPT-5.1 Mini', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-5.1轻量版，平衡智能与速度' },
+      { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', provider: 'openai', enabled: true, isDefault: false, description: '前沿代理编程模型，2025年11月19日发布，专为代码任务优化' },
+
+      // ========== GPT-5 系列 ==========
+      { id: 'gpt-5', name: 'GPT-5', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-5旗舰，256K上下文，多模态+工具调用+持久记忆' },
       { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-5轻量版，性价比高' },
+      { id: 'gpt-5-nano', name: 'GPT-5 Nano', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-5超轻量版，极速响应' },
 
-      // GPT-4.5 系列
-      { id: 'gpt-4.5', name: 'GPT-4.5', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4.5模型，写作和推理能力强' },
+      // ========== GPT-4.1 系列 ==========
+      { id: 'gpt-4.1', name: 'GPT-4.1', provider: 'openai', enabled: true, isDefault: false, description: '2025年4月发布，编程和长上下文能力强，百万token支持' },
+      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4.1轻量版，接近GPT-4o质量，成本更低' },
+      { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4.1超轻量版，极速且经济' },
 
-      // GPT-4.1 系列
-      { id: 'gpt-4.1', name: 'GPT-4.1', provider: 'openai', enabled: true, isDefault: false, description: '最智能的非推理模型' },
-      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4.1轻量版' },
-      { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4.1超轻量版' },
-
-      // GPT-4o 系列
-      { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', enabled: true, isDefault: true, description: 'GPT-4优化版，多模态能力强' },
+      // ========== GPT-4o 系列 ==========
+      { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', enabled: true, isDefault: true, description: 'GPT-4 Omni，原生多模态处理，文本+图像+音频' },
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4o轻量版，快速且经济' },
+      { id: 'chatgpt-4o-latest', name: 'ChatGPT-4o Latest', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4o最新别名，自动更新' },
 
-      // GPT-4 系列
-      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openai', enabled: true, isDefault: false, description: 'GPT-4加速版' },
+      // ========== 图像生成模型 ==========
+      { id: 'gpt-image-1', name: 'GPT Image 1', provider: 'openai', enabled: true, isDefault: false, description: '取代DALL-E，支持高分辨率生成、修复和编辑', capabilities: { imageGeneration: true } },
 
-      // o系列推理模型
-      { id: 'o1', name: 'o1', provider: 'openai', enabled: true, isDefault: false, description: 'OpenAI推理模型第一代' },
+      // ========== 音频模型 ==========
+      { id: 'gpt-4o-transcribe', name: 'GPT-4o Transcribe', provider: 'openai', enabled: true, isDefault: false, description: '语音转文字，高精度多语言支持' },
+      { id: 'gpt-4o-mini-tts', name: 'GPT-4o Mini TTS', provider: 'openai', enabled: true, isDefault: false, description: '文字转语音，表达力强可控' },
+
+      // ========== o系列推理模型 ==========
+      { id: 'o4-mini', name: 'o4-mini', provider: 'openai', enabled: true, isDefault: false, description: 'o4轻量推理模型，AIME 2024/2025最佳，高配额' },
+      { id: 'o3', name: 'o3', provider: 'openai', enabled: true, isDefault: false, description: 'o3推理模型，深度思考复杂问题' },
+      { id: 'o3-mini', name: 'o3-mini', provider: 'openai', enabled: true, isDefault: false, description: 'o3轻量版推理模型' },
+      { id: 'o3-pro', name: 'o3-pro', provider: 'openai', enabled: true, isDefault: false, description: 'o3专业版，工具调用能力强' },
+      { id: 'o3-deep-research', name: 'o3 Deep Research', provider: 'openai', enabled: true, isDefault: false, description: '深度研究模型，多步骤网络搜索和文档分析' },
+      { id: 'o4-mini-deep-research', name: 'o4-mini Deep Research', provider: 'openai', enabled: true, isDefault: false, description: 'o4-mini深度研究版，自主信息收集' },
+      { id: 'o1', name: 'o1', provider: 'openai', enabled: true, isDefault: false, description: 'o1推理模型第一代' },
       { id: 'o1-mini', name: 'o1-mini', provider: 'openai', enabled: true, isDefault: false, description: 'o1轻量版推理模型' },
       { id: 'o1-pro', name: 'o1-pro', provider: 'openai', enabled: true, isDefault: false, description: 'o1专业版推理模型' },
-      { id: 'o3', name: 'o3', provider: 'openai', enabled: true, isDefault: false, description: 'OpenAI推理模型第三代，2025年4月发布' },
-      { id: 'o3-mini', name: 'o3-mini', provider: 'openai', enabled: true, isDefault: false, description: 'o3轻量版推理模型' },
-      { id: 'o3-pro', name: 'o3-pro', provider: 'openai', enabled: true, isDefault: false, description: 'o3专业版推理模型，2025年6月发布' },
-      { id: 'o4-mini', name: 'o4-mini', provider: 'openai', enabled: true, isDefault: false, description: 'o4轻量版推理模型，快速且高性价比' },
     ]
   },
   {
@@ -116,33 +126,36 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://api.openai.com/v1',
     providerType: 'openai-aisdk',
     models: [
-      // GPT-5 系列 (最新旗舰 - 2025年8月发布)
-      { id: 'gpt-5', name: 'GPT-5', provider: 'openai-aisdk', enabled: true, isDefault: false, description: '最佳编程和代理任务模型，2025年8月发布' },
+      // ========== GPT-5.1 系列 (2025年11月最新) ==========
+      { id: 'gpt-5.1', name: 'GPT-5.1', provider: 'openai-aisdk', enabled: true, isDefault: false, description: '最新旗舰模型，2025年11月13日发布，动态思考时间，代理和编程任务最佳' },
+      { id: 'gpt-5.1-mini', name: 'GPT-5.1 Mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-5.1轻量版，平衡智能与速度' },
+      { id: 'gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', provider: 'openai-aisdk', enabled: true, isDefault: false, description: '前沿代理编程模型，2025年11月19日发布，专为代码任务优化' },
+
+      // ========== GPT-5 系列 ==========
+      { id: 'gpt-5', name: 'GPT-5', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-5旗舰，256K上下文，多模态+工具调用+持久记忆' },
       { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-5轻量版，性价比高' },
+      { id: 'gpt-5-nano', name: 'GPT-5 Nano', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-5超轻量版，极速响应' },
 
-      // GPT-4.5 系列
-      { id: 'gpt-4.5', name: 'GPT-4.5', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4.5模型，写作和推理能力强' },
+      // ========== GPT-4.1 系列 ==========
+      { id: 'gpt-4.1', name: 'GPT-4.1', provider: 'openai-aisdk', enabled: true, isDefault: false, description: '2025年4月发布，编程和长上下文能力强，百万token支持' },
+      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4.1轻量版，接近GPT-4o质量，成本更低' },
+      { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4.1超轻量版，极速且经济' },
 
-      // GPT-4.1 系列
-      { id: 'gpt-4.1', name: 'GPT-4.1', provider: 'openai-aisdk', enabled: true, isDefault: false, description: '最智能的非推理模型' },
-      { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4.1轻量版' },
-      { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4.1超轻量版' },
-
-      // GPT-4o 系列
-      { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4优化版，多模态能力强' },
+      // ========== GPT-4o 系列 ==========
+      { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4 Omni，原生多模态处理，文本+图像+音频' },
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4o轻量版，快速且经济' },
+      { id: 'chatgpt-4o-latest', name: 'ChatGPT-4o Latest', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4o最新别名，自动更新' },
 
-      // GPT-4 系列
-      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'GPT-4加速版' },
+      // ========== 图像生成模型 ==========
+      { id: 'gpt-image-1', name: 'GPT Image 1', provider: 'openai-aisdk', enabled: true, isDefault: false, description: '取代DALL-E，支持高分辨率生成、修复和编辑', capabilities: { imageGeneration: true } },
 
-      // o系列推理模型
-      { id: 'o1', name: 'o1', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'OpenAI推理模型第一代' },
-      { id: 'o1-mini', name: 'o1-mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o1轻量版推理模型' },
-      { id: 'o1-pro', name: 'o1-pro', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o1专业版推理模型' },
-      { id: 'o3', name: 'o3', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'OpenAI推理模型第三代，2025年4月发布' },
+      // ========== o系列推理模型 ==========
+      { id: 'o4-mini', name: 'o4-mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o4轻量推理模型，AIME 2024/2025最佳，高配额' },
+      { id: 'o3', name: 'o3', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o3推理模型，深度思考复杂问题' },
       { id: 'o3-mini', name: 'o3-mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o3轻量版推理模型' },
-      { id: 'o3-pro', name: 'o3-pro', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o3专业版推理模型，2025年6月发布' },
-      { id: 'o4-mini', name: 'o4-mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o4轻量版推理模型，快速且高性价比' },
+      { id: 'o3-pro', name: 'o3-pro', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o3专业版，工具调用能力强' },
+      { id: 'o1', name: 'o1', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o1推理模型第一代' },
+      { id: 'o1-mini', name: 'o1-mini', provider: 'openai-aisdk', enabled: true, isDefault: false, description: 'o1轻量版推理模型' },
     ]
   },
   {
@@ -155,22 +168,54 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     providerType: 'gemini',
     models: [
-      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'gemini', enabled: true, isDefault: false, description: '最先进的思考模型，能够处理代码、数学和STEM领域的复杂问题' },
+      // ========== Gemini 3 系列 (最新旗舰) ==========
+      { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'gemini', enabled: true, isDefault: false, description: '世界最强多模态理解模型，最强代理和编程能力，支持深度推理思考' },
+      {
+        id: 'gemini-3-pro-image-preview',
+        name: 'Gemini 3 Pro Image (Nano Banana Pro)',
+        provider: 'gemini',
+        enabled: true,
+        isDefault: false,
+        description: 'Gemini 3 Pro图像生成版本 (Nano Banana Pro)，支持4K分辨率，最高质量图像生成',
+        capabilities: { imageGeneration: true }
+      },
+
+      // ========== Gemini 2.5 Pro 系列 ==========
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'gemini', enabled: true, isDefault: false, description: '最先进的思考模型，能够处理代码、数学和STEM领域的复杂问题，1M上下文' },
       { id: 'gemini-2.5-pro-preview-tts', name: 'Gemini 2.5 Pro TTS', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Pro文本转语音版本' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', enabled: true, isDefault: false, description: '性价比最佳模型，适合大规模处理、低延迟和高容量任务' },
+
+      // ========== Gemini 2.5 Flash 系列 ==========
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', enabled: true, isDefault: false, description: '性价比最佳模型，适合大规模处理、低延迟和高容量任务，支持思考模式' },
       { id: 'gemini-2.5-flash-preview-09-2025', name: 'Gemini 2.5 Flash Preview', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash预览版' },
-      { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash图像生成和理解版本' },
-      { id: 'gemini-2.5-flash-native-audio-preview-09-2025', name: 'Gemini 2.5 Flash Live', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash实时音视频交互版本' },
+      {
+        id: 'gemini-2.5-flash-image',
+        name: 'Gemini 2.5 Flash Image (Nano Banana)',
+        provider: 'gemini',
+        enabled: true,
+        isDefault: false,
+        description: 'Gemini 2.5 Flash图像生成版本 (Nano Banana)，快速图像生成和编辑',
+        capabilities: { imageGeneration: true }
+      },
+      { id: 'gemini-2.5-flash-image-preview', name: 'Gemini 2.5 Flash Image Preview', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash Image预览版', capabilities: { imageGeneration: true } },
+      { id: 'gemini-2.5-flash-native-audio-preview-09-2025', name: 'Gemini 2.5 Flash Live', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash实时音视频交互版本，支持Live API' },
+      { id: 'gemini-live-2.5-flash-preview', name: 'Gemini Live 2.5 Flash', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash Live别名版本' },
       { id: 'gemini-2.5-flash-preview-tts', name: 'Gemini 2.5 Flash TTS', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash文本转语音版本' },
+
+      // ========== Gemini 2.5 Flash Lite 系列 ==========
       { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', provider: 'gemini', enabled: true, isDefault: false, description: '超快速Flash模型，优化成本效率和高吞吐量' },
       { id: 'gemini-2.5-flash-lite-preview-09-2025', name: 'Gemini 2.5 Flash Lite Preview', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.5 Flash Lite预览版' },
+
+      // ========== Gemini 2.0 Flash 系列 (旧版) ==========
       { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'gemini', enabled: true, isDefault: false, description: '第二代主力模型，1M token上下文窗口' },
       { id: 'gemini-2.0-flash-001', name: 'Gemini 2.0 Flash (稳定版)', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.0 Flash稳定版本' },
-      { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash (实验版)', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.0 Flash实验版本' },
-      { id: 'gemini-2.0-flash-preview-image-generation', name: 'Gemini 2.0 Flash Image', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.0 Flash图像生成版本' },
+      { id: 'gemini-2.0-flash-image', name: 'Gemini 2.0 Flash Image', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.0 Flash图像生成版本', capabilities: { imageGeneration: true } },
       { id: 'gemini-2.0-flash-live-001', name: 'Gemini 2.0 Flash Live', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.0 Flash实时交互版本' },
+
+      // ========== Gemini 2.0 Flash Lite 系列 ==========
       { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', provider: 'gemini', enabled: true, isDefault: false, description: '第二代快速模型，1M token上下文窗口' },
       { id: 'gemini-2.0-flash-lite-001', name: 'Gemini 2.0 Flash Lite (稳定版)', provider: 'gemini', enabled: true, isDefault: false, description: 'Gemini 2.0 Flash Lite稳定版本' },
+
+      // ========== 视频生成模型 ==========
       {
         id: 'veo-2.0-generate-001',
         name: 'Veo 2 (视频生成)',
@@ -195,25 +240,26 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://api.anthropic.com/v1',
     providerType: 'anthropic',
     models: [
-      // Claude 4.5 系列 (最新)
-      { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', provider: 'anthropic', enabled: true, isDefault: false, description: '最智能的模型，适合复杂代理和编程任务，在编程和代理任务上表现卓越' },
-      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', provider: 'anthropic', enabled: true, isDefault: false, description: '最快的模型，具有接近前沿的智能水平，适合高并发场景' },
+      // ========== Claude 4.5 系列 (2025年11月最新) ==========
+      { id: 'claude-opus-4-5-20251120', name: 'Claude Opus 4.5', provider: 'anthropic', enabled: true, isDefault: false, description: '最强旗舰模型，长时间自主任务表现卓越，SWE-bench顶尖，业界最强对齐安全性' },
+      { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', provider: 'anthropic', enabled: true, isDefault: false, description: '世界最佳编程模型，SWE-bench领先(77.2%)，OSWorld领先(61.4%)，最强代理能力' },
+      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', provider: 'anthropic', enabled: true, isDefault: false, description: '最快的模型，接近前沿智能水平，适合高并发场景' },
 
-      // Claude 4.1 系列
-      { id: 'claude-opus-4-1-20250805', name: 'Claude Opus 4.1', provider: 'anthropic', enabled: true, isDefault: false, description: '专门用于特殊推理任务的卓越模型' },
+      // ========== Claude 4.1 系列 ==========
+      { id: 'claude-opus-4-1-20250805', name: 'Claude Opus 4.1', provider: 'anthropic', enabled: true, isDefault: false, description: '专门用于特殊推理任务的卓越模型，支持高级记忆功能' },
 
-      // Claude 4 系列 (传统)
-      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude Sonnet 3.7的重大升级，在编程和推理方面表现卓越' },
-      { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'anthropic', enabled: true, isDefault: false, description: '世界最佳编程模型，在SWE-bench上领先，适合代理和复杂任务' },
+      // ========== Claude 4 系列 ==========
+      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3.7的重大升级，SWE-bench 72.7%，编程和推理能力强' },
+      { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', provider: 'anthropic', enabled: true, isDefault: false, description: '强大编程模型，SWE-bench 72.5%，Terminal-bench 43.2%，持续7小时+任务' },
 
-      // Claude 3.7 系列
-      { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3.7 Sonnet，行业领先的能力' },
+      // ========== Claude 3.7 系列 ==========
+      { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3.7 Sonnet，支持扩展思考，128K输出' },
 
-      // Claude 3.5 系列
+      // ========== Claude 3.5 系列 ==========
       { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3.5 Sonnet，平衡性能与效率' },
       { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3.5 Haiku，快速响应' },
 
-      // Claude 3 系列
+      // ========== Claude 3 系列 (旧版) ==========
       { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3 Opus，强大的推理能力' },
       { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'anthropic', enabled: true, isDefault: false, description: 'Claude 3 Haiku，快速且经济的模型' },
     ]

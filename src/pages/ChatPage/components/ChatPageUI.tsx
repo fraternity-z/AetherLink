@@ -287,8 +287,12 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       // 模仿 rikkahub：有背景图时消息容器透明，让背景透出来
       backgroundColor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
       // 🚀 为固定定位的输入框预留空间，防止消息被遮挡
-      // 动态计算：基础输入框高度 + 工具栏高度(如果显示) + 安全间距
-      paddingBottom: shouldShowToolbar ? '90px' : '60px',
+      // 动态计算：基础输入框高度 + 安全间距 + 键盘高度 + 安全区域
+      // 当键盘弹出时，需要额外增加 padding 以确保消息列表底部内容可见
+      // 键盘关闭时，需要加上底部安全区域（导航条区域）的高度
+      paddingBottom: keyboardHeight > 0
+        ? `${(shouldShowToolbar ? 24 : 16) + keyboardHeight}px`
+        : `calc(16px + var(--safe-area-bottom-computed, 0px))`,
       // 平滑过渡动画
       transition: 'padding-bottom 0.2s ease-out',
     },
@@ -307,7 +311,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       color: 'var(--theme-text-primary)',
       mb: 1,
     }
-  }), [hasBackgroundImage, shouldShowToolbar]);
+  }), [hasBackgroundImage, shouldShowToolbar, keyboardHeight]);
 
   // contentContainerStyle已移除，样式直接在motion.div中定义
 
@@ -589,6 +593,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   const InputContainer = useMemo(() => (
     <motion.div
       key={`input-container-${isDrawerVisible ? 'open' : 'closed'}`}
+      className="chat-input-container"
       initial={false}
       animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.inputContainer : LAYOUT_CONFIGS.SIDEBAR_CLOSED.inputContainer}
       transition={ANIMATION_CONFIG}
@@ -678,6 +683,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
   return (
     <Box
+      className="chat-page-container"
       sx={{
         ...baseStyles.mainContainer,
         position: 'relative', // 为背景层提供定位上下文
@@ -688,6 +694,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         <>
           {/* 背景图片层 - opacity 直接控制背景图透明度 */}
           <Box
+            className="chat-background-no-scroll"
             sx={{
               position: 'fixed',
               top: 0,
@@ -706,6 +713,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           {/* 渐变遮罩层 - 提高文字可读性，可通过设置开关控制 */}
           {settings.chatBackground.showOverlay !== false && (
             <Box
+              className="chat-background-no-scroll"
               sx={{
                 position: 'fixed',
                 top: 0,
@@ -742,6 +750,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
 
       {/* 主内容区域 - 🚀 使用预计算布局，避免Drawer推开导致的重新布局 */}
       <Box
+        className="chat-main-content-no-scroll"
         component={motion.div}
         key={`main-content-${isDrawerVisible ? 'open' : 'closed'}`}
         initial={false}
@@ -776,13 +785,16 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               : 'none',
           }}
         >
-          <Toolbar sx={{
-            position: 'relative',
-            minHeight: '56px !important',
-            justifyContent: isDIYLayout ? 'center' : 'space-between',
-            userSelect: 'none', // 禁止工具栏文本选择
-            backgroundColor: 'transparent', // Toolbar 也要透明
-          }}>
+          <Toolbar
+            className="chat-toolbar-no-scroll"
+            sx={{
+              position: 'relative',
+              minHeight: '56px !important',
+              justifyContent: isDIYLayout ? 'center' : 'space-between',
+              userSelect: 'none', // 禁止工具栏文本选择
+              backgroundColor: 'transparent', // Toolbar 也要透明
+            }}
+          >
             {/* 如果有DIY布局，使用绝对定位渲染组件 */}
             {isDIYLayout ? (
               <>

@@ -260,8 +260,13 @@ export function isGenerateImageModel(model: Model): boolean {
 
   return Boolean(
     model.capabilities?.imageGeneration ||
-    modelId.includes('gemini-2.0-flash') ||
+    // Gemini 图像生成模型 (Nano Banana 系列)
+    modelId.includes('gemini-2.5-flash-image') ||  // Nano Banana
+    modelId.includes('gemini-3-pro-image') ||       // Nano Banana Pro
+    modelId.includes('gemini-2.0-flash-image') ||   // Gemini 2.0 图像模型
+    modelId.includes('gemini-2.0-flash') ||         // Gemini 2.0 Flash (部分支持)
     modelId.includes('gemini-exp-1206') ||
+    // 其他图像生成模型
     modelId.includes('dall-e') ||
     modelId.includes('midjourney') ||
     modelId.includes('stable-diffusion')
@@ -329,20 +334,43 @@ export function isGemmaModel(model: Model): boolean {
  */
 export function findTokenLimit(modelId: string): { max: number; input?: number; output?: number } | null {
   const limits: Record<string, { max: number; input?: number; output?: number }> = {
-    'gemini-1.5-pro': { max: 2097152, input: 2097152, output: 8192 },
-    'gemini-1.5-flash': { max: 1048576, input: 1048576, output: 8192 },
-    'gemini-2.0-flash-exp': { max: 1048576, input: 1048576, output: 8192 },
+    // Gemini 3 系列
+    'gemini-3-pro-preview': { max: 1048576, input: 1048576, output: 65536 },
+    'gemini-3-pro-image-preview': { max: 65536, input: 65536, output: 32768 },
+    // Gemini 2.5 系列
     'gemini-2.5-pro': { max: 2097152, input: 1048576, output: 65536 },
     'gemini-2.5-flash': { max: 1048576, input: 1048576, output: 65536 },
+    'gemini-2.5-flash-image': { max: 65536, input: 65536, output: 32768 },
     'gemini-2.5-flash-lite': { max: 1048576, input: 1048576, output: 8192 },
-    'gemini-2.5-pro-preview-06-05': { max: 2097152, input: 1048576, output: 65536 },
-    'gemini-2.5-pro-preview-05-06': { max: 2097152, input: 1048576, output: 65536 },
-    'gemini-2.5-flash-preview-04-17': { max: 1048576, input: 1048576, output: 65536 },
+    'gemini-2.5-flash-preview-09-2025': { max: 1048576, input: 1048576, output: 65536 },
+    'gemini-2.5-flash-native-audio-preview-09-2025': { max: 131072, input: 131072, output: 8192 },
+    // Gemini 2.0 系列
+    'gemini-2.0-flash': { max: 1048576, input: 1048576, output: 8192 },
+    'gemini-2.0-flash-exp': { max: 1048576, input: 1048576, output: 8192 },
+    'gemini-2.0-flash-image': { max: 65536, input: 65536, output: 32768 },
+    // Gemini 1.5 系列 (旧版)
+    'gemini-1.5-pro': { max: 2097152, input: 2097152, output: 8192 },
+    'gemini-1.5-flash': { max: 1048576, input: 1048576, output: 8192 },
     'gemini-pro': { max: 32768, input: 30720, output: 2048 },
     'gemini-pro-vision': { max: 16384, input: 12288, output: 4096 },
+    // OpenAI 系列
     'gpt-4': { max: 8192, input: 8192, output: 4096 },
     'gpt-4-turbo': { max: 128000, input: 128000, output: 4096 },
     'gpt-4o': { max: 128000, input: 128000, output: 16384 },
+    // Claude 4.5 系列
+    'claude-opus-4-5': { max: 200000, input: 200000, output: 32768 },
+    'claude-sonnet-4-5': { max: 200000, input: 200000, output: 16384 },
+    'claude-haiku-4-5': { max: 200000, input: 200000, output: 8192 },
+    // Claude 4.x 系列
+    'claude-opus-4-1': { max: 200000, input: 200000, output: 32768 },
+    'claude-opus-4': { max: 200000, input: 200000, output: 32768 },
+    'claude-sonnet-4': { max: 200000, input: 200000, output: 16384 },
+    // Claude 3.7 系列
+    'claude-3-7-sonnet': { max: 200000, input: 200000, output: 128000 },
+    // Claude 3.5 系列
+    'claude-3-5-sonnet': { max: 200000, input: 200000, output: 8192 },
+    'claude-3-5-haiku': { max: 200000, input: 200000, output: 8192 },
+    // Claude 3 系列
     'claude-3-opus': { max: 200000, input: 200000, output: 4096 },
     'claude-3-sonnet': { max: 200000, input: 200000, output: 4096 },
     'claude-3-haiku': { max: 200000, input: 200000, output: 4096 }

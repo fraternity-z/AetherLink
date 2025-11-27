@@ -200,6 +200,7 @@ const useExpandableContainer = ({
 
     return (
       <div
+        className="chat-input-container"
         style={{
           backgroundColor: 'transparent',
           ...responsiveStyles,

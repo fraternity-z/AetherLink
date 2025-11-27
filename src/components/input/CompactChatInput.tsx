@@ -630,12 +630,14 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
 
 
   return (
-    <Box sx={{
-      width: '100%',
-      maxWidth: { xs: '100%', sm: '800px' }, // 移动端占满宽度，桌面端限制最大宽度
-      margin: { xs: '0', sm: '0 auto' }, // 移动端无边距，桌面端居中
-      paddingLeft: { xs: '8px', sm: '0' }, // 移动端使用padding
-      paddingRight: { xs: '8px', sm: '0' }, // 移动端使用padding
+    <Box
+      className="chat-input-container"
+      sx={{
+        width: '100%',
+        maxWidth: { xs: '100%', sm: '800px' }, // 移动端占满宽度，桌面端限制最大宽度
+        margin: { xs: '0', sm: '0 auto' }, // 移动端无边距，桌面端居中
+        paddingLeft: { xs: '8px', sm: '0' }, // 移动端使用padding
+        paddingRight: { xs: '8px', sm: '0' }, // 移动端使用padding
       // 添加全局滚动条样式
       '& textarea::-webkit-scrollbar': {
         width: '6px',

@@ -9,6 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { throttle } from 'lodash';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { topicCacheManager } from '../../shared/services/TopicCacheManager';
@@ -60,6 +61,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   const dispatch = useDispatch();
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
   const isDevMode = process.env.NODE_ENV === 'development';
+
+  // 键盘状态监听 - 用于在键盘弹出时自动滚动到底部
+  const { keyboardHeight } = useKeyboard();
 
   // 修复：添加错误状态管理
   const [error, setError] = useState<string | null>(null);
@@ -348,6 +352,19 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     prevMessagesLengthRef.current = messages.length;
   }, [messages.length, throttledMessageLengthScroll]);
 
+  // 🚀 键盘弹出时自动滚动到底部，确保用户能看到最新消息
+  const prevKeyboardHeightRef = useRef(keyboardHeight);
+  useEffect(() => {
+    // 只有当键盘从隐藏变为显示时才滚动
+    if (keyboardHeight > 0 && prevKeyboardHeightRef.current === 0) {
+      // 延迟一小段时间确保 padding 已更新
+      setTimeout(() => {
+        unifiedScrollManagerRef.current.scrollToBottom('keyboardShow', { force: true });
+      }, 100);
+    }
+    prevKeyboardHeightRef.current = keyboardHeight;
+  }, [keyboardHeight]);
+
   // 处理系统提示词气泡点击
   const handlePromptBubbleClick = useCallback(() => {
     setPromptDialogOpen(true);
@@ -510,6 +527,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   return (
     <Box
       id="messageList"
+      className="chat-message-list-scrollable"
       ref={containerRef}
       sx={{
         display: 'flex',

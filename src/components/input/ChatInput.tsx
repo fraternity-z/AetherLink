@@ -603,6 +603,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div
+      className="chat-input-container"
       style={{
         backgroundColor: 'transparent',
         ...responsiveStyles,
