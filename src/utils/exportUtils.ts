@@ -263,6 +263,76 @@ export async function shareMessage(message: Message, format: 'text' | 'markdown'
 }
 
 /**
+ * 通过分享方式保存消息内容为文件
+ */
+export async function shareContentAsFile(message: Message): Promise<void> {
+  try {
+    const textContent = getMainTextContent(message);
+    const title = await getMessageTitle(message);
+    const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
+    const fileName = `${removeSpecialCharactersForFileName(title)}_${timestamp}.txt`;
+
+    if (Capacitor.isNativePlatform()) {
+      // 移动端：创建临时文件并通过分享API让用户选择保存位置
+      try {
+        // 创建临时文件
+        const tempFileName = `temp_${Date.now()}.txt`;
+        await Filesystem.writeFile({
+          path: tempFileName,
+          data: textContent,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8
+        });
+
+        // 获取文件URI
+        const fileUri = await Filesystem.getUri({
+          path: tempFileName,
+          directory: Directory.Cache
+        });
+
+        // 使用分享API
+        await Share.share({
+          title: '保存消息内容',
+          text: textContent,
+          url: fileUri.uri,
+          dialogTitle: '保存文本文件'
+        });
+
+        // 清理临时文件
+        try {
+          await Filesystem.deleteFile({
+            path: tempFileName,
+            directory: Directory.Cache
+          });
+        } catch (deleteError) {
+          console.warn('清理临时文件失败:', deleteError);
+        }
+
+      } catch (shareError) {
+        console.warn('分享失败，尝试复制到剪贴板:', shareError);
+        // 回退到复制到剪贴板
+        await Clipboard.write({ string: textContent });
+        toastManager.warning('分享失败，内容已复制到剪贴板', '保存提醒');
+      }
+    } else {
+      // Web端：使用下载链接
+      const blob = new Blob([textContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  } catch (error) {
+    console.error('保存文件失败:', error);
+    toastManager.error('保存失败: ' + (error as Error).message, '保存错误');
+  }
+}
+
+/**
  * 截图消息并复制到剪贴板
  */
 export async function captureMessageAsImage(messageElement: HTMLElement): Promise<void> {

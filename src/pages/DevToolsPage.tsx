@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Box,
   AppBar,
@@ -28,6 +28,7 @@ import {
   CheckSquare as SelectAllIcon,
   Square as DeselectIcon,
   MousePointer2 as SelectModeIcon,
+  Share as ShareIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -41,6 +42,12 @@ import type { NetworkPanelRef } from '../components/DevTools/NetworkPanel';
 import EnhancedConsoleService from '../shared/services/EnhancedConsoleService';
 import EnhancedNetworkService from '../shared/services/network/EnhancedNetworkService';
 import { SafeAreaContainer } from '../components/settings/SettingComponents';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
+import { Clipboard } from '@capacitor/clipboard';
+import { toastManager } from '../components/EnhancedToast';
+import dayjs from 'dayjs';
 
 const DevToolsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -51,8 +58,27 @@ const DevToolsPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [preserveLog, setPreserveLog] = useState(false);
+  
+  // 从 localStorage 读取设置，默认值为 true（自动滚动开启）
+  const [autoScroll, setAutoScroll] = useState(() => {
+    try {
+      const saved = localStorage.getItem('devtools-auto-scroll');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+  
+  // 从 localStorage 读取保持日志设置，默认值为 false
+  const [preserveLog, setPreserveLog] = useState(() => {
+    try {
+      const saved = localStorage.getItem('devtools-preserve-log');
+      return saved !== null ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+  
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedConsoleIds, setSelectedConsoleIds] = useState<Set<string>>(new Set());
   const [selectedNetworkIds, setSelectedNetworkIds] = useState<Set<string>>(new Set());
@@ -63,6 +89,24 @@ const DevToolsPage: React.FC = () => {
 
   const consoleService = EnhancedConsoleService.getInstance();
   const networkService = EnhancedNetworkService.getInstance();
+
+  // 监听 autoScroll 变化并保存到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('devtools-auto-scroll', JSON.stringify(autoScroll));
+    } catch (error) {
+      console.warn('保存自动滚动设置失败:', error);
+    }
+  }, [autoScroll]);
+
+  // 监听 preserveLog 变化并保存到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('devtools-preserve-log', JSON.stringify(preserveLog));
+    } catch (error) {
+      console.warn('保存保持日志设置失败:', error);
+    }
+  }, [preserveLog]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -145,6 +189,141 @@ const DevToolsPage: React.FC = () => {
       }
     }
   }, [tabValue, selectedConsoleIds, selectedNetworkIds]);
+
+  // 分享日志功能
+  const handleShareLogs = useCallback(async () => {
+    try {
+      let logContent = '';
+      const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
+      let fileName = '';
+
+      if (tabValue === 0) {
+        // 控制台日志
+        const entries = consolePanelRef.current?.getFilteredEntries() || [];
+        fileName = `console_logs_${timestamp}.txt`;
+        
+        if (entries.length === 0) {
+          toastManager.warning('没有控制台日志可以分享', '分享提醒');
+          return;
+        }
+
+        logContent = [
+          `# 控制台日志导出`,
+          `导出时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`,
+          `日志条数: ${entries.length}`,
+          ``,
+          `---`,
+          ``,
+          ...entries.map((entry: any) => {
+            const time = new Date(entry.timestamp).toLocaleString();
+            const level = entry.level.toUpperCase();
+            const message = entry.args.map((arg: any) => consoleService.formatArg(arg)).join(' ');
+            const stack = entry.stack ? `\n堆栈信息: ${entry.stack}` : '';
+            return `[${time}] [${level}] ${message}${stack}`;
+          })
+        ].join('\n');
+
+      } else if (tabValue === 1) {
+        // 网络日志
+        const entries = networkPanelRef.current?.getFilteredEntries() || [];
+        fileName = `network_logs_${timestamp}.txt`;
+        
+        if (entries.length === 0) {
+          toastManager.warning('没有网络日志可以分享', '分享提醒');
+          return;
+        }
+
+        logContent = [
+          `# 网络请求日志导出`,
+          `导出时间: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`,
+          `请求数量: ${entries.length}`,
+          ``,
+          `---`,
+          ``,
+          ...entries.map((entry: any) => {
+            const startTime = new Date(entry.startTime).toLocaleString();
+            const duration = entry.duration ? networkService.formatDuration(entry.duration) : 'pending';
+            const size = entry.responseSize ? networkService.formatSize(entry.responseSize) : '-';
+            
+            let requestInfo = `[${startTime}] ${entry.method} ${entry.url}`;
+            requestInfo += `\n状态: ${entry.statusCode || entry.status}`;
+            requestInfo += `\n耗时: ${duration}`;
+            requestInfo += `\n大小: ${size}`;
+            
+            if (entry.requestHeaders && Object.keys(entry.requestHeaders).length > 0) {
+              requestInfo += `\n请求头: ${JSON.stringify(entry.requestHeaders, null, 2)}`;
+            }
+            
+            if (entry.responseHeaders && Object.keys(entry.responseHeaders).length > 0) {
+              requestInfo += `\n响应头: ${JSON.stringify(entry.responseHeaders, null, 2)}`;
+            }
+            
+            if (entry.error) {
+              requestInfo += `\n错误: ${entry.error.message}`;
+            }
+            
+            return requestInfo;
+          })
+        ].join('\n\n');
+      }
+
+      if (Capacitor.isNativePlatform()) {
+        // 移动端：创建临时文件并通过分享API让用户选择保存位置
+        try {
+          const tempFileName = `temp_${Date.now()}.txt`;
+          await Filesystem.writeFile({
+            path: tempFileName,
+            data: logContent,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8
+          });
+
+          const fileUri = await Filesystem.getUri({
+            path: tempFileName,
+            directory: Directory.Cache
+          });
+
+          await Share.share({
+            title: '分享开发者日志',
+            text: logContent,
+            url: fileUri.uri,
+            dialogTitle: '保存日志文件'
+          });
+
+          // 清理临时文件
+          try {
+            await Filesystem.deleteFile({
+              path: tempFileName,
+              directory: Directory.Cache
+            });
+          } catch (deleteError) {
+            console.warn('清理临时文件失败:', deleteError);
+          }
+
+        } catch (shareError) {
+          console.warn('分享失败，尝试复制到剪贴板:', shareError);
+          await Clipboard.write({ string: logContent });
+          toastManager.warning('分享失败，日志已复制到剪贴板', '分享提醒');
+        }
+      } else {
+        // Web端：使用下载链接
+        const blob = new Blob([logContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toastManager.success('日志已下载', '分享成功');
+      }
+
+    } catch (error) {
+      console.error('分享日志失败:', error);
+      toastManager.error('分享日志失败: ' + (error as Error).message, '分享错误');
+    }
+  }, [tabValue, consoleService, networkService]);
 
   // 当前选中的数量
   const selectedCount = tabValue === 0 ? selectedConsoleIds.size : selectedNetworkIds.size;
@@ -262,6 +441,21 @@ const DevToolsPage: React.FC = () => {
                 </Tooltip>
               </>
             )}
+
+            <Tooltip title="分享日志" arrow>
+              <IconButton 
+                onClick={handleShareLogs}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                    color: 'success.main',
+                  },
+                }}
+              >
+                <ShareIcon size={18} />
+              </IconButton>
+            </Tooltip>
 
             <Tooltip title={t('devtools.settings')} arrow>
               <IconButton 

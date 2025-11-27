@@ -44,10 +44,9 @@ import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
 import { getStorageItem } from '../../shared/utils/storage';
 import { useAppSelector } from '../../shared/store';
 import { Clipboard } from '@capacitor/clipboard';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
 import { Z_INDEX } from '../../shared/constants/zIndex';
 import { debugLog } from '../../shared/utils/debugLogger';
+import { shareContentAsFile } from '../../utils/exportUtils';
 
 interface MessageActionsProps {
   message: Message;
@@ -366,94 +365,16 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [onResend, message.id, handleMenuClose]);
 
-  // 保存消息内容 - 优化：使用useCallback，修复依赖项
+  // 分享保存消息内容 - 改为使用分享方式
   const handleSaveContent = useCallback(async () => {
     try {
-      const textContent = getMainTextContent(message);
-      const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
-      const fileName = `message_${timestamp}.txt`;
-
-      // 移动端使用Capacitor Filesystem
-      if (Capacitor.isNativePlatform()) {
-        try {
-          // 使用统一的文件管理服务检查并请求权限
-          const { unifiedFileManager } = await import('../../shared/services/UnifiedFileManagerService');
-          
-          const permissionResult = await unifiedFileManager.checkPermissions();
-          if (!permissionResult.granted) {
-            const requestResult = await unifiedFileManager.requestPermissions();
-            if (!requestResult.granted) {
-              throw new Error('需要存储权限才能保存文件：' + requestResult.message);
-            }
-          }
-
-          // 优先尝试保存到Download目录（用户可访问）
-          try {
-            await Filesystem.writeFile({
-              path: `Download/${fileName}`,
-              data: textContent,
-              directory: Directory.External,
-              encoding: Encoding.UTF8
-            });
-            alert(`消息内容已保存到下载目录\n文件名: ${fileName}\n位置: 手机存储/Download/\n可在文件管理器的"下载"文件夹中找到`);
-          } catch (externalError) {
-            console.warn('保存到外部存储失败，尝试保存到应用目录:', externalError);
-            
-            // 如果外部存储失败，保存到Documents目录作为备选
-            try {
-              await Filesystem.writeFile({
-                path: fileName,
-                data: textContent,
-                directory: Directory.Documents,
-                encoding: Encoding.UTF8
-              });
-              alert(`消息内容已保存到应用目录\n文件名: ${fileName}\n位置: 应用内部存储\n(需要通过应用分享功能访问)`);
-            } catch (internalError) {
-              const errorMessage = internalError instanceof Error ? internalError.message : String(internalError);
-              throw new Error('无法保存到任何位置：' + errorMessage);
-            }
-          }
-        } catch (capacitorError) {
-          console.error('Capacitor保存失败:', capacitorError);
-          
-          // 如果权限问题，提供更详细的错误信息
-          if (capacitorError instanceof Error && 
-              (capacitorError.message.includes('permission') || capacitorError.message.includes('权限'))) {
-            alert('保存失败：请授予应用存储权限。您可以在设置中手动开启"存储权限"。');
-          } else {
-            // 回退到Web方式
-            const blob = new Blob([textContent], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            alert('消息内容已保存（使用浏览器下载）');
-          }
-        }
-      } else {
-        // Web端使用下载链接
-        const blob = new Blob([textContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        alert('消息内容已保存');
-      }
+      await shareContentAsFile(message);
     } catch (error) {
-      console.error('保存消息内容失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      alert(`保存失败: ${errorMessage}`);
+      console.error('分享保存消息内容失败:', error);
+      toastManager.error('分享保存失败', '操作失败');
     }
     handleMenuClose();
-  }, [message, handleMenuClose]); // 依赖项已正确
+  }, [message, handleMenuClose]);
 
   // 创建分支 - 使用最佳实例的事件机制
   const handleCreateBranch = useCallback(() => {
@@ -877,8 +798,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </IconButton>
           </Tooltip>
 
-          {/* 保存按钮 */}
-          <Tooltip title="保存内容">
+          {/* 分享文件按钮 */}
+          <Tooltip title="分享文件">
             <IconButton
               size="small"
               onClick={handleSaveContent}
@@ -1247,7 +1168,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         >
           复制内容
         </MenuItem>
-        <MenuItem onClick={handleSaveContent}>保存内容</MenuItem>
+        <MenuItem onClick={handleSaveContent}>分享文件</MenuItem>
         <MenuItem onClick={handleExportClick} sx={{ display: 'flex', alignItems: 'center' }}>
           <FileText size={16} style={{ marginRight: '8px' }} />
           导出信息
