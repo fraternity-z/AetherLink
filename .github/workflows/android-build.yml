@@ -61,15 +61,6 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Clean Android Build Cache
-        run: |
-          echo "Cleaning Android build cache to avoid duplicate class issues..."
-          rm -rf android/.gradle
-          rm -rf android/app/build
-          rm -rf android/capacitor-cordova-android-plugins/build
-          rm -rf ~/.gradle/caches/transforms-*
-          echo "Build cache cleaned"
-
       - name: Sync Capacitor
         run: npx cap sync android
 
