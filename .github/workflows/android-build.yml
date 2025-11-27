@@ -70,12 +70,10 @@ jobs:
       - name: Create keystore.properties
         run: |
           # keystore 文件已在仓库中，只需创建 properties 文件
-          cat > android/keystore.properties << 'EOF'
-storeFile=aetherlink.keystore
-storePassword=aetherlink2025
-keyAlias=aetherlink
-keyPassword=aetherlink2025
-EOF
+          echo "storeFile=aetherlink.keystore" > android/keystore.properties
+          echo "storePassword=aetherlink2025" >> android/keystore.properties
+          echo "keyAlias=aetherlink" >> android/keystore.properties
+          echo "keyPassword=aetherlink2025" >> android/keystore.properties
           echo "Keystore properties created"
 
       - name: Build Debug APK
