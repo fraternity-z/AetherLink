@@ -20,13 +20,13 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
 
 interface ContextSettingsProps {
-  contextLength: number;
+  contextWindowSize: number; // 上下文窗口大小（Token数）
   contextCount: number;
   maxOutputTokens: number;
   enableMaxOutputTokens: boolean;
   thinkingEffort: ThinkingOption;
   thinkingBudget: number;
-  onContextLengthChange: (value: number) => void;
+  onContextWindowSizeChange: (value: number) => void;
   onContextCountChange: (value: number) => void;
   onMaxOutputTokensChange: (value: number) => void;
   onEnableMaxOutputTokensChange: (value: boolean) => void;
@@ -38,13 +38,13 @@ interface ContextSettingsProps {
  * 可折叠的上下文设置组件
  */
 export default function ContextSettings({
-  contextLength,
+  contextWindowSize,
   contextCount,
   maxOutputTokens,
   enableMaxOutputTokens,
   thinkingEffort,
   thinkingBudget,
-  onContextLengthChange,
+  onContextWindowSizeChange,
   onContextCountChange,
   onMaxOutputTokensChange,
   onEnableMaxOutputTokensChange,
@@ -77,10 +77,16 @@ export default function ContextSettings({
     };
   }, [maxOutputTokens, enableMaxOutputTokens, onMaxOutputTokensChange, onEnableMaxOutputTokensChange]);
 
-  // 处理上下文长度变化
-  const handleContextLengthChange = (_event: Event, newValue: number | number[]) => {
-    const value = newValue as number;
-    onContextLengthChange(value);
+  // 处理上下文窗口大小变化
+  const handleContextWindowSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // 允许空值或纯数字
+    if (value === '' || /^\d+$/.test(value)) {
+      const numValue = value === '' ? 0 : parseInt(value);
+      if (numValue >= 0 && numValue <= 2000000) {
+        onContextWindowSizeChange(numValue);
+      }
+    }
   };
 
   // 处理上下文消息数变化
@@ -119,13 +125,6 @@ export default function ContextSettings({
     onThinkingEffortChange(value);
   };
 
-  // 处理文本框输入
-  const handleTextFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= 0 && value <= 64000) {
-      onContextLengthChange(value);
-    }
-  };
 
   return (
     <Box>
@@ -175,7 +174,7 @@ export default function ContextSettings({
       >
         <ListItemText
           primary="上下文设置"
-          secondary={`长度: ${contextLength === 64000 ? '不限' : contextLength} 字符 | 消息数: ${contextCount === 100 ? '最大' : contextCount} 条 | 输出: ${maxOutputTokens} tokens`}
+          secondary={`窗口: ${contextWindowSize > 0 ? contextWindowSize.toLocaleString() : '自动'} | 轮数: ${contextCount === 100 ? '最大' : contextCount} | 输出: ${maxOutputTokens}`}
           primaryTypographyProps={{ fontWeight: 'medium', fontSize: '0.95rem', lineHeight: 1.2 }}
           secondaryTypographyProps={{ fontSize: '0.75rem', lineHeight: 1.2 }}
         />
@@ -194,43 +193,28 @@ export default function ContextSettings({
         unmountOnExit
       >
         <Box sx={{ px: 2, pb: 2 }}>
-          {/* 上下文长度控制 */}
+          {/* 上下文窗口大小控制 */}
           <Box sx={{ mb: 3 }}>
-            <Box sx={{ width: '100%', mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="body2" fontWeight="medium">
-                  上下文长度: {contextLength === 64000 ? '不限' : contextLength} 字符
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  每条消息的最大上下文长度
-                </Typography>
-              </Box>
-              <Box sx={{ width: '80px' }}>
-                <TextField
-                  size="small"
-                  type="number"
-                  value={contextLength}
-                  onChange={handleTextFieldChange}
-                  slotProps={{
-                    htmlInput: { min: 0, max: 64000 }
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: '100%', mb: 1 }}>
+              <Typography variant="body2" fontWeight="medium">
+                上下文窗口大小
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                模型可以处理的总Token数（输入 + 输出）
+              </Typography>
             </Box>
-            <Slider
-              value={contextLength}
-              onChange={handleContextLengthChange}
-              min={0}
-              max={64000}
-              step={1000}
-              marks={[
-                { value: 0, label: '0' },
-                { value: 16000, label: '16K' },
-                { value: 32000, label: '32K' },
-                { value: 48000, label: '48K' },
-                { value: 64000, label: '64K' }
-              ]}
+            <TextField
+              fullWidth
+              size="small"
+              type="text"
+              value={contextWindowSize || ''}
+              onChange={handleContextWindowSizeChange}
+              placeholder="0 表示使用模型默认值"
+              sx={{ mt: 1 }}
             />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontSize: '0.7rem' }}>
+              模型可以处理的总Token数（输入 + 输出）。
+            </Typography>
           </Box>
           <Divider sx={{ my: 2 }} /> {/* 添加分割线 */}
 

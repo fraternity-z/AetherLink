@@ -45,6 +45,9 @@ export interface SettingsState {
   // 对话导航功能
   messageNavigation?: 'none' | 'buttons';
 
+  // 上下文Token指示器
+  showContextTokenIndicator?: boolean;
+
   // 其他设置...
   [key: string]: any;
 }
@@ -88,6 +91,7 @@ const loadFromStorage = async (): Promise<SettingsState> => {
     },
     integratedInputButtons: ['tools', 'search'],
     messageNavigation: 'none',
+    showContextTokenIndicator: true,
     isLoading: false
   };
 };
@@ -120,6 +124,7 @@ const initialState: SettingsState = {
   },
   integratedInputButtons: ['tools', 'search'],
   messageNavigation: 'none',
+  showContextTokenIndicator: true,
   isLoading: false
 };
 

@@ -14,7 +14,6 @@ import {
   Sliders as TuneIcon,
   Wand2 as AutoFixHighIcon,
   GitBranch,
-  Minimize2 as CompressIcon,
   MessageSquare as ForumIcon,
   BookOpen as MenuBookIcon,
   Folder as WorkspaceIcon,
@@ -30,6 +29,7 @@ import {
   SettingGroup,
   SettingItem,
 } from '../../components/settings/SettingComponents';
+import { CustomIcon } from '../../components/icons/CustomIcon';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useSwipeGesture } from '../../hooks/useSwipeGesture';
 import { useTranslation } from '../../i18n';
@@ -160,7 +160,7 @@ const SettingsPage: React.FC = () => {
           id: 'context-condense',
           title: t('settings.items.contextCondense.title', '上下文压缩'),
           description: t('settings.items.contextCondense.description', '智能压缩对话历史，节省Token成本'),
-          icon: <CompressIcon size={24} />,
+          icon: <CustomIcon name="foldVertical" size={24} />,
           path: '/settings/context-condense',
           onClick: () => navigateTo('/settings/context-condense'),
         },

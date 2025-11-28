@@ -203,9 +203,11 @@ export function getMainTextContent(message: Message): string {
       .map(blockId => messageBlocksSelectors.selectById(state, blockId))
       .filter(Boolean) as MessageBlock[];
 
-    // 查找主文本块（兼容 UNKNOWN 类型）
+    // 查找主文本块（兼容 UNKNOWN 和 CONTEXT_SUMMARY 类型）
     const mainTextBlock = blocks.find(block =>
-      block.type === MessageBlockType.MAIN_TEXT || block.type === MessageBlockType.UNKNOWN
+      block.type === MessageBlockType.MAIN_TEXT || 
+      block.type === MessageBlockType.UNKNOWN ||
+      block.type === MessageBlockType.CONTEXT_SUMMARY
     );
 
     // 如果找到主文本块，返回其内容

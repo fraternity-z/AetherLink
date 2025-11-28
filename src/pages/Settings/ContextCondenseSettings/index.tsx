@@ -15,7 +15,7 @@ import {
   Button,
   Slider
 } from '@mui/material';
-import { ArrowLeft, Minimize2, Info } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
@@ -25,6 +25,7 @@ import { ModelSelector } from '../../ChatPage/components/ModelSelector';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../../hooks/useScrollPosition';
 import CustomSwitch from '../../../components/CustomSwitch';
+import { CustomIcon } from '../../../components/icons/CustomIcon';
 
 const ContextCondenseSettingsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -223,7 +224,7 @@ const ContextCondenseSettingsPage: React.FC = () => {
         >
           <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Minimize2 size={18} />
+              <CustomIcon name="foldVertical" size={18} />
               {t('settings:contextCondense.autoCondense', '自动压缩')}
             </Typography>
             <Typography variant="body2" color="text.secondary">

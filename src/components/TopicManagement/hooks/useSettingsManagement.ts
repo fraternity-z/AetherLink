@@ -14,6 +14,8 @@ export function useSettingsManagement() {
   const autoScrollToBottom = useAppSelector(state => state.settings.autoScrollToBottom);
   // 获取对话导航设置
   const messageNavigation = useAppSelector(state => (state.settings as any).messageNavigation || 'none');
+  // 获取上下文Token指示器设置
+  const showContextTokenIndicator = useAppSelector(state => (state.settings as any).showContextTokenIndicator ?? true);
 
   // 应用设置
   const [settings, setSettings] = useState({
@@ -26,6 +28,8 @@ export function useSettingsManagement() {
     autoScrollToBottom: autoScrollToBottom !== undefined ? autoScrollToBottom : true, // 从Redux获取自动滚动设置
     // 对话导航设置
     messageNavigation: messageNavigation, // 从Redux获取对话导航设置
+    // 上下文Token指示器设置
+    showContextTokenIndicator: showContextTokenIndicator, // 从Redux获取Token指示器设置
     contextLength: 16000, // 设置为16K，适合大多数模型
     contextCount: 20,     // 默认上下文消息数量设置为20条
     mathRenderer: 'KaTeX' as const,
@@ -52,6 +56,7 @@ export function useSettingsManagement() {
     { id: 'autoScrollToBottom', name: '自动下滑', defaultValue: settings.autoScrollToBottom, description: '新消息时自动滚动到聊天底部' },
     { id: 'messageStyle', name: '消息样式', defaultValue: settings.messageStyle, description: '选择聊天消息的显示样式', type: 'select' as const, options: messageStyleOptions},
     { id: 'messageNavigation', name: '对话导航', defaultValue: settings.messageNavigation, description: '显示上下按钮快速跳转到上一条/下一条消息（对呼吸灯左滑显示）', type: 'select' as const, options: messageNavigationOptions},
+    { id: 'showContextTokenIndicator', name: 'Token用量指示', defaultValue: settings.showContextTokenIndicator, description: '在右侧显示上下文Token用量呼吸灯（与对话导航一起左滑显示）' },
   ];
 
   // 设置相关函数
@@ -85,6 +90,14 @@ export function useSettingsManagement() {
       const newValue = value as 'none' | 'buttons';
       dispatch(updateSettings({ messageNavigation: newValue } as any));
       setSettings(prev => ({ ...prev, messageNavigation: newValue }));
+      return;
+    }
+
+    // 特殊处理上下文Token指示器设置
+    if (settingId === 'showContextTokenIndicator') {
+      const newValue = value as boolean;
+      dispatch(updateSettings({ showContextTokenIndicator: newValue } as any));
+      setSettings(prev => ({ ...prev, showContextTokenIndicator: newValue }));
       return;
     }
 

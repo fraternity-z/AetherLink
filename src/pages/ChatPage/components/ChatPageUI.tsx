@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, startTransition, useState, useEffect } from 'react';
 import { Box, AppBar, Toolbar, Typography, IconButton, CircularProgress, Snackbar, Alert } from '@mui/material';
-import { Settings, Plus, Trash2, AlertTriangle, Minimize2 } from 'lucide-react';
+import { Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
@@ -571,7 +571,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               {isCondensing ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                <Minimize2 size={20} />
+                <CustomIcon name="foldVertical" size={20} />
               )}
             </IconButton>
           </motion.div>
@@ -969,7 +969,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
               </Box>
 
               {/* 对话导航组件 */}
-              <ChatNavigation containerId="messageList" />
+              <ChatNavigation containerId="messageList" topicId={currentTopic?.id} />
 
               {/* 输入框容器，固定在底部 */}
               <ErrorBoundary>

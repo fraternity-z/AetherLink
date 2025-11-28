@@ -25,6 +25,30 @@ export const CustomIcon: React.FC<CustomIconProps> = ({
     return null;
   }
 
+  // 渲染多个 path（stroke 模式）
+  if (icon.paths && icon.strokeBased) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox={icon.viewBox}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        aria-label={icon.description}
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {icon.paths.map((d, index) => (
+          <path key={index} d={d} />
+        ))}
+      </svg>
+    );
+  }
+
+  // 渲染单个 path（fill 模式）
   return (
     <svg
       width={size}
@@ -33,7 +57,7 @@ export const CustomIcon: React.FC<CustomIconProps> = ({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      title={icon.description}
+      aria-label={icon.description}
     >
       <path
         fill={color}

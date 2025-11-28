@@ -121,15 +121,18 @@ function extractContentFromBlocks(message: Message): string {
         continue;
       }
 
-      // 兼容性处理：同时支持 MAIN_TEXT、UNKNOWN 和字符串类型的块类型
+      // 兼容性处理：同时支持 MAIN_TEXT、UNKNOWN、CONTEXT_SUMMARY 和字符串类型的块类型
       const blockType = block && typeof block === 'object' ?
         (typeof (block as any).type === 'string' ? (block as any).type : MessageBlockType.UNKNOWN) :
         MessageBlockType.UNKNOWN;
 
       if (blockType === MessageBlockType.MAIN_TEXT ||
           blockType === MessageBlockType.UNKNOWN ||
+          blockType === MessageBlockType.CONTEXT_SUMMARY ||
           blockType === 'main_text' ||
-          blockType === 'MAIN_TEXT') {
+          blockType === 'MAIN_TEXT' ||
+          blockType === 'context_summary' ||
+          blockType === 'CONTEXT_SUMMARY') {
         textBlocks.push(block as MainTextMessageBlock);
       }
     } catch (error) {

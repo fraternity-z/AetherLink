@@ -233,13 +233,13 @@ export default function SettingsTab({
 
       {/* 可折叠的上下文设置 */}
       <ContextSettings
-        contextLength={getSetting('contextLength', 16000)}
+        contextWindowSize={getSetting('contextWindowSize', 0)}
         contextCount={getSetting('contextCount', 20)}
         maxOutputTokens={getSetting('maxOutputTokens', 8192)}
         enableMaxOutputTokens={getSetting('enableMaxOutputTokens', true)}
         thinkingEffort={getSetting('defaultThinkingEffort', 'medium')}
         thinkingBudget={getSetting('thinkingBudget', 1024)}
-        onContextLengthChange={(value) => updateSetting('contextLength', value)}
+        onContextWindowSizeChange={(value: number) => updateSetting('contextWindowSize', value)}
         onContextCountChange={(value) => updateSetting('contextCount', value)}
         onMaxOutputTokensChange={async (value) => {
           updateSetting('maxOutputTokens', value);

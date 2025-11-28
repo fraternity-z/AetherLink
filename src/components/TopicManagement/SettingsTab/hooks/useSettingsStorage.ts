@@ -8,6 +8,7 @@ export interface AppSettings {
   // 上下文设置
   contextLength?: number;
   contextCount?: number;
+  contextWindowSize?: number;
   maxOutputTokens?: number;
   enableMaxOutputTokens?: boolean;
   mathRenderer?: MathRendererType;
@@ -29,6 +30,7 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   contextLength: 16000,
   contextCount: 20,
+  contextWindowSize: 100000,
   maxOutputTokens: 8192,
   enableMaxOutputTokens: true,
   mathRenderer: 'KaTeX' as MathRendererType,

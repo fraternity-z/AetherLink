@@ -9,7 +9,7 @@ import { AssistantMessageStatus } from '../../../types/newMessage';
 import store, { type RootState } from '../../index';
 import { injectSystemPromptVariables } from '../../../utils/systemPromptVariables';
 import { EventEmitter, EVENT_NAMES } from '../../../services/EventService';
-import { getContextSettings } from '../../../services/messages/messageService';
+import { getContextSettings, estimateMessagesTokenCount, truncateConversation } from '../../../services/messages/messageService';
 
 /**
  * 在API调用前检查是否需要进行知识库搜索（风格：新模式）
@@ -146,9 +146,9 @@ export const prepareMessagesForApi = async (
     console.log('[prepareMessagesForApi] 跳过知识库搜索检查');
   }
 
-  // 2. 获取上下文设置（参考 cherry-studio 的实现）
-  const { contextLength, contextCount } = await getContextSettings();
-  console.log(`[prepareMessagesForApi] 上下文设置: contextLength=${contextLength}, contextCount=${contextCount}`);
+  // 2. 获取上下文设置（类似 Roo Code 的 manageContext）
+  const { contextCount, contextWindowSize, maxOutputTokens } = await getContextSettings();
+  console.log(`[prepareMessagesForApi] 上下文设置: contextCount=${contextCount}, contextWindowSize=${contextWindowSize}, maxOutputTokens=${maxOutputTokens}`);
 
   // 3. 获取包含content字段的消息
   const messages = await dexieStorage.getTopicMessages(topicId);
@@ -201,11 +201,45 @@ export const prepareMessagesForApi = async (
   // contextCount 代表**轮数**，1轮 = 1条用户消息 + 1条AI回复 = 2条消息
   // 所以实际取的消息数 = contextCount * 2
   const actualMessageCount = contextCount * 2;
-  const limitedMessages = contextCount >= 100000
+  let limitedMessages = contextCount >= 100000
     ? contextFilteredMessages  // 无限制
     : contextFilteredMessages.slice(-actualMessageCount);
   
-  console.log(`[prepareMessagesForApi] 应用上下文限制: 原始消息数=${sortedMessages.length}, 过滤后消息数=${contextFilteredMessages.length}, 限制后消息数=${limitedMessages.length}, 设置轮数=${contextCount}, 实际消息数=${actualMessageCount}`);
+  console.log(`[prepareMessagesForApi] 消息轮数限制: 原始消息数=${sortedMessages.length}, 过滤后消息数=${contextFilteredMessages.length}, 限制后消息数=${limitedMessages.length}, 设置轮数=${contextCount}`);
+
+  // 类似 Roo Code：如果设置了上下文窗口大小，应用 Token 限制
+  if (contextWindowSize > 0) {
+    const TOKEN_BUFFER_PERCENTAGE = 0.1;
+    // 确保 maxOutputTokens 不超过窗口的 50%（类似 Roo Code 的限制）
+    const effectiveMaxOutput = Math.min(maxOutputTokens, contextWindowSize * 0.5);
+    const allowedTokens = contextWindowSize * (1 - TOKEN_BUFFER_PERCENTAGE) - effectiveMaxOutput;
+    
+    // 只有当 allowedTokens 为正数时才进行限制
+    if (allowedTokens > 0) {
+      let currentTokens = estimateMessagesTokenCount(limitedMessages);
+      console.log(`[prepareMessagesForApi] Token 检查: ${currentTokens}/${allowedTokens} (窗口: ${contextWindowSize})`);
+      
+      // 如果超出限制，进行滑动窗口截断（最多尝试 10 次，避免无限循环）
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (currentTokens > allowedTokens && limitedMessages.length > 2 && attempts < maxAttempts) {
+        const prevLength = limitedMessages.length;
+        limitedMessages = truncateConversation(limitedMessages, 0.3);
+        
+        // 如果消息数没有减少，退出循环
+        if (limitedMessages.length >= prevLength) {
+          console.log(`[prepareMessagesForApi] 无法继续截断，退出`);
+          break;
+        }
+        
+        currentTokens = estimateMessagesTokenCount(limitedMessages);
+        console.log(`[prepareMessagesForApi] 滑动窗口截断后: Token=${currentTokens}/${allowedTokens}, 消息数=${limitedMessages.length}`);
+        attempts++;
+      }
+    } else {
+      console.log(`[prepareMessagesForApi] 跳过 Token 限制: allowedTokens=${allowedTokens} (窗口太小或输出 Token 太大)`);
+    }
+  }
 
   // 获取当前助手ID，用于获取系统提示词
   const topic = await dexieStorage.getTopic(topicId);

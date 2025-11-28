@@ -6,12 +6,14 @@ import type { RootState } from '../../shared/store';
 import { updateSettings } from '../../shared/store/slices/settingsSlice';
 import { Haptics } from '../../shared/utils/hapticFeedback';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
+import ContextTokenIndicator from './ContextTokenIndicator';
 
 interface ChatNavigationProps {
   containerId: string;
+  topicId?: string; // 当前话题ID，用于Token指示器
 }
 
-const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
+const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isNearButtons, setIsNearButtons] = useState(false);
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
@@ -216,7 +218,14 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
       lastMoveTime.current = now;
 
       const triggerWidth = 30;
-      const isInTriggerArea = e.clientX > window.innerWidth - triggerWidth;
+      const centerY = window.innerHeight / 2;
+      const triggerHeight = 120;
+      
+      // 导航呼吸灯区域：右侧边缘，从中央开始往下（避免与 Token 呼吸灯重叠）
+      // Token 呼吸灯在中央上方 150px，所以导航从中央开始
+      const isInTriggerArea = e.clientX > window.innerWidth - triggerWidth &&
+                             e.clientY > centerY - 30 &&
+                             e.clientY < centerY + triggerHeight;
 
       if (isInTriggerArea && !isNearButtons) {
         setIsVisible(true);
@@ -234,13 +243,14 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
       if (!touch) return;
 
       const triggerWidth = 80; // 移动端触发区域（呼吸灯区域）
-      const triggerHeight = 200; // 中间区域高度
+      const triggerHeight = 120; // 减小高度，避免与 Token 呼吸灯重叠
       const centerY = window.innerHeight / 2;
 
-      // 检查是否在呼吸灯区域（右侧边缘）
+      // 检查是否在呼吸灯区域（右侧边缘，从中央往下延伸）
+      // Token 呼吸灯在中央上方 150px，导航呼吸灯从中央开始往下
       const isInTriggerArea = touch.clientX > window.innerWidth - triggerWidth &&
-                             touch.clientY > centerY - triggerHeight / 2 &&
-                             touch.clientY < centerY + triggerHeight / 2;
+                             touch.clientY > centerY - 30 && // 中央上方只留 30px
+                             touch.clientY < centerY + triggerHeight - 30; // 主要向下延伸
 
       if (isInTriggerArea) {
         // 记录触摸起始位置和时间
@@ -351,11 +361,6 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     };
   }, []);
 
-  // 如果设置为none，不显示导航
-  if (messageNavigation !== 'buttons') {
-    return null;
-  }
-
   // 计算导航组件的垂直位置
   // 当键盘弹出时，导航应该在可视消息列表区域的中间
   const navigationPosition = useMemo(() => {
@@ -379,44 +384,60 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
     };
   }, [keyboardHeight]);
 
+  // 是否显示导航按钮
+  const showNavigation = messageNavigation === 'buttons';
+
   return (
     <>
-      {/* 移动端触发区域提示：呼吸灯（左滑显示导航） */}
-      {isMobile && !isVisible && (
-        <Box
-          sx={{
-            position: 'fixed',
-            right: 0,
-            top: navigationPosition.top,
-            transform: navigationPosition.transform,
-            width: 4,
-            height: keyboardHeight > 0 ? 60 : 100, // 键盘弹出时缩小呼吸灯
-            bgcolor: 'primary.main',
-            opacity: 0.3,
-            borderRadius: '4px 0 0 4px',
-            zIndex: 999,
-            pointerEvents: 'none',
-            transition: 'all 0.2s ease-out', // 平滑过渡
-            '@keyframes pulse': {
-              '0%': {
-                opacity: 0.3,
-                scaleY: 1
-              },
-              '50%': {
-                opacity: 0.6,
-                scaleY: 1.1
-              },
-              '100%': {
-                opacity: 0.3,
-                scaleY: 1
-              }
-            },
-            animation: 'pulse 2s ease-in-out infinite'
-          }}
-        />
-      )}
+      {/* Token用量指示器 - 完全独立，有自己的呼吸灯和触发逻辑 */}
+      <ContextTokenIndicator topicId={topicId} />
 
-      <Fade in={isVisible} timeout={300}>
+      {/* 以下内容仅在启用对话导航时显示 */}
+      {showNavigation && (
+        <>
+          {/* 触发区域提示：呼吸灯 - 支持桌面端和移动端 */}
+          {!isVisible && (
+            <Box
+              sx={{
+                position: 'fixed',
+                right: 0,
+                top: navigationPosition.top,
+                transform: navigationPosition.transform,
+                width: isMobile ? 4 : 6, // 桌面端稍宽
+                height: keyboardHeight > 0 ? 60 : (isMobile ? 100 : 120), // 桌面端稍高
+                bgcolor: 'primary.main',
+                opacity: isMobile ? 0.3 : 0.4,
+                borderRadius: '4px 0 0 4px',
+                zIndex: 999,
+                pointerEvents: 'none',
+                transition: 'all 0.2s ease-out',
+                '@keyframes pulse': {
+                  '0%': {
+                    opacity: isMobile ? 0.3 : 0.35,
+                    scaleY: 1
+                  },
+                  '50%': {
+                    opacity: isMobile ? 0.6 : 0.7,
+                    scaleY: 1.1
+                  },
+                  '100%': {
+                    opacity: isMobile ? 0.3 : 0.35,
+                    scaleY: 1
+                  }
+                },
+                animation: 'pulse 2s ease-in-out infinite',
+                // 桌面端悬停效果
+                ...(!isMobile && {
+                  '&:hover': {
+                    opacity: 0.8,
+                    width: 8
+                  }
+                })
+              }}
+            />
+          )}
+
+          <Fade in={isVisible} timeout={300}>
         <Box
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -564,6 +585,8 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId }) => {
         </Paper>
         </Box>
       </Fade>
+        </>
+      )}
     </>
   );
 };

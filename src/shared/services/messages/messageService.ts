@@ -1,62 +1,130 @@
 import type { Message, ChatTopic, Model } from '../../types';
-import { getStorageItem } from '../../utils/storage';
 import { saveTopicToDB, getAllTopicsFromDB } from '../storage/storageService';
-import { getMainTextContent } from '../../utils/messageUtils';
 import store from '../../store';
 import { newMessagesActions } from '../../store/slices/newMessagesSlice';
 import { sendMessage as sendMessageThunk } from '../../store/thunks/messageThunk';
 import { ApiProviderRegistry } from './ApiProvider';
+import { getMainTextContent } from '../../utils/blockUtils';
+import { estimateTokens } from '../../utils';
+
+// 类似 Roo Code 的 TOKEN_BUFFER_PERCENTAGE
+const TOKEN_BUFFER_PERCENTAGE = 0.1;
 
 /**
- * 应用上下文限制到消息列表
+ * 估算消息列表的 Token 数
  */
-export function applyContextLimits(messages: Message[], contextLength: number, contextCount: number): Message[] {
-  // 最佳实例逻辑：从消息列表中取出最近的N条消息
-  // 使用lodash的takeRight函数，但这里我们用原生JavaScript实现
-  const limitedByCountMessages = [...messages].slice(-contextCount);
+export function estimateMessagesTokenCount(messages: Message[]): number {
+  let totalTokens = 0;
+  for (const message of messages) {
+    const content = getMainTextContent(message);
+    if (content) {
+      totalTokens += estimateTokens(content);
+    }
+  }
+  return totalTokens;
+}
 
-  // 查找最后一个clear类型的消息的索引
-  // 使用兼容性更好的方法替代findLastIndex
+/**
+ * 滑动窗口截断（类似 Roo Code 的 truncateConversation）
+ * 保留第一条消息，删除一定比例的中间消息
+ * @param messages 消息列表
+ * @param fracToRemove 要删除的消息比例（0-1）
+ */
+export function truncateConversation(messages: Message[], fracToRemove: number = 0.5): Message[] {
+  if (messages.length <= 2) return messages;
+  
+  const firstMessage = messages[0];
+  const rawMessagesToRemove = Math.floor((messages.length - 1) * fracToRemove);
+  // 确保删除偶数条消息（保持对话成对）
+  const messagesToRemove = rawMessagesToRemove - (rawMessagesToRemove % 2);
+  const remainingMessages = messages.slice(messagesToRemove + 1);
+  
+  console.log(`[truncateConversation] 滑动窗口截断: 删除 ${messagesToRemove} 条消息，保留 ${remainingMessages.length + 1} 条`);
+  
+  return [firstMessage, ...remainingMessages];
+}
+
+/**
+ * 应用上下文限制到消息列表（类似 Roo Code 的 manageContext）
+ * @param messages 消息列表
+ * @param contextCount 上下文消息数量（轮数）
+ * @param contextWindowSize 上下文窗口大小（Token 数），0 表示不限制
+ * @param maxOutputTokens 保留给输出的 Token 数
+ */
+export function applyContextLimits(
+  messages: Message[], 
+  contextCount: number, 
+  contextWindowSize: number = 0,
+  maxOutputTokens: number = 8192
+): Message[] {
+  // 1. 首先应用消息轮数限制
+  let limitedMessages = [...messages].slice(-contextCount);
+
+  // 2. 查找最后一个clear类型的消息，只保留之后的消息
   let clearIndex = -1;
-  for (let i = limitedByCountMessages.length - 1; i >= 0; i--) {
-    if (limitedByCountMessages[i].type === 'clear') {
+  for (let i = limitedMessages.length - 1; i >= 0; i--) {
+    if (limitedMessages[i].type === 'clear') {
       clearIndex = i;
       break;
     }
   }
-
-  // 如果找到了clear消息，则只保留clear消息之后的消息
-  let filteredMessages = limitedByCountMessages;
   if (clearIndex !== -1) {
-    filteredMessages = limitedByCountMessages.slice(clearIndex + 1);
+    limitedMessages = limitedMessages.slice(clearIndex + 1);
   }
 
-  // 对每条消息应用长度限制
-  return filteredMessages.map(msg => {
-    // 使用getMainTextContent获取消息内容
-    const content = getMainTextContent(msg);
-    if (content && content.length > contextLength) {
-      // 截断过长的消息内容
-      // 注意：我们不能直接修改msg.content，因为新消息格式没有这个属性
-      // 但我们可以返回一个新的消息对象，保留原始消息的所有属性
-      return msg;
+  // 3. 如果设置了上下文窗口大小，应用 Token 限制（类似 Roo Code）
+  if (contextWindowSize > 0) {
+    // 确保 maxOutputTokens 不超过窗口的 50%（类似 Roo Code 的限制）
+    const effectiveMaxOutput = Math.min(maxOutputTokens, contextWindowSize * 0.5);
+    const allowedTokens = contextWindowSize * (1 - TOKEN_BUFFER_PERCENTAGE) - effectiveMaxOutput;
+    
+    // 只有当 allowedTokens 为正数时才进行限制
+    if (allowedTokens > 0) {
+      let currentTokens = estimateMessagesTokenCount(limitedMessages);
+      console.log(`[applyContextLimits] Token 检查: ${currentTokens}/${allowedTokens} (窗口: ${contextWindowSize})`);
+      
+      // 如果超出限制，进行滑动窗口截断（最多尝试 10 次，避免无限循环）
+      let attempts = 0;
+      const maxAttempts = 10;
+      while (currentTokens > allowedTokens && limitedMessages.length > 2 && attempts < maxAttempts) {
+        const prevLength = limitedMessages.length;
+        limitedMessages = truncateConversation(limitedMessages, 0.3);
+        
+        // 如果消息数没有减少，退出循环
+        if (limitedMessages.length >= prevLength) {
+          break;
+        }
+        
+        currentTokens = estimateMessagesTokenCount(limitedMessages);
+        console.log(`[applyContextLimits] 截断后 Token: ${currentTokens}/${allowedTokens}, 消息数: ${limitedMessages.length}`);
+        attempts++;
+      }
     }
-    return msg;
-  });
+  }
+
+  return limitedMessages;
 }
 
 /**
  * 获取上下文设置
  */
-export async function getContextSettings(): Promise<{ contextLength: number; contextCount: number }> {
-  let contextLength = 16000; // 默认上下文长度，设置为16K
-  let contextCount = 20;     // 默认上下文数量，设置为20条
+export async function getContextSettings(): Promise<{ 
+  contextCount: number; 
+  contextWindowSize: number;
+  maxOutputTokens: number;
+}> {
+  let contextCount = 20;        // 默认上下文数量，设置为20轮
+  let contextWindowSize = 100000; // 默认上下文窗口大小，设置为10万 Token
+  let maxOutputTokens = 8192;   // 默认最大输出 Token 数
 
   try {
-    const appSettings = await getStorageItem<any>('appSettings');
-    if (appSettings) {
-      if (appSettings.contextLength) contextLength = appSettings.contextLength;
-      if (appSettings.contextCount) contextCount = appSettings.contextCount;
+    // 优先从 localStorage 读取（与设置页面保持一致）
+    const appSettingsJSON = localStorage.getItem('appSettings');
+    if (appSettingsJSON) {
+      const appSettings = JSON.parse(appSettingsJSON);
+      if (appSettings.contextCount !== undefined) contextCount = appSettings.contextCount;
+      if (appSettings.contextWindowSize !== undefined) contextWindowSize = appSettings.contextWindowSize;
+      if (appSettings.maxOutputTokens !== undefined) maxOutputTokens = appSettings.maxOutputTokens;
     }
   } catch (error) {
     console.error('读取上下文设置失败:', error);
@@ -67,12 +135,7 @@ export async function getContextSettings(): Promise<{ contextLength: number; con
     contextCount = 100000;
   }
 
-  // 如果上下文长度为64000，视为不限制
-  if (contextLength === 64000) {
-    contextLength = 65549; // 使用65549作为实际的最大值
-  }
-
-  return { contextLength, contextCount };
+  return { contextCount, contextWindowSize, maxOutputTokens };
 }
 
 /**
@@ -135,12 +198,12 @@ export class MessageService {
   }): Promise<any> {
     try {
       // 获取上下文设置
-      const { contextLength, contextCount } = await getContextSettings();
+      const { contextCount, contextWindowSize, maxOutputTokens } = await getContextSettings();
 
-      // 应用上下文限制
-      const limitedMessages = applyContextLimits(messages, contextLength, contextCount);
+      // 应用上下文限制（同时考虑消息轮数和 Token 限制）
+      const limitedMessages = applyContextLimits(messages, contextCount, contextWindowSize, maxOutputTokens);
 
-      console.log(`[handleChatRequest] 消息数: ${limitedMessages.length}, 模型: ${model.id}`);
+      console.log(`[handleChatRequest] 消息数: ${limitedMessages.length}, 模型: ${model.id}, 窗口: ${contextWindowSize || '模型默认'}`);
 
       // 获取API提供商
       const apiProvider = ApiProviderRegistry.get(model);

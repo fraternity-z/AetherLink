@@ -58,26 +58,32 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
   // 获取当前话题的所有消息
   const messages = useSelector(selectCurrentTopicMessages);
 
-  // 计算总token数
+  // 计算总token数（类似 Roo Code 逻辑：最近一次 API 调用）
   const totalTokens = useMemo(() => {
     if (!messages || messages.length === 0) return 0;
     
-    let total = 0;
+    // 类似 Roo Code：从最近一次 API 调用获取 token 数
+    // 找到最后一条 AI 回复消息
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role === 'assistant' && message.usage) {
+        // 使用实际的 usage 信息（输入 + 输出）
+        const inputTokens = message.usage.promptTokens || 0;
+        const outputTokens = message.usage.completionTokens || 0;
+        return inputTokens + outputTokens;
+      }
+    }
     
+    // 如果没有找到 usage 信息，回退到估算逻辑
+    let total = 0;
     for (const message of messages) {
-      // 优先使用消息的usage信息
-      if (message.usage?.totalTokens) {
-        total += message.usage.totalTokens;
-      } else {
-        // 如果没有usage信息，估算token数
-        try {
-          const content = getMainTextContent(message);
-          if (content) {
-            total += estimateTokens(content);
-          }
-        } catch (error) {
-          console.warn('计算消息token失败:', error);
+      try {
+        const content = getMainTextContent(message);
+        if (content) {
+          total += estimateTokens(content);
         }
+      } catch (error) {
+        console.warn('计算消息token失败:', error);
       }
     }
     
