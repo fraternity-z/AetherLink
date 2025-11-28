@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'  // Rolldown-Vite 官方推荐，已内置 OXC 优化
+import react from '@vitejs/plugin-react-swc'  // SWC 高性能编译，基于 Rust，比 Babel 快 10-75 倍
 import solidPlugin from 'vite-plugin-solid'
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 
@@ -13,10 +13,8 @@ export default defineConfig(({ mode }) => ({
     solidPlugin({
       include: /\.solid\.(tsx|jsx|ts|js)$/,
     }),
-    // Rolldown-Vite 官方 React 插件（已内置 OXC 优化）
-    react({
-      include: /^(?!.*\.solid\.(tsx|jsx|ts|js)$).*\.(tsx|jsx)$/,
-    }),
+    // SWC 高性能 React 插件（基于 Rust，比 Babel 快 10-75 倍）
+    react(),
     // 🖼️ 图片优化插件 - 仅在构建时启用，开发环境跳过
     ...(mode === 'production' ? [
       ViteImageOptimizer({
@@ -58,6 +56,14 @@ export default defineConfig(({ mode }) => ({
     host: process.env.TAURI_DEV_HOST || '0.0.0.0', // 使用 Tauri 提供的主机地址
     cors: false, // 完全禁用 CORS 检查
     strictPort: true, // 严格端口模式
+    // 允许访问映射盘符路径（解决 J:/K: 盘符映射问题）
+    fs: {
+      allow: [
+        'J:/Cherry/AetherLink-app3',
+        'K:/Cherry/AetherLink-app3',
+      ],
+      strict: false, // 放宽文件系统限制（解决 J:/K: 盘符映射问题）
+    },
     // 预热常用文件，提升首次加载速度
     warmup: {
       clientFiles: ['./src/main.tsx', './src/App.tsx', './src/shared/store/index.ts'],
@@ -133,7 +139,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': '/src'
-    }
+    },
+    // 处理符号链接问题
+    preserveSymlinks: false,
   },
 
   // 定义全局常量

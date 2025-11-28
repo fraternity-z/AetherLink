@@ -12,7 +12,7 @@ import { universalFetch } from '../../../utils/universalFetch';
 // 工具定义
 const METASO_SEARCH_TOOL: Tool = {
   name: 'metaso_search',
-  description: '使用秘塔AI进行全网搜索，返回相关网页结果。支持多种召回和内容提取选项',
+  description: '使用秘塔AI进行搜索，支持网页、文库、学术、图片、视频、播客等多种搜索范围',
   inputSchema: {
     type: 'object',
     properties: {
@@ -20,15 +20,16 @@ const METASO_SEARCH_TOOL: Tool = {
         type: 'string',
         description: '搜索关键词或问题'
       },
+      scope: {
+        type: 'string',
+        enum: ['webpage', 'document', 'scholar', 'image', 'video', 'podcast'],
+        description: '搜索范围：webpage=网页(默认)、document=文库、scholar=学术、image=图片、video=视频、podcast=播客',
+        default: 'webpage'
+      },
       size: {
         type: 'number',
         description: '返回结果数量，默认10，建议范围5-20',
         default: 10
-      },
-      page: {
-        type: 'number',
-        description: '页码，从1开始，用于分页获取更多结果',
-        default: 1
       },
       includeRawContent: {
         type: 'boolean',
@@ -140,9 +141,9 @@ export class MetasoSearchServer {
 
       if (name === 'metaso_search') {
         return this.search(args as { 
-          query: string; 
+          query: string;
+          scope?: string;
           size?: number; 
-          page?: number;
           includeRawContent?: boolean;
         });
       } else if (name === 'metaso_reader') {
@@ -165,9 +166,9 @@ export class MetasoSearchServer {
    */
   private async search(
     params: { 
-      query: string; 
+      query: string;
+      scope?: string;
       size?: number;
-      page?: number;
       includeRawContent?: boolean;
     }
   ): Promise<{
@@ -185,17 +186,18 @@ export class MetasoSearchServer {
       // 构建请求体（所有参数都可由AI控制）
       const requestBody = {
         q: params.query,
-        scope: 'webpage',
+        scope: params.scope || 'webpage',
+        includeSummary: false,
         size: String(params.size || 10),
-        page: String(params.page || 1),
-        includeRawContent: params.includeRawContent === true  // 默认关闭完整原文
+        includeRawContent: params.includeRawContent === true,  // 默认关闭完整原文
+        conciseSnippet: false
       };
 
       // 记录API调用参数（便于调试）
       console.log('[Metaso Search] API请求参数:', {
         query: params.query,
+        scope: requestBody.scope,
         size: requestBody.size,
-        page: requestBody.page,
         includeRawContent: requestBody.includeRawContent
       });
 
@@ -227,7 +229,6 @@ export class MetasoSearchServer {
       // 构建头部信息
       let resultText = `## 秘塔AI搜索结果\n\n`;
       resultText += `**查询**: ${params.query}\n`;
-      resultText += `**当前页**: ${params.page || 1}\n`;
       resultText += `**返回结果数**: ${webpages.length}\n`;
       resultText += `**总匹配数**: ${total}\n`;
       resultText += `**消耗积分**: ${data.credits || 0}\n`;
@@ -275,14 +276,6 @@ export class MetasoSearchServer {
 
       resultText += `*数据来源: 秘塔AI搜索 (metaso.cn)*`;
       
-      // 分页提示
-      if (total > webpages.length) {
-        const totalPages = Math.ceil(total / (params.size || 10));
-        const currentPage = params.page || 1;
-        if (currentPage < totalPages) {
-          resultText += `\n\n💡 提示：还有更多结果，可以设置 page=${currentPage + 1} 查看下一页`;
-        }
-      }
 
       return {
         content: [
