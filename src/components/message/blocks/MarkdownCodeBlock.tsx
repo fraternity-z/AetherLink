@@ -120,7 +120,9 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
       <code
         className={className}
         style={{
-          textWrap: 'wrap',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+          overflowWrap: 'break-word',
           fontFamily: 'monospace',
           backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
           padding: '2px 4px',
