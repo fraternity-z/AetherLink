@@ -64,9 +64,18 @@ export interface GeminiTTSConfig extends TTSBaseConfig {
 // 硅基流动 TTS 配置
 export interface SiliconFlowTTSConfig extends TTSBaseConfig {
   apiKey: string;
-  model: string;
+  model: 'FunAudioLLM/CosyVoice2-0.5B' | 'fnlp/MOSS-TTSD-v0.5' | 'IndexTeam/IndexTTS-2';
   voice: string;
   useStream: boolean;
+  // MOSS-TTSD 专用配置
+  speed?: number;          // 语速 0.5-2.0，默认 1
+  gain?: number;           // 音量增益 -10 到 10，默认 0
+  maxTokens?: number;      // 最大 token 数，默认 1600
+  // 参考音频（用于语音克隆）
+  references?: Array<{
+    audio: string;         // 参考音频 URL 或 base64
+    text: string;          // 参考音频对应的文本
+  }>;
 }
 
 // ElevenLabs TTS 配置

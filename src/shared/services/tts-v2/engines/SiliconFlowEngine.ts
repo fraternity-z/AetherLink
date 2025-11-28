@@ -1,6 +1,9 @@
 /**
  * 硅基流动 TTS 引擎
- * CosyVoice2 API
+ * 支持模型：
+ * - FunAudioLLM/CosyVoice2-0.5B: 多语言语音合成（中、英、日、韩、方言）
+ * - fnlp/MOSS-TTSD-v0.5: 高表现力双人对话语音合成
+ * - IndexTeam/IndexTTS-2: B站开源情感语音合成，精确时长控制
  */
 
 import { BaseTTSEngine } from './BaseTTSEngine';
@@ -16,6 +19,11 @@ export class SiliconFlowEngine extends BaseTTSEngine {
     model: 'FunAudioLLM/CosyVoice2-0.5B',
     voice: 'FunAudioLLM/CosyVoice2-0.5B:alex',
     useStream: false,
+    // MOSS-TTSD 默认值
+    speed: 1,
+    gain: 0,
+    maxTokens: 1600,
+    references: [],
   };
   
   protected async doInitialize(): Promise<void> {
@@ -34,11 +42,8 @@ export class SiliconFlowEngine extends BaseTTSEngine {
     try {
       const url = 'https://api.siliconflow.cn/v1/audio/speech';
       
-      // 处理语音参数格式
-      let voice = this.config.voice;
-      if (!voice.includes(':')) {
-        voice = `${this.config.model}:${voice}`;
-      }
+      // 根据模型类型构建请求体
+      const requestBody = this.buildRequestBody(text);
       
       const response = await fetch(url, {
         method: 'POST',
@@ -46,13 +51,7 @@ export class SiliconFlowEngine extends BaseTTSEngine {
           'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          input: text,
-          voice: voice,
-          response_format: 'mp3',
-          stream: this.config.useStream,
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
@@ -121,5 +120,78 @@ export class SiliconFlowEngine extends BaseTTSEngine {
   
   updateConfig(config: Partial<SiliconFlowTTSConfig>): void {
     this.config = { ...this.config, ...config };
+  }
+  
+  /**
+   * 根据模型类型构建请求体
+   */
+  private buildRequestBody(text: string): Record<string, unknown> {
+    const isMossTTSD = this.config.model === 'fnlp/MOSS-TTSD-v0.5';
+    const isIndexTTS2 = this.config.model === 'IndexTeam/IndexTTS-2';
+    
+    if (isMossTTSD) {
+      // MOSS-TTSD 模型请求体
+      // 支持预置音色和参考音频两种模式
+      let voice = this.config.voice;
+      if (voice && !voice.includes(':')) {
+        voice = `${this.config.model}:${voice}`;
+      }
+      
+      const requestBody: Record<string, unknown> = {
+        model: this.config.model,
+        input: text,
+        voice: voice || undefined,
+        stream: this.config.useStream,
+        response_format: 'mp3',
+        speed: this.config.speed ?? 1,
+        gain: this.config.gain ?? 0,
+        max_tokens: this.config.maxTokens ?? 1600,
+      };
+      
+      // 如果提供了自定义参考音频，也添加进去
+      if (this.config.references && this.config.references.length > 0) {
+        requestBody.references = this.config.references;
+      }
+      
+      return requestBody;
+    } else if (isIndexTTS2) {
+      // IndexTTS-2 模型请求体
+      // 支持情感控制、精确时长控制、零样本语音克隆
+      let voice = this.config.voice;
+      if (!voice.includes(':')) {
+        voice = `${this.config.model}:${voice}`;
+      }
+      
+      const requestBody: Record<string, unknown> = {
+        model: this.config.model,
+        input: text,
+        voice: voice,
+        stream: this.config.useStream,
+        response_format: 'mp3',
+        speed: this.config.speed ?? 1,
+        gain: this.config.gain ?? 0,
+      };
+      
+      // 如果有自定义参考音频，添加到请求中
+      if (this.config.references && this.config.references.length > 0) {
+        requestBody.references = this.config.references;
+      }
+      
+      return requestBody;
+    } else {
+      // CosyVoice2 模型请求体
+      let voice = this.config.voice;
+      if (!voice.includes(':')) {
+        voice = `${this.config.model}:${voice}`;
+      }
+      
+      return {
+        model: this.config.model,
+        input: text,
+        voice: voice,
+        response_format: 'mp3',
+        stream: this.config.useStream,
+      };
+    }
   }
 }

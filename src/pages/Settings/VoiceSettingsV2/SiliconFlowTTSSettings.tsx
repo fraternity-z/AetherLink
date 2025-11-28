@@ -44,6 +44,10 @@ const SiliconFlowTTSSettings: React.FC = () => {
     selectedModel: 'FunAudioLLM/CosyVoice2-0.5B',
     selectedVoice: 'alex',
     useStream: false,
+    // MOSS-TTSD 默认值
+    speed: 1,
+    gain: 0,
+    maxTokens: 1600,
   });
 
   const [uiState, setUIState] = useState({
@@ -65,6 +69,10 @@ const SiliconFlowTTSSettings: React.FC = () => {
         const storedUseStream = (await getStorageItem<string>('siliconflow_tts_stream')) === 'true';
         const storedEnableTTS = (await getStorageItem<string>('enable_tts')) !== 'false';
         const storedSelectedTTSService = await getStorageItem<string>('selected_tts_service') || 'siliconflow';
+        // MOSS-TTSD 专用配置
+        const storedSpeed = parseFloat(await getStorageItem<string>('siliconflow_tts_speed') || '1');
+        const storedGain = parseFloat(await getStorageItem<string>('siliconflow_tts_gain') || '0');
+        const storedMaxTokens = parseInt(await getStorageItem<string>('siliconflow_tts_max_tokens') || '1600');
 
         setSettings({
           apiKey: storedApiKey,
@@ -72,18 +80,31 @@ const SiliconFlowTTSSettings: React.FC = () => {
           selectedModel: storedModel,
           selectedVoice: storedVoice,
           useStream: storedUseStream,
+          speed: storedSpeed,
+          gain: storedGain,
+          maxTokens: storedMaxTokens,
         });
 
         setEnableTTS(storedEnableTTS);
         setIsEnabled(storedSelectedTTSService === 'siliconflow');
 
-        // 设置 TTSManager
+        // 设置 TTSManager - 根据模型类型配置不同参数
+        const isIndexTTS2 = storedModel === 'IndexTeam/IndexTTS-2';
+        const isMossTTSD = storedModel === 'fnlp/MOSS-TTSD-v0.5';
+        const hasAdvancedParams = isMossTTSD || isIndexTTS2;
+        
         ttsManager.configureEngine('siliconflow', {
           enabled: true,
           apiKey: storedApiKey,
           model: storedModel,
           voice: `${storedModel}:${storedVoice}`,
-          useStream: storedUseStream
+          useStream: storedUseStream,
+          // 高级参数仅对 IndexTTS-2 和 MOSS-TTSD 有效
+          ...(hasAdvancedParams && {
+            speed: storedSpeed,
+            gain: storedGain,
+            maxTokens: storedMaxTokens,
+          }),
         } as Partial<SiliconFlowTTSConfig>);
         
         // 加载测试文本
@@ -116,6 +137,10 @@ const SiliconFlowTTSSettings: React.FC = () => {
       await setStorageItem('siliconflow_tts_stream', settings.useStream.toString());
       await setStorageItem('enable_tts', enableTTS.toString());
       await setStorageItem('use_capacitor_tts', 'false');
+      // MOSS-TTSD 专用配置
+      await setStorageItem('siliconflow_tts_speed', (settings.speed ?? 1).toString());
+      await setStorageItem('siliconflow_tts_gain', (settings.gain ?? 0).toString());
+      await setStorageItem('siliconflow_tts_max_tokens', (settings.maxTokens ?? 1600).toString());
 
       // 只有启用时才设置为当前服务
       if (isEnabled) {
@@ -182,13 +207,23 @@ const SiliconFlowTTSSettings: React.FC = () => {
 
     setUIState(prev => ({ ...prev, isTestPlaying: true }));
 
-    // 设置为使用 SiliconFlow TTS
+    // 设置为使用 SiliconFlow TTS - 根据模型类型配置不同参数
+    const isIndexTTS2 = settings.selectedModel === 'IndexTeam/IndexTTS-2';
+    const isMossTTSD = settings.selectedModel === 'fnlp/MOSS-TTSD-v0.5';
+    const hasAdvancedParams = isMossTTSD || isIndexTTS2;
+    
     ttsManager.configureEngine('siliconflow', {
       enabled: true,
       apiKey: settings.apiKey,
       model: settings.selectedModel,
       voice: `${settings.selectedModel}:${settings.selectedVoice}`,
-      useStream: settings.useStream
+      useStream: settings.useStream,
+      // 高级参数仅对 IndexTTS-2 和 MOSS-TTSD 有效
+      ...(hasAdvancedParams && {
+        speed: settings.speed ?? 1,
+        gain: settings.gain ?? 0,
+        maxTokens: settings.maxTokens ?? 1600,
+      }),
     } as Partial<SiliconFlowTTSConfig>);
     ttsManager.setActiveEngine('siliconflow');
 
