@@ -3,6 +3,8 @@
  * 负责处理模型组合的聊天请求
  */
 import type { Message, Model, MCPTool } from '../../types';
+import type { Chunk } from '../../types/chunk';
+import { ChunkType } from '../../types/chunk';
 import { getMainTextContent, createMessage } from '../../utils/messageUtils';
 import { ApiProviderRegistry } from './ApiProvider';
 import store from '../../store';
@@ -25,8 +27,7 @@ export class ModelComboProvider {
   async sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
-      onChunk?: (chunk: any) => void;
+      onChunk?: (chunk: Chunk) => void;
       enableWebSearch?: boolean;
       enableThinking?: boolean;
       enableTools?: boolean;
@@ -68,8 +69,7 @@ export class ModelComboProvider {
     comboConfig: any,
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
-      onChunk?: (chunk: any) => void;
+      onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
     }
   ): Promise<{ content: string; reasoning?: string; reasoningTime?: number; comboResult?: any }> {
@@ -91,14 +91,7 @@ export class ModelComboProvider {
 
         const provider = ApiProviderRegistry.get(model);
 
-        // 调用模型
-        const response = await provider.sendChatMessage(messages, {
-          onUpdate: (content: string, reasoning?: string) => {
-            // 对比策略中，我们不实时显示单个模型的输出
-            // 而是等所有模型完成后一起显示
-            console.log(`[ModelComboProvider] 模型 ${modelConfig.modelId} 更新: ${content.length} 字符${reasoning ? ', 推理: ' + reasoning.length + ' 字符' : ''}`);
-          }
-        });
+const response = await provider.sendChatMessage(messages, {});
 
         let content = '';
         let reasoning = '';
@@ -166,10 +159,14 @@ export class ModelComboProvider {
 
     console.log(`[ModelComboProvider] 对比策略完成，成功模型: ${successResults.length}/${results.length}`);
 
-    // 通过特殊的更新回调通知前端创建对比块
-    if (options?.onUpdate) {
-      // 发送特殊标记，告诉前端这是对比结果
-      options.onUpdate('__COMPARISON_RESULT__', JSON.stringify(comboResult));
+    // 通过 onChunk 发送对比结果
+    if (options?.onChunk) {
+      options.onChunk({
+        type: ChunkType.TEXT_COMPLETE,
+        text: '__COMPARISON_RESULT__',
+        // 将对比结果放在 metadata 中
+        metadata: { comboResult }
+      } as Chunk);
     }
 
     // 返回特殊格式，包含对比结果
@@ -188,8 +185,7 @@ export class ModelComboProvider {
     comboConfig: any,
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
-      onChunk?: (chunk: any) => void;
+      onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
     }
   ): Promise<{ content: string; reasoning?: string; reasoningTime?: number }> {
@@ -212,11 +208,8 @@ export class ModelComboProvider {
       // 第一阶段：调用推理模型，实时显示推理过程
       console.log(`[ModelComboProvider] 第一阶段：调用推理模型 ${thinkingModel.modelId}`);
 
-      // 直接使用传入的消息历史
       const thinkingMessages: Message[] = messages;
 
-      // 调用推理模型，获取推理过程
-      // 注意：我们需要直接使用 Provider 实例而不是 API 模块，因为需要访问 onUpdate 回调
       const thinkingModelConfig = await this.getModelById(thinkingModel.modelId);
       if (!thinkingModelConfig) {
         throw new Error(`找不到推理模型: ${thinkingModel.modelId}`);
@@ -224,40 +217,46 @@ export class ModelComboProvider {
 
       const thinkingProvider = ApiProviderRegistry.get(thinkingModelConfig);
 
-      // 用于收集推理内容的数组（按照参考项目的逻辑）
+      // 用于收集推理内容
       const reasoningContent: string[] = [];
+      let reasoningComplete = false;
 
       // 创建 Promise 来等待推理完成
       const reasoningPromise = new Promise<string>((resolve, reject) => {
         thinkingProvider.sendChatMessage(thinkingMessages, {
-          onUpdate: (content: string, reasoning?: string) => {
-            if (reasoning) {
-              // 收集推理内容片段（按照参考项目逻辑）
-              reasoningContent.push(reasoning);
-              console.log(`[ModelComboProvider] 收到推理片段，长度: ${reasoning.length}`);
+          onChunk: (chunk: Chunk) => {
+            // 处理推理内容
+            if (chunk.type === ChunkType.THINKING_DELTA && chunk.text) {
+              reasoningContent.push(chunk.text);
+              console.log(`[ModelComboProvider] 收到推理片段，长度: ${chunk.text.length}`);
 
-              // 实时显示推理内容
-              if (options?.onUpdate) {
-                options.onUpdate('', reasoning);
+              // 实时转发推理内容
+              if (options?.onChunk) {
+                options.onChunk(chunk);
               }
             }
 
-            // 当收到普通内容时，表示推理阶段结束
-            if (content && !reasoning) {
-              console.log(`[ModelComboProvider] 推理阶段结束，收到内容: ${content.length} 字符`);
-
-              // 检查是否是推理完成信号
-              if (content === '[REASONING_COMPLETE]') {
-                console.log(`[ModelComboProvider] 收到推理完成信号`);
-              } else {
-                console.log(`[ModelComboProvider] 收到实际内容: ${content.substring(0, 50)}...`);
-              }
-
-              // 返回完整的推理内容
-              const fullReasoning = reasoningContent.join('');
-              console.log(`[ModelComboProvider] 推理完成，总长度: ${fullReasoning.length}`);
-              resolve(fullReasoning);
+            // 处理推理完成
+            if (chunk.type === ChunkType.THINKING_COMPLETE) {
+              reasoningComplete = true;
+              console.log(`[ModelComboProvider] 推理阶段完成`);
             }
+
+            // 处理文本内容（推理阶段结束信号）
+            if (chunk.type === ChunkType.TEXT_DELTA || chunk.type === ChunkType.TEXT_COMPLETE) {
+              if (!reasoningComplete) {
+                // 推理阶段结束
+                const fullReasoning = reasoningContent.join('');
+                console.log(`[ModelComboProvider] 推理完成，总长度: ${fullReasoning.length}`);
+                resolve(fullReasoning);
+              }
+            }
+          }
+        }).then(() => {
+          // 如果没有通过 TEXT_DELTA 触发 resolve，在完成时 resolve
+          if (!reasoningComplete) {
+            const fullReasoning = reasoningContent.join('');
+            resolve(fullReasoning);
           }
         }).catch(reject);
       });
@@ -340,15 +339,26 @@ ${combinedContent}`;
         console.log(`[ModelComboProvider] 消息 ${index}: 角色=${msg.role}, 内容长度=${content.length}, 内容预览=${content.substring(0, 100)}...`);
       });
 
-      // 调用生成模型，实时显示生成内容
+      // 调用生成模型，通过 onChunk 实时显示生成内容
       const generatingResponse = await generatingProvider.sendChatMessage(generatingMessages, {
-        onUpdate: (content: string) => {
-          // 实时显示生成内容
-          finalContent = content;
-          console.log(`[ModelComboProvider] 生成更新，长度: ${content.length}`);
-          // 只发送生成的内容，不重复发送推理内容
-          if (options?.onUpdate) {
-            options.onUpdate(content);
+        onChunk: (chunk: Chunk) => {
+          // 处理文本增量
+          if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
+            finalContent += chunk.text;
+            console.log(`[ModelComboProvider] 生成更新，长度: ${chunk.text.length}`);
+            
+            // 转发给上层
+            if (options?.onChunk) {
+              options.onChunk(chunk);
+            }
+          }
+          
+          // 处理文本完成
+          if (chunk.type === ChunkType.TEXT_COMPLETE && chunk.text) {
+            finalContent = chunk.text;
+            if (options?.onChunk) {
+              options.onChunk(chunk);
+            }
           }
         }
       });

@@ -245,7 +245,6 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
 export async function parseAndCallTools(
   content: string | MCPToolResponse[],
   mcpTools: MCPTool[] = [],
-  onUpdate?: (toolResponse: MCPToolResponse, result: MCPCallToolResponse) => void,
   onChunk?: (chunk: import('../types/chunk').Chunk) => void
 ): Promise<MCPCallToolResponse[]> {
   const toolResults: MCPCallToolResponse[] = [];
@@ -291,9 +290,11 @@ export async function parseAndCallTools(
         response: result
       };
 
-      // 通知更新
-      if (onUpdate) {
-        onUpdate(finalToolResponse, result);
+      if (onChunk) {
+        onChunk({
+          type: ChunkType.MCP_TOOL_COMPLETE,
+          responses: [finalToolResponse]
+        });
       }
 
       return result;
@@ -316,8 +317,11 @@ export async function parseAndCallTools(
         response: errorResult
       };
 
-      if (onUpdate) {
-        onUpdate(errorToolResponse, errorResult);
+      if (onChunk) {
+        onChunk({
+          type: ChunkType.MCP_TOOL_COMPLETE,
+          responses: [errorToolResponse]
+        });
       }
 
       return errorResult;

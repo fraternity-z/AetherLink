@@ -189,12 +189,10 @@ export class MessageService {
   // 为向后兼容添加handleChatRequest方法
   static async handleChatRequest({
     messages,
-    model,
-    onChunk
+    model
   }: {
     messages: Message[];
     model: Model;
-    onChunk?: (chunk: string, reasoning?: string) => void;
   }): Promise<any> {
     try {
       // 获取上下文设置
@@ -212,15 +210,8 @@ export class MessageService {
         throw new Error(`无法获取API提供商: ${model.provider}`);
       }
 
-      // 发送API请求
-      const response = await apiProvider.sendChatMessage(limitedMessages, {
-        onUpdate: (content: string, reasoning?: string) => {
-          // 如果有回调函数，调用它
-          if (onChunk) {
-            onChunk(content, reasoning);
-          }
-        }
-      });
+      // handleChatRequest 是向后兼容方法，不需要流式更新
+      const response = await apiProvider.sendChatMessage(limitedMessages, {});
       console.log(`[handleChatRequest] API请求成功返回`);
       return response;
     } catch (error) {

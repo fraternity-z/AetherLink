@@ -98,11 +98,10 @@ export function getProviderApi(model: Model): any {
   // 扩展的Provider选择逻辑，支持Azure OpenAI和模型组合
   switch (providerType) {
     case 'model-combo':
-      // 返回模型组合API
       console.log(`[ProviderFactory] 使用模型组合API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model, onUpdate?: (content: string) => void) => {
-          return await handleModelComboRequest(messages, model, onUpdate);
+        sendChatRequest: async (messages: any[], model: Model) => {
+          return await handleModelComboRequest(messages, model);
         }
       };
     case 'anthropic':
@@ -114,13 +113,11 @@ export function getProviderApi(model: Model): any {
       console.log(`[ProviderFactory] 使用Azure OpenAI API`);
       return openaiApi;
     case 'openai-aisdk':
-      // 使用AI SDK版本的OpenAI API
       console.log(`[ProviderFactory] 使用AI SDK OpenAI API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model, onUpdate?: (content: string, reasoning?: string) => void) => {
-          // 使用已导入的AI SDK模块
+        sendChatRequest: async (messages: any[], model: Model) => {
           const provider = new OpenAIAISDKProvider(model);
-          return await provider.sendChatMessage(messages, { onUpdate });
+          return await provider.sendChatMessage(messages, {});
         },
         testConnection: async (_model: Model) => {
           try {
@@ -184,13 +181,11 @@ function isVideoGenerationModel(model: Model): boolean {
  * 发送聊天请求
  * @param messages 消息数组
  * @param model 模型配置
- * @param onUpdate 更新回调函数
  * @returns 响应内容
  */
 export async function sendChatRequest(
   messages: any[],
-  model: Model,
-  onUpdate?: (content: string, reasoning?: string) => void
+  model: Model
 ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
   try {
     console.log(`[ProviderFactory.sendChatRequest] 开始处理请求 - 模型ID: ${model.id}, 提供商: ${model.provider}`);
@@ -243,7 +238,7 @@ export async function sendChatRequest(
     }
 
     console.log(`[ProviderFactory.sendChatRequest] 调用API的sendChatRequest方法`);
-    return await api.sendChatRequest(messages, model, onUpdate);
+    return await api.sendChatRequest(messages, model);
   } catch (error) {
     console.error('[ProviderFactory.sendChatRequest] 发送聊天请求失败:', error);
     throw error;
@@ -602,13 +597,11 @@ export async function fetchModels(provider: any): Promise<any[]> {
  * 处理模型组合请求
  * @param messages 消息数组
  * @param model 模型配置（包含组合信息）
- * @param onUpdate 更新回调函数
  * @returns 响应内容
  */
 async function handleModelComboRequest(
   messages: any[],
-  model: Model,
-  onUpdate?: (content: string) => void
+  model: Model
 ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
   try {
     console.log(`[handleModelComboRequest] 开始处理模型组合请求: ${model.id}`);
@@ -631,11 +624,6 @@ async function handleModelComboRequest(
     const result = await modelComboService.executeCombo(comboConfig.id, prompt);
 
     console.log(`[handleModelComboRequest] 模型组合执行完成:`, result);
-
-    // 如果有更新回调，发送最终结果
-    if (onUpdate && result.finalResult?.content) {
-      onUpdate(result.finalResult.content);
-    }
 
     // 返回最终结果
     return {

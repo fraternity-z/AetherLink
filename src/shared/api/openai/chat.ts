@@ -12,7 +12,6 @@ import { OpenAIProvider } from './provider';
  * 聊天选项接口
  */
 export interface ChatOptions {
-  onUpdate?: (content: string, reasoning?: string) => void;
   onChunk?: (chunk: Chunk) => void;
   enableWebSearch?: boolean;
   systemPrompt?: string;
@@ -36,7 +35,6 @@ export interface ChatResponse {
  * 标准化后的聊天选项接口
  */
 interface NormalizedChatOptions {
-  onUpdate?: (content: string, reasoning?: string) => void;
   onChunk?: (chunk: Chunk) => void;
   enableWebSearch: boolean;
   systemPrompt: string;
@@ -52,7 +50,6 @@ interface NormalizedChatOptions {
  */
 function normalizeChatOptions(options?: ChatOptions): NormalizedChatOptions {
   return {
-    onUpdate: options?.onUpdate,
     onChunk: options?.onChunk,
     enableWebSearch: options?.enableWebSearch ?? true,
     systemPrompt: options?.systemPrompt ?? '',
@@ -184,7 +181,6 @@ export async function sendChatMessage(
 
     // 调用Provider发送消息
     const result = await provider.sendChatMessage(validatedMessages, {
-      onUpdate: normalizedOptions.onUpdate,
       onChunk: normalizedOptions.onChunk,
       enableWebSearch: normalizedOptions.enableWebSearch,
       systemPrompt: normalizedOptions.systemPrompt,
@@ -210,13 +206,11 @@ export async function sendChatMessage(
 export async function sendChatRequest(
   messages: Message[],
   model: Model,
-  onUpdate?: (content: string, reasoning?: string) => void,
   abortSignal?: AbortSignal
 ): Promise<string | ChatResponse> {
   console.warn('[OpenAI Chat] sendChatRequest 已废弃，请使用 sendChatMessage');
 
   return sendChatMessage(messages, model, {
-    onUpdate,
     abortSignal
   });
 }

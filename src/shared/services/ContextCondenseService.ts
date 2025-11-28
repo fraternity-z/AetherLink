@@ -471,13 +471,9 @@ export class ContextCondenseService {
       // 收集响应内容
       let responseContent = '';
       
-      // 调用API
       const result = await apiProvider.sendChatMessage(
         [systemMessage, userMessage],
         {
-          onUpdate: (content: string) => {
-            responseContent = content;
-          },
           enableWebSearch: false,
           enableTools: false
         }

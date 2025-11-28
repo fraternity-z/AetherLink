@@ -85,29 +85,19 @@ export {
   type ChatResponse
 } from './chat';
 
-// 导出响应处理器
-export {
-  createResponseHandler,
-  ResponseHandler,
-  defaultResponseHandler
-} from './responseHandler';
-
 // 使用统一聊天模块的包装函数
 export async function sendChatRequest(
   messages: any[],
   model: Model,
   options?: {
-    onUpdate?: (content: string, reasoning?: string) => void;
     systemPrompt?: string;
   }
 ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
-  const onUpdate = options?.onUpdate;
   const systemPrompt = options?.systemPrompt || '';
 
   console.log(`[openai/index.ts] 使用统一聊天模块 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
 
   return sendChatMessage(messages, model, {
-    onUpdate,
     systemPrompt
   });
 }
@@ -137,7 +127,6 @@ export function createOpenAIAPI(model: Model) {
     sendMessage: (
       messages: Message[],
       options?: {
-        onUpdate?: (content: string, reasoning?: string) => void;
         enableWebSearch?: boolean;
         systemPrompt?: string;
         enableTools?: boolean;

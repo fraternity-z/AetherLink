@@ -23,7 +23,6 @@ import type { Chunk } from '../../types/chunk';
 export interface UnifiedStreamOptions {
   // 基础选项
   model: Model;
-  onUpdate?: (content: string, reasoning?: string) => void;
   onChunk?: (chunk: Chunk) => void;
   abortSignal?: AbortSignal;
 
@@ -168,15 +167,18 @@ export class UnifiedStreamProcessor {
 
       this.state.content += chunk.textDelta;
 
-      // 如果是推理阶段结束，先发送推理完成信号
-      if (isFirstContent && this.options.onUpdate) {
-        console.log('[UnifiedStreamProcessor] 推理阶段结束，开始内容阶段');
-        // 发送推理完成信号，让模型组合知道推理阶段结束
-        this.options.onUpdate(chunk.textDelta, '');
-        return; // 这次调用已经发送了内容，直接返回
+      // 如果是推理阶段结束，先发送推理完成事件
+      if (isFirstContent && this.options.onChunk && this.state.reasoning) {
+        console.log('[UnifiedStreamProcessor] 推理阶段结束，发送 THINKING_COMPLETE');
+        this.options.onChunk({
+          type: ChunkType.THINKING_COMPLETE,
+          text: this.state.reasoning,
+          thinking_millsec: this.state.reasoningStartTime ? (Date.now() - this.state.reasoningStartTime) : 0,
+          blockId: this.options.thinkingBlockId
+        } as Chunk);
       }
 
-      // 发送事件
+      // 发送文本增量事件
       if (this.options.onChunk) {
         this.options.onChunk({
           type: ChunkType.TEXT_DELTA,
@@ -185,9 +187,6 @@ export class UnifiedStreamProcessor {
           blockId: this.options.blockId,
           topicId: this.options.topicId
         });
-      } else if (this.options.onUpdate) {
-        // 传递增量内容而不是累积内容，避免重复显示
-        this.options.onUpdate(chunk.textDelta, '');
       }
     } else if (chunk.type === 'reasoning') {
       if (!this.state.reasoningStartTime) {
@@ -196,16 +195,12 @@ export class UnifiedStreamProcessor {
 
       this.state.reasoning += chunk.textDelta;
 
-      if (this.options.onChunk) {
+if (this.options.onChunk) {
         this.options.onChunk({
           type: ChunkType.THINKING_DELTA,
           text: chunk.textDelta,
           blockId: this.options.thinkingBlockId
         } as Chunk);
-      } else if (this.options.onUpdate) {
-        // 为模型组合功能提供实时推理片段
-        // 传递空字符串作为content，推理片段作为reasoning
-        this.options.onUpdate('', chunk.textDelta);
       }
     } else if (chunk.type === 'finish') {
       // 处理完成 - 对于只有推理内容没有普通内容的模型（如纯推理模型）
@@ -214,9 +209,15 @@ export class UnifiedStreamProcessor {
         // 将推理内容设置为最终内容
         this.state.content = this.state.reasoning;
 
-        // 发送最终内容
-        if (this.options.onUpdate) {
-          this.options.onUpdate(this.state.content, '');
+        // 通过 onChunk 发送最终内容
+        if (this.options.onChunk) {
+          this.options.onChunk({
+            type: ChunkType.TEXT_COMPLETE,
+            text: this.state.content,
+            messageId: this.options.messageId,
+            blockId: this.options.blockId,
+            topicId: this.options.topicId
+          } as Chunk);
         }
       }
 
@@ -311,7 +312,7 @@ export class UnifiedStreamProcessor {
 }
 
 /**
- * 简化的函数式接口 - 兼容原 streamCompletion
+ * 简化的函数式接口
  */
 export async function unifiedStreamCompletion(
   client: OpenAI,
@@ -319,7 +320,6 @@ export async function unifiedStreamCompletion(
   messages: any[],
   temperature?: number,
   maxTokens?: number,
-  onUpdate?: (content: string, reasoning?: string) => void,
   additionalParams?: any,
   onChunk?: (chunk: Chunk) => void
 ): Promise<string | StreamProcessingResult> {
@@ -330,7 +330,6 @@ export async function unifiedStreamCompletion(
 
   const processor = new UnifiedStreamProcessor({
     model,
-    onUpdate,
     onChunk,
     enableTools: additionalParams?.enableTools,
     mcpTools: additionalParams?.mcpTools,

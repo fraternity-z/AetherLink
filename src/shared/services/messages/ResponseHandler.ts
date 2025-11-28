@@ -2,14 +2,13 @@ import store from '../../store';
 import { EventEmitter, EVENT_NAMES } from '../EventService';
 import { AssistantMessageStatus } from '../../types/newMessage';
 import { newMessagesActions } from '../../store/slices/newMessagesSlice';
-import type { Chunk, TextDeltaChunk, ThinkingDeltaChunk } from '../../types/chunk';
+import type { Chunk, TextDeltaChunk } from '../../types/chunk';
 import { ChunkType } from '../../types/chunk';
 
 // 导入拆分后的处理器
 import {
   createResponseChunkProcessor,
   ToolResponseHandler,
-  ComparisonResultHandler,
   KnowledgeSearchHandler,
   ResponseCompletionHandler,
   ResponseErrorHandler
@@ -54,7 +53,6 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
     getHighPerformanceUpdateInterval() // 根据节流强度设置动态调整
   );
   const toolHandler = new ToolResponseHandler(messageId);
-  const comparisonHandler = new ComparisonResultHandler(messageId);
   const knowledgeHandler = new KnowledgeSearchHandler(messageId);
   const completionHandler = new ResponseCompletionHandler(messageId, blockId, topicId);
   const errorHandler = new ResponseErrorHandler(messageId, blockId, topicId);
@@ -116,9 +114,10 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
     },
 
     /**
-     * 处理字符串内容（向后兼容）
+     * 处理字符串内容（简化版）
+     * 主要用于图像生成完成后的简单状态消息
      */
-    async handleStringContent(content: string, reasoning?: string): Promise<string> {
+    async handleStringContent(content: string): Promise<string> {
       // 检查消息是否完成
       const currentState = store.getState();
       const message = currentState.messages.entities[messageId];
@@ -127,48 +126,13 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
         return chunkProcessor.content;
       }
 
-      // 检查对比结果
-      if (comparisonHandler.isComparisonResult(content, reasoning)) {
-        console.log(`[ResponseHandler] 检测到对比结果`);
-        comparisonHandler.handleComparisonResult(reasoning!);
-        return chunkProcessor.content;
-      }
-
       try {
-        // 处理推理内容
-        if (reasoning?.trim()) {
-          const thinkingChunk: ThinkingDeltaChunk = {
-            type: ChunkType.THINKING_DELTA,
-            text: reasoning,
-            thinking_millsec: 0
-          };
-          await this.handleChunk(thinkingChunk);
-        } else {
-          // 尝试解析JSON格式
-          let textContent = content;
-          try {
-            const parsed = JSON.parse(content);
-            if (parsed?.reasoning) {
-              const thinkingChunk: ThinkingDeltaChunk = {
-                type: ChunkType.THINKING_DELTA,
-                text: parsed.reasoning,
-                thinking_millsec: parsed.reasoningTime || 0
-              };
-              await this.handleChunk(thinkingChunk);
-              return chunkProcessor.content;
-            }
-            textContent = parsed?.text || content;
-          } catch {
-            // 不是JSON，按普通文本处理
-          }
-
-          // 处理文本内容
-          const textChunk: TextDeltaChunk = {
-            type: ChunkType.TEXT_DELTA,
-            text: textContent
-          };
-          await this.handleChunk(textChunk);
-        }
+        // 直接作为文本内容处理
+        const textChunk: TextDeltaChunk = {
+          type: ChunkType.TEXT_DELTA,
+          text: content
+        };
+        await this.handleChunk(textChunk);
       } catch (error) {
         console.error('[ResponseHandler] 处理字符串内容失败:', error);
         throw error;

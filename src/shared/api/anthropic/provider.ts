@@ -64,7 +64,7 @@ export abstract class BaseProvider extends AbstractBaseProvider {
   abstract sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
       enableWebSearch?: boolean;
       enableThinking?: boolean;
       enableTools?: boolean;
@@ -159,7 +159,7 @@ export class AnthropicProvider extends BaseProvider {
   async sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
       enableWebSearch?: boolean;
       enableThinking?: boolean;
       enableTools?: boolean;
@@ -174,7 +174,7 @@ export class AnthropicProvider extends BaseProvider {
       console.log(`[AnthropicProvider.sendChatMessage] 开始处理聊天请求, 模型: ${this.model.id}, 消息数量: ${messages.length}`);
 
       const {
-        onUpdate,
+        onChunk,
         enableWebSearch = false,
         enableThinking = false,
         enableTools = true,
@@ -316,11 +316,9 @@ export class AnthropicProvider extends BaseProvider {
         console.log(`[AnthropicProvider] 系统提示词模式：${mcpTools.length} 个工具已注入到系统提示词中`);
       }
 
-      // 如果有onUpdate回调，使用流式响应
-      if (onUpdate) {
+      if (onChunk) {
         requestParams.stream = true;
 
-        // 创建流式响应
         const stream = await this.client.messages.create({
           ...requestParams
         });
@@ -332,11 +330,20 @@ export class AnthropicProvider extends BaseProvider {
           if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
             const chunkText = chunk.delta.text;
             fullResponse += chunkText;
-            onUpdate(fullResponse);
+            // 使用 onChunk 发送增量内容
+            onChunk({
+              type: 'TEXT_DELTA' as any,
+              text: chunkText
+            });
           }
         }
 
-        // 记录API响应
+        // 发送完成事件
+        onChunk({
+          type: 'TEXT_COMPLETE' as any,
+          text: fullResponse
+        });
+
         logApiResponse('Anthropic API Stream', 200, {
           model: this.model.id,
           content: fullResponse.substring(0, 100) + (fullResponse.length > 100 ? '...' : '')

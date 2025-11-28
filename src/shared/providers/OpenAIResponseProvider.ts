@@ -267,7 +267,6 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
   public async sendChatMessage(
     messages: any[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
       onChunk?: (chunk: Chunk) => void;
       enableWebSearch?: boolean;
       systemPrompt?: string;
@@ -296,7 +295,6 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
             case ChunkType.TEXT_DELTA:
               if (chunk.text) {
                 accumulatedContent += chunk.text;
-                // 注意：不在这里调用 onUpdate，让响应处理器处理累积
               }
               break;
             case ChunkType.THINKING_DELTA:
@@ -306,21 +304,17 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
               break;
             case ChunkType.TEXT_COMPLETE:
               if (chunk.text) {
-                // 使用服务器返回的完整文本，确保准确性
                 accumulatedContent = chunk.text;
-                // 在完成时调用 onUpdate
-                options?.onUpdate?.(accumulatedContent, accumulatedReasoning);
               }
               break;
             case ChunkType.THINKING_COMPLETE:
               if (chunk.text) {
                 accumulatedReasoning = chunk.text;
-                options?.onUpdate?.(accumulatedContent, accumulatedReasoning);
               }
               break;
           }
 
-          // 转发 chunk 给调用者 - 让响应处理器处理累积逻辑
+          // 转发 chunk 给调用者
           options?.onChunk?.(chunk);
         }
       });
@@ -659,10 +653,7 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
 
       const results = await parseAndCallTools(
         mcpToolResponses,
-        mcpTools,
-        (toolResponse: MCPToolResponse, _result: MCPCallToolResponse) => {
-          console.log(`[OpenAIResponseProvider] 工具调用完成: ${toolResponse.tool.name}`);
-        }
+        mcpTools
       );
 
       return results.map((result, index) =>

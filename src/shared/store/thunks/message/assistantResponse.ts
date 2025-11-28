@@ -363,26 +363,18 @@ export const processAssistantResponse = async (
           });
         }
 
-        // 使用Provider的sendChatMessage方法，避免重复调用
-        //  修复组合模型推理显示问题：同时使用onUpdate和onChunk
-        //  修复文件上传问题：根据provider类型使用合适的消息格式
+        // 使用Provider的sendChatMessage方法
         response = await apiProvider.sendChatMessage(
-          messagesToSend as any, // 根据provider类型传递合适的消息格式
+          messagesToSend as any,
           {
-            onUpdate: (content: string, reasoning?: string) => {
-              // 组合模型的推理内容通过onUpdate传递
-              responseHandler.handleStringContent(content, reasoning);
-            },
             onChunk: (chunk: import('../../../types/chunk').Chunk) => {
-              // 普通模型的流式内容通过onChunk传递
               responseHandler.handleChunk(chunk);
             },
             enableTools: toolsEnabled !== false,
             mcpTools: mcpTools,
             mcpMode: mcpMode,
             abortSignal: abortController.signal,
-            assistant: assistant, // 传递助手信息给Provider
-            //  关键修复：为Gemini provider传递系统提示词
+            assistant: assistant,
             systemPrompt: isActualGeminiProvider ? systemPromptForProvider : undefined
           }
         );
@@ -406,8 +398,8 @@ export const processAssistantResponse = async (
       // AI 提供者会自动检测工具调用、执行工具、将结果添加到对话历史并继续对话
       console.log(`[processAssistantResponse] 工具调用已在 AI 提供者层面处理完成`);
 
-      // 对于非流式响应，onUpdate回调已经在Provider层正确处理了思考过程和普通文本
-      // 不需要重复处理，避免重复调用导致的问题
+      // 响应处理已通过 onChunk 回调在 Provider 层完成
+      // 包括流式和非流式的思考过程和普通文本
       const handlerStatus = responseHandler.getStatus();
       console.log(`[processAssistantResponse] 非流式响应处理完成，内容长度: ${finalContent.length}, 思考过程长度: ${handlerStatus.thinkingContent?.length || 0}, 是否被中断: ${isInterrupted}`);
 

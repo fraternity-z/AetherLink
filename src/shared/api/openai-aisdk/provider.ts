@@ -29,7 +29,6 @@ export class OpenAIAISDKProvider extends BaseOpenAIProvider {
   public async sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
       onChunk?: (chunk: any) => void;
       enableWebSearch?: boolean;
       systemPrompt?: string;
@@ -73,14 +72,12 @@ export class OpenAIAISDKProvider extends BaseOpenAIProvider {
         ];
       }
 
-      // 使用AI SDK流式处理
       const result = await streamCompletionAISDK(
         this.aiSdkClient,
         this.model.id,
         params.messages,
         params.temperature,
         params.max_tokens, // 如果禁用了会是undefined
-        options?.onUpdate,
         params,
         options?.onChunk
       );

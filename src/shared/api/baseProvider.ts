@@ -16,10 +16,10 @@ export interface BaseProvider {
    * @param options 选项
    * @returns 响应内容
    */
-  sendChatMessage(
+sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
+      onChunk?: (chunk: import('../types/chunk').Chunk) => void;
       enableWebSearch?: boolean;
       enableThinking?: boolean;
       enableTools?: boolean;
@@ -58,7 +58,7 @@ export abstract class AbstractBaseProvider implements BaseProvider {
   abstract sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
+      onChunk?: (chunk: import('../types/chunk').Chunk) => void;
       enableWebSearch?: boolean;
       enableThinking?: boolean;
       enableTools?: boolean;

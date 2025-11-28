@@ -137,13 +137,11 @@ export async function generateImage(
  * 在聊天中生成图像 - 完整支持版本
  * @param model 模型配置
  * @param messages 消息数组
- * @param onUpdate 更新回调
  * @returns 生成的图像URL数组
  */
 export async function generateImageByChat(
   model: Model,
-  messages: any[],
-  onUpdate?: (content: string) => void
+  messages: any[]
 ): Promise<string[]> {
   try {
     // 获取最后一条用户消息作为提示词
@@ -166,10 +164,7 @@ export async function generateImageByChat(
       throw new Error('没有找到有效的图像生成提示词');
     }
 
-    // 通知开始生成
-    if (onUpdate) {
-      onUpdate('正在生成图像...');
-    }
+    log('INFO', '正在生成图像...', { model: model.id });
 
     // 使用基础图像生成功能
     const imageUrls = await generateImage(model, {
@@ -178,10 +173,7 @@ export async function generateImageByChat(
       batchSize: 1
     });
 
-    // 通知生成完成
-    if (onUpdate) {
-      onUpdate(`图像生成完成！生成了 ${imageUrls.length} 张图像。`);
-    }
+    log('INFO', `图像生成完成！生成了 ${imageUrls.length} 张图像。`, { model: model.id });
 
     return imageUrls;
   } catch (error: any) {
@@ -190,10 +182,6 @@ export async function generateImageByChat(
       provider: model.provider,
       error
     });
-
-    if (onUpdate) {
-      onUpdate(`图像生成失败: ${error.message || '未知错误'}`);
-    }
 
     throw error;
   }

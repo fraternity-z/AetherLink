@@ -22,7 +22,6 @@ export async function streamCompletionAISDK(
   messages: any[],
   temperature?: number,
   maxTokens?: number,
-  onUpdate?: (content: string, reasoning?: string) => void,
   additionalParams?: any,
   onChunk?: (chunk: any) => void
 ): Promise<string> {
@@ -95,8 +94,8 @@ export async function streamCompletionAISDK(
             const beforeThink = contentBuffer.substring(0, thinkStartIndex);
             if (beforeThink) {
               fullContent += beforeThink;
-              if (onUpdate) {
-                onUpdate(beforeThink);
+              if (onChunk) {
+                onChunk({ type: ChunkType.TEXT_DELTA, text: beforeThink });
               }
             }
 
@@ -119,8 +118,8 @@ export async function streamCompletionAISDK(
 
               if (safeContent) {
                 fullContent += safeContent;
-                if (onUpdate) {
-                  onUpdate(safeContent);
+                if (onChunk) {
+                  onChunk({ type: ChunkType.TEXT_DELTA, text: safeContent });
                 }
               }
 
@@ -199,8 +198,8 @@ export async function streamCompletionAISDK(
       } else {
         // 否则作为普通内容
         fullContent += contentBuffer;
-        if (onUpdate) {
-          onUpdate(contentBuffer);
+        if (onChunk) {
+          onChunk({ type: ChunkType.TEXT_DELTA, text: contentBuffer });
         }
       }
     }

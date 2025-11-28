@@ -39,8 +39,7 @@ export abstract class BaseAIProvider {
    */
   protected async processToolCalls(
     toolCalls: any[],
-    mcpTools: MCPTool[],
-    onToolUpdate?: (toolResponse: MCPToolResponse, result: MCPCallToolResponse) => void
+    mcpTools: MCPTool[]
   ): Promise<any[]> {
     if (!toolCalls || toolCalls.length === 0) {
       return [];
@@ -50,8 +49,7 @@ export abstract class BaseAIProvider {
 
     const results = await parseAndCallTools(
       mcpToolResponses,
-      mcpTools,
-      onToolUpdate
+      mcpTools
     );
 
     return results.map((result, index) =>
@@ -72,8 +70,7 @@ export abstract class BaseAIProvider {
    */
   protected async processToolUses(
     content: string,
-    mcpTools: MCPTool[],
-    onToolUpdate?: (toolResponse: MCPToolResponse, result: MCPCallToolResponse) => void
+    mcpTools: MCPTool[]
   ): Promise<any[]> {
     if (!content || !mcpTools || mcpTools.length === 0) {
       return [];
@@ -81,8 +78,7 @@ export abstract class BaseAIProvider {
 
     const results = await parseAndCallTools(
       content,
-      mcpTools,
-      onToolUpdate
+      mcpTools
     );
 
     // 从内容中解析工具响应

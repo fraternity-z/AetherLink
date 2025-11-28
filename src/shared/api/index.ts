@@ -129,18 +129,6 @@ async function processModelRequest(model: Model, options: ChatRequest): Promise<
     const api = getProviderApi(model);
 
     try {
-
-      // 简化流式响应处理
-      const onUpdate = options.onChunk
-        ? (content: string) => {
-            try {
-              options.onChunk!(content);
-            } catch (error) {
-              console.error('发送流式内容时出错:', error);
-            }
-          }
-        : undefined;
-
       // 简化消息格式转换
       const apiMessages = messages.map(msg => {
         let content = '';
@@ -170,7 +158,7 @@ async function processModelRequest(model: Model, options: ChatRequest): Promise<
         throw new DOMException('Operation aborted', 'AbortError');
       }
 
-      const response = await api.sendChatRequest(apiMessages, model, onUpdate, options.abortSignal);
+      const response = await api.sendChatRequest(apiMessages, model);
 
       // 处理响应格式
       const content = typeof response === 'string' ? response : response.content;

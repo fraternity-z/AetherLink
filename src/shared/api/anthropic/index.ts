@@ -29,7 +29,6 @@ export {
  * ```
  * const api = createAnthropicAPI(model);
  * const response = await api.sendMessage(messages, {
- *   onUpdate: (content) => console.log(content)
  * });
  * ```
  */
@@ -43,9 +42,7 @@ export function createAnthropicAPI(model: Model) {
      */
     sendMessage: (
       messages: Message[],
-      options?: {
-        onUpdate?: (content: string) => void;
-      }
+      options?: {}
     ) => {
       console.log(`[anthropic/index.ts] 通过API适配器发送消息 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
       return provider.sendChatMessage(messages, options);
@@ -64,12 +61,11 @@ export function createAnthropicAPI(model: Model) {
  */
 export const sendChatRequest = async (
   messages: Message[],
-  model: Model,
-  onUpdate?: (content: string) => void
+  model: Model
 ): Promise<string> => {
   console.log(`[anthropic/index.ts] 发送聊天请求 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
   const provider = createProvider(model);
-  const result = await provider.sendChatMessage(messages, { onUpdate });
+  const result = await provider.sendChatMessage(messages, {});
 
   // 处理新的返回类型
   if (typeof result === 'string') {

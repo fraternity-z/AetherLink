@@ -6,7 +6,6 @@ import OpenAI from 'openai';
 import { createClient } from './client';
 import { unifiedStreamCompletion } from './unifiedStreamProcessor';
 import { OpenAIParameterManager, createParameterManager } from './parameterManager';
-// import { createResponseHandler } from './responseHandler'; // 暂时注释，将来使用
 
 import {
   supportsMultimodal,
@@ -285,8 +284,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    */
   protected async processToolUses(
     content: string,
-    mcpTools: MCPTool[],
-    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
+    mcpTools: MCPTool[]
   ): Promise<any[]> {
     if (!content || !mcpTools || mcpTools.length === 0) {
       console.log(`[OpenAI] processToolUses 跳过 - 内容: ${!!content}, 工具数量: ${mcpTools?.length || 0}`);
@@ -307,9 +305,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
     const results = await parseAndCallTools(
       content,
-      mcpTools,
-      undefined, // onUpdate 回调
-      onChunk    // onChunk 回调 - 传递给工具调用处理
+      mcpTools
     );
 
     console.log(`[OpenAI] 工具调用结果数量: ${results.length}`);
@@ -338,14 +334,14 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   public abstract sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
       enableWebSearch?: boolean;
       systemPrompt?: string;
-      enableTools?: boolean; // 添加工具开关参数
-      mcpTools?: import('../../types').MCPTool[]; // 添加 MCP 工具参数
-      mcpMode?: 'prompt' | 'function'; // 添加 MCP 模式参数
+      enableTools?: boolean;
+      mcpTools?: import('../../types').MCPTool[];
+      mcpMode?: 'prompt' | 'function';
       abortSignal?: AbortSignal;
-      assistant?: any; // 添加助手参数以获取设置
+      assistant?: any;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }>;
 }
@@ -368,7 +364,6 @@ export class OpenAIProvider extends BaseOpenAIProvider {
   public async sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
       onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
       enableWebSearch?: boolean;
       systemPrompt?: string;
@@ -382,7 +377,6 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     console.log(`[OpenAIProvider] 开始API调用, 模型: ${this.model.id}`);
 
     const {
-      onUpdate,
       onChunk,
       enableWebSearch = false,
       systemPrompt = '',
@@ -474,15 +468,15 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     try {
       // 根据流式输出设置选择响应处理方式
       if (streamEnabled) {
-        // 使用流式响应处理
-        if (onUpdate) {
-          return await this.handleStreamResponse(requestParams, onUpdate, enableTools, mcpTools, abortSignal, onChunk);
-        } else {
-          return await this.handleStreamResponseWithoutCallback(requestParams, enableTools, mcpTools, abortSignal, onChunk);
-        }
+        return await this.handleStreamResponse(requestParams, {
+          onChunk,
+          enableTools,
+          mcpTools,
+          abortSignal
+        });
       } else {
-        // 使用非流式响应处理
-        return await this.handleNonStreamResponse(requestParams, onUpdate, onChunk, enableTools, mcpTools, abortSignal);
+        // 非流式响应处理
+        return await this.handleNonStreamResponse(requestParams, onChunk, enableTools, mcpTools, abortSignal);
       }
     } catch (error: any) {
       // 检查是否为中断错误
@@ -507,174 +501,41 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 
 
   /**
-   * 创建迭代回调函数
-   * 处理多轮工具调用时的内容累积逻辑
-   */
-  private createIterationCallback(
-    iteration: number,
-    accumulatedContent: { value: string },
-    onUpdate?: (content: string, reasoning?: string) => void
-  ): (content: string, reasoning?: string) => void {
-    return (content: string, reasoning?: string) => {
-      if (iteration === 1) {
-        // 第一次迭代，直接使用内容
-        accumulatedContent.value = content;
-        if (onUpdate) onUpdate(content, reasoning);
-      } else {
-        // 后续迭代，添加分隔符并传递新增的内容
-        const separator = accumulatedContent.value.trim() ? '\n\n' : '';
-        const newContent = separator + content;
-        accumulatedContent.value += newContent;
-        if (onUpdate) onUpdate(newContent, reasoning); // 传递包含分隔符的新增内容
-      }
-    };
-  }
-
-  /**
-   * 处理流式响应
+   * 处理流式响应（统一方法）
+   * 合并了原有的 handleStreamResponse 和 handleStreamResponseWithoutCallback
    * @param params 请求参数
-   * @param onUpdate 更新回调
-   * @param enableTools 是否启用工具
-   * @param mcpTools MCP 工具列表
-   * @param abortSignal 中断信号
+   * @param options 选项
    * @returns 响应内容
    */
   private async handleStreamResponse(
     params: any,
-    onUpdate: (content: string, reasoning?: string) => void,
-    enableTools: boolean = true,
-    mcpTools: import('../../types').MCPTool[] = [],
-    abortSignal?: AbortSignal,
-    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
+    options: {
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
+      enableTools?: boolean;
+      mcpTools?: import('../../types').MCPTool[];
+      abortSignal?: AbortSignal;
+    } = {}
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
+    const {
+      onChunk,
+      enableTools = true,
+      mcpTools = [],
+      abortSignal
+    } = options;
 
-    // 工具调用循环处理（类似非流式响应）
-    let currentMessages = [...params.messages];
-    let iteration = 0;
-    const accumulatedContent = { value: '' }; // 使用对象便于引用传递
-
-    while (true) {
-      iteration++;
-      console.log(`[OpenAIProvider] 流式工具调用迭代 ${iteration}`);
-
-      // 使用公共方法创建迭代回调
-      const enhancedCallback = this.createIterationCallback(iteration, accumulatedContent, onUpdate);
-
-      // 准备请求参数，确保工具配置正确
-      const iterationParams = {
-        ...params,
-        messages: currentMessages, // 使用当前消息
-        signal: abortSignal
-      };
-
-      // 在提示词模式下，移除 tools 参数避免冲突
-      if (this.getUseSystemPromptForTools()) {
-        delete iterationParams.tools;
-        delete iterationParams.tool_choice;
-        console.log(`[OpenAIProvider] 提示词模式：移除 API 中的 tools 参数`);
-      }
-
-      //  智能选择处理方式：
-      // 1. 如果有 onChunk 回调，说明是普通消息处理，使用 OpenAIStreamProcessor 分离思考标签
-      // 2. 如果只有 onUpdate 回调，说明可能是组合模型调用，使用 streamCompletion 保持推理内容
-      let result;
-      //  关键修复：确保工具参数传递给 streamCompletion
-      const streamParams = {
-        ...iterationParams,
-        enableTools,
-        mcpTools
-      };
-
-      // 统一使用 unifiedStreamCompletion 处理流式响应
-      result = await unifiedStreamCompletion(
-        this.client,
-        this.model.id,
-        currentMessages,
-        params.temperature,
-        params.max_tokens || params.max_completion_tokens,
-        enhancedCallback,
-        streamParams,
-        onChunk
-      );
-
-
-
-      console.log(`[OpenAIProvider] 流式响应结果类型: ${typeof result}, hasToolCalls: ${typeof result === 'object' && (result as any)?.hasToolCalls}`);
-
-      // 检查是否有工具调用标记
-      if (typeof result === 'object' && (result as any).hasToolCalls) {
-        console.log(`[OpenAIProvider] 流式响应检测到工具调用`);
-
-        const content = result.content;
-
-        // 处理工具调用
-        const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
-
-        if (xmlToolResults.length > 0) {
-          //  修复：保留 XML 标签，让 MainTextBlock 在原位置渲染工具块
-          // 但是对话历史中需要清理后的内容，避免重复处理
-          const cleanContent = removeToolUseTags(content);
-          console.log(`[OpenAIProvider] 流式：对话历史使用清理后的内容，长度: ${cleanContent.length}`);
-
-          // 添加助手消息到对话历史（使用清理后的内容）
-          currentMessages.push({
-            role: 'assistant',
-            content: cleanContent
-          });
-
-          // 添加工具结果到对话历史
-          currentMessages.push(...xmlToolResults);
-
-          console.log(`[OpenAIProvider] 流式工具调用完成，继续下一轮对话`);
-          continue; // 继续下一轮对话
-        }
-      }
-
-      // 没有工具调用或工具调用处理完成，返回结果
-      return result;
-    }
-
-    // 正常情况下不会到达这里，因为循环中会有return语句
-    throw new Error('工具调用处理异常');
-  }
-
-  /**
-   * 处理流式响应（无回调）
-   * 使用流式响应但不使用回调，结果会在完成后一次性返回
-   * 这与最佳实例的行为一致
-   * @param params 请求参数
-   * @param enableTools 是否启用工具
-   * @param mcpTools MCP 工具列表
-   * @param abortSignal 中断信号
-   * @returns 响应内容
-   */
-  private async handleStreamResponseWithoutCallback(
-    params: any,
-    _enableTools: boolean = true,
-    mcpTools: import('../../types').MCPTool[] = [],
-    abortSignal?: AbortSignal,
-    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
-  ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     try {
-      console.log('[OpenAIProvider.handleStreamResponseWithoutCallback] 开始处理流式响应（无回调）');
-
       // 工具调用循环处理
       let currentMessages = [...params.messages];
       let iteration = 0;
-      const accumulatedContent = { value: '' }; // 使用对象便于引用传递
 
       while (true) {
         iteration++;
-        console.log(`[OpenAIProvider] 无回调流式工具调用迭代 ${iteration}`);
+        console.log(`[OpenAIProvider] 流式工具调用迭代 ${iteration}`);
 
-        // 使用公共方法创建迭代回调（传入 undefined 作为 onUpdate）
-        // 这里不需要实际的 UI 更新回调，只需要累积内容
-        const virtualCallback = this.createIterationCallback(iteration, accumulatedContent, undefined);
-
-        // 准备请求参数，确保工具配置正确
+        // 准备请求参数
         const iterationParams = {
           ...params,
-          messages: currentMessages, // 使用当前消息
+          messages: currentMessages,
           signal: abortSignal
         };
 
@@ -682,43 +543,42 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         if (this.getUseSystemPromptForTools()) {
           delete iterationParams.tools;
           delete iterationParams.tool_choice;
-          console.log(`[OpenAIProvider] 无回调提示词模式：移除 API 中的 tools 参数`);
+          console.log(`[OpenAIProvider] 提示词模式：移除 API 中的 tools 参数`);
         }
 
-        //  关键修复：确保工具参数传递给 streamCompletion
+        // 构建流参数
         const streamParams = {
           ...iterationParams,
-          enableTools: _enableTools,
+          enableTools,
           mcpTools
         };
 
-        // 统一使用 unifiedStreamCompletion 处理流式响应
         const result = await unifiedStreamCompletion(
           this.client,
           this.model.id,
           currentMessages,
           params.temperature,
           params.max_tokens || params.max_completion_tokens,
-          virtualCallback,
           streamParams,
           onChunk
         );
 
+        console.log(`[OpenAIProvider] 流式响应结果类型: ${typeof result}, hasToolCalls: ${typeof result === 'object' && (result as any)?.hasToolCalls}`);
+
         // 检查是否有工具调用标记
         if (typeof result === 'object' && (result as any).hasToolCalls) {
-          console.log(`[OpenAIProvider] 无回调流式响应检测到工具调用`);
+          console.log(`[OpenAIProvider] 流式响应检测到工具调用`);
 
           const content = result.content;
 
           // 处理工具调用
-          const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
+          const xmlToolResults = await this.processToolUses(content, mcpTools);
 
           if (xmlToolResults.length > 0) {
-            //  关键修复：从内容中移除 XML 标签，与非流式响应保持一致
             const cleanContent = removeToolUseTags(content);
-            console.log(`[OpenAIProvider] 无回调流式：移除工具使用标签后的内容长度: ${cleanContent.length}`);
+            console.log(`[OpenAIProvider] 流式：对话历史使用清理后的内容，长度: ${cleanContent.length}`);
 
-            // 添加助手消息到对话历史（使用清理后的内容）
+            // 添加助手消息到对话历史
             currentMessages.push({
               role: 'assistant',
               content: cleanContent
@@ -727,21 +587,16 @@ export class OpenAIProvider extends BaseOpenAIProvider {
             // 添加工具结果到对话历史
             currentMessages.push(...xmlToolResults);
 
-            console.log(`[OpenAIProvider] 无回调流式工具调用完成，继续下一轮对话`);
-            continue; // 继续下一轮对话
+            console.log(`[OpenAIProvider] 流式工具调用完成，继续下一轮对话`);
+            continue;
           }
         }
 
         // 没有工具调用或工具调用处理完成，返回结果
         return result;
       }
-
-      // 正常情况下不会到达这里，因为循环中会有return语句
-      throw new Error('工具调用处理异常');
     } catch (error) {
-      console.error('OpenAI API流式请求失败:', error);
-      // 不使用logApiError，直接记录错误
-      console.error('错误详情:', error);
+      console.error('[OpenAIProvider] 流式请求失败:', error);
       throw error;
     }
   }
@@ -749,8 +604,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
   /**
    * 处理非流式响应
    * @param params 请求参数
-   * @param onUpdate 更新回调（可选）
-   * @param onChunk Chunk事件回调（可选）
+   * @param onChunk Chunk事件回调
    * @param enableTools 是否启用工具
    * @param mcpTools MCP 工具列表
    * @param abortSignal 中断信号
@@ -758,7 +612,6 @@ export class OpenAIProvider extends BaseOpenAIProvider {
    */
   private async handleNonStreamResponse(
     params: any,
-    onUpdate?: (content: string, reasoning?: string) => void,
     onChunk?: (chunk: import('../../types/chunk').Chunk) => void,
     enableTools: boolean = true,
     mcpTools: import('../../types').MCPTool[] = [],
@@ -828,7 +681,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           console.log(`[OpenAI] 检查工具使用 - 内容长度: ${content.length}, 工具数量: ${mcpTools.length}`);
           console.log(`[OpenAI] 内容预览: ${content.substring(0, 200)}...`);
 
-          const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
+          const xmlToolResults = await this.processToolUses(content, mcpTools);
           console.log(`[OpenAI] XML 工具调用结果数量: ${xmlToolResults.length}`);
 
           toolResults = toolResults.concat(xmlToolResults);
@@ -853,13 +706,11 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         }
       }
 
-      // 参考最佳实例实现：优先使用 onChunk 回调，避免重复处理
       if (onChunk) {
         console.log(`[OpenAIProvider] 非流式：使用 onChunk 回调处理响应`);
         // 先发送完整的思考过程（如果有）
         if (finalReasoning && finalReasoning.trim()) {
           console.log(`[OpenAIProvider] 非流式：发送思考内容，长度: ${finalReasoning.length}`);
-          // 发送思考完成事件（非流式时直接发送完整内容）
           onChunk({
             type: ChunkType.THINKING_COMPLETE,
             text: finalReasoning,
@@ -869,22 +720,10 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         // 再发送完整的普通文本（如果有）
         if (finalContent && finalContent.trim()) {
           console.log(`[OpenAIProvider] 非流式：发送普通文本，长度: ${finalContent.length}`);
-          // 发送文本完成事件（非流式时直接发送完整内容）
           onChunk({
             type: ChunkType.TEXT_COMPLETE,
             text: finalContent
           });
-        }
-      } else if (onUpdate) {
-        console.log(`[OpenAIProvider] 非流式：使用 onUpdate 回调处理响应（兼容模式）`);
-        // 兼容旧的 onUpdate 回调
-        if (finalReasoning && finalReasoning.trim()) {
-          console.log(`[OpenAIProvider] 非流式：发送思考内容（兼容模式），长度: ${finalReasoning.length}`);
-          onUpdate('', finalReasoning);
-        }
-        if (finalContent && finalContent.trim()) {
-          console.log(`[OpenAIProvider] 非流式：发送普通文本（兼容模式），长度: ${finalContent.length}`);
-          onUpdate(finalContent);
         }
       }
 

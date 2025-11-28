@@ -747,7 +747,6 @@ export default class GeminiProvider extends BaseProvider {
   public async sendChatMessage(
     messages: Message[],
     options?: {
-      onUpdate?: (content: string, reasoning?: string) => void;
       onChunk?: (chunk: any) => void;
       enableWebSearch?: boolean;
       enableThinking?: boolean;
@@ -839,17 +838,11 @@ export default class GeminiProvider extends BaseProvider {
             if (part.thought) {
               // 思考内容
               reasoning += part.text;
-              // 如果有 onChunk，发送 THINKING_DELTA
-              options?.onChunk?.({ type: ChunkType.THINKING_DELTA, text: part.text });
-              // 兼容 onUpdate
-              options?.onUpdate?.(content, reasoning);
+options?.onChunk?.({ type: ChunkType.THINKING_DELTA, text: part.text });
             } else {
               // 正常文本内容
               content += part.text;
-              // 如果有 onChunk，发送 TEXT_DELTA
-              options?.onChunk?.({ type: ChunkType.TEXT_DELTA, text: part.text });
-              // 兼容 onUpdate
-              options?.onUpdate?.(content, reasoning);
+options?.onChunk?.({ type: ChunkType.TEXT_DELTA, text: part.text });
             }
           }
         }

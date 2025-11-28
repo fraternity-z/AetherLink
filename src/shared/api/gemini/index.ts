@@ -66,7 +66,6 @@ import { createGeminiFileService } from './fileService.ts';
  * ```
  * const api = createGeminiAPI(model);
  * const response = await api.sendMessage(messages, {
- *   onUpdate: (content) => console.log(content)
  * });
  * ```
  */
@@ -81,7 +80,6 @@ export function createGeminiAPI(model: Model) {
     sendMessage: async (
       messages: Message[],
       options?: {
-        onUpdate?: (content: string) => void;
         enableWebSearch?: boolean;
         enableThinking?: boolean;
         enableTools?: boolean;
@@ -116,8 +114,6 @@ export function createGeminiAPI(model: Model) {
         onChunk: (chunk: any) => {
           if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
             result += chunk.text;
-            // 传递增量文本给前端，让前端自己累积
-            options?.onUpdate?.(chunk.text);
           }
         },
         onFilterMessages: () => {}
@@ -141,14 +137,12 @@ export function createGeminiAPI(model: Model) {
      */
     generateImageByChat: (
       messages: Message[],
-      options?: {
-        onUpdate?: (content: string) => void;
+      _options?: {
         assistant?: any;
       }
     ) => {
       console.log(`[gemini/index.ts] 通过API适配器在聊天中生成图像 - 模型ID: ${model.id}`);
-      // 使用导入的函数而不是 provider 方法
-      return generateImageByChat(model, messages, options?.onUpdate);
+return generateImageByChat(model, messages);
     },
 
     /**
@@ -241,8 +235,7 @@ export function createGeminiAPI(model: Model) {
  */
 export const sendChatRequest = async (
   messages: Message[],
-  model: Model,
-  onUpdate?: (content: string) => void
+  model: Model
 ): Promise<string> => {
   console.log(`[gemini/index.ts] 发送聊天请求 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
   const provider = createProvider(model);
@@ -253,7 +246,6 @@ export const sendChatRequest = async (
     settings: {
       streamOutput: true
     },
-    // 对于图像生成模型，默认启用图像生成
     enableGenerateImage: isGenerateImageModel(model)
   };
 
@@ -265,8 +257,6 @@ export const sendChatRequest = async (
     onChunk: (chunk: any) => {
       if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
         result += chunk.text;
-        // 传递增量文本给前端，让前端自己累积
-        onUpdate?.(chunk.text);
       }
     },
     onFilterMessages: () => {}
