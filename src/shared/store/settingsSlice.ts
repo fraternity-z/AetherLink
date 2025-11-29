@@ -190,6 +190,7 @@ interface SettingsState {
     threshold: number; // 触发阈值百分比 (5-100)
     modelId?: string; // 用于压缩的模型ID（可选，使用更便宜的模型）
     customPrompt?: string; // 自定义压缩提示词
+    useCurrentTopicModel?: boolean; // 是否使用当前话题的模型（优先于 modelId）
   };
 }
 
@@ -397,7 +398,8 @@ const getInitialState = (): SettingsState => {
       enabled: false, // 默认关闭自动压缩
       threshold: 80, // 默认阈值80%
       modelId: undefined, // 默认使用当前模型
-      customPrompt: undefined // 默认使用内置提示词
+      customPrompt: undefined, // 默认使用内置提示词
+      useCurrentTopicModel: true // 默认使用当前话题的模型
     }
   };
 
@@ -603,8 +605,12 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
           enabled: false,
           threshold: 80,
           modelId: undefined,
-          customPrompt: undefined
+          customPrompt: undefined,
+          useCurrentTopicModel: true
         };
+      } else if (savedSettings.contextCondense.useCurrentTopicModel === undefined) {
+        // 兼容旧数据：如果没有 useCurrentTopicModel 字段，添加默认值
+        savedSettings.contextCondense.useCurrentTopicModel = true;
       }
 
       return {

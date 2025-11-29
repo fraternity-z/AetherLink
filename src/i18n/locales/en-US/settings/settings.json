@@ -109,6 +109,8 @@
     "thresholdHint": "Recommended to set between 70%-90%. Too low will trigger frequent condensing, too high may exceed limits",
     "condenseModel": "Condense Model",
     "condenseModelDesc": "Select the model for condensing conversations (can use a cheaper model to save costs)",
+    "useCurrentTopicModel": "Use Current Topic Model",
+    "useCurrentTopicModelDesc": "Use the model selected for the current conversation to condense",
     "selectModel": "Select Model",
     "useDefaultModel": "Use Default Model",
     "currentModelPrefix": "Current",

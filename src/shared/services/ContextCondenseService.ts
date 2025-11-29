@@ -76,6 +76,7 @@ export interface CondenseSettings {
   threshold: number; // 触发阈值百分比
   modelId?: string; // 用于压缩的模型ID（可选，使用更便宜的模型）
   customPrompt?: string; // 自定义压缩提示词
+  useCurrentTopicModel?: boolean; // 是否使用当前话题的模型（优先于 modelId）
 }
 
 // 默认压缩设置
@@ -83,7 +84,8 @@ export const DEFAULT_CONDENSE_SETTINGS: CondenseSettings = {
   enabled: false,
   threshold: DEFAULT_CONDENSE_THRESHOLD,
   modelId: undefined,
-  customPrompt: undefined
+  customPrompt: undefined,
+  useCurrentTopicModel: true // 默认使用当前话题的模型
 };
 
 /**
@@ -210,6 +212,18 @@ export class ContextCondenseService {
     const state = store.getState();
     const providers = state.settings.providers;
 
+    // 如果启用"使用当前话题的模型"，优先使用当前模型
+    if (settings.useCurrentTopicModel !== false) { // 默认为 true
+      const currentModelId = state.settings.currentModelId || state.settings.defaultModelId;
+      if (currentModelId) {
+        const result = findModelInProviders(providers, currentModelId, { includeDisabled: false });
+        if (result) {
+          return result.model;
+        }
+      }
+    }
+
+    // 如果指定了压缩模型，使用指定的模型
     if (settings.modelId) {
       const result = findModelInProviders(providers, settings.modelId, { includeDisabled: false });
       if (result) {
@@ -217,7 +231,7 @@ export class ContextCondenseService {
       }
     }
 
-    // 使用默认模型
+    // 最后的备用方案：使用默认模型
     const defaultModelId = state.settings.currentModelId || state.settings.defaultModelId;
     if (defaultModelId) {
       const result = findModelInProviders(providers, defaultModelId, { includeDisabled: false });

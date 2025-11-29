@@ -109,6 +109,8 @@
     "thresholdHint": "建议设置在 70%-90% 之间，过低会频繁触发压缩，过高可能导致超出限制",
     "condenseModel": "压缩模型",
     "condenseModelDesc": "选择用于压缩对话的模型（可使用更便宜的模型来节省成本）",
+    "useCurrentTopicModel": "使用当前话题模型",
+    "useCurrentTopicModelDesc": "使用当前对话所选择的模型进行压缩",
     "selectModel": "选择模型",
     "useDefaultModel": "使用默认模型",
     "currentModelPrefix": "当前",

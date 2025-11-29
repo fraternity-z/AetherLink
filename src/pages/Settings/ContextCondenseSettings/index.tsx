@@ -92,6 +92,11 @@ const ContextCondenseSettingsPage: React.FC = () => {
     dispatch(updateContextCondenseSettings({ enabled: event.target.checked }));
   };
 
+  // 处理"使用当前话题模型"开关
+  const handleUseCurrentTopicModelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateContextCondenseSettings({ useCurrentTopicModel: event.target.checked }));
+  };
+
   // 处理阈值变更
   const handleThresholdChange = (_event: Event, value: number | number[]) => {
     dispatch(updateContextCondenseSettings({ threshold: value as number }));
@@ -322,29 +327,48 @@ const ContextCondenseSettingsPage: React.FC = () => {
 
           <Divider />
 
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-            <Button variant="outlined" onClick={handleOpenModelSelector} size="small">
-              {t('settings:contextCondense.selectModel', '选择模型')}
-            </Button>
-            {contextCondense?.modelId && (
-              <Button variant="text" onClick={handleUseDefaultModel} size="small" color="secondary">
-                {t('settings:contextCondense.useDefaultModel', '使用默认模型')}
+          {/* 使用当前话题模型开关 */}
+          <List disablePadding>
+            <ListItem>
+              <ListItemText 
+                primary={t('settings:contextCondense.useCurrentTopicModel', '使用当前话题模型')} 
+                secondary={t('settings:contextCondense.useCurrentTopicModelDesc', '使用当前对话所选择的模型进行压缩')}
+              />
+              <CustomSwitch
+                checked={contextCondense?.useCurrentTopicModel ?? true}
+                onChange={handleUseCurrentTopicModelChange}
+              />
+            </ListItem>
+          </List>
+
+          <Divider />
+
+          {/* 仅在关闭"使用当前话题模型"时显示模型选择器 */}
+          {contextCondense?.useCurrentTopicModel === false && (
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Button variant="outlined" onClick={handleOpenModelSelector} size="small">
+                {t('settings:contextCondense.selectModel', '选择模型')}
               </Button>
-            )}
-            <Typography variant="body2" color="text.secondary">
-              {selectedModel
-                ? `${t('settings:contextCondense.currentModelPrefix', '当前')}: ${selectedModel.name}`
-                : t('settings:contextCondense.usingDefaultModel', '使用默认模型')}
-            </Typography>
-            <ModelSelector
-              selectedModel={selectedModel}
-              availableModels={allModels}
-              handleModelSelect={handleModelChange}
-              handleMenuClick={handleOpenModelSelector}
-              handleMenuClose={handleCloseModelSelector}
-              menuOpen={modelSelectorOpen}
-            />
-          </Box>
+              {contextCondense?.modelId && (
+                <Button variant="text" onClick={handleUseDefaultModel} size="small" color="secondary">
+                  {t('settings:contextCondense.useDefaultModel', '使用默认模型')}
+                </Button>
+              )}
+              <Typography variant="body2" color="text.secondary">
+                {selectedModel
+                  ? `${t('settings:contextCondense.currentModelPrefix', '当前')}: ${selectedModel.name}`
+                  : t('settings:contextCondense.usingDefaultModel', '使用默认模型')}
+              </Typography>
+              <ModelSelector
+                selectedModel={selectedModel}
+                availableModels={allModels}
+                handleModelSelect={handleModelChange}
+                handleMenuClick={handleOpenModelSelector}
+                handleMenuClose={handleCloseModelSelector}
+                menuOpen={modelSelectorOpen}
+              />
+            </Box>
+          )}
         </Paper>
 
         {/* 自定义提示词 */}
