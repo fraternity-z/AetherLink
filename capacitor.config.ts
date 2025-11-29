@@ -58,7 +58,6 @@ const config: CapacitorConfig = {
       launchAutoHide: true, // 自动隐藏启动画面
       backgroundColor: '#F8FAFC', // 保持背景色一致
       androidSplashResourceName: 'splash', // 保留资源名称
-      iosSplashResourceName: 'Splash', // 保留资源名称
       showSpinner: false, // 不显示加载指示器
       splashFullScreen: false, // 禁用全屏模式
       splashImmersive: false // 非沉浸式模式

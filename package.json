@@ -38,6 +38,7 @@
     "mobile:both": "npm run mobile:capacitor && npm run mobile:tauri",
     "buildapk": "npm run buildandroid && npm run open:android",
     "dev:android": "npm run dev -- --host && npx cap run android",
+    "devlive": "node scripts/live-reload.js",
     "devandroid": "npm run dev -- --host && npx cap run android",
     "build:ios": "npm run build && npx cap sync ios",
     "buildios": "npm run build && npx cap sync ios",
