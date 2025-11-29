@@ -1,6 +1,6 @@
 [package]
 name = "aetherlink"
-version = "0.5.6"
+version = "0.5.7"
 description = "AetherLink - AI-powered chat assistant with advanced features"
 authors = ["AetherLink Team"]
 license = "MIT"
