@@ -9,6 +9,7 @@ import { ChunkType } from '../../types/chunk';
 import {
   createResponseChunkProcessor,
   ToolResponseHandler,
+  ToolUseExtractionProcessor,
   KnowledgeSearchHandler,
   ResponseCompletionHandler,
   ResponseErrorHandler
@@ -24,6 +25,10 @@ type ResponseHandlerConfig = {
   messageId: string;
   blockId: string;
   topicId: string;
+  /** 可用的 MCP 工具名称列表，用于流式工具检测 */
+  toolNames?: string[];
+  /** 完整的 MCP 工具列表，用于工具执行 */
+  mcpTools?: import('../../types').MCPTool[];
 };
 
 /**
@@ -42,7 +47,7 @@ export class ApiError extends Error {
  * 创建响应处理器
  * 处理API流式响应的接收、更新和完成
  */
-export function createResponseHandler({ messageId, blockId, topicId }: ResponseHandlerConfig) {
+export function createResponseHandler({ messageId, blockId, topicId, toolNames = [], mcpTools = [] }: ResponseHandlerConfig) {
   // 创建各个专门的处理器实例
   const chunkProcessor = createResponseChunkProcessor(
     messageId,
@@ -52,7 +57,8 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
     { updateOneBlock, addOneBlock, upsertBlockReference: newMessagesActions.upsertBlockReference },
     getHighPerformanceUpdateInterval() // 根据节流强度设置动态调整
   );
-  const toolHandler = new ToolResponseHandler(messageId);
+  const toolHandler = new ToolResponseHandler(messageId, mcpTools);
+  const toolExtractionProcessor = new ToolUseExtractionProcessor(toolNames);
   const knowledgeHandler = new KnowledgeSearchHandler(messageId);
   const completionHandler = new ResponseCompletionHandler(messageId, blockId, topicId);
   const errorHandler = new ResponseErrorHandler(messageId, blockId, topicId);
@@ -91,10 +97,19 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
         switch (chunk.type) {
           case ChunkType.THINKING_DELTA:
           case ChunkType.THINKING_COMPLETE:
+            // 思考内容直接委托给块处理器
+            await chunkProcessor.handleChunk(chunk);
+            break;
+
           case ChunkType.TEXT_DELTA:
           case ChunkType.TEXT_COMPLETE:
-            // 委托给块处理器
-            await chunkProcessor.handleChunk(chunk);
+            // 文本内容需要先通过工具提取处理器
+            await this.handleTextWithToolExtraction(chunk);
+            break;
+
+          case ChunkType.MCP_TOOL_CREATED:
+            // 从流式解析检测到的工具调用
+            await toolHandler.handleChunk(chunk);
             break;
 
           case ChunkType.MCP_TOOL_IN_PROGRESS:
@@ -110,6 +125,55 @@ export function createResponseHandler({ messageId, blockId, topicId }: ResponseH
       } catch (error) {
         console.error(`[ResponseHandler] 处理 chunk 事件失败:`, error);
         throw error;
+      }
+    },
+
+    /**
+     * 处理文本内容并检测工具调用
+     * 模仿参考项目：检测到工具时完成当前块，创建工具块，后续文本创建新块
+     */
+    async handleTextWithToolExtraction(chunk: TextDeltaChunk | { type: ChunkType.TEXT_COMPLETE; text: string }): Promise<void> {
+      const text = chunk.text;
+      if (!text) return;
+
+      // 通过工具提取处理器处理文本
+      const results = toolExtractionProcessor.processText(text);
+
+      for (const result of results) {
+        switch (result.type) {
+          case 'text':
+            // 正常文本，委托给块处理器
+            if (result.content) {
+              const textChunk: TextDeltaChunk = {
+                type: ChunkType.TEXT_DELTA,
+                text: result.content
+              };
+              await chunkProcessor.handleChunk(textChunk);
+            }
+            break;
+
+          case 'tool_created':
+            // 模仿参考项目：检测到工具时的块切换逻辑
+            // 关键：不立即创建新文本块，让下一轮的 thinking/text 自然触发新块创建
+            if (result.responses && result.responses.length > 0) {
+              // 1. 完成当前文本块
+              const completedBlockId = await chunkProcessor.completeCurrentTextBlock();
+              console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}`);
+              
+              // 2. 创建工具块并执行
+              const toolChunk = {
+                type: ChunkType.MCP_TOOL_CREATED as const,
+                responses: result.responses,
+                format: result.format
+              };
+              await toolHandler.handleChunk(toolChunk);
+              
+              // 3. 重置文本块状态，让下一轮自动创建新块
+              // 参考项目：onTextComplete 时 mainTextBlockId = null，下次 onTextStart 会创建新块
+              chunkProcessor.resetTextBlock();
+            }
+            break;
+        }
       }
     },
 

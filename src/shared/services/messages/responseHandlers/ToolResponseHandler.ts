@@ -7,16 +7,32 @@ import { updateOneBlock, addOneBlock } from '../../../store/slices/messageBlocks
 import { ChunkType } from '../../../types/chunk';
 import { globalToolTracker } from '../../../utils/toolExecutionSync';
 import { createToolBlock } from '../../../utils/messageUtils';
+import { callMCPTool } from '../../../utils/mcpToolParser';
+import type { MCPTool } from '../../../types';
 
 /**
  * 工具响应处理器 - 处理工具调用相关的逻辑
  */
 export class ToolResponseHandler {
   private messageId: string;
+  private mcpTools: MCPTool[];
   private toolCallIdToBlockIdMap = new Map<string, string>();
 
-  constructor(messageId: string) {
+  constructor(messageId: string, mcpTools: MCPTool[] = []) {
     this.messageId = messageId;
+    this.mcpTools = mcpTools;
+  }
+
+  /**
+   * 根据工具名称查找 MCP 工具
+   */
+  private findMcpTool(toolName: string): MCPTool | undefined {
+    return this.mcpTools.find(tool => 
+      tool.id === toolName || 
+      tool.name === toolName ||
+      `tool_${tool.id}` === toolName ||
+      `tool_${tool.name}` === toolName
+    );
   }
 
   /**
@@ -301,11 +317,117 @@ export class ToolResponseHandler {
   }
 
   /**
+   * 处理从流式解析检测到的工具调用（MCP_TOOL_CREATED）
+   * 模仿参考项目：创建工具块 → 执行工具 → 更新状态
+   */
+  async handleToolCreated(chunk: { type: 'mcp_tool_created'; responses: any[]; format?: 'tool_use' | 'direct' }) {
+    try {
+      console.log(`[ToolResponseHandler] 处理流式检测到的工具调用，格式: ${chunk.format}, 数量: ${chunk.responses?.length || 0}`);
+
+      if (!chunk.responses || chunk.responses.length === 0) {
+        return;
+      }
+
+      // 逐个处理工具调用（模仿参考项目）
+      for (const response of chunk.responses) {
+        const toolId = response.id || response.toolCallId;
+        const toolName = response.name;
+        const toolArgs = response.arguments;
+
+        // 查找匹配的 MCP 工具
+        const mcpTool = this.findMcpTool(toolName);
+        if (!mcpTool) {
+          console.error(`[ToolResponseHandler] 未找到匹配的 MCP 工具: ${toolName}`);
+          continue;
+        }
+
+        // 1. 创建工具块（pending 状态）
+        const toolBlock = createToolBlock(this.messageId, toolId, {
+          toolName: mcpTool.name,
+          arguments: toolArgs,
+          status: MessageBlockStatus.PROCESSING,
+          metadata: {
+            rawMcpToolResponse: response,
+            toolUseId: toolId,
+            startTime: new Date().toISOString(),
+            serverName: mcpTool.serverName
+          }
+        });
+
+        console.log(`[ToolResponseHandler] 创建工具块: ${toolBlock.id} (${mcpTool.name})`);
+
+        // 保存映射
+        this.toolCallIdToBlockIdMap.set(toolId, toolBlock.id);
+        globalToolTracker.startTool(toolId);
+
+        // 添加到 Redux（模仿参考项目：追加到末尾）
+        store.dispatch(addOneBlock(toolBlock));
+        await dexieStorage.saveMessageBlock(toolBlock);
+        store.dispatch(newMessagesActions.upsertBlockReference({
+          messageId: this.messageId,
+          blockId: toolBlock.id,
+          status: toolBlock.status
+        }));
+
+        // 2. 执行工具（模仿参考项目）
+        try {
+          console.log(`[ToolResponseHandler] 执行工具: ${mcpTool.name}`);
+          const result = await callMCPTool({
+            id: toolId,
+            tool: mcpTool,
+            arguments: toolArgs,
+            status: 'invoking'
+          });
+
+          // 3. 更新工具块状态（done/error）
+          const finalStatus = result.isError ? MessageBlockStatus.ERROR : MessageBlockStatus.SUCCESS;
+          const changes: any = {
+            content: result,
+            status: finalStatus,
+            metadata: {
+              rawMcpToolResponse: { ...response, status: result.isError ? 'error' : 'done', response: result },
+              endTime: new Date().toISOString()
+            },
+            updatedAt: new Date().toISOString()
+          };
+
+          console.log(`[ToolResponseHandler] 工具执行完成: ${toolName}, 状态: ${finalStatus}`);
+
+          store.dispatch(updateOneBlock({ id: toolBlock.id, changes }));
+          await dexieStorage.updateMessageBlock(toolBlock.id, changes);
+          globalToolTracker.completeTool(toolId, !result.isError);
+
+        } catch (execError) {
+          console.error(`[ToolResponseHandler] 工具执行失败: ${toolName}`, execError);
+          
+          const changes = {
+            status: MessageBlockStatus.ERROR,
+            error: { message: execError instanceof Error ? execError.message : '工具执行失败' },
+            updatedAt: new Date().toISOString()
+          };
+
+          store.dispatch(updateOneBlock({ id: toolBlock.id, changes }));
+          await dexieStorage.updateMessageBlock(toolBlock.id, changes);
+          globalToolTracker.completeTool(toolId, false);
+        }
+      }
+
+    } catch (error) {
+      console.error(`[ToolResponseHandler] 处理流式工具调用失败:`, error);
+    }
+  }
+
+  /**
    * 处理基于 Chunk 事件的工具调用
    */
   async handleChunk(chunk: any) {
     try {
       switch (chunk.type) {
+        case ChunkType.MCP_TOOL_CREATED:
+          console.log(`[ToolResponseHandler] 处理流式检测到的工具调用`);
+          await this.handleToolCreated(chunk);
+          break;
+
         case ChunkType.MCP_TOOL_IN_PROGRESS:
           console.log(`[ToolResponseHandler] 处理工具调用进行中事件`);
           await this.handleToolProgress(chunk);

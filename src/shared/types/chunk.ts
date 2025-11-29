@@ -29,6 +29,7 @@ export enum ChunkType {
   WEB_SEARCH_COMPLETE = 'web_search_complete',
   KNOWLEDGE_SEARCH_IN_PROGRESS = 'knowledge_search_in_progress',
   KNOWLEDGE_SEARCH_COMPLETE = 'knowledge_search_complete',
+  MCP_TOOL_CREATED = 'mcp_tool_created',
   MCP_TOOL_IN_PROGRESS = 'mcp_tool_in_progress',
   MCP_TOOL_COMPLETE = 'mcp_tool_complete',
   EXTERNEL_TOOL_COMPLETE = 'externel_tool_complete',
@@ -326,6 +327,38 @@ export interface BlockCompleteChunk {
   error?: ResponseError
 }
 
+/**
+ * MCP 工具创建事件 - 从 XML 解析出的工具调用
+ * 用于流式解析检测到 <tool_use> 或 <tool_name> 标签时
+ */
+export interface MCPToolCreatedChunk {
+  /**
+   * 数据块类型
+   */
+  type: ChunkType.MCP_TOOL_CREATED
+
+  /**
+   * 工具响应列表
+   */
+  responses: MCPToolResponse[]
+
+  /**
+   * 检测到的格式类型
+   */
+  format?: 'tool_use' | 'direct'
+}
+
+/**
+ * MCP 工具响应类型
+ */
+export interface MCPToolResponse {
+  id: string;
+  name: string;
+  arguments: Record<string, any>;
+  status?: 'pending' | 'running' | 'done' | 'error';
+  toolCallId?: string;
+}
+
 export interface MCPToolInProgressChunk {
   /**
    * 数据块类型
@@ -372,6 +405,7 @@ export type Chunk =
   | LLMWebSearchCompleteChunk
   | LLMResponseCompleteChunk
   | BlockCompleteChunk
+  | MCPToolCreatedChunk
   | MCPToolInProgressChunk
   | MCPToolCompleteChunk
   | ErrorChunk

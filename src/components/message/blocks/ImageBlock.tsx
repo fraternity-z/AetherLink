@@ -7,13 +7,15 @@ import { dexieStorage } from '../../../shared/services/storage/DexieStorageServi
 
 interface Props {
   block: ImageMessageBlock;
+  /** 是否为单独显示（非分组），影响最大高度 */
+  isSingle?: boolean;
 }
 
 /**
  * 图片块组件
  * 负责渲染图片内容，支持点击放大和图片引用格式
  */
-const ImageBlock: React.FC<Props> = ({ block }) => {
+const ImageBlock: React.FC<Props> = ({ block, isSingle = true }) => {
   const [open, setOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -125,9 +127,10 @@ const ImageBlock: React.FC<Props> = ({ block }) => {
         alt="图片内容"
         sx={{
           maxWidth: '100%',
-          maxHeight: '300px',
+          maxHeight: isSingle ? '300px' : '180px',
           borderRadius: '8px',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          objectFit: 'cover'
         }}
         onClick={handleOpen}
       />

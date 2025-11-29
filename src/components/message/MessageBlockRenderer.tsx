@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { Box, Fade } from '@mui/material';
 import type { RootState } from '../../shared/store';
 import { messageBlocksSelectors } from '../../shared/store/slices/messageBlocksSlice';
-import type { MessageBlock, Message } from '../../shared/types/newMessage';
+import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
 
 
@@ -25,7 +25,10 @@ import PlaceholderBlock from './blocks/PlaceholderBlock';
 import SearchResultsBlock from './blocks/SearchResultsBlock';
 import KnowledgeReferenceBlock from './blocks/KnowledgeReferenceBlock';
 import ContextSummaryBlock from './blocks/ContextSummaryBlock';
-// import ToolBlock from './blocks/ToolBlock'; // 已移除：工具块在 MainTextBlock 中原位渲染
+import ToolBlock from './blocks/ToolBlock';
+
+// 类型定义：分组后的块可以是单个块或块数组
+type GroupedBlock = MessageBlock | MessageBlock[];
 
 // 简单的动画块包装器组件（使用 MUI Fade）
 interface AnimatedBlockWrapperProps {
@@ -41,6 +44,86 @@ const AnimatedBlockWrapper: React.FC<AnimatedBlockWrapperProps> = ({ children, e
       </div>
     </Fade>
   );
+};
+
+/**
+ * 图片分组容器组件
+ * 用于网格展示多张连续图片
+ */
+interface ImageBlockGroupProps {
+  children: React.ReactNode;
+  count: number;
+}
+
+const ImageBlockGroup: React.FC<ImageBlockGroupProps> = ({ children, count }) => {
+  // 根据图片数量动态计算列数
+  const getGridColumns = () => {
+    if (count === 1) return '1fr';
+    if (count === 2) return 'repeat(2, 1fr)';
+    if (count <= 4) return 'repeat(2, 1fr)';
+    return 'repeat(3, 1fr)';
+  };
+
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: getGridColumns(),
+        gap: 1,
+        maxWidth: '100%',
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
+/**
+ * 将连续的同类型媒体块分组
+ * - 连续的图片块会被分组到一个数组中
+ * - 相同路径的视频块会被去重（只保留第一个）
+ * - 其他块保持原样
+ */
+const groupSimilarBlocks = (blocks: MessageBlock[]): GroupedBlock[] => {
+  const seenVideoPaths = new Set<string>();
+  
+  return blocks.reduce<GroupedBlock[]>((acc, currentBlock) => {
+    // 图片块分组逻辑
+    if (currentBlock.type === MessageBlockType.IMAGE) {
+      const prevGroup = acc[acc.length - 1];
+      // 如果上一个元素是图片数组，追加到该数组
+      if (Array.isArray(prevGroup) && prevGroup[0]?.type === MessageBlockType.IMAGE) {
+        prevGroup.push(currentBlock);
+      } else {
+        // 否则创建新的图片数组
+        acc.push([currentBlock]);
+      }
+      return acc;
+    }
+    
+    // 视频块去重逻辑
+    if (currentBlock.type === MessageBlockType.VIDEO) {
+      const videoBlock = currentBlock as VideoMessageBlock;
+      const videoPath = videoBlock.url || '';
+      
+      // 如果这个视频路径已经存在，跳过
+      if (videoPath && seenVideoPaths.has(videoPath)) {
+        return acc;
+      }
+      
+      // 记录视频路径
+      if (videoPath) {
+        seenVideoPaths.add(videoPath);
+      }
+      
+      acc.push(currentBlock);
+      return acc;
+    }
+    
+    // 其他类型块直接添加
+    acc.push(currentBlock);
+    return acc;
+  }, []);
 };
 
 interface Props {
@@ -78,6 +161,9 @@ const MessageBlockRenderer: React.FC<Props> = ({
     // 这样确保工具块显示在正确的位置（通常在主文本块之后）
     return validBlocks;
   }, [blocks, blockEntities]);
+
+  // 对块进行分组（图片分组、视频去重）
+  const groupedBlocks = useMemo(() => groupSimilarBlocks(renderedBlocks), [renderedBlocks]);
 
   // 渲染占位符块
   const renderPlaceholder = () => {
@@ -151,8 +237,40 @@ const MessageBlockRenderer: React.FC<Props> = ({
         renderEmptyContentMessage()
       ) : (
         <>
-          {/* 渲染所有块 */}
-          {renderedBlocks.map((block) => {
+          {/* 渲染所有块（支持分组） */}
+          {groupedBlocks.map((blockOrGroup) => {
+            // 处理图片分组
+            if (Array.isArray(blockOrGroup)) {
+              const imageBlocks = blockOrGroup as ImageMessageBlock[];
+              const groupKey = imageBlocks.map(b => b.id).join('-');
+              
+              // 单张图片不需要分组容器
+              if (imageBlocks.length === 1) {
+                return (
+                  <AnimatedBlockWrapper key={groupKey} enableAnimation={enableAnimation}>
+                    <Box sx={{ mb: 1, pl: extraPaddingLeft, pr: extraPaddingRight }}>
+                      <ImageBlock block={imageBlocks[0]} isSingle={true} />
+                    </Box>
+                  </AnimatedBlockWrapper>
+                );
+              }
+              
+              // 多张图片使用网格容器
+              return (
+                <AnimatedBlockWrapper key={groupKey} enableAnimation={enableAnimation}>
+                  <Box sx={{ mb: 1, pl: extraPaddingLeft, pr: extraPaddingRight }}>
+                    <ImageBlockGroup count={imageBlocks.length}>
+                      {imageBlocks.map((imageBlock) => (
+                        <ImageBlock key={imageBlock.id} block={imageBlock} isSingle={false} />
+                      ))}
+                    </ImageBlockGroup>
+                  </Box>
+                </AnimatedBlockWrapper>
+              );
+            }
+            
+            // 处理单个块
+            const block = blockOrGroup;
             let blockComponent: React.ReactNode = null;
 
             // 处理空内容的成功状态块
@@ -183,7 +301,8 @@ const MessageBlockRenderer: React.FC<Props> = ({
                 blockComponent = <ThinkingBlock key={block.id} block={block} />;
                 break;
               case MessageBlockType.IMAGE:
-                blockComponent = <ImageBlock key={block.id} block={block} />;
+                // 单独的图片块（非连续分组的情况）
+                blockComponent = <ImageBlock key={block.id} block={block} isSingle={true} />;
                 break;
               case MessageBlockType.VIDEO:
                 blockComponent = <VideoBlock key={block.id} block={block} />;
@@ -226,9 +345,8 @@ const MessageBlockRenderer: React.FC<Props> = ({
                 blockComponent = <FileBlock key={block.id} block={block} />;
                 break;
               case MessageBlockType.TOOL:
-                // 🔧 修复工具块重复渲染问题：
-                // 工具块已经在 MainTextBlock 中原位渲染，这里跳过避免重复显示
-                blockComponent = null;
+                // 工具块按 message.blocks 顺序独立渲染
+                blockComponent = <ToolBlock key={block.id} block={block as any} />;
                 break;
               case MessageBlockType.SEARCH_RESULTS:
                 blockComponent = <SearchResultsBlock key={block.id} block={block as any} />;

@@ -2,24 +2,64 @@ import { generateBlockId } from '../../utils';
 import store from '../../store';
 import { DataRepository } from '../storage/DataRepository';
 import { upsertOneBlock } from '../../store/slices/messageBlocksSlice';
+// 注意：上述导入用于 defaultDependencies，实际方法使用 this.deps
 import { MessageBlockType, MessageBlockStatus } from '../../types/newMessage';
 import type { MessageBlock } from '../../types/newMessage';
 import { createKnowledgeReferenceBlock } from '../../utils/messageUtils';
 import type { KnowledgeDocument } from '../../types/KnowledgeBase';
+import type { AppDispatch } from '../../store';
 
 /**
- * 块管理器模块
- * 负责创建和管理消息块
+ * BlockManager 依赖接口
+ * 用于依赖注入，便于测试和解耦
  */
-export const BlockManager = {
+export interface BlockManagerDependencies {
+  /** Redux dispatch 函数 */
+  dispatch: AppDispatch;
+  /** 存储服务 */
+  storage: {
+    saveBlock(block: MessageBlock): Promise<void>;
+    updateBlock(blockId: string, changes: Partial<MessageBlock>): Promise<void>;
+    deleteBlock(blockId: string): Promise<void>;
+  };
+  /** ID 生成函数 */
+  generateId: (prefix: string) => string;
+}
+
+/**
+ * 默认依赖实现
+ * 使用 Redux store 和 DataRepository
+ */
+const defaultDependencies: BlockManagerDependencies = {
+  dispatch: (action: any) => store.dispatch(action),
+  storage: {
+    saveBlock: (block: MessageBlock) => DataRepository.blocks.save(block),
+    updateBlock: (blockId: string, changes: Partial<MessageBlock>) => 
+      DataRepository.blocks.update(blockId, changes),
+    deleteBlock: (blockId: string) => DataRepository.blocks.delete(blockId),
+  },
+  generateId: generateBlockId,
+};
+
+/**
+ * 块管理器类
+ * 负责创建和管理消息块
+ * 支持依赖注入，便于测试
+ */
+export class BlockManager {
+  private deps: BlockManagerDependencies;
+
+  constructor(dependencies?: Partial<BlockManagerDependencies>) {
+    this.deps = { ...defaultDependencies, ...dependencies };
+  }
   /**
    * 创建主文本块
    * @param messageId 消息ID
    * @returns 创建的主文本块
    */
   async createMainTextBlock(messageId: string): Promise<MessageBlock> {
-    // 生成唯一的块ID - 使用统一的ID生成工具
-    const blockId = generateBlockId('block');
+    // 生成唯一的块ID - 使用注入的ID生成函数
+    const blockId = this.deps.generateId('block');
 
     // 创建块对象
     const block: MessageBlock = {
@@ -34,13 +74,13 @@ export const BlockManager = {
     console.log(`[BlockManager] 创建主文本块 - ID: ${blockId}, 消息ID: ${messageId}`);
 
     // 添加到Redux
-    store.dispatch(upsertOneBlock(block));
+    this.deps.dispatch(upsertOneBlock(block));
 
     // 保存到数据库
-    await DataRepository.blocks.save(block);
+    await this.deps.storage.saveBlock(block);
 
     return block;
-  },
+  }
 
   /**
    * 创建思考过程块
@@ -48,8 +88,8 @@ export const BlockManager = {
    * @returns 创建的思考过程块
    */
   async createThinkingBlock(messageId: string): Promise<MessageBlock> {
-    // 生成唯一的块ID - 使用统一的ID生成工具
-    const blockId = generateBlockId('thinking');
+    // 生成唯一的块ID - 使用注入的ID生成函数
+    const blockId = this.deps.generateId('thinking');
 
     // 创建块对象
     const block: MessageBlock = {
@@ -64,13 +104,13 @@ export const BlockManager = {
     console.log(`[BlockManager] 创建思考过程块 - ID: ${blockId}, 消息ID: ${messageId}`);
 
     // 添加到Redux
-    store.dispatch(upsertOneBlock(block));
+    this.deps.dispatch(upsertOneBlock(block));
 
     // 保存到数据库
-    await DataRepository.blocks.save(block);
+    await this.deps.storage.saveBlock(block);
 
     return block;
-  },
+  }
 
   /**
    * 创建错误块
@@ -79,8 +119,8 @@ export const BlockManager = {
    * @returns 创建的错误块
    */
   async createErrorBlock(messageId: string, errorMessage: string): Promise<MessageBlock> {
-    // 生成唯一的块ID - 使用统一的ID生成工具
-    const blockId = generateBlockId('error');
+    // 生成唯一的块ID - 使用注入的ID生成函数
+    const blockId = this.deps.generateId('error');
 
     // 创建块对象
     const block: MessageBlock = {
@@ -95,13 +135,13 @@ export const BlockManager = {
     console.log(`[BlockManager] 创建错误块 - ID: ${blockId}, 消息ID: ${messageId}, 错误: ${errorMessage}`);
 
     // 添加到Redux
-    store.dispatch(upsertOneBlock(block));
+    this.deps.dispatch(upsertOneBlock(block));
 
     // 保存到数据库
-    await DataRepository.blocks.save(block);
+    await this.deps.storage.saveBlock(block);
 
     return block;
-  },
+  }
 
   /**
    * 创建代码块
@@ -111,8 +151,8 @@ export const BlockManager = {
    * @returns 创建的代码块
    */
   async createCodeBlock(messageId: string, content: string, language?: string): Promise<MessageBlock> {
-    // 生成唯一的块ID - 使用统一的ID生成工具
-    const blockId = generateBlockId('code');
+    // 生成唯一的块ID - 使用注入的ID生成函数
+    const blockId = this.deps.generateId('code');
 
     // 创建块对象
     const block: MessageBlock = {
@@ -128,13 +168,13 @@ export const BlockManager = {
     console.log(`[BlockManager] 创建代码块 - ID: ${blockId}, 消息ID: ${messageId}, 语言: ${language || 'text'}`);
 
     // 添加到Redux
-    store.dispatch(upsertOneBlock(block));
+    this.deps.dispatch(upsertOneBlock(block));
 
     // 保存到数据库
-    await DataRepository.blocks.save(block);
+    await this.deps.storage.saveBlock(block);
 
     return block;
-  },
+  }
 
   /**
    * 创建视频块
@@ -152,8 +192,8 @@ export const BlockManager = {
     duration?: number;
     poster?: string;
   }): Promise<MessageBlock> {
-    // 生成唯一的块ID - 使用统一的ID生成工具
-    const blockId = generateBlockId('video');
+    // 生成唯一的块ID - 使用注入的ID生成函数
+    const blockId = this.deps.generateId('video');
 
     // 创建块对象
     const block: MessageBlock = {
@@ -175,13 +215,13 @@ export const BlockManager = {
     console.log(`[BlockManager] 创建视频块 - ID: ${blockId}, 消息ID: ${messageId}, 类型: ${videoData.mimeType}`);
 
     // 添加到Redux
-    store.dispatch(upsertOneBlock(block));
+    this.deps.dispatch(upsertOneBlock(block));
 
     // 保存到数据库
-    await DataRepository.blocks.save(block);
+    await this.deps.storage.saveBlock(block);
 
     return block;
-  },
+  }
 
   /**
    * 创建知识库引用块
@@ -214,13 +254,13 @@ export const BlockManager = {
     console.log(`[BlockManager] 创建知识库引用块 - ID: ${block.id}, 消息ID: ${messageId}`);
 
     // 添加块到Redux
-    store.dispatch(upsertOneBlock(block));
+    this.deps.dispatch(upsertOneBlock(block));
 
     // 保存块到数据库
-    await DataRepository.blocks.save(block);
+    await this.deps.storage.saveBlock(block);
 
     return block;
-  },
+  }
 
   /**
    * 从搜索结果创建知识库引用块
@@ -255,6 +295,28 @@ export const BlockManager = {
       }
     );
   }
-};
+}
 
-export default BlockManager;
+// 单例实例，保持向后兼容
+let blockManagerInstance: BlockManager | null = null;
+
+/**
+ * 获取 BlockManager 单例实例
+ * 向后兼容：允许无缝替换原有的静态对象用法
+ */
+export function getBlockManager(dependencies?: Partial<BlockManagerDependencies>): BlockManager {
+  if (!blockManagerInstance || dependencies) {
+    blockManagerInstance = new BlockManager(dependencies);
+  }
+  return blockManagerInstance;
+}
+
+/**
+ * 重置 BlockManager 单例（主要用于测试）
+ */
+export function resetBlockManager(): void {
+  blockManagerInstance = null;
+}
+
+// 导出默认实例，保持向后兼容
+export default getBlockManager();

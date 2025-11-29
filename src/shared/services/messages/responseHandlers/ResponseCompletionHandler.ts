@@ -490,39 +490,24 @@ export class ResponseCompletionHandler {
   }
 
   /**
-   * 计算最终的块ID数组 - 提取复杂逻辑
+   * 计算最终的块ID数组 - 简化版：直接使用流式过程中建立的顺序
+   * 
+   * 关键修复：不再重新组织块顺序，保持流式接收时的原始顺序
+   * 参考 cherry-studio：所有块按流式接收顺序依次追加
    */
-  private calculateFinalBlockIds(chunkProcessor: any): string[] {
+  private calculateFinalBlockIds(_chunkProcessor: any): string[] {
     const currentMessage = store.getState().messages.entities[this.messageId];
     const existingBlocks = currentMessage?.blocks || [];
-    let finalBlockIds: string[] = [];
+    
+    // 直接使用现有块顺序（流式过程中已按正确顺序添加）
+    // 只过滤掉空块或无效块
+    const finalBlockIds = existingBlocks.filter(blockId => {
+      const block = store.getState().messageBlocks.entities[blockId];
+      // 保留所有有效的块
+      return block != null;
+    });
 
-    if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
-      // 有新创建的主文本块
-      for (const existingBlockId of existingBlocks) {
-        if (existingBlockId === this.blockId) {
-          if (chunkProcessor.blockType === MessageBlockType.THINKING) {
-            // 思考块在前，主文本块在后
-            this.addUniqueBlockId(finalBlockIds, this.blockId);
-            this.addUniqueBlockId(finalBlockIds, chunkProcessor.textBlockId);
-          } else {
-            // 只替换为主文本块
-            this.addUniqueBlockId(finalBlockIds, chunkProcessor.textBlockId);
-          }
-        } else {
-          this.addUniqueBlockId(finalBlockIds, existingBlockId);
-        }
-      }
-
-      // 确保主文本块存在
-      this.addUniqueBlockId(finalBlockIds, chunkProcessor.textBlockId);
-    } else {
-      // 使用原始块
-      finalBlockIds = [...existingBlocks];
-      this.addUniqueBlockId(finalBlockIds, this.blockId);
-    }
-
-    console.log(`[ResponseCompletionHandler] 计算得出的最终块ID: [${finalBlockIds.join(', ')}]`);
+    console.log(`[ResponseCompletionHandler] 最终块ID（保持流式顺序）: [${finalBlockIds.join(', ')}]`);
     return finalBlockIds;
   }
 
@@ -571,15 +556,6 @@ export class ResponseCompletionHandler {
         updatedAt: now
       }
     }));
-  }
-
-  /**
-   * 添加唯一的块ID
-   */
-  private addUniqueBlockId(blockIds: string[], blockId: string): void {
-    if (!blockIds.includes(blockId)) {
-      blockIds.push(blockId);
-    }
   }
 
   /**

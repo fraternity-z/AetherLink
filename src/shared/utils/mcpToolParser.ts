@@ -4,90 +4,6 @@ import { mcpService } from '../services/mcp';
 import { nanoid } from './index';
 
 /**
- * 自动修复被分割的工具标签
- * 处理 AI 输出中常见的标签分割问题，如：
- * <tool\n_use> -> <tool_use>
- * </tool\n_use> -> </tool_use>
- * <name\n> -> <name>
- * </name\n> -> </name>
- */
-export function fixBrokenToolTags(content: string): string {
-  if (!content) return content;
-
-  //  高精度检测：只有在明确检测到工具标签上下文时才进行修复
-  // 避免误伤正常的文本内容
-
-  // 首先检查是否包含工具相关的关键词，避免误伤
-  const hasToolContext = /(?:tool_use|<name>|<arguments>|<\/tool)/i.test(content);
-  if (!hasToolContext) {
-    return content; // 没有工具上下文，直接返回
-  }
-
-  let fixed = content;
-  let hasChanges = false;
-
-  // 1. 修复 <tool_use> 开始标签的分割问题
-  // 只匹配明确的 <tool + 空白字符 + _use> 模式
-  const toolUseStartPattern = /<tool[\s\n\r]+_use>/gi;
-  if (toolUseStartPattern.test(content)) {
-    fixed = fixed.replace(toolUseStartPattern, '<tool_use>');
-    hasChanges = true;
-  }
-
-  // 2. 修复 </tool_use> 结束标签的分割问题
-  const toolUseEndPattern = /<\/tool[\s\n\r]+_use>/gi;
-  if (toolUseEndPattern.test(fixed)) {
-    fixed = fixed.replace(toolUseEndPattern, '</tool_use>');
-    hasChanges = true;
-  }
-
-  // 3. 修复 <name> 标签的分割问题（只在工具上下文中）
-  // 确保前后有工具相关内容才修复
-  const nameStartPattern = /<name[\s\n\r]+>(?=[\s\S]*?<\/name>)/gi;
-  if (nameStartPattern.test(fixed)) {
-    fixed = fixed.replace(nameStartPattern, '<name>');
-    hasChanges = true;
-  }
-
-  // 4. 修复 </name> 结束标签的分割问题
-  const nameEndPattern = /<\/name[\s\n\r]+>/gi;
-  if (nameEndPattern.test(fixed)) {
-    fixed = fixed.replace(nameEndPattern, '</name>');
-    hasChanges = true;
-  }
-
-  // 5. 修复 <arguments> 标签的分割问题（只在工具上下文中）
-  const argsStartPattern = /<arguments[\s\n\r]+>(?=[\s\S]*?<\/arguments>)/gi;
-  if (argsStartPattern.test(fixed)) {
-    fixed = fixed.replace(argsStartPattern, '<arguments>');
-    hasChanges = true;
-  }
-
-  // 6. 修复 </arguments> 结束标签的分割问题
-  const argsEndPattern = /<\/arguments[\s\n\r]+>/gi;
-  if (argsEndPattern.test(fixed)) {
-    fixed = fixed.replace(argsEndPattern, '</arguments>');
-    hasChanges = true;
-  }
-
-  // 7. 修复 <tool_use> 标签内部的换行问题（最后处理）
-  const toolUseInternalPattern = /<tool_use[\s\n\r]+>/gi;
-  if (toolUseInternalPattern.test(fixed)) {
-    fixed = fixed.replace(toolUseInternalPattern, '<tool_use>');
-    hasChanges = true;
-  }
-
-  // 记录修复情况（只在确实有修复时记录）
-  if (hasChanges) {
-    console.log('[ToolParser] 🔧 自动修复了被分割的工具标签');
-    console.log('修复前片段:', content.substring(0, 150) + '...');
-    console.log('修复后片段:', fixed.substring(0, 150) + '...');
-  }
-
-  return fixed;
-}
-
-/**
  * 根据名称查找 MCP 工具（支持转换后的名称）
  */
 function findMcpToolByName(mcpTools: MCPTool[], toolName: string): MCPTool | undefined {
@@ -115,18 +31,19 @@ function findMcpToolByName(mcpTools: MCPTool[], toolName: string): MCPTool | und
 }
 
 /**
- * 解析 XML 格式的工具调用
+ * 解析 XML 格式的工具调用（批量解析）
  * 支持两种格式：
  * 1. <tool_use><name>工具名</name><arguments>参数</arguments></tool_use>
  * 2. <tool_name>参数</tool_name> (提示词注入模式)
+ * 
+ * @deprecated 推荐使用 ToolUseExtractionProcessor 进行流式解析，
+ * 它能实现实时检测和幻觉防护。此函数仅保留用于批量解析场景。
+ * @see src/shared/services/messages/responseHandlers/ToolUseExtractionProcessor.ts
  */
 export function parseToolUse(content: string, mcpTools: MCPTool[]): MCPToolResponse[] {
   if (!content || typeof content !== 'string' || !mcpTools || mcpTools.length === 0) {
     return [];
   }
-
-  //  自动修复被分割的工具标签
-  const fixedContent = fixBrokenToolTags(content);
 
   // 工具使用模式：<tool_use><name>工具名</name><arguments>参数</arguments></tool_use>
   const toolUsePattern = /<tool_use>([\s\S]*?)<name>([\s\S]*?)<\/name>([\s\S]*?)<arguments>([\s\S]*?)<\/arguments>([\s\S]*?)<\/tool_use>/g;
@@ -134,7 +51,7 @@ export function parseToolUse(content: string, mcpTools: MCPTool[]): MCPToolRespo
   let match;
 
   // 查找所有工具使用块
-  while ((match = toolUsePattern.exec(fixedContent)) !== null) {
+  while ((match = toolUsePattern.exec(content)) !== null) {
     const toolName = match[2].trim();
     const toolArgs = match[4].trim();
 
@@ -174,7 +91,7 @@ export function parseToolUse(content: string, mcpTools: MCPTool[]): MCPToolRespo
     const directPattern = new RegExp(`<${escapedToolName}>([\\s\\S]*?)</${escapedToolName}>`, 'g');
     let directMatch;
 
-    while ((directMatch = directPattern.exec(fixedContent)) !== null) {
+    while ((directMatch = directPattern.exec(content)) !== null) {
       const toolArgs = directMatch[1].trim();
 
       // 尝试解析参数为 JSON
@@ -460,11 +377,8 @@ export function mcpToolCallResponseToMessage(
  * 支持两种格式的移除
  */
 export function removeToolUseTags(content: string): string {
-  //  自动修复被分割的工具标签
-  const fixedContent = fixBrokenToolTags(content);
-
   // 移除格式1：<tool_use>...</tool_use>
-  let result = fixedContent.replace(/<tool_use>([\s\S]*?)<\/tool_use>/g, '');
+  let result = content.replace(/<tool_use>([\s\S]*?)<\/tool_use>/g, '');
 
   // 移除格式2：<tool_name>...</tool_name> (简单移除所有XML标签)
   result = result.replace(/<[a-zA-Z0-9_-]+>([\s\S]*?)<\/[a-zA-Z0-9_-]+>/g, '');
@@ -477,12 +391,9 @@ export function removeToolUseTags(content: string): string {
  * 支持两种格式的检测
  */
 export function hasToolUseTags(content: string, mcpTools: MCPTool[] = []): boolean {
-  //  自动修复被分割的工具标签
-  const fixedContent = fixBrokenToolTags(content);
-
   // 格式1：<tool_use>...</tool_use>
   const toolUsePattern = /<tool_use>([\s\S]*?)<name>([\s\S]*?)<\/name>([\s\S]*?)<arguments>([\s\S]*?)<\/arguments>([\s\S]*?)<\/tool_use>/;
-  if (toolUsePattern.test(fixedContent)) {
+  if (toolUsePattern.test(content)) {
     return true;
   }
 

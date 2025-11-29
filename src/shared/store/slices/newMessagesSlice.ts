@@ -302,7 +302,7 @@ const newMessagesSlice = createSlice({
       state.messageIdsByTopic[topicId] = [];
     },
 
-    // 添加或更新块引用
+    // 添加或更新块引用（按流式接收顺序追加到末尾）
     upsertBlockReference(state, action: PayloadAction<UpsertBlockReferencePayload>) {
       const { messageId, blockId } = action.payload;
 
@@ -311,19 +311,18 @@ const newMessagesSlice = createSlice({
         return;
       }
 
-      // 获取当前块列表
-      const currentBlocks = [...(messageToUpdate.blocks || [])];
+      const currentBlocks = messageToUpdate.blocks || [];
 
-      // 如果块ID不在列表中，添加它
-      if (!currentBlocks.includes(blockId)) {
-        // 更新消息的blocks数组
-        messagesAdapter.updateOne(state, {
-          id: messageId,
-          changes: {
-            blocks: [...currentBlocks, blockId]
-          }
-        });
+      // 如果块ID已在列表中，不重复添加
+      if (currentBlocks.includes(blockId)) {
+        return;
       }
+
+      // 按流式顺序追加到末尾
+      messagesAdapter.updateOne(state, {
+        id: messageId,
+        changes: { blocks: [...currentBlocks, blockId] }
+      });
     }
   }
 });

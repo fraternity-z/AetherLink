@@ -56,50 +56,98 @@ class ThinkingAccumulator extends ContentAccumulator {
   }
 }
 
-// 4. 改进的块更新器 - 完全依赖注入
+// 4. 改进的块更新器 - 智能更新策略
 interface BlockUpdater {
-  updateBlock(blockId: string, changes: any): Promise<void>;
+  updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete?: boolean): Promise<void>;
   createBlock(block: MessageBlock): Promise<void>;
 }
 
-class ThrottledBlockUpdater implements BlockUpdater {
-  private throttledStorageUpdate: (blockId: string, changes: any) => void;
-  private throttledStateUpdate: (blockId: string, changes: any) => void;
+/**
+ * 智能节流块更新器
+ * - 块类型变化时：立即更新（取消节流）
+ * - 同类型连续更新：节流更新
+ * - 块完成时：立即更新并刷新
+ */
+class SmartThrottledBlockUpdater implements BlockUpdater {
+  private throttledStorageUpdate: ReturnType<typeof throttle>;
+  private throttledStateUpdate: ReturnType<typeof throttle>;
+  private lastBlockType: MessageBlockType | null = null;
+  private lastBlockId: string | null = null;
 
   constructor(
     private stateService: StateService,
     private storageService: StorageService,
     throttleInterval: number
   ) {
-    console.log('[ThrottledBlockUpdater] 创建节流更新器，间隔:', throttleInterval + 'ms');
-
     this.throttledStorageUpdate = throttle(
       (blockId: string, changes: any) => storageService.updateBlock(blockId, changes),
       throttleInterval
     );
 
-    // 🚀 关键修复：Redux状态更新也使用节流
     this.throttledStateUpdate = throttle(
       (blockId: string, changes: any) => {
-        console.log('[ThrottledBlockUpdater] 节流更新Redux状态');
         stateService.updateBlock(blockId, changes);
       },
       throttleInterval
     );
   }
 
-  async updateBlock(blockId: string, changes: any): Promise<void> {
-    // 🚀 修复：状态更新也使用节流，控制UI更新频率
-    this.throttledStateUpdate(blockId, changes);
-    // 存储更新使用节流（性能优化）
-    this.throttledStorageUpdate(blockId, changes);
+  /**
+   * 智能更新策略：根据块类型连续性自动判断使用节流还是立即更新
+   */
+  async updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete: boolean = false): Promise<void> {
+    const isBlockTypeChanged = this.lastBlockType !== null && this.lastBlockType !== blockType;
+    const isBlockIdChanged = this.lastBlockId !== null && this.lastBlockId !== blockId;
+    const needsImmediateUpdate = isBlockTypeChanged || isBlockIdChanged || isComplete;
+
+    if (needsImmediateUpdate) {
+      // 块类型变化、块ID变化或完成时：取消之前的节流，立即更新
+      if (isBlockTypeChanged || isBlockIdChanged) {
+        this.throttledStateUpdate.flush();
+        this.throttledStorageUpdate.flush();
+      }
+      
+      if (isComplete) {
+        this.throttledStateUpdate.flush();
+        this.throttledStorageUpdate.flush();
+      }
+
+      // 立即更新
+      this.stateService.updateBlock(blockId, changes);
+      await this.storageService.updateBlock(blockId, changes);
+    } else {
+      // 同类型连续更新：使用节流
+      this.throttledStateUpdate(blockId, changes);
+      this.throttledStorageUpdate(blockId, changes);
+    }
+
+    // 更新追踪状态
+    this.lastBlockType = blockType;
+    this.lastBlockId = blockId;
   }
 
   async createBlock(block: MessageBlock): Promise<void> {
-    // 创建操作不需要节流
     this.stateService.addBlock(block);
     await this.storageService.saveBlock(block);
     this.stateService.addBlockReference(block.messageId, block.id, block.status);
+    this.lastBlockType = block.type;
+    this.lastBlockId = block.id;
+  }
+
+  /**
+   * 刷新所有待处理的节流更新
+   */
+  flush(): void {
+    this.throttledStateUpdate.flush();
+    this.throttledStorageUpdate.flush();
+  }
+
+  /**
+   * 取消所有待处理的节流更新
+   */
+  cancel(): void {
+    this.throttledStateUpdate.cancel();
+    this.throttledStorageUpdate.cancel();
   }
 }
 
@@ -121,7 +169,7 @@ class BlockStateManager {
     this.initialBlockId = initialBlockId;
   }
 
-  // 状态转换方法
+  // 状态转换方法（模仿参考项目：检查 blockId 是否为 null 来决定是否创建新块）
   transitionToText(): { blockId: string; isNewBlock: boolean } {
     switch (this.state) {
       case BlockState.INITIAL:
@@ -135,7 +183,12 @@ class BlockStateManager {
         return { blockId: this.textBlockId, isNewBlock: true };
 
       default:
-        return { blockId: this.textBlockId!, isNewBlock: false };
+        // 关键修复：如果 textBlockId 为 null（被 resetTextBlock 重置），创建新块
+        if (!this.textBlockId) {
+          this.textBlockId = uuid();
+          return { blockId: this.textBlockId, isNewBlock: true };
+        }
+        return { blockId: this.textBlockId, isNewBlock: false };
     }
   }
 
@@ -147,7 +200,12 @@ class BlockStateManager {
         return { blockId: this.initialBlockId, isNewBlock: false };
 
       default:
-        return { blockId: this.thinkingBlockId!, isNewBlock: false };
+        // 关键：如果 thinkingBlockId 为 null（被 resetThinkingBlock 重置），创建新块
+        if (!this.thinkingBlockId) {
+          this.thinkingBlockId = uuid();
+          return { blockId: this.thinkingBlockId, isNewBlock: true };
+        }
+        return { blockId: this.thinkingBlockId, isNewBlock: false };
     }
   }
 
@@ -155,14 +213,24 @@ class BlockStateManager {
   getThinkingBlockId(): string | null { return this.thinkingBlockId; }
   getInitialBlockId(): string { return this.initialBlockId; }
   getCurrentState(): BlockState { return this.state; }
+
+  /** 重置思考块状态，下一轮可创建新块 */
+  resetThinkingBlock(): void {
+    this.thinkingBlockId = null;
+  }
+
+  /** 重置文本块状态，下一轮可创建新块 */
+  resetTextBlock(): void {
+    this.textBlockId = null;
+  }
 }
 
-// 6. 主处理器 - 更简洁的逻辑
+// 6. 主处理器 - 智能更新策略
 export class ResponseChunkProcessor {
   private readonly textAccumulator = new TextAccumulator();
   private readonly thinkingAccumulator = new ThinkingAccumulator();
   private readonly blockStateManager: BlockStateManager;
-  private readonly blockUpdater: BlockUpdater;
+  private readonly blockUpdater: SmartThrottledBlockUpdater;
   private reasoningStartTime: number | null = null;
   private lastThinkingMilliseconds?: number;
 
@@ -174,7 +242,7 @@ export class ResponseChunkProcessor {
     throttleInterval: number
   ) {
     this.blockStateManager = new BlockStateManager(blockId);
-    this.blockUpdater = new ThrottledBlockUpdater(stateService, storageService, throttleInterval);
+    this.blockUpdater = new SmartThrottledBlockUpdater(stateService, storageService, throttleInterval);
   }
 
   async handleChunk(chunk: Chunk): Promise<void> {
@@ -215,7 +283,7 @@ export class ResponseChunkProcessor {
 
   private async handleTextComplete(chunk: TextCompleteChunk): Promise<void> {
     this.textAccumulator.accumulate(chunk.text);
-    await this.processTextContent();
+    await this.processTextContent(true); // 标记为完成
   }
 
   private async handleThinkingDelta(chunk: ThinkingDeltaChunk): Promise<void> {
@@ -225,23 +293,45 @@ export class ResponseChunkProcessor {
 
   private async handleThinkingComplete(chunk: ThinkingCompleteChunk): Promise<void> {
     this.thinkingAccumulator.accumulate(chunk.text);
-    await this.processThinkingContent(chunk.thinking_millsec);
+    await this.processThinkingContent(chunk.thinking_millsec, true); // 标记为完成
   }
 
-  private async processTextContent(): Promise<void> {
+  private async processTextContent(isComplete: boolean = false): Promise<void> {
     const { blockId, isNewBlock } = this.blockStateManager.transitionToText();
 
     if (isNewBlock) {
       await this.createTextBlock(blockId);
     } else {
-      await this.updateTextBlock(blockId);
+      await this.updateTextBlock(blockId, isComplete);
+    }
+
+    // 模仿参考项目：文本完成后重置状态，下一轮可创建新块
+    if (isComplete) {
+      this.blockStateManager.resetTextBlock();
+      this.textAccumulator.clear();
     }
   }
 
-  private async processThinkingContent(thinkingMillsec?: number): Promise<void> {
-    const { blockId } = this.blockStateManager.transitionToThinking();
+  private async processThinkingContent(thinkingMillsec?: number, isComplete: boolean = false): Promise<void> {
+    const { blockId, isNewBlock } = this.blockStateManager.transitionToThinking();
     const computedThinkingMillis = this.updateThinkingTimer(thinkingMillsec);
-    await this.updateThinkingBlock(blockId, computedThinkingMillis);
+    
+    if (isNewBlock) {
+      await this.createThinkingBlock(blockId);
+    } else {
+      await this.updateThinkingBlock(blockId, computedThinkingMillis, isComplete);
+    }
+    
+    // 模仿参考项目：思考完成后重置状态，下一轮可创建新块
+    // 注意：不清空累积器内容，因为 ResponseCompletionHandler.complete() 还需要访问它
+    // 累积器会随着处理器对象一起被垃圾回收
+    if (isComplete) {
+      this.blockStateManager.resetThinkingBlock();
+      // 不再清空累积器：this.thinkingAccumulator.clear();
+      // 因为 complete() 中的 updateAllBlockStates 还需要读取 thinking 内容
+      this.reasoningStartTime = null;
+      // 保留 lastThinkingMilliseconds，complete() 需要使用
+    }
   }
 
   private updateThinkingTimer(thinkingMillsec?: number): number | undefined {
@@ -282,27 +372,60 @@ export class ResponseChunkProcessor {
     await this.blockUpdater.createBlock(block);
   }
 
-  private async updateTextBlock(blockId: string): Promise<void> {
+  private async createThinkingBlock(blockId: string): Promise<void> {
+    const block: MessageBlock = {
+      id: blockId,
+      messageId: this.messageId,
+      type: MessageBlockType.THINKING,
+      content: this.thinkingAccumulator.getContent(),
+      createdAt: new Date().toISOString(),
+      status: MessageBlockStatus.STREAMING,
+      thinking_millsec: 0
+    } as MessageBlock;
+    await this.blockUpdater.createBlock(block);
+  }
+
+  private async updateTextBlock(blockId: string, isComplete: boolean = false): Promise<void> {
     const changes = {
       type: MessageBlockType.MAIN_TEXT,
       content: this.textAccumulator.getContent(),
-      status: MessageBlockStatus.STREAMING,
+      status: isComplete ? MessageBlockStatus.SUCCESS : MessageBlockStatus.STREAMING,
       updatedAt: new Date().toISOString()
     };
-    await this.blockUpdater.updateBlock(blockId, changes);
+    await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.MAIN_TEXT, isComplete);
   }
 
-  private async updateThinkingBlock(blockId: string, thinkingMillis?: number): Promise<void> {
+  private async updateThinkingBlock(blockId: string, thinkingMillis?: number, isComplete: boolean = false): Promise<void> {
     const changes: any = {
       type: MessageBlockType.THINKING,
       content: this.thinkingAccumulator.getContent(),
-      status: MessageBlockStatus.STREAMING,
+      status: isComplete ? MessageBlockStatus.SUCCESS : MessageBlockStatus.STREAMING,
       updatedAt: new Date().toISOString()
     };
     if (typeof thinkingMillis === 'number') {
       changes.thinking_millsec = thinkingMillis;
     }
-    await this.blockUpdater.updateBlock(blockId, changes);
+    await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.THINKING, isComplete);
+  }
+
+  /**
+   * 完成当前文本块（检测到工具时调用）
+   */
+  async completeCurrentTextBlock(): Promise<string | null> {
+    const textBlockId = this.blockStateManager.getTextBlockId();
+    if (textBlockId && this.textAccumulator.getContent()) {
+      await this.updateTextBlock(textBlockId, true);
+      return textBlockId;
+    }
+    return null;
+  }
+
+  /**
+   * 重置文本块状态（模仿参考项目：工具调用后调用，下一轮可创建新块）
+   */
+  resetTextBlock(): void {
+    this.blockStateManager.resetTextBlock();
+    this.textAccumulator.clear();
   }
 
   // Getters

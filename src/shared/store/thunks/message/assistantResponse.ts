@@ -152,7 +152,9 @@ export const processAssistantResponse = async (
     const responseHandler = createResponseHandler({
       messageId: assistantMessage.id,
       blockId: placeholderBlock.id,
-      topicId
+      topicId,
+      toolNames: mcpTools.map(t => t.name || t.id).filter((n): n is string => !!n),
+      mcpTools: mcpTools
     });
 
     // 7.1. 现在ResponseHandler已创建，可以进行知识库搜索了
