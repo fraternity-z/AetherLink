@@ -10,10 +10,11 @@ import rehypeRaw from 'rehype-raw';
 import remarkCjkFriendly from 'remark-cjk-friendly';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import type { PluggableList } from 'unified';
 import { Link } from '@mui/material';
 import { isEmpty } from 'lodash';
 import type { MainTextMessageBlock, TranslationMessageBlock, ThinkingMessageBlock } from '../../shared/types/newMessage';
-import { escapeBrackets, removeSvgEmptyLines, convertMathFormula } from '../../utils/formats';
+import { processLatexBrackets, removeSvgEmptyLines } from '../../utils/formats';
 import { getCodeBlockId, removeTrailingDoubleSpaces } from '../../utils/markdown';
 import { getAppSettings } from '../../shared/utils/settingsUtils';
 import MarkdownCodeBlock from './blocks/MarkdownCodeBlock';
@@ -71,8 +72,8 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
     };
   }, []);
 
-  const remarkPlugins = useMemo(() => {
-    const plugins = [remarkGfm, remarkCjkFriendly];
+  const remarkPlugins = useMemo((): PluggableList => {
+    const plugins: PluggableList = [remarkGfm, remarkCjkFriendly];
     // 只有当数学引擎不是 'none' 时才添加数学支持
     if (mathEngine !== 'none') {
       // 配置 remark-math 插件
@@ -97,10 +98,9 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
       processedContent = empty && paused ? '消息已暂停' : block.content || '';
     }
 
-    // 应用所有转换：移除行末双空格 -> 数学公式 -> 转义括号 -> 移除SVG空行
+    // 应用所有转换：移除行末双空格 -> LaTeX括号转换（保护代码块） -> 移除SVG空行
     processedContent = removeTrailingDoubleSpaces(processedContent);
-    processedContent = convertMathFormula(processedContent);
-    processedContent = escapeBrackets(processedContent);
+    processedContent = processLatexBrackets(processedContent);
     processedContent = removeSvgEmptyLines(processedContent);
 
     return processedContent;
