@@ -256,10 +256,14 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
   /**
    * 处理工具调用
+   * @param toolCalls 工具调用列表
+   * @param mcpTools MCP 工具列表
+   * @param onChunk Chunk 事件回调，用于更新 UI 状态
    */
   protected async processToolCalls(
     toolCalls: any[],
-    mcpTools: MCPTool[]
+    mcpTools: MCPTool[],
+    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
   ): Promise<any[]> {
     if (!toolCalls || toolCalls.length === 0) {
       return [];
@@ -271,7 +275,8 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
     const results = await parseAndCallTools(
       mcpToolResponses,
-      mcpTools
+      mcpTools,
+      onChunk // 传递 onChunk 以发送工具执行状态事件
     );
 
     return results.map((result, index) =>
@@ -281,10 +286,14 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
   /**
    * 处理工具使用（XML 格式）
+   * @param content 响应内容
+   * @param mcpTools MCP 工具列表
+   * @param onChunk Chunk 事件回调，用于更新 UI 状态
    */
   protected async processToolUses(
     content: string,
-    mcpTools: MCPTool[]
+    mcpTools: MCPTool[],
+    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
   ): Promise<any[]> {
     if (!content || !mcpTools || mcpTools.length === 0) {
       console.log(`[OpenAI] processToolUses 跳过 - 内容: ${!!content}, 工具数量: ${mcpTools?.length || 0}`);
@@ -305,7 +314,8 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
     const results = await parseAndCallTools(
       content,
-      mcpTools
+      mcpTools,
+      onChunk // 传递 onChunk 以发送工具执行状态事件
     );
 
     console.log(`[OpenAI] 工具调用结果数量: ${results.length}`);
@@ -570,25 +580,54 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           console.log(`[OpenAIProvider] 流式响应检测到工具调用`);
 
           const content = result.content;
+          const nativeToolCalls = (result as any).nativeToolCalls;
+          const usePromptMode = this.getUseSystemPromptForTools();
 
-          // 处理工具调用
-          const xmlToolResults = await this.processToolUses(content, mcpTools);
+          // 根据用户设置决定工具调用方式
+          if (usePromptMode) {
+            // 提示词注入模式：使用 XML 格式工具调用
+            console.log(`[OpenAIProvider] 提示词注入模式：处理 XML 格式工具调用`);
+            const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
 
-          if (xmlToolResults.length > 0) {
-            const cleanContent = removeToolUseTags(content);
-            console.log(`[OpenAIProvider] 流式：对话历史使用清理后的内容，长度: ${cleanContent.length}`);
+            if (xmlToolResults.length > 0) {
+              const cleanContent = removeToolUseTags(content);
+              console.log(`[OpenAIProvider] 流式：对话历史使用清理后的内容，长度: ${cleanContent.length}`);
 
-            // 添加助手消息到对话历史
-            currentMessages.push({
-              role: 'assistant',
-              content: cleanContent
-            });
+              // 添加助手消息到对话历史
+              currentMessages.push({
+                role: 'assistant',
+                content: cleanContent
+              });
 
-            // 添加工具结果到对话历史
-            currentMessages.push(...xmlToolResults);
+              // 添加工具结果到对话历史
+              currentMessages.push(...xmlToolResults);
 
-            console.log(`[OpenAIProvider] 流式工具调用完成，继续下一轮对话`);
-            continue;
+              console.log(`[OpenAIProvider] 流式 XML 工具调用完成，继续下一轮对话`);
+              continue;
+            }
+          } else {
+            // 函数调用模式：使用原生 Function Calling
+            if (nativeToolCalls && nativeToolCalls.length > 0) {
+              console.log(`[OpenAIProvider] 函数调用模式：检测到 ${nativeToolCalls.length} 个原生工具调用`);
+
+              // 添加助手消息到对话历史（包含 tool_calls）
+              currentMessages.push({
+                role: 'assistant',
+                content: content || '',
+                tool_calls: nativeToolCalls
+              });
+
+              // 处理原生工具调用，传递 onChunk 以更新 UI
+              const toolResults = await this.processToolCalls(nativeToolCalls, mcpTools, onChunk);
+
+              if (toolResults.length > 0) {
+                // 添加工具结果到对话历史
+                currentMessages.push(...toolResults);
+
+                console.log(`[OpenAIProvider] 流式原生工具调用完成，继续下一轮对话`);
+                continue;
+              }
+            }
           }
         }
 
@@ -672,8 +711,8 @@ export class OpenAIProvider extends BaseOpenAIProvider {
             tool_calls: toolCalls
           });
 
-          // 处理工具调用
-          toolResults = await this.processToolCalls(toolCalls, mcpTools);
+          // 处理工具调用，传递 onChunk 以更新 UI
+          toolResults = await this.processToolCalls(toolCalls, mcpTools, onChunk);
         }
 
         // 检查是否有工具使用（提示词模式）
@@ -681,7 +720,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           console.log(`[OpenAI] 检查工具使用 - 内容长度: ${content.length}, 工具数量: ${mcpTools.length}`);
           console.log(`[OpenAI] 内容预览: ${content.substring(0, 200)}...`);
 
-          const xmlToolResults = await this.processToolUses(content, mcpTools);
+          const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
           console.log(`[OpenAI] XML 工具调用结果数量: ${xmlToolResults.length}`);
 
           toolResults = toolResults.concat(xmlToolResults);

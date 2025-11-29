@@ -251,19 +251,9 @@ export async function parseAndCallTools(
 
   console.log(`[MCP] 所有工具调用完成，结果数量: ${results.length}`);
 
-  // 发送工具调用完成事件
-  if (onChunk && currentToolResponses.length > 0) {
-    const completedResponses = currentToolResponses.map((tr, index) => ({
-      ...tr,
-      status: results[index]?.isError ? 'error' as const : 'done' as const,
-      response: results[index]
-    }));
-
-    onChunk({
-      type: ChunkType.MCP_TOOL_COMPLETE,
-      responses: completedResponses
-    });
-  }
+  // 注意：不再发送汇总的 MCP_TOOL_COMPLETE 事件
+  // 参考项目设计：每个工具完成时已经发送了单独的完成事件（第 210-215 行）
+  // 这样避免 UI 层收到重复的完成事件
 
   return toolResults;
 }

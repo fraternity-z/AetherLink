@@ -87,7 +87,8 @@ export function textToReasoningDelta(text: string): { type: 'reasoning'; textDel
  */
 export type OpenAIStreamChunk =
   | { type: 'text-delta'; textDelta: string }
-  | { type: 'reasoning'; textDelta: string };
+  | { type: 'reasoning'; textDelta: string }
+  | { type: 'tool_calls'; toolCalls: any[] };
 
 /**
  * 将OpenAI块转换为文本增量或思考增量
@@ -124,6 +125,11 @@ export async function* openAIChunkToTextDelta(stream: AsyncIterable<any>): Async
         if (reasoningContent && typeof reasoningContent === 'string') {
           yield { type: 'reasoning', textDelta: reasoningContent };
         }
+      }
+
+      // 处理工具调用 - 支持原生 Function Calling
+      if (delta?.tool_calls) {
+        yield { type: 'tool_calls', toolCalls: delta.tool_calls };
       }
 
       // 处理DeepSeek特有的思考内容字段

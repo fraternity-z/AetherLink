@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import {
   Box,
   Dialog,
@@ -28,6 +28,44 @@ interface AdvancedImagePreviewProps {
   // 移除通用属性传播，避免传递不合适的属性给 img 元素
 }
 
+/**
+ * 检测是否是需要代理的外部图片URL
+ */
+function isExternalImageUrl(url: string): boolean {
+  if (!url) return false;
+  
+  // base64 图片不需要代理
+  if (url.startsWith('data:')) return false;
+  
+  // blob URL 不需要代理
+  if (url.startsWith('blob:')) return false;
+  
+  // 本地文件不需要代理
+  if (url.startsWith('file://')) return false;
+  
+  // 相对路径不需要代理
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+  
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
+    
+    // 本地地址不需要代理
+    if (hostname === 'localhost' || 
+        hostname === '127.0.0.1' || 
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.0.') ||
+        hostname.startsWith('172.')) {
+      return false;
+    }
+    
+    // 其他外部 URL 需要代理
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 interface ImageTransform {
   scale: number;
   rotation: number;
@@ -47,6 +85,106 @@ const AdvancedImagePreview: React.FC<AdvancedImagePreviewProps> = ({
   style
 }) => {
   const [open, setOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string>(src);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 跨平台加载外部图片
+  useEffect(() => {
+    let isMounted = true;
+    let blobUrl: string | null = null;
+
+    const loadExternalImage = async () => {
+      // 如果不是外部URL，直接使用原始src
+      if (!isExternalImageUrl(src)) {
+        setImageSrc(src);
+        return;
+      }
+
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        // 动态导入平台检测工具
+        const { isTauri } = await import('../../../shared/utils/platformDetection');
+        const { Capacitor } = await import('@capacitor/core');
+
+        let response: Response;
+
+        if (isTauri()) {
+          // Tauri 桌面端：使用 Tauri HTTP 插件
+          console.log('[AdvancedImagePreview] Tauri 端加载外部图片:', src);
+          const { fetch: tauriHttpFetch } = await import('@tauri-apps/plugin-http');
+          response = await tauriHttpFetch(src, {
+            method: 'GET',
+            connectTimeout: 30000,
+          });
+        } else if (Capacitor.isNativePlatform()) {
+          // 移动端：使用 CorsBypass 插件
+          console.log('[AdvancedImagePreview] 移动端加载外部图片:', src);
+          const { CorsBypass } = await import('capacitor-cors-bypass-enhanced');
+          const result = await CorsBypass.request({
+            url: src,
+            method: 'GET',
+            headers: {},
+            timeout: 30000,
+            responseType: 'arraybuffer' as any,
+          });
+          
+          // CorsBypass 返回的是 base64 编码的数据
+          if (result.data) {
+            // 检测 MIME 类型
+            const mimeType = result.headers?.['content-type'] || 'image/png';
+            const dataUrl = `data:${mimeType};base64,${result.data}`;
+            if (isMounted) {
+              setImageSrc(dataUrl);
+              setIsLoading(false);
+            }
+            return;
+          }
+          throw new Error('No data received from CorsBypass');
+        } else {
+          // Web 端：使用代理服务器
+          console.log('[AdvancedImagePreview] Web 端通过代理加载外部图片:', src);
+          const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(src)}`;
+          response = await fetch(proxyUrl, {
+            method: 'GET',
+          });
+        }
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // 将响应转换为 blob URL
+        const blob = await response.blob();
+        blobUrl = URL.createObjectURL(blob);
+        
+        if (isMounted) {
+          setImageSrc(blobUrl);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('[AdvancedImagePreview] 加载外部图片失败:', error);
+        if (isMounted) {
+          setLoadError(error instanceof Error ? error.message : '图片加载失败');
+          setIsLoading(false);
+          // 失败时尝试使用原始 URL（可能会因 CORS 显示不出来）
+          setImageSrc(src);
+        }
+      }
+    };
+
+    loadExternalImage();
+
+    return () => {
+      isMounted = false;
+      // 清理 blob URL
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [src]);
   const [transform, setTransform] = useState<ImageTransform>({
     scale: 1,
     rotation: 0,
@@ -184,24 +322,66 @@ const AdvancedImagePreview: React.FC<AdvancedImagePreviewProps> = ({
   return (
     <>
       {/* 缩略图 */}
-      <img
-        src={src}
-        alt={alt}
-        style={{
-          maxWidth: '100%',
-          height: 'auto',
-          borderRadius: '8px',
-          margin: '8px 0',
-          display: 'block',
-          cursor: 'pointer',
-          ...style
-        }}
-        onClick={handleOpen}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-        }}
-      />
+      {isLoading ? (
+        <div
+          style={{
+            width: '200px',
+            height: '150px',
+            borderRadius: '8px',
+            margin: '8px 0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            color: 'rgba(0, 0, 0, 0.5)',
+            fontSize: '14px',
+          }}
+        >
+          加载中...
+        </div>
+      ) : loadError ? (
+        <div
+          style={{
+            maxWidth: '100%',
+            padding: '12px',
+            borderRadius: '8px',
+            margin: '8px 0',
+            backgroundColor: 'rgba(255, 0, 0, 0.1)',
+            color: '#d32f2f',
+            fontSize: '12px',
+            cursor: 'pointer',
+          }}
+          onClick={() => window.open(src, '_blank')}
+          title="点击在新标签页打开原图"
+        >
+          ⚠️ 图片加载失败: {loadError}
+          <br />
+          <span style={{ textDecoration: 'underline' }}>点击查看原图</span>
+        </div>
+      ) : (
+        <img
+          src={imageSrc}
+          alt={alt}
+          style={{
+            maxWidth: '400px',
+            maxHeight: '400px',
+            width: 'auto',
+            height: 'auto',
+            borderRadius: '8px',
+            margin: '8px 0',
+            display: 'block',
+            cursor: 'pointer',
+            objectFit: 'contain',
+            ...style
+          }}
+          onClick={handleOpen}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            setLoadError('图片无法显示');
+          }}
+        />
+      )}
 
       {/* 预览对话框 */}
       <Dialog
@@ -240,7 +420,7 @@ const AdvancedImagePreview: React.FC<AdvancedImagePreviewProps> = ({
         >
           {/* 预览图片 */}
           <img
-            src={src}
+            src={imageSrc}
             alt={alt}
             style={{
               maxWidth: '90%',

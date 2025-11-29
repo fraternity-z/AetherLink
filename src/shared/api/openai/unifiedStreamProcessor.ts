@@ -8,6 +8,7 @@ import {
   readableStreamAsyncIterable,
   openAIChunkToTextDelta
 } from '../../utils/streamUtils';
+import type { OpenAIStreamChunk } from '../../utils/streamUtils';
 import { EventEmitter, EVENT_NAMES } from '../../services/EventEmitter';
 import { getAppropriateTag } from '../../config/reasoningTags';
 import { extractReasoningMiddleware } from '../../middlewares/extractReasoningMiddleware';
@@ -46,6 +47,8 @@ export interface StreamProcessingResult {
   reasoning?: string;
   reasoningTime?: number;
   hasToolCalls?: boolean;
+  /** 原生 Function Calling 工具调用（流式积累后的完整数据） */
+  nativeToolCalls?: any[];
 }
 
 /**
@@ -55,6 +58,8 @@ interface StreamProcessingState {
   content: string;
   reasoning: string;
   reasoningStartTime: number;
+  toolCalls: any[]; // 用于积累流式工具调用
+  emittedToolIndices: Set<number>; // 记录已发送事件的工具索引
 }
 
 /**
@@ -66,7 +71,9 @@ export class UnifiedStreamProcessor {
   private state: StreamProcessingState = {
     content: '',
     reasoning: '',
-    reasoningStartTime: 0
+    reasoningStartTime: 0,
+    toolCalls: [],
+    emittedToolIndices: new Set()
   };
 
   // AbortController管理
@@ -129,8 +136,8 @@ export class UnifiedStreamProcessor {
     // 获取推理标签
     const reasoningTag = getAppropriateTag(this.options.model);
 
-    // 使用中间件处理
-    const { stream: processedStream } = await extractReasoningMiddleware({
+    // 使用中间件处理 - 显式指定泛型类型以支持 tool_calls
+    const { stream: processedStream } = await extractReasoningMiddleware<OpenAIStreamChunk>({
       openingTag: reasoningTag.openingTag,
       closingTag: reasoningTag.closingTag,
       separator: reasoningTag.separator,
@@ -202,6 +209,9 @@ if (this.options.onChunk) {
           blockId: this.options.thinkingBlockId
         } as Chunk);
       }
+    } else if (chunk.type === 'tool_calls') {
+      // 处理原生 Function Calling 工具调用
+      this.handleNativeToolCalls(chunk.toolCalls);
     } else if (chunk.type === 'finish') {
       // 处理完成 - 对于只有推理内容没有普通内容的模型（如纯推理模型）
       if (this.state.content.trim() === '' && this.state.reasoning && this.state.reasoning.trim() !== '') {
@@ -263,7 +273,57 @@ if (this.options.onChunk) {
     }
   }
 
+  /**
+   * 处理原生工具调用（流式积累）
+   * OpenAI 流式返回的 tool_calls 是增量的，需要合并
+   */
+  private handleNativeToolCalls(toolCallDeltas: any[]): void {
+    for (const delta of toolCallDeltas) {
+      const index = delta.index ?? 0;
 
+      // 初始化或更新工具调用
+      if (!this.state.toolCalls[index]) {
+        this.state.toolCalls[index] = {
+          id: delta.id || '',
+          type: delta.type || 'function',
+          function: {
+            name: delta.function?.name || '',
+            arguments: delta.function?.arguments || ''
+          }
+        };
+      } else {
+        // 合并增量数据
+        if (delta.id) {
+          this.state.toolCalls[index].id = delta.id;
+        }
+        if (delta.function?.name) {
+          this.state.toolCalls[index].function.name += delta.function.name;
+        }
+        if (delta.function?.arguments) {
+          this.state.toolCalls[index].function.arguments += delta.function.arguments;
+        }
+      }
+
+      // 首次看到该工具时发送 MCP_TOOL_IN_PROGRESS 事件（用于 UI 显示）
+      if (!this.state.emittedToolIndices.has(index) && this.state.toolCalls[index].function.name) {
+        this.state.emittedToolIndices.add(index);
+
+        if (this.options.onChunk) {
+          const toolCall = this.state.toolCalls[index];
+          console.log(`[UnifiedStreamProcessor] 检测到原生工具调用: ${toolCall.function.name}`);
+          this.options.onChunk({
+            type: ChunkType.MCP_TOOL_IN_PROGRESS,
+            responses: [{
+              id: toolCall.id,
+              name: toolCall.function.name,
+              status: 'invoking',
+              arguments: {} // 参数尚未完整
+            }]
+          } as Chunk);
+        }
+      }
+    }
+  }
 
   /**
    * 构建最终结果
@@ -275,8 +335,15 @@ if (this.options.onChunk) {
       reasoningTime: this.state.reasoningStartTime > 0 ? (Date.now() - this.state.reasoningStartTime) : undefined
     };
 
-    // 检查工具调用
-    if (this.options.enableTools && this.options.mcpTools && this.options.mcpTools.length > 0) {
+    // 检查原生工具调用
+    if (this.state.toolCalls.length > 0) {
+      result.hasToolCalls = true;
+      result.nativeToolCalls = this.state.toolCalls;
+      console.log(`[UnifiedStreamProcessor] 流式积累完成，原生工具调用数量: ${this.state.toolCalls.length}`);
+    }
+
+    // 检查 XML 格式工具调用
+    if (!result.hasToolCalls && this.options.enableTools && this.options.mcpTools && this.options.mcpTools.length > 0) {
       const hasTools = hasToolUseTags(this.state.content, this.options.mcpTools);
       if (hasTools) {
         result.hasToolCalls = true;

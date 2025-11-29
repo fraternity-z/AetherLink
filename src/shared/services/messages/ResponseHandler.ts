@@ -103,13 +103,8 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
 
           case ChunkType.TEXT_DELTA:
           case ChunkType.TEXT_COMPLETE:
-            // 文本内容需要先通过工具提取处理器
+            // 文本内容通过工具提取处理器过滤（移除工具标签）
             await this.handleTextWithToolExtraction(chunk);
-            break;
-
-          case ChunkType.MCP_TOOL_CREATED:
-            // 从流式解析检测到的工具调用
-            await toolHandler.handleChunk(chunk);
             break;
 
           case ChunkType.MCP_TOOL_IN_PROGRESS:
@@ -130,7 +125,11 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
 
     /**
      * 处理文本内容并检测工具调用
-     * 模仿参考项目：检测到工具时完成当前块，创建工具块，后续文本创建新块
+     * 
+     * 参考项目设计：检测到工具时完成当前块，创建工具块，后续文本创建新块
+     * 
+     * 重要：此处只负责块切换逻辑，不执行工具！
+     * 工具执行由 Provider 层的 processToolUses 统一处理，避免双重执行。
      */
     async handleTextWithToolExtraction(chunk: TextDeltaChunk | { type: ChunkType.TEXT_COMPLETE; text: string }): Promise<void> {
       const text = chunk.text;
@@ -153,20 +152,15 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
             break;
 
           case 'tool_created':
-            // 模仿参考项目：检测到工具时的块切换逻辑
+            // 参考项目：检测到工具时的块切换逻辑
             // 关键：不立即创建新文本块，让下一轮的 thinking/text 自然触发新块创建
             if (result.responses && result.responses.length > 0) {
-              // 1. 完成当前文本块
+              // 1. 完成当前文本块（保持排序正确）
               const completedBlockId = await chunkProcessor.completeCurrentTextBlock();
               console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}`);
               
-              // 2. 创建工具块并执行
-              const toolChunk = {
-                type: ChunkType.MCP_TOOL_CREATED as const,
-                responses: result.responses,
-                format: result.format
-              };
-              await toolHandler.handleChunk(toolChunk);
+              // 2. 不执行工具！工具执行由 Provider 层通过 MCP_TOOL_IN_PROGRESS/COMPLETE 事件驱动
+              // 参考项目：工具块的创建和状态更新通过事件分离，避免双重执行
               
               // 3. 重置文本块状态，让下一轮自动创建新块
               // 参考项目：onTextComplete 时 mainTextBlockId = null，下次 onTextStart 会创建新块
