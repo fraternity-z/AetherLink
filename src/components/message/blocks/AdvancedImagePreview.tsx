@@ -20,6 +20,10 @@ import {
   X as CloseIcon,
   RotateCcw as ResetIcon
 } from 'lucide-react';
+// 🚀 静态导入：这些模块已在其他地方被静态导入，改为静态导入避免 Vite 警告
+import { isTauri } from '../../../shared/utils/platformDetection';
+import { Capacitor } from '@capacitor/core';
+import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
 
 interface AdvancedImagePreviewProps {
   src: string;
@@ -105,10 +109,6 @@ const AdvancedImagePreview: React.FC<AdvancedImagePreviewProps> = ({
       setLoadError(null);
 
       try {
-        // 动态导入平台检测工具
-        const { isTauri } = await import('../../../shared/utils/platformDetection');
-        const { Capacitor } = await import('@capacitor/core');
-
         let response: Response;
 
         if (isTauri()) {
@@ -122,7 +122,6 @@ const AdvancedImagePreview: React.FC<AdvancedImagePreviewProps> = ({
         } else if (Capacitor.isNativePlatform()) {
           // 移动端：使用 CorsBypass 插件
           console.log('[AdvancedImagePreview] 移动端加载外部图片:', src);
-          const { CorsBypass } = await import('capacitor-cors-bypass-enhanced');
           const result = await CorsBypass.request({
             url: src,
             method: 'GET',
