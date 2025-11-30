@@ -25,6 +25,7 @@ interface SettingsState {
   generatedImages?: GeneratedImage[];
   enableTopicNaming: boolean; // 统一字段名称，与最佳实例保持一致
   topicNamingModelId?: string;
+  topicNamingUseCurrentModel?: boolean; // 使用当前话题模型进行命名
   topicNamingPrompt: string; // 添加自定义提示词配置
   modelSelectorStyle: 'dialog' | 'dropdown';
   thinkingDisplayStyle: string;
@@ -247,6 +248,7 @@ const getInitialState = (): SettingsState => {
     models: [],
     providers: initialProviders,
     enableTopicNaming: true, // 统一字段名称，与最佳实例保持一致
+    topicNamingUseCurrentModel: true, // 默认使用当前话题模型
     topicNamingPrompt: '', // 添加默认空提示词
     modelSelectorStyle: 'dialog' as 'dialog' | 'dropdown',
     thinkingDisplayStyle: ThinkingDisplayStyle.COMPACT,

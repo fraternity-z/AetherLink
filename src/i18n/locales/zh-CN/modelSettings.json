@@ -69,6 +69,8 @@
     "title": "话题命名设置",
     "namingModel": "话题命名模型",
     "namingModelDesc": "选择用于自动为话题生成标题的AI模型",
+    "useCurrentTopicModel": "使用当前话题模型",
+    "useCurrentTopicModelDesc": "使用当前对话所选择的模型进行命名",
     "selectModel": "选择模型",
     "currentModel": "当前：{{model}}",
     "notSelected": "未选择",

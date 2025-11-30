@@ -384,33 +384,28 @@ export const processAssistantResponse = async (
 
       // 处理不同类型的响应
       let finalContent: string;
+      let finalReasoning: string | undefined;
       let isInterrupted = false;
 
       if (typeof response === 'string') {
         finalContent = response;
       } else if (response && typeof response === 'object' && 'content' in response) {
         finalContent = response.content;
+        // 提取思考内容（非流式响应）
+        finalReasoning = response.reasoning;
         // 检查是否被中断
         isInterrupted = response.interrupted === true;
       } else {
         finalContent = '';
       }
 
-      // 工具调用现在完全在 AI 提供者层面处理（包括函数调用和 XML 格式）
-      // AI 提供者会自动检测工具调用、执行工具、将结果添加到对话历史并继续对话
-      console.log(`[processAssistantResponse] 工具调用已在 AI 提供者层面处理完成`);
-
-      // 响应处理已通过 onChunk 回调在 Provider 层完成
-      // 包括流式和非流式的思考过程和普通文本
-      const handlerStatus = responseHandler.getStatus();
-      console.log(`[processAssistantResponse] 非流式响应处理完成，内容长度: ${finalContent.length}, 思考过程长度: ${handlerStatus.thinkingContent?.length || 0}, 是否被中断: ${isInterrupted}`);
-
       // 如果响应被中断，使用中断处理方法
       if (isInterrupted) {
         return await responseHandler.completeWithInterruption();
       }
 
-      return await responseHandler.complete(finalContent);
+      // 传递内容和思考内容到 complete 方法
+      return await responseHandler.complete(finalContent, finalReasoning);
     } catch (error: any) {
       // 检查是否为中断错误
       if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {

@@ -111,7 +111,21 @@ export class TopicNamingService {
 
       const customPrompt = store.getState().settings.topicNamingPrompt;
       const systemPrompt = customPrompt || '你是一个话题生成专家。根据对话内容生成一个简洁、精确、具有描述性的标题。标题应简洁，不超过10个字。你只需要返回标题文本，不需要解释或扩展。';
-      const namingModelId = modelId || store.getState().settings.topicNamingModelId || store.getState().settings.defaultModelId || 'gpt-3.5-turbo';
+      
+      // 根据设置决定使用哪个模型
+      const useCurrentTopicModel = store.getState().settings.topicNamingUseCurrentModel ?? true;
+      const currentModelId = store.getState().settings.currentModelId;
+      let namingModelId: string;
+      if (modelId) {
+        // 如果传入了 modelId 参数，优先使用
+        namingModelId = modelId;
+      } else if (useCurrentTopicModel && currentModelId) {
+        // 如果启用了"使用当前话题模型"且有当前选择的模型，使用当前模型
+        namingModelId = currentModelId;
+      } else {
+        // 否则使用配置的命名模型或默认模型
+        namingModelId = store.getState().settings.topicNamingModelId || store.getState().settings.defaultModelId || 'gpt-3.5-turbo';
+      }
 
       const response = await sendChatRequest({
         messages: [

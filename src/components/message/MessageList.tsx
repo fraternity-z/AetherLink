@@ -109,8 +109,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   }, []);
 
   // 无限滚动相关状态
-  const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
-  const [hasMore, setHasMore] = useState(false);
+  // 🚀 优化：使用函数式初始化，避免首次渲染时显示空列表导致的闪烁
+  const [displayMessages, setDisplayMessages] = useState<Message[]>(() => {
+    // 直接计算初始显示的消息，而不是空数组
+    const startIndex = Math.max(0, messages.length - optimizedConfig.virtualScrollThreshold);
+    return computeDisplayMessages(messages, startIndex, optimizedConfig.virtualScrollThreshold);
+  });
+  const [hasMore, setHasMore] = useState(() => messages.length > optimizedConfig.virtualScrollThreshold);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [displayCount] = useState(optimizedConfig.virtualScrollThreshold); // 🚀 使用优化配置
 

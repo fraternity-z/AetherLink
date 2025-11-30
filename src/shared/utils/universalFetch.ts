@@ -138,19 +138,16 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
     
     // 使用从 options 中提取的 useCorsPlugin 参数
     if (useCorsPlugin) {
-      console.log('[Universal Fetch] 移动端使用 CorsBypass 插件（支持流式输出）:', url);
-      
       try {
-        // 检查是否是流式请求（通过 Content-Type 或 URL 判断）
-        const isChatStreamRequest = url.includes('/chat/completions') || 
-                                     url.includes('/v1/completions') ||
-                                     (fetchOptions.body && typeof fetchOptions.body === 'string' &&
-                                      fetchOptions.body.includes('"stream":true'));
+        // 检查 body 中是否明确指定了 stream:true 或 stream:false
+        const bodyStr = fetchOptions.body && typeof fetchOptions.body === 'string' ? fetchOptions.body : '';
+        const isExplicitlyNonStream = bodyStr.includes('"stream":false') || bodyStr.includes('"stream": false');
+        const isExplicitlyStream = bodyStr.includes('"stream":true') || bodyStr.includes('"stream": true');
         
-        // MCP 请求不使用流式模式（使用普通 HTTP 请求即可）
-        const isMcpRequest = url.includes('/mcp') || 
-                            (fetchOptions.body && typeof fetchOptions.body === 'string' &&
-                             fetchOptions.body.includes('"jsonrpc"'));
+        // 只有当明确指定 "stream":true 时才使用流式 API
+        const isChatApiUrl = url.includes('/chat/completions') || url.includes('/v1/completions');
+        const isChatStreamRequest = isChatApiUrl && isExplicitlyStream && !isExplicitlyNonStream;
+        const isMcpRequest = url.includes('/mcp') || bodyStr.includes('"jsonrpc"');
         
         if (isChatStreamRequest && !isMcpRequest) {
           // 使用流式 API

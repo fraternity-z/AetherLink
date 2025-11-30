@@ -69,6 +69,8 @@
     "title": "Topic Naming",
     "namingModel": "Naming Model",
     "namingModelDesc": "Select AI model for auto-generating topic titles",
+    "useCurrentTopicModel": "Use Current Topic Model",
+    "useCurrentTopicModelDesc": "Use the model selected in current conversation for naming",
     "selectModel": "Select",
     "currentModel": "Current: {{model}}",
     "notSelected": "Not selected",

@@ -49,6 +49,7 @@ const DefaultModelSettingsPage: React.FC = () => {
   // 话题命名功能的状态 - 统一字段名称
   const enableTopicNaming = useSelector((state: RootState) => state.settings.enableTopicNaming);
   const topicNamingPrompt = useSelector((state: RootState) => state.settings.topicNamingPrompt);
+  const topicNamingUseCurrentModel = useSelector((state: RootState) => state.settings.topicNamingUseCurrentModel);
 
   // 模型选择器对话框状态
   const [modelSelectorOpen, setModelSelectorOpen] = useState<boolean>(false);
@@ -98,6 +99,11 @@ const DefaultModelSettingsPage: React.FC = () => {
 
     // 更新到 Redux store
     dispatch(updateSettings({ enableTopicNaming: isEnabled }));
+  };
+
+  // 处理"使用当前话题模型"开关
+  const handleUseCurrentTopicModelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateSettings({ topicNamingUseCurrentModel: event.target.checked }));
   };
 
   // 处理话题命名提示词变更
@@ -203,22 +209,41 @@ const DefaultModelSettingsPage: React.FC = () => {
 
           <Divider />
 
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Button variant="outlined" onClick={handleOpenModelSelector} size="small">
-              {t('modelSettings.defaultModel.selectModel')}
-            </Button>
-            <Typography variant="body2" color="text.secondary">
-              {selectedModel ? t('modelSettings.defaultModel.currentModel', { model: selectedModel.name }) : t('modelSettings.defaultModel.notSelected')}
-            </Typography>
-            <ModelSelector
-              selectedModel={selectedModel}
-              availableModels={allModels}
-              handleModelSelect={handleTopicNamingModelChange}
-              handleMenuClick={handleOpenModelSelector}
-              handleMenuClose={handleCloseModelSelector}
-              menuOpen={modelSelectorOpen}
-            />
-          </Box>
+          {/* 使用当前话题模型开关 */}
+          <List disablePadding>
+            <ListItem>
+              <ListItemText 
+                primary={t('modelSettings.defaultModel.useCurrentTopicModel', '使用当前话题模型')} 
+                secondary={t('modelSettings.defaultModel.useCurrentTopicModelDesc', '使用当前对话所选择的模型进行命名')}
+              />
+              <CustomSwitch
+                checked={topicNamingUseCurrentModel ?? true}
+                onChange={handleUseCurrentTopicModelChange}
+              />
+            </ListItem>
+          </List>
+
+          <Divider />
+
+          {/* 仅在关闭"使用当前话题模型"时显示模型选择器 */}
+          {topicNamingUseCurrentModel === false && (
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+              <Button variant="outlined" onClick={handleOpenModelSelector} size="small">
+                {t('modelSettings.defaultModel.selectModel')}
+              </Button>
+              <Typography variant="body2" color="text.secondary">
+                {selectedModel ? t('modelSettings.defaultModel.currentModel', { model: selectedModel.name }) : t('modelSettings.defaultModel.notSelected')}
+              </Typography>
+              <ModelSelector
+                selectedModel={selectedModel}
+                availableModels={allModels}
+                handleModelSelect={handleTopicNamingModelChange}
+                handleMenuClick={handleOpenModelSelector}
+                handleMenuClose={handleCloseModelSelector}
+                menuOpen={modelSelectorOpen}
+              />
+            </Box>
+          )}
         </Paper>
 
         <Paper

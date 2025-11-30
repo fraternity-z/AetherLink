@@ -7,7 +7,6 @@ import { newMessagesActions } from '../../../store/slices/newMessagesSlice';
 import { updateOneBlock, addOneBlock } from '../../../store/slices/messageBlocksSlice';
 import { v4 as uuid } from 'uuid';
 import { globalToolTracker } from '../../../utils/toolExecutionSync';
-import { hasToolUseTags } from '../../../utils/mcpToolParser';
 import { TopicNamingService } from '../../topics/TopicNamingService';
 
 /**
@@ -28,27 +27,22 @@ export class ResponseCompletionHandler {
    * 响应完成处理 - 参考 Cline 的稳定性机制
    * @param finalContent 最终内容
    * @param chunkProcessor 块处理器实例
+   * @param finalReasoning 最终思考内容（非流式响应时使用）
    * @returns 累计的响应内容
    */
-  async complete(finalContent: string | undefined, chunkProcessor: any) {
-    console.log(`[ResponseCompletionHandler] 完成处理 - finalContent长度: ${finalContent?.length || 0}, accumulatedContent长度: ${chunkProcessor.content.length}`);
-
-    // 检查特殊情况
+  async complete(finalContent: string | undefined, chunkProcessor: any, finalReasoning?: string) {
     if (this.isComparisonResult(finalContent, chunkProcessor)) {
       return chunkProcessor.content;
     }
 
-    // 等待工具完成
     await this.waitForToolsCompletion();
 
-    // 处理内容
     const accumulatedContent = this.resolveAccumulatedContent(finalContent, chunkProcessor);
+    const accumulatedReasoning = finalReasoning || chunkProcessor.thinking;
 
-    // 处理可能的新块创建
-    await this.handleNewBlockCreation(finalContent, chunkProcessor);
+    await this.handleNonStreamBlockCreation(finalContent, chunkProcessor, accumulatedReasoning);
 
-    // 完成响应处理
-    return await this.finalizeResponse(accumulatedContent, chunkProcessor, false);
+    return await this.finalizeResponse(accumulatedContent, chunkProcessor, false, undefined, accumulatedReasoning);
   }
 
   /**
@@ -101,13 +95,14 @@ export class ResponseCompletionHandler {
     content: string,
     chunkProcessor: any,
     interrupted: boolean = false,
-    metadata?: any
+    metadata?: any,
+    accumulatedReasoning?: string
   ): Promise<string> {
     const now = new Date().toISOString();
 
     // 1. 更新Redux状态
     if (!interrupted) {
-      this.updateAllBlockStates(chunkProcessor, content, now);
+      this.updateAllBlockStates(chunkProcessor, content, now, accumulatedReasoning);
     }
     this.updateStates(now, metadata);
 
@@ -116,7 +111,7 @@ export class ResponseCompletionHandler {
 
     // 3. 批量数据库操作（避免分散的数据库调用）
     if (!interrupted) {
-      await this.batchSaveToDatabase(chunkProcessor, content, now);
+      await this.batchSaveToDatabase(chunkProcessor, content, now, accumulatedReasoning);
       this.triggerTopicNaming();
     }
 
@@ -129,13 +124,13 @@ export class ResponseCompletionHandler {
   /**
    * 批量保存到数据库 - 统一处理，避免重复
    */
-  private async batchSaveToDatabase(chunkProcessor: any, content: string, now: string): Promise<void> {
+  private async batchSaveToDatabase(chunkProcessor: any, content: string, now: string, accumulatedReasoning?: string): Promise<void> {
     try {
       // 计算最终的块ID数组
       const finalBlockIds = this.calculateFinalBlockIds(chunkProcessor);
 
       // 先更新块数据（不在事务中，避免冲突）
-      await this.updateBlocksInDatabase(chunkProcessor, content, now);
+      await this.updateBlocksInDatabase(chunkProcessor, content, now, accumulatedReasoning);
 
       // 然后在事务中更新消息和话题引用
       await this.updateMessageAndTopicReferences(finalBlockIds, now);
@@ -151,33 +146,65 @@ export class ResponseCompletionHandler {
   /**
    * 更新块数据到数据库
    */
-  private async updateBlocksInDatabase(chunkProcessor: any, content: string, now: string): Promise<void> {
+  private async updateBlocksInDatabase(chunkProcessor: any, content: string, now: string, accumulatedReasoning?: string): Promise<void> {
     const updateOperations: Promise<any>[] = [];
     const finalThinkingMillis = chunkProcessor.thinkingDurationMs;
+    const thinkingContent = accumulatedReasoning || chunkProcessor.thinking || '';
+    
+    // 检查是否是非流式响应
+    const isNonStreamResponse = !chunkProcessor.content.trim() && content.trim();
 
-    // 更新块数据
-    if (chunkProcessor.blockType === MessageBlockType.THINKING) {
-      updateOperations.push(dexieStorage.updateMessageBlock(
-        this.blockId,
-        this.buildThinkingSuccessUpdate(chunkProcessor.thinking, now, finalThinkingMillis)
-      ));
+    if (isNonStreamResponse) {
+      // 非流式响应：根据是否有思考内容决定块类型
+      if (thinkingContent.trim()) {
+        // 有思考内容：初始块为思考块
+        updateOperations.push(dexieStorage.updateMessageBlock(
+          this.blockId,
+          this.buildThinkingSuccessUpdate(thinkingContent, now, finalThinkingMillis)
+        ));
+        // 更新文本块（如果已创建）
+        if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
+          updateOperations.push(dexieStorage.updateMessageBlock(chunkProcessor.textBlockId, {
+            type: MessageBlockType.MAIN_TEXT,
+            content: content,
+            status: MessageBlockStatus.SUCCESS,
+            updatedAt: now
+          }));
+        }
+      } else {
+        // 没有思考内容：初始块为文本块
+        updateOperations.push(dexieStorage.updateMessageBlock(this.blockId, {
+          type: MessageBlockType.MAIN_TEXT,
+          content: content,
+          status: MessageBlockStatus.SUCCESS,
+          updatedAt: now
+        }));
+      }
     } else {
-      updateOperations.push(dexieStorage.updateMessageBlock(this.blockId, {
-        type: MessageBlockType.MAIN_TEXT,
-        content: content,
-        status: MessageBlockStatus.SUCCESS,
-        updatedAt: now
-      }));
-    }
+      // 流式响应：使用原有逻辑
+      if (chunkProcessor.blockType === MessageBlockType.THINKING) {
+        updateOperations.push(dexieStorage.updateMessageBlock(
+          this.blockId,
+          this.buildThinkingSuccessUpdate(thinkingContent, now, finalThinkingMillis)
+        ));
+      } else {
+        updateOperations.push(dexieStorage.updateMessageBlock(this.blockId, {
+          type: MessageBlockType.MAIN_TEXT,
+          content: content,
+          status: MessageBlockStatus.SUCCESS,
+          updatedAt: now
+        }));
+      }
 
-    // 更新新创建的主文本块
-    if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
-      updateOperations.push(dexieStorage.updateMessageBlock(chunkProcessor.textBlockId, {
-        type: MessageBlockType.MAIN_TEXT,
-        content: content,
-        status: MessageBlockStatus.SUCCESS,
-        updatedAt: now
-      }));
+      // 更新新创建的主文本块
+      if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
+        updateOperations.push(dexieStorage.updateMessageBlock(chunkProcessor.textBlockId, {
+          type: MessageBlockType.MAIN_TEXT,
+          content: content,
+          status: MessageBlockStatus.SUCCESS,
+          updatedAt: now
+        }));
+      }
     }
 
     this.ensureAdditionalThinkingBlockUpdated(updateOperations, chunkProcessor, now, finalThinkingMillis);
@@ -250,42 +277,19 @@ export class ResponseCompletionHandler {
    * 解析累积内容
    */
   private resolveAccumulatedContent(finalContent: string | undefined, chunkProcessor: any): string {
-    let accumulatedContent = chunkProcessor.content;
-
-    if (!accumulatedContent.trim() && finalContent) {
-      accumulatedContent = finalContent;
-      console.log(`[ResponseCompletionHandler] 使用 finalContent 作为最终内容`);
-    } else {
-      console.log(`[ResponseCompletionHandler] 保持 accumulatedContent 作为最终内容`);
-    }
-
-    // 检查工具标签（仅用于日志）
-    this.logToolUsage(accumulatedContent);
-
-    return accumulatedContent;
+    const accumulatedContent = chunkProcessor.content;
+    return (!accumulatedContent.trim() && finalContent) ? finalContent : accumulatedContent;
   }
 
   /**
-   * 检查和记录工具使用情况
+   * 处理非流式响应的块创建
    */
-  private logToolUsage(content: string): void {
-    try {
-      const hasTools = hasToolUseTags(content);
-      if (hasTools) {
-        console.log(`[ResponseCompletionHandler] 内容包含工具标签，将在原位置渲染工具块`);
-      }
-    } catch (error) {
-      console.error(`[ResponseCompletionHandler] 检查工具标签失败:`, error);
-    }
-  }
-
-  /**
-   * 处理新块创建（如果需要）
-   */
-  private async handleNewBlockCreation(finalContent: string | undefined, chunkProcessor: any): Promise<void> {
-    if (finalContent && finalContent.trim() && !chunkProcessor.textBlockId) {
-      console.log(`[ResponseCompletionHandler] 创建新的主文本块`);
-
+  private async handleNonStreamBlockCreation(finalContent: string | undefined, chunkProcessor: any, accumulatedReasoning?: string): Promise<void> {
+    const isNonStreamResponse = !chunkProcessor.content.trim() && finalContent && finalContent.trim();
+    if (!isNonStreamResponse) return;
+    
+    // 有思考内容时，初始块作为思考块，需要创建新的文本块
+    if (accumulatedReasoning && accumulatedReasoning.trim() && !chunkProcessor.textBlockId) {
       const newMainTextBlock: MessageBlock = {
         id: uuid(),
         messageId: this.messageId,
@@ -295,19 +299,17 @@ export class ResponseCompletionHandler {
         status: MessageBlockStatus.SUCCESS
       };
 
-      // 添加到Redux和数据库
       store.dispatch(addOneBlock(newMainTextBlock));
       await dexieStorage.saveMessageBlock(newMainTextBlock);
-
-      // 更新消息块引用
       store.dispatch(newMessagesActions.upsertBlockReference({
         messageId: this.messageId,
         blockId: newMainTextBlock.id,
         status: MessageBlockStatus.SUCCESS
       }));
 
-      // 更新处理器状态
-      chunkProcessor.textBlockId = newMainTextBlock.id;
+      if (typeof chunkProcessor.setTextBlockId === 'function') {
+        chunkProcessor.setTextBlockId(newMainTextBlock.id);
+      }
     }
   }
 
@@ -373,19 +375,31 @@ export class ResponseCompletionHandler {
       Object.assign(changes, additionalChanges);
     }
 
-    console.log(`[ResponseCompletionHandler] 更新块 ${blockId} 状态为 SUCCESS`);
     store.dispatch(updateOneBlock({ id: blockId, changes }));
   }
 
   /**
-   * 统一的块状态更新逻辑 - 消除重复代码
+   * 统一的块状态更新逻辑 - 支持非流式响应
    */
-  private updateAllBlockStates(chunkProcessor: any, accumulatedContent: string, now: string): void {
-    console.log(`[ResponseCompletionHandler] 更新块状态 - blockType: ${chunkProcessor.blockType}, blockId: ${this.blockId}, textBlockId: ${chunkProcessor.textBlockId}`);
+  private updateAllBlockStates(chunkProcessor: any, accumulatedContent: string, now: string, accumulatedReasoning?: string): void {
     const finalThinkingMillis = chunkProcessor.thinkingDurationMs;
     const thinkingAdditionalChanges = this.getThinkingAdditionalChanges(finalThinkingMillis);
+    const thinkingContent = accumulatedReasoning || chunkProcessor.thinking || '';
+    const isNonStreamResponse = !chunkProcessor.content.trim() && accumulatedContent.trim();
+    
+    if (isNonStreamResponse) {
+      if (thinkingContent.trim()) {
+        this.updateSingleBlock(this.blockId, thinkingContent, now, MessageBlockType.THINKING, undefined, thinkingAdditionalChanges);
+        if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
+          this.updateSingleBlock(chunkProcessor.textBlockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
+        }
+      } else {
+        this.updateSingleBlock(this.blockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
+      }
+      return;
+    }
 
-    // 根据块类型更新相应的块
+    // 流式响应：根据块类型更新相应的块
     switch (chunkProcessor.blockType) {
       case MessageBlockType.MAIN_TEXT:
         this.updateSingleBlock(this.blockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
@@ -395,7 +409,7 @@ export class ResponseCompletionHandler {
         // 更新思考块
         this.updateSingleBlock(
           this.blockId,
-          chunkProcessor.thinking,
+          thinkingContent,
           now,
           MessageBlockType.THINKING,
           undefined,
@@ -420,13 +434,12 @@ export class ResponseCompletionHandler {
       if (thinkingBlock && thinkingBlock.type === MessageBlockType.THINKING) {
         this.updateSingleBlock(
           chunkProcessor.thinkingId,
-          chunkProcessor.thinking || thinkingBlock.content || '',
+          thinkingContent || thinkingBlock.content || '',
           now,
           MessageBlockType.THINKING,
           undefined,
           thinkingAdditionalChanges
         );
-        console.log(`[ResponseCompletionHandler] 更新额外思考块 ${chunkProcessor.thinkingId}`);
       }
     }
   }

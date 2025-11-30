@@ -223,6 +223,15 @@ class BlockStateManager {
   resetTextBlock(): void {
     this.textBlockId = null;
   }
+  
+  /** 设置文本块ID（用于非流式响应时手动创建块后设置） */
+  setTextBlockId(blockId: string): void {
+    this.textBlockId = blockId;
+    // 如果当前状态是 THINKING_ONLY，转换为 BOTH
+    if (this.state === BlockState.THINKING_ONLY) {
+      this.state = BlockState.BOTH;
+    }
+  }
 }
 
 // 6. 主处理器 - 智能更新策略
@@ -308,7 +317,9 @@ export class ResponseChunkProcessor {
     // 模仿参考项目：文本完成后重置状态，下一轮可创建新块
     if (isComplete) {
       this.blockStateManager.resetTextBlock();
-      this.textAccumulator.clear();
+      // 不再清空累积器：this.textAccumulator.clear();
+      // 因为 complete() 中的 updateAllBlockStates 还需要读取 content 内容
+      // 累积器会随着处理器对象一起被垃圾回收
     }
   }
 
@@ -435,6 +446,11 @@ export class ResponseChunkProcessor {
   get thinkingId(): string | null { return this.blockStateManager.getThinkingBlockId(); }
   get currentBlockId(): string { return this.blockStateManager.getInitialBlockId(); }
   get thinkingDurationMs(): number | undefined { return this.lastThinkingMilliseconds; }
+  
+  // Setter for textBlockId (用于非流式响应时设置)
+  setTextBlockId(blockId: string): void {
+    this.blockStateManager.setTextBlockId(blockId);
+  }
   get blockType(): string {
     const state = this.blockStateManager.getCurrentState();
     switch (state) {

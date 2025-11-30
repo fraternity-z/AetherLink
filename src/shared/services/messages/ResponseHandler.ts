@@ -201,9 +201,11 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
 
     /**
      * 完成处理
+     * @param finalContent 最终文本内容
+     * @param finalReasoning 最终思考内容（非流式响应时使用）
      */
-    async complete(finalContent?: string): Promise<string> {
-      return await completionHandler.complete(finalContent, chunkProcessor);
+    async complete(finalContent?: string, finalReasoning?: string): Promise<string> {
+      return await completionHandler.complete(finalContent, chunkProcessor, finalReasoning);
     },
 
     /**
