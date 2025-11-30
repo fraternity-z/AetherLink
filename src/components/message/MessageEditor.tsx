@@ -12,12 +12,20 @@ import {
 import { useDispatch } from 'react-redux';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import type { Message } from '../../shared/types/newMessage.ts';
-import { UserMessageStatus, AssistantMessageStatus } from '../../shared/types/newMessage.ts';
+import { UserMessageStatus, AssistantMessageStatus, MessageBlockType } from '../../shared/types/newMessage.ts';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { clearGetMainTextContentCache } from '../../shared/utils/messageUtils';
 import styled from '@emotion/styled';
 import { Z_INDEX } from '../../shared/constants/zIndex';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
+
+// 编辑块类型
+interface EditableBlock {
+  id: string;
+  content: string;
+  type: string;
+}
+
 // 开发环境日志工具 - 只保留错误日志
 const isDev = process.env.NODE_ENV === 'development';
 const devError = isDev ? console.error : () => {};
@@ -87,23 +95,26 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
   // 只有在编辑框打开时才锁定键盘，关闭时释放锁
   const { keyboardHeight, isKeyboardVisible } = useKeyboard({ lock: open });
 
-  // 🚀 简化：只在保存时需要查找主文本块，移除不必要的selector
+  // 🚀 参考 cherry-studio：加载所有文本块，支持多轮工具调用编辑
 
-  // 🔧 重写：基于信息块系统架构的内容获取逻辑
-  const loadInitialContent = useCallback(async () => {
-    // 方法1：检查消息是否有直接的 content 字段（编辑后的内容）
-    if (typeof (message as any).content === 'string' && (message as any).content.trim()) {
-      return (message as any).content.trim();
-    }
-
-    // 方法2：检查消息是否有 blocks 数组
+  // 🔧 重写：加载所有 main_text 块，而不是只加载第一个
+  const loadAllTextBlocks = useCallback(async (): Promise<EditableBlock[]> => {
+    // 检查消息是否有 blocks 数组
     if (!message.blocks || message.blocks.length === 0) {
-      return '';
+      // 如果没有块，检查 content 字段
+      if (typeof (message as any).content === 'string' && (message as any).content.trim()) {
+        return [{
+          id: 'legacy_content',
+          content: (message as any).content.trim(),
+          type: 'main_text'
+        }];
+      }
+      return [];
     }
 
-    // 方法3：从数据库批量加载所有消息块
+    // 从数据库批量加载所有消息块
     try {
-      const messageBlocks = await dexieStorage.getMessageBlocksByMessageId(message.id);
+      let messageBlocks = await dexieStorage.getMessageBlocksByMessageId(message.id);
 
       if (messageBlocks.length === 0) {
         // 如果批量获取失败，尝试逐个获取
@@ -118,60 +129,70 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
             devError('[MessageEditor] 获取块失败:', blockId, error);
           }
         }
-        messageBlocks.push(...individualBlocks);
+        messageBlocks = individualBlocks;
       }
 
-      // 方法4：查找主文本块或未知类型块
+      // 🔧 关键修复：过滤出所有 main_text 和 unknown 类型的块
       const textBlocks = messageBlocks.filter(block =>
-        block.type === 'main_text' ||
-        block.type === 'unknown'
+        block.type === MessageBlockType.MAIN_TEXT ||
+        block.type === MessageBlockType.UNKNOWN
       );
 
-      for (const block of textBlocks) {
-        const blockContent = (block as any).content;
-        if (blockContent && typeof blockContent === 'string' && blockContent.trim()) {
-          return blockContent.trim();
+      // 转换为可编辑块格式
+      const editableBlocks: EditableBlock[] = textBlocks
+        .map(block => ({
+          id: block.id,
+          content: (block as any).content || '',
+          type: block.type
+        }))
+        .filter(block => block.content.trim() !== '');
+
+      // 如果没有找到文本块，返回空数组
+      if (editableBlocks.length === 0) {
+        // 尝试从任意块获取内容
+        for (const block of messageBlocks) {
+          const blockContent = (block as any).content;
+          if (blockContent && typeof blockContent === 'string' && blockContent.trim()) {
+            return [{
+              id: block.id,
+              content: blockContent.trim(),
+              type: block.type
+            }];
+          }
         }
       }
 
-      // 方法5：如果没有找到主文本块，检查所有块是否有 content 字段
-      for (const block of messageBlocks) {
-        const blockContent = (block as any).content;
-        if (blockContent && typeof blockContent === 'string' && blockContent.trim()) {
-          return blockContent.trim();
-        }
-      }
-
-      return '';
+      return editableBlocks;
 
     } catch (error) {
       devError('[MessageEditor] 加载消息块时出错:', error);
-      return '';
+      return [];
     }
   }, [message]);
 
-  const [editedContent, setEditedContent] = useState('');
+  // 🔧 状态改为存储多个可编辑块
+  const [editedBlocks, setEditedBlocks] = useState<EditableBlock[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const isUser = message.role === 'user';
 
-  // 🚀 改进：异步加载内容的逻辑，添加清理函数防止内存泄漏
+  // 🚀 改进：异步加载所有文本块，添加清理函数防止内存泄漏
   useEffect(() => {
     let isMounted = true; // 防止组件卸载后设置状态
 
     if (open && !isInitialized) {
       const initContent = async () => {
         try {
-          const content = await loadInitialContent();
+          const blocks = await loadAllTextBlocks();
 
           // 只有在组件仍然挂载时才设置状态
           if (isMounted) {
-            setEditedContent(content);
+            setEditedBlocks(blocks);
             setIsInitialized(true);
           }
         } catch (error) {
           devError('[MessageEditor] 初始化内容失败:', error);
           if (isMounted) {
-            setEditedContent('');
+            setEditedBlocks([]);
             setIsInitialized(true); // 即使失败也标记为已初始化，避免无限重试
           }
         }
@@ -180,66 +201,62 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
     } else if (!open) {
       // Dialog关闭时重置状态
       setIsInitialized(false);
-      setEditedContent('');
+      setEditedBlocks([]);
     }
 
     // 清理函数
     return () => {
       isMounted = false;
     };
-  }, [open, isInitialized, loadInitialContent]);
+  }, [open, isInitialized, loadAllTextBlocks]);
 
-  // 🚀 性能优化：保存逻辑 - 减少数据库调用和日志输出
+  // 🔧 参考 cherry-studio：处理单个块内容变更
+  const handleTextChange = useCallback((blockId: string, content: string) => {
+    setEditedBlocks(prev => prev.map(block =>
+      block.id === blockId ? { ...block, content } : block
+    ));
+  }, []);
+
+  // 🚀 性能优化：保存逻辑 - 支持多块编辑保存
   const handleSave = useCallback(async () => {
-    // 获取编辑后的文本内容
-    const editedText = typeof editedContent === 'string'
-      ? editedContent.trim()
-      : '';
+    // 检查是否有可编辑的块
+    if (!topicId || editedBlocks.length === 0) {
+      devError('[MessageEditor] 保存失败: 缺少topicId或没有可编辑内容');
+      return;
+    }
 
-    if (!topicId || !editedText) {
-      devError('[MessageEditor] 保存失败: 缺少topicId或内容为空');
+    // 过滤出有内容的块
+    const blocksToSave = editedBlocks.filter(block => block.content.trim());
+    if (blocksToSave.length === 0) {
+      devError('[MessageEditor] 保存失败: 所有块内容为空');
       return;
     }
 
     try {
-      // 🚀 简化：直接从数据库查找主文本块
-      let mainTextBlockId: string | undefined;
-      if (message.blocks && message.blocks.length > 0) {
-        for (const blockId of message.blocks) {
-          const block = await dexieStorage.getMessageBlock(blockId);
-          if (block && (block.type === 'main_text' || block.type === 'unknown')) {
-            mainTextBlockId = blockId;
-            break;
-          }
-        }
-      }
-
-      if (!mainTextBlockId) {
-        console.warn('[MessageEditor] 未找到主文本块，消息可能没有正确的块结构');
-      }
-
-
-
-      // � 性能优化：批量更新数据库和Redux状态
       const updatedAt = new Date().toISOString();
+
+      // 🔧 合并所有块内容用于用户消息的 content 字段
+      const mergedContent = blocksToSave.map(b => b.content.trim()).join('\n\n');
 
       // 🔧 修复：区分用户消息和AI消息的更新策略
       const messageUpdates = {
         status: isUser ? UserMessageStatus.SUCCESS : AssistantMessageStatus.SUCCESS,
         updatedAt,
         // 用户消息：设置content字段；AI消息：不设置content字段，让其从消息块获取
-        ...(isUser && { content: editedText })
+        ...(isUser && { content: mergedContent })
       };
 
       // 🚀 性能优化：使用事务批量更新数据库，减少I/O操作
       try {
         await dexieStorage.transaction('rw', [dexieStorage.messages, dexieStorage.message_blocks, dexieStorage.topics], async () => {
-          // 更新消息块
-          if (mainTextBlockId) {
-            await dexieStorage.updateMessageBlock(mainTextBlockId, {
-              content: editedText,
-              updatedAt
-            });
+          // 🔧 关键修复：更新所有编辑过的消息块
+          for (const block of blocksToSave) {
+            if (block.id !== 'legacy_content') {
+              await dexieStorage.updateMessageBlock(block.id, {
+                content: block.content.trim(),
+                updatedAt
+              });
+            }
           }
 
           // 更新消息表
@@ -249,48 +266,37 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
           if (topicId) {
             const topic = await dexieStorage.topics.get(topicId);
             if (topic && topic.messages) {
-              // 查找消息在数组中的位置
               const messageIndex = topic.messages.findIndex((m: any) => m.id === message.id);
-
               if (messageIndex >= 0) {
-                // 更新topic.messages数组中的消息
                 const updatedMessage = {
                   ...topic.messages[messageIndex],
                   ...messageUpdates
                 };
                 topic.messages[messageIndex] = updatedMessage;
-
-
-
-                // 保存更新后的话题
                 await dexieStorage.topics.put(topic);
-              } else {
-                console.warn('[MessageEditor] 在topic.messages中未找到消息:', message.id);
               }
-            } else {
-              console.warn('[MessageEditor] 话题不存在或没有messages数组:', topicId);
             }
           }
         });
-
-
       } catch (dbError) {
         devError('[MessageEditor] 数据库更新失败:', dbError);
-        throw dbError; // 重新抛出错误以便后续处理
+        throw dbError;
       }
 
-      // 🚀 性能优化：批量更新Redux状态
-      if (mainTextBlockId) {
-        dispatch({
-          type: 'messageBlocks/updateOneBlock',
-          payload: {
-            id: mainTextBlockId,
-            changes: {
-              content: editedText,
-              updatedAt
+      // 🚀 性能优化：批量更新Redux状态 - 更新所有块
+      for (const block of blocksToSave) {
+        if (block.id !== 'legacy_content') {
+          dispatch({
+            type: 'messageBlocks/updateOneBlock',
+            payload: {
+              id: block.id,
+              changes: {
+                content: block.content.trim(),
+                updatedAt
+              }
             }
-          }
-        });
+          });
+        }
       }
 
       dispatch(newMessagesActions.updateMessage({
@@ -298,29 +304,25 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
         changes: messageUpdates
       }));
 
-      // 🔧 修复：清除getMainTextContent缓存，确保立即获取最新内容
+      // 🔧 修复：清除getMainTextContent缓存
       try {
         clearGetMainTextContentCache();
       } catch (error) {
         console.warn('[MessageEditor] 清除缓存失败:', error);
       }
 
-      // 🔧 修复AI消息特殊问题：对于AI消息，不设置message.content字段
-      // 让getMainTextContent函数从消息块获取最新内容，而不是从缓存的content字段
+      // 🔧 修复AI消息特殊问题
       if (!isUser) {
-        // AI消息：移除content字段，强制从消息块获取内容
         dispatch(newMessagesActions.updateMessage({
           id: message.id,
           changes: {
-            ...(message as any).content && { content: undefined }, // 清除content字段（如果存在）
+            ...(message as any).content && { content: undefined },
             updatedAt: new Date().toISOString()
           }
         }));
-
       }
 
       // 🔧 修复：强制触发组件重新渲染
-      // 通过更新消息的updatedAt字段来触发依赖该字段的组件重新渲染
       setTimeout(() => {
         dispatch(newMessagesActions.updateMessage({
           id: message.id,
@@ -329,45 +331,39 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
           }
         }));
 
-        // 🔧 额外修复：强制更新消息块的updatedAt，确保MainTextBlock重新渲染
-        if (mainTextBlockId) {
-          dispatch({
-            type: 'messageBlocks/updateOneBlock',
-            payload: {
-              id: mainTextBlockId,
-              changes: {
-                updatedAt: new Date().toISOString()
+        // 更新所有块的 updatedAt
+        for (const block of blocksToSave) {
+          if (block.id !== 'legacy_content') {
+            dispatch({
+              type: 'messageBlocks/updateOneBlock',
+              payload: {
+                id: block.id,
+                changes: {
+                  updatedAt: new Date().toISOString()
+                }
               }
-            }
-          });
+            });
+          }
         }
-
-
       }, 100);
 
-
-
-      // � 性能优化：直接关闭Dialog，移除不必要的延迟和事件
-      // Redux状态更新是同步的，不需要额外的延迟或全局事件
       onClose();
 
     } catch (error) {
       devError('[MessageEditor] 保存失败:', error);
       alert('保存失败，请重试');
     }
-  }, [editedContent, topicId, message, dispatch, isUser, onClose]);
+  }, [editedBlocks, topicId, message, dispatch, isUser, onClose]);
 
   // 🚀 性能优化：关闭处理 - 使用useCallback
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
 
-  // 🚀 性能优化：内容变更处理 - 使用useCallback
-  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditedContent(e.target.value);
-    }, []);
- 
-    return (
+  // 检查是否有可保存的内容
+  const hasContent = editedBlocks.some(block => block.content.trim());
+
+  return (
     <Drawer
       anchor="bottom"
       open={open}
@@ -417,29 +413,61 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
         <EditorHeader theme={theme}>
           <EditorTitle theme={theme}>
             编辑{isUser ? '消息' : '回复'}
+            {editedBlocks.length > 1 && (
+              <Typography component="span" sx={{ ml: 1, fontSize: '12px', color: 'text.secondary' }}>
+                ({editedBlocks.length} 个文本块)
+              </Typography>
+            )}
           </EditorTitle>
         </EditorHeader>
 
-        {/* 编辑区域 */}
+        {/* 编辑区域 - 为每个文本块渲染独立的编辑框 */}
         <EditorContent theme={theme}>
-          <TextField
-            multiline
-            fullWidth
-            minRows={6}
-            maxRows={12}
-            value={editedContent}
-            onChange={handleContentChange}
-            variant="outlined"
-            placeholder={isInitialized ? "请输入内容..." : "正在加载内容..."}
-            disabled={!isInitialized}
-            autoFocus={isInitialized && !isMobile}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                fontSize: '14px',
-                lineHeight: 1.5
-              }
-            }}
-          />
+          {!isInitialized ? (
+            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              正在加载内容...
+            </Typography>
+          ) : editedBlocks.length === 0 ? (
+            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              没有可编辑的内容
+            </Typography>
+          ) : (
+            editedBlocks.map((block, index) => (
+              <Box key={block.id} sx={{ mb: editedBlocks.length > 1 ? 2 : 0 }}>
+                {/* 多个块时显示块标签 */}
+                {editedBlocks.length > 1 && (
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      display: 'block',
+                      mb: 0.5, 
+                      color: 'text.secondary',
+                      fontWeight: 500
+                    }}
+                  >
+                    文本块 {index + 1}
+                  </Typography>
+                )}
+                <TextField
+                  multiline
+                  fullWidth
+                  minRows={editedBlocks.length > 1 ? 3 : 6}
+                  maxRows={editedBlocks.length > 1 ? 8 : 12}
+                  value={block.content}
+                  onChange={(e) => handleTextChange(block.id, e.target.value)}
+                  variant="outlined"
+                  placeholder="请输入内容..."
+                  autoFocus={index === 0 && !isMobile}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      fontSize: '14px',
+                      lineHeight: 1.5
+                    }
+                  }}
+                />
+              </Box>
+            ))
+          )}
         </EditorContent>
 
         {/* 操作栏 */}
@@ -455,7 +483,7 @@ const MessageEditor: React.FC<MessageEditorProps> = ({ message, topicId, open, o
             variant="contained"
             color="primary"
             onClick={handleSave}
-            disabled={!isInitialized || !editedContent || !editedContent.trim()}
+            disabled={!isInitialized || !hasContent}
           >
             保存
           </Button>

@@ -15,7 +15,7 @@ interface NoteEditorViewProps {
 const NoteEditorView: React.FC<NoteEditorViewProps> = ({
   content,
   onContentChange,
-  fileName = '未命名笔记',
+  fileName: _fileName = '未命名笔记', // fileName 由页面 AppBar 显示，这里保留 props 兼容性
   readOnly = false
 }) => {
   const editorRef = useRef<RichEditorRef>(null);
@@ -43,25 +43,18 @@ const NoteEditorView: React.FC<NoteEditorViewProps> = ({
         backgroundColor: 'background.default'
       }}
     >
-      {/* 顶部工具栏 */}
+      {/* 顶部工具栏 - 只显示字符数和视图切换，文件名由页面AppBar显示 */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          p: 1.5,
+          justifyContent: 'flex-end',
+          p: 1,
           borderBottom: '1px solid',
           borderColor: 'divider',
           backgroundColor: 'background.paper'
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FileText size={18} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-            {fileName}
-          </Typography>
-        </Box>
-
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="caption" color="text.secondary">
             {charCount} 字符

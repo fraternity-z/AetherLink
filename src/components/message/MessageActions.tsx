@@ -28,7 +28,8 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  FileText
+  FileText,
+  NotebookPen
 } from 'lucide-react';
 import TokenDisplay from '../chat/TokenDisplay';
 import type { Message, MessageVersion } from '../../shared/types/newMessage.ts';
@@ -47,6 +48,8 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Z_INDEX } from '../../shared/constants/zIndex';
 import { debugLog } from '../../shared/utils/debugLogger';
 import { shareContentAsFile } from '../../utils/exportUtils';
+import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
+import { useNavigate } from 'react-router-dom';
 
 interface MessageActionsProps {
   message: Message;
@@ -140,6 +143,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 }) => {
   const isUser = message.role === 'user';
   const theme = useTheme();
+  const navigate = useNavigate();
 
   // 获取工具栏按钮样式
   const toolbarIconButtonStyle = getToolbarIconButtonStyle(customTextColor);
@@ -375,6 +379,57 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     }
     handleMenuClose();
   }, [message, handleMenuClose]);
+
+  // 保存为笔记 - 将消息内容保存到笔记功能
+  const handleSaveToNote = useCallback(async () => {
+    try {
+      // 检查笔记功能是否配置
+      const hasConfig = await simpleNoteService.hasValidConfig();
+      if (!hasConfig) {
+        toastManager.warning('请先在设置中配置笔记存储目录', '未配置笔记');
+        navigate('/settings/notes');
+        return;
+      }
+
+      // 获取消息内容
+      const textContent = getMainTextContent(message);
+      if (!textContent || !textContent.trim()) {
+        toastManager.warning('没有可保存的内容', '提示');
+        return;
+      }
+
+      // 生成笔记标题：使用消息内容的前30个字符或时间戳
+      // 清理文件名：移除换行符、非法字符（包括中英文标点）
+      const contentPreview = textContent
+        .trim()
+        .replace(/[\r\n]+/g, ' ')  // 换行符替换为空格
+        .substring(0, 30)
+        .replace(/[\\/:*?"<>|！？。，、；：""''【】（）\s]+/g, '_')  // 非法字符替换为下划线
+        .replace(/_+/g, '_')  // 多个连续下划线合并
+        .replace(/^_|_$/g, '');  // 去除首尾下划线
+      const timestamp = new Date().toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).replace(/[\/\s:]/g, '-');
+      const noteTitle = contentPreview || `消息-${timestamp}`;
+
+      // 添加来源标记
+      const roleLabel = message.role === 'user' ? '👤 用户' : '🤖 AI';
+      const noteContent = `# ${roleLabel}\n\n${textContent}\n\n---\n*保存时间: ${new Date().toLocaleString('zh-CN')}*`;
+
+      // 保存到笔记根目录
+      await simpleNoteService.createNote('', noteTitle, noteContent);
+      
+      toastManager.success('已保存到笔记', '成功');
+    } catch (error) {
+      console.error('保存为笔记失败:', error);
+      toastManager.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'), '错误');
+    }
+    handleMenuClose();
+  }, [message, handleMenuClose, navigate]);
 
   // 创建分支 - 使用最佳实例的事件机制
   const handleCreateBranch = useCallback(() => {
@@ -820,6 +875,17 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </IconButton>
           </Tooltip>
 
+          {/* 保存为笔记按钮 */}
+          <Tooltip title="保存为笔记">
+            <IconButton
+              size="small"
+              onClick={handleSaveToNote}
+              sx={toolbarIconButtonStyle}
+            >
+              <NotebookPen size={16} />
+            </IconButton>
+          </Tooltip>
+
           {/* 用户消息：重新发送 */}
           {isUser && (
             <Tooltip title="重新发送">
@@ -1172,6 +1238,10 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         <MenuItem onClick={handleExportClick} sx={{ display: 'flex', alignItems: 'center' }}>
           <FileText size={16} style={{ marginRight: '8px' }} />
           导出信息
+        </MenuItem>
+        <MenuItem onClick={handleSaveToNote} sx={{ display: 'flex', alignItems: 'center' }}>
+          <NotebookPen size={16} style={{ marginRight: '8px' }} />
+          保存为笔记
         </MenuItem>
         <MenuItem onClick={handleEditClick}>编辑</MenuItem>
 
