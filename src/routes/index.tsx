@@ -1,5 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { Navigate, Routes, Route } from 'react-router-dom';
+import { getStorageItem } from '../shared/utils/storage';
 import { useSelector } from 'react-redux'; // 导入 useSelector
 import type { RootState } from '../shared/store'; // 导入 RootState 类型
 import { statusBarService } from '../shared/services/StatusBarService'; // 导入 statusBarService
@@ -87,27 +88,25 @@ const LoadingFallback = () => (
   </div>
 );
 
-// 🚀 极速启动：同步检查首次用户状态，避免异步等待
-const getIsFirstTimeUser = (): boolean => {
-  try {
-    // 优先使用 localStorage 同步检查（极快）
-    const hasLaunched = localStorage.getItem('app-has-launched');
-    if (hasLaunched) return false;
-    
-    // 兼容旧的 first-time-user 标志
-    const firstTimeUser = localStorage.getItem('first-time-user');
-    return firstTimeUser === null;
-  } catch {
-    return false; // 出错时默认为非首次用户
-  }
-};
-
 // 路由提供者组件
 const AppRouter: React.FC = () => {
-  // 🚀 极速启动：直接同步获取，无需异步等待
-  const [isFirstTimeUser] = useState<boolean>(() => getIsFirstTimeUser());
+  const [isFirstTimeUser, setIsFirstTimeUser] = useState<boolean | null>(null);
   const theme = useSelector((state: RootState) => state.settings.theme);
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
+
+  useEffect(() => {
+    async function checkFirstTimeUser() {
+      try {
+        const firstTimeUserValue = await getStorageItem<string>('first-time-user');
+        setIsFirstTimeUser(firstTimeUserValue === null);
+      } catch (error) {
+        console.error('检查首次用户状态出错:', error);
+        setIsFirstTimeUser(false); // 出错时默认为非首次用户
+      }
+    }
+
+    checkFirstTimeUser();
+  }, []);
 
   // 监听主题变化并更新状态栏
   useEffect(() => {
@@ -131,6 +130,11 @@ const AppRouter: React.FC = () => {
       mediaQuery.removeEventListener('change', handleSystemThemeChange);
     };
   }, [theme, themeStyle]); // 依赖项包括 theme 和 themeStyle
+
+  if (isFirstTimeUser === null) {
+    // 显示加载状态
+    return <LoadingFallback />;
+  }
 
   return (
     <Suspense fallback={<LoadingFallback />}>

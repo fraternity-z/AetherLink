@@ -25,11 +25,10 @@ public class MainActivity extends BridgeActivity {
     private static final String TAG = "MainActivity";
 
     // --- 定义常量 ---
-    // 🚀 极速启动优化：大幅减少初始延迟
-    private static final int WEBVIEW_SETUP_INITIAL_DELAY_MS = 0; // 立即尝试，无需延迟
-    private static final int WEBVIEW_SETUP_MAX_RETRIES = 3;      // 减少最大重试次数
-    private static final int WEBVIEW_SETUP_RETRY_DELAY_BASE_MS = 100; // 减少重试延迟基数
-    private static final int UPGRADE_DIALOG_DELAY_MS = 5000;   // 升级对话框延迟增加，避免影响启动体验
+    private static final int WEBVIEW_SETUP_INITIAL_DELAY_MS = 300; // 初始延迟
+    private static final int WEBVIEW_SETUP_MAX_RETRIES = 4;      // 最大重试次数
+    private static final int WEBVIEW_SETUP_RETRY_DELAY_BASE_MS = 800; // 重试延迟基数
+    private static final int UPGRADE_DIALOG_DELAY_MS = 3000;   // 升级对话框延迟
 
     // --- 单一Handler实例 ---
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -59,46 +58,38 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * 🚀 极速启动优化：尝试获取并配置 WebView
-     * 首次尝试同步执行，失败后才使用延迟重试
+     * 尝试获取并配置 WebView，包含重试逻辑
      * @param retryCount 当前重试次数
      */
     private void attemptWebViewSetup(int retryCount) {
-        if (isWebViewConfigured) return;
+        if (isWebViewConfigured) return; // 如果已配置，直接返回
 
         if (retryCount > WEBVIEW_SETUP_MAX_RETRIES) {
-            Log.e(TAG, "❌ WebView 初始化重试次数已达上限，放弃配置。");
+            Log.e(TAG, "❌ WebView 初始化重试次数 (" + WEBVIEW_SETUP_MAX_RETRIES + ") 已达上限，放弃配置。应用可能无法正常工作。");
             return;
         }
 
-        // 🚀 首次尝试直接同步执行，不延迟
-        if (retryCount == 0) {
-            try {
-                if (getBridge() != null && getBridge().getWebView() != null) {
-                    WebView webView = getBridge().getWebView();
-                    onWebViewReady(webView);
-                    isWebViewConfigured = true;
-                    return; // 成功，无需重试
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "⚠️ 首次同步获取 WebView 失败，将异步重试");
-            }
-        }
+        // 首次延迟较短，后续重试延迟递增
+        long delay = (retryCount == 0) ? WEBVIEW_SETUP_INITIAL_DELAY_MS : (WEBVIEW_SETUP_RETRY_DELAY_BASE_MS * (long) retryCount);
 
-        // 后续重试使用短延迟
-        long delay = WEBVIEW_SETUP_RETRY_DELAY_BASE_MS * (long) Math.max(1, retryCount);
+        Log.d(TAG, String.format("⏳ 尝试获取和配置 WebView (第 %d 次), 延迟 %dms 后执行...", retryCount, delay));
 
         mainHandler.postDelayed(() -> {
-            if (isWebViewConfigured) return;
+             if (isWebViewConfigured) return; // 再次检查
             try {
                 if (getBridge() != null && getBridge().getWebView() != null) {
+                    // 成功获取到 Capacitor 正在使用的 WebView 实例
                     WebView webView = getBridge().getWebView();
-                    onWebViewReady(webView);
-                    isWebViewConfigured = true;
+                    onWebViewReady(webView); // 进入成功配置流程
+                    isWebViewConfigured = true; // 标记为已配置
                 } else {
+                    // 未获取到，继续重试
+                    Log.w(TAG, "⚠️ Capacitor WebView 尚未准备好，将进行下一次重试...");
                     attemptWebViewSetup(retryCount + 1);
                 }
             } catch (Exception e) {
+                Log.e(TAG, "❌ 尝试获取 WebView 时发生错误，将进行下一次重试: " + e.getMessage(), e);
+                 // 发生异常也尝试重试
                 attemptWebViewSetup(retryCount + 1);
             }
         }, delay);
@@ -149,7 +140,6 @@ public class MainActivity extends BridgeActivity {
      * 减少了原 configureMixedContent 和 configureMixedContentRetry 的代码重复
      * (注意：忽略了这些设置本身的安全风险，仅做结构优化)
      */
-    @SuppressWarnings("deprecation") // setAllowFileAccessFromFileURLs 和 setAllowUniversalAccessFromFileURLs 在 API 30 废弃，但仍需兼容
     private void applyContentAndSecuritySettings(WebSettings settings) {
          Log.d(TAG, "🔧 开始应用内容和(非)安全设置 (处理混合内容和 CORS)...");
         try {
@@ -222,7 +212,9 @@ public class MainActivity extends BridgeActivity {
             webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null);
             Log.d(TAG, "✅ 已启用 WebView 硬件加速 (LAYER_TYPE_HARDWARE)");
 
-            // 注意：setRenderPriority() 在 API 18+ 已废弃且无效果，已移除
+            // 2. 设置高优先级渲染（提升渲染性能）
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+            Log.d(TAG, "✅ 已设置渲染优先级为 HIGH");
 
             // 3. 设置合适的缓存策略（平衡性能和内容更新）
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);

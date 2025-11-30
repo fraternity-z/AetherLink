@@ -134,8 +134,8 @@ public class SmartWebViewManager {
     private static void configureOptimalSettings(WebSettings settings) {
         Log.d(TAG, "应用最优WebView配置");
 
-        // 🚀 性能优化：缓存策略
-        // 注意：setRenderPriority() 在 API 18+ 已废弃且无效果，已移除
+        // 🚀 性能优化：核心配置
+        settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         
         // 🚀 图片加载优化
@@ -198,7 +198,6 @@ public class SmartWebViewManager {
     /**
      * 基础配置 - 适用于老版本WebView
      */
-    @SuppressWarnings("deprecation") // setAllowFileAccessFromFileURLs 和 setAllowUniversalAccessFromFileURLs 在 API 30 废弃
     private static void configureBasicSettings(WebSettings settings) {
         Log.d(TAG, "应用基础WebView配置");
 
@@ -220,7 +219,6 @@ public class SmartWebViewManager {
     /**
      * 最小配置 - 适用于需要升级的WebView
      */
-    @SuppressWarnings("deprecation") // setAllowFileAccessFromFileURLs 和 setAllowUniversalAccessFromFileURLs 在 API 30 废弃
     private static void configureMinimalSettings(WebSettings settings) {
         Log.d(TAG, "应用最小WebView配置");
 
