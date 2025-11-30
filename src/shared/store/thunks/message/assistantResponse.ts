@@ -369,8 +369,9 @@ export const processAssistantResponse = async (
         response = await apiProvider.sendChatMessage(
           messagesToSend as any,
           {
-            onChunk: (chunk: import('../../../types/chunk').Chunk) => {
-              responseHandler.handleChunk(chunk);
+            onChunk: async (chunk: import('../../../types/chunk').Chunk) => {
+              // 🔧 关键修复：等待 chunk 处理完成，避免竞态条件
+              await responseHandler.handleChunk(chunk);
             },
             enableTools: toolsEnabled !== false,
             mcpTools: mcpTools,

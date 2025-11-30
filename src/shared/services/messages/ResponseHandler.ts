@@ -45,7 +45,25 @@ export class ApiError extends Error {
 
 /**
  * 创建响应处理器
- * 处理API流式响应的接收、更新和完成
+ * 处理API流式/非流式响应的接收、更新和完成
+ * 
+ * ============= 响应处理链路 =============
+ * 
+ * Provider.sendChatMessage
+ *   ↓ onChunk 回调
+ * ResponseHandler.handleChunk
+ *   ├─ THINKING_DELTA/COMPLETE → chunkProcessor.handleChunk (直接处理)
+ *   ├─ TEXT_DELTA/COMPLETE → handleTextWithToolExtraction
+ *   │     ├─ 工具提取器检测工具标签
+ *   │     ├─ 纯文本 → chunkProcessor.handleChunk (保持原始类型)
+ *   │     └─ 工具检测 → 完成当前块 + 重置块状态
+ *   └─ MCP_TOOL_* → toolHandler.handleChunk
+ * 
+ * ============= 关键设计 =============
+ * - handleChunk 是 async，Provider 必须 await
+ * - TEXT 类型经过 handleTextWithToolExtraction 过滤工具标签
+ * - 保持原始 chunk 类型（DELTA 或 COMPLETE），不强制转换
+ * - 工具检测后重置块状态，让下一轮创建新块
  */
 export function createResponseHandler({ messageId, blockId, topicId, toolNames = [], mcpTools = [] }: ResponseHandlerConfig) {
   // 创建各个专门的处理器实例
@@ -135,16 +153,19 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
       const text = chunk.text;
       if (!text) return;
 
+      // 保存原始 chunk 类型（DELTA 或 COMPLETE）
+      const originalChunkType = chunk.type;
+
       // 通过工具提取处理器处理文本
       const results = toolExtractionProcessor.processText(text);
 
       for (const result of results) {
         switch (result.type) {
           case 'text':
-            // 正常文本，委托给块处理器
+            // 保持原始chunk类型，不强制转换
             if (result.content) {
-              const textChunk: TextDeltaChunk = {
-                type: ChunkType.TEXT_DELTA,
+              const textChunk: Chunk = {
+                type: originalChunkType,
                 text: result.content
               };
               await chunkProcessor.handleChunk(textChunk);

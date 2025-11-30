@@ -35,11 +35,15 @@ abstract class ContentAccumulator {
 // 2. 文本累积器
 class TextAccumulator extends ContentAccumulator {
   accumulate(newText: string): void {
-    if (this.content.length > 0 && newText.includes(this.content)) {
-      // 完整文本替换
+    // 🔧 修复：处理流式增量和非流式全量两种情况
+    if (newText.length > this.content.length && newText.startsWith(this.content)) {
+      // 全量替换（流式累积或非流式全量）
       this.content = newText;
+    } else if (newText === this.content) {
+      // 相同内容，不处理（避免重复累积）
+      return;
     } else {
-      // 增量文本追加
+      // 增量追加（流式增量）
       this.content += newText;
     }
   }
@@ -64,6 +68,7 @@ interface BlockUpdater {
 
 /**
  * 智能节流块更新器
+ * 
  * - 块类型变化时：立即更新（取消节流）
  * - 同类型连续更新：节流更新
  * - 块完成时：立即更新并刷新
@@ -286,23 +291,47 @@ export class ResponseChunkProcessor {
 
 
   private async handleTextDelta(chunk: TextDeltaChunk): Promise<void> {
+    // 🔧 检查是否需要清空累积器（新一轮开始）
+    const willCreateNewBlock = this.blockStateManager.getTextBlockId() === null;
+    if (willCreateNewBlock && this.textAccumulator.getContent()) {
+      this.textAccumulator.clear();
+    }
+    
     this.textAccumulator.accumulate(chunk.text);
     await this.processTextContent();
   }
 
   private async handleTextComplete(chunk: TextCompleteChunk): Promise<void> {
+    // 非流式多轮：如果开始新一轮，先清空累积器
+    const willCreateNewBlock = this.blockStateManager.getTextBlockId() === null;
+    if (willCreateNewBlock && this.textAccumulator.getContent()) {
+      this.textAccumulator.clear();
+    }
+    
     this.textAccumulator.accumulate(chunk.text);
-    await this.processTextContent(true); // 标记为完成
+    await this.processTextContent(true);
   }
 
   private async handleThinkingDelta(chunk: ThinkingDeltaChunk): Promise<void> {
+    // 非流式多轮：如果开始新一轮，先清空累积器
+    const willCreateNewBlock = this.blockStateManager.getThinkingBlockId() === null;
+    if (willCreateNewBlock && this.thinkingAccumulator.getContent()) {
+      this.thinkingAccumulator.clear();
+    }
+    
     this.thinkingAccumulator.accumulate(chunk.text);
     await this.processThinkingContent(chunk.thinking_millsec);
   }
 
   private async handleThinkingComplete(chunk: ThinkingCompleteChunk): Promise<void> {
+    // 非流式多轮：如果开始新一轮，先清空累积器
+    const willCreateNewBlock = this.blockStateManager.getThinkingBlockId() === null;
+    if (willCreateNewBlock && this.thinkingAccumulator.getContent()) {
+      this.thinkingAccumulator.clear();
+    }
+    
     this.thinkingAccumulator.accumulate(chunk.text);
-    await this.processThinkingContent(chunk.thinking_millsec, true); // 标记为完成
+    await this.processThinkingContent(chunk.thinking_millsec, true);
   }
 
   private async processTextContent(isComplete: boolean = false): Promise<void> {
@@ -310,16 +339,16 @@ export class ResponseChunkProcessor {
 
     if (isNewBlock) {
       await this.createTextBlock(blockId);
+      if (isComplete) {
+        await this.updateTextBlock(blockId, true);
+      }
     } else {
       await this.updateTextBlock(blockId, isComplete);
     }
 
-    // 模仿参考项目：文本完成后重置状态，下一轮可创建新块
+    // 完成后重置状态，让下一轮可以创建新块
     if (isComplete) {
       this.blockStateManager.resetTextBlock();
-      // 不再清空累积器：this.textAccumulator.clear();
-      // 因为 complete() 中的 updateAllBlockStates 还需要读取 content 内容
-      // 累积器会随着处理器对象一起被垃圾回收
     }
   }
 
@@ -329,19 +358,17 @@ export class ResponseChunkProcessor {
     
     if (isNewBlock) {
       await this.createThinkingBlock(blockId);
+      if (isComplete) {
+        await this.updateThinkingBlock(blockId, computedThinkingMillis, true);
+      }
     } else {
       await this.updateThinkingBlock(blockId, computedThinkingMillis, isComplete);
     }
     
-    // 模仿参考项目：思考完成后重置状态，下一轮可创建新块
-    // 注意：不清空累积器内容，因为 ResponseCompletionHandler.complete() 还需要访问它
-    // 累积器会随着处理器对象一起被垃圾回收
+    // 完成后重置状态，让下一轮可以创建新块
     if (isComplete) {
       this.blockStateManager.resetThinkingBlock();
-      // 不再清空累积器：this.thinkingAccumulator.clear();
-      // 因为 complete() 中的 updateAllBlockStates 还需要读取 thinking 内容
       this.reasoningStartTime = null;
-      // 保留 lastThinkingMilliseconds，complete() 需要使用
     }
   }
 
@@ -436,7 +463,7 @@ export class ResponseChunkProcessor {
    */
   resetTextBlock(): void {
     this.blockStateManager.resetTextBlock();
-    this.textAccumulator.clear();
+    this.textAccumulator.clear(); // 工具调用后需要清空
   }
 
   // Getters

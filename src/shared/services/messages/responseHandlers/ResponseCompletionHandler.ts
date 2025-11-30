@@ -11,6 +11,23 @@ import { TopicNamingService } from '../../topics/TopicNamingService';
 
 /**
  * 响应完成处理器 - 处理响应完成和中断的逻辑
+ * 
+ * ============= 完成处理链路 =============
+ * 
+ * ResponseHandler.complete(finalContent, finalReasoning)
+ *   ↓
+ * ResponseCompletionHandler.complete
+ *   ├─ 等待所有工具执行完成 (waitForToolsCompletion)
+ *   ├─ 更新所有块状态为 SUCCESS (updateAllBlockStates)
+ *   │     └─ 只更新状态，不覆盖内容（每个块创建时就有正确内容）
+ *   ├─ 更新消息和话题状态 (updateStates)
+ *   ├─ 发送完成事件 (emitEvents)
+ *   └─ 批量保存到数据库 (batchSaveToDatabase)
+ * 
+ * ============= 关键设计 =============
+ * - 非流式多轮时，每个块在 ResponseChunkProcessor 创建时就有正确内容
+ * - complete 时只更新状态为 SUCCESS，不覆盖块内容
+ * - 块顺序由流式/非流式处理过程中的 upsertBlockReference 顺序决定
  */
 export class ResponseCompletionHandler {
   private messageId: string;
@@ -380,67 +397,35 @@ export class ResponseCompletionHandler {
 
   /**
    * 统一的块状态更新逻辑 - 支持非流式响应
+   * 
+   * 🔧 修复：非流式多轮工具调用时，每个块在创建时就已有正确内容
+   * complete 时只需要更新状态为 SUCCESS，不要用相同内容覆盖所有块
    */
-  private updateAllBlockStates(chunkProcessor: any, accumulatedContent: string, now: string, accumulatedReasoning?: string): void {
+  private updateAllBlockStates(chunkProcessor: any, _accumulatedContent: string, now: string, _accumulatedReasoning?: string): void {
     const finalThinkingMillis = chunkProcessor.thinkingDurationMs;
     const thinkingAdditionalChanges = this.getThinkingAdditionalChanges(finalThinkingMillis);
-    const thinkingContent = accumulatedReasoning || chunkProcessor.thinking || '';
-    const isNonStreamResponse = !chunkProcessor.content.trim() && accumulatedContent.trim();
     
-    if (isNonStreamResponse) {
-      if (thinkingContent.trim()) {
-        this.updateSingleBlock(this.blockId, thinkingContent, now, MessageBlockType.THINKING, undefined, thinkingAdditionalChanges);
-        if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
-          this.updateSingleBlock(chunkProcessor.textBlockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
-        }
-      } else {
-        this.updateSingleBlock(this.blockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
+    // 🔧 修复：获取消息的所有块，只更新状态，不覆盖内容
+    const currentMessage = store.getState().messages.entities[this.messageId];
+    const blockIds = currentMessage?.blocks || [];
+    
+    // 更新所有块的状态为 SUCCESS
+    for (const blockId of blockIds) {
+      const block = store.getState().messageBlocks.entities[blockId];
+      if (!block) continue;
+      
+      // 只更新状态和时间，保留原有内容
+      const changes: any = {
+        status: MessageBlockStatus.SUCCESS,
+        updatedAt: now
+      };
+      
+      // 对于思考块，添加思考时间
+      if (block.type === MessageBlockType.THINKING && thinkingAdditionalChanges) {
+        Object.assign(changes, thinkingAdditionalChanges);
       }
-      return;
-    }
-
-    // 流式响应：根据块类型更新相应的块
-    switch (chunkProcessor.blockType) {
-      case MessageBlockType.MAIN_TEXT:
-        this.updateSingleBlock(this.blockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
-        break;
-
-      case MessageBlockType.THINKING:
-        // 更新思考块
-        this.updateSingleBlock(
-          this.blockId,
-          thinkingContent,
-          now,
-          MessageBlockType.THINKING,
-          undefined,
-          thinkingAdditionalChanges
-        );
-
-        // 更新关联的主文本块（如果存在）
-        if (chunkProcessor.textBlockId && chunkProcessor.textBlockId !== this.blockId) {
-          this.updateSingleBlock(chunkProcessor.textBlockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
-        }
-        break;
-
-      default:
-        // 默认情况，作为主文本块处理
-        this.updateSingleBlock(this.blockId, accumulatedContent, now, MessageBlockType.MAIN_TEXT);
-        break;
-    }
-
-    // 处理额外的思考块（如果存在）
-    if (chunkProcessor.thinkingId && chunkProcessor.thinkingId !== this.blockId) {
-      const thinkingBlock = store.getState().messageBlocks.entities[chunkProcessor.thinkingId];
-      if (thinkingBlock && thinkingBlock.type === MessageBlockType.THINKING) {
-        this.updateSingleBlock(
-          chunkProcessor.thinkingId,
-          thinkingContent || thinkingBlock.content || '',
-          now,
-          MessageBlockType.THINKING,
-          undefined,
-          thinkingAdditionalChanges
-        );
-      }
+      
+      store.dispatch(updateOneBlock({ id: blockId, changes }));
     }
   }
 

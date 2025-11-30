@@ -26,6 +26,7 @@ import {
   mcpToolCallResponseToOpenAIMessage,
   convertToolCallsToMcpResponses
 } from './tools';
+import { ChunkType } from '../../types/chunk';
 
 
 
@@ -641,12 +642,25 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 
   /**
    * 处理非流式响应
-   * @param params 请求参数
-   * @param onChunk Chunk事件回调
-   * @param enableTools 是否启用工具
-   * @param mcpTools MCP 工具列表
-   * @param abortSignal 中断信号
-   * @returns 响应内容
+   * 
+   * ============= 非流式输出链路 =============
+   * while (iteration < maxIterations) {
+   *   1. 发送 THINKING_COMPLETE (全量 reasoning) → 创建/更新思考块
+   *   2. 处理函数调用模式 (toolCalls):
+   *      - 发送 TEXT_COMPLETE → 创建文本块
+   *      - 调用工具 → 创建工具块
+   *   3. 处理 XML 格式工具 (processToolUses):
+   *      - 先发送 TEXT_COMPLETE (去除工具标签后的文本) → 创建文本块
+   *      - 再调用工具 → 创建工具块
+   *   4. 有工具结果 → continue 下一轮
+   *   5. 无工具结果 → 发送最终 TEXT_COMPLETE → break
+   * }
+   * 
+   * ============= 关键设计 =============
+   * - 所有 onChunk 调用都 await，确保块创建完成后再继续
+   * - 只发 COMPLETE，不发 DELTA（非流式是全量数据）
+   * - 先发文本再发工具，保证块顺序正确
+   * - 每轮的 reasoning 独立收集，最后合并返回
    */
   private async handleNonStreamResponse(
     params: any,
@@ -658,7 +672,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     try {
       let currentMessages = [...params.messages];
       let finalContent = '';
-      let finalReasoning: string | undefined;
+      let allReasoningParts: string[] = []; // 收集所有轮次的 reasoning
       let maxIterations = 5;
       let iteration = 0;
 
@@ -684,42 +698,82 @@ export class OpenAIProvider extends BaseOpenAIProvider {
                          (choice.message as any)?.reasoning_content ||
                          undefined;
 
-        finalContent = content;
-        finalReasoning = reasoning;
+        // 第1步：发送推理块（非流式直接发 COMPLETE）
+        if (reasoning && onChunk) {
+          await onChunk({
+            type: ChunkType.THINKING_COMPLETE,
+            text: reasoning,
+            thinking_millsec: 0
+          });
+          allReasoningParts.push(reasoning);
+        }
 
-        // 检查是否有工具调用（函数调用模式）
+        finalContent = content;
+
+        // 第2步：处理函数调用模式的工具
         const toolCalls = choice.message?.tool_calls;
         let toolResults: any[] = [];
 
         if (toolCalls && toolCalls.length > 0 && enableTools && mcpTools.length > 0) {
+          // 在工具调用前发送文本块
+          if (onChunk) {
+            await onChunk({
+              type: ChunkType.TEXT_COMPLETE,
+              text: content || ''
+            });
+          }
+
           currentMessages.push({
             role: 'assistant',
             content: content || '',
             tool_calls: toolCalls
           });
 
-          // 处理工具调用，传递 onChunk 以更新 UI
+          // 处理工具调用
           toolResults = await this.processToolCalls(toolCalls, mcpTools, onChunk);
         }
 
-        // 检查是否有工具使用（提示词模式）
+        // 第3步：处理 XML 格式的工具调用（提示词模式）
         if (content && content.length > 0 && enableTools && mcpTools.length > 0) {
+          const textWithoutTools = removeToolUseTags(content);
+          const hasToolTags = textWithoutTools.length < content.length;
+          
+          if (hasToolTags) {
+            // 先发送去除工具标签后的文本
+            if (textWithoutTools.trim() && onChunk) {
+              await onChunk({
+                type: ChunkType.TEXT_COMPLETE,
+                text: textWithoutTools
+              });
+            }
+            finalContent = textWithoutTools;
+          }
+          
+          // 然后处理工具调用
           const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
           toolResults = toolResults.concat(xmlToolResults);
-          if (xmlToolResults.length > 0) {
-            finalContent = removeToolUseTags(content);
-          }
         }
 
         if (toolResults.length > 0) {
           currentMessages.push(...toolResults);
-          continue;
+          continue; // 继续下一轮
         } else {
+          // 最后一轮没有工具调用，发送最终文本块
+          if (onChunk) {
+            await onChunk({
+              type: ChunkType.TEXT_COMPLETE,
+              text: content || ''
+            });
+          }
           break;
         }
       }
 
-      // 返回结果
+      // 返回结果 - 合并所有轮次的 reasoning
+      const finalReasoning = allReasoningParts.length > 0 
+        ? allReasoningParts.join('\n\n---\n\n') 
+        : undefined;
+
       if (finalReasoning) {
         return {
           content: finalContent,
