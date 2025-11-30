@@ -107,7 +107,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.13.5",
     "@floating-ui/dom": "^1.7.4",
-    "@google/genai": "^1.2.0",
+    "@google/genai": "^1.30.0",
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
     "@lezer/common": "^1.2.3",

@@ -111,6 +111,7 @@ export function createGeminiAPI(model: Model) {
         messages,
         assistant,
         mcpTools,
+        mcpMode: options?.mcpMode || 'function',  // 传递工具调用模式
         onChunk: (chunk: any) => {
           if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
             result += chunk.text;
