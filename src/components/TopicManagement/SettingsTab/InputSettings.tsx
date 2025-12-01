@@ -16,6 +16,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../../shared/store';
 import { setPasteLongTextAsFile, setPasteLongTextThreshold } from '../../../shared/store/settingsSlice';
 import OptimizedCollapse from './OptimizedCollapse';
+import { collapsibleHeaderStyle } from './scrollOptimization';
 
 /**
  * 输入设置组件
@@ -60,42 +61,7 @@ export default function InputSettings() {
       <ListItem
         component="div"
         onClick={() => setExpanded(!expanded)}
-        sx={{
-          px: 2,
-          py: 0.5,
-          cursor: 'pointer',
-          position: 'relative',
-          zIndex: 1,
-          touchAction: 'manipulation',
-          userSelect: 'none',
-          '@media (hover: none)': {
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-              transform: 'scale(0.98)',
-              transition: 'all 0.1s ease-out'
-            }
-          },
-          '@media (hover: hover)': {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-              transform: 'none !important',
-              boxShadow: 'none !important'
-            },
-            '&:focus': {
-              backgroundColor: 'transparent !important'
-            },
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)'
-            }
-          },
-          '& *': {
-            pointerEvents: 'none',
-            '&:hover': {
-              backgroundColor: 'transparent !important',
-              transform: 'none !important'
-            }
-          }
-        }}
+        sx={collapsibleHeaderStyle(expanded)}
       >
         <ListItemText
           primary="输入设置"
@@ -116,7 +82,7 @@ export default function InputSettings() {
         timeout={150}
         unmountOnExit
       >
-        <Box sx={{ px: 2, pb: 2 }}>
+        <Box sx={{ px: 2, pb: 2, pt: 1 }}>
           {/* 长文本粘贴为文件设置 */}
           <Box sx={{ mb: 2 }}>
             <FormControlLabel
@@ -127,7 +93,7 @@ export default function InputSettings() {
                 />
               }
               label={
-                <Box>
+                <Box sx={{ pr: 1 }}>
                   <Typography variant="body2" fontWeight="medium">
                     长文本粘贴为文件
                   </Typography>
@@ -141,6 +107,7 @@ export default function InputSettings() {
                 margin: 0,
                 display: 'flex',
                 justifyContent: 'space-between',
+                alignItems: 'flex-start',
                 '& .MuiFormControlLabel-label': {
                   flex: 1,
                   marginRight: 1

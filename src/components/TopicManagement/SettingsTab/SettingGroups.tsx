@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import SettingItem from './SettingItem';
-import { createOptimizedClickHandler } from './scrollOptimization';
+import { createOptimizedClickHandler, collapsibleHeaderStyle } from './scrollOptimization';
 import OptimizedCollapse from './OptimizedCollapse';
 
 interface Setting {
@@ -73,45 +73,7 @@ export default function SettingGroups({ groups, onSettingChange }: SettingGroups
           <ListItem
             component="div"
             onClick={createOptimizedClickHandler(() => toggleGroup(group.id))}
-            sx={{
-              px: 2,
-              py: 0.5,
-              cursor: 'pointer',
-              position: 'relative',
-              zIndex: 1,
-              // 优化触摸响应
-              touchAction: 'manipulation',
-              userSelect: 'none',
-              // 移动端优化
-              '@media (hover: none)': {
-                '&:active': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  transform: 'scale(0.98)',
-                  transition: 'all 0.1s ease-out'
-                }
-              },
-              // 桌面端优化
-              '@media (hover: hover)': {
-                '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  transform: 'none !important',
-                  boxShadow: 'none !important'
-                },
-                '&:focus': {
-                  backgroundColor: 'transparent !important'
-                },
-                '&:active': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                }
-              },
-              '& *': {
-                pointerEvents: 'none', // 防止子元素干扰点击
-                '&:hover': {
-                  backgroundColor: 'transparent !important',
-                  transform: 'none !important'
-                }
-              }
-            }}
+            sx={collapsibleHeaderStyle(expandedGroups[group.id])}
           >
             <ListItemText
               primary={group.title}

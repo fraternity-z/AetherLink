@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useTransition, useMemo } from 'react';
 import {
-  Drawer,
   IconButton,
   TextField,
   Typography,
@@ -10,6 +9,7 @@ import {
   InputAdornment,
   Avatar
 } from '@mui/material';
+import BackButtonDrawer from './common/BackButtonDrawer';
 import {
   Plus as AddIcon,
   Minus as RemoveIcon,
@@ -295,7 +295,8 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
   }, [groupedModels]);
 
   return (
-    <Drawer
+    <BackButtonDrawer
+      drawerId="model-management-drawer"
       anchor="bottom"
       open={open}
       onClose={onClose}
@@ -498,7 +499,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
           )}
         </Box>
       </Box>
-    </Drawer>
+    </BackButtonDrawer>
   );
 };
 

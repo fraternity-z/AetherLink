@@ -131,6 +131,56 @@ export const createOptimizedSwitchHandler = (
 };
 
 /**
+ * 可折叠分组标题栏样式 - 展开时变色
+ */
+export const collapsibleHeaderStyle = (expanded: boolean): SxProps<Theme> => ({
+  px: 2,
+  py: 0.5,
+  cursor: 'pointer',
+  position: 'relative',
+  zIndex: 1,
+  // 禁用点击蓝色高亮
+  WebkitTapHighlightColor: 'transparent',
+  outline: 'none',
+  // 展开时的背景色
+  backgroundColor: expanded ? 'rgba(25, 118, 210, 0.06)' : 'transparent',
+  borderLeft: expanded ? '3px solid #1976d2' : '3px solid transparent',
+  transition: 'background-color 0.2s ease, border-left 0.2s ease',
+  // 优化触摸响应
+  touchAction: 'manipulation',
+  userSelect: 'none',
+  // 移动端优化
+  '@media (hover: none)': {
+    '&:active': {
+      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+      transform: 'scale(0.98)',
+      transition: 'all 0.1s ease-out'
+    }
+  },
+  // 桌面端优化
+  '@media (hover: hover)': {
+    '&:hover': {
+      backgroundColor: expanded ? 'rgba(25, 118, 210, 0.08)' : 'rgba(0, 0, 0, 0.02)',
+      transform: 'none !important',
+      boxShadow: 'none !important'
+    },
+    '&:focus': {
+      backgroundColor: expanded ? 'rgba(25, 118, 210, 0.06)' : 'transparent !important'
+    },
+    '&:active': {
+      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+    }
+  },
+  '& *': {
+    pointerEvents: 'none',
+    '&:hover': {
+      backgroundColor: 'transparent !important',
+      transform: 'none !important'
+    }
+  }
+});
+
+/**
  * 列表项优化样式
  */
 export const listItemOptimization: SxProps<Theme> = {

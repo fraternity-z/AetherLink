@@ -148,6 +148,35 @@
   cursor: not-allowed;
 }
 
+/* 快速选择上次按钮 */
+.solid-multi-quick-select {
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--theme-border-default);
+}
+
+.solid-multi-quick-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: transparent;
+  border: 1px solid var(--theme-primary);
+  color: var(--theme-primary);
+  border-radius: 20px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.solid-multi-quick-select-btn:hover {
+  background-color: var(--theme-primary);
+  color: white;
+}
+
+.solid-multi-quick-select-btn svg {
+  flex-shrink: 0;
+}
+
 /* 已选择的模型标签 */
 .solid-multi-selected-tags {
   padding: 12px 24px;

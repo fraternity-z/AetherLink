@@ -15,6 +15,7 @@ import {
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import CustomSwitch from '../../CustomSwitch';
 import OptimizedCollapse from './OptimizedCollapse';
+import { collapsibleHeaderStyle } from './scrollOptimization';
 import type { MathRendererType } from '../../../shared/types';
 
 interface MathSettingsProps {
@@ -62,44 +63,7 @@ export default function MathSettings({
       <ListItem
         component="div"
         onClick={() => setExpanded(!expanded)}
-        sx={{
-          px: 2,
-          py: 0.75,
-          cursor: 'pointer',
-          position: 'relative',
-          zIndex: 1,
-          touchAction: 'manipulation',
-          userSelect: 'none',
-          // 移动端优化
-          '@media (hover: none)': {
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-              transform: 'scale(0.98)',
-              transition: 'all 0.1s ease-out'
-            }
-          },
-          // 桌面端优化
-          '@media (hover: hover)': {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-              transform: 'none !important',
-              boxShadow: 'none !important'
-            },
-            '&:focus': {
-              backgroundColor: 'transparent !important'
-            },
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)'
-            }
-          },
-          '& *': {
-            pointerEvents: 'none',
-            '&:hover': {
-              backgroundColor: 'transparent !important',
-              transform: 'none !important'
-            }
-          }
-        }}
+        sx={collapsibleHeaderStyle(expanded)}
       >
         <ListItemText
           primary="数学公式设置"

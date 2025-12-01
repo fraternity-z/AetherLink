@@ -115,7 +115,14 @@ export default function SettingsTab({
   ];
 
   return (
-    <List sx={{ p: 0 }}>
+    <List sx={{ 
+      p: 0,
+      // 全局禁用所有可点击元素的蓝色高亮
+      '& .MuiListItem-root': {
+        WebkitTapHighlightColor: 'transparent',
+        outline: 'none',
+      },
+    }}>
       <ListItemButton
         onClick={() => navigate('/settings')}
         sx={{

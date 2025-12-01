@@ -18,6 +18,7 @@ import {
 import CustomSwitch from '../../CustomSwitch';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
+import { collapsibleHeaderStyle } from './scrollOptimization';
 
 interface ContextSettingsProps {
   contextWindowSize: number; // 上下文窗口大小（Token数）
@@ -132,45 +133,7 @@ export default function ContextSettings({
       <ListItem
         component="div"
         onClick={() => setExpanded(!expanded)}
-        sx={{
-          px: 2,
-          py: 0.75,
-          cursor: 'pointer',
-          position: 'relative',
-          zIndex: 1,
-          // 优化触摸响应
-          touchAction: 'manipulation', // 防止双击缩放，优化触摸响应
-          userSelect: 'none', // 防止文本选择
-          // 移动端优化
-          '@media (hover: none)': {
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-              transform: 'scale(0.98)', // 轻微缩放反馈
-              transition: 'all 0.1s ease-out'
-            }
-          },
-          // 桌面端优化
-          '@media (hover: hover)': {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-              transform: 'none !important',
-              boxShadow: 'none !important'
-            },
-            '&:focus': {
-              backgroundColor: 'transparent !important'
-            },
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)'
-            }
-          },
-          '& *': {
-            pointerEvents: 'none', // 防止子元素干扰点击
-            '&:hover': {
-              backgroundColor: 'transparent !important',
-              transform: 'none !important'
-            }
-          }
-        }}
+        sx={collapsibleHeaderStyle(expanded)}
       >
         <ListItemText
           primary="上下文设置"

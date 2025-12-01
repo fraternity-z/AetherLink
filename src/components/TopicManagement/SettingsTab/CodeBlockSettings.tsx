@@ -16,6 +16,7 @@ import {
 import CustomSwitch from '../../CustomSwitch';
 import { ChevronDown, ChevronUp, Edit, Palette } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../../shared/store';
+import { collapsibleHeaderStyle } from './scrollOptimization';
 import {
   setCodeThemeLight,
   setCodeThemeDark,
@@ -79,45 +80,7 @@ const CodeBlockSettings: React.FC<CodeBlockSettingsProps> = () => {
       <ListItem
         component="div"
         onClick={() => setExpanded(!expanded)}
-        sx={{
-          px: 2,
-          py: 0.5,
-          cursor: 'pointer',
-          position: 'relative',
-          zIndex: 1,
-          // 优化触摸响应
-          touchAction: 'manipulation',
-          userSelect: 'none',
-          // 移动端优化
-          '@media (hover: none)': {
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-              transform: 'scale(0.98)',
-              transition: 'all 0.1s ease-out'
-            }
-          },
-          // 桌面端优化
-          '@media (hover: hover)': {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.02)',
-              transform: 'none !important',
-              boxShadow: 'none !important'
-            },
-            '&:focus': {
-              backgroundColor: 'transparent !important'
-            },
-            '&:active': {
-              backgroundColor: 'rgba(0, 0, 0, 0.04)'
-            }
-          },
-          '& *': {
-            pointerEvents: 'none', // 防止子元素干扰点击
-            '&:hover': {
-              backgroundColor: 'transparent !important',
-              transform: 'none !important'
-            }
-          }
-        }}
+        sx={collapsibleHeaderStyle(expanded)}
       >
         <ListItemText
           primary="代码块设置"

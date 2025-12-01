@@ -22,12 +22,48 @@ export interface MultiModelSelectorProps {
   fullScreen: boolean;
 }
 
+// localStorage 键名
+const STORAGE_KEY = 'multi_model_selector_last_selection';
+
+// 保存选择到 localStorage
+const saveSelection = (modelIds: string[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(modelIds));
+  } catch (e) {
+    console.warn('保存多模型选择失败:', e);
+  }
+};
+
+// 从 localStorage 加载选择
+const loadSelection = (): string[] => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    console.warn('加载多模型选择失败:', e);
+    return [];
+  }
+};
+
 export function MultiModelSelector(props: MultiModelSelectorProps) {
-  console.log('🚀 [SolidJS] MultiModelSelector 已加载');
+  console.log('[SolidJS] MultiModelSelector 已加载');
 
   const maxSelection = () => props.maxSelection ?? 5;
   const [selectedModelIds, setSelectedModelIds] = createSignal<string[]>([]);
   const [activeTab, setActiveTab] = createSignal<string>('all');
+  const [lastSelection, setLastSelection] = createSignal<string[]>([]);
+
+  // 初始化时加载上次选择
+  createEffect(() => {
+    if (props.open) {
+      const saved = loadSelection();
+      // 过滤掉已不存在的模型
+      const validIds = saved.filter(id => 
+        props.availableModels.some(m => getModelIdentityKey({ id: m.id, provider: m.provider || (m as any).providerId || 'unknown' }) === id)
+      );
+      setLastSelection(validIds);
+    }
+  });
   const [showLeftArrow, setShowLeftArrow] = createSignal(false);
   const [showRightArrow, setShowRightArrow] = createSignal(false);
   const [isDragging, setIsDragging] = createSignal(false);
@@ -134,6 +170,14 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
     setSelectedModelIds([]);
   };
 
+  // 快速选择上次的模型
+  const handleQuickSelectLast = () => {
+    const last = lastSelection();
+    if (last.length > 0) {
+      setSelectedModelIds(last.slice(0, maxSelection()));
+    }
+  };
+
   // 确认选择
   const handleConfirm = () => {
     const ids = selectedModelIds();
@@ -141,6 +185,9 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
       const selectedModels = ids.map(uniqueId => {
         return props.availableModels.find(model => getUniqueModelId(model) === uniqueId);
       }).filter(Boolean) as Model[];
+
+      // 保存选择到 localStorage
+      saveSelection(ids);
 
       props.onConfirm(selectedModels);
       setSelectedModelIds([]);
@@ -332,6 +379,22 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
                 </button>
               </div>
             </div>
+
+            {/* 快速选择上次 */}
+            <Show when={lastSelection().length > 0 && selectedModelIds().length === 0}>
+              <div class="solid-multi-quick-select">
+                <button
+                  class="solid-multi-quick-select-btn"
+                  onClick={handleQuickSelectLast}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  快速选择上次的 {lastSelection().length} 个模型
+                </button>
+              </div>
+            </Show>
 
             {/* 已选择的模型标签 */}
             <Show when={selectedModels().length > 0}>
