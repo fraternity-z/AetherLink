@@ -3,6 +3,7 @@
 import type { Model } from './index';
 
 // 消息块类型枚举
+// 注意：MULTI_MODEL 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 export const MessageBlockType = {
   UNKNOWN: 'unknown',
   MAIN_TEXT: 'main_text',
@@ -15,7 +16,6 @@ export const MessageBlockType = {
   ERROR: 'error',
   CITATION: 'citation',
   TRANSLATION: 'translation',
-  MULTI_MODEL: 'multi_model',
   CHART: 'chart',
   MATH: 'math',
   SEARCH_RESULTS: 'search_results',
@@ -182,30 +182,6 @@ export interface TranslationMessageBlock extends BaseMessageBlock {
   sourceBlockId?: string;
 }
 
-
-
-// 多模型响应块
-export interface MultiModelMessageBlock extends BaseMessageBlock {
-  type: typeof MessageBlockType.MULTI_MODEL;
-  responses: {
-    modelId: string;
-    modelName: string;
-    content: string;
-    status: MessageBlockStatus;
-  }[];
-  displayStyle?: 'horizontal' | 'vertical' | 'fold' | 'grid';
-}
-
-// 模型对比消息块 - 专门用于对比分析策略
-export interface ModelComparisonMessageBlock extends BaseMessageBlock {
-  type: typeof MessageBlockType.MULTI_MODEL;
-  subType: 'comparison'; // 子类型标识
-  comboResult: import('../types/ModelCombo').ModelComboResult;
-  selectedModelId?: string; // 用户选择的模型ID
-  selectedContent?: string; // 用户选择的内容
-  isSelectionPending?: boolean; // 是否等待用户选择
-}
-
 // 图表块
 export interface ChartMessageBlock extends BaseMessageBlock {
   type: typeof MessageBlockType.CHART;
@@ -267,6 +243,8 @@ export interface ContextSummaryMessageBlock extends BaseMessageBlock {
 }
 
 // 消息块联合类型
+// 注意：MultiModelMessageBlock 和 ModelComparisonMessageBlock 已移除
+// 多模型功能现在通过 askId 分组多个独立的助手消息实现
 export type MessageBlock =
   | PlaceholderMessageBlock
   | MainTextMessageBlock
@@ -279,8 +257,6 @@ export type MessageBlock =
   | ErrorMessageBlock
   | CitationMessageBlock
   | TranslationMessageBlock
-  | MultiModelMessageBlock
-  | ModelComparisonMessageBlock
   | ChartMessageBlock
   | MathMessageBlock
   | SearchResultsMessageBlock
@@ -346,6 +322,9 @@ export interface MessageVersion {
   };
 }
 
+// 多模型消息展示样式
+export type MultiModelMessageStyle = 'horizontal' | 'vertical' | 'fold' | 'grid';
+
 // 新消息类型
 export type Message = {
   id: string
@@ -360,12 +339,15 @@ export type Message = {
   type?: 'clear'
   isPreset?: boolean
   useful?: boolean
-  askId?: string
-  mentions?: Model[]
+  askId?: string // 关联的问题消息ID，用于多模型响应分组
+  mentions?: Model[] // 用户选择的多个模型（用于多模型发送）
   usage?: Usage
   metrics?: Metrics
   blocks: MessageBlock['id'][]
   versions?: MessageVersion[]
   currentVersionId?: string // 当前显示的版本ID
   metadata?: MessageMetadata // 使用具体的MessageMetadata类型
+  // 多模型相关
+  multiModelMessageStyle?: MultiModelMessageStyle // 多模型消息展示样式
+  foldSelected?: boolean // fold模式下是否被选中显示
 }

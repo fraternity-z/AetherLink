@@ -6,11 +6,11 @@ import type {
   VideoMessageBlock,
   CodeMessageBlock,
   TranslationMessageBlock,
-  MultiModelMessageBlock,
   ChartMessageBlock,
   MathMessageBlock,
   KnowledgeReferenceMessageBlock
 } from '../../types/newMessage';
+// 注意：MultiModelMessageBlock 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 import {
   MessageBlockType,
   MessageBlockStatus
@@ -194,24 +194,8 @@ export function createTranslationBlock(
   }) as TranslationMessageBlock;
 }
 
-/**
- * 创建多模型响应块
- */
-export function createMultiModelBlock(
-  messageId: string,
-  responses: {
-    modelId: string;
-    modelName: string;
-    content: string;
-    status: MessageBlockStatus;
-  }[],
-  displayStyle: 'horizontal' | 'vertical' | 'fold' | 'grid' = 'vertical'
-): MultiModelMessageBlock {
-  return createBaseBlock(messageId, MessageBlockType.MULTI_MODEL, {
-    responses,
-    displayStyle
-  }) as MultiModelMessageBlock;
-}
+// 注意：createMultiModelBlock 已移除
+// 多模型功能现在通过 askId 分组多个独立的助手消息实现，不再使用 MultiModelMessageBlock
 
 /**
  * 创建图表块

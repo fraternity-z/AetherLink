@@ -5,10 +5,10 @@
  */
 import { createSignal, createMemo, For, Show, createEffect, on, onCleanup } from 'solid-js';
 import { Portal } from 'solid-js/web';
-import type { Model } from '../../shared/types';
-import { getModelIdentityKey } from '../../shared/utils/modelUtils';
-import { getModelOrProviderIcon } from '../../shared/utils/providerIcons';
-import { useAppState } from '../../shared/hooks/useAppState';
+import type { Model } from '../../../shared/types';
+import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
+import { getModelOrProviderIcon } from '../../../shared/utils/providerIcons';
+import { useAppState } from '../../../shared/hooks/useAppState';
 import './DialogModelSelector.solid.css';
 
 export interface DialogModelSelectorProps {
@@ -150,15 +150,15 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
     setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 1);
   };
 
-  // 鼠标滚轮横向滚动
+  // 鼠标滚轮横向滚动 - 增加滚动速度倍数
   const handleWheel = (e: WheelEvent) => {
     if (!tabsContainerRef) return;
     
     // 阻止默认的垂直滚动
     e.preventDefault();
     
-    // 将垂直滚动转换为横向滚动
-    tabsContainerRef.scrollLeft += e.deltaY;
+    // 将垂直滚动转换为横向滚动，3倍速度更丝滑
+    tabsContainerRef.scrollLeft += e.deltaY * 3;
     
     // 更新箭头显示状态
     updateScrollButtons();

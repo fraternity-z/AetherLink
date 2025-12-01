@@ -45,6 +45,7 @@ const MCPServerSettings = lazy(() => import('../pages/Settings/MCPServerSettings
 const MCPServerDetail = lazy(() => import('../pages/Settings/MCPServerDetail'));
 // 导入模型组合页面
 const ModelComboSettings = lazy(() => import('../pages/Settings/ModelComboSettings'));
+const ModelComboEditPage = lazy(() => import('../pages/Settings/ModelComboEditPage'));
 // 导入AI辩论设置页面
 const AIDebateSettings = lazy(() => import('../pages/Settings/AIDebateSettings'));
 // 导入上下文压缩设置页面
@@ -181,6 +182,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/mcp-server" element={<MCPServerSettings />} />
         <Route path="/settings/mcp-server/:serverId" element={<MCPServerDetail />} />
         <Route path="/settings/model-combo" element={<ModelComboSettings />} />
+        <Route path="/settings/model-combo/:comboId" element={<ModelComboEditPage />} />
         <Route path="/settings/context-condense" element={<ContextCondenseSettings />} />
         <Route path="/settings/knowledge" element={<KnowledgeSettings />} />
         <Route path="/settings/workspace" element={<WorkspaceSettings />} />

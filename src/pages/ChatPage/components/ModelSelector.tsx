@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useTheme, useMediaQuery } from '@mui/material';
 import type { RootState } from '../../../shared/store';
 import { SolidBridge } from '../../../shared/bridges/SolidBridge';
-import { DialogModelSelector as SolidDialogModelSelector } from '../../../solid/components/DialogModelSelector.solid';
+import { DialogModelSelector as SolidDialogModelSelector } from '../../../solid/components/ModelSelector/DialogModelSelector.solid';
 import DropdownModelSelector from './DropdownModelSelector';
 
 // 定义组件props类型

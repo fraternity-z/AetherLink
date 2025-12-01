@@ -60,6 +60,7 @@ interface StreamProcessingState {
   reasoningStartTime: number;
   toolCalls: any[]; // 用于积累流式工具调用
   emittedToolIndices: Set<number>; // 记录已发送事件的工具索引
+  thinkingCompleteSent: boolean; // 记录是否已发送 THINKING_COMPLETE
 }
 
 /**
@@ -73,7 +74,8 @@ export class UnifiedStreamProcessor {
     reasoning: '',
     reasoningStartTime: 0,
     toolCalls: [],
-    emittedToolIndices: new Set()
+    emittedToolIndices: new Set(),
+    thinkingCompleteSent: false
   };
 
   // AbortController管理
@@ -175,8 +177,9 @@ export class UnifiedStreamProcessor {
       this.state.content += chunk.textDelta;
 
       // 如果是推理阶段结束，先发送推理完成事件
-      if (isFirstContent && this.options.onChunk && this.state.reasoning) {
+      if (isFirstContent && this.options.onChunk && this.state.reasoning && !this.state.thinkingCompleteSent) {
         console.log('[UnifiedStreamProcessor] 推理阶段结束，发送 THINKING_COMPLETE');
+        this.state.thinkingCompleteSent = true;
         this.options.onChunk({
           type: ChunkType.THINKING_COMPLETE,
           text: this.state.reasoning,
@@ -213,6 +216,18 @@ if (this.options.onChunk) {
       // 处理原生 Function Calling 工具调用
       this.handleNativeToolCalls(chunk.toolCalls);
     } else if (chunk.type === 'finish') {
+      // 先发送 THINKING_COMPLETE（如果有推理内容且还没发送过）
+      if (this.state.reasoning && this.options.onChunk && !this.state.thinkingCompleteSent) {
+        console.log('[UnifiedStreamProcessor] finish: 发送 THINKING_COMPLETE');
+        this.state.thinkingCompleteSent = true;
+        this.options.onChunk({
+          type: ChunkType.THINKING_COMPLETE,
+          text: this.state.reasoning,
+          thinking_millsec: this.state.reasoningStartTime ? (Date.now() - this.state.reasoningStartTime) : 0,
+          blockId: this.options.thinkingBlockId
+        } as Chunk);
+      }
+
       // 处理完成 - 对于只有推理内容没有普通内容的模型（如纯推理模型）
       if (this.state.content.trim() === '' && this.state.reasoning && this.state.reasoning.trim() !== '') {
         console.log('[UnifiedStreamProcessor] 纯推理模型：使用推理内容作为最终回复');
@@ -242,7 +257,7 @@ if (this.options.onChunk) {
         } as Chunk);
       }
 
-      // 发送思考完成事件
+      // 发送思考完成事件（EventEmitter）
       if (this.state.reasoning) {
         EventEmitter.emit(EVENT_NAMES.STREAM_THINKING_COMPLETE, {
           text: this.state.reasoning,

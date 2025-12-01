@@ -1,0 +1,537 @@
+/* MultiModelSelector - SolidJS 版本样式 */
+/* 使用 CSS Variables 主题系统 */
+
+/* 背景遮罩 */
+.solid-multi-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  animation: solidMultiFadeIn 0.2s ease-out;
+}
+
+@keyframes solidMultiFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 对话框容器 */
+.solid-multi-dialog {
+  background-color: var(--theme-bg-paper);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
+              0 24px 38px 3px rgba(0, 0, 0, 0.14),
+              0 9px 46px 8px rgba(0, 0, 0, 0.12);
+  animation: solidMultiSlideUp 0.2s ease-out;
+}
+
+.solid-multi-dialog.fullscreen {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+@keyframes solidMultiSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 标题栏 */
+.solid-multi-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--theme-border-default);
+  flex-shrink: 0;
+}
+
+.solid-multi-dialog.fullscreen .solid-multi-dialog-header {
+  padding-top: max(16px, env(safe-area-inset-top, 16px));
+}
+
+.solid-multi-dialog-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--theme-text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.solid-multi-dialog-title svg {
+  color: var(--theme-primary);
+}
+
+.solid-multi-dialog-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-secondary);
+  transition: background-color 0.2s;
+}
+
+.solid-multi-dialog-close-btn:hover {
+  background-color: var(--theme-hover-bg);
+}
+
+/* 选择状态栏 */
+.solid-multi-selection-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--theme-border-default);
+}
+
+.solid-multi-selection-count {
+  font-size: 0.875rem;
+  color: var(--theme-text-secondary);
+}
+
+.solid-multi-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.solid-multi-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-secondary);
+  transition: all 0.2s;
+}
+
+.solid-multi-action-btn:hover:not(:disabled) {
+  background-color: var(--theme-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+.solid-multi-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 已选择的模型标签 */
+.solid-multi-selected-tags {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--theme-border-default);
+}
+
+.solid-multi-selected-label {
+  font-size: 0.75rem;
+  color: var(--theme-text-secondary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.solid-multi-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.solid-multi-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  background-color: var(--theme-primary);
+  color: white;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  border: 1px solid var(--theme-primary);
+}
+
+.solid-multi-tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.solid-multi-tag-remove:hover {
+  opacity: 1;
+}
+
+/* 标签页包装器 */
+.solid-multi-tabs-wrapper {
+  position: relative;
+  border-bottom: 1px solid var(--theme-border-default);
+  display: flex;
+  align-items: center;
+}
+
+.solid-multi-tabs-container {
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.solid-multi-tabs-container:active {
+  cursor: grabbing;
+}
+
+.solid-multi-tabs-container::-webkit-scrollbar {
+  display: none;
+}
+
+.solid-multi-tabs {
+  display: flex;
+  min-width: min-content;
+}
+
+.solid-multi-tab-scroll-button {
+  position: sticky;
+  background: var(--theme-bg-paper);
+  border: none;
+  cursor: pointer;
+  padding: 8px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-secondary);
+  transition: all 0.2s;
+  z-index: 1;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.solid-multi-tab-scroll-button.left {
+  left: 0;
+  border-right: 1px solid var(--theme-border-default);
+}
+
+.solid-multi-tab-scroll-button.right {
+  right: 0;
+  border-left: 1px solid var(--theme-border-default);
+}
+
+.solid-multi-tab-scroll-button:hover {
+  background-color: var(--theme-hover-bg);
+  color: var(--theme-text-primary);
+}
+
+.solid-multi-tab {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--theme-text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.solid-multi-tab:hover {
+  background-color: var(--theme-hover-bg);
+}
+
+.solid-multi-tab.active {
+  color: var(--theme-primary);
+  border-bottom-color: var(--theme-primary);
+}
+
+/* 对话框内容 */
+.solid-multi-dialog-content {
+  padding: 8px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.solid-multi-dialog.fullscreen .solid-multi-dialog-content {
+  padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 16px) + 16px));
+}
+
+/* 空状态 */
+.solid-multi-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--theme-text-secondary);
+}
+
+/* 模型列表 */
+.solid-multi-model-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 模型项 */
+.solid-multi-model-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  background-color: transparent;
+}
+
+.solid-multi-model-item:hover:not(.disabled) {
+  background-color: var(--theme-hover-bg);
+}
+
+.solid-multi-model-item.selected {
+  background-color: var(--theme-selected-bg);
+}
+
+.solid-multi-model-item.selected:hover {
+  background-color: var(--theme-active-bg);
+}
+
+.solid-multi-model-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 复选框 */
+.solid-multi-checkbox {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.solid-multi-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.solid-multi-checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 20px;
+  width: 20px;
+  background-color: transparent;
+  border: 2px solid var(--theme-text-secondary);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.solid-multi-checkbox:hover .solid-multi-checkmark {
+  border-color: var(--theme-primary);
+}
+
+.solid-multi-checkbox input:checked ~ .solid-multi-checkmark {
+  background-color: var(--theme-primary);
+  border-color: var(--theme-primary);
+}
+
+.solid-multi-checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.solid-multi-checkbox input:checked ~ .solid-multi-checkmark:after {
+  display: block;
+}
+
+.solid-multi-checkbox input:disabled ~ .solid-multi-checkmark {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 模型图标 */
+.solid-multi-model-icon {
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.solid-multi-model-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.solid-multi-model-icon-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theme-bg-elevated);
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--theme-text-secondary);
+}
+
+/* 模型信息 */
+.solid-multi-model-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.solid-multi-model-name {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-bottom: 2px;
+  color: var(--theme-text-primary);
+}
+
+.solid-multi-model-name.selected {
+  font-weight: 500;
+}
+
+.solid-multi-model-description {
+  font-size: 0.75rem;
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 底部操作栏 */
+.solid-multi-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--theme-border-default);
+  flex-shrink: 0;
+}
+
+.solid-multi-dialog.fullscreen .solid-multi-dialog-actions {
+  padding-bottom: max(16px, calc(env(safe-area-inset-bottom, 16px) + 16px));
+}
+
+.solid-multi-btn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solid-multi-btn-cancel {
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary);
+}
+
+.solid-multi-btn-cancel:hover {
+  background-color: var(--theme-hover-bg);
+}
+
+.solid-multi-btn-confirm {
+  background-color: var(--theme-primary);
+  border: none;
+  color: white;
+}
+
+.solid-multi-btn-confirm:hover:not(:disabled) {
+  background-color: var(--theme-primary-dark, var(--theme-primary));
+  filter: brightness(1.1);
+}
+
+.solid-multi-btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+  .solid-multi-dialog:not(.fullscreen) {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .solid-multi-dialog-header {
+    padding: 12px 16px;
+  }
+
+  .solid-multi-selection-bar {
+    padding: 10px 16px;
+  }
+
+  .solid-multi-selected-tags {
+    padding: 10px 16px;
+  }
+
+  .solid-multi-dialog-content {
+    padding: 8px 12px;
+  }
+
+  .solid-multi-dialog-actions {
+    padding: 12px 16px;
+  }
+
+  .solid-multi-tab {
+    padding: 10px 12px;
+    font-size: 0.8125rem;
+  }
+}

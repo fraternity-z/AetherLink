@@ -8,10 +8,78 @@ import { throttle } from 'lodash';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import MessageItem from './MessageItem';
+import MultiModelMessageGroup from './MultiModelMessageGroup';
 import ConversationDivider from './ConversationDivider';
 import type { Message } from '../../shared/types/newMessage';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
 import { getMessageDividerSetting, shouldShowConversationDivider } from '../../shared/utils/settingsUtils';
+
+/**
+ * 将消息按 askId 分组，识别多模型响应
+ * 返回一个数组，每个元素是：
+ * - 单条消息（普通消息）
+ * - 多模型分组对象 { userMessage, assistantMessages }
+ */
+interface MultiModelGroup {
+  type: 'multi-model';
+  userMessage: Message;
+  assistantMessages: Message[];
+}
+
+type MessageOrGroup = Message | MultiModelGroup;
+
+const groupMessagesByAskId = (messages: Message[]): MessageOrGroup[] => {
+  const result: MessageOrGroup[] = [];
+  const processedIds = new Set<string>();
+
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+
+    // 如果已处理过，跳过
+    if (processedIds.has(message.id)) continue;
+
+    // 检查是否是用户消息且有 mentions（多模型发送）
+    if (message.role === 'user' && message.mentions && message.mentions.length > 0) {
+      // 查找所有共享同一个 askId 的助手消息
+      const assistantMessages = messages.filter(
+        m => m.role === 'assistant' && m.askId === message.id
+      );
+
+      if (assistantMessages.length > 1) {
+        // 多模型分组
+        result.push({
+          type: 'multi-model',
+          userMessage: message,
+          assistantMessages
+        });
+
+        // 标记所有相关消息为已处理
+        processedIds.add(message.id);
+        assistantMessages.forEach(m => processedIds.add(m.id));
+        continue;
+      }
+    }
+
+    // 检查是否是助手消息且属于多模型分组（已被上面处理）
+    if (message.role === 'assistant' && message.askId) {
+      const userMessage = messages.find(m => m.id === message.askId);
+      if (userMessage?.mentions && userMessage.mentions.length > 0) {
+        // 这条消息属于多模型分组，跳过（会在用户消息处理时一起处理）
+        continue;
+      }
+    }
+
+    // 普通消息
+    result.push(message);
+    processedIds.add(message.id);
+  }
+
+  return result;
+};
+
+const isMultiModelGroup = (item: MessageOrGroup): item is MultiModelGroup => {
+  return (item as MultiModelGroup).type === 'multi-model';
+};
 
 interface MessageGroupProps {
   date: string;
@@ -136,27 +204,52 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     }
   }, [messages, forceUpdate]);
 
+  // 将消息按 askId 分组，识别多模型响应
+  const groupedMessages = useMemo(() => groupMessagesByAskId(messages), [messages]);
+
+  // 渲染单条消息或多模型分组
+  const renderMessageOrGroup = (item: MessageOrGroup, index: number) => {
+    if (isMultiModelGroup(item)) {
+      // 渲染多模型分组
+      return (
+        <MultiModelMessageGroup
+          key={`multi-${item.userMessage.id}`}
+          userMessage={item.userMessage}
+          assistantMessages={item.assistantMessages}
+          forceUpdate={forceUpdate}
+          onRegenerate={onRegenerate}
+          onDelete={onDelete}
+          onSwitchVersion={onSwitchVersion}
+          onResend={onResend}
+        />
+      );
+    } else {
+      // 渲染普通消息
+      return (
+        <React.Fragment key={item.id}>
+          <MessageItem
+            message={item}
+            forceUpdate={forceUpdate}
+            messageIndex={startIndex + index}
+            onRegenerate={onRegenerate}
+            onDelete={onDelete}
+            onSwitchVersion={onSwitchVersion}
+            onResend={onResend}
+          />
+          {/* 在对话轮次结束后显示分割线 */}
+          {shouldShowConversationDivider(messages, index) && (
+            <ConversationDivider show={showMessageDivider} style="subtle" />
+          )}
+        </React.Fragment>
+      );
+    }
+  };
+
   // 如果禁用了消息分组，直接渲染消息列表
   if (messageGrouping === 'disabled') {
     return (
       <Box>
-        {messages.map((message, index) => (
-          <React.Fragment key={message.id}>
-            <MessageItem
-              message={message}
-              forceUpdate={forceUpdate}
-              messageIndex={startIndex + index} // 传递全局消息索引
-              onRegenerate={onRegenerate}
-              onDelete={onDelete}
-              onSwitchVersion={onSwitchVersion}
-              onResend={onResend}
-            />
-            {/* 在对话轮次结束后显示分割线 */}
-            {shouldShowConversationDivider(messages, index) && (
-              <ConversationDivider show={showMessageDivider} style="subtle" />
-            )}
-          </React.Fragment>
-        ))}
+        {groupedMessages.map((item, index) => renderMessageOrGroup(item, index))}
       </Box>
     );
   }
@@ -190,23 +283,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
       {/* 消息列表 */}
       {expanded && (
         <Box>
-          {messages.map((message, index) => (
-            <React.Fragment key={message.id}>
-              <MessageItem
-                message={message}
-                forceUpdate={forceUpdate}
-                messageIndex={startIndex + index} // 传递全局消息索引
-                onRegenerate={onRegenerate}
-                onDelete={onDelete}
-                onSwitchVersion={onSwitchVersion}
-                onResend={onResend}
-              />
-              {/* 在对话轮次结束后显示分割线 */}
-              {shouldShowConversationDivider(messages, index) && (
-                <ConversationDivider show={showMessageDivider} style="subtle" />
-              )}
-            </React.Fragment>
-          ))}
+          {groupedMessages.map((item, index) => renderMessageOrGroup(item, index))}
         </Box>
       )}
     </Box>

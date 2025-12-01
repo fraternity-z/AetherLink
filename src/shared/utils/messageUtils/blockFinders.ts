@@ -8,10 +8,10 @@ import type {
   CodeMessageBlock,
   CitationMessageBlock,
   TranslationMessageBlock,
-  MultiModelMessageBlock,
   ChartMessageBlock,
   MathMessageBlock
 } from '../../types/newMessage';
+// 注意：MultiModelMessageBlock 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 import { MessageBlockType, MessageBlockStatus } from '../../types/newMessage';
 import store from '../../store';
 import { messageBlocksSelectors } from '../../store/slices/messageBlocksSlice';
@@ -173,12 +173,8 @@ export function findTranslationBlocks(message: Message): TranslationMessageBlock
   return findBlocksByType<TranslationMessageBlock>(message, MessageBlockType.TRANSLATION);
 }
 
-/**
- * 查找消息的所有多模型响应块
- */
-export function findMultiModelBlocks(message: Message): MultiModelMessageBlock[] {
-  return findBlocksByType<MultiModelMessageBlock>(message, MessageBlockType.MULTI_MODEL);
-}
+// 注意：findMultiModelBlocks 已移除
+// 多模型功能现在通过 askId 分组多个独立的助手消息实现
 
 /**
  * 查找消息的所有图表块

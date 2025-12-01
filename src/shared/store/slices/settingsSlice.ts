@@ -19,8 +19,8 @@ export interface SettingsState {
   // 默认思维链长度
   defaultThinkingEffort?: 'off' | 'low' | 'medium' | 'high' | 'auto';
 
-  // 多模型对比显示样式
-  multiModelDisplayStyle?: 'horizontal' | 'grid' | 'vertical';
+  // 多模型消息显示样式（与 Cherry Studio 一致）
+  multiModelMessageStyle?: 'fold' | 'horizontal' | 'vertical' | 'grid';
 
   // 工具调用显示详情
   showToolDetails?: boolean;
@@ -69,7 +69,7 @@ const loadFromStorage = async (): Promise<SettingsState> => {
     thinkingDisplayStyle: 'compact',
     thoughtAutoCollapse: true,
     defaultThinkingEffort: 'medium',
-    multiModelDisplayStyle: 'horizontal',
+    multiModelMessageStyle: 'fold',
     showToolDetails: true,
     showCitationDetails: true,
     fontSize: 16,

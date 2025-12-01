@@ -430,21 +430,6 @@ export class DexieStorageService extends Dexie {
       }
     }
 
-    // 🔧 修复：多模型块的特殊处理
-    if (block.type === 'multi_model' && 'responses' in block) {
-      const multiModelBlock = block as any;
-      if (multiModelBlock.responses && Array.isArray(multiModelBlock.responses)) {
-        // 深拷贝确保 responses 数组被正确序列化
-        const blockToSave = {
-          ...block,
-          responses: JSON.parse(JSON.stringify(multiModelBlock.responses)),
-          displayStyle: multiModelBlock.displayStyle || 'horizontal'
-        };
-        await this.message_blocks.put(blockToSave);
-        return;
-      }
-    }
-
     await this.message_blocks.put(block);
   }
 
@@ -452,23 +437,7 @@ export class DexieStorageService extends Dexie {
     const block = await this.message_blocks.get(id);
     if (!block) return null;
 
-    // 🔧 修复：多模型块的特殊处理
-    if (block.type === 'multi_model' && 'responses' in block) {
-      const multiModelBlock = block as any;
-
-      // 确保 responses 数组存在且格式正确
-      if (!multiModelBlock.responses || !Array.isArray(multiModelBlock.responses)) {
-        multiModelBlock.responses = [];
-      }
-
-      // 确保每个 response 都有必要的字段
-      multiModelBlock.responses = multiModelBlock.responses.map((response: any) => ({
-        modelId: response.modelId || '',
-        modelName: response.modelName || response.modelId || '',
-        content: response.content || '',
-        status: response.status || 'pending'
-      }));
-    }
+    // 注意：multi_model 块类型已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 
     // 🔧 修复：对比分析块的特殊处理
     if ('subType' in block && (block as any).subType === 'comparison') {
@@ -854,6 +823,10 @@ export class DexieStorageService extends Dexie {
           if (!topic.messages) {
             topic.messages = [];
           }
+          // 确保messageIds数组存在
+          if (!topic.messageIds) {
+            topic.messageIds = [];
+          }
 
           // 查找消息在数组中的位置
           const messageIndex = topic.messages.findIndex(m => m.id === message.id);
@@ -863,6 +836,11 @@ export class DexieStorageService extends Dexie {
             topic.messages[messageIndex] = message;
           } else {
             topic.messages.push(message);
+          }
+
+          // 同步更新 messageIds 数组
+          if (!topic.messageIds.includes(message.id)) {
+            topic.messageIds.push(message.id);
           }
 
           // 保存更新后的话题

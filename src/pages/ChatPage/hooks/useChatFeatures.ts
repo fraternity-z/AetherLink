@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { v4 as uuid } from 'uuid';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
-import { updateOneBlock, upsertOneBlock } from '../../../shared/store/slices/messageBlocksSlice';
-import { multiModelService } from '../../../shared/services/MultiModelService';
-import { ApiProviderRegistry } from '../../../shared/services/messages/ApiProvider';
+import { updateOneBlock, upsertOneBlock, upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlice';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import {
   createUserMessage,
   createAssistantMessage
 } from '../../../shared/utils/messageUtils';
+import { processAssistantResponse } from '../../../shared/store/thunks/message/assistantResponse';
 import {
   MessageBlockType,
   MessageBlockStatus,
@@ -755,32 +753,36 @@ export const useChatFeatures = (
       return;
     }
 
-    // 正常的消息发送处理，传递工具开关状态和文件
+    // 
     handleSendMessage(content, images, toolsEnabled, files);
   };
 
-  // 切换工具调用开关
+  // 
   const toggleToolsEnabled = () => {
     const newValue = !toolsEnabled;
     setToolsEnabled(newValue);
     localStorage.setItem('mcp-tools-enabled', JSON.stringify(newValue));
   };
 
-  // 切换 MCP 模式
+  // MCP 
   const handleMCPModeChange = (mode: 'prompt' | 'function') => {
     setMcpMode(mode);
     localStorage.setItem('mcp-mode', mode);
   };
 
-  // 处理多模型发送 - 完全重写
+  /**
+   * 
+   * 
+   */
   const handleMultiModelSend = async (content: string, models: any[], images?: any[], _toolsEnabled?: boolean, files?: any[]) => {
     if (!currentTopic || !selectedModel) return;
 
     try {
-      console.log(`[useChatFeatures] 开始多模型发送，模型数量: ${models.length}`);
+      console.log(`[useChatFeatures] `, models.length);
+      console.log(`[useChatFeatures] `, models.map(m => `${m.provider || m.providerType}:${m.id}`));
       console.log(`[useChatFeatures] 选中的模型:`, models.map(m => `${m.provider || m.providerType}:${m.id}`));
 
-      // 1. 创建用户消息
+      // 1. 创建用户消息，包含 mentions 字段记录选中的模型
       const { message: userMessage, blocks: userBlocks } = createUserMessage({
         content,
         assistantId: currentTopic.assistantId,
@@ -791,179 +793,105 @@ export const useChatFeatures = (
         files: files?.map(file => file.fileRecord).filter(Boolean)
       });
 
-      // 2. 创建助手消息 - 只包含多模型块
-      const assistantMessageId = uuid();
-      const multiModelBlockId = `multi-model-${uuid()}`;
+      // 添加 mentions 字段到用户消息
+      (userMessage as any).mentions = models;
 
-      const assistantMessage = {
-        id: assistantMessageId,
-        role: 'assistant' as const,
-        content: '',
-        assistantId: currentTopic.assistantId,
-        topicId: currentTopic.id,
-        askId: userMessage.id,
-        modelId: selectedModel.id,
-        model: selectedModel,
-        createdAt: new Date().toISOString(),
-        status: 'streaming' as const,
-        blocks: [multiModelBlockId] // 直接包含多模型块ID
-      };
-
-      // 3. 直接创建多模型块
-      const responses = models.map(model => ({
-        modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
-        modelName: model.name || model.id,
-        content: '',
-        status: MessageBlockStatus.PENDING
-      }));
-
-      const multiModelBlock = {
-        id: multiModelBlockId,
-        messageId: assistantMessageId,
-        type: MessageBlockType.MULTI_MODEL,
-        responses,
-        displayStyle: 'horizontal' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: MessageBlockStatus.PENDING
-      };
-
-      // 5. 保存所有数据
+      // 2. 保存用户消息和块
       await dexieStorage.saveMessage(userMessage);
-      await dexieStorage.saveMessage(assistantMessage);
-      await dexieStorage.saveMessageBlock(multiModelBlock);
-
-      // 保存用户消息块
       for (const block of userBlocks) {
         await dexieStorage.saveMessageBlock(block);
       }
 
-      // 6. 更新Redux状态
+      // 更新 Redux 状态
       dispatch(newMessagesActions.addMessage({ topicId: currentTopic.id, message: userMessage }));
-      dispatch(newMessagesActions.addMessage({ topicId: currentTopic.id, message: assistantMessage }));
-      dispatch(upsertOneBlock(multiModelBlock));
 
-      // 7. 并行调用所有模型
-      models.map(async (model) => {
+      // 3. 为每个模型创建独立的助手消息
+      const assistantMessages: any[] = [];
+
+      for (const model of models) {
+        const { message: assistantMessage, blocks: assistantBlocks } = createAssistantMessage({
+          assistantId: currentTopic.assistantId,
+          topicId: currentTopic.id,
+          askId: userMessage.id, // 关键：所有助手消息共享同一个 askId
+          modelId: model.id,
+          model: model,
+          status: AssistantMessageStatus.PENDING
+        });
+
+        // 保存助手消息和块
+        await dexieStorage.saveMessage(assistantMessage);
+        for (const block of assistantBlocks) {
+          await dexieStorage.saveMessageBlock(block);
+        }
+
+        // 更新 Redux 状态
+        dispatch(newMessagesActions.addMessage({ topicId: currentTopic.id, message: assistantMessage }));
+
+        assistantMessages.push({ message: assistantMessage, blocks: assistantBlocks, model });
+      }
+
+      // 4. 并行调用所有模型
+      await Promise.all(assistantMessages.map(async ({ message: assistantMessage, blocks: assistantBlocks, model }) => {
         try {
-          // 实际调用模型API
-          await callSingleModelForMultiModel(model, content, multiModelBlockId);
-
+          await callSingleModelForMultiModel(model, content, assistantMessage, assistantBlocks);
         } catch (error) {
           console.error(`[useChatFeatures] 模型 ${model.id} 调用失败:`, error);
-          await multiModelService.updateModelResponse(multiModelBlockId, model.id, `模型调用失败: ${error}`, 'error');
+          // 更新消息状态为错误
+          dispatch(newMessagesActions.updateMessage({
+            id: assistantMessage.id,
+            changes: {
+              status: AssistantMessageStatus.ERROR,
+              updatedAt: new Date().toISOString()
+            }
+          }));
         }
-      });
+      }));
 
     } catch (error) {
       console.error('[useChatFeatures] 多模型发送失败:', error);
     }
   };
 
-  // 为多模型调用单个模型
+  /**
+   * 为多模型调用单个模型 - 使用标准的 processAssistantResponse
+   * 这样可以正确支持思考过程显示
+   */
   const callSingleModelForMultiModel = async (
     model: any,
-    content: string,
-    blockId: string
+    _content: string,
+    assistantMessage: any,
+    assistantBlocks: any[]
   ) => {
     try {
-
-      // 使用静态导入的API和服务
-
-      // 获取当前话题的消息历史
-      const topicMessages = await dexieStorage.getTopicMessages(currentTopic.id);
-
-      // 按创建时间排序消息
-      const sortedMessages = [...topicMessages].sort((a, b) => {
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
-        return timeA - timeB;
-      });
-
-      // 构建API消息数组
-      const chatMessages: any[] = [];
-
-      // 添加历史消息
-      for (const message of sortedMessages) {
-        if (message.role === 'system') continue; // 跳过系统消息
-
-        // 获取消息的主要文本内容
-        const messageBlocks = await dexieStorage.getMessageBlocksByMessageId(message.id);
-        const mainTextBlock = messageBlocks.find((block: any) => block.type === 'main_text');
-        const messageContent = (mainTextBlock as any)?.content || '';
-
-        if (messageContent.trim()) {
-          // 创建符合Message接口的对象
-          chatMessages.push({
-            id: message.id,
-            role: message.role,
-            content: messageContent,
-            assistantId: message.assistantId,
-            topicId: message.topicId,
-            createdAt: message.createdAt,
-            status: message.status,
-            blocks: message.blocks
-          });
-        }
+      // 添加块到 Redux 状态
+      if (assistantBlocks.length > 0) {
+        dispatch(upsertManyBlocks(assistantBlocks));
       }
 
-      // 添加用户的新消息
-      chatMessages.push({
-        id: `temp-${Date.now()}`,
-        role: 'user' as const,
-        content: content,
-        assistantId: currentTopic.assistantId,
-        topicId: currentTopic.id,
-        createdAt: new Date().toISOString(),
-        status: 'success',
-        blocks: []
-      });
-
-
-
-      // 获取API提供商
-      const provider = ApiProviderRegistry.get(model);
-      if (!provider) {
-        throw new Error(`无法获取模型 ${model.id} 的API提供商`);
-      }
-
-      // 初始化响应状态
-      await multiModelService.updateModelResponse(blockId, model.id, '', 'streaming');
-
-      // 调用模型API，使用流式更新（高级模式）
-      const response = await provider.sendChatMessage(chatMessages, {
-        onUpdate: async (content: string) => {
-          // 实时更新响应内容
-          await multiModelService.updateModelResponse(blockId, model.id, content, 'streaming');
-        },
-        onChunk: async () => {
-          // 启用高级流式模式
-        },
-        enableTools: true,
-        // 其他选项...
-      });
-
-      // 处理最终响应
-      let finalContent = '';
-      if (typeof response === 'string') {
-        finalContent = response;
-      } else if (response && typeof response === 'object' && 'content' in response) {
-        finalContent = response.content;
-      }
-
-      // 完成响应
-      await multiModelService.completeModelResponse(blockId, model.id, finalContent);
+      // 使用标准的 processAssistantResponse 处理响应
+      // 这会使用 ResponseHandler，正确处理思考过程
+      await processAssistantResponse(
+        dispatch as any,
+        store.getState,
+        assistantMessage,
+        currentTopic.id,
+        model,
+        false // 多模型模式下禁用工具
+      );
 
     } catch (error) {
       console.error(`[useChatFeatures] 模型 ${model.id} 调用失败:`, error);
 
-      // 使用静态导入的服务
-      await multiModelService.updateModelResponse(
-        blockId,
-        model.id,
-        `调用失败: ${error instanceof Error ? error.message : String(error)}`,
-        'error'
-      );
+      // 更新消息状态为错误
+      dispatch(newMessagesActions.updateMessage({
+        id: assistantMessage.id,
+        changes: {
+          status: AssistantMessageStatus.ERROR,
+          updatedAt: new Date().toISOString()
+        }
+      }));
+
+      throw error;
     }
   };
 

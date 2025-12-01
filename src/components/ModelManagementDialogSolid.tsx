@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTheme, alpha } from '@mui/material';
 import { SolidBridge } from '../shared/bridges/SolidBridge';
-import { ModelManagementDrawer } from '../solid/components/ModelManagementDrawer.solid';
+import { ModelManagementDrawer } from '../solid/components/ModelSelector/ModelManagementDrawer.solid';
 import { fetchModels } from '../shared/services/network/APIService';
 import type { Model } from '../shared/types';
 

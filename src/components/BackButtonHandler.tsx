@@ -100,6 +100,10 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     navigate('/settings/mcp-server');
     return;
   }
+  if (pathWithoutQuery.startsWith('/settings/model-combo/') && pathWithoutQuery !== '/settings/model-combo') {
+    navigate('/settings/model-combo');
+    return;
+  }
   if (pathWithoutQuery.startsWith('/settings/workspace/') && pathWithoutQuery !== '/settings/workspace') {
     navigate('/settings/workspace');
     return;

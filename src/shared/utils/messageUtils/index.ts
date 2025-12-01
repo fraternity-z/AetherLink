@@ -22,6 +22,7 @@ export {
 } from './messageFactory';
 
 // 块工厂函数
+// 注意：createMultiModelBlock 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 export {
   createThinkingBlock,
   createImageBlock,
@@ -30,13 +31,13 @@ export {
   createCodeBlock,
   createToolBlock,
   createTranslationBlock,
-  createMultiModelBlock,
   createChartBlock,
   createMathBlock,
   createKnowledgeReferenceBlock
 } from './blockFactory';
 
 // 块查找函数
+// 注意：findMultiModelBlocks 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 export {
   findMainTextBlocks,
   findThinkingBlocks,
@@ -45,7 +46,6 @@ export {
   findCodeBlocks,
   findCitationBlocks,
   findTranslationBlocks,
-  findMultiModelBlocks,
   findChartBlocks,
   findMathBlocks
 } from './blockFinders';

@@ -8,6 +8,8 @@ import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMess
 
 
 // 直接导入块组件，与最佳实例保持一致
+// 注意：MultiModelBlock 和 ModelComparisonBlock 已移除
+// 多模型功能现在通过 askId 分组多个独立的助手消息实现，由 MultiModelMessageGroup 组件处理
 import MainTextBlock from './blocks/MainTextBlock';
 import ThinkingBlock from './blocks/ThinkingBlock';
 import ImageBlock from './blocks/ImageBlock';
@@ -17,8 +19,6 @@ import CitationBlock from './blocks/CitationBlock';
 import ErrorBlock from './blocks/ErrorBlock';
 import TranslationBlock from './blocks/TranslationBlock';
 import MathBlock from './blocks/MathBlock';
-import MultiModelBlock from './blocks/MultiModelBlock';
-import ModelComparisonBlock from './blocks/ModelComparisonBlock';
 import ChartBlock from './blocks/ChartBlock';
 import FileBlock from './blocks/FileBlock';
 import PlaceholderBlock from './blocks/PlaceholderBlock';
@@ -330,14 +330,8 @@ const MessageBlockRenderer: React.FC<Props> = ({
               case MessageBlockType.MATH:
                 blockComponent = <MathBlock key={block.id} block={block} />;
                 break;
-              case MessageBlockType.MULTI_MODEL:
-                // 检查是否是对比分析块
-                if ('subType' in block && (block as any).subType === 'comparison') {
-                  blockComponent = <ModelComparisonBlock key={block.id} block={block as any} />;
-                } else {
-                  blockComponent = <MultiModelBlock key={block.id} block={block as any} />;
-                }
-                break;
+              // 注意：MULTI_MODEL case 已移除
+              // 多模型功能现在通过 askId 分组多个独立的助手消息实现
               case MessageBlockType.CHART:
                 blockComponent = <ChartBlock key={block.id} block={block} />;
                 break;

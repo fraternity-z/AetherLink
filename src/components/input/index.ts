@@ -10,8 +10,8 @@ export { default as InputToolbar, getGlassmorphismToolbarStyles, getTransparentT
 // 向后兼容的别名导出
 export { default as ChatToolbar } from './InputToolbar';
 
-// 重新导出类型（如果有的话）
+// 重新导出类型
 export type { default as ChatInputProps } from './ChatInput';
 export type { default as CompactChatInputProps } from './CompactChatInput';
 export type { default as UploadMenuProps } from './UploadMenu';
-export type { default as MultiModelSelectorProps } from './MultiModelSelector';
+export type { MultiModelSelectorProps } from './MultiModelSelector';

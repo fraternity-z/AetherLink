@@ -20,7 +20,7 @@ import {
   useTheme
 } from '@mui/material';
 import BackButtonDialog from '../../components/common/BackButtonDialog';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Plus,
@@ -35,7 +35,6 @@ import {
 
 import { modelComboService } from '../../shared/services/ModelComboService';
 import type { ModelComboConfig, ModelComboTemplate, ModelComboStrategy } from '../../shared/types/ModelCombo';
-import ModelComboDialog from '../../components/settings/ModelComboDialog';
 import { useModelComboSync } from '../../shared/hooks/useModelComboSync';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../hooks/useScrollPosition';
@@ -59,17 +58,17 @@ const ModelComboSettings: React.FC = () => {
 
   const [combos, setCombos] = useState<ModelComboConfig[]>([]);
   const [templates, setTemplates] = useState<ModelComboTemplate[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingCombo, setEditingCombo] = useState<ModelComboConfig | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [comboToDelete, setComboToDelete] = useState<ModelComboConfig | null>(null);
+  const location = useLocation();
 
   // 使用同步Hook来自动同步模型组合到Redux store
   const { syncModelCombos } = useModelComboSync();
 
+  // 加载数据，当从编辑页面返回时也会刷新
   useEffect(() => {
     loadData();
-  }, []);
+  }, [location.key]);
 
   const loadData = async () => {
     try {
@@ -89,13 +88,11 @@ const ModelComboSettings: React.FC = () => {
   };
 
   const handleCreateCombo = () => {
-    setEditingCombo(null);
-    setDialogOpen(true);
+    navigate('/settings/model-combo/new');
   };
 
   const handleEditCombo = (combo: ModelComboConfig) => {
-    setEditingCombo(combo);
-    setDialogOpen(true);
+    navigate(`/settings/model-combo/${combo.id}`);
   };
 
   const handleDeleteCombo = (combo: ModelComboConfig) => {
@@ -108,30 +105,12 @@ const ModelComboSettings: React.FC = () => {
       try {
         await modelComboService.deleteCombo(comboToDelete.id);
         await loadData();
-        // 触发同步到Redux store
         await syncModelCombos();
         setDeleteDialogOpen(false);
         setComboToDelete(null);
       } catch (error) {
         console.error('删除模型组合失败:', error);
       }
-    }
-  };
-
-  const handleSaveCombo = async (comboData: any) => {
-    try {
-      if (editingCombo) {
-        await modelComboService.updateCombo(editingCombo.id, comboData);
-      } else {
-        await modelComboService.createCombo(comboData);
-      }
-      await loadData();
-      // 触发同步到Redux store
-      await syncModelCombos();
-      setDialogOpen(false);
-      setEditingCombo(null);
-    } catch (error) {
-      console.error('保存模型组合失败:', error);
     }
   };
 
@@ -476,29 +455,32 @@ const ModelComboSettings: React.FC = () => {
                       </Typography>
                     </CardContent>
                     <CardActions sx={{
-                      p: isMobile ? 1 : 2,
+                      p: isMobile ? 1.5 : 2,
                       pt: 0,
-                      minHeight: isMobile ? 'auto' : undefined
+                      justifyContent: 'flex-end',
+                      gap: 1
                     }}>
                       <IconButton
-                        size={isMobile ? "small" : "small"}
+                        size="medium"
                         onClick={() => handleEditCombo(combo)}
                         color="primary"
                         sx={{
-                          p: isMobile ? 0.5 : undefined
+                          bgcolor: 'action.hover',
+                          '&:hover': { bgcolor: 'primary.main', color: 'white' }
                         }}
                       >
-                        <Edit size={isMobile ? 16 : 20} />
+                        <Edit size={isMobile ? 18 : 22} />
                       </IconButton>
                       <IconButton
-                        size={isMobile ? "small" : "small"}
+                        size="medium"
                         onClick={() => handleDeleteCombo(combo)}
                         color="error"
                         sx={{
-                          p: isMobile ? 0.5 : undefined
+                          bgcolor: 'action.hover',
+                          '&:hover': { bgcolor: 'error.main', color: 'white' }
                         }}
                       >
-                        <Trash2 size={isMobile ? 16 : 20} />
+                        <Trash2 size={isMobile ? 18 : 22} />
                       </IconButton>
                     </CardActions>
                   </Card>
@@ -516,7 +498,7 @@ const ModelComboSettings: React.FC = () => {
         size={isMobile ? "medium" : "large"}
         sx={{
           position: 'fixed',
-          bottom: isMobile ? 12 : 16,
+          bottom: `calc(${isMobile ? 12 : 16}px + var(--safe-area-bottom-computed, 0px))`,
           right: isMobile ? 12 : 16,
           width: isMobile ? 48 : undefined,
           height: isMobile ? 48 : undefined
@@ -525,15 +507,6 @@ const ModelComboSettings: React.FC = () => {
       >
         <Plus size={isMobile ? 20 : 24} />
       </Fab>
-
-      {/* 创建/编辑对话框 */}
-      <ModelComboDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSave={handleSaveCombo}
-        combo={editingCombo}
-        templates={templates}
-      />
 
       {/* 删除确认对话框 */}
       <BackButtonDialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>

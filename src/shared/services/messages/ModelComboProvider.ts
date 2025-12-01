@@ -76,9 +76,6 @@ export class ModelComboProvider {
     const startTime = Date.now();
     console.log(`[ModelComboProvider] 执行对比策略，模型数量: ${comboConfig.models.length}`);
 
-    // 使用静态导入的 ApiProviderRegistry
-    const modelResults: any[] = [];
-
     // 并行调用所有模型
     const promises = comboConfig.models.map(async (modelConfig: any) => {
       try {
@@ -91,7 +88,9 @@ export class ModelComboProvider {
 
         const provider = ApiProviderRegistry.get(model);
 
-const response = await provider.sendChatMessage(messages, {});
+        const response = await provider.sendChatMessage(messages, {
+          abortSignal: options?.abortSignal
+        });
 
         let content = '';
         let reasoning = '';
@@ -128,7 +127,6 @@ const response = await provider.sendChatMessage(messages, {});
     });
 
     const results = await Promise.all(promises);
-    modelResults.push(...results);
 
     const totalLatency = Date.now() - startTime;
     const successResults = results.filter(r => r.status === 'success');
@@ -222,13 +220,22 @@ const response = await provider.sendChatMessage(messages, {});
       let reasoningComplete = false;
 
       // 创建 Promise 来等待推理完成
+      let hasResolved = false;
       const reasoningPromise = new Promise<string>((resolve, reject) => {
+        const doResolve = (source: string) => {
+          if (hasResolved) return;
+          hasResolved = true;
+          const fullReasoning = reasoningContent.join('');
+          console.log(`[ModelComboProvider] 推理完成 (来源: ${source})，总长度: ${fullReasoning.length}`);
+          resolve(fullReasoning);
+        };
+
         thinkingProvider.sendChatMessage(thinkingMessages, {
+          abortSignal: options?.abortSignal,
           onChunk: (chunk: Chunk) => {
             // 处理推理内容
             if (chunk.type === ChunkType.THINKING_DELTA && chunk.text) {
               reasoningContent.push(chunk.text);
-              console.log(`[ModelComboProvider] 收到推理片段，长度: ${chunk.text.length}`);
 
               // 实时转发推理内容
               if (options?.onChunk) {
@@ -236,28 +243,27 @@ const response = await provider.sendChatMessage(messages, {});
               }
             }
 
-            // 处理推理完成
+            // 处理推理完成 - 立即 resolve
             if (chunk.type === ChunkType.THINKING_COMPLETE) {
               reasoningComplete = true;
-              console.log(`[ModelComboProvider] 推理阶段完成`);
+              console.log(`[ModelComboProvider] 收到 THINKING_COMPLETE`);
+              // 转发推理完成事件
+              if (options?.onChunk) {
+                options.onChunk(chunk);
+              }
+              doResolve('THINKING_COMPLETE');
             }
 
-            // 处理文本内容（推理阶段结束信号）
+            // 处理文本内容（推理阶段结束信号）- 作为备用触发
             if (chunk.type === ChunkType.TEXT_DELTA || chunk.type === ChunkType.TEXT_COMPLETE) {
-              if (!reasoningComplete) {
-                // 推理阶段结束
-                const fullReasoning = reasoningContent.join('');
-                console.log(`[ModelComboProvider] 推理完成，总长度: ${fullReasoning.length}`);
-                resolve(fullReasoning);
+              if (!reasoningComplete && !hasResolved) {
+                doResolve('TEXT_DELTA/COMPLETE');
               }
             }
           }
         }).then(() => {
-          // 如果没有通过 TEXT_DELTA 触发 resolve，在完成时 resolve
-          if (!reasoningComplete) {
-            const fullReasoning = reasoningContent.join('');
-            resolve(fullReasoning);
-          }
+          // 兜底：如果还没有 resolve，在 API 调用完成时 resolve
+          doResolve('API_COMPLETE');
         }).catch(reject);
       });
 
@@ -341,11 +347,11 @@ ${combinedContent}`;
 
       // 调用生成模型，通过 onChunk 实时显示生成内容
       const generatingResponse = await generatingProvider.sendChatMessage(generatingMessages, {
+        abortSignal: options?.abortSignal,
         onChunk: (chunk: Chunk) => {
           // 处理文本增量
           if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
             finalContent += chunk.text;
-            console.log(`[ModelComboProvider] 生成更新，长度: ${chunk.text.length}`);
             
             // 转发给上层
             if (options?.onChunk) {
@@ -353,9 +359,11 @@ ${combinedContent}`;
             }
           }
           
-          // 处理文本完成
-          if (chunk.type === ChunkType.TEXT_COMPLETE && chunk.text) {
-            finalContent = chunk.text;
+          // 处理文本完成 - 只有当 text 有内容时才覆盖
+          if (chunk.type === ChunkType.TEXT_COMPLETE) {
+            if (chunk.text) {
+              finalContent = chunk.text;
+            }
             if (options?.onChunk) {
               options.onChunk(chunk);
             }

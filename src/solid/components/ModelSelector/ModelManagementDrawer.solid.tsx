@@ -5,8 +5,8 @@
  */
 import { createSignal, createMemo, For, Show, createEffect, on } from 'solid-js';
 import { Portal } from 'solid-js/web';
-import type { Model } from '../../shared/types';
-import { getDefaultGroupName, modelMatchesIdentity } from '../../shared/utils/modelUtils';
+import type { Model } from '../../../shared/types';
+import { getDefaultGroupName, modelMatchesIdentity } from '../../../shared/utils/modelUtils';
 import './ModelManagementDrawer.solid.css';
 
 export interface ModelManagementDrawerProps {
