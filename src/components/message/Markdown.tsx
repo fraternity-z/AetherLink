@@ -17,6 +17,7 @@ import type { MainTextMessageBlock, TranslationMessageBlock, ThinkingMessageBloc
 import { processLatexBrackets, removeSvgEmptyLines } from '../../utils/formats';
 import { getCodeBlockId, removeTrailingDoubleSpaces } from '../../utils/markdown';
 import { getAppSettings } from '../../shared/utils/settingsUtils';
+import remarkDisableConstructs from '../../utils/remarkDisableConstructs';
 import MarkdownCodeBlock from './blocks/MarkdownCodeBlock';
 import AdvancedImagePreview from './blocks/AdvancedImagePreview';
 
@@ -73,7 +74,12 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
   }, []);
 
   const remarkPlugins = useMemo((): PluggableList => {
-    const plugins: PluggableList = [remarkGfm, remarkCjkFriendly];
+    const plugins: PluggableList = [
+      remarkGfm,
+      remarkCjkFriendly,
+      // 禁用缩进代码块，防止带缩进的普通文本被误识别为代码块
+      remarkDisableConstructs(['codeIndented'])
+    ];
     // 只有当数学引擎不是 'none' 时才添加数学支持
     if (mathEngine !== 'none') {
       // 配置 remark-math 插件
