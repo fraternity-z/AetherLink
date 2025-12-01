@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useRef } from 'react';
 import MultiModelSelector from '../MultiModelSelector';
+import MentionedModelsDisplay from '../MentionedModelsDisplay';
 import UploadMenu from '../UploadMenu';
 import ToolsMenu from '../ToolsMenu';
 import AIDebateButton from '../../AIDebateButton';
 import QuickPhraseButton from '../../QuickPhraseButton';
 import NoteSelector from '../../NoteSelector';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
-import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../../shared/types';
+import type { SiliconFlowImageFormat, ImageContent, FileContent, Model } from '../../../shared/types';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
+import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 interface MenuManagerProps {
   // 基础状态
@@ -95,6 +97,26 @@ const useMenuManager = ({
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [toolsMenuAnchorEl, setToolsMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [noteSelectorOpen, setNoteSelectorOpen] = useState(false);
+  
+  // 多模型选择状态（新模式：选择后显示在输入框上方）
+  const [mentionedModels, setMentionedModels] = useState<Model[]>([]);
+
+  // 获取模型唯一标识
+  const getModelUniqueId = useCallback((model: Model): string => {
+    const providerId = model.provider || (model as any).providerId || 'unknown';
+    return getModelIdentityKey({ id: model.id, provider: providerId });
+  }, []);
+
+  // 移除单个已选模型
+  const handleRemoveMentionedModel = useCallback((model: Model) => {
+    const modelId = getModelUniqueId(model);
+    setMentionedModels(prev => prev.filter(m => getModelUniqueId(m) !== modelId));
+  }, [getModelUniqueId]);
+
+  // 清空所有已选模型
+  const handleClearMentionedModels = useCallback(() => {
+    setMentionedModels([]);
+  }, []);
 
   // 组件引用
   const aiDebateButtonRef = useRef<any>(null);
@@ -291,12 +313,13 @@ const useMenuManager = ({
           onSelectNote={handleNoteSelected}
         />
 
-        {/* 多模型选择器 */}
+        {/* 多模型选择器 - 新模式：选择后显示在输入框上方 */}
         <MultiModelSelector
           open={multiModelSelectorOpen}
           onClose={() => setMultiModelSelectorOpen(false)}
           availableModels={availableModels}
-          onConfirm={handleMultiModelSend}
+          selectedModels={mentionedModels}
+          onSelectionChange={setMentionedModels}
           maxSelection={5}
         />
 
@@ -356,8 +379,21 @@ const useMenuManager = ({
     handleCloseToolsMenu, onClearTopic, imageGenerationMode, toggleImageGenerationMode,
     videoGenerationMode, toggleVideoGenerationMode, webSearchActive, toggleWebSearch,
     toolsEnabled, onToolsEnabledChange, onStartDebate, onStopDebate, message,
-    handleInsertPhrase, currentAssistant
+    handleInsertPhrase, currentAssistant, mentionedModels, noteSelectorOpen, handleNoteSelected
   ]);
+
+  // 渲染已选模型显示
+  const renderMentionedModels = useCallback(() => {
+    if (mentionedModels.length === 0) return null;
+    
+    return (
+      <MentionedModelsDisplay
+        selectedModels={mentionedModels}
+        onRemoveModel={handleRemoveMentionedModel}
+        onClearAll={handleClearMentionedModels}
+      />
+    );
+  }, [mentionedModels, handleRemoveMentionedModel, handleClearMentionedModels]);
 
   return {
     // 状态
@@ -365,6 +401,7 @@ const useMenuManager = ({
     multiModelSelectorOpen,
     toolsMenuOpen,
     toolsMenuAnchorEl,
+    mentionedModels,
     
     // 处理函数
     handleOpenUploadMenu,
@@ -376,9 +413,13 @@ const useMenuManager = ({
     handleQuickPhraseClick,
     handleQuickPhraseClickForUploadMenu,
     setMultiModelSelectorOpen,
+    setMentionedModels,
+    handleRemoveMentionedModel,
+    handleClearMentionedModels,
     
     // 渲染函数
-    renderMenus
+    renderMenus,
+    renderMentionedModels
   };
 };
 

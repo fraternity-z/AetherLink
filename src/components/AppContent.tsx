@@ -14,7 +14,6 @@ import BackButtonHandler from './BackButtonHandler';
 import ExitConfirmDialog from './ExitConfirmDialog';
 import UpdateNoticeDialog from './UpdateNoticeDialog';
 import GlobalStyles from './GlobalStyles';
-import LoadingScreen from './LoadingScreen';
 import ErrorBoundary from './ErrorBoundary';
 import EnhancedPerformanceMonitor from './debug/EnhancedPerformanceMonitor';
 import DevToolsFloatingButton from './debug/DevToolsFloatingButton';
@@ -22,22 +21,29 @@ import DevToolsFloatingButton from './debug/DevToolsFloatingButton';
 const AppContent = memo(() => {
   const { theme, fontSize } = useTheme();
   
-  // CSS Variables 初始化日志（仅在开发环境）
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ CSS Variables 系统已初始化');
-      // 🚀 性能优化：记录启动屏隐藏时间（AppContent 首次渲染）
-      recordMetric('splashScreenHide');
-    }
-  }, []);
   const {
     appInitialized,
-    initializationProgress,
-    initializationStep,
-    isFirstInstall,
     initError,
     retryInitialization
   } = useAppInitialization();
+
+  // 🚀 当应用初始化完成后，移除启动屏（平滑淡出）
+  useEffect(() => {
+    if (appInitialized) {
+      const splash = document.getElementById('S');
+      if (splash) {
+        // 淡出动画
+        splash.style.opacity = '0';
+        setTimeout(() => splash.remove(), 300);
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ CSS Variables 系统已初始化');
+        // 🚀 性能优化：记录启动屏隐藏时间
+        recordMetric('splashScreenHide');
+      }
+    }
+  }, [appInitialized]);
   
   // 设置Capacitor监听器
   useCapacitorSetup();
@@ -68,7 +74,7 @@ const AppContent = memo(() => {
       <GlobalStyles fontSize={fontSize} theme={theme} />
       
       <ErrorBoundary>
-        {appInitialized ? (
+        {appInitialized && (
           <>
             <AppInitializer />
             <AppRouter />
@@ -80,12 +86,6 @@ const AppContent = memo(() => {
             {/* 开发者工具悬浮按钮 */}
             <DevToolsFloatingButton />
           </>
-        ) : (
-          <LoadingScreen
-            progress={initializationProgress}
-            step={initializationStep}
-            isFirstInstall={isFirstInstall}
-          />
         )}
       </ErrorBoundary>
 

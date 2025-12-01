@@ -61,11 +61,15 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
     assistantMessages[0]?.multiModelMessageStyle || defaultStyle
   );
 
-  // fold 模式下选中的消息ID
+  // 本地选中状态（用于立即更新 UI）
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+
+  // fold 模式下选中的消息ID（优先使用本地状态）
   const selectedMessageId = useMemo(() => {
+    if (localSelectedId) return localSelectedId;
     const selected = assistantMessages.find(m => m.foldSelected);
     return selected?.id || assistantMessages[0]?.id || '';
-  }, [assistantMessages]);
+  }, [assistantMessages, localSelectedId]);
 
   // grid 模式下的 Popover 锚点
   const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null);
@@ -100,9 +104,12 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
 
   // 切换选中的消息（fold 模式）
   const handleSelectMessage = useCallback(async (message: Message) => {
+    // 立即更新本地状态，确保 UI 响应
+    setLocalSelectedId(message.id);
+    
     // 更新之前选中的消息
-    const prevSelected = assistantMessages.find(m => m.id === selectedMessageId);
-    if (prevSelected) {
+    const prevSelected = assistantMessages.find(m => m.foldSelected);
+    if (prevSelected && prevSelected.id !== message.id) {
       dispatch(newMessagesActions.updateMessage({
         id: prevSelected.id,
         changes: { foldSelected: false }
@@ -114,7 +121,7 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
       id: message.id,
       changes: { foldSelected: true }
     }));
-  }, [assistantMessages, selectedMessageId, dispatch]);
+  }, [assistantMessages, dispatch]);
 
   // Grid 模式点击处理
   const handleGridClick = useCallback((event: React.MouseEvent<HTMLElement>, message: Message) => {

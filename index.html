@@ -2,27 +2,45 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#475569" />
+    <meta name="theme-color" content="#1A1A1A" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>AetherLink</title>
-    <!-- 预加载字体 -->
+    <!-- 🚀 关键：主题检测脚本放在最前面，阻止白屏闪烁 -->
+    <script>
+      (function(){var T={default:{l:{b:'#FFFFFF',t:'#1E293B',s:'#64748B'},d:{b:'#1A1A1A',t:'#F0F0F0',s:'#B0B0B0'}},claude:{l:{b:'#FEF7ED',t:'#1C1917',s:'#78716C'},d:{b:'#1C1917',t:'#F5F5F4',s:'#A8A29E'}},nature:{l:{b:'#F7F5F3',t:'#1A1F16',s:'#5D6B47'},d:{b:'#1A1F16',t:'#E8E6E3',s:'#B8B5B0'}},tech:{l:{b:'#F8FAFC',t:'#0F172A',s:'#64748B'},d:{b:'#0F172A',t:'#F1F5F9',s:'#94A3B8'}},soft:{l:{b:'#FDF2F8',t:'#1F1626',s:'#9F1239'},d:{b:'#1F1626',t:'#FCE7F3',s:'#F9A8D4'}},ocean:{l:{b:'#F0F9FF',t:'#0C4A6E',s:'#0369A1'},d:{b:'#0C1A2E',t:'#E0F2FE',s:'#7DD3FC'}},sunset:{l:{b:'#FFF7ED',t:'#7C2D12',s:'#C2410C'},d:{b:'#1C1917',t:'#FED7AA',s:'#FDBA74'}},cinnamonSlate:{l:{b:'#F5F1ED',t:'#2B2420',s:'#5D4E4A'},d:{b:'#1A1614',t:'#F0EBE3',s:'#C4B5A8'}},horizonGreen:{l:{b:'#F5FAF8',t:'#0F3D34',s:'#2D6B5E'},d:{b:'#0F1B18',t:'#E8F5F1',s:'#A8D5C8'}},cherryCoded:{l:{b:'#FFF5F7',t:'#450A0F',s:'#78121C'},d:{b:'#1A0C0F',t:'#FFE8ED',s:'#FFB3C6'}}};var c=T.default.d;try{var d=localStorage.getItem('persist:cherry-studio');if(d){var p=JSON.parse(d);if(p.settings){var s=JSON.parse(p.settings),y=s.themeStyle||'default',m=s.theme||'dark';if(m==='system')m=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';c=T[y]?T[y][m==='light'?'l':'d']:T.default[m==='light'?'l':'d'];}}}catch(e){}window.__theme=c;document.documentElement.style.cssText='--splash-bg:'+c.b+';--splash-t:'+c.t+';--splash-s:'+c.s;document.querySelector('meta[name=theme-color]').content=c.b;})();
+    </script>
+    <!-- 🚀 内联关键 CSS，避免 FOUC -->
+    <style>
+      html,body{margin:0;padding:0;background:var(--splash-bg,#1A1A1A)}
+      #S{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--splash-bg,#1A1A1A);z-index:9999;font-family:system-ui,-apple-system,sans-serif;transition:opacity .3s}
+      #S h1{color:var(--splash-t,#F0F0F0);font-size:28px;font-weight:700;margin:0 0 8px;letter-spacing:2px}
+      #S .s{color:var(--splash-s,#B0B0B0)}
+      #S .L{position:relative;width:80px;height:80px;margin-bottom:24px}
+      #S .L>div{position:absolute;inset:0;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;display:flex;align-items:center;justify-content:center}
+      #S .P{width:180px;height:3px;background:var(--splash-s,#B0B0B0);opacity:.2;border-radius:2px;overflow:hidden;margin:32px 0 12px}
+      #S .P>div{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:2px;transition:width .2s}
+    </style>
+    <link rel="icon" type="image/png" href="/favicon.ico" />
+    <!-- 延迟加载字体，不阻塞渲染 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-
-
-
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
     <script type="module" src="/src/main.tsx"></script>
   </head>
   <body>
-    <div id="root"></div>
-
-
+    <div id="root">
+      <!-- 🚀 极简启动屏 - 样式已在 head 中定义 -->
+      <div id="S">
+        <div class="L"><div><svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+        <h1>AetherLink</h1>
+        <div class="P"><div id="B"></div></div>
+        <p id="T" class="s">正在启动...</p>
+      </div>
+    </div>
+    <script>!function(){var s=[{p:25,t:'加载核心...'},{p:50,t:'初始化...'},{p:75,t:'准备界面...'},{p:100,t:'即将完成...'}],i=0,b=document.getElementById('B'),t=document.getElementById('T'),v=setInterval(function(){i<s.length&&b&&t?(b.style.width=s[i].p+'%',t.textContent=s[i].t,i++):clearInterval(v)},150)}()</script>
   </body>
 </html>

@@ -368,6 +368,41 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 显示正在加载的指示器，但不禁用输入框
   const showLoadingIndicator = isLoading && !allowConsecutiveMessages;
 
+  // 智能发送函数：如果有已选模型则使用多模型发送，否则使用普通发送
+  const smartHandleSubmit = useCallback(async () => {
+    hideKeyboard();
+    
+    // 检查是否有已选的多模型
+    if (menuManager.mentionedModels.length > 0 && onSendMultiModelMessage) {
+      // 使用多模型发送
+      const formattedImages = await processImages();
+      const nonImageFiles = files.filter((f: FileContent) => !f.mimeType.startsWith('image/'));
+      
+      console.log('智能发送：使用多模型模式', {
+        models: menuManager.mentionedModels.map(m => m.id),
+        message: message.trim()
+      });
+      
+      onSendMultiModelMessage(
+        message.trim(),
+        menuManager.mentionedModels,
+        formattedImages.length > 0 ? formattedImages : undefined,
+        toolsEnabled,
+        nonImageFiles
+      );
+      
+      // 清空状态
+      setMessage('');
+      setImages([]);
+      setFiles([]);
+      setUploadingMedia(false);
+      menuManager.setMentionedModels([]); // 清空已选模型
+    } else {
+      // 使用普通发送
+      handleSubmit();
+    }
+  }, [hideKeyboard, menuManager.mentionedModels, onSendMultiModelMessage, processImages, files, message, toolsEnabled, setMessage, setImages, setFiles, setUploadingMedia, handleSubmit]);
+
   // 展开容器管理
   const expandableContainer = useExpandableContainer({
     message,
@@ -395,7 +430,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     toolsEnabled,
     images,
     files,
-    handleSubmit: wrappedHandleSubmit,
+    handleSubmit: smartHandleSubmit, // 使用智能发送函数
     onStopResponse,
     handleImageUploadLocal,
     handleFileUploadLocal,
@@ -434,6 +469,9 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
           </Box>
         );
       })()}
+
+      {/* 已选多模型显示 */}
+      {menuManager.renderMentionedModels()}
 
       {/* 文件上传管理器 - 包含文件预览、拖拽上传、粘贴处理等功能 */}
       <FileUploadManager

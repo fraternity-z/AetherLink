@@ -13,19 +13,30 @@ export interface MultiModelSelectorProps {
   open: boolean;
   onClose: () => void;
   availableModels: Model[];
-  onConfirm: (selectedModels: Model[]) => void;
+  /** @deprecated 使用 onSelectionChange 替代 */
+  onConfirm?: (selectedModels: Model[]) => void;
+  /** 选择变更回调 - 新模式：选择后立即回调 */
+  onSelectionChange?: (selectedModels: Model[]) => void;
+  /** 已选中的模型列表 - 用于外部控制 */
+  selectedModels?: Model[];
   maxSelection?: number;
 }
 
 /**
  * 多模型选择器组件（React 桥接版）
  * 内部使用 SolidJS 实现，通过桥接层在 React 中使用
+ * 
+ * 支持两种模式：
+ * 1. 旧模式：使用 onConfirm，选择后点确认按钮发送
+ * 2. 新模式：使用 onSelectionChange + selectedModels，选择后显示在输入框上方
  */
 const MultiModelSelector: React.FC<MultiModelSelectorProps> = ({
   open,
   onClose,
   availableModels,
   onConfirm,
+  onSelectionChange,
+  selectedModels,
   maxSelection = 5
 }) => {
   const theme = useTheme();
@@ -50,11 +61,13 @@ const MultiModelSelector: React.FC<MultiModelSelectorProps> = ({
     onClose,
     availableModels,
     onConfirm,
+    onSelectionChange,
+    selectedModels,
     maxSelection,
     providers,
     themeMode: themeMode as 'light' | 'dark',
     fullScreen
-  }), [open, onClose, availableModels, onConfirm, maxSelection, providers, themeMode, fullScreen]);
+  }), [open, onClose, availableModels, onConfirm, onSelectionChange, selectedModels, maxSelection, providers, themeMode, fullScreen]);
 
   // 只在打开且组件加载完成时渲染
   if (!open || !SolidComponent) {

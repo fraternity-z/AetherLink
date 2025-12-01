@@ -15,7 +15,12 @@ export interface MultiModelSelectorProps {
   open: boolean;
   onClose: () => void;
   availableModels: Model[];
-  onConfirm: (selectedModels: Model[]) => void;
+  /** @deprecated 使用 onSelectionChange 替代 */
+  onConfirm?: (selectedModels: Model[]) => void;
+  /** 选择变更回调 - 新模式：选择后立即回调，不需要确认 */
+  onSelectionChange?: (selectedModels: Model[]) => void;
+  /** 已选中的模型列表 - 用于外部控制 */
+  selectedModels?: Model[];
   maxSelection?: number;
   providers: any[];
   themeMode: 'light' | 'dark';
@@ -49,9 +54,42 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
   console.log('[SolidJS] MultiModelSelector 已加载');
 
   const maxSelection = () => props.maxSelection ?? 5;
-  const [selectedModelIds, setSelectedModelIds] = createSignal<string[]>([]);
+  const [internalSelectedIds, setInternalSelectedIds] = createSignal<string[]>([]);
   const [activeTab, setActiveTab] = createSignal<string>('all');
   const [lastSelection, setLastSelection] = createSignal<string[]>([]);
+
+  // 生成唯一的模型标识符（提前定义，供 effect 使用）
+  const getUniqueModelId = (model: Model): string => {
+    const providerId = model.provider || (model as any).providerId || 'unknown';
+    return getModelIdentityKey({ id: model.id, provider: providerId });
+  };
+
+  // 判断是否为外部控制模式
+  const isControlled = () => props.selectedModels !== undefined;
+
+  // 获取当前选中的模型 ID 列表
+  const selectedModelIds = () => {
+    if (isControlled()) {
+      return (props.selectedModels || []).map(m => getUniqueModelId(m));
+    }
+    return internalSelectedIds();
+  };
+
+  // 设置选中的模型 ID 列表
+  const setSelectedModelIds = (updater: string[] | ((prev: string[]) => string[])) => {
+    const newIds = typeof updater === 'function' ? updater(selectedModelIds()) : updater;
+    
+    if (isControlled() && props.onSelectionChange) {
+      // 外部控制模式：通过回调通知父组件
+      const selectedModels = newIds.map(uniqueId => 
+        props.availableModels.find(model => getUniqueModelId(model) === uniqueId)
+      ).filter(Boolean) as Model[];
+      props.onSelectionChange(selectedModels);
+    } else {
+      // 内部控制模式
+      setInternalSelectedIds(newIds);
+    }
+  };
 
   // 初始化时加载上次选择
   createEffect(() => {
@@ -83,12 +121,6 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
   // 获取提供商名称
   const getProviderName = (providerId: string) => {
     return providerNameMap().get(providerId) || providerId;
-  };
-
-  // 生成唯一的模型标识符
-  const getUniqueModelId = (model: Model): string => {
-    const providerId = model.provider || (model as any).providerId || 'unknown';
-    return getModelIdentityKey({ id: model.id, provider: providerId });
   };
 
   // 按提供商分组的模型
@@ -178,7 +210,7 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
     }
   };
 
-  // 确认选择
+  // 确认选择（兼容旧模式）
   const handleConfirm = () => {
     const ids = selectedModelIds();
     if (ids.length > 0) {
@@ -189,7 +221,8 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
       // 保存选择到 localStorage
       saveSelection(ids);
 
-      props.onConfirm(selectedModels);
+      // 调用确认回调（如果存在）
+      props.onConfirm?.(selectedModels);
       setSelectedModelIds([]);
       props.onClose();
     }
@@ -197,7 +230,10 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
 
   // 关闭对话框
   const handleClose = () => {
-    setSelectedModelIds([]);
+    // 外部控制模式下不清空选择（由父组件管理）
+    if (!isControlled()) {
+      setInternalSelectedIds([]);
+    }
     props.onClose();
   };
 
