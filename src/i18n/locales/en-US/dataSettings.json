@@ -107,16 +107,26 @@
   },
   "selectiveBackupDialog": {
     "title": "Selective Backup",
-    "description": "Select content to backup:",
+    "description": "Select content to backup, multiple options can be selected:",
     "modelConfig": {
       "label": "Model Configuration",
       "recommended": "Recommended",
+      "hint": "Includes model providers, API keys, default model, web search settings",
       "description": "Model configuration includes:<br/>• All model provider settings<br/>• API key configuration<br/>• Default model selection<br/>• Web search settings"
     },
-    "comingSoon": {
-      "title": "Coming Soon",
-      "message": "More backup options are under development, including chat history, assistant configurations, etc."
+    "chatHistory": {
+      "label": "Chat History",
+      "hint": "Includes all conversation topics and their complete message history"
     },
+    "assistants": {
+      "label": "Assistant Configuration",
+      "hint": "Includes all custom assistants and their system prompt settings"
+    },
+    "userSettings": {
+      "label": "User Settings",
+      "hint": "Includes theme, language, font, code display and other preferences"
+    },
+    "backupTip": "Tip: Selective backup allows you to backup only the data you need, reducing backup file size. The restore process will automatically identify the backup type and restore the corresponding data.",
     "cancel": "Cancel",
     "createBackup": "Create Backup",
     "backingUp": "Backing up..."
@@ -149,6 +159,8 @@
     "restoredTopics": "Restored {count} conversation topics",
     "restoredAssistants": "Restored {count} assistants",
     "restoredSettings": "Restored app settings",
+    "restoredUserSettings": "Restored user preferences",
+    "restoredModelConfig": "Restored model configuration",
     "restoredLocalStorage": "Restored {count} other app data items",
     "restartRequired": "Please restart the app to apply all changes"
   },

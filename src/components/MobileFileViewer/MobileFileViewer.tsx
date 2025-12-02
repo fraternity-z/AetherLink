@@ -23,6 +23,7 @@ import { loadLanguage } from '@uiw/codemirror-extensions-langs';
 import { EditorView } from '@codemirror/view';
 
 import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { statusBarService } from '../../shared/services/StatusBarService';
 import { usePinchZoom } from './hooks/usePinchZoom';
 import { FileIcon } from './components/FileIcon';
 import { ZoomControls } from './components/ZoomControls';
@@ -41,6 +42,22 @@ export const MobileFileViewer: React.FC<MobileFileViewerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // 保存打开前的主题状态
+  const previousThemeRef = useRef<'light' | 'dark'>('light');
+
+  // 打开/关闭时切换状态栏样式（深色编辑器需要浅色状态栏图标）
+  useEffect(() => {
+    if (open) {
+      // 保存当前主题，以便关闭时恢复
+      previousThemeRef.current = statusBarService.getCurrentTheme();
+      // 编辑器是深色背景，需要浅色（白色）状态栏图标
+      statusBarService.updateTheme('dark');
+    } else {
+      // 关闭时恢复原来的主题状态栏样式
+      statusBarService.updateTheme(previousThemeRef.current);
+    }
+  }, [open]);
 
   // 双指缩放（MT管理器风格 - 仅缩放字体大小）
   const {
@@ -169,23 +186,26 @@ export const MobileFileViewer: React.FC<MobileFileViewerProps> = ({
           }
         }}
       >
-        <DialogTitle sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          pb: 1,
-          backgroundColor: '#252526',
-          color: '#cccccc',
-          borderBottom: '1px solid #333333',
-          flexWrap: 'wrap',
-          gap: 1,
-          '& .MuiIconButton-root': {
+        <DialogTitle 
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            // 顶部安全区域适配
+            pt: 'max(16px, env(safe-area-inset-top, 16px))',
+            pb: 1,
+            backgroundColor: '#252526',
             color: '#cccccc',
-            '&:hover': {
-              backgroundColor: '#333333'
+            borderBottom: '1px solid #333333',
+            flexWrap: 'wrap',
+            gap: 1,
+            '& .MuiIconButton-root': {
+              color: '#cccccc',
+              '&:hover': {
+                backgroundColor: '#333333'
+              }
             }
-          }
-        }}>
+          }}>
           {/* 左侧：文件图标和名称 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: '1 1 auto' }}>
             <FileIcon type={fileType} />
@@ -372,6 +392,8 @@ export const MobileFileViewer: React.FC<MobileFileViewerProps> = ({
 
         <DialogActions sx={{
           p: 2,
+          // 底部安全区域适配
+          pb: 'max(16px, calc(env(safe-area-inset-bottom, 16px) + 16px))',
           gap: 1,
           flexWrap: 'wrap',
           backgroundColor: '#252526',

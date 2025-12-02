@@ -71,9 +71,10 @@ export function validateBackupData(data: any): boolean {
 
   // 检查选择性备份数据结构
   const hasModelConfig = typeof data.modelConfig === 'object' && data.modelConfig !== null;
+  const hasUserSettings = typeof data.userSettings === 'object' && data.userSettings !== null;
 
   // 至少需要包含以下字段之一
-  const hasRequiredFields = hasTopics || hasAssistants || hasSettings || hasModelConfig;
+  const hasRequiredFields = hasTopics || hasAssistants || hasSettings || hasModelConfig || hasUserSettings;
 
   // 检查appInfo信息
   const hasAppInfo = typeof data.appInfo === 'object' && data.appInfo !== null;
@@ -84,7 +85,12 @@ export function validateBackupData(data: any): boolean {
 
     // 如果是选择性备份，记录备份类型
     if (data.appInfo.backupType === 'selective') {
-      console.log('检测到选择性备份数据');
+      console.log('检测到选择性备份数据', {
+        hasModelConfig,
+        hasTopics,
+        hasAssistants,
+        hasUserSettings
+      });
     }
 
     return true;
@@ -406,6 +412,67 @@ export async function restoreModelConfig(
 }
 
 /**
+ * 恢复用户设置（选择性备份专用）
+ * 与 restoreSettings 不同，这个函数只恢复用户偏好设置，不影响模型配置
+ */
+export async function restoreUserSettings(
+  userSettingsData: any,
+  currentSettings: any = {}
+): Promise<boolean> {
+  try {
+    if (!userSettingsData || Object.keys(userSettingsData).length === 0) {
+      console.warn('没有用户设置需要恢复');
+      return false;
+    }
+
+    console.log('开始恢复用户设置...');
+
+    // 合并当前设置和用户设置（保留模型配置不变）
+    const mergedSettings = {
+      ...currentSettings,
+      // 恢复用户偏好设置
+      theme: userSettingsData.theme ?? currentSettings.theme,
+      language: userSettingsData.language ?? currentSettings.language,
+      fontSize: userSettingsData.fontSize ?? currentSettings.fontSize,
+      sendWithEnter: userSettingsData.sendWithEnter ?? currentSettings.sendWithEnter,
+      enableNotifications: userSettingsData.enableNotifications ?? currentSettings.enableNotifications,
+      showMessageDivider: userSettingsData.showMessageDivider ?? currentSettings.showMessageDivider,
+      messageStyle: userSettingsData.messageStyle ?? currentSettings.messageStyle,
+      topicPosition: userSettingsData.topicPosition ?? currentSettings.topicPosition,
+      showInputEstimatedTokens: userSettingsData.showInputEstimatedTokens ?? currentSettings.showInputEstimatedTokens,
+      showAssistantAvatar: userSettingsData.showAssistantAvatar ?? currentSettings.showAssistantAvatar,
+      showUserAvatar: userSettingsData.showUserAvatar ?? currentSettings.showUserAvatar,
+      pasteLongTextAsFile: userSettingsData.pasteLongTextAsFile ?? currentSettings.pasteLongTextAsFile,
+      pasteLongTextThreshold: userSettingsData.pasteLongTextThreshold ?? currentSettings.pasteLongTextThreshold,
+      clickAssistantToShowTopic: userSettingsData.clickAssistantToShowTopic ?? currentSettings.clickAssistantToShowTopic,
+      renderInputMessageAsMarkdown: userSettingsData.renderInputMessageAsMarkdown ?? currentSettings.renderInputMessageAsMarkdown,
+      codeShowLineNumbers: userSettingsData.codeShowLineNumbers ?? currentSettings.codeShowLineNumbers,
+      codeCollapsible: userSettingsData.codeCollapsible ?? currentSettings.codeCollapsible,
+      codeCollapsibleDefaultOpen: userSettingsData.codeCollapsibleDefaultOpen ?? currentSettings.codeCollapsibleDefaultOpen,
+      codeWrapping: userSettingsData.codeWrapping ?? currentSettings.codeWrapping,
+      mathEngine: userSettingsData.mathEngine ?? currentSettings.mathEngine,
+      proxyUrl: userSettingsData.proxyUrl ?? currentSettings.proxyUrl,
+      soundEnabled: userSettingsData.soundEnabled ?? currentSettings.soundEnabled,
+      soundVolume: userSettingsData.soundVolume ?? currentSettings.soundVolume,
+      generatedImages: userSettingsData.generatedImages ?? currentSettings.generatedImages,
+    };
+
+    // 保存设置到数据库
+    await setStorageItem('settings', mergedSettings);
+
+    // 重新加载设置到Redux store，确保状态同步
+    console.log('重新加载用户设置到Redux store...');
+    await store.dispatch(loadSettings());
+
+    console.log('用户设置恢复完成');
+    return true;
+  } catch (error) {
+    console.error('恢复用户设置时出错:', error);
+    return false;
+  }
+}
+
+/**
  * 恢复备份设置
  */
 export async function restoreBackupSettings(backupSettings: { location?: string; storageType?: string }): Promise<boolean> {
@@ -526,19 +593,26 @@ export async function performFullRestore(
       console.log('执行选择性备份恢复');
 
       if (processedData.modelConfig) {
-        onProgress?.('恢复模型配置', 0.5);
+        onProgress?.('恢复模型配置', 0.3);
         modelConfigRestored = await restoreModelConfig(processedData.modelConfig, currentSettings);
       }
 
       // 选择性备份可能包含其他数据类型
       if (processedData.topics) {
-        onProgress?.('恢复话题数据', 0.3);
+        onProgress?.('恢复话题数据', 0.4);
         topicsCount = await restoreTopics(processedData.topics);
       }
 
       if (processedData.assistants) {
-        onProgress?.('恢复助手数据', 0.4);
+        onProgress?.('恢复助手数据', 0.5);
         assistantsCount = await restoreAssistants(processedData.assistants);
+      }
+
+      if (processedData.userSettings) {
+        onProgress?.('恢复用户设置', 0.6);
+        // 获取最新的设置（可能已被模型配置恢复更新）
+        const latestSettings = await getStorageItem('settings') || {};
+        settingsRestored = await restoreUserSettings(processedData.userSettings, latestSettings);
       }
     } else {
       // 完整备份恢复逻辑

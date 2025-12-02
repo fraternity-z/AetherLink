@@ -296,15 +296,21 @@ const WorkspaceDetail: React.FC = () => {
   const handleDeleteItem = async () => {
     if (!workspaceId || !deleteDialog.file) return;
 
+    const deletedFile = deleteDialog.file;
     try {
       const result = await workspaceService.deleteItem(
         workspaceId,
-        deleteDialog.file.path,
-        deleteDialog.file.isDirectory
+        deletedFile.path,
+        deletedFile.isDirectory
       );
       if (result.success) {
         setDeleteDialog({ open: false, file: null });
-        loadFiles(currentPath === workspace?.path ? '' : currentPath.replace(workspace?.path || '', '').replace(/^\//, ''));
+        // 直接从本地状态移除，避免重新加载导致滚动位置重置
+        setFiles(prev => prev.filter(f => f.path !== deletedFile.path));
+        // 如果有搜索结果，也从搜索结果中移除
+        if (searchResults.length > 0) {
+          setSearchResults(prev => prev.filter(f => f.path !== deletedFile.path));
+        }
       } else {
         setError(result.error || '删除失败');
       }
@@ -525,7 +531,12 @@ const WorkspaceDetail: React.FC = () => {
       </Paper>
 
       {/* 主要内容 */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{ 
+        flex: 1, 
+        overflow: 'auto',
+        // 底部安全区域适配
+        pb: 'max(16px, calc(env(safe-area-inset-bottom, 0px) + 16px))'
+      }}>
         {/* 错误提示 */}
         {error && (
           <Alert severity="error" sx={{ m: 2 }} onClose={() => setError(null)}>

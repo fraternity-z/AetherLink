@@ -8,12 +8,11 @@ import {
   FormGroup,
   FormControlLabel,
   Box,
-  Alert,
-  AlertTitle,
-  Chip
+  Chip,
+  Divider
 } from '@mui/material';
 import BackButtonDialog from '../../../../../components/common/BackButtonDialog';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Settings as SettingsIcon, MessageSquare, Bot, Sliders } from 'lucide-react';
 import { useTranslation } from '../../../../../i18n';
 import CustomSwitch from '../../../../../components/CustomSwitch';
 import type { SelectiveBackupOptions } from '../../utils/selectiveBackupUtils';
@@ -70,49 +69,149 @@ const SelectiveBackupDialog: React.FC<SelectiveBackupDialogProps> = ({
           {t('dataSettings.selectiveBackupDialog.description')}
         </Typography>
         
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <CustomSwitch 
-                checked={options.modelConfig} 
-                onChange={() => onOptionChange('modelConfig')}
-              />
-            }
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2">
-                  {t('dataSettings.selectiveBackupDialog.modelConfig.label')}
-                </Typography>
-                <Chip 
-                  label={t('dataSettings.selectiveBackupDialog.modelConfig.recommended')} 
-                  size="small" 
-                  color="primary" 
-                  sx={{ 
-                    height: 20, 
-                    fontSize: '0.7rem',
-                    bgcolor: '#9333EA',
-                    color: 'white'
-                  }} 
+        <FormGroup sx={{ gap: 1 }}>
+          {/* 模型配置选项 */}
+          <Box sx={{ 
+            p: 1.5, 
+            borderRadius: 1, 
+            border: '1px solid',
+            borderColor: options.modelConfig ? 'primary.main' : 'divider',
+            bgcolor: options.modelConfig ? 'rgba(147, 51, 234, 0.04)' : 'transparent',
+            transition: 'all 0.2s'
+          }}>
+            <FormControlLabel
+              control={
+                <CustomSwitch 
+                  checked={options.modelConfig} 
+                  onChange={() => onOptionChange('modelConfig')}
                 />
-              </Box>
-            }
-          />
+              }
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SettingsIcon size={18} color="#9333EA" />
+                  <Typography variant="body2" fontWeight={500}>
+                    {t('dataSettings.selectiveBackupDialog.modelConfig.label')}
+                  </Typography>
+                  <Chip 
+                    label={t('dataSettings.selectiveBackupDialog.modelConfig.recommended')} 
+                    size="small" 
+                    sx={{ 
+                      height: 18, 
+                      fontSize: '0.65rem',
+                      bgcolor: '#9333EA',
+                      color: 'white'
+                    }} 
+                  />
+                </Box>
+              }
+              sx={{ m: 0, width: '100%' }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ pl: 5, display: 'block', mt: 0.5 }}>
+              {t('dataSettings.selectiveBackupDialog.modelConfig.hint')}
+            </Typography>
+          </Box>
+
+          {/* 聊天记录选项 */}
+          <Box sx={{ 
+            p: 1.5, 
+            borderRadius: 1, 
+            border: '1px solid',
+            borderColor: options.chatHistory ? 'primary.main' : 'divider',
+            bgcolor: options.chatHistory ? 'rgba(147, 51, 234, 0.04)' : 'transparent',
+            transition: 'all 0.2s'
+          }}>
+            <FormControlLabel
+              control={
+                <CustomSwitch 
+                  checked={options.chatHistory} 
+                  onChange={() => onOptionChange('chatHistory')}
+                />
+              }
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <MessageSquare size={18} color="#2563EB" />
+                  <Typography variant="body2" fontWeight={500}>
+                    {t('dataSettings.selectiveBackupDialog.chatHistory.label')}
+                  </Typography>
+                </Box>
+              }
+              sx={{ m: 0, width: '100%' }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ pl: 5, display: 'block', mt: 0.5 }}>
+              {t('dataSettings.selectiveBackupDialog.chatHistory.hint')}
+            </Typography>
+          </Box>
+
+          {/* 助手配置选项 */}
+          <Box sx={{ 
+            p: 1.5, 
+            borderRadius: 1, 
+            border: '1px solid',
+            borderColor: options.assistants ? 'primary.main' : 'divider',
+            bgcolor: options.assistants ? 'rgba(147, 51, 234, 0.04)' : 'transparent',
+            transition: 'all 0.2s'
+          }}>
+            <FormControlLabel
+              control={
+                <CustomSwitch 
+                  checked={options.assistants} 
+                  onChange={() => onOptionChange('assistants')}
+                />
+              }
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Bot size={18} color="#059669" />
+                  <Typography variant="body2" fontWeight={500}>
+                    {t('dataSettings.selectiveBackupDialog.assistants.label')}
+                  </Typography>
+                </Box>
+              }
+              sx={{ m: 0, width: '100%' }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ pl: 5, display: 'block', mt: 0.5 }}>
+              {t('dataSettings.selectiveBackupDialog.assistants.hint')}
+            </Typography>
+          </Box>
+
+          {/* 用户设置选项 */}
+          <Box sx={{ 
+            p: 1.5, 
+            borderRadius: 1, 
+            border: '1px solid',
+            borderColor: options.userSettings ? 'primary.main' : 'divider',
+            bgcolor: options.userSettings ? 'rgba(147, 51, 234, 0.04)' : 'transparent',
+            transition: 'all 0.2s'
+          }}>
+            <FormControlLabel
+              control={
+                <CustomSwitch 
+                  checked={options.userSettings} 
+                  onChange={() => onOptionChange('userSettings')}
+                />
+              }
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Sliders size={18} color="#D97706" />
+                  <Typography variant="body2" fontWeight={500}>
+                    {t('dataSettings.selectiveBackupDialog.userSettings.label')}
+                  </Typography>
+                </Box>
+              }
+              sx={{ m: 0, width: '100%' }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ pl: 5, display: 'block', mt: 0.5 }}>
+              {t('dataSettings.selectiveBackupDialog.userSettings.hint')}
+            </Typography>
+          </Box>
         </FormGroup>
 
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-          <Typography variant="caption" color="text.secondary" dangerouslySetInnerHTML={{
-            __html: `<strong>${t('dataSettings.selectiveBackupDialog.modelConfig.label')}包含：</strong><br/>${t('dataSettings.selectiveBackupDialog.modelConfig.description')}`
-          }} />
-        </Box>
+        <Divider sx={{ my: 2 }} />
 
-        {/* 未来扩展区域的占位符 */}
-        <Box sx={{ mt: 2 }}>
-          <Alert severity="info" sx={{ bgcolor: 'rgba(147, 51, 234, 0.05)' }}>
-            <AlertTitle sx={{ color: '#9333EA' }}>{t('dataSettings.selectiveBackupDialog.comingSoon.title')}</AlertTitle>
-            <Typography variant="body2" color="text.secondary">
-              {t('dataSettings.selectiveBackupDialog.comingSoon.message')}
-            </Typography>
-          </Alert>
+        {/* 备份提示 */}
+        <Box sx={{ p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            {t('dataSettings.selectiveBackupDialog.backupTip')}
+          </Typography>
         </Box>
       </DialogContent>
       

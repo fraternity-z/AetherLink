@@ -107,16 +107,26 @@
   },
   "selectiveBackupDialog": {
     "title": "选择性备份",
-    "description": "选择需要备份的内容：",
+    "description": "选择需要备份的内容，可以同时选择多个选项：",
     "modelConfig": {
       "label": "模型配置",
       "recommended": "推荐",
+      "hint": "包含模型提供商、API密钥、默认模型、网络搜索设置",
       "description": "模型配置包含：<br/>• 所有模型提供商设置<br/>• API密钥配置<br/>• 默认模型选择<br/>• 网络搜索设置"
     },
-    "comingSoon": {
-      "title": "即将推出",
-      "message": "更多备份选项正在开发中，包括聊天记录、助手配置等。"
+    "chatHistory": {
+      "label": "聊天记录",
+      "hint": "包含所有对话话题及其完整消息历史"
     },
+    "assistants": {
+      "label": "助手配置",
+      "hint": "包含所有自定义助手及其系统提示词设置"
+    },
+    "userSettings": {
+      "label": "用户设置",
+      "hint": "包含主题、语言、字体、代码显示等偏好设置"
+    },
+    "backupTip": "提示：选择性备份可以让你只备份需要的数据，减少备份文件大小。恢复时会自动识别备份类型并恢复对应数据。",
     "cancel": "取消",
     "createBackup": "创建备份",
     "backingUp": "备份中..."
@@ -149,6 +159,8 @@
     "restoredTopics": "已恢复 {count} 个对话话题",
     "restoredAssistants": "已恢复 {count} 个助手",
     "restoredSettings": "已恢复应用设置",
+    "restoredUserSettings": "已恢复用户偏好设置",
+    "restoredModelConfig": "已恢复模型配置",
     "restoredLocalStorage": "已恢复 {count} 项其他应用数据",
     "restartRequired": "请重启应用以应用所有更改"
   },

@@ -279,7 +279,7 @@ const BackupRestorePanel: React.FC = () => {
               restoreMessage += t('dataSettings.restoreProgress.success.selective') + '\n';
 
               if (result.modelConfigRestored) {
-                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredSettings')}\n`;
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredModelConfig')}\n`;
               }
 
               if (result.topicsCount > 0) {
@@ -288,6 +288,10 @@ const BackupRestorePanel: React.FC = () => {
 
               if (result.assistantsCount > 0) {
                 restoreMessage += `• ${t('dataSettings.restoreProgress.restoredAssistants', { count: result.assistantsCount })}\n`;
+              }
+
+              if (result.settingsRestored) {
+                restoreMessage += `• ${t('dataSettings.restoreProgress.restoredUserSettings')}\n`;
               }
             } else {
               // 完整备份恢复消息

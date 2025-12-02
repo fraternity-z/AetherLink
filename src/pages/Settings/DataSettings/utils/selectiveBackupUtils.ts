@@ -1,15 +1,16 @@
 import { getStorageItem } from '../../../../shared/utils/storage';
-import { createAndShareBackupFile } from './backupUtils';
+import { createAndShareBackupFile, prepareBasicBackupData } from './backupUtils';
+import type { ChatTopic } from '../../../../shared/types';
+import type { Assistant } from '../../../../shared/types/Assistant';
 
 /**
  * 选择性备份选项接口
  */
 export interface SelectiveBackupOptions {
-  modelConfig: boolean; // 模型配置备份
-  // 未来可扩展的选项：
-  // chatHistory: boolean;
-  // assistants: boolean;
-  // userSettings: boolean;
+  modelConfig: boolean;    // 模型配置备份
+  chatHistory: boolean;    // 聊天记录备份
+  assistants: boolean;     // 助手配置备份
+  userSettings: boolean;   // 用户设置备份
 }
 
 /**
@@ -66,6 +67,98 @@ async function prepareModelConfigData(): Promise<ModelConfigData> {
 }
 
 /**
+ * 准备聊天记录备份数据
+ */
+async function prepareChatHistoryData(): Promise<ChatTopic[]> {
+  try {
+    const basicData = await prepareBasicBackupData();
+    console.log('聊天记录数据准备完成:', {
+      topicsCount: basicData.topics?.length || 0
+    });
+    return basicData.topics || [];
+  } catch (error) {
+    console.error('准备聊天记录数据失败:', error);
+    throw new Error('获取聊天记录失败: ' + (error instanceof Error ? error.message : '未知错误'));
+  }
+}
+
+/**
+ * 准备助手配置备份数据
+ */
+async function prepareAssistantsData(): Promise<Assistant[]> {
+  try {
+    const basicData = await prepareBasicBackupData();
+    console.log('助手配置数据准备完成:', {
+      assistantsCount: basicData.assistants?.length || 0
+    });
+    return basicData.assistants || [];
+  } catch (error) {
+    console.error('准备助手配置数据失败:', error);
+    throw new Error('获取助手配置失败: ' + (error instanceof Error ? error.message : '未知错误'));
+  }
+}
+
+/**
+ * 准备用户设置备份数据
+ */
+async function prepareUserSettingsData(): Promise<any> {
+  try {
+    const settings = await getStorageItem<any>('settings');
+    
+    if (!settings) {
+      console.warn('未找到用户设置数据');
+      return {};
+    }
+
+    // 提取用户设置相关配置（排除模型配置，因为模型配置是单独选项）
+    const userSettingsData: any = {
+      theme: settings.theme,
+      language: settings.language,
+      fontSize: settings.fontSize,
+      sendWithEnter: settings.sendWithEnter,
+      enableNotifications: settings.enableNotifications,
+      showMessageDivider: settings.showMessageDivider,
+      messageStyle: settings.messageStyle,
+      topicPosition: settings.topicPosition,
+      showInputEstimatedTokens: settings.showInputEstimatedTokens,
+      showAssistantAvatar: settings.showAssistantAvatar,
+      showUserAvatar: settings.showUserAvatar,
+      pasteLongTextAsFile: settings.pasteLongTextAsFile,
+      pasteLongTextThreshold: settings.pasteLongTextThreshold,
+      clickAssistantToShowTopic: settings.clickAssistantToShowTopic,
+      renderInputMessageAsMarkdown: settings.renderInputMessageAsMarkdown,
+      codeShowLineNumbers: settings.codeShowLineNumbers,
+      codeCollapsible: settings.codeCollapsible,
+      codeCollapsibleDefaultOpen: settings.codeCollapsibleDefaultOpen,
+      codeWrapping: settings.codeWrapping,
+      mathEngine: settings.mathEngine,
+      proxyUrl: settings.proxyUrl,
+      // 音效设置
+      soundEnabled: settings.soundEnabled,
+      soundVolume: settings.soundVolume,
+      // 生成的图片
+      generatedImages: settings.generatedImages,
+    };
+
+    // 移除 undefined 值
+    Object.keys(userSettingsData).forEach(key => {
+      if (userSettingsData[key] === undefined) {
+        delete userSettingsData[key];
+      }
+    });
+
+    console.log('用户设置数据准备完成:', {
+      settingsCount: Object.keys(userSettingsData).length
+    });
+
+    return userSettingsData;
+  } catch (error) {
+    console.error('准备用户设置数据失败:', error);
+    throw new Error('获取用户设置失败: ' + (error instanceof Error ? error.message : '未知错误'));
+  }
+}
+
+/**
  * 准备选择性备份数据
  */
 export async function prepareSelectiveBackupData(options: SelectiveBackupOptions): Promise<any> {
@@ -88,9 +181,23 @@ export async function prepareSelectiveBackupData(options: SelectiveBackupOptions
     console.log('已添加模型配置数据');
   }
 
-  // 未来可以在这里添加其他选项的处理
-  // if (options.chatHistory) { ... }
-  // if (options.assistants) { ... }
+  if (options.chatHistory) {
+    const chatHistoryData = await prepareChatHistoryData();
+    backupData.topics = chatHistoryData;
+    console.log('已添加聊天记录数据');
+  }
+
+  if (options.assistants) {
+    const assistantsData = await prepareAssistantsData();
+    backupData.assistants = assistantsData;
+    console.log('已添加助手配置数据');
+  }
+
+  if (options.userSettings) {
+    const userSettingsData = await prepareUserSettingsData();
+    backupData.userSettings = userSettingsData;
+    console.log('已添加用户设置数据');
+  }
 
   return backupData;
 }
@@ -120,7 +227,10 @@ export async function performSelectiveBackup(
       .filter(([_, selected]) => selected)
       .map(([key, _]) => {
         switch (key) {
-          case 'modelConfig': return 'ModelConfig';
+          case 'modelConfig': return 'Model';
+          case 'chatHistory': return 'Chats';
+          case 'assistants': return 'Assistants';
+          case 'userSettings': return 'Settings';
           default: return key;
         }
       })
@@ -154,10 +264,15 @@ function getSelectedOptionsText(options: SelectiveBackupOptions): string {
   if (options.modelConfig) {
     selectedItems.push('模型配置');
   }
-  
-  // 未来可以添加其他选项的描述
-  // if (options.chatHistory) selectedItems.push('聊天记录');
-  // if (options.assistants) selectedItems.push('助手配置');
+  if (options.chatHistory) {
+    selectedItems.push('聊天记录');
+  }
+  if (options.assistants) {
+    selectedItems.push('助手配置');
+  }
+  if (options.userSettings) {
+    selectedItems.push('用户设置');
+  }
   
   return selectedItems.join('、');
 }
@@ -167,9 +282,9 @@ function getSelectedOptionsText(options: SelectiveBackupOptions): string {
  */
 export function getDefaultSelectiveBackupOptions(): SelectiveBackupOptions {
   return {
-    modelConfig: true, // 默认选中模型配置
-    // 未来的默认选项
-    // chatHistory: false,
-    // assistants: false,
+    modelConfig: true,   // 默认选中模型配置
+    chatHistory: false,  // 聊天记录
+    assistants: false,   // 助手配置
+    userSettings: false, // 用户设置
   };
 }

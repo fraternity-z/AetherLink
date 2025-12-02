@@ -218,8 +218,7 @@ const WorkspaceList: React.FC<WorkspaceListProps> = ({ onSelectWorkspace }) => {
           gap: 1, 
           borderBottom: 1, 
           borderColor: 'divider',
-          flexShrink: 0,
-          pt: 'calc(8px + env(safe-area-inset-top, 0px))'  // 顶部安全区域
+          flexShrink: 0
         }}>
           <Home size={18} style={{ marginLeft: 4 }} />
           <Typography variant="subtitle2" sx={{ flexGrow: 1, fontWeight: 600 }}>
@@ -305,8 +304,7 @@ const WorkspaceList: React.FC<WorkspaceListProps> = ({ onSelectWorkspace }) => {
         gap: 1, 
         borderBottom: 1, 
         borderColor: 'divider',
-        flexShrink: 0,
-        pt: 'calc(8px + env(safe-area-inset-top, 0px))'  // 顶部安全区域
+        flexShrink: 0
       }}>
         <IconButton onClick={handleBackToParent} size="small">
           <ArrowLeft size={18} />

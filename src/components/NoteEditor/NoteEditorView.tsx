@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect, lazy, Suspense } from 'react';
-import { Box, Typography, Button, ButtonGroup, CircularProgress } from '@mui/material';
-import { FileText, Eye, Code2 } from 'lucide-react';
+import { Box, Typography, Button, ButtonGroup, CircularProgress, IconButton } from '@mui/material';
+import { FileText, Eye, Code2, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { usePinchZoom } from '../MobileFileViewer/hooks/usePinchZoom';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -31,11 +32,30 @@ const NoteEditorView: React.FC<NoteEditorViewProps> = ({
   // 标记是否已经加载过 RichEditor（避免切换时重复初始化）
   const [hasLoadedRichEditor, setHasLoadedRichEditor] = useState(false);
 
-  // CodeMirror 自适应主题
+  // 双指缩放功能（MT管理器风格）
+  const {
+    scale,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    bindGestures,
+    canZoomIn,
+    canZoomOut
+  } = usePinchZoom({
+    minScale: 0.5,
+    maxScale: 3.0,
+    initialScale: 1.0,
+    scaleStep: 0.1
+  });
+
+  // 获取手势绑定属性
+  const gestureProps = bindGestures();
+
+  // CodeMirror 自适应主题（支持动态字体大小）
   const cmTheme = EditorView.theme({
     '&': {
       height: '100%',
-      fontSize: '14px'
+      fontSize: `${14 * scale}px`
     },
     '.cm-scroller': {
       overflow: 'auto',
@@ -88,6 +108,39 @@ const NoteEditorView: React.FC<NoteEditorViewProps> = ({
             {charCount} 字符
           </Typography>
 
+          {/* 缩放控制 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={zoomOut}
+              disabled={!canZoomOut}
+              title="缩小"
+              sx={{ p: 0.5 }}
+            >
+              <ZoomOut size={16} />
+            </IconButton>
+            <Typography variant="caption" color="text.secondary" sx={{ minWidth: 40, textAlign: 'center' }}>
+              {Math.round(scale * 100)}%
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={zoomIn}
+              disabled={!canZoomIn}
+              title="放大"
+              sx={{ p: 0.5 }}
+            >
+              <ZoomIn size={16} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={resetZoom}
+              title="重置缩放"
+              sx={{ p: 0.5 }}
+            >
+              <RotateCcw size={16} />
+            </IconButton>
+          </Box>
+
           <ButtonGroup size="small" variant="outlined">
             <Button
               onClick={() => setViewMode('source')}
@@ -122,14 +175,24 @@ const NoteEditorView: React.FC<NoteEditorViewProps> = ({
       </Box>
 
       {/* 编辑器区域 */}
-      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Box 
+        {...gestureProps}
+        sx={{ 
+          flex: 1, 
+          overflow: 'hidden', 
+          display: 'flex', 
+          flexDirection: 'column',
+          touchAction: 'none' // 支持手势
+        }}
+      >
         {viewMode === 'source' ? (
           // 源码模式：使用 CodeMirror，性能更好
           <Box sx={{ 
             flex: 1, 
             overflow: 'hidden',
             '& .cm-editor': {
-              height: '100%'
+              height: '100%',
+              fontSize: `${14 * scale}px`
             },
             '& .cm-scroller': {
               overflow: 'auto'
@@ -167,7 +230,7 @@ const NoteEditorView: React.FC<NoteEditorViewProps> = ({
                 showToolbar={viewMode === 'preview' && !readOnly}
                 editable={viewMode === 'preview' && !readOnly}
                 isFullWidth={true}
-                fontSize={16}
+                fontSize={16 * scale}
                 fontFamily="system-ui, -apple-system, sans-serif"
               />
             )}
