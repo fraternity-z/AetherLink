@@ -15,6 +15,13 @@ import type { Model, MCPTool } from '../../../types';
 import type { RootState, AppDispatch } from '../../index';
 import { prepareMessagesForApi, performKnowledgeSearchIfNeeded } from './apiPreparation';
 import { getActualProviderType } from '../../../services/ProviderFactory';
+// 导入网络搜索 AI Tool 相关模块
+import {
+  analyzeSearchIntent,
+  createWebSearchToolDefinition,
+  shouldEnableWebSearchTool
+} from '../../../services/webSearch';
+import type { ExtractedSearchKeywords } from '../../../services/webSearch';
 
 export const processAssistantResponse = async (
   dispatch: AppDispatch,
@@ -94,6 +101,55 @@ export const processAssistantResponse = async (
       }
     } else {
       console.log(`[MCP] 工具未启用 (toolsEnabled=${toolsEnabled})`);
+    }
+
+    // 🚀 4.1 检查是否需要启用网络搜索工具 (AI Tool Use 模式)
+    let webSearchTool: any = null;
+    let extractedKeywords: ExtractedSearchKeywords | undefined;
+    
+    // 🚀 获取网络搜索配置：优先从助手配置获取，其次从全局 webSearch 状态获取（自动模式）
+    const webSearchState = _getState().webSearch;
+    const isAutoSearchMode = webSearchState?.searchMode === 'auto';
+    const webSearchProviderId = assistant?.webSearchProviderId || 
+      (isAutoSearchMode ? webSearchState?.provider : undefined);
+    
+    if (webSearchProviderId && shouldEnableWebSearchTool(webSearchProviderId)) {
+      console.log(`[WebSearch] 检测到网络搜索配置: ${webSearchProviderId}, 模式: ${webSearchState?.searchMode}`);
+      
+      // 获取最后一条用户消息
+      const topicMessages = await dexieStorage.getTopicMessages(topicId);
+      const lastUserMsg = topicMessages
+        .filter((m: Message) => m.role === 'user')
+        .sort((a: Message, b: Message) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      
+      if (lastUserMsg) {
+        // 获取用户消息内容
+        const userBlocks = await dexieStorage.getMessageBlocksByMessageId(lastUserMsg.id);
+        const mainTextBlock = userBlocks.find((b: any) => b.type === MessageBlockType.MAIN_TEXT) as any;
+        const userContent = mainTextBlock?.content || '';
+        
+        // 🚀 自动模式：总是添加搜索工具，让 AI 自主决定是否搜索
+        // 手动模式：使用意图分析判断
+        if (isAutoSearchMode) {
+          // 自动模式：提取关键词但总是启用工具
+          extractedKeywords = {
+            question: [userContent],
+            links: undefined
+          };
+          webSearchTool = createWebSearchToolDefinition(extractedKeywords);
+          console.log(`[WebSearch] 自动模式：已添加网络搜索工具，AI 将自主决定是否搜索`);
+        } else {
+          // 其他模式：使用意图分析
+          const intentResult = analyzeSearchIntent(userContent);
+          console.log(`[WebSearch] 意图分析结果:`, intentResult);
+          
+          if (intentResult.needsWebSearch) {
+            extractedKeywords = intentResult.websearch;
+            webSearchTool = createWebSearchToolDefinition(extractedKeywords);
+            console.log(`[WebSearch] 已创建网络搜索工具，预设查询:`, extractedKeywords?.question);
+          }
+        }
+      }
     }
 
     // 暂时不进行知识库搜索，等ResponseHandler创建后再搜索
@@ -350,7 +406,30 @@ export const processAssistantResponse = async (
         const mcpMode = localStorage.getItem('mcp-mode') as 'prompt' | 'function' || 'function';
         console.log(`[MCP] 当前模式: ${mcpMode}`);
 
-        //  修复Gemini系统提示词传递问题：从API消息中提取系统提示词
+        // 🚀 将网络搜索工具添加到 MCP 工具列表（如果启用）
+        // 这样 AI 可以自主决定是否调用网络搜索
+        let allTools = [...mcpTools];
+        if (webSearchTool) {
+          // 创建网络搜索的 MCPTool 格式
+          const webSearchMcpTool: MCPTool = {
+            id: 'builtin_web_search',
+            name: 'builtin_web_search',
+            description: webSearchTool.function.description,
+            inputSchema: webSearchTool.function.parameters,
+            serverId: 'builtin',
+            serverName: 'builtin',
+            // 存储网络搜索配置，供 callMCPTool 使用
+            webSearchConfig: {
+              providerId: webSearchProviderId, // 使用已解析的提供商ID
+              extractedKeywords
+            }
+          } as MCPTool & { webSearchConfig: any };
+          
+          allTools.push(webSearchMcpTool);
+          console.log('[WebSearch] 网络搜索工具已添加到工具列表，AI 可自主决定是否调用');
+        }
+
+        // 修复Gemini系统提示词传递问题：从API消息中提取系统提示词
         let systemPromptForProvider = '';
         if (isActualGeminiProvider) {
           // 对于Gemini provider，从apiMessages中提取系统提示词
@@ -366,21 +445,23 @@ export const processAssistantResponse = async (
         }
 
         // 使用Provider的sendChatMessage方法
+        // 🚀 使用 allTools（包含网络搜索工具）而不是 mcpTools
         response = await apiProvider.sendChatMessage(
           messagesToSend as any,
           {
             onChunk: async (chunk: import('../../../types/chunk').Chunk) => {
-              // 🔧 关键修复：等待 chunk 处理完成，避免竞态条件
+              // 等待 chunk 处理完成，避免竞态条件
               await responseHandler.handleChunk(chunk);
             },
-            enableTools: toolsEnabled !== false,
-            mcpTools: mcpTools,
+            enableTools: toolsEnabled !== false || !!webSearchTool,
+            mcpTools: allTools, // 🚀 使用包含网络搜索工具的完整列表
             mcpMode: mcpMode,
             abortSignal: abortController.signal,
             assistant: assistant,
             systemPrompt: isActualGeminiProvider ? systemPromptForProvider : undefined
           }
         );
+
       }
 
       // 处理不同类型的响应

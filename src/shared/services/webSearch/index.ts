@@ -28,3 +28,7 @@ export type {
 // 导出常用的搜索引擎实例
 export const bingFreeSearchService = BingFreeSearchServiceClass.getInstance();
 export const enhancedWebSearchService = enhancedWebSearchServiceInstance;
+
+// 🚀 导出 AI Tool Use 相关模块
+export * from './WebSearchTool';
+export * from './SearchIntentAnalyzer';

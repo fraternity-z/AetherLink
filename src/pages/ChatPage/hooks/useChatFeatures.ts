@@ -747,10 +747,23 @@ export const useChatFeatures = (
       return;
     }
 
-    // 如果处于网络搜索模式，则调用网络搜索处理函数
+    // 如果处于网络搜索模式
     if (webSearchActive) {
-      handleWebSearch(content);
-      return;
+      // 🚀 检查搜索模式：auto = AI 自主决定，manual = 直接搜索
+      const webSearchState = store.getState().webSearch;
+      const searchMode = webSearchState?.searchMode || 'manual';
+      
+      if (searchMode === 'auto') {
+        // 🚀 自动模式：将搜索提供商设置到助手配置，让 AI 自主决定是否搜索
+        // 通过正常的消息发送流程，assistantResponse.ts 会检测 webSearchProviderId 并添加搜索工具
+        console.log('[WebSearch] 自动模式：AI 将自主决定是否需要搜索');
+        handleSendMessage(content, images, toolsEnabled, files);
+        return;
+      } else {
+        // 手动模式：直接执行搜索（旧逻辑）
+        handleWebSearch(content);
+        return;
+      }
     }
 
     // 

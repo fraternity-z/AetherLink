@@ -21,6 +21,7 @@ import type { Message, MultiModelMessageStyle } from '../../shared/types/newMess
 import { AssistantMessageStatus } from '../../shared/types/newMessage';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
+import { getModelOrProviderIcon } from '../../shared/utils/providerIcons';
 import MessageItem from './MessageItem';
 
 interface MultiModelMessageGroupProps {
@@ -139,10 +140,17 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
     return message.model?.name || message.modelId || '未知模型';
   }, []);
 
-  // 获取模型头像
-  const getModelAvatar = useCallback((message: Message) => {
+  // 获取模型头像字母
+  const getModelAvatarLetter = useCallback((message: Message) => {
     const name = message.model?.name || message.modelId || '?';
     return name.charAt(0).toUpperCase();
+  }, []);
+
+  // 获取模型图标
+  const getModelIcon = useCallback((message: Message, isDark: boolean) => {
+    const modelId = message.model?.id || message.modelId || '';
+    const providerId = message.model?.provider || '';
+    return getModelOrProviderIcon(modelId, providerId, isDark);
   }, []);
 
   // 检查消息是否正在处理
@@ -196,15 +204,18 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
             const isSelected = message.id === selectedMessageId;
             const isProcessing = isMessageProcessing(message);
 
+            const iconUrl = getModelIcon(message, false);
+            
             if (modelListMode === 'compact') {
               return (
                 <Tooltip key={message.id} title={getModelName(message)}>
                   <ModelAvatar
-                    $isSelected={isSelected}
-                    $isProcessing={isProcessing}
+                    isSelected={isSelected}
+                    isProcessing={isProcessing}
                     onClick={() => handleSelectMessage(message)}
+                    src={iconUrl}
                   >
-                    {getModelAvatar(message)}
+                    {getModelAvatarLetter(message)}
                   </ModelAvatar>
                 </Tooltip>
               );
@@ -212,7 +223,14 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
               return (
                 <ModelChip
                   key={message.id}
-                  avatar={<Avatar sx={{ width: 20, height: 20, fontSize: 12 }}>{getModelAvatar(message)}</Avatar>}
+                  avatar={
+                    <Avatar 
+                      sx={{ width: 20, height: 20, fontSize: 10 }}
+                      src={iconUrl}
+                    >
+                      {getModelAvatarLetter(message)}
+                    </Avatar>
+                  }
                   label={getModelName(message)}
                   onClick={() => handleSelectMessage(message)}
                   variant={isSelected ? 'filled' : 'outlined'}
@@ -282,6 +300,7 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
 
     const messageContent = (
       <MessageWrapper
+        key={message.id}
         id={`message-${message.id}`}
         className={className}
         onClick={isGrid ? (e) => handleGridClick(e, message) : undefined}
@@ -313,7 +332,7 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
       />
 
       {/* 助手消息区域 */}
-      <GridContainer className={effectiveStyle} $count={messageCount}>
+      <GridContainer className={effectiveStyle} count={messageCount}>
         {assistantMessages.map(renderMessage)}
       </GridContainer>
 
@@ -365,7 +384,9 @@ const GroupContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
-const GridContainer = styled(Box)<{ $count: number }>(({ theme, $count }) => ({
+const GridContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'count'
+})<{ count: number }>(({ theme, count }) => ({
   width: '100%',
   display: 'grid',
   overflowY: 'visible',
@@ -373,7 +394,7 @@ const GridContainer = styled(Box)<{ $count: number }>(({ theme, $count }) => ({
 
   '&.horizontal': {
     paddingBottom: 4,
-    gridTemplateColumns: `repeat(${$count}, minmax(420px, 1fr))`,
+    gridTemplateColumns: `repeat(${count}, minmax(420px, 1fr))`,
     overflowX: 'auto',
   },
 
@@ -388,10 +409,10 @@ const GridContainer = styled(Box)<{ $count: number }>(({ theme, $count }) => ({
   },
 
   '&.grid': {
-    gridTemplateColumns: $count > 1 ? 'repeat(2, minmax(0, 1fr))' : 'repeat(1, minmax(0, 1fr))',
+    gridTemplateColumns: count > 1 ? 'repeat(2, minmax(0, 1fr))' : 'repeat(1, minmax(0, 1fr))',
     gridTemplateRows: 'auto',
     [theme.breakpoints.up('lg')]: {
-      gridTemplateColumns: $count > 2 ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
+      gridTemplateColumns: count > 2 ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
     },
   },
 }));
@@ -479,14 +500,16 @@ const ModelList = styled(Box)(({ theme }) => ({
   },
 }));
 
-const ModelAvatar = styled(Avatar)<{ $isSelected: boolean; $isProcessing: boolean }>(({ theme, $isSelected, $isProcessing }) => ({
+const ModelAvatar = styled(Avatar, {
+  shouldForwardProp: (prop) => prop !== 'isSelected' && prop !== 'isProcessing'
+})<{ isSelected: boolean; isProcessing: boolean }>(({ theme, isSelected, isProcessing }) => ({
   width: 24,
   height: 24,
   fontSize: 12,
   cursor: 'pointer',
-  border: $isSelected ? `2px solid ${theme.palette.primary.main}` : 'none',
+  border: isSelected ? `2px solid ${theme.palette.primary.main}` : 'none',
   transition: 'transform 0.18s ease-out',
-  animation: $isProcessing ? 'pulse 1.5s infinite' : 'none',
+  animation: isProcessing ? 'pulse 1.5s infinite' : 'none',
   '&:hover': {
     transform: 'scale(1.15)',
   },

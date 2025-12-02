@@ -2,6 +2,8 @@ import type { MCPTool, MCPToolResponse, MCPCallToolResponse } from '../types';
 import { ChunkType } from '../types/chunk';
 import { mcpService } from '../services/mcp';
 import { nanoid } from './index';
+// 🚀 导入网络搜索工具
+import { executeWebSearch, formatSearchResultsForAI } from '../services/webSearch';
 
 /**
  * 根据名称查找 MCP 工具（支持转换后的名称）
@@ -120,12 +122,50 @@ export function parseToolUse(content: string, mcpTools: MCPTool[]): MCPToolRespo
 
 /**
  * 调用 MCP 工具并返回结果
+ * 🚀 支持内置工具（如 builtin_web_search）和 MCP 工具
  */
 export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCallToolResponse> {
-  console.log(`[MCP] 调用工具: ${toolResponse.tool.serverName}.${toolResponse.tool.name}`, toolResponse.arguments);
+  const toolName = toolResponse.tool.name || toolResponse.tool.id;
+  console.log(`[MCP] 调用工具: ${toolResponse.tool.serverName || 'builtin'}.${toolName}`, toolResponse.arguments);
 
   try {
-    // 获取工具对应的服务器
+    // 🚀 检查是否为内置网络搜索工具
+    if (toolName === 'builtin_web_search') {
+      console.log(`[WebSearch] AI 自主调用网络搜索工具`);
+      
+      // 从工具元数据中获取搜索配置
+      const webSearchConfig = (toolResponse.tool as any).webSearchConfig;
+      const providerId = webSearchConfig?.providerId;
+      const extractedKeywords = webSearchConfig?.extractedKeywords;
+      
+      if (!providerId) {
+        throw new Error('网络搜索提供商未配置');
+      }
+      
+      // 执行网络搜索
+      const searchResult = await executeWebSearch(
+        toolResponse.arguments as any,
+        providerId,
+        extractedKeywords
+      );
+      
+      // 格式化结果返回给 AI
+      const formattedResult = formatSearchResultsForAI(searchResult);
+      
+      console.log(`[WebSearch] 搜索完成，找到 ${searchResult.results?.length || 0} 个结果`);
+      
+      return {
+        isError: false,
+        content: [
+          {
+            type: 'text',
+            text: formattedResult
+          }
+        ]
+      };
+    }
+
+    // 获取工具对应的服务器（MCP 工具）
     const server = mcpService.getServerById(toolResponse.tool.serverId);
 
     if (!server) {
@@ -142,13 +182,13 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
     console.log(`[MCP] 工具调用成功: ${toolResponse.tool.serverName}.${toolResponse.tool.name}`, response);
     return response;
   } catch (error) {
-    console.error(`[MCP] 工具调用失败: ${toolResponse.tool.serverName}.${toolResponse.tool.name}`, error);
+    console.error(`[MCP] 工具调用失败: ${toolResponse.tool.serverName || 'builtin'}.${toolName}`, error);
     return {
       isError: true,
       content: [
         {
           type: 'text',
-          text: `工具调用失败 ${toolResponse.tool.name}: ${error instanceof Error ? error.message : '未知错误'}`
+          text: `工具调用失败 ${toolName}: ${error instanceof Error ? error.message : '未知错误'}`
         }
       ]
     };

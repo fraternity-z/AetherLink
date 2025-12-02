@@ -43,6 +43,10 @@ export interface Assistant {
   file_ids?: string[];
   type?: string; // 添加type字段，与最佳实例保持一致
   regularPhrases?: QuickPhrase[]; // 助手专属快捷短语
+  
+  // 🚀 网络搜索配置 - AI Tool Use 模式
+  webSearchProviderId?: string; // 选择的网络搜索提供商ID，如 'bing-free', 'tavily' 等
+  enableWebSearch?: boolean; // 是否启用模型内置的网络搜索（如 Gemini/OpenAI 内置搜索）
 }
 
 export interface ChatTopic {
