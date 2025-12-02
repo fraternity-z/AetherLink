@@ -2,6 +2,17 @@
  * File Editor MCP Server
  * 提供 AI 编辑工作区和笔记文件的能力
  * 参考 Roo-Code 的工具实现
+ * 
+ * 增强功能:
+ * - 批量读取多文件
+ * - Token 预算控制
+ * - 代码定义提取
+ * - 行数验证防截断
+ * - HTML 实体转义
+ * - Diff 预览
+ * - 可配置 Diff 策略
+ * - 部分失败处理
+ * - 错误重试计数
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -12,17 +23,99 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { unifiedFileManager } from '../../UnifiedFileManagerService';
 import { workspaceService } from '../../WorkspaceService';
 
+// ==================== 常量定义 ====================
+
+/** 文件大小阈值 (字节)，超过此值触发 Token 验证 */
+const FILE_SIZE_THRESHOLD = 100_000; // 100KB
+
+/** 最大可 Token 化的文件大小 (字节) */
+const MAX_FILE_SIZE_FOR_TOKENIZATION = 5_000_000; // 5MB
+
+/** 大文件预览大小 (字节) */
+const PREVIEW_SIZE_FOR_LARGE_FILES = 100_000; // 100KB
+
+/** 文件读取 Token 预算百分比 */
+const FILE_READ_BUDGET_PERCENT = 0.6; // 60%
+
+/** 默认上下文窗口大小 */
+const DEFAULT_CONTEXT_WINDOW = 128000;
+
+/** Diff 模糊匹配阈值 */
+const FUZZY_THRESHOLD = 0.9;
+
+/** Diff 搜索缓冲行数 */
+const BUFFER_LINES = 40;
+
+// ==================== 类型定义 ====================
+
+/** 文件条目 */
+interface FileEntry {
+  path: string;
+  start_line?: number;
+  end_line?: number;
+}
+
+/** Token 预算验证结果 */
+interface TokenBudgetResult {
+  shouldTruncate: boolean;
+  maxChars?: number;
+  reason?: string;
+  isPreview?: boolean;
+}
+
+/** Diff 统计 */
+interface DiffStats {
+  added: number;
+  removed: number;
+}
+
+/** Diff 结果 */
+interface DiffResult {
+  success: boolean;
+  content?: string;
+  error?: string;
+  failParts?: Array<{
+    success: boolean;
+    error?: string;
+    details?: any;
+  }>;
+}
+
+/** Diff 策略类型 */
+type DiffStrategyType = 'unified' | 'search-replace' | 'auto';
+
 // ==================== 工具定义 ====================
 
 const READ_FILE_TOOL: Tool = {
   name: 'read_file',
-  description: '读取文件内容。支持读取完整文件或指定行范围。对于大文件，建议使用行范围参数只读取需要的部分。',
+  description: `读取文件内容。支持读取完整文件、指定行范围或批量读取多个文件。
+
+功能特性:
+- 支持批量读取多个文件 (使用 files 数组)
+- 支持指定行范围读取
+- 自动 Token 预算控制，防止超出上下文限制
+- 支持代码定义提取 (extract_definitions)
+
+对于大文件，建议使用行范围参数只读取需要的部分。`,
   inputSchema: {
     type: 'object',
     properties: {
       path: {
         type: 'string',
-        description: '文件的完整路径'
+        description: '单个文件的完整路径 (与 files 二选一)'
+      },
+      files: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: '文件路径' },
+            start_line: { type: 'number', description: '起始行号 (1-based)' },
+            end_line: { type: 'number', description: '结束行号 (1-based, 包含)' }
+          },
+          required: ['path']
+        },
+        description: '批量读取的文件列表 (与 path 二选一)'
       },
       start_line: {
         type: 'number',
@@ -31,15 +124,30 @@ const READ_FILE_TOOL: Tool = {
       end_line: {
         type: 'number',
         description: '结束行号 (1-based, 包含)，可选。不指定则读取到文件末尾'
+      },
+      extract_definitions: {
+        type: 'boolean',
+        description: '是否提取代码定义 (函数、类、接口等)，默认 false'
+      },
+      context_tokens: {
+        type: 'number',
+        description: '当前已使用的上下文 Token 数，用于 Token 预算控制'
       }
-    },
-    required: ['path']
+    }
   }
 };
 
 const WRITE_TO_FILE_TOOL: Tool = {
   name: 'write_to_file',
-  description: '将内容写入文件。如果文件不存在则创建，如果存在则覆盖。写入前请先读取文件确认内容。',
+  description: `将内容写入文件。如果文件不存在则创建，如果存在则覆盖。
+
+重要提示:
+- 必须提供 line_count 参数，用于验证内容完整性
+- 写入前请先读取文件确认内容
+- 系统会自动检测代码截断 (如 "// rest of code unchanged")
+- 支持 Diff 预览，返回变更统计
+
+如果内容被截断，请使用 apply_diff 工具进行增量修改。`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -50,9 +158,17 @@ const WRITE_TO_FILE_TOOL: Tool = {
       content: {
         type: 'string',
         description: '要写入的完整文件内容'
+      },
+      line_count: {
+        type: 'number',
+        description: '(必需) 预期的内容行数，用于验证内容是否被截断'
+      },
+      create_backup: {
+        type: 'boolean',
+        description: '是否创建备份文件，默认 true'
       }
     },
-    required: ['path', 'content']
+    required: ['path', 'content', 'line_count']
   }
 };
 
@@ -81,7 +197,26 @@ const INSERT_CONTENT_TOOL: Tool = {
 
 const APPLY_DIFF_TOOL: Tool = {
   name: 'apply_diff',
-  description: '应用 unified diff 格式的补丁来修改文件。这是修改现有代码的推荐方式。',
+  description: `应用精确、有针对性的修改到现有文件。支持 unified diff 和 SEARCH/REPLACE 两种格式。
+
+支持的格式:
+1. Unified Diff 格式 (传统)
+2. SEARCH/REPLACE 格式 (推荐，更精确):
+   <<<<<<< SEARCH
+   :start_line:行号
+   -------
+   [要查找的精确内容]
+   =======
+   [替换后的内容]
+   >>>>>>> REPLACE
+
+特性:
+- 支持多个 SEARCH/REPLACE 块在一次调用中
+- 模糊匹配 (相似度阈值 90%)
+- 部分失败处理，返回详细报告
+- 自动重试计数
+
+提示: 如果不确定要搜索的精确内容，请先使用 read_file 工具获取最新内容。`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -91,7 +226,16 @@ const APPLY_DIFF_TOOL: Tool = {
       },
       diff: {
         type: 'string',
-        description: 'Unified diff 格式的补丁内容'
+        description: 'Diff 内容 (unified diff 或 SEARCH/REPLACE 格式)'
+      },
+      strategy: {
+        type: 'string',
+        enum: ['unified', 'search-replace', 'auto'],
+        description: 'Diff 策略: unified(传统), search-replace(推荐), auto(自动检测)。默认 auto'
+      },
+      fuzzy_threshold: {
+        type: 'number',
+        description: '模糊匹配阈值 (0-1)，默认 0.9。值越高要求越精确'
       }
     },
     required: ['path', 'diff']
@@ -276,6 +420,17 @@ const ALL_TOOLS: Tool[] = [
 export class FileEditorServer {
   public server: Server;
 
+  // ==================== 状态追踪 ====================
+  
+  /** 缓存工作区列表，用于编号到ID的映射 */
+  private workspaceCache: Array<{ id: string; name: string; path: string }> = [];
+  
+  /** 连续错误计数 */
+  private consecutiveMistakeCount: number = 0;
+  
+  /** Diff 重试计数 (按文件路径) */
+  private diffRetryCount: Map<string, number> = new Map();
+
   constructor() {
     this.server = new Server(
       {
@@ -338,9 +493,6 @@ export class FileEditorServer {
   }
 
   // ==================== 工具实现 ====================
-
-  // 缓存工作区列表，用于编号到ID的映射
-  private workspaceCache: Array<{ id: string; name: string; path: string }> = [];
 
   /**
    * 列出所有工作区
@@ -518,20 +670,38 @@ export class FileEditorServer {
   }
 
   /**
-   * 读取文件
+   * 读取文件 - 增强版
+   * 支持批量读取、Token 预算控制、代码定义提取
    */
   private async readFile(params: { 
-    path: string; 
+    path?: string;
+    files?: FileEntry[];
     start_line?: number; 
-    end_line?: number 
+    end_line?: number;
+    extract_definitions?: boolean;
+    context_tokens?: number;
   }) {
-    const { path, start_line, end_line } = params;
+    const { path, files, start_line, end_line, extract_definitions = false, context_tokens = 0 } = params;
+
+    // 支持批量读取
+    if (files && files.length > 0) {
+      return await this.readMultipleFiles(files, context_tokens, extract_definitions);
+    }
 
     if (!path) {
-      throw new Error('缺少必需参数: path');
+      throw new Error('缺少必需参数: path 或 files');
     }
 
     try {
+      // 获取文件信息用于 Token 预算
+      const fileInfo = await unifiedFileManager.getFileInfo({ path });
+      
+      // Token 预算控制
+      const budgetResult = await this.validateFileTokenBudget(
+        fileInfo.size,
+        context_tokens
+      );
+
       // 检查是否需要读取行范围
       if (start_line !== undefined && end_line !== undefined) {
         const result = await unifiedFileManager.readFileRange({
@@ -556,10 +726,37 @@ export class FileEditorServer {
 
         // 获取行数
         const lineCount = await unifiedFileManager.getLineCount({ path });
+        
+        let content = result.content;
+        let notice: string | undefined;
+        
+        // Token 预算截断
+        if (budgetResult.shouldTruncate && budgetResult.maxChars) {
+          const truncateResult = this.truncateFileContent(
+            content,
+            budgetResult.maxChars,
+            content.length,
+            budgetResult.isPreview
+          );
+          content = truncateResult.content;
+          notice = truncateResult.notice;
+        }
+        
+        // 代码定义提取
+        let definitions: string[] | undefined;
+        if (extract_definitions) {
+          definitions = this.extractCodeDefinitions(content, path);
+        }
 
         return this.createSuccessResponse({
-          content: result.content,
-          totalLines: lineCount.lines
+          content,
+          totalLines: lineCount.lines,
+          ...(notice && { notice }),
+          ...(definitions && { definitions }),
+          ...(budgetResult.shouldTruncate && { 
+            truncated: true,
+            reason: budgetResult.reason 
+          })
         });
       }
     } catch (error) {
@@ -568,10 +765,239 @@ export class FileEditorServer {
   }
 
   /**
-   * 写入文件
+   * 批量读取多个文件
    */
-  private async writeToFile(params: { path: string; content: string }) {
-    const { path, content } = params;
+  private async readMultipleFiles(
+    files: FileEntry[],
+    contextTokens: number,
+    extractDefinitions: boolean
+  ) {
+    const results: Array<{
+      path: string;
+      status: 'success' | 'error';
+      content?: string;
+      totalLines?: number;
+      error?: string;
+      definitions?: string[];
+      truncated?: boolean;
+    }> = [];
+
+    let currentTokens = contextTokens;
+
+    for (const file of files) {
+      try {
+        const fileInfo = await unifiedFileManager.getFileInfo({ path: file.path });
+        const budgetResult = await this.validateFileTokenBudget(fileInfo.size, currentTokens);
+
+        let content: string;
+        let totalLines: number;
+
+        if (file.start_line !== undefined && file.end_line !== undefined) {
+          const result = await unifiedFileManager.readFileRange({
+            path: file.path,
+            startLine: file.start_line,
+            endLine: file.end_line
+          });
+          content = result.content;
+          totalLines = result.totalLines;
+        } else {
+          const result = await unifiedFileManager.readFile({
+            path: file.path,
+            encoding: 'utf8'
+          });
+          content = result.content;
+          const lineCount = await unifiedFileManager.getLineCount({ path: file.path });
+          totalLines = lineCount.lines;
+        }
+
+        // Token 预算截断
+        let truncated = false;
+        if (budgetResult.shouldTruncate && budgetResult.maxChars) {
+          const truncateResult = this.truncateFileContent(
+            content,
+            budgetResult.maxChars,
+            content.length,
+            budgetResult.isPreview
+          );
+          content = truncateResult.content;
+          truncated = true;
+        }
+
+        // 代码定义提取
+        let definitions: string[] | undefined;
+        if (extractDefinitions) {
+          definitions = this.extractCodeDefinitions(content, file.path);
+        }
+
+        // 更新已使用 Token 估算
+        currentTokens += Math.ceil(content.length / 4);
+
+        results.push({
+          path: file.path,
+          status: 'success',
+          content,
+          totalLines,
+          ...(definitions && { definitions }),
+          ...(truncated && { truncated })
+        });
+      } catch (error) {
+        results.push({
+          path: file.path,
+          status: 'error',
+          error: error instanceof Error ? error.message : '未知错误'
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.status === 'success').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+
+    return this.createSuccessResponse({
+      files: results,
+      summary: {
+        total: files.length,
+        success: successCount,
+        error: errorCount
+      }
+    });
+  }
+
+  /**
+   * Token 预算验证
+   */
+  private async validateFileTokenBudget(
+    fileSizeBytes: number,
+    currentTokens: number
+  ): Promise<TokenBudgetResult> {
+    // 小文件快速路径
+    if (fileSizeBytes < FILE_SIZE_THRESHOLD) {
+      return { shouldTruncate: false };
+    }
+
+    // 计算可用 Token 预算
+    const remainingTokens = DEFAULT_CONTEXT_WINDOW - currentTokens;
+    const safeReadBudget = Math.floor(remainingTokens * FILE_READ_BUDGET_PERCENT);
+
+    if (safeReadBudget <= 0) {
+      return {
+        shouldTruncate: true,
+        maxChars: 0,
+        reason: '没有可用的上下文预算用于文件读取'
+      };
+    }
+
+    // 大文件预览模式
+    const isPreviewMode = fileSizeBytes > MAX_FILE_SIZE_FOR_TOKENIZATION;
+
+    if (isPreviewMode) {
+      return {
+        shouldTruncate: true,
+        maxChars: PREVIEW_SIZE_FOR_LARGE_FILES,
+        isPreview: true,
+        reason: `文件过大 (${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB)，显示前 ${(PREVIEW_SIZE_FOR_LARGE_FILES / 1024).toFixed(0)}KB 预览。使用 start_line/end_line 读取特定部分。`
+      };
+    }
+
+    // 估算 Token 数 (粗略估算: 4 字符 = 1 Token)
+    const estimatedTokens = Math.ceil(fileSizeBytes / 4);
+
+    if (estimatedTokens > safeReadBudget) {
+      const maxChars = Math.floor(safeReadBudget * 4);
+      return {
+        shouldTruncate: true,
+        maxChars,
+        reason: `文件需要约 ${estimatedTokens} tokens，但只有 ${safeReadBudget} tokens 可用`
+      };
+    }
+
+    return { shouldTruncate: false };
+  }
+
+  /**
+   * 截断文件内容
+   */
+  private truncateFileContent(
+    content: string,
+    maxChars: number,
+    totalChars: number,
+    isPreview: boolean = false
+  ): { content: string; notice: string } {
+    const truncatedContent = content.slice(0, maxChars);
+
+    const notice = isPreview
+      ? `预览: 显示前 ${(maxChars / 1024).toFixed(1)}KB / 共 ${(totalChars / 1024).toFixed(1)}KB。使用 start_line/end_line 读取特定部分。`
+      : `文件已截断至 ${maxChars} / ${totalChars} 字符，以适应上下文限制。使用 start_line/end_line 读取特定部分。`;
+
+    return {
+      content: truncatedContent,
+      notice
+    };
+  }
+
+  /**
+   * 提取代码定义 (函数、类、接口等)
+   */
+  private extractCodeDefinitions(content: string, filePath: string): string[] {
+    const definitions: string[] = [];
+    const ext = filePath.split('.').pop()?.toLowerCase();
+
+    // 根据文件类型使用不同的正则
+    const patterns: Record<string, RegExp[]> = {
+      ts: [
+        /^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)/gm,
+        /^\s*(?:export\s+)?class\s+(\w+)/gm,
+        /^\s*(?:export\s+)?interface\s+(\w+)/gm,
+        /^\s*(?:export\s+)?type\s+(\w+)/gm,
+        /^\s*(?:export\s+)?const\s+(\w+)\s*=/gm,
+      ],
+      tsx: [
+        /^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)/gm,
+        /^\s*(?:export\s+)?class\s+(\w+)/gm,
+        /^\s*(?:export\s+)?interface\s+(\w+)/gm,
+        /^\s*(?:export\s+)?type\s+(\w+)/gm,
+        /^\s*(?:export\s+)?const\s+(\w+)\s*=/gm,
+      ],
+      js: [
+        /^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)/gm,
+        /^\s*(?:export\s+)?class\s+(\w+)/gm,
+        /^\s*(?:export\s+)?const\s+(\w+)\s*=/gm,
+      ],
+      py: [
+        /^\s*def\s+(\w+)/gm,
+        /^\s*class\s+(\w+)/gm,
+        /^\s*async\s+def\s+(\w+)/gm,
+      ],
+      java: [
+        /^\s*(?:public|private|protected)?\s*(?:static)?\s*(?:final)?\s*(?:class|interface|enum)\s+(\w+)/gm,
+        /^\s*(?:public|private|protected)?\s*(?:static)?\s*(?:\w+)\s+(\w+)\s*\(/gm,
+      ],
+    };
+
+    const filePatterns = patterns[ext || ''] || patterns['ts'];
+
+    for (const pattern of filePatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        if (match[1] && !definitions.includes(match[1])) {
+          definitions.push(match[1]);
+        }
+      }
+    }
+
+    return definitions;
+  }
+
+  /**
+   * 写入文件 - 增强版
+   * 支持行数验证、代码截断检测、HTML 实体转义、Diff 预览
+   */
+  private async writeToFile(params: { 
+    path: string; 
+    content: string;
+    line_count?: number;
+    create_backup?: boolean;
+  }) {
+    const { path, content, line_count, create_backup = true } = params;
 
     if (!path) {
       throw new Error('缺少必需参数: path');
@@ -580,10 +1006,60 @@ export class FileEditorServer {
       throw new Error('缺少必需参数: content');
     }
 
+    // 行数验证 - 防止内容截断
+    const actualLineCount = content.split('\n').length;
+    if (line_count !== undefined && line_count > 0) {
+      if (actualLineCount < line_count * 0.8) {
+        // 实际行数小于预期的 80%，可能被截断
+        this.consecutiveMistakeCount++;
+        
+        // 检测代码省略标记
+        const omissionDetected = this.detectCodeOmission(content);
+        
+        if (omissionDetected) {
+          return this.createErrorResponse(new Error(
+            `内容可能被截断 (实际 ${actualLineCount} 行，预期 ${line_count} 行)，` +
+            `并检测到代码省略标记 (如 "// rest of code unchanged")。` +
+            `请提供完整内容，或使用 apply_diff 工具进行增量修改。`
+          ));
+        }
+      }
+    }
+
     try {
+      // HTML 实体转义
+      let processedContent = this.unescapeHtmlEntities(content);
+      
+      // 移除可能的代码块标记
+      processedContent = this.removeCodeBlockMarkers(processedContent);
+
+      // 获取原始文件内容用于 Diff 预览
+      let originalContent = '';
+      let fileExists = false;
+      try {
+        const existing = await unifiedFileManager.readFile({ path, encoding: 'utf8' });
+        originalContent = existing.content;
+        fileExists = true;
+      } catch {
+        // 文件不存在，这是新文件
+      }
+
+      // 创建备份
+      let backupPath: string | undefined;
+      if (create_backup && fileExists) {
+        backupPath = `${path}.backup.${Date.now()}`;
+        await unifiedFileManager.writeFile({
+          path: backupPath,
+          content: originalContent,
+          encoding: 'utf8',
+          append: false
+        });
+      }
+
+      // 写入文件
       await unifiedFileManager.writeFile({
         path,
-        content,
+        content: processedContent,
         encoding: 'utf8',
         append: false
       });
@@ -591,14 +1067,147 @@ export class FileEditorServer {
       // 获取写入后的行数
       const lineCount = await unifiedFileManager.getLineCount({ path });
 
+      // 计算 Diff 统计
+      const diffStats = this.computeDiffStats(originalContent, processedContent);
+
+      // 重置连续错误计数
+      this.consecutiveMistakeCount = 0;
+
       return this.createSuccessResponse({
-        message: '文件写入成功',
+        message: fileExists ? '文件更新成功' : '文件创建成功',
         path,
-        totalLines: lineCount.lines
+        totalLines: lineCount.lines,
+        isNewFile: !fileExists,
+        ...(backupPath && { backupPath }),
+        diffStats: {
+          added: diffStats.added,
+          removed: diffStats.removed
+        },
+        // Diff 预览 (简化版)
+        diffPreview: fileExists ? this.generateDiffPreview(originalContent, processedContent) : undefined
       });
     } catch (error) {
       throw new Error(`写入文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
+  }
+
+  /**
+   * HTML 实体转义
+   */
+  private unescapeHtmlEntities(text: string): string {
+    if (!text) return text;
+
+    return text
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&#91;/g, '[')
+      .replace(/&#93;/g, ']')
+      .replace(/&lsqb;/g, '[')
+      .replace(/&rsqb;/g, ']')
+      .replace(/&amp;/g, '&');
+  }
+
+  /**
+   * 移除代码块标记
+   */
+  private removeCodeBlockMarkers(content: string): string {
+    let result = content;
+    
+    // 移除开头的 ```
+    if (result.startsWith('```')) {
+      result = result.split('\n').slice(1).join('\n');
+    }
+    
+    // 移除结尾的 ```
+    if (result.endsWith('```')) {
+      result = result.split('\n').slice(0, -1).join('\n');
+    }
+    
+    return result;
+  }
+
+  /**
+   * 检测代码省略标记
+   */
+  private detectCodeOmission(content: string): boolean {
+    const omissionPatterns = [
+      /\/\/\s*rest\s+of\s+code/i,
+      /\/\/\s*\.{3}/,
+      /\/\*\s*previous\s+code/i,
+      /\/\*\s*rest\s+of/i,
+      /\/\/\s*unchanged/i,
+      /\/\/\s*same\s+as\s+before/i,
+      /\/\/\s*\.{3}\s*remaining/i,
+      /#\s*rest\s+of\s+code/i,
+      /#\s*\.{3}/,
+    ];
+
+    return omissionPatterns.some(pattern => pattern.test(content));
+  }
+
+  /**
+   * 计算 Diff 统计
+   */
+  private computeDiffStats(oldContent: string, newContent: string): DiffStats {
+    const oldLines = oldContent.split('\n');
+    const newLines = newContent.split('\n');
+    
+    // 简化的 Diff 统计
+    const oldSet = new Set(oldLines);
+    const newSet = new Set(newLines);
+    
+    let added = 0;
+    let removed = 0;
+    
+    for (const line of newLines) {
+      if (!oldSet.has(line)) added++;
+    }
+    
+    for (const line of oldLines) {
+      if (!newSet.has(line)) removed++;
+    }
+    
+    return { added, removed };
+  }
+
+  /**
+   * 生成 Diff 预览 (简化版)
+   */
+  private generateDiffPreview(oldContent: string, newContent: string): string {
+    const oldLines = oldContent.split('\n');
+    const newLines = newContent.split('\n');
+    
+    const preview: string[] = [];
+    const maxPreviewLines = 20;
+    let previewCount = 0;
+    
+    // 简化的行对比
+    const maxLen = Math.max(oldLines.length, newLines.length);
+    
+    for (let i = 0; i < maxLen && previewCount < maxPreviewLines; i++) {
+      const oldLine = oldLines[i];
+      const newLine = newLines[i];
+      
+      if (oldLine !== newLine) {
+        if (oldLine !== undefined && newLine === undefined) {
+          preview.push(`- ${i + 1}: ${oldLine.substring(0, 60)}...`);
+        } else if (oldLine === undefined && newLine !== undefined) {
+          preview.push(`+ ${i + 1}: ${newLine.substring(0, 60)}...`);
+        } else if (oldLine !== newLine) {
+          preview.push(`~ ${i + 1}: ${newLine?.substring(0, 60)}...`);
+        }
+        previewCount++;
+      }
+    }
+    
+    if (previewCount >= maxPreviewLines) {
+      preview.push(`... 还有更多变更`);
+    }
+    
+    return preview.join('\n');
   }
 
   /**
@@ -641,10 +1250,16 @@ export class FileEditorServer {
   }
 
   /**
-   * 应用 diff
+   * 应用 Diff - 增强版
+   * 支持多种 Diff 策略、部分失败处理、错误重试计数
    */
-  private async applyDiff(params: { path: string; diff: string }) {
-    const { path, diff } = params;
+  private async applyDiff(params: { 
+    path: string; 
+    diff: string;
+    strategy?: DiffStrategyType;
+    fuzzy_threshold?: number;
+  }) {
+    const { path, diff, strategy = 'auto', fuzzy_threshold = FUZZY_THRESHOLD } = params;
 
     if (!path) {
       throw new Error('缺少必需参数: path');
@@ -653,25 +1268,316 @@ export class FileEditorServer {
       throw new Error('缺少必需参数: diff');
     }
 
+    // 获取或初始化该文件的重试计数
+    const currentRetryCount = this.diffRetryCount.get(path) || 0;
+
     try {
-      const result = await unifiedFileManager.applyDiff({
-        path,
-        diff,
-        createBackup: true
-      });
+      // 检测 Diff 策略
+      const detectedStrategy = strategy === 'auto' 
+        ? this.detectDiffStrategy(diff) 
+        : strategy;
+
+      let result: DiffResult;
+
+      if (detectedStrategy === 'search-replace') {
+        // 使用 SEARCH/REPLACE 策略
+        result = await this.applySearchReplaceDiff(path, diff, fuzzy_threshold);
+      } else {
+        // 使用传统 unified diff
+        const unifiedResult = await unifiedFileManager.applyDiff({
+          path,
+          diff,
+          createBackup: true
+        });
+        
+        result = {
+          success: unifiedResult.success,
+          content: undefined,
+          error: unifiedResult.success ? undefined : '应用 unified diff 失败'
+        };
+      }
+
+      if (!result.success) {
+        // 增加重试计数
+        this.diffRetryCount.set(path, currentRetryCount + 1);
+        this.consecutiveMistakeCount++;
+
+        // 构建详细错误报告
+        let errorMessage = result.error || 'Diff 应用失败';
+        
+        if (result.failParts && result.failParts.length > 0) {
+          const failedCount = result.failParts.filter(p => !p.success).length;
+          errorMessage += `\n\n部分失败报告: ${failedCount} 个块失败`;
+          
+          for (const part of result.failParts) {
+            if (!part.success) {
+              errorMessage += `\n- ${part.error}`;
+            }
+          }
+        }
+
+        // 如果重试次数过多，给出建议
+        if (currentRetryCount >= 2) {
+          errorMessage += `\n\n建议: 该文件已失败 ${currentRetryCount + 1} 次。请使用 read_file 工具获取最新内容后重试。`;
+        }
+
+        return this.createSuccessResponse({
+          success: false,
+          error: errorMessage,
+          retryCount: currentRetryCount + 1,
+          failParts: result.failParts
+        });
+      }
+
+      // 成功 - 重置重试计数
+      this.diffRetryCount.delete(path);
+      this.consecutiveMistakeCount = 0;
+
+      // 计算 Diff 统计
+      const diffStats = this.computeSearchReplaceDiffStats(diff);
 
       return this.createSuccessResponse({
         message: 'Diff 应用成功',
         path,
-        success: result.success,
-        linesChanged: result.linesChanged,
-        linesAdded: result.linesAdded,
-        linesDeleted: result.linesDeleted,
-        backupPath: result.backupPath
+        success: true,
+        strategy: detectedStrategy,
+        diffStats,
+        ...(result.failParts && result.failParts.length > 0 && {
+          partialSuccess: true,
+          failParts: result.failParts.filter(p => !p.success)
+        })
       });
     } catch (error) {
-      throw new Error(`应用 diff 失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      // 增加重试计数
+      this.diffRetryCount.set(path, currentRetryCount + 1);
+      this.consecutiveMistakeCount++;
+      
+      throw new Error(`应用 diff 失败 (第 ${currentRetryCount + 1} 次尝试): ${error instanceof Error ? error.message : '未知错误'}`);
     }
+  }
+
+  /**
+   * 检测 Diff 策略
+   */
+  private detectDiffStrategy(diff: string): DiffStrategyType {
+    // 检测 SEARCH/REPLACE 格式
+    if (diff.includes('<<<<<<< SEARCH') && diff.includes('>>>>>>> REPLACE')) {
+      return 'search-replace';
+    }
+    
+    // 检测 unified diff 格式
+    if (diff.includes('@@') && (diff.includes('---') || diff.includes('+++'))) {
+      return 'unified';
+    }
+    
+    // 默认使用 search-replace
+    return 'search-replace';
+  }
+
+  /**
+   * 应用 SEARCH/REPLACE 格式的 Diff
+   */
+  private async applySearchReplaceDiff(
+    filePath: string,
+    diffContent: string,
+    fuzzyThreshold: number
+  ): Promise<DiffResult> {
+    // 解析 SEARCH/REPLACE 块
+    const blocks = this.parseSearchReplaceBlocks(diffContent);
+    
+    if (blocks.length === 0) {
+      return {
+        success: false,
+        error: '无效的 Diff 格式 - 未找到 SEARCH/REPLACE 块'
+      };
+    }
+
+    // 读取原始文件
+    const originalFile = await unifiedFileManager.readFile({ path: filePath, encoding: 'utf8' });
+    let content = originalFile.content;
+    const failParts: DiffResult['failParts'] = [];
+    let appliedCount = 0;
+
+    // 按行号排序，从后往前应用以避免行号偏移
+    const sortedBlocks = [...blocks].sort((a, b) => (b.startLine || 0) - (a.startLine || 0));
+
+    for (const block of sortedBlocks) {
+      const result = this.applySingleSearchReplace(
+        content,
+        block.search,
+        block.replace,
+        block.startLine,
+        fuzzyThreshold
+      );
+
+      if (result.success && result.content) {
+        content = result.content;
+        appliedCount++;
+      } else {
+        failParts.push({
+          success: false,
+          error: result.error,
+          details: {
+            search: block.search.substring(0, 100) + '...',
+            startLine: block.startLine
+          }
+        });
+      }
+    }
+
+    if (appliedCount === 0) {
+      return {
+        success: false,
+        error: '所有 SEARCH/REPLACE 块都失败',
+        failParts
+      };
+    }
+
+    // 写入文件
+    await unifiedFileManager.writeFile({
+      path: filePath,
+      content,
+      encoding: 'utf8',
+      append: false
+    });
+
+    return {
+      success: true,
+      content,
+      failParts: failParts.length > 0 ? failParts : undefined
+    };
+  }
+
+  /**
+   * 解析 SEARCH/REPLACE 块
+   */
+  private parseSearchReplaceBlocks(diff: string): Array<{
+    search: string;
+    replace: string;
+    startLine?: number;
+  }> {
+    const blocks: Array<{ search: string; replace: string; startLine?: number }> = [];
+    
+    // 匹配 SEARCH/REPLACE 块
+    const regex = /<<<<<<< SEARCH>?\s*\n(?::start_line:\s*(\d+)\s*\n)?(?:-------\s*\n)?([\s\S]*?)\n=======\n([\s\S]*?)\n>>>>>>> REPLACE/g;
+    
+    let match;
+    while ((match = regex.exec(diff)) !== null) {
+      blocks.push({
+        startLine: match[1] ? parseInt(match[1], 10) : undefined,
+        search: match[2] || '',
+        replace: match[3] || ''
+      });
+    }
+    
+    return blocks;
+  }
+
+  /**
+   * 应用单个 SEARCH/REPLACE
+   */
+  private applySingleSearchReplace(
+    content: string,
+    search: string,
+    replace: string,
+    startLine: number | undefined,
+    fuzzyThreshold: number
+  ): { success: boolean; content?: string; error?: string } {
+    const lines = content.split('\n');
+    const searchLines = search.split('\n');
+    
+    // 确定搜索范围
+    let searchStart = 0;
+    let searchEnd = lines.length;
+    
+    if (startLine !== undefined) {
+      searchStart = Math.max(0, startLine - 1 - BUFFER_LINES);
+      searchEnd = Math.min(lines.length, startLine - 1 + searchLines.length + BUFFER_LINES);
+    }
+
+    // 查找最佳匹配
+    let bestMatchIndex = -1;
+    let bestMatchScore = 0;
+
+    for (let i = searchStart; i <= searchEnd - searchLines.length; i++) {
+      const chunk = lines.slice(i, i + searchLines.length).join('\n');
+      const similarity = this.calculateSimilarity(chunk, search);
+      
+      if (similarity > bestMatchScore) {
+        bestMatchScore = similarity;
+        bestMatchIndex = i;
+      }
+      
+      // 精确匹配，立即返回
+      if (similarity === 1) break;
+    }
+
+    if (bestMatchIndex === -1 || bestMatchScore < fuzzyThreshold) {
+      return {
+        success: false,
+        error: `未找到匹配内容 (相似度 ${Math.floor(bestMatchScore * 100)}%，需要 ${Math.floor(fuzzyThreshold * 100)}%)`
+      };
+    }
+
+    // 应用替换
+    const replaceLines = replace.split('\n');
+    const newLines = [
+      ...lines.slice(0, bestMatchIndex),
+      ...replaceLines,
+      ...lines.slice(bestMatchIndex + searchLines.length)
+    ];
+
+    return {
+      success: true,
+      content: newLines.join('\n')
+    };
+  }
+
+  /**
+   * 计算字符串相似度 (Levenshtein 简化版)
+   */
+  private calculateSimilarity(str1: string, str2: string): number {
+    if (str1 === str2) return 1;
+    if (!str1 || !str2) return 0;
+
+    // 简化的相似度计算
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1;
+    
+    // 使用简化的编辑距离估算
+    let matches = 0;
+    const shorterLines = shorter.split('\n');
+    const longerLines = longer.split('\n');
+    
+    for (const line of shorterLines) {
+      if (longerLines.includes(line)) matches++;
+    }
+    
+    return matches / Math.max(shorterLines.length, longerLines.length);
+  }
+
+  /**
+   * 计算 SEARCH/REPLACE Diff 统计
+   */
+  private computeSearchReplaceDiffStats(diff: string): DiffStats {
+    const blocks = this.parseSearchReplaceBlocks(diff);
+    let added = 0;
+    let removed = 0;
+
+    for (const block of blocks) {
+      const searchLines = block.search.split('\n').length;
+      const replaceLines = block.replace.split('\n').length;
+      
+      if (replaceLines > searchLines) {
+        added += replaceLines - searchLines;
+      } else if (searchLines > replaceLines) {
+        removed += searchLines - replaceLines;
+      }
+    }
+
+    return { added, removed };
   }
 
   /**
