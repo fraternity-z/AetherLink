@@ -2,10 +2,11 @@
  * 网络搜索工具消息块组件
  * 
  * 显示 AI 调用网络搜索工具的状态和结果
+ * 简约风格设计
  */
 
 import React from 'react';
-import { Search, Loader2, CheckCircle, ExternalLink, AlertCircle } from 'lucide-react';
+import { Search, Loader2, Check, ExternalLink, X } from 'lucide-react';
 import type { ToolMessageBlock } from '../../shared/types/newMessage';
 
 interface MessageWebSearchToolProps {
@@ -43,9 +44,9 @@ export const MessageWebSearchTool: React.FC<MessageWebSearchToolProps> = ({ bloc
   // 搜索中状态
   if (isSearching) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
-        <Loader2 size={16} className="text-blue-500 animate-spin" />
-        <span className="text-blue-700 dark:text-blue-300">
+      <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+        <Loader2 size={14} className="text-gray-400 animate-spin" />
+        <span className="text-gray-600 dark:text-gray-400">
           正在搜索: {searchQuery}
         </span>
       </div>
@@ -55,9 +56,9 @@ export const MessageWebSearchTool: React.FC<MessageWebSearchToolProps> = ({ bloc
   // 错误状态
   if (isError) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm">
-        <AlertCircle size={16} className="text-red-500" />
-        <span className="text-red-700 dark:text-red-300">
+      <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+        <X size={14} className="text-gray-400" />
+        <span className="text-gray-500 dark:text-gray-400">
           搜索失败: {toolOutput?.error || '未知错误'}
         </span>
       </div>
@@ -71,9 +72,9 @@ export const MessageWebSearchTool: React.FC<MessageWebSearchToolProps> = ({ bloc
     return (
       <div className="space-y-2">
         {/* 搜索摘要 */}
-        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
-          <CheckCircle size={16} className="text-green-500" />
-          <span className="text-green-700 dark:text-green-300">
+        <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+          <Check size={14} className="text-gray-500" />
+          <span className="text-gray-600 dark:text-gray-400">
             搜索完成，找到 {resultCount} 个结果
           </span>
         </div>
@@ -89,27 +90,26 @@ export const MessageWebSearchTool: React.FC<MessageWebSearchToolProps> = ({ bloc
                 rel="noopener noreferrer"
                 className="
                   flex items-start gap-2 px-2 py-1.5 rounded
-                  hover:bg-gray-100 dark:hover:bg-gray-800
-                  text-sm group
+                  hover:bg-gray-50 dark:hover:bg-gray-800/50
+                  text-sm group transition-colors
                 "
               >
                 <span className="
-                  flex-shrink-0 w-5 h-5 rounded-full
-                  bg-gray-200 dark:bg-gray-700
-                  text-gray-600 dark:text-gray-400
-                  flex items-center justify-center text-xs font-medium
+                  flex-shrink-0 w-4 h-4
+                  text-gray-400
+                  flex items-center justify-center text-xs
                 ">
-                  {index + 1}
+                  {index + 1}.
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-blue-600 dark:text-blue-400 truncate group-hover:underline">
+                    <span className="text-gray-700 dark:text-gray-300 truncate group-hover:underline">
                       {result.title}
                     </span>
-                    <ExternalLink size={10} className="text-gray-400 flex-shrink-0" />
+                    <ExternalLink size={10} className="text-gray-300 dark:text-gray-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   {result.snippet && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1 mt-0.5">
                       {result.snippet}
                     </p>
                   )}
@@ -117,7 +117,7 @@ export const MessageWebSearchTool: React.FC<MessageWebSearchToolProps> = ({ bloc
               </a>
             ))}
             {resultCount > 5 && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 pl-7">
+              <div className="text-xs text-gray-400 pl-6">
                 还有 {resultCount - 5} 个结果...
               </div>
             )}
@@ -129,9 +129,9 @@ export const MessageWebSearchTool: React.FC<MessageWebSearchToolProps> = ({ bloc
 
   // 默认状态（等待中）
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm">
-      <Search size={16} className="text-gray-400" />
-      <span className="text-gray-600 dark:text-gray-400">
+    <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+      <Search size={14} className="text-gray-400" />
+      <span className="text-gray-500 dark:text-gray-400">
         网络搜索
       </span>
     </div>
@@ -151,8 +151,8 @@ export const MessageWebSearchToolTitle: React.FC<MessageWebSearchToolProps> = ({
 
   if (isSearching) {
     return (
-      <div className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400">
-        <Loader2 size={14} className="animate-spin" />
+      <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+        <Loader2 size={12} className="animate-spin" />
         <span>正在搜索...</span>
       </div>
     );
@@ -160,16 +160,16 @@ export const MessageWebSearchToolTitle: React.FC<MessageWebSearchToolProps> = ({
 
   if (isDone) {
     return (
-      <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-        <Search size={14} />
+      <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+        <Search size={12} />
         <span>搜索完成，{resultCount} 个结果</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5 text-sm text-gray-500">
-      <Search size={14} />
+    <div className="flex items-center gap-1.5 text-sm text-gray-400">
+      <Search size={12} />
       <span>网络搜索</span>
     </div>
   );
