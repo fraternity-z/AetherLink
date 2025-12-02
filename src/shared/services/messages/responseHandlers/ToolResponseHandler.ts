@@ -11,6 +11,51 @@ import { createToolBlock } from '../../../utils/messageUtils';
 import type { MCPTool } from '../../../types';
 
 /**
+ * 检查是否是 attempt_completion 工具（支持带前缀的名称）
+ */
+function isAttemptCompletionTool(toolName: string): boolean {
+  return toolName === 'attempt_completion' || toolName.endsWith('-attempt_completion');
+}
+
+/**
+ * 解析 attempt_completion 的结果
+ */
+function parseAttemptCompletionResult(response: any): { result: string; command?: string } | null {
+  try {
+    let content: any = response;
+    
+    // 如果是字符串，尝试解析 JSON
+    if (typeof response === 'string') {
+      try {
+        content = JSON.parse(response);
+      } catch {
+        return { result: response };
+      }
+    }
+    
+    // 检查是否有 __agentic_completion__ 标记
+    if (content?.__agentic_completion__) {
+      return {
+        result: content.result || '任务已完成',
+        command: content.command
+      };
+    }
+    
+    // 直接返回 result 字段
+    if (content?.result) {
+      return {
+        result: content.result,
+        command: content.command
+      };
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 工具响应处理器
  * 
  * 参考项目设计：统一处理工具调用事件
@@ -253,14 +298,35 @@ export class ToolResponseHandler {
             }
 
             const finalStatus = toolResponse.status === 'done' ? MessageBlockStatus.SUCCESS : MessageBlockStatus.ERROR;
+            
+            // 🎯 特殊处理 attempt_completion 工具
+            const toolName = toolResponse.tool?.name || '';
+            const isCompletion = isAttemptCompletionTool(toolName);
+            let displayContent = toolResponse.response;
+            
+            if (isCompletion && finalStatus === MessageBlockStatus.SUCCESS) {
+              // 解析 attempt_completion 的结果，格式化显示
+              const completionInfo = parseAttemptCompletionResult(toolResponse.response);
+              if (completionInfo) {
+                // 创建格式化的完成内容
+                displayContent = `✅ **任务完成**\n\n${completionInfo.result}`;
+                if (completionInfo.command) {
+                  displayContent += `\n\n📋 **建议执行命令:**\n\`\`\`\n${completionInfo.command}\n\`\`\``;
+                }
+                console.log(`[ToolResponseHandler] attempt_completion 结果已格式化`);
+              }
+            }
+            
             const changes: any = {
-              content: toolResponse.response,
+              content: displayContent,
               status: finalStatus,
               metadata: {
                 rawMcpToolResponse: toolResponse,
                 // 参考 Cline 添加完成时间
                 endTime: new Date().toISOString(),
-                duration: this.calculateToolDuration(toolResponse.id)
+                duration: this.calculateToolDuration(toolResponse.id),
+                // 标记是否是完成工具
+                isCompletionTool: isCompletion
               },
               updatedAt: new Date().toISOString()
             };
@@ -272,7 +338,7 @@ export class ToolResponseHandler {
               };
             }
 
-            console.log(`[ToolResponseHandler] 更新工具块 ${existingBlockId} (toolId: ${toolResponse.id}) 状态为 ${finalStatus}`);
+            console.log(`[ToolResponseHandler] 更新工具块 ${existingBlockId} (toolId: ${toolResponse.id}) 状态为 ${finalStatus}${isCompletion ? ' [attempt_completion]' : ''}`);
 
             // 修复：简化更新操作，避免复杂事务
 

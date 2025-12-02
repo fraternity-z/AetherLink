@@ -119,6 +119,71 @@ export interface SystemFilePickerResult {
   cancelled: boolean;
 }
 
+// ============ AI 编辑相关类型 ============
+
+export interface ReadFileRangeOptions {
+  path: string;
+  startLine: number;
+  endLine: number;
+  encoding?: 'utf8' | 'base64';
+}
+
+export interface ReadFileRangeResult {
+  content: string;
+  totalLines: number;
+  startLine: number;
+  endLine: number;
+  rangeHash: string;
+}
+
+export interface InsertContentOptions {
+  path: string;
+  line: number;
+  content: string;
+}
+
+export interface ReplaceInFileOptions {
+  path: string;
+  search: string;
+  replace: string;
+  isRegex?: boolean;
+  replaceAll?: boolean;
+  caseSensitive?: boolean;
+}
+
+export interface ReplaceInFileResult {
+  replacements: number;
+  modified: boolean;
+}
+
+export interface ApplyDiffOptions {
+  path: string;
+  diff: string;
+  createBackup?: boolean;
+}
+
+export interface ApplyDiffResult {
+  success: boolean;
+  linesChanged: number;
+  linesAdded: number;
+  linesDeleted: number;
+  backupPath?: string;
+}
+
+export interface GetFileHashOptions {
+  path: string;
+  algorithm?: 'md5' | 'sha256';
+}
+
+export interface GetFileHashResult {
+  hash: string;
+  algorithm: string;
+}
+
+export interface GetLineCountResult {
+  lines: number;
+}
+
 export interface AdvancedFileManagerPlugin {
   requestPermissions(): Promise<PermissionResult>;
   checkPermissions(): Promise<PermissionResult>;
@@ -138,5 +203,12 @@ export interface AdvancedFileManagerPlugin {
   getFileInfo(options: FileOperationOptions): Promise<FileInfo>;
   exists(options: FileOperationOptions): Promise<{ exists: boolean }>;
   searchFiles(options: SearchFilesOptions): Promise<SearchFilesResult>;
+  // AI 编辑相关
+  readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult>;
+  insertContent(options: InsertContentOptions): Promise<void>;
+  replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult>;
+  applyDiff(options: ApplyDiffOptions): Promise<ApplyDiffResult>;
+  getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult>;
+  getLineCount(options: FileOperationOptions): Promise<GetLineCountResult>;
   echo(options: { value: string }): Promise<{ value: string }>;
 }

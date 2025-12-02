@@ -9,6 +9,7 @@ import { createClient } from './client';
 import { getMainTextContent } from '../../utils/messageUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import { getAppSettings } from '../../utils/settingsUtils';
+import { universalFetch } from '../../utils/universalFetch';
 
 /**
  * 基础Provider抽象类
@@ -403,13 +404,14 @@ export class AnthropicProvider extends BaseProvider {
    */
   async getModels(): Promise<any[]> {
     try {
-      // 尝试获取模型列表
-      const response = await fetch('https://api.anthropic.com/v1/models', {
+      // 尝试获取模型列表 - 使用 universalFetch 支持代理
+      const response = await universalFetch('https://api.anthropic.com/v1/models', {
+        method: 'GET',
         headers: {
           'x-api-key': this.model.apiKey || '',
           'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json'
-        } as HeadersInit
+        }
       });
 
       if (!response.ok) {

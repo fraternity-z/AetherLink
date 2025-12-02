@@ -42,11 +42,8 @@ import type { NetworkPanelRef } from '../components/DevTools/NetworkPanel';
 import EnhancedConsoleService from '../shared/services/EnhancedConsoleService';
 import EnhancedNetworkService from '../shared/services/network/EnhancedNetworkService';
 import { SafeAreaContainer } from '../components/settings/SettingComponents';
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
-import { Share } from '@capacitor/share';
-import { Clipboard } from '@capacitor/clipboard';
 import { toastManager } from '../components/EnhancedToast';
+import { shareTextAsFile } from '../utils/exportUtils';
 import dayjs from 'dayjs';
 
 const DevToolsPage: React.FC = () => {
@@ -267,57 +264,7 @@ const DevToolsPage: React.FC = () => {
         ].join('\n\n');
       }
 
-      if (Capacitor.isNativePlatform()) {
-        // 移动端：创建临时文件并通过分享API让用户选择保存位置
-        try {
-          const tempFileName = `temp_${Date.now()}.txt`;
-          await Filesystem.writeFile({
-            path: tempFileName,
-            data: logContent,
-            directory: Directory.Cache,
-            encoding: Encoding.UTF8
-          });
-
-          const fileUri = await Filesystem.getUri({
-            path: tempFileName,
-            directory: Directory.Cache
-          });
-
-          await Share.share({
-            title: '分享开发者日志',
-            text: logContent,
-            url: fileUri.uri,
-            dialogTitle: '保存日志文件'
-          });
-
-          // 清理临时文件
-          try {
-            await Filesystem.deleteFile({
-              path: tempFileName,
-              directory: Directory.Cache
-            });
-          } catch (deleteError) {
-            console.warn('清理临时文件失败:', deleteError);
-          }
-
-        } catch (shareError) {
-          console.warn('分享失败，尝试复制到剪贴板:', shareError);
-          await Clipboard.write({ string: logContent });
-          toastManager.warning('分享失败，日志已复制到剪贴板', '分享提醒');
-        }
-      } else {
-        // Web端：使用下载链接
-        const blob = new Blob([logContent], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toastManager.success('日志已下载', '分享成功');
-      }
+      await shareTextAsFile(logContent, fileName);
 
     } catch (error) {
       console.error('分享日志失败:', error);

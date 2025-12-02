@@ -17,6 +17,7 @@ import type {
 } from '../types/workspace';
 
 const WORKSPACE_STORAGE_KEY = 'workspaces';
+export const ENABLE_WORKSPACE_SIDEBAR_KEY = 'ENABLE_WORKSPACE_SIDEBAR';
 
 class WorkspaceService {
 
@@ -510,6 +511,21 @@ class WorkspaceService {
         error: '搜索文件失败: ' + (error instanceof Error ? error.message : String(error))
       };
     }
+  }
+
+  /**
+   * 获取是否启用侧边栏
+   */
+  async isSidebarEnabled(): Promise<boolean> {
+    const enabled = await dexieStorage.getSetting(ENABLE_WORKSPACE_SIDEBAR_KEY);
+    return enabled === true;
+  }
+
+  /**
+   * 设置是否启用侧边栏
+   */
+  async setSidebarEnabled(enabled: boolean): Promise<void> {
+    await dexieStorage.saveSetting(ENABLE_WORKSPACE_SIDEBAR_KEY, enabled);
   }
 }
 

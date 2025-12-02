@@ -30,6 +30,8 @@ import {
   CheckCircle2 as SuccessIcon,
   Clock as PendingIcon,
   XCircle as CancelledIcon,
+  Copy as CopyIcon,
+  Share2 as ShareIcon,
 } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import { useMediaQuery } from '@mui/material';
@@ -37,6 +39,8 @@ import { useTranslation } from '../../i18n';
 import EnhancedNetworkService from '../../shared/services/network/EnhancedNetworkService';
 import type { NetworkEntry, NetworkFilter } from '../../shared/services/network/EnhancedNetworkService';
 import CustomSwitch from '../CustomSwitch';
+import { shareTextAsFile } from '../../utils/exportUtils';
+import dayjs from 'dayjs';
 
 interface NetworkPanelProps {
   selectionMode?: boolean;
@@ -103,6 +107,50 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
     setShowDetails(true);
   };
 
+  // 生成网络请求详情文本
+  const generateDetailsText = () => {
+    if (!selectedEntry) return '';
+    
+    return [
+      `=== 网络请求详情 ===`,
+      ``,
+      `URL: ${selectedEntry.url}`,
+      `Method: ${selectedEntry.method}`,
+      `Status: ${selectedEntry.statusCode || selectedEntry.status}`,
+      selectedEntry.duration ? `Duration: ${networkService.formatDuration(selectedEntry.duration)}` : null,
+      selectedEntry.responseSize ? `Response Size: ${networkService.formatSize(selectedEntry.responseSize)}` : null,
+      ``,
+      `=== Request Headers ===`,
+      JSON.stringify(selectedEntry.requestHeaders, null, 2),
+      selectedEntry.requestPayload ? `\n=== Request Body ===\n${typeof selectedEntry.requestPayload === 'string' ? selectedEntry.requestPayload : JSON.stringify(selectedEntry.requestPayload, null, 2)}` : null,
+      ``,
+      `=== Response Headers ===`,
+      JSON.stringify(selectedEntry.responseHeaders, null, 2),
+      selectedEntry.responseData ? `\n=== Response Body ===\n${typeof selectedEntry.responseData === 'string' ? selectedEntry.responseData : JSON.stringify(selectedEntry.responseData, null, 2)}` : null,
+    ].filter(Boolean).join('\n');
+  };
+
+  // 复制网络请求详情
+  const handleCopyDetails = async () => {
+    const details = generateDetailsText();
+    if (!details) return;
+
+    try {
+      await navigator.clipboard.writeText(details);
+      // 可以添加一个提示，但为了简单起见暂时不加
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
+  };
+
+  // 分享网络请求详情为文本文件
+  const handleShareDetails = async () => {
+    const details = generateDetailsText();
+    if (!details) return;
+    const timestamp = dayjs().format('YYYY-MM-DD-HH-mm-ss');
+    await shareTextAsFile(details, `network_request_${timestamp}.txt`);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
@@ -131,7 +179,14 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
         },
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{
+        pb: 1,
+        // 移动端适配顶部安全区域
+        ...(isMobile && {
+          paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
+          minHeight: '64px'
+        })
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
@@ -150,6 +205,36 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
           <Typography variant="h6" component="span" sx={{ fontWeight: 600, flexGrow: 1 }}>
             {t('devtools.network.detailsTitle')}
           </Typography>
+          <Tooltip title={t('devtools.network.copyAll') || '复制全部'}>
+            <IconButton
+              size="small"
+              onClick={handleCopyDetails}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  color: 'primary.main',
+                },
+              }}
+            >
+              <CopyIcon size={18} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t('devtools.network.shareAsText') || '分享为文本'}>
+            <IconButton
+              size="small"
+              onClick={handleShareDetails}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.info.main, 0.08),
+                  color: 'info.main',
+                },
+              }}
+            >
+              <ShareIcon size={18} />
+            </IconButton>
+          </Tooltip>
           <IconButton
             size="small"
             onClick={() => setShowDetails(false)}
@@ -166,7 +251,13 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
         </Box>
       </DialogTitle>
       <Divider />
-      <DialogContent sx={{ pt: 3 }}>
+      <DialogContent sx={{
+        pt: 3,
+        // 移动端适配底部安全区域
+        ...(isMobile && {
+          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))'
+        })
+      }}>
         {selectedEntry && (
           <Box>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 3 }}>

@@ -173,6 +173,10 @@ export interface WebSearchSettings {
 
   // 🚀 新增：搜索引擎选择（仅对bing-free有效）
   selectedSearchEngine?: SearchEngine;    // 选择的搜索引擎
+
+  // 🚀 新增：当前激活的搜索提供商ID（仅当用户点击搜索按钮选择引擎后才设置）
+  // 这个字段用于区分"设置中选择了自动模式"和"用户实际点击了搜索按钮"
+  activeProviderId?: string;
 }
 
 // 自定义搜索提供商

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { updateOneBlock, upsertOneBlock, upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlice';
@@ -15,13 +15,18 @@ import {
 } from '../../../shared/types/newMessage.ts';
 import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
 
-
 import { EnhancedWebSearchService } from '../../../shared/services/webSearch';
 import { abortCompletion } from '../../../shared/utils/abortController';
 import store from '../../../shared/store';
+import { setActiveProviderId } from '../../../shared/store/slices/webSearchSlice';
 import { TopicService } from '../../../shared/services/topics/TopicService';
 import { VideoTaskManager } from '../../../shared/services/VideoTaskManager';
 import type { SiliconFlowImageFormat, GoogleVeoParams } from '../../../shared/types';
+
+/**
+ * 互斥模式类型
+ */
+type ExclusiveMode = 'image' | 'video' | 'webSearch' | null;
 
 /**
  * 处理聊天特殊功能相关的钩子
@@ -34,49 +39,60 @@ export const useChatFeatures = (
   handleSendMessage: (content: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void
 ) => {
   const dispatch = useDispatch();
-  const [webSearchActive, setWebSearchActive] = useState(false); // 控制是否处于网络搜索模式
-  const [imageGenerationMode, setImageGenerationMode] = useState(false); // 控制是否处于图像生成模式
-  const [videoGenerationMode, setVideoGenerationMode] = useState(false); // 控制是否处于视频生成模式
+  
+  // 统一管理互斥模式状态
+  const [activeMode, setActiveMode] = useState<ExclusiveMode>(null);
+  
   // MCP 工具开关状态 - 从 localStorage 读取并持久化
   const [toolsEnabled, setToolsEnabled] = useState(() => {
     const saved = localStorage.getItem('mcp-tools-enabled');
     return saved !== null ? JSON.parse(saved) : false; // 默认关闭
   });
+  
   // MCP 工具调用模式 - 从 localStorage 读取
   const [mcpMode, setMcpMode] = useState<'prompt' | 'function'>(() => {
     const saved = localStorage.getItem('mcp-mode');
     return (saved as 'prompt' | 'function') || 'function';
   });
 
+  // 派生状态：各模式是否激活
+  const webSearchActive = activeMode === 'webSearch';
+  const imageGenerationMode = activeMode === 'image';
+  const videoGenerationMode = activeMode === 'video';
+
+  /**
+   * 通用的互斥模式切换函数
+   * 切换到某个模式时会自动关闭其他模式
+   */
+  const toggleMode = useCallback((mode: ExclusiveMode) => {
+    setActiveMode(prev => {
+      if (prev === mode) {
+        // 关闭当前模式
+        if (mode === 'webSearch') {
+          // 关闭搜索模式时，清除 activeProviderId
+          dispatch(setActiveProviderId(undefined));
+        }
+        return null;
+      }
+      // 切换到新模式
+      return mode;
+    });
+  }, [dispatch]);
+
   // 切换图像生成模式
-  const toggleImageGenerationMode = () => {
-    setImageGenerationMode(!imageGenerationMode);
-    // 如果启用图像生成模式，关闭其他模式
-    if (!imageGenerationMode) {
-      if (webSearchActive) setWebSearchActive(false);
-      if (videoGenerationMode) setVideoGenerationMode(false);
-    }
-  };
+  const toggleImageGenerationMode = useCallback(() => {
+    toggleMode('image');
+  }, [toggleMode]);
 
   // 切换视频生成模式
-  const toggleVideoGenerationMode = () => {
-    setVideoGenerationMode(!videoGenerationMode);
-    // 如果启用视频生成模式，关闭其他模式
-    if (!videoGenerationMode) {
-      if (webSearchActive) setWebSearchActive(false);
-      if (imageGenerationMode) setImageGenerationMode(false);
-    }
-  };
+  const toggleVideoGenerationMode = useCallback(() => {
+    toggleMode('video');
+  }, [toggleMode]);
 
   // 切换网络搜索模式
-  const toggleWebSearch = () => {
-    setWebSearchActive(!webSearchActive);
-    // 如果启用网络搜索模式，关闭其他模式
-    if (!webSearchActive) {
-      if (imageGenerationMode) setImageGenerationMode(false);
-      if (videoGenerationMode) setVideoGenerationMode(false);
-    }
-  };
+  const toggleWebSearch = useCallback(() => {
+    toggleMode('webSearch');
+  }, [toggleMode]);
 
   // 处理图像生成提示词
   const handleImagePrompt = (prompt: string, images?: SiliconFlowImageFormat[], files?: any[]) => {
@@ -106,13 +122,26 @@ export const useChatFeatures = (
                         selectedModel.id.includes('Wan-AI/Wan2.1-I2V') ||
                         selectedModel.id.toLowerCase().includes('video');
 
+    // 🔧 修复：即使模型不支持，也要先保存用户消息
+    const { message: userMessage, blocks: userBlocks } = createUserMessage({
+      content: prompt,
+      assistantId: currentTopic.assistantId,
+      topicId: currentTopic.id,
+      modelId: selectedModel.id,
+      model: selectedModel,
+      images: images?.map(img => ({ url: img.image_url?.url || '' })),
+      files: files?.map(file => file.fileRecord).filter(Boolean)
+    });
+
+    await TopicService.saveMessageAndBlocks(userMessage, userBlocks);
+
     if (!isVideoModel) {
       console.error(`[useChatFeatures] 模型 ${selectedModel.name || selectedModel.id} 不支持视频生成`);
       // 创建错误消息
       const { message: errorMessage, blocks: errorBlocks } = createAssistantMessage({
         assistantId: currentTopic.assistantId,
         topicId: currentTopic.id,
-        askId: `video-gen-${Date.now()}`,
+        askId: userMessage.id, // 🔧 修复：使用正确的 askId
         modelId: selectedModel.id,
         model: selectedModel,
         status: AssistantMessageStatus.ERROR
@@ -128,20 +157,7 @@ export const useChatFeatures = (
       return;
     }
 
-    // 创建用户消息
-    const { message: userMessage, blocks: userBlocks } = createUserMessage({
-      content: prompt,
-      assistantId: currentTopic.assistantId,
-      topicId: currentTopic.id,
-      modelId: selectedModel.id,
-      model: selectedModel,
-      images: images?.map(img => ({ url: img.image_url?.url || '' })),
-      files: files?.map(file => file.fileRecord).filter(Boolean)
-    });
-
-    await TopicService.saveMessageAndBlocks(userMessage, userBlocks);
-
-    // 创建助手消息（视频生成中）
+    // 创建助手消息（视频生成中）- 用户消息已在上面创建
     const { message: assistantMessage, blocks: assistantBlocks } = createAssistantMessage({
       assistantId: currentTopic.assistantId,
       topicId: currentTopic.id,
@@ -345,16 +361,13 @@ export const useChatFeatures = (
     // 保存用户消息和块
     await TopicService.saveMessageAndBlocks(userMessage, userBlocks);
 
+    // 保存当前的 topicId 以避免闭包问题
+    const topicId = currentTopic.id;
+
     try {
-      // 🚀 设置流式状态，让输入框显示正确的状态
-      store.dispatch({
-        type: 'normalizedMessages/setTopicStreaming',
-        payload: { topicId: currentTopic.id, streaming: true }
-      });
-      store.dispatch({
-        type: 'normalizedMessages/setTopicLoading',
-        payload: { topicId: currentTopic.id, loading: true }
-      });
+      // 🔧 修复：使用 action creators 替代字符串 type
+      dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: true }));
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
 
       // 创建助手消息和块
       const { message: searchingMessage, blocks: searchingBlocks } = createAssistantMessage({
@@ -452,20 +465,20 @@ export const useChatFeatures = (
 
       // 🚀 不再创建引用块，搜索结果通过搜索结果块显示
 
-      // 更新消息状态为成功
-      store.dispatch({
-        type: 'normalizedMessages/updateMessageStatus',
-        payload: {
-          topicId: currentTopic.id,
-          messageId: searchingMessage.id,
-          status: AssistantMessageStatus.SUCCESS
-        }
-      });
+      // 🔧 修复：使用 action creators 替代字符串 type
+      dispatch(newMessagesActions.updateMessageStatus({
+        topicId,
+        messageId: searchingMessage.id,
+        status: AssistantMessageStatus.SUCCESS
+      }));
 
       // 关闭网络搜索模式
-      setWebSearchActive(false);
+      setActiveMode(null);
+      // 🚀 清除 activeProviderId
+      dispatch(setActiveProviderId(undefined));
 
       // 🚀 新增：基于搜索结果让AI进行回复（在同一个消息块内追加）
+      // 🔧 修复：传递 topicId 参数避免闭包问题
       if (mainTextBlock && mainTextBlock.id) {
         await handleAIResponseAfterSearch(
           query,
@@ -473,7 +486,8 @@ export const useChatFeatures = (
           currentTopic,
           selectedModel,
           searchingMessage.id,
-          mainTextBlock.id
+          mainTextBlock.id,
+          topicId
         );
       }
 
@@ -500,39 +514,39 @@ export const useChatFeatures = (
       // 保存错误消息和块
       await TopicService.saveMessageAndBlocks(errorMessage, errorBlocks);
 
-      // 设置错误状态
-      store.dispatch({
-        type: 'normalizedMessages/setError',
-        payload: {
-          error: `网络搜索失败: ${error instanceof Error ? error.message : String(error)}`
-        }
-      });
+      // 🔧 修复：使用 action creators 替代字符串 type
+      dispatch(newMessagesActions.setError({
+        error: {
+          message: `网络搜索失败: ${error instanceof Error ? error.message : String(error)}`,
+          timestamp: new Date().toISOString(),
+          type: 'WEB_SEARCH_ERROR'
+        },
+        topicId
+      }));
 
-      // 🚀 清除流式状态
-      store.dispatch({
-        type: 'normalizedMessages/setTopicStreaming',
-        payload: { topicId: currentTopic.id, streaming: false }
-      });
-      store.dispatch({
-        type: 'normalizedMessages/setTopicLoading',
-        payload: { topicId: currentTopic.id, loading: false }
-      });
+      // 🔧 修复：使用 action creators 替代字符串 type
+      dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
 
       // 关闭网络搜索模式
-      setWebSearchActive(false);
+      setActiveMode(null);
+      // 🚀 清除 activeProviderId
+      dispatch(setActiveProviderId(undefined));
     }
   };
 
   // 🚀 改造：基于搜索结果让AI进行回复，使用供应商原生onChunk回调
+  // 🔧 修复：添加 topicId 参数避免闭包问题
   const handleAIResponseAfterSearch = async (
     originalQuery: string,
     searchResults: any[],
     topic: any,
     model: any,
     existingMessageId: string,
-    existingMainTextBlockId: string
+    existingMainTextBlockId: string,
+    topicId: string
   ) => {
-    if (!topic || !model || searchResults.length === 0 || !existingMessageId || !existingMainTextBlockId) return;
+    if (!topic || !model || searchResults.length === 0 || !existingMessageId || !existingMainTextBlockId || !topicId) return;
 
     try {
       console.log(`[useChatFeatures] 开始基于搜索结果生成AI回复，使用供应商原生回调`);
@@ -563,15 +577,9 @@ export const useChatFeatures = (
         status: MessageBlockStatus.PROCESSING
       });
 
-      // 🚀 设置流式状态，让输入框显示AI分析进行中
-      store.dispatch({
-        type: 'normalizedMessages/setTopicStreaming',
-        payload: { topicId: topic.id, streaming: true }
-      });
-      store.dispatch({
-        type: 'normalizedMessages/setTopicLoading',
-        payload: { topicId: topic.id, loading: true }
-      });
+      // 🔧 修复：使用 action creators 和传入的 topicId
+      dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: true }));
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: true }));
 
       // 构建消息数组
       const messages = [
@@ -589,13 +597,13 @@ export const useChatFeatures = (
 
       console.log(`[useChatFeatures] 使用供应商原生回调处理AI分析`);
 
-      // 使用现有的助手响应处理系统，但需要特殊处理内容前缀
+      // 🔧 修复：传递 topicId 参数
       await handleAIAnalysisWithNativeCallbacks(
         messages,
         model,
-        existingMessageId,
         existingMainTextBlockId,
-        contentWithHeader
+        contentWithHeader,
+        topicId
       );
 
       console.log(`[useChatFeatures] AI搜索结果分析完成`);
@@ -606,12 +614,13 @@ export const useChatFeatures = (
   };
 
   // 🚀 简化：使用供应商原生回调处理AI分析
+  // 🔧 修复：移除未使用的 _messageId 参数，添加 topicId 参数
   const handleAIAnalysisWithNativeCallbacks = async (
     messages: any[],
     model: any,
-    _messageId: string,
     blockId: string,
-    contentPrefix: string
+    contentPrefix: string,
+    topicId: string
   ) => {
     try {
       // 直接调用API并手动处理响应，使用累积方式而不是替换
@@ -670,28 +679,16 @@ export const useChatFeatures = (
         }
       }));
 
-      // 🚀 清除流式状态，让输入框恢复正常
-      store.dispatch({
-        type: 'normalizedMessages/setTopicStreaming',
-        payload: { topicId: currentTopic.id, streaming: false }
-      });
-      store.dispatch({
-        type: 'normalizedMessages/setTopicLoading',
-        payload: { topicId: currentTopic.id, loading: false }
-      });
+      // 🔧 修复：使用 action creators 和传入的 topicId
+      dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
 
     } catch (error) {
       console.error('[handleAIAnalysisWithNativeCallbacks] 处理失败:', error);
 
-      // 错误时也要清除流式状态
-      store.dispatch({
-        type: 'normalizedMessages/setTopicStreaming',
-        payload: { topicId: currentTopic.id, streaming: false }
-      });
-      store.dispatch({
-        type: 'normalizedMessages/setTopicLoading',
-        payload: { topicId: currentTopic.id, loading: false }
-      });
+      // 🔧 修复：使用 action creators 和传入的 topicId
+      dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
+      dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
     }
   };
 
@@ -730,12 +727,12 @@ export const useChatFeatures = (
   };
 
   // 处理消息发送
-  const handleMessageSend = async (content: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => {
+  const handleMessageSend = async (content: string, images?: SiliconFlowImageFormat[], toolsEnabledParam?: boolean, files?: any[]) => {
     // 如果处于图像生成模式，则调用图像生成处理函数
     if (imageGenerationMode) {
       handleImagePrompt(content, images, files);
       // 关闭图像生成模式
-      setImageGenerationMode(false);
+      setActiveMode(null);
       return;
     }
 
@@ -743,7 +740,7 @@ export const useChatFeatures = (
     if (videoGenerationMode) {
       await handleVideoPrompt(content, images, files);
       // 关闭视频生成模式
-      setVideoGenerationMode(false);
+      setActiveMode(null);
       return;
     }
 
@@ -757,7 +754,7 @@ export const useChatFeatures = (
         // 🚀 自动模式：将搜索提供商设置到助手配置，让 AI 自主决定是否搜索
         // 通过正常的消息发送流程，assistantResponse.ts 会检测 webSearchProviderId 并添加搜索工具
         console.log('[WebSearch] 自动模式：AI 将自主决定是否需要搜索');
-        handleSendMessage(content, images, toolsEnabled, files);
+        handleSendMessage(content, images, toolsEnabledParam, files);
         return;
       } else {
         // 手动模式：直接执行搜索（旧逻辑）
@@ -766,28 +763,30 @@ export const useChatFeatures = (
       }
     }
 
-    // 
-    handleSendMessage(content, images, toolsEnabled, files);
+    // 普通消息发送
+    handleSendMessage(content, images, toolsEnabledParam, files);
   };
 
-  // 
-  const toggleToolsEnabled = () => {
-    const newValue = !toolsEnabled;
-    setToolsEnabled(newValue);
-    localStorage.setItem('mcp-tools-enabled', JSON.stringify(newValue));
-  };
+  // MCP 工具开关切换
+  const toggleToolsEnabled = useCallback(() => {
+    setToolsEnabled((prev: boolean) => {
+      const newValue = !prev;
+      localStorage.setItem('mcp-tools-enabled', JSON.stringify(newValue));
+      return newValue;
+    });
+  }, []);
 
-  // MCP 
-  const handleMCPModeChange = (mode: 'prompt' | 'function') => {
+  // MCP 模式切换
+  const handleMCPModeChange = useCallback((mode: 'prompt' | 'function') => {
     setMcpMode(mode);
     localStorage.setItem('mcp-mode', mode);
-  };
+  }, []);
 
   /**
-   * 
-   * 
+   * 多模型发送消息
+   * 支持同时向多个模型发送相同的消息
    */
-  const handleMultiModelSend = async (content: string, models: any[], images?: any[], _toolsEnabled?: boolean, files?: any[]) => {
+  const handleMultiModelSend = async (content: string, models: any[], images?: any[], files?: any[]) => {
     if (!currentTopic || !selectedModel) return;
 
     try {
@@ -846,7 +845,7 @@ export const useChatFeatures = (
       // 4. 并行调用所有模型
       await Promise.all(assistantMessages.map(async ({ message: assistantMessage, blocks: assistantBlocks, model }) => {
         try {
-          await callSingleModelForMultiModel(model, content, assistantMessage, assistantBlocks);
+          await callSingleModelForMultiModel(model, assistantMessage, assistantBlocks);
         } catch (error) {
           console.error(`[useChatFeatures] 模型 ${model.id} 调用失败:`, error);
           // 更新消息状态为错误
@@ -871,7 +870,6 @@ export const useChatFeatures = (
    */
   const callSingleModelForMultiModel = async (
     model: any,
-    _content: string,
     assistantMessage: any,
     assistantBlocks: any[]
   ) => {

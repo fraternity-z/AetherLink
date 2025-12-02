@@ -402,6 +402,14 @@
   color: #2c3e50 !important;
 }
 
+/* 表格内的代码不换行 */
+.markdown th code,
+.markdown td code {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
 /* 斑马纹效果 - 强制应用 */
 .markdown tbody tr:nth-child(even) {
   background-color: #f8f9fa !important;

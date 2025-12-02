@@ -6,16 +6,23 @@ import AssistantTab from './AssistantTab/index';
 import TopicTab from './TopicTab/index';
 import SettingsTab from './SettingsTab/index';
 import NoteTab from './NoteTab/index';
-import { Bot, MessageSquare, Settings, FileText } from 'lucide-react';
+import WorkspaceTab from './WorkspaceTab/index';
+import { Bot, MessageSquare, Settings, FileText, FolderOpen } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
+import { ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/WorkspaceService';
 
 /**
  * 侧边栏标签页内容组件 - 使用memo优化性能
  */
 const SidebarTabsContent = React.memo(function SidebarTabsContent() {
   const showNoteTab = useSelector((state: RootState) => (state.settings as any)[ENABLE_NOTE_SIDEBAR_KEY]);
+  const showWorkspaceTab = useSelector((state: RootState) => (state.settings as any)[ENABLE_WORKSPACE_SIDEBAR_KEY]);
+
+  // 计算额外Tab数量，用于调整样式
+  const extraTabCount = (showNoteTab ? 1 : 0) + (showWorkspaceTab ? 1 : 0);
+  const hasExtraTabs = extraTabCount > 0;
 
   const {
     loading,
@@ -105,16 +112,16 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               value={value}
               onChange={handleChange}
               aria-label="sidebar tabs"
-              variant={showNoteTab ? "scrollable" : "fullWidth"}
-              scrollButtons={showNoteTab ? false : "auto"}
+              variant={hasExtraTabs ? "scrollable" : "fullWidth"}
+              scrollButtons={hasExtraTabs ? false : "auto"}
               sx={{
-                minHeight: showNoteTab ? '50px' : '48px',
-                margin: showNoteTab ? '0' : '0 10px',
-                padding: showNoteTab ? '8px 2px' : '10px 0',
+                minHeight: hasExtraTabs ? '50px' : '48px',
+                margin: hasExtraTabs ? '0' : '0 10px',
+                padding: hasExtraTabs ? '8px 2px' : '10px 0',
                 '& .MuiTabs-indicator': {
                   display: 'none',
                 },
-                ...(showNoteTab ? {
+                ...(hasExtraTabs ? {
                   '& .MuiTabs-flexContainer': {
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -123,7 +130,7 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                   },
                 } : {}),
                 '& .MuiTab-root': {
-                  ...(showNoteTab ? {
+                  ...(hasExtraTabs ? {
                     flex: 1,
                     minWidth: 0,
                     minHeight: '42px',
@@ -152,11 +159,11 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               }}
             >
               <Tab
-                icon={<Bot size={showNoteTab ? 14 : 18} />}
+                icon={<Bot size={hasExtraTabs ? 14 : 18} />}
                 label="助手"
                 {...a11yProps(0)}
                 sx={{
-                  ...(showNoteTab ? {
+                  ...(hasExtraTabs ? {
                     flex: 1,
                     minHeight: '42px',
                     borderRadius: '4px',
@@ -184,11 +191,11 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                 }}
               />
               <Tab
-                icon={<MessageSquare size={showNoteTab ? 14 : 18} />}
+                icon={<MessageSquare size={hasExtraTabs ? 14 : 18} />}
                 label="话题"
                 {...a11yProps(1)}
                 sx={{
-                  ...(showNoteTab ? {
+                  ...(hasExtraTabs ? {
                     flex: 1,
                     minHeight: '42px',
                     borderRadius: '4px',
@@ -215,10 +222,10 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                   },
                 }}
               />
-              {showNoteTab && (
+              {showWorkspaceTab && (
                 <Tab
-                  icon={<FileText size={14} />}
-                  label="笔记"
+                  icon={<FolderOpen size={14} />}
+                  label="工作区"
                   {...a11yProps(2)}
                   sx={{
                     flex: 1,
@@ -241,12 +248,38 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
                   }}
                 />
               )}
+              {showNoteTab && (
+                <Tab
+                  icon={<FileText size={14} />}
+                  label="笔记"
+                  {...a11yProps(2 + (showWorkspaceTab ? 1 : 0))}
+                  sx={{
+                    flex: 1,
+                    minHeight: '42px',
+                    borderRadius: '4px',
+                    color: 'var(--theme-text-primary)',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    padding: '3px 1px',
+                    '& .MuiTab-iconWrapper': {
+                      margin: '0 auto 1px auto',
+                      display: 'block',
+                    },
+                    '&.Mui-selected': {
+                      color: 'var(--theme-text-primary)',
+                    },
+                    '&:hover': {
+                      color: 'var(--theme-text-primary)',
+                    },
+                  }}
+                />
+              )}
               <Tab
-                icon={<Settings size={showNoteTab ? 14 : 18} />}
+                icon={<Settings size={hasExtraTabs ? 14 : 18} />}
                 label="设置"
-                {...a11yProps(showNoteTab ? 3 : 2)}
+                {...a11yProps(2 + extraTabCount)}
                 sx={{
-                  ...(showNoteTab ? {
+                  ...(hasExtraTabs ? {
                     flex: 1,
                     minHeight: '42px',
                     borderRadius: '4px',
@@ -301,13 +334,19 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
             />
           </TabPanel>
 
-          {showNoteTab && (
+          {showWorkspaceTab && (
             <TabPanel value={deferredValue} index={2}>
+              <WorkspaceTab />
+            </TabPanel>
+          )}
+
+          {showNoteTab && (
+            <TabPanel value={deferredValue} index={2 + (showWorkspaceTab ? 1 : 0)}>
               <NoteTab />
             </TabPanel>
           )}
 
-          <TabPanel value={deferredValue} index={showNoteTab ? 3 : 2}>
+          <TabPanel value={deferredValue} index={2 + extraTabCount}>
             <SettingsTab
               settings={settingsArray}
               onSettingChange={handleSettingChange}

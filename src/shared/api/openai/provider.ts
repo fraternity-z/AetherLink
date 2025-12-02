@@ -254,88 +254,64 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
 
 
+  /** 检测工具列表是否包含 attempt_completion（支持带前缀的名称） */
+  private hasCompletionTool(toolNames: string[]): boolean {
+    return toolNames.some(name => 
+      name === 'attempt_completion' || name.endsWith('-attempt_completion')
+    );
+  }
+
   /**
-   * 处理工具调用
-   * @param toolCalls 工具调用列表
-   * @param mcpTools MCP 工具列表
-   * @param onChunk Chunk 事件回调，用于更新 UI 状态
+   * 处理工具调用（Function Calling 模式）
    */
   protected async processToolCalls(
     toolCalls: any[],
     mcpTools: MCPTool[],
     onChunk?: (chunk: import('../../types/chunk').Chunk) => void
-  ): Promise<any[]> {
-    if (!toolCalls || toolCalls.length === 0) {
-      return [];
-    }
+  ): Promise<{ messages: any[]; hasCompletion: boolean }> {
+    if (!toolCalls?.length) return { messages: [], hasCompletion: false };
 
-    console.log(`[OpenAI] 处理 ${toolCalls.length} 个工具调用`);
+    const toolNames = toolCalls.map(tc => tc.function?.name || tc.name || '');
+    const hasCompletion = this.hasCompletionTool(toolNames);
+    
+    console.log(`[OpenAI] 处理 ${toolCalls.length} 个工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
 
     const mcpToolResponses = this.convertToolCallsToMcpResponses(toolCalls, mcpTools);
+    const results = await parseAndCallTools(mcpToolResponses, mcpTools, onChunk);
+    const messages = results
+      .map((result, i) => this.mcpToolCallResponseToMessage(mcpToolResponses[i], result, this.model))
+      .filter(Boolean);
 
-    const results = await parseAndCallTools(
-      mcpToolResponses,
-      mcpTools,
-      onChunk // 传递 onChunk 以发送工具执行状态事件
-    );
-
-    return results.map((result, index) =>
-      this.mcpToolCallResponseToMessage(mcpToolResponses[index], result, this.model)
-    ).filter(Boolean);
+    return { messages, hasCompletion };
   }
 
   /**
-   * 处理工具使用（XML 格式）
-   * @param content 响应内容
-   * @param mcpTools MCP 工具列表
-   * @param onChunk Chunk 事件回调，用于更新 UI 状态
+   * 处理工具使用（XML 提示词模式）
    */
   protected async processToolUses(
     content: string,
     mcpTools: MCPTool[],
     onChunk?: (chunk: import('../../types/chunk').Chunk) => void
-  ): Promise<any[]> {
-    if (!content || !mcpTools || mcpTools.length === 0) {
-      console.log(`[OpenAI] processToolUses 跳过 - 内容: ${!!content}, 工具数量: ${mcpTools?.length || 0}`);
-      return [];
-    }
+  ): Promise<{ messages: any[]; hasCompletion: boolean }> {
+    if (!content || !mcpTools?.length) return { messages: [], hasCompletion: false };
 
-    console.log(`[OpenAI] 检查 XML 格式的工具使用 - 工具数量: ${mcpTools.length}`);
-    console.log(`[OpenAI] 可用工具列表:`, mcpTools.map(t => ({ id: t.id, name: t.name })));
-
-    // 从内容中解析工具响应
     const toolResponses = parseToolUse(content, mcpTools);
-    console.log(`[OpenAI] 解析到的工具响应数量: ${toolResponses.length}`);
+    if (!toolResponses.length) return { messages: [], hasCompletion: false };
 
-    if (toolResponses.length === 0) {
-      console.warn(`[OpenAI] 未检测到工具调用，内容包含工具标签但解析失败`);
-      return [];
+    const toolNames = toolResponses.map(tr => tr.tool?.name || tr.tool?.id || '');
+    const hasCompletion = this.hasCompletionTool(toolNames);
+    
+    console.log(`[OpenAI] 处理 ${toolResponses.length} 个 XML 工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
+
+    const results = await parseAndCallTools(content, mcpTools, onChunk);
+    const messages: any[] = [];
+    
+    for (let i = 0; i < Math.min(results.length, toolResponses.length); i++) {
+      const msg = this.mcpToolCallResponseToMessage(toolResponses[i], results[i], this.model);
+      if (msg) messages.push(msg);
     }
 
-    const results = await parseAndCallTools(
-      content,
-      mcpTools,
-      onChunk // 传递 onChunk 以发送工具执行状态事件
-    );
-
-    console.log(`[OpenAI] 工具调用结果数量: ${results.length}`);
-
-    // 安全地处理工具调用结果，避免索引越界
-    const toolMessages = [];
-    const maxIndex = Math.min(results.length, toolResponses.length);
-
-    for (let i = 0; i < maxIndex; i++) {
-      try {
-        const toolMessage = this.mcpToolCallResponseToMessage(toolResponses[i], results[i], this.model);
-        if (toolMessage) {
-          toolMessages.push(toolMessage);
-        }
-      } catch (error) {
-        console.warn(`[OpenAI] 处理工具调用结果 ${i} 失败:`, error);
-      }
-    }
-
-    return toolMessages;
+    return { messages, hasCompletion };
   }
 
   /**
@@ -587,20 +563,26 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           if (usePromptMode) {
             // 提示词注入模式：使用 XML 格式工具调用
             console.log(`[OpenAIProvider] 提示词注入模式：处理 XML 格式工具调用`);
-            const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
+            const { messages: xmlToolResults, hasCompletion } = await this.processToolUses(content, mcpTools, onChunk);
 
             if (xmlToolResults.length > 0) {
-              const cleanContent = removeToolUseTags(content);
-              console.log(`[OpenAIProvider] 流式：对话历史使用清理后的内容，长度: ${cleanContent.length}`);
+              // 保留完整内容（包含工具调用），让模型知道自己调用了什么工具
+              console.log(`[OpenAIProvider] 流式：对话历史保留完整内容（含工具调用），长度: ${content.length}`);
 
-              // 添加助手消息到对话历史
+              // 添加助手消息到对话历史（保留工具调用标签）
               currentMessages.push({
                 role: 'assistant',
-                content: cleanContent
+                content: content
               });
 
               // 添加工具结果到对话历史
               currentMessages.push(...xmlToolResults);
+
+              // 检测到 attempt_completion 时提前退出
+              if (hasCompletion) {
+                console.log(`[OpenAIProvider] 检测到 attempt_completion，返回结果让上层处理终止`);
+                return result;
+              }
 
               console.log(`[OpenAIProvider] 流式 XML 工具调用完成，继续下一轮对话`);
               continue;
@@ -618,11 +600,17 @@ export class OpenAIProvider extends BaseOpenAIProvider {
               });
 
               // 处理原生工具调用，传递 onChunk 以更新 UI
-              const toolResults = await this.processToolCalls(nativeToolCalls, mcpTools, onChunk);
+              const { messages: toolResults, hasCompletion } = await this.processToolCalls(nativeToolCalls, mcpTools, onChunk);
 
               if (toolResults.length > 0) {
                 // 添加工具结果到对话历史
                 currentMessages.push(...toolResults);
+
+                // 如果检测到 attempt_completion，结束循环
+                if (hasCompletion) {
+                  console.log(`[OpenAIProvider] attempt_completion 已执行，结束工具调用循环`);
+                  return result;
+                }
 
                 console.log(`[OpenAIProvider] 流式原生工具调用完成，继续下一轮对话`);
                 continue;
@@ -713,6 +701,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         // 第2步：处理函数调用模式的工具
         const toolCalls = choice.message?.tool_calls;
         let toolResults: any[] = [];
+        let hasCompletion = false;
 
         if (toolCalls && toolCalls.length > 0 && enableTools && mcpTools.length > 0) {
           // 在工具调用前发送文本块
@@ -730,7 +719,9 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           });
 
           // 处理工具调用
-          toolResults = await this.processToolCalls(toolCalls, mcpTools, onChunk);
+          const result = await this.processToolCalls(toolCalls, mcpTools, onChunk);
+          toolResults = result.messages;
+          hasCompletion = result.hasCompletion;
         }
 
         // 第3步：处理 XML 格式的工具调用（提示词模式）
@@ -739,7 +730,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
           const hasToolTags = textWithoutTools.length < content.length;
           
           if (hasToolTags) {
-            // 先发送去除工具标签后的文本
+            // 先发送去除工具标签后的文本（用于 UI 显示）
             if (textWithoutTools.trim() && onChunk) {
               await onChunk({
                 type: ChunkType.TEXT_COMPLETE,
@@ -747,11 +738,27 @@ export class OpenAIProvider extends BaseOpenAIProvider {
               });
             }
             finalContent = textWithoutTools;
+            
+            // 添加助手消息到对话历史（保留完整内容，包含工具调用标签）
+            currentMessages.push({
+              role: 'assistant',
+              content: content  // 保留工具调用标签，让模型知道自己调用了什么
+            });
           }
           
           // 然后处理工具调用
-          const xmlToolResults = await this.processToolUses(content, mcpTools, onChunk);
-          toolResults = toolResults.concat(xmlToolResults);
+          const xmlResult = await this.processToolUses(content, mcpTools, onChunk);
+          toolResults = toolResults.concat(xmlResult.messages);
+          hasCompletion = hasCompletion || xmlResult.hasCompletion;
+        }
+
+        // 如果检测到 attempt_completion，结束循环
+        if (hasCompletion) {
+          console.log(`[OpenAIProvider] 非流式：attempt_completion 已执行，结束工具调用循环`);
+          if (toolResults.length > 0) {
+            currentMessages.push(...toolResults);
+          }
+          break;
         }
 
         if (toolResults.length > 0) {

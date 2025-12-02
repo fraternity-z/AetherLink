@@ -12,11 +12,7 @@ Tool use is formatted using XML-style tags. The tool name is enclosed in opening
   <arguments>{json_arguments}</arguments>
 </tool_use>
 
-⚠️ **CRITICAL FORMAT REQUIREMENTS**:
-- Tool tags MUST be complete and unbroken - NO line breaks or spaces within tag names
-- WRONG: "<tool" + newline + "_use>" or "<tool _use>"
-- CORRECT: "<tool_use>"
-- Broken tag formatting will cause tool calls to FAIL completely!
+**Important**: Tool tags must be complete and unbroken. Ensure no line breaks or spaces within tag names (e.g., use <tool_use> not <tool _use>).
 
 The tool name should be the exact name of the tool you are using, and the arguments should be a JSON object containing the parameters required by that tool. For example:
 <tool_use>
@@ -31,21 +27,13 @@ The user will respond with the result of the tool use, which should be formatted
   <result>{result}</result>
 </tool_use_result>
 
-The result should be a string, which can represent a file or any other output type. You can use this result as input for the next action.
-For example, if the result of the tool use is an image file, you can use it in the next action like this:
-
-<tool_use>
-  <name>image_transformer</name>
-  <arguments>{"image": "image_1.jpg"}</arguments>
-</tool_use>
-
-Always adhere to this format for the tool use to ensure proper parsing and execution.
+The result can be a string, file path, or any other output type that you can use as input for subsequent actions.
 
 ## Tool Use Examples
 {{ TOOL_USE_EXAMPLES }}
 
 ## Tool Use Available Tools
-Above example were using notional tools that might not exist for you. You only have access to these tools:
+Above examples were using notional tools for demonstration. You only have access to these tools:
 {{ AVAILABLE_TOOLS }}
 
 ## Tool Use Rules
@@ -54,12 +42,12 @@ Here are the rules you should always follow to solve your task:
 2. Call a tool only when needed: do not call the search agent if you do not need information, try to solve the task yourself.
 3. If no tool call is needed, just answer the question directly.
 4. Never re-do a tool call that you previously did with the exact same parameters.
-5. For tool use, MARK SURE use XML tag format as shown in the examples above. Do not use any other format.
+5. For tool use, MAKE SURE to use the XML tag format as shown in the examples above. Do not use any other format.
+
+{{ FILE_EDITOR_CAPABILITIES }}
 
 # User Instructions
 {{ USER_SYSTEM_PROMPT }}
-
-Now Begin! If you solve the task correctly, you will receive a reward of $1,000,000.
 `
 
 export const ToolUseExamples = `
@@ -134,6 +122,62 @@ User: <tool_use_result>
 Assistant: The population of Shanghai is 26 million, while Guangzhou has a population of 15 million. Therefore, Shanghai has the highest population.
 `
 
+// Agentic Mode 能力说明（仅当文件编辑工具可用时注入）
+export const FILE_EDITOR_CAPABILITIES = `
+## Agentic Mode
+
+You are operating in **Agentic Mode**, which means:
+1. You can make multiple tool calls iteratively to complete complex tasks
+2. Tool results are automatically sent back to you for the next decision
+3. You MUST call attempt_completion when you finish the task
+
+**CRITICAL: Task Completion Protocol**
+
+When you have completed the user's task, you MUST call the attempt_completion tool:
+
+<tool_use>
+  <name>attempt_completion</name>
+  <arguments>{"result": "Brief summary of what you accomplished", "command": "Optional: suggested command to run"}</arguments>
+</tool_use>
+
+**When to call attempt_completion:**
+- After successfully completing all requested tasks
+- After verifying your changes are correct
+- When the task objective has been fully achieved
+
+**When NOT to call attempt_completion:**
+- When a tool call just failed (try to fix the error first)
+- In the middle of a multi-step task
+- When you need more information from the user
+
+**Limits:**
+- Maximum iterations: 25 tool calls
+- Consecutive error limit: 3 failures in a row
+`;
+
+/**
+ * 检查工具列表中是否包含文件编辑工具
+ */
+export const hasFileEditorTools = (tools: MCPTool[]): boolean => {
+  if (!tools || tools.length === 0) return false;
+  
+  const fileEditorToolNames = [
+    'list_workspaces',
+    'get_workspace_files', 
+    'read_file',
+    'write_to_file',
+    'insert_content',
+    'replace_in_file',
+    'apply_diff',
+    'attempt_completion'  // Agentic 模式完成工具
+  ];
+  
+  return tools.some(tool => 
+    fileEditorToolNames.includes(tool.name) || 
+    tool.serverName === '@aether/file-editor'
+  );
+};
+
 export const AvailableTools = (tools: MCPTool[]) => {
   const availableTools = tools
     .map((tool) => {
@@ -157,9 +201,13 @@ ${availableTools}
 
 export const buildSystemPrompt = (userSystemPrompt: string, tools?: MCPTool[]): string => {
   if (tools && tools.length > 0) {
+    // 检查是否有文件编辑工具，如果有则注入文件编辑能力说明
+    const fileEditorCapabilities = hasFileEditorTools(tools) ? FILE_EDITOR_CAPABILITIES : '';
+    
     return SYSTEM_PROMPT.replace('{{ USER_SYSTEM_PROMPT }}', userSystemPrompt)
       .replace('{{ TOOL_USE_EXAMPLES }}', ToolUseExamples)
       .replace('{{ AVAILABLE_TOOLS }}', AvailableTools(tools))
+      .replace('{{ FILE_EDITOR_CAPABILITIES }}', fileEditorCapabilities)
   }
 
   return userSystemPrompt

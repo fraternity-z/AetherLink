@@ -1,4 +1,11 @@
 
+// 🚀 全局 fetch 代理初始化 - 必须在最前面导入
+// 这样可以在任何 SDK 使用 fetch 之前完成初始化
+import { initGlobalFetchProxy } from './shared/utils/globalFetchProxy';
+
+// 尽早初始化全局 fetch 代理（在 Tauri 环境中支持网络代理）
+initGlobalFetchProxy();
+
 import { Provider } from 'react-redux';
 import { SnackbarProvider } from 'notistack';
 import { HashRouter } from 'react-router-dom';

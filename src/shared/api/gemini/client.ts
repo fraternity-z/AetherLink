@@ -5,7 +5,7 @@
 import { GoogleGenAI } from '@google/genai';
 import type { Model } from '../../types';
 import { logApiRequest } from '../../services/LoggerService';
-import axios from 'axios';
+import { universalFetch } from '../../utils/universalFetch';
 import type OpenAI from 'openai';
 
 /**
@@ -125,26 +125,30 @@ export async function fetchModels(model: Model): Promise<OpenAI.Model[]> {
 
     // 清理 baseUrl
     const cleanBaseUrl = baseUrl.replace(/\/v1beta\/?$/, '');
-    const modelsUrl = `${cleanBaseUrl}/v1beta/models`;
+    const modelsUrl = `${cleanBaseUrl}/v1beta/models?key=${encodeURIComponent(apiKey)}`;
 
     // 记录 API 请求
     logApiRequest('Gemini Models List', 'INFO', {
       method: 'GET',
-      url: modelsUrl
+      url: `${cleanBaseUrl}/v1beta/models`
     });
 
-    // 发送请求获取模型列表
-    const response = await axios.get(modelsUrl, {
-      params: {
-        key: apiKey
-      },
+    // 发送请求获取模型列表 - 使用 universalFetch 支持代理
+    const response = await universalFetch(modelsUrl, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       }
     });
 
+    if (!response.ok) {
+      throw new Error(`API请求失败: ${response.status}`);
+    }
+
+    const data = await response.json();
+
     // 转换为 OpenAI 兼容格式
-    const models: OpenAI.Model[] = response.data.models?.map((geminiModel: any) => ({
+    const models: OpenAI.Model[] = data.models?.map((geminiModel: any) => ({
       id: geminiModel.name?.replace('models/', '') || geminiModel.name,
       object: 'model' as const,
       created: Date.now(),

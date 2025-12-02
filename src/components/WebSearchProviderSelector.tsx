@@ -25,7 +25,7 @@ import {
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import type { RootState } from '../shared/store';
-import { setWebSearchProvider, refreshProviders } from '../shared/store/slices/webSearchSlice';
+import { setWebSearchProvider, refreshProviders, setActiveProviderId } from '../shared/store/slices/webSearchSlice';
 import type { WebSearchProviderConfig } from '../shared/types';
 
 interface WebSearchProviderSelectorProps {
@@ -70,12 +70,16 @@ const WebSearchProviderSelector: React.FC<WebSearchProviderSelectorProps> = ({
 
   const handleProviderSelect = (providerId: string) => {
     dispatch(setWebSearchProvider(providerId as any));
+    // 🚀 设置 activeProviderId，标记用户已经点击搜索按钮并选择了引擎
+    dispatch(setActiveProviderId(providerId));
     onProviderSelect?.(providerId);
     onClose();
   };
 
   const handleDisableWebSearch = () => {
     dispatch(setWebSearchProvider('custom' as any)); // 设置为无效提供商来禁用
+    // 🚀 清除 activeProviderId，标记用户已经关闭了搜索
+    dispatch(setActiveProviderId(undefined));
     onProviderSelect?.('');
     onClose();
   };

@@ -741,6 +741,32 @@ export class MCPService {
   }
 
   /**
+   * 获取已启用的服务器名称列表
+   * 用于 Agentic 模式检测
+   */
+  public getActiveServerNames(): string[] {
+    const activeServers = this.getActiveServers();
+    return activeServers.map(server => server.name);
+  }
+
+  /**
+   * 检查是否启用了特定的 MCP 服务器
+   */
+  public hasActiveServer(serverName: string): boolean {
+    const activeNames = this.getActiveServerNames();
+    return activeNames.includes(serverName);
+  }
+
+  /**
+   * 检查是否应该启用 Agentic 模式
+   * 基于已启用的 MCP 服务器判断
+   */
+  public shouldEnableAgenticMode(): boolean {
+    // 检查是否启用了 @aether/file-editor
+    return this.hasActiveServer('@aether/file-editor');
+  }
+
+  /**
    * 检查连接健康状态
    */
   public async checkConnectionHealth(server: MCPServer): Promise<boolean> {

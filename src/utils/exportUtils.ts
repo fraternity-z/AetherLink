@@ -1286,4 +1286,63 @@ async function parseMarkdownLine(
   return parts;
 }
 
+/**
+ * 分享文本内容为文件
+ * 通用工具函数，可用于分享任何文本内容
+ */
+export async function shareTextAsFile(content: string, fileName: string): Promise<void> {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      // 移动端：创建临时文件并通过分享API
+      const tempFileName = `temp_${Date.now()}.txt`;
+      await Filesystem.writeFile({
+        path: tempFileName,
+        data: content,
+        directory: Directory.Cache,
+        encoding: Encoding.UTF8
+      });
 
+      const fileUri = await Filesystem.getUri({
+        path: tempFileName,
+        directory: Directory.Cache
+      });
+
+      await Share.share({
+        title: fileName,
+        url: fileUri.uri,
+        dialogTitle: '保存文件'
+      });
+
+      // 清理临时文件
+      try {
+        await Filesystem.deleteFile({
+          path: tempFileName,
+          directory: Directory.Cache
+        });
+      } catch (deleteError) {
+        console.warn('清理临时文件失败:', deleteError);
+      }
+    } else {
+      // Web端：下载文件
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  } catch (error) {
+    console.error('分享文件失败:', error);
+    // 回退到复制到剪贴板
+    try {
+      await Clipboard.write({ string: content });
+      toastManager.warning('分享失败，内容已复制到剪贴板', '分享提醒');
+    } catch (clipboardError) {
+      await navigator.clipboard.writeText(content);
+      toastManager.warning('分享失败，内容已复制到剪贴板', '分享提醒');
+    }
+  }
+}

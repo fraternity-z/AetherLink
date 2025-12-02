@@ -223,7 +223,7 @@ export async function parseAndCallTools(
 
   // 发送工具调用开始事件
   if (onChunk && currentToolResponses.length > 0) {
-    onChunk({
+    await onChunk({
       type: ChunkType.MCP_TOOL_IN_PROGRESS,
       responses: currentToolResponses.map(tr => ({ ...tr, status: 'invoking' as const }))
     });
@@ -248,7 +248,7 @@ export async function parseAndCallTools(
       };
 
       if (onChunk) {
-        onChunk({
+        await onChunk({
           type: ChunkType.MCP_TOOL_COMPLETE,
           responses: [finalToolResponse]
         });
@@ -275,7 +275,7 @@ export async function parseAndCallTools(
       };
 
       if (onChunk) {
-        onChunk({
+        await onChunk({
           type: ChunkType.MCP_TOOL_COMPLETE,
           responses: [errorToolResponse]
         });

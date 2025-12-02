@@ -23,7 +23,18 @@ import type {
   SearchFilesResult,
   SystemFilePickerOptions,
   SystemFilePickerResult,
-  SelectedFileInfo
+  SelectedFileInfo,
+  // AI 编辑相关
+  ReadFileRangeOptions,
+  ReadFileRangeResult,
+  InsertContentOptions,
+  ReplaceInFileOptions,
+  ReplaceInFileResult,
+  ApplyDiffOptions,
+  ApplyDiffResult,
+  GetFileHashOptions,
+  GetFileHashResult,
+  GetLineCountResult
 } from '../types/fileManager';
 
 // ============================================
@@ -362,6 +373,88 @@ class TauriFileManagerImpl {
     }
   }
 
+  // ========== AI 编辑相关（Tauri 使用软件实现）==========
+
+  async readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
+    await this.loadModules();
+    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const lines = content.split('\n');
+    const totalLines = lines.length;
+    const start = Math.max(1, options.startLine);
+    const end = Math.min(totalLines, options.endLine);
+    const rangeLines = lines.slice(start - 1, end);
+    const rangeContent = rangeLines.join('\n');
+    const rangeHash = await this.simpleHash(rangeContent);
+    return { content: rangeContent, totalLines, startLine: start, endLine: end, rangeHash };
+  }
+
+  async insertContent(options: InsertContentOptions): Promise<void> {
+    await this.loadModules();
+    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const lines = content.split('\n');
+    const insertIndex = Math.max(0, Math.min(lines.length, options.line - 1));
+    const newLines = options.content.split('\n');
+    lines.splice(insertIndex, 0, ...newLines);
+    await this.invoke('write_text_file', { path: options.path, contents: lines.join('\n') });
+  }
+
+  async replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
+    await this.loadModules();
+    let content = await this.invoke<string>('read_text_file', { path: options.path });
+    let replacements = 0;
+    const flags = options.caseSensitive ? 'g' : 'gi';
+    
+    if (options.isRegex) {
+      const regex = new RegExp(options.search, options.replaceAll ? flags : flags.replace('g', ''));
+      const matches = content.match(new RegExp(options.search, flags));
+      replacements = matches ? matches.length : 0;
+      content = content.replace(regex, options.replace);
+    } else {
+      if (options.replaceAll) {
+        const parts = content.split(options.search);
+        replacements = parts.length - 1;
+        content = parts.join(options.replace);
+      } else {
+        const idx = content.indexOf(options.search);
+        if (idx !== -1) {
+          content = content.slice(0, idx) + options.replace + content.slice(idx + options.search.length);
+          replacements = 1;
+        }
+      }
+    }
+    
+    if (replacements > 0) {
+      await this.invoke('write_text_file', { path: options.path, contents: content });
+    }
+    return { replacements, modified: replacements > 0 };
+  }
+
+  async applyDiff(_options: ApplyDiffOptions): Promise<ApplyDiffResult> {
+    // Tauri 暂不支持 diff，返回失败
+    throw new Error('Tauri 桌面端暂不支持 applyDiff，请使用 replaceInFile');
+  }
+
+  async getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult> {
+    await this.loadModules();
+    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const hash = await this.simpleHash(content, options.algorithm);
+    return { hash, algorithm: options.algorithm || 'md5' };
+  }
+
+  async getLineCount(options: FileOperationOptions): Promise<GetLineCountResult> {
+    await this.loadModules();
+    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    return { lines: content.split('\n').length };
+  }
+
+  private async simpleHash(content: string, algorithm: string = 'md5'): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(content);
+    const hashBuffer = await crypto.subtle.digest(algorithm === 'sha256' ? 'SHA-256' : 'SHA-1', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   async searchFiles(options: SearchFilesOptions): Promise<SearchFilesResult> {
     await this.loadModules();
 
@@ -540,6 +633,38 @@ class CapacitorFileManagerImpl {
     const service = await this.loadService();
     return service.searchFiles(options);
   }
+
+  // ========== AI 编辑相关 ==========
+
+  async readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
+    const service = await this.loadService();
+    return service.readFileRange(options);
+  }
+
+  async insertContent(options: InsertContentOptions): Promise<void> {
+    const service = await this.loadService();
+    return service.insertContent(options);
+  }
+
+  async replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
+    const service = await this.loadService();
+    return service.replaceInFile(options);
+  }
+
+  async applyDiff(options: ApplyDiffOptions): Promise<ApplyDiffResult> {
+    const service = await this.loadService();
+    return service.applyDiff(options);
+  }
+
+  async getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult> {
+    const service = await this.loadService();
+    return service.getFileHash(options);
+  }
+
+  async getLineCount(options: FileOperationOptions): Promise<GetLineCountResult> {
+    const service = await this.loadService();
+    return service.getLineCount(options);
+  }
 }
 
 // ============================================
@@ -617,6 +742,32 @@ class WebFileManagerImpl {
 
   async searchFiles(_options: SearchFilesOptions): Promise<SearchFilesResult> {
     throw new Error('搜索文件功能仅在原生应用中可用');
+  }
+
+  // ========== AI 编辑相关 ==========
+
+  async readFileRange(_options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
+    throw new Error('读取文件范围功能仅在原生应用中可用');
+  }
+
+  async insertContent(_options: InsertContentOptions): Promise<void> {
+    throw new Error('插入内容功能仅在原生应用中可用');
+  }
+
+  async replaceInFile(_options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
+    throw new Error('替换内容功能仅在原生应用中可用');
+  }
+
+  async applyDiff(_options: ApplyDiffOptions): Promise<ApplyDiffResult> {
+    throw new Error('应用 diff 功能仅在原生应用中可用');
+  }
+
+  async getFileHash(_options: GetFileHashOptions): Promise<GetFileHashResult> {
+    throw new Error('获取文件哈希功能仅在原生应用中可用');
+  }
+
+  async getLineCount(_options: FileOperationOptions): Promise<GetLineCountResult> {
+    throw new Error('获取行数功能仅在原生应用中可用');
   }
 }
 
@@ -750,6 +901,32 @@ class UnifiedFileManagerService {
 
   async searchFiles(options: SearchFilesOptions): Promise<SearchFilesResult> {
     return this.getImpl().searchFiles(options);
+  }
+
+  // ========== AI 编辑相关 ==========
+
+  async readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
+    return this.getImpl().readFileRange(options);
+  }
+
+  async insertContent(options: InsertContentOptions): Promise<void> {
+    return this.getImpl().insertContent(options);
+  }
+
+  async replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
+    return this.getImpl().replaceInFile(options);
+  }
+
+  async applyDiff(options: ApplyDiffOptions): Promise<ApplyDiffResult> {
+    return this.getImpl().applyDiff(options);
+  }
+
+  async getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult> {
+    return this.getImpl().getFileHash(options);
+  }
+
+  async getLineCount(options: FileOperationOptions): Promise<GetLineCountResult> {
+    return this.getImpl().getLineCount(options);
   }
 
   // ========== 便捷方法 ==========

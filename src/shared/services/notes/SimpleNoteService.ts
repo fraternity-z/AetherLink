@@ -167,59 +167,14 @@ class SimpleNoteService {
 
   /**
    * 重命名文件或文件夹
-   * 使用复制+删除的方式实现，兼容 Android 平台
+   * 直接使用原生 renameFile API，支持文件和文件夹
    */
   async renameItem(relativePath: string, newName: string): Promise<void> {
-    const oldFullPath = await this.getFullPath(relativePath);
-    
-    // 获取父目录路径
-    const pathParts = relativePath.split('/');
-    const parentPath = pathParts.slice(0, -1).join('/');
-    const newRelativePath = parentPath ? `${parentPath}/${newName}` : newName;
-    const newFullPath = await this.getFullPath(newRelativePath);
-    
-    try {
-      // 检查是否是文件夹
-      await unifiedFileManager.listDirectory({
-        path: oldFullPath,
-        showHidden: false,
-        sortBy: 'name',
-        sortOrder: 'asc'
-      });
-      
-      // 如果能列出目录，说明是文件夹
-      // 对于文件夹，我们需要递归复制
-      throw new Error('暂不支持重命名文件夹，请使用文件管理器');
-    } catch (listError) {
-      // 如果列目录失败，说明是文件，继续处理
-      try {
-        // 1. 读取原文件内容
-        const content = await this.readNote(relativePath);
-        
-        // 2. 写入新文件
-        await unifiedFileManager.writeFile({
-          path: newFullPath,
-          content: content,
-          encoding: 'utf8',
-          append: false
-        });
-        
-        // 3. 删除原文件
-        await unifiedFileManager.deleteFile({
-          path: oldFullPath
-        });
-      } catch (error) {
-        // 如果出错，尝试清理新文件
-        try {
-          await unifiedFileManager.deleteFile({
-            path: newFullPath
-          });
-        } catch (cleanupError) {
-          // 忽略清理错误
-        }
-        throw error;
-      }
-    }
+    const fullPath = await this.getFullPath(relativePath);
+    await unifiedFileManager.renameFile({
+      path: fullPath,
+      newName: newName
+    });
   }
   
   /**

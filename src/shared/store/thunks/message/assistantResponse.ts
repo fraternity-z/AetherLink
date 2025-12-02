@@ -1,28 +1,169 @@
-import { v4 as uuid } from 'uuid';
-import { MessageBlockStatus, MessageBlockType, AssistantMessageStatus } from '../../../types/newMessage';
+/**
+ * 助手响应处理模块
+ * 重构后的精简版本，核心逻辑已拆分到 helpers 目录
+ */
+import { AssistantMessageStatus } from '../../../types/newMessage';
 import { createResponseHandler } from '../../../services/messages/ResponseHandler';
 import { ApiProviderRegistry } from '../../../services/messages/ApiProvider';
-import { generateImage as generateOpenAIImage } from '../../../api/openai/image';
-import { generateImage as generateGeminiImage } from '../../../api/gemini/image';
-import { createImageBlock } from '../../../utils/messageUtils';
 import { createAbortController } from '../../../utils/abortController';
-import { mcpService } from '../../../services/mcp';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
-import { upsertOneBlock, addOneBlock } from '../../slices/messageBlocksSlice';
-import { dexieStorage } from '../../../services/storage/DexieStorageService';
-import type { Message, MessageBlock } from '../../../types/newMessage';
-import type { Model, MCPTool } from '../../../types';
-import type { RootState, AppDispatch } from '../../index';
+import { upsertOneBlock } from '../../slices/messageBlocksSlice';
 import { prepareMessagesForApi, performKnowledgeSearchIfNeeded } from './apiPreparation';
 import { getActualProviderType } from '../../../services/ProviderFactory';
-// 导入网络搜索 AI Tool 相关模块
-import {
-  analyzeSearchIntent,
-  createWebSearchToolDefinition,
-  shouldEnableWebSearchTool
-} from '../../../services/webSearch';
-import type { ExtractedSearchKeywords } from '../../../services/webSearch';
 
+import type { Message } from '../../../types/newMessage';
+import type { Model, MCPTool } from '../../../types';
+import type { RootState, AppDispatch } from '../../index';
+
+// 导入辅助模块
+import {
+  updateMessageAndTopic,
+  saveBlockToDB,
+  isImageGenerationModel,
+  handleImageGeneration,
+  configureWebSearchTool,
+  createWebSearchMcpTool,
+  checkAgenticMode,
+  startAgenticLoop,
+  collectToolResults,
+  buildMessagesWithToolResults,
+  processAgenticIteration,
+  checkCompletionSignal,
+  processToolResults,
+  handleCompletionSignal,
+  shouldContinueLoop,
+  endAgenticLoop,
+  cancelAgenticLoop,
+  isInAgenticMode,
+  fetchAssistantInfo,
+  createPlaceholderBlock,
+  fetchMcpTools,
+  prepareOriginalMessages,
+  extractGeminiSystemPrompt
+} from './helpers';
+
+/**
+ * 处理文本生成响应
+ */
+async function handleTextGeneration(context: {
+  assistantMessage: Message;
+  topicId: string;
+  model: Model;
+  mcpTools: MCPTool[];
+  apiMessages: any[];
+  filteredOriginalMessages: Message[];
+  responseHandler: any;
+  abortController: AbortController;
+  assistant: any;
+  webSearchTool: any;
+  webSearchProviderId: string | undefined;
+  extractedKeywords: any;
+}): Promise<any> {
+  const {
+    assistantMessage, model, mcpTools, apiMessages,
+    filteredOriginalMessages, responseHandler, abortController,
+    assistant, webSearchTool, webSearchProviderId, extractedKeywords
+  } = context;
+
+  const apiProvider = ApiProviderRegistry.get(model);
+  const actualProviderType = getActualProviderType(model);
+  const isActualGeminiProvider = actualProviderType === 'gemini';
+
+  let currentMessagesToSend = isActualGeminiProvider
+    ? [...filteredOriginalMessages]
+    : [...apiMessages];
+
+  console.log(`[processAssistantResponse] Provider类型: ${model.provider} -> 实际类型: ${actualProviderType}, 使用${isActualGeminiProvider ? '原始' : 'API'}格式消息，消息数量: ${currentMessagesToSend.length}`);
+
+  // 获取 MCP 模式设置
+  const mcpMode = localStorage.getItem('mcp-mode') as 'prompt' | 'function' || 'function';
+  console.log(`[MCP] 当前模式: ${mcpMode}`);
+
+  // 准备工具列表（包含网络搜索工具）
+  let allTools = [...mcpTools];
+  if (webSearchTool && webSearchProviderId) {
+    const webSearchMcpTool = createWebSearchMcpTool(webSearchTool, webSearchProviderId, extractedKeywords);
+    allTools.push(webSearchMcpTool);
+    console.log('[WebSearch] 网络搜索工具已添加到工具列表，AI 可自主决定是否调用');
+  }
+
+  // 提取系统提示词（Gemini）
+  const systemPromptForProvider = isActualGeminiProvider
+    ? extractGeminiSystemPrompt(apiMessages)
+    : undefined;
+
+  // Agentic 循环
+  let shouldContinueLoopFlag = true;
+  let response: any;
+
+  while (shouldContinueLoopFlag) {
+    processAgenticIteration();
+
+    response = await apiProvider.sendChatMessage(
+      currentMessagesToSend as any,
+      {
+        onChunk: async (chunk: import('../../../types/chunk').Chunk) => {
+          await responseHandler.handleChunk(chunk);
+        },
+        enableTools: context.mcpTools.length > 0 || !!webSearchTool,
+        mcpTools: allTools,
+        mcpMode,
+        abortSignal: abortController.signal,
+        assistant,
+        systemPrompt: systemPromptForProvider
+      }
+    );
+
+    // 非 Agentic 模式，单轮执行后结束
+    if (!isInAgenticMode()) {
+      shouldContinueLoopFlag = false;
+      break;
+    }
+
+    // 收集工具调用结果
+    const toolResults = await collectToolResults(assistantMessage.id);
+    console.log(`[Agentic] 收集到 ${toolResults.length} 个工具结果`);
+
+    if (toolResults.length === 0) {
+      console.log(`[Agentic] 没有工具调用，结束循环`);
+      shouldContinueLoopFlag = false;
+      break;
+    }
+
+    // 检查完成信号
+    const completionResult = checkCompletionSignal(toolResults);
+    if (completionResult) {
+      handleCompletionSignal(completionResult);
+      shouldContinueLoopFlag = false;
+      break;
+    }
+
+    // 处理工具结果
+    processToolResults(toolResults);
+
+    // 检查是否应该继续
+    if (!shouldContinueLoop()) {
+      console.log(`[Agentic] 循环终止条件满足，结束循环`);
+      shouldContinueLoopFlag = false;
+      break;
+    }
+
+    // 将工具结果添加到消息历史
+    console.log(`[Agentic] 工具执行完成，将结果发回 AI 继续下一轮`);
+    currentMessagesToSend = buildMessagesWithToolResults(
+      currentMessagesToSend,
+      toolResults,
+      isActualGeminiProvider
+    );
+  }
+
+  endAgenticLoop();
+  return response;
+}
+
+/**
+ * 处理助手响应的主函数
+ */
 export const processAssistantResponse = async (
   dispatch: AppDispatch,
   _getState: () => RootState,
@@ -32,439 +173,102 @@ export const processAssistantResponse = async (
   toolsEnabled?: boolean
 ) => {
   try {
-    // 0. 获取助手信息（强制刷新，避免缓存问题）
-    let assistant: any = null;
-    try {
-      const topic = await dexieStorage.getTopic(topicId);
-      if (topic?.assistantId) {
-        // 强制从数据库重新获取最新的助手信息
-        assistant = await dexieStorage.getAssistant(topic.assistantId);
-        console.log(`[processAssistantResponse] 获取到助手信息:`, {
-          id: assistant?.id,
-          name: assistant?.name,
-          temperature: assistant?.temperature,
-          topP: assistant?.topP,
-          maxTokens: assistant?.maxTokens,
-          model: assistant?.model
-        });
-      }
-    } catch (error) {
-      console.error('[processAssistantResponse] 获取助手信息失败:', error);
-    }
+    // 1. 获取助手信息
+    const assistant = await fetchAssistantInfo(topicId);
 
-    // 1. 立即设置消息状态为处理中并创建占位符块，让用户看到反馈
+    // 2. 设置消息状态为处理中
     dispatch(newMessagesActions.updateMessage({
       id: assistantMessage.id,
-      changes: {
-        status: AssistantMessageStatus.PROCESSING
-      }
+      changes: { status: AssistantMessageStatus.PROCESSING }
     }));
 
-    // 2. 创建占位符块（参考最佳实例逻辑）
-    const placeholderBlock: MessageBlock = {
-      id: uuid(),
-      messageId: assistantMessage.id,
-      type: MessageBlockType.UNKNOWN,
-      content: '',
-      createdAt: new Date().toISOString(),
-      status: MessageBlockStatus.PROCESSING
-    };
-
+    // 3. 创建占位符块
+    const placeholderBlock = createPlaceholderBlock(assistantMessage.id);
     console.log(`[sendMessage] 创建占位符块: ${placeholderBlock.id}`);
 
-    // 添加占位符块到Redux
     dispatch(upsertOneBlock(placeholderBlock));
+    await saveBlockToDB(placeholderBlock);
 
-    // 保存占位符块到数据库
-    await dexieStorage.saveMessageBlock(placeholderBlock);
-
-    // 3. 关联占位符块到消息
+    // 4. 关联占位符块到消息
     dispatch(newMessagesActions.updateMessage({
       id: assistantMessage.id,
-      changes: {
-        blocks: [placeholderBlock.id]
-      }
+      changes: { blocks: [placeholderBlock.id] }
     }));
 
-    // 4. 获取 MCP 工具（如果启用）- 现在用户已经能看到加载状态了
-    let mcpTools: MCPTool[] = [];
-    if (toolsEnabled) {
-      try {
-        console.log(`[MCP] 开始获取工具，可能需要连接网络服务器...`);
-        mcpTools = await mcpService.getAllAvailableTools();
-        console.log(`[MCP] 获取到 ${mcpTools.length} 个可用工具`);
-        if (mcpTools.length > 0) {
-          console.log(`[MCP] 工具列表:`, mcpTools.map(t => t.name || t.id).join(', '));
-        }
-      } catch (error) {
-        console.error('[MCP] 获取工具失败:', error);
-      }
-    } else {
-      console.log(`[MCP] 工具未启用 (toolsEnabled=${toolsEnabled})`);
+    // 5. 获取 MCP 工具
+    const mcpTools = await fetchMcpTools(toolsEnabled);
+
+    // 6. 检测并启动 Agentic 模式
+    if (checkAgenticMode(mcpTools)) {
+      startAgenticLoop(topicId);
     }
 
-    // 🚀 4.1 检查是否需要启用网络搜索工具 (AI Tool Use 模式)
-    let webSearchTool: any = null;
-    let extractedKeywords: ExtractedSearchKeywords | undefined;
-    
-    // 🚀 获取网络搜索配置：优先从助手配置获取，其次从全局 webSearch 状态获取（自动模式）
-    const webSearchState = _getState().webSearch;
-    const isAutoSearchMode = webSearchState?.searchMode === 'auto';
-    const webSearchProviderId = assistant?.webSearchProviderId || 
-      (isAutoSearchMode ? webSearchState?.provider : undefined);
-    
-    if (webSearchProviderId && shouldEnableWebSearchTool(webSearchProviderId)) {
-      console.log(`[WebSearch] 检测到网络搜索配置: ${webSearchProviderId}, 模式: ${webSearchState?.searchMode}`);
-      
-      // 获取最后一条用户消息
-      const topicMessages = await dexieStorage.getTopicMessages(topicId);
-      const lastUserMsg = topicMessages
-        .filter((m: Message) => m.role === 'user')
-        .sort((a: Message, b: Message) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-      
-      if (lastUserMsg) {
-        // 获取用户消息内容
-        const userBlocks = await dexieStorage.getMessageBlocksByMessageId(lastUserMsg.id);
-        const mainTextBlock = userBlocks.find((b: any) => b.type === MessageBlockType.MAIN_TEXT) as any;
-        const userContent = mainTextBlock?.content || '';
-        
-        // 🚀 自动模式：总是添加搜索工具，让 AI 自主决定是否搜索
-        // 手动模式：使用意图分析判断
-        if (isAutoSearchMode) {
-          // 自动模式：提取关键词但总是启用工具
-          extractedKeywords = {
-            question: [userContent],
-            links: undefined
-          };
-          webSearchTool = createWebSearchToolDefinition(extractedKeywords);
-          console.log(`[WebSearch] 自动模式：已添加网络搜索工具，AI 将自主决定是否搜索`);
-        } else {
-          // 其他模式：使用意图分析
-          const intentResult = analyzeSearchIntent(userContent);
-          console.log(`[WebSearch] 意图分析结果:`, intentResult);
-          
-          if (intentResult.needsWebSearch) {
-            extractedKeywords = intentResult.websearch;
-            webSearchTool = createWebSearchToolDefinition(extractedKeywords);
-            console.log(`[WebSearch] 已创建网络搜索工具，预设查询:`, extractedKeywords?.question);
-          }
-        }
-      }
-    }
+    // 7. 配置网络搜索工具
+    const webSearchConfig = await configureWebSearchTool({
+      getState: _getState,
+      topicId,
+      assistant
+    });
 
-    // 暂时不进行知识库搜索，等ResponseHandler创建后再搜索
+    // 8. 准备 API 消息
     const apiMessages = await prepareMessagesForApi(topicId, assistantMessage.id, mcpTools, { skipKnowledgeSearch: true });
+    const filteredOriginalMessages = await prepareOriginalMessages(topicId, assistantMessage);
 
-    // 获取原始消息对象用于Gemini provider
-    const originalMessages = await dexieStorage.getTopicMessages(topicId);
-    const sortedOriginalMessages = [...originalMessages].sort((a, b) => {
-      const timeA = new Date(a.createdAt).getTime();
-      const timeB = new Date(b.createdAt).getTime();
-      return timeA - timeB;
+    // 9. 更新数据库
+    await updateMessageAndTopic(assistantMessage.id, topicId, {
+      blocks: [placeholderBlock.id]
     });
 
-    // 过滤出需要的消息（与prepareMessagesForApi相同的逻辑）
-    const assistantMessageTime = new Date(assistantMessage.createdAt).getTime();
-    const filteredOriginalMessages = sortedOriginalMessages.filter(message => {
-      // 跳过当前正在处理的助手消息和所有system消息
-      if (message.id === assistantMessage.id || message.role === 'system') {
-        return false;
-      }
-      // 只包含创建时间早于当前助手消息的消息
-      const messageTime = new Date(message.createdAt).getTime();
-      return messageTime < assistantMessageTime;
-    });
-
-// 5. 更新消息数据库（同时更新messages表和topic.messages数组）
-    await dexieStorage.transaction('rw', [
-      dexieStorage.messages,
-      dexieStorage.topics
-    ], async () => {
-      // 更新messages表
-      await dexieStorage.updateMessage(assistantMessage.id, {
-        blocks: [placeholderBlock.id]
-      });
-
-      // 更新topic.messages数组
-      const topic = await dexieStorage.topics.get(topicId);
-      if (topic && topic.messages) {
-        const messageIndex = topic.messages.findIndex((m: Message) => m.id === assistantMessage.id);
-        if (messageIndex >= 0) {
-          topic.messages[messageIndex] = {
-            ...topic.messages[messageIndex],
-            blocks: [placeholderBlock.id]
-          };
-          await dexieStorage.topics.put(topic);
-        }
-      }
-    });
-
-// 6. 创建AbortController
+    // 10. 创建 AbortController
     const { abortController, cleanup } = createAbortController(assistantMessage.askId, true);
 
-
-
-// 7. 创建响应处理器，使用占位符块ID
+    // 11. 创建响应处理器
     const responseHandler = createResponseHandler({
       messageId: assistantMessage.id,
       blockId: placeholderBlock.id,
       topicId,
       toolNames: mcpTools.map(t => t.name || t.id).filter((n): n is string => !!n),
-      mcpTools: mcpTools
+      mcpTools
     });
 
-    // 7.1. 现在ResponseHandler已创建，可以进行知识库搜索了
+    // 12. 执行知识库搜索
     await performKnowledgeSearchIfNeeded(topicId, assistantMessage.id);
 
-// 8. 获取API提供者
-    const apiProvider = ApiProviderRegistry.get(model);
+    // 13. 检查是否为图像生成模型
+    const isImageModel = isImageGenerationModel(model);
 
-// 9. 检查是否为图像生成模型
-    // 优先检查模型编辑界面中的"输出能力"标签（modelTypes）
-    const isImageGenerationModel =
-      // 1. 优先检查 modelTypes 中是否包含图像生成类型（对应编辑界面的"输出能力"）
-      (model.modelTypes && model.modelTypes.includes('image_gen' as any)) ||
-      // 2. 检查模型的图像生成标志
-      model.imageGeneration ||
-      model.capabilities?.imageGeneration ||
-      // 3. 兼容旧的字符串格式
-      (model.modelTypes && model.modelTypes.includes('image-generation' as any)) ||
-      // 4. 基于模型ID的后备检测（用于未正确配置的模型）
-      model.id.toLowerCase().includes('flux') ||
-      model.id.toLowerCase().includes('black-forest') ||
-      model.id.toLowerCase().includes('stable-diffusion') ||
-      model.id.toLowerCase().includes('sd') ||
-      model.id.toLowerCase().includes('dalle') ||
-      model.id.toLowerCase().includes('midjourney') ||
-      model.id.toLowerCase().includes('grok-2-image') ||
-      model.id === 'grok-2-image-1212' ||
-      model.id === 'grok-2-image' ||
-      model.id === 'grok-2-image-latest' ||
-      model.id === 'gemini-2.0-flash-exp-image-generation' ||
-      model.id === 'gemini-2.0-flash-preview-image-generation' ||
-      (model.id === 'gemini-2.0-flash-exp' && model.imageGeneration);
-
-// 10. 发送API请求
     try {
       let response: any;
 
-      if (isImageGenerationModel) {
-        // 获取最后一条用户消息作为图像生成提示词
-        const lastUserMessage = apiMessages.filter((msg: { role: string; content: any }) => msg.role === 'user').pop();
-        let prompt = '生成一张图片';
-
-        // 处理不同类型的content
-        if (lastUserMessage?.content) {
-          if (typeof lastUserMessage.content === 'string') {
-            prompt = lastUserMessage.content;
-          } else if (Array.isArray(lastUserMessage.content)) {
-            // 从多模态内容中提取文本
-            const textParts = lastUserMessage.content
-              .filter((part: any) => part.type === 'text')
-              .map((part: any) => part.text);
-            prompt = textParts.join(' ') || '生成一张图片';
-          }
-        }
-
-        // 根据模型类型选择不同的图像生成API
-        let imageUrls: string[] = [];
-
-        if (model.provider === 'google' || model.id.startsWith('gemini-')) {
-          // 使用 Gemini 图像生成API
-          imageUrls = await generateGeminiImage(model, {
-            prompt: prompt,
-            imageSize: '1024x1024',
-            batchSize: 1
-          });
-          responseHandler.handleStringContent('Gemini 图像生成完成！');
-        } else {
-          // 使用 OpenAI 兼容的图像生成API（支持 Grok、SiliconFlow 等）
-          imageUrls = await generateOpenAIImage(model, {
-            prompt: prompt,
-            imageSize: '1024x1024',
-            batchSize: 1
-          });
-          responseHandler.handleStringContent('图像生成完成！');
-        }
-
-        // 处理图像生成结果
-        if (imageUrls && imageUrls.length > 0) {
-          const imageUrl = imageUrls[0];
-
-          // 如果是base64图片，保存到数据库并创建引用
-          let finalImageUrl = imageUrl;
-          if (imageUrl.startsWith('data:image/')) {
-            try {
-              // 保存base64图片到数据库
-              const imageId = await dexieStorage.saveBase64Image(imageUrl, {
-                topicId: topicId,
-                messageId: assistantMessage.id,
-                source: 'ai_generated',
-                model: model.id
-              });
-
-              // 使用图片引用格式
-              finalImageUrl = `[图片:${imageId}]`;
-            } catch (error) {
-              console.error('保存生成的图片失败，使用原始base64:', error);
-              // 如果保存失败，继续使用原始base64
-            }
-          }
-
-          // 创建图片块
-          const imageBlock = createImageBlock(assistantMessage.id, {
-            url: finalImageUrl,
-            mimeType: imageUrl.startsWith('data:image/png') ? 'image/png' :
-                     imageUrl.startsWith('data:image/jpeg') ? 'image/jpeg' :
-                     'image/png'
-          });
-
-          // 添加图片块到 Redux 状态
-          dispatch(addOneBlock(imageBlock));
-
-          // 保存图片块到数据库
-          await dexieStorage.saveMessageBlock(imageBlock);
-
-          // 将图片块ID添加到消息的blocks数组
-          dispatch(newMessagesActions.upsertBlockReference({
-            messageId: assistantMessage.id,
-            blockId: imageBlock.id,
-            status: imageBlock.status
-          }));
-
-          // 更新消息的blocks数组并保存到数据库
-          const updatedMessage = {
-            ...assistantMessage,
-            blocks: [...(assistantMessage.blocks || []), imageBlock.id],
-            updatedAt: new Date().toISOString()
-          };
-
-          // 更新Redux中的消息
-          dispatch(newMessagesActions.updateMessage({
-            id: assistantMessage.id,
-            changes: updatedMessage
-          }));
-
-          // 保存消息到数据库并更新topics表
-          await dexieStorage.transaction('rw', [
-            dexieStorage.messages,
-            dexieStorage.topics
-          ], async () => {
-            // 更新messages表
-            await dexieStorage.updateMessage(assistantMessage.id, updatedMessage);
-
-            // 更新topics表中的messages数组
-            const topic = await dexieStorage.topics.get(topicId);
-            if (topic && topic.messages) {
-              const messageIndex = topic.messages.findIndex((m: Message) => m.id === assistantMessage.id);
-              if (messageIndex >= 0) {
-                topic.messages[messageIndex] = updatedMessage;
-                await dexieStorage.topics.put(topic);
-              }
-            }
-          });
-
-          response = '图像生成完成！';
-        } else {
-          response = '图像生成失败，没有返回有效的图像URL。';
-        }
+      if (isImageModel) {
+        // 图像生成
+        response = await handleImageGeneration({
+          dispatch,
+          model,
+          assistantMessage,
+          topicId,
+          apiMessages,
+          responseHandler
+        });
       } else {
-
-        // 修复：根据实际provider类型选择合适的消息格式
-        //  关键修复：使用getActualProviderType来正确判断Gemini provider
-        const actualProviderType = getActualProviderType(model);
-        const isActualGeminiProvider = actualProviderType === 'gemini';
-        const messagesToSend = isActualGeminiProvider ? filteredOriginalMessages : apiMessages;
-
-        console.log(`[processAssistantResponse] Provider类型: ${model.provider} -> 实际类型: ${actualProviderType}, 使用${isActualGeminiProvider ? '原始' : 'API'}格式消息，消息数量: ${messagesToSend.length}`);
-
-        // 调试：打印消息内容以确认文件块信息
-        if (isActualGeminiProvider) {
-          console.log(`[processAssistantResponse] Gemini使用原始消息，包含完整的blocks信息`);
-          filteredOriginalMessages.forEach((msg: any, index: number) => {
-            console.log(`[processAssistantResponse] 原始消息 ${index}:`, {
-              role: msg.role,
-              hasBlocks: !!(msg.blocks && msg.blocks.length > 0),
-              blocksCount: msg.blocks?.length || 0,
-              messageId: msg.id
-            });
-          });
-        } else {
-          console.log(`[processAssistantResponse] OpenAI使用API格式消息`);
-          apiMessages.forEach((msg: any, index: number) => {
-            console.log(`[processAssistantResponse] API消息 ${index}:`, {
-              role: msg.role,
-              contentType: typeof msg.content,
-              isArray: Array.isArray(msg.content),
-              contentLength: typeof msg.content === 'string' ? msg.content.length :
-                            Array.isArray(msg.content) ? msg.content.length : 0
-            });
-          });
-        }
-
-        // 获取 MCP 模式设置
-        const mcpMode = localStorage.getItem('mcp-mode') as 'prompt' | 'function' || 'function';
-        console.log(`[MCP] 当前模式: ${mcpMode}`);
-
-        // 🚀 将网络搜索工具添加到 MCP 工具列表（如果启用）
-        // 这样 AI 可以自主决定是否调用网络搜索
-        let allTools = [...mcpTools];
-        if (webSearchTool) {
-          // 创建网络搜索的 MCPTool 格式
-          const webSearchMcpTool: MCPTool = {
-            id: 'builtin_web_search',
-            name: 'builtin_web_search',
-            description: webSearchTool.function.description,
-            inputSchema: webSearchTool.function.parameters,
-            serverId: 'builtin',
-            serverName: 'builtin',
-            // 存储网络搜索配置，供 callMCPTool 使用
-            webSearchConfig: {
-              providerId: webSearchProviderId, // 使用已解析的提供商ID
-              extractedKeywords
-            }
-          } as MCPTool & { webSearchConfig: any };
-          
-          allTools.push(webSearchMcpTool);
-          console.log('[WebSearch] 网络搜索工具已添加到工具列表，AI 可自主决定是否调用');
-        }
-
-        // 修复Gemini系统提示词传递问题：从API消息中提取系统提示词
-        let systemPromptForProvider = '';
-        if (isActualGeminiProvider) {
-          // 对于Gemini provider，从apiMessages中提取系统提示词
-          const systemMessage = apiMessages.find((msg: any) => msg.role === 'system');
-          const content = systemMessage?.content;
-          systemPromptForProvider = typeof content === 'string' ? content : '';
-          console.log(`[processAssistantResponse] Gemini提取到系统提示词:`, {
-            hasSystemMessage: !!systemMessage,
-            systemPromptLength: systemPromptForProvider.length,
-            systemPromptPreview: systemPromptForProvider.substring(0, 50) + (systemPromptForProvider.length > 50 ? '...' : ''),
-            apiMessagesCount: apiMessages.length
-          });
-        }
-
-        // 使用Provider的sendChatMessage方法
-        // 🚀 使用 allTools（包含网络搜索工具）而不是 mcpTools
-        response = await apiProvider.sendChatMessage(
-          messagesToSend as any,
-          {
-            onChunk: async (chunk: import('../../../types/chunk').Chunk) => {
-              // 等待 chunk 处理完成，避免竞态条件
-              await responseHandler.handleChunk(chunk);
-            },
-            enableTools: toolsEnabled !== false || !!webSearchTool,
-            mcpTools: allTools, // 🚀 使用包含网络搜索工具的完整列表
-            mcpMode: mcpMode,
-            abortSignal: abortController.signal,
-            assistant: assistant,
-            systemPrompt: isActualGeminiProvider ? systemPromptForProvider : undefined
-          }
-        );
-
+        // 文本生成
+        response = await handleTextGeneration({
+          assistantMessage,
+          topicId,
+          model,
+          mcpTools,
+          apiMessages,
+          filteredOriginalMessages,
+          responseHandler,
+          abortController,
+          assistant,
+          webSearchTool: webSearchConfig.webSearchTool,
+          webSearchProviderId: webSearchConfig.webSearchProviderId,
+          extractedKeywords: webSearchConfig.extractedKeywords
+        });
       }
 
-      // 处理不同类型的响应
+      // 处理响应
       let finalContent: string;
       let finalReasoning: string | undefined;
       let isInterrupted = false;
@@ -473,40 +277,36 @@ export const processAssistantResponse = async (
         finalContent = response;
       } else if (response && typeof response === 'object' && 'content' in response) {
         finalContent = response.content;
-        // 提取思考内容（非流式响应）
         finalReasoning = response.reasoning;
-        // 检查是否被中断
         isInterrupted = response.interrupted === true;
       } else {
         finalContent = '';
       }
 
-      // 如果响应被中断，使用中断处理方法
       if (isInterrupted) {
         return await responseHandler.completeWithInterruption();
       }
 
-      // 传递内容和思考内容到 complete 方法
       return await responseHandler.complete(finalContent, finalReasoning);
+
     } catch (error: any) {
-      // 检查是否为中断错误
+      cancelAgenticLoop();
+
       if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
         console.log('[processAssistantResponse] 请求被用户中断');
-        // 对于中断错误，完成响应并标记为被中断
         return await responseHandler.completeWithInterruption();
       }
 
       return await responseHandler.fail(error as Error);
     } finally {
-      // 清理AbortController
       if (cleanup) {
         cleanup();
       }
     }
+
   } catch (error) {
     console.error('处理助手响应失败:', error);
 
-    // 错误恢复：确保状态重置
     dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
     dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
 

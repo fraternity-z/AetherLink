@@ -72,6 +72,16 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     env: {
       METASO_API_KEY: ''
     }
+  },
+  {
+    id: 'builtin-file-editor',
+    name: '@aether/file-editor',
+    type: 'inMemory',
+    description: 'AI 文件编辑工具，支持读取、写入、插入、替换、应用 diff 等操作。可用于工作区和笔记文件的编辑。',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['文件', '编辑', 'AI', '工作区', '笔记', '工具']
   }
 ];
 

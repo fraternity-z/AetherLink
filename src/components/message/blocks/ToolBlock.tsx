@@ -2,6 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { Box, Typography, Collapse, IconButton, useTheme, alpha, Divider } from '@mui/material';
 import { ChevronRight, Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { keyframes, styled } from '@mui/material/styles';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import '../markdown.css';
 
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { ToolMessageBlock } from '../../../shared/types/newMessage';
@@ -17,11 +20,22 @@ const spin = keyframes`
 `;
 
 /**
+ * 检查是否是 attempt_completion 工具
+ */
+const isCompletionTool = (block: ToolMessageBlock): boolean => {
+  return block.toolName === 'attempt_completion' || 
+         (block.metadata as any)?.isCompletionTool === true;
+};
+
+/**
  * 工具调用块组件 - 简约版
  */
 const ToolBlock: React.FC<Props> = ({ block }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
+  
+  // 检查是否是完成工具
+  const isCompletion = isCompletionTool(block);
 
   const toolResponse = block.metadata?.rawMcpToolResponse;
   const isProcessing = block.status === MessageBlockStatus.STREAMING ||
@@ -94,6 +108,122 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
   const statusColor = hasError ? theme.palette.error.main 
     : isCompleted ? theme.palette.success.main 
     : theme.palette.info.main;
+
+  // 🎯 attempt_completion 特殊渲染 - 参考 Roo-Code 样式
+  if (isCompletion && isCompleted && !hasError) {
+    // 解析完成内容，提取 result 字段
+    const parseCompletionContent = (): { result: string; command?: string } => {
+      try {
+        // 尝试从 block.content 解析
+        let content = block.content;
+        
+        // 如果是对象且有 content 数组（MCP 格式）
+        if (content && typeof content === 'object' && 'content' in content) {
+          const mcpContent = (content as any).content;
+          if (Array.isArray(mcpContent) && mcpContent[0]?.text) {
+            content = mcpContent[0].text;
+          }
+        }
+        
+        // 如果是字符串，尝试解析 JSON
+        if (typeof content === 'string') {
+          const parsed = JSON.parse(content);
+          if (parsed.__agentic_completion__ || parsed.agentic_completion) {
+            return {
+              result: parsed.result || '任务已完成',
+              command: parsed.command
+            };
+          }
+          // 如果不是完成格式，直接返回字符串
+          return { result: content };
+        }
+        
+        // 如果是对象，尝试提取 result
+        if (content && typeof content === 'object') {
+          if ('result' in content) {
+            return {
+              result: (content as any).result || '任务已完成',
+              command: (content as any).command
+            };
+          }
+        }
+        
+        return { result: '任务已完成' };
+      } catch {
+        // 解析失败，返回原始内容或默认值
+        if (typeof block.content === 'string') {
+          return { result: block.content };
+        }
+        return { result: '任务已完成' };
+      }
+    };
+    
+    const { result: completionResult, command: suggestedCommand } = parseCompletionContent();
+    
+    return (
+      <Box sx={{ mb: 1 }}>
+        {/* 标题行：绿色勾号 + 任务完成 */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1.25,
+          mb: 1.25
+        }}>
+          <Check size={16} color={theme.palette.success.main} />
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontWeight: 600, 
+              color: 'success.main'
+            }}
+          >
+            任务完成
+          </Typography>
+        </Box>
+        
+        {/* 内容区域：左侧绿色边框 + Markdown 内容 */}
+        <Box 
+          className="markdown"
+          sx={{ 
+            borderLeft: `2px solid ${alpha(theme.palette.success.main, 0.3)}`,
+            ml: 0.25,
+            pl: 2,
+            pb: 0.5
+          }}
+        >
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              table: ({ children }) => (
+                <div className="markdown-table-container">
+                  <table>{children}</table>
+                </div>
+              )
+            }}
+          >
+            {completionResult}
+          </ReactMarkdown>
+          
+          {/* 如果有建议命令，显示命令 */}
+          {suggestedCommand && (
+            <Box sx={{ 
+              mt: 1.5, 
+              p: 1, 
+              bgcolor: alpha(theme.palette.info.main, 0.1),
+              borderRadius: 1,
+              fontFamily: 'monospace',
+              fontSize: '0.85rem'
+            }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                建议执行：
+              </Typography>
+              <code>{suggestedCommand}</code>
+            </Box>
+          )}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Container>

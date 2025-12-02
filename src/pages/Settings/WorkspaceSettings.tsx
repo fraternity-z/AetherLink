@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import {
   Box,
   Typography,
@@ -26,9 +27,12 @@ import {
   Avatar,
   Divider,
   ListSubheader,
-  alpha
+  alpha,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import BackButtonDialog from '../../components/common/BackButtonDialog';
+import { updateSettings } from '../../shared/store/slices/settingsSlice';
 import {
   Plus as AddIcon,
   Folder as FolderIcon,
@@ -38,8 +42,9 @@ import {
   FolderOpen as FolderOpenIcon,
   Shield as ShieldIcon
 } from 'lucide-react';
-import { workspaceService } from '../../shared/services/WorkspaceService';
+import { workspaceService, ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/WorkspaceService';
 import { WorkspaceCreateDialog } from '../../components/WorkspaceCreateDialog';
+import { toastManager } from '../../components/EnhancedToast';
 import type { Workspace } from '../../shared/types/workspace';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import dayjs from 'dayjs';
@@ -51,12 +56,14 @@ dayjs.locale('zh-cn');
 
 const WorkspaceSettings: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<Workspace | null>(null);
+  const [sidebarEnabled, setSidebarEnabled] = useState(false);
 
   // 使用滚动位置保存功能
   const {
@@ -67,13 +74,16 @@ const WorkspaceSettings: React.FC = () => {
     restoreDelay: 0
   });
 
-  // 加载工作区列表
+  // 加载工作区列表和设置
   const loadWorkspaces = async () => {
     try {
       setLoading(true);
       setError(null);
       const result = await workspaceService.getWorkspaces();
       setWorkspaces(result.workspaces);
+      // 加载侧边栏开关状态
+      const enabled = await workspaceService.isSidebarEnabled();
+      setSidebarEnabled(enabled);
     } catch (err) {
       setError('加载工作区列表失败');
       console.error('加载工作区失败:', err);
@@ -85,6 +95,15 @@ const WorkspaceSettings: React.FC = () => {
   useEffect(() => {
     loadWorkspaces();
   }, []);
+
+  // 处理侧边栏开关
+  const handleSidebarToggle = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const enabled = event.target.checked;
+    await workspaceService.setSidebarEnabled(enabled);
+    dispatch(updateSettings({ [ENABLE_WORKSPACE_SIDEBAR_KEY]: enabled }));
+    setSidebarEnabled(enabled);
+    toastManager.success(`侧边栏入口已${enabled ? '启用' : '禁用'}`, '设置成功');
+  };
 
   // 处理返回
   const handleBack = () => {
@@ -237,6 +256,41 @@ const WorkspaceSettings: React.FC = () => {
             {error}
           </Alert>
         )}
+
+        {/* 侧边栏开关设置 */}
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          }}
+        >
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                侧边栏快捷入口
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                在聊天侧边栏显示工作区标签页，方便快速访问
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={sidebarEnabled}
+                  onChange={handleSidebarToggle}
+                  color="primary"
+                />
+              }
+              label=""
+            />
+          </Box>
+        </Paper>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>

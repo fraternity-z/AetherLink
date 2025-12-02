@@ -235,17 +235,22 @@ export function mcpToolCallResponseToOpenAIMessage(
     ? JSON.stringify(resp.content)
     : '工具调用完成，但没有返回内容';
 
+  // 获取工具名称
+  const toolName = mcpToolResponse.tool.name || mcpToolResponse.tool.id || 'unknown';
+
+  // 函数调用模式：使用 OpenAI 原生 tool 角色
   if ('toolCallId' in mcpToolResponse && mcpToolResponse.toolCallId) {
     return {
       role: 'tool',
       tool_call_id: mcpToolResponse.toolCallId,
-      content: `Here is the result of mcp tool use \`${mcpToolResponse.tool.name}\`:\n\n${contentText}`
+      content: contentText
     };
   }
 
+  // 提示词注入模式：使用 XML 格式，与系统提示中的格式保持一致
   return {
     role: 'user',
-    content: `Here is the result of mcp tool use \`${mcpToolResponse.tool.name}\`:\n\n${contentText}`
+    content: `<tool_use_result>\n  <name>${toolName}</name>\n  <result>${contentText}</result>\n</tool_use_result>`
   };
 }
 

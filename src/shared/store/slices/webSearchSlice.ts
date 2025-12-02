@@ -97,7 +97,10 @@ const loadFromStorage = async (): Promise<WebSearchSettings> => {
     newsSearchDays: 7,
 
     // 🚀 新增：搜索引擎选择默认设置
-    selectedSearchEngine: 'bing'
+    selectedSearchEngine: 'bing',
+
+    // 🚀 新增：当前激活的搜索提供商ID（临时状态，不持久化）
+    activeProviderId: undefined
   };
 };
 
@@ -132,7 +135,11 @@ const initialState: WebSearchSettings = {
   newsSearchDays: 7,
 
   // 🚀 新增：搜索引擎选择默认设置
-  selectedSearchEngine: 'bing'
+  selectedSearchEngine: 'bing',
+
+  // 🚀 新增：当前激活的搜索提供商ID（仅当用户点击搜索按钮选择引擎后才设置）
+  // 这个字段用于区分"设置中选择了自动模式"和"用户实际点击了搜索按钮"
+  activeProviderId: undefined as string | undefined
 };
 
 // 延迟加载数据，避免循环导入
@@ -188,7 +195,10 @@ const saveToStorage = (state: WebSearchSettings) => {
     newsSearchDays: state.newsSearchDays,
 
     // 🚀 新增：搜索引擎选择相关字段
-    selectedSearchEngine: state.selectedSearchEngine
+    selectedSearchEngine: state.selectedSearchEngine,
+
+    // 🚀 新增：当前激活的搜索提供商ID
+    activeProviderId: state.activeProviderId
   };
 
   setStorageItem(STORAGE_KEY, serializableState).catch(error => {
@@ -310,6 +320,11 @@ const webSearchSlice = createSlice({
     setSelectedSearchEngine: (state, action: PayloadAction<SearchEngine>) => {
       state.selectedSearchEngine = action.payload;
       saveToStorage(state);
+    },
+    // 🚀 新增：设置当前激活的搜索提供商ID（用户点击搜索按钮选择引擎后调用）
+    setActiveProviderId: (state, action: PayloadAction<string | undefined>) => {
+      state.activeProviderId = action.payload;
+      // 注意：activeProviderId 是临时状态，不需要持久化到存储
     },
     addCustomProvider: (state, action: PayloadAction<WebSearchCustomProvider>) => {
       if (!state.customProviders) {
@@ -440,7 +455,10 @@ export const {
   setNewsSearchDays,
 
   // 🚀 新增：搜索引擎选择相关actions
-  setSelectedSearchEngine
+  setSelectedSearchEngine,
+
+  // 🚀 新增：激活搜索提供商相关actions
+  setActiveProviderId
 } = webSearchSlice.actions;
 
 export default webSearchSlice.reducer;

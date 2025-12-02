@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AppBar,
@@ -25,6 +25,9 @@ const NoteEditor: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // 保存原始内容，用于比较是否真正修改
+  const originalContentRef = useRef<string>('');
 
   // 根据来源决定返回路径
   const getBackPath = useCallback(() => {
@@ -48,6 +51,9 @@ const NoteEditor: React.FC = () => {
     try {
       const fileContent = await simpleNoteService.readNote(filePath);
       setContent(fileContent);
+      // 保存原始内容用于比较
+      originalContentRef.current = fileContent;
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error('读取文件失败:', error);
       toastManager.error('读取文件失败', '错误');
@@ -63,6 +69,8 @@ const NoteEditor: React.FC = () => {
     setSaving(true);
     try {
       await simpleNoteService.saveNote(filePath, content);
+      // 保存成功后，更新原始内容引用
+      originalContentRef.current = content;
       setHasUnsavedChanges(false);
       toastManager.success('保存成功', '成功');
     } catch (error) {
@@ -75,7 +83,9 @@ const NoteEditor: React.FC = () => {
 
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
-    setHasUnsavedChanges(true);
+    // 只有内容真正改变时才标记为未保存
+    const hasRealChanges = newContent !== originalContentRef.current;
+    setHasUnsavedChanges(hasRealChanges);
   }, []);
 
   const handleBack = useCallback(() => {

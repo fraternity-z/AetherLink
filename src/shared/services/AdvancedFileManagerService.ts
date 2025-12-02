@@ -23,7 +23,18 @@ import type {
   FileInfo,
   SelectedFileInfo,
   SystemFilePickerOptions,
-  SystemFilePickerResult
+  SystemFilePickerResult,
+  // AI 编辑相关
+  ReadFileRangeOptions,
+  ReadFileRangeResult,
+  InsertContentOptions,
+  ReplaceInFileOptions,
+  ReplaceInFileResult,
+  ApplyDiffOptions,
+  ApplyDiffResult,
+  GetFileHashOptions,
+  GetFileHashResult,
+  GetLineCountResult
 } from '../types/fileManager';
 
 const AdvancedFileManager = registerPlugin<AdvancedFileManagerPlugin>('AdvancedFileManager');
@@ -509,7 +520,115 @@ class AdvancedFileManagerService {
     }
   }
 
+  // ==================== AI 编辑相关 ====================
 
+  /**
+   * 读取文件指定行范围
+   */
+  async readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
+    if (!this.isSupportedPlatform()) {
+      throw new Error('文件管理功能仅在移动端应用中可用');
+    }
+    if (!(await this.ensurePermissions())) {
+      throw new Error('没有文件访问权限');
+    }
+    try {
+      return await AdvancedFileManager.readFileRange(options);
+    } catch (error) {
+      console.error('读取文件范围失败:', error);
+      throw new Error('读取文件范围失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  /**
+   * 在指定行插入内容
+   */
+  async insertContent(options: InsertContentOptions): Promise<void> {
+    if (!this.isSupportedPlatform()) {
+      throw new Error('文件管理功能仅在移动端应用中可用');
+    }
+    if (!(await this.ensurePermissions())) {
+      throw new Error('没有文件访问权限');
+    }
+    try {
+      return await AdvancedFileManager.insertContent(options);
+    } catch (error) {
+      console.error('插入内容失败:', error);
+      throw new Error('插入内容失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  /**
+   * 查找并替换文件内容
+   */
+  async replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
+    if (!this.isSupportedPlatform()) {
+      throw new Error('文件管理功能仅在移动端应用中可用');
+    }
+    if (!(await this.ensurePermissions())) {
+      throw new Error('没有文件访问权限');
+    }
+    try {
+      return await AdvancedFileManager.replaceInFile(options);
+    } catch (error) {
+      console.error('替换内容失败:', error);
+      throw new Error('替换内容失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  /**
+   * 应用 diff 补丁
+   */
+  async applyDiff(options: ApplyDiffOptions): Promise<ApplyDiffResult> {
+    if (!this.isSupportedPlatform()) {
+      throw new Error('文件管理功能仅在移动端应用中可用');
+    }
+    if (!(await this.ensurePermissions())) {
+      throw new Error('没有文件访问权限');
+    }
+    try {
+      return await AdvancedFileManager.applyDiff(options);
+    } catch (error) {
+      console.error('应用 diff 失败:', error);
+      throw new Error('应用 diff 失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  /**
+   * 获取文件哈希值
+   */
+  async getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult> {
+    if (!this.isSupportedPlatform()) {
+      throw new Error('文件管理功能仅在移动端应用中可用');
+    }
+    if (!(await this.ensurePermissions())) {
+      throw new Error('没有文件访问权限');
+    }
+    try {
+      return await AdvancedFileManager.getFileHash(options);
+    } catch (error) {
+      console.error('获取文件哈希失败:', error);
+      throw new Error('获取文件哈希失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+
+  /**
+   * 获取文件行数
+   */
+  async getLineCount(options: FileOperationOptions): Promise<GetLineCountResult> {
+    if (!this.isSupportedPlatform()) {
+      throw new Error('文件管理功能仅在移动端应用中可用');
+    }
+    if (!(await this.ensurePermissions())) {
+      throw new Error('没有文件访问权限');
+    }
+    try {
+      return await AdvancedFileManager.getLineCount(options);
+    } catch (error) {
+      console.error('获取文件行数失败:', error);
+      throw new Error('获取文件行数失败: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
 
   /**
    * 测试插件连接
