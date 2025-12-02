@@ -251,6 +251,7 @@ public class MainActivity extends BridgeActivity {
          Log.d(TAG, "🔍 开始检测 WebView 版本和策略...");
          try {
              // 获取WebView信息
+
              WebViewDetector.WebViewInfo webViewInfo = WebViewDetector.getWebViewInfo(this);
              // SmartWebViewManager.WebViewStrategy strategy = SmartWebViewManager.getBestStrategy(this); // 如果需要使用 strategy
  

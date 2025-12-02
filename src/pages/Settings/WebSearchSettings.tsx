@@ -148,7 +148,7 @@ const WebSearchSettings: React.FC = () => {
   };
 
   const handleSearchModeChange = (event: SelectChangeEvent) => {
-    dispatch(setSearchMode(event.target.value as 'auto' | 'manual'));
+    dispatch(setSearchMode(event.target.value as 'auto' | 'manual' | 'once'));
   };
 
   const handleAddCustomProvider = () => {
@@ -599,6 +599,7 @@ const WebSearchSettings: React.FC = () => {
                 >
                   <MenuItem value="auto">{t('settings.webSearch.searchOptions.searchMode.auto')}</MenuItem>
                   <MenuItem value="manual">{t('settings.webSearch.searchOptions.searchMode.manual')}</MenuItem>
+                  <MenuItem value="once">{t('settings.webSearch.searchOptions.searchMode.once')}</MenuItem>
                 </Select>
               </FormControl>
             </Row>

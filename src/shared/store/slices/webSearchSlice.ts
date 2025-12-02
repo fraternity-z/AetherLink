@@ -270,7 +270,7 @@ const webSearchSlice = createSlice({
       state.filterSafeSearch = !state.filterSafeSearch;
       saveToStorage(state);
     },
-    setSearchMode: (state, action: PayloadAction<'auto' | 'manual'>) => {
+    setSearchMode: (state, action: PayloadAction<'auto' | 'manual' | 'once'>) => {
       state.searchMode = action.payload;
       saveToStorage(state);
     },

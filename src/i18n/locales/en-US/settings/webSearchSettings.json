@@ -101,7 +101,8 @@
       "searchMode": {
         "label": "Search Mode",
         "auto": "Auto Search (AI automatically determines when to search)",
-        "manual": "Manual Search (Click search button to start)"
+        "manual": "Always On (Keep search function enabled)",
+        "once": "Once Only (Auto-close after one search)"
       },
       "maxResults": {
         "label": "Maximum Results: {{count}}",

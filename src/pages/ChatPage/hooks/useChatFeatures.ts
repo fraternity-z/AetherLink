@@ -13,7 +13,6 @@ import {
   MessageBlockStatus,
   AssistantMessageStatus
 } from '../../../shared/types/newMessage.ts';
-import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
 
 import { EnhancedWebSearchService } from '../../../shared/services/webSearch';
 import { abortCompletion } from '../../../shared/utils/abortController';
@@ -349,6 +348,9 @@ export const useChatFeatures = (
   const handleWebSearch = async (query: string) => {
     if (!currentTopic || !query.trim()) return;
 
+    // 🚀 获取搜索模式设置
+    const webSearchState = store.getState().webSearch;
+
     // 使用新的块系统创建用户消息
     const { message: userMessage, blocks: userBlocks } = createUserMessage({
       content: query,
@@ -472,10 +474,17 @@ export const useChatFeatures = (
         status: AssistantMessageStatus.SUCCESS
       }));
 
-      // 关闭网络搜索模式
-      setActiveMode(null);
-      // 🚀 清除 activeProviderId
-      dispatch(setActiveProviderId(undefined));
+      // 根据搜索模式决定是否关闭搜索功能
+      const currentSearchMode = webSearchState?.searchMode || 'manual';
+      if (currentSearchMode === 'once') {
+        // "只开启一次"模式：搜索完成后关闭搜索功能
+        setActiveMode(null);
+        dispatch(setActiveProviderId(undefined));
+        console.log('[WebSearch] once 模式：搜索完成，已关闭搜索功能');
+      } else {
+        // "永久手动"模式：保持搜索功能开启，不清除 activeProviderId
+        console.log('[WebSearch] manual 模式：搜索完成，保持搜索功能开启');
+      }
 
       // 🚀 新增：基于搜索结果让AI进行回复（在同一个消息块内追加）
       // 🔧 修复：传递 topicId 参数避免闭包问题
@@ -613,8 +622,8 @@ export const useChatFeatures = (
     }
   };
 
-  // 🚀 简化：使用供应商原生回调处理AI分析
-  // 🔧 修复：移除未使用的 _messageId 参数，添加 topicId 参数
+  // 🚀 重构：使用 ApiProviderRegistry 复用现有流式处理流程
+  // 🔧 修复：使用真正的流式输出
   const handleAIAnalysisWithNativeCallbacks = async (
     messages: any[],
     model: any,
@@ -623,44 +632,58 @@ export const useChatFeatures = (
     topicId: string
   ) => {
     try {
-      // 直接调用API并手动处理响应，使用累积方式而不是替换
-      const { sendChatRequest } = await import('../../../shared/api');
+      // 使用 ApiProviderRegistry 获取 Provider 实例，复用现有流式处理流程
+      const { ApiProviderRegistry } = await import('../../../shared/services/messages/ApiProvider');
+      const { ChunkType } = await import('../../../shared/types/chunk');
 
       let accumulatedContent = '';
+      const apiProvider = ApiProviderRegistry.get(model);
 
-      const response = await sendChatRequest({
-        messages,
-        modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),
-        onChunk: async (content: string) => {
-          // 只累积新的AI分析内容
-          accumulatedContent += content;
-          // 组合完整内容：前缀（搜索结果+标题）+ 累积的AI分析内容
-          const fullContent = contentPrefix + accumulatedContent;
+      console.log(`[handleAIAnalysisWithNativeCallbacks] 使用 ApiProviderRegistry 流式处理，模型: ${model.id}`);
 
-          // 更新块内容
-          await TopicService.updateMessageBlockFields(blockId, {
-            content: fullContent,
-            status: MessageBlockStatus.PROCESSING
-          });
+      // 调用 Provider 的 sendChatMessage，配合 onChunk 回调实现流式输出
+      const response = await apiProvider.sendChatMessage(messages, {
+        onChunk: async (chunk: any) => {
+          // 处理流式 chunk
+          if (chunk.type === ChunkType.TEXT_DELTA && chunk.text) {
+            // 只累积新的AI分析内容
+            accumulatedContent += chunk.text;
+            // 组合完整内容：前缀（搜索结果+标题）+ 累积的AI分析内容
+            const fullContent = contentPrefix + accumulatedContent;
 
-          // 更新Redux状态
-          dispatch(updateOneBlock({
-            id: blockId,
-            changes: {
+            // 更新块内容
+            await TopicService.updateMessageBlockFields(blockId, {
               content: fullContent,
-              status: MessageBlockStatus.PROCESSING,
-              updatedAt: new Date().toISOString()
-            }
-          }));
-        }
+              status: MessageBlockStatus.PROCESSING
+            });
+
+            // 更新Redux状态
+            dispatch(updateOneBlock({
+              id: blockId,
+              changes: {
+                content: fullContent,
+                status: MessageBlockStatus.PROCESSING,
+                updatedAt: new Date().toISOString()
+              }
+            }));
+          }
+        },
+        enableTools: false,  // 搜索结果分析不需要工具
+        mcpTools: []
       });
 
       // 处理最终响应
-      let finalContent = '';
-      if (response.success && response.content) {
-        finalContent = response.content;
-      } else if (response.error) {
-        finalContent = `AI分析失败: ${response.error}`;
+      let finalContent = accumulatedContent;
+      if (typeof response === 'string') {
+        // 如果没有通过流式处理（非流式响应），使用返回的内容
+        if (!accumulatedContent) {
+          finalContent = response;
+        }
+      } else if (response && typeof response === 'object' && 'content' in response) {
+        // 如果没有通过流式处理，使用返回的内容
+        if (!accumulatedContent) {
+          finalContent = response.content;
+        }
       }
 
       // 更新最终状态
@@ -682,6 +705,8 @@ export const useChatFeatures = (
       // 🔧 修复：使用 action creators 和传入的 topicId
       dispatch(newMessagesActions.setTopicStreaming({ topicId, streaming: false }));
       dispatch(newMessagesActions.setTopicLoading({ topicId, loading: false }));
+
+      console.log(`[handleAIAnalysisWithNativeCallbacks] 流式处理完成，累积内容长度: ${accumulatedContent.length}`);
 
     } catch (error) {
       console.error('[handleAIAnalysisWithNativeCallbacks] 处理失败:', error);
