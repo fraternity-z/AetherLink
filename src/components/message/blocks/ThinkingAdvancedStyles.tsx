@@ -670,108 +670,32 @@ const TerminalRenderer: React.FC<TerminalRendererProps> = React.memo(({
             </Typography>
             {isThinking ? (
               <Box>
-                <Typography component="div" sx={{ color: '#ffff00', mb: 1 }}>
-                  [INFO] 初始化思考模块...
-                </Typography>
-                <Typography component="div" sx={{ color: '#00ffff', mb: 1 }}>
-                  [PROC] 正在分析问题空间...
-                </Typography>
+                <Typography component="div" sx={{ color: '#ffff00', mb: 1 }}>[INFO] {t('settings.appearance.thinkingProcess.preview.texts.running')}...</Typography>
+                <Typography component="div" sx={{ color: '#00ffff', mb: 1 }}>[PROC] Processing...</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography component="span" sx={{ color: '#ff9500' }}>
-                    [EXEC] 实时思考流
-                  </Typography>
+                  <Typography component="span" sx={{ color: '#ff9500' }}>[EXEC] Stream</Typography>
                   {[0, 1, 2].map((i) => (
-                    <Box
-                      key={i}
-                      component="span"
-                      sx={{
-                        color: '#00ff00',
-                        animation: `blink 1s infinite`,
-                        animationDelay: `${i * 0.3}s`,
-                        '@keyframes blink': {
-                          '0%, 50%': { opacity: 1 },
-                          '51%, 100%': { opacity: 0 }
-                        }
-                      }}
-                    >
-                      .
-                    </Box>
+                    <Box key={i} component="span" sx={{ color: '#00ff00', animation: `blink 1s infinite`, animationDelay: `${i * 0.3}s`, '@keyframes blink': { '0%, 50%': { opacity: 1 }, '51%, 100%': { opacity: 0 } } }}>.</Box>
                   ))}
                 </Box>
                 <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid #333' }}>
-                  <Typography component="div" sx={{ color: '#888', mb: 1 }}>
-                    --- 思考流输出 ---
-                  </Typography>
                   {content.split('\n').slice(0, 3).map((line, index) => (
-                    <Typography
-                      key={index}
-                      component="div"
-                      sx={{
-                        color: '#ccc',
-                        mb: 0.5,
-                        opacity: 0.7,
-                        fontSize: '0.8rem'
-                      }}
-                    >
-                      {line.trim() && `> ${line.trim()}`}
-                    </Typography>
+                    <Typography key={index} component="div" sx={{ color: '#ccc', mb: 0.5, opacity: 0.7, fontSize: '0.8rem' }}>{line.trim() && `> ${line.trim()}`}</Typography>
                   ))}
-                  <Typography component="span" sx={{ color: '#00ff00' }}>
-                    {showCursor ? '█' : ' '}
-                  </Typography>
+                  <Typography component="span" sx={{ color: '#00ff00' }}>{showCursor ? '█' : ' '}</Typography>
                 </Box>
               </Box>
             ) : (
               <Box>
-                <Typography component="div" sx={{ color: '#ffff00', mb: 1 }}>
-                  [INFO] 思考进程已完成
-                </Typography>
-                <Typography component="div" sx={{ color: '#00ffff', mb: 1 }}>
-                  [PROC] 输出完整思考流到终端...
-                </Typography>
+                <Typography component="div" sx={{ color: '#ffff00', mb: 1 }}>[INFO] {t('settings.appearance.thinkingProcess.preview.texts.completed')}</Typography>
                 <Box sx={{ mt: 2, pt: 1, borderTop: '1px solid #333' }}>
-                  <Typography component="div" sx={{ color: '#888', mb: 1 }}>
-                    --- 思考流输出 ---
-                  </Typography>
                   {displayedLines.map((line, index) => (
-                    <Typography
-                      key={`line-${index}`}
-                      component="div"
-                      sx={{
-                        color: '#ccc',
-                        mb: 0.3,
-                        fontSize: '0.8rem',
-                        lineHeight: 1.3,
-                        whiteSpace: 'pre-wrap',
-                        animation: 'fadeIn 0.3s ease-in',
-                        '@keyframes fadeIn': {
-                          '0%': { opacity: 0, transform: 'translateX(-10px)' },
-                          '100%': { opacity: 1, transform: 'translateX(0)' }
-                        }
-                      }}
-                    >
-                      {line}
-                    </Typography>
+                    <Typography key={`line-${index}`} component="div" sx={{ color: '#ccc', mb: 0.3, fontSize: '0.8rem', lineHeight: 1.3, whiteSpace: 'pre-wrap' }}>{line}</Typography>
                   ))}
                   {currentLineIndex < lines.length ? (
-                    <Typography component="div" sx={{ color: '#ff9500', mt: 1 }}>
-                      [STREAM] 输出进度: {currentLineIndex}/{lines.length} 行
-                      <Typography component="span" sx={{ color: '#00ff00', ml: 1 }}>
-                        {showCursor ? '█' : ' '}
-                      </Typography>
-                    </Typography>
+                    <Typography component="div" sx={{ color: '#ff9500', mt: 1 }}>[STREAM] {currentLineIndex}/{lines.length}<Typography component="span" sx={{ color: '#00ff00', ml: 1 }}>{showCursor ? '█' : ' '}</Typography></Typography>
                   ) : displayedLines.length > 0 && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography component="div" sx={{ color: '#00ff00', mb: 0.5 }}>
-                        [DONE] 思考流输出完成 - 退出代码: 0
-                      </Typography>
-                      <Typography component="div" sx={{ color: '#888', mb: 0.5 }}>
-                        总计: {lines.length} 行
-                      </Typography>
-                      <Typography component="div" sx={{ color: '#00ff00' }}>
-                        $ {showCursor ? '█' : ' '}
-                      </Typography>
-                    </Box>
+                    <Typography component="div" sx={{ color: '#00ff00', mt: 1 }}>[DONE] $ {showCursor ? '█' : ' '}</Typography>
                   )}
                 </Box>
               </Box>

@@ -349,8 +349,10 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
         slotProps={{
           paper: {
             sx: {
-              maxWidth: '60vw',
-              maxHeight: '50vh',
+              // 移动端使用更大宽度
+              maxWidth: { xs: '95vw', sm: '85vw', md: '60vw' },
+              width: { xs: '95vw', sm: 'auto' },
+              maxHeight: { xs: '70vh', sm: '60vh', md: '50vh' },
               overflowY: 'auto',
               p: 1
             }
@@ -409,8 +411,12 @@ const GridContainer = styled(Box, {
   },
 
   '&.grid': {
-    gridTemplateColumns: count > 1 ? 'repeat(2, minmax(0, 1fr))' : 'repeat(1, minmax(0, 1fr))',
+    // 移动端单列，平板双列，桌面三列
+    gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
     gridTemplateRows: 'auto',
+    [theme.breakpoints.up('sm')]: {
+      gridTemplateColumns: count > 1 ? 'repeat(2, minmax(0, 1fr))' : 'repeat(1, minmax(0, 1fr))',
+    },
     [theme.breakpoints.up('lg')]: {
       gridTemplateColumns: count > 2 ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
     },
