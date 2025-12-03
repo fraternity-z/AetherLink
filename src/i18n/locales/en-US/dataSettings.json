@@ -147,7 +147,21 @@
       "open": "Open file",
       "delete": "Delete backup"
     },
-    "deleted": "Backup file deleted"
+    "deleted": "Backup file deleted",
+    "selectFolder": {
+      "button": "Select Folder",
+      "title": "Select Backup Folder"
+    },
+    "directories": {
+      "download": "Download",
+      "storageRoot": "Storage Root",
+      "appBackup": "App Backup",
+      "cacheCleanup": "Cache Cleanup",
+      "documents": "Documents",
+      "appData": "App Data",
+      "custom": "Custom Directory"
+    },
+    "noCustomDir": "Please tap the 'Select Folder' button above to choose the directory containing your backup files"
   },
   "restoreProgress": {
     "readingFile": "Reading file...",

@@ -161,7 +161,7 @@
     "ai": "^5.0.99",
     "axios": "^1.9.0",
     "buffer": "6.0.3",
-    "capacitor-advanced-file-manager": "^0.3.0",
+    "capacitor-advanced-file-manager": "file:K:/Cherry/tauri和capacitor插件/capacitor-advanced-file-manager",
     "capacitor-cors-bypass-enhanced": "^1.2.2",
     "capacitor-edge-to-edge": "^1.6.4",
     "chart.js": "^4.4.9",

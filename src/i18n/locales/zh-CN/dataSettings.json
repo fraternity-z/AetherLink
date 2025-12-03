@@ -147,7 +147,21 @@
       "open": "打开文件",
       "delete": "删除备份"
     },
-    "deleted": "备份文件已删除"
+    "deleted": "备份文件已删除",
+    "selectFolder": {
+      "button": "选择文件夹",
+      "title": "选择备份文件夹"
+    },
+    "directories": {
+      "download": "下载目录",
+      "storageRoot": "存储根目录",
+      "appBackup": "应用备份目录",
+      "cacheCleanup": "清理缓存目录",
+      "documents": "文档目录",
+      "appData": "应用数据目录",
+      "custom": "自定义目录"
+    },
+    "noCustomDir": "请点击上方「选择文件夹」按钮，选择备份文件所在的目录"
   },
   "restoreProgress": {
     "readingFile": "读取文件中...",

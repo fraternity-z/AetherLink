@@ -3840,10 +3840,11 @@ caniuse-lite@^1.0.30001751:
   resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001754.tgz"
   integrity sha512-x6OeBXueoAceOmotzx3PO4Zpt4rzpeIFsSr6AAePTZxSkXiYDUmpypEl7e2+8NCd9bD7bXjqyef8CJYPC1jfxg==
 
-capacitor-advanced-file-manager@^0.3.0:
-  version "0.3.1"
-  resolved "https://registry.npmjs.org/capacitor-advanced-file-manager/-/capacitor-advanced-file-manager-0.3.1.tgz"
-  integrity sha512-+FFtyRkbtjdytPDTIfx3iwlFIxUAyfFmeEf6Giw5MSnCxOME4faaeazd6yP3WG12Mot/YBynCueAruPTuOFG/w==
+"capacitor-advanced-file-manager@file:K:/Cherry/tauri和capacitor插件/capacitor-advanced-file-manager":
+  version "0.4.0"
+  resolved "file:K:/Cherry/tauri和capacitor插件/capacitor-advanced-file-manager"
+  dependencies:
+    capacitor-advanced-file-manager "^0.3.4"
 
 capacitor-cors-bypass-enhanced@^1.2.2:
   version "1.2.2"
