@@ -21,7 +21,8 @@ env:
 
 jobs:
   # ============================================
-  # Cranelift 构建 - 快速编译，包稍大
+  # Cranelift 构建 - 快速编译（仅 Windows 和 Linux x64）
+  # macOS ARM64 不支持 Cranelift
   # ============================================
   build-cranelift:
     if: ${{ github.event.inputs.build_mode != 'llvm' }}
@@ -29,9 +30,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin --bundles app,dmg'
-            target: 'aarch64-apple-darwin,x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
             target: 'x86_64-unknown-linux-gnu'
@@ -56,21 +54,13 @@ jobs:
         with:
           components: rustc-codegen-cranelift-preview
 
-      - name: Add Rust targets (Unix)
-        if: matrix.platform != 'windows-latest'
-        run: |
-          IFS=',' read -ra TARGETS <<< "${{ matrix.target }}"
-          for target in "${TARGETS[@]}"; do
-            rustup target add "$target"
-          done
+      - name: Add Rust targets (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: rustup target add ${{ matrix.target }}
 
       - name: Add Rust targets (Windows)
         if: matrix.platform == 'windows-latest'
-        run: |
-          $targets = "${{ matrix.target }}" -split ","
-          foreach ($target in $targets) {
-            rustup target add $target.Trim()
-          }
+        run: rustup target add ${{ matrix.target }}
 
       - name: Setup Rust Cache
         uses: swatinem/rust-cache@v2
@@ -101,11 +91,25 @@ jobs:
             libxcb-xfixes0-dev \
             pkg-config
 
-      - name: Configure Cranelift Build
+      - name: Configure Cranelift Build (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
-          # 确保 .cargo/config.toml 使用 Cranelift
           mkdir -p .cargo
-          cat > .cargo/config.toml << 'EOF'
+          echo '[unstable]' > .cargo/config.toml
+          echo 'codegen-backend = true' >> .cargo/config.toml
+          echo '' >> .cargo/config.toml
+          echo '[profile.dev]' >> .cargo/config.toml
+          echo 'codegen-backend = "cranelift"' >> .cargo/config.toml
+          echo '' >> .cargo/config.toml
+          echo '[profile.release]' >> .cargo/config.toml
+          echo 'codegen-backend = "cranelift"' >> .cargo/config.toml
+
+      - name: Configure Cranelift Build (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .cargo
+          @"
           [unstable]
           codegen-backend = true
 
@@ -114,16 +118,15 @@ jobs:
 
           [profile.release]
           codegen-backend = "cranelift"
-          EOF
+          "@ | Out-File -FilePath .cargo/config.toml -Encoding utf8
 
       - name: Configure Cargo.toml for Cranelift
+        shell: bash
         run: |
-          # 修改 Cargo.toml 关闭 LTO
           cd src-tauri
           sed -i.bak 's/lto = true/lto = false/' Cargo.toml || true
           sed -i.bak 's/lto = "thin"/lto = false/' Cargo.toml || true
           sed -i.bak 's/codegen-units = 1/codegen-units = 16/' Cargo.toml || true
-        shell: bash
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install --legacy-peer-deps
@@ -135,17 +138,10 @@ jobs:
         run: npm install -g @tauri-apps/cli@latest
 
       - name: Build Tauri App (Cranelift)
+        shell: bash
         run: |
           cd src-tauri
-          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
-            export APPLE_SIGNING_IDENTITY="-"
-            cargo +nightly build --release
-            tauri build ${{ matrix.args }} --ci
-          else
-            cargo +nightly build --release
-            tauri build ${{ matrix.args }} --ci
-          fi
-        shell: bash
+          tauri build ${{ matrix.args }} --ci
 
       - name: Upload Cranelift Build (Windows)
         if: matrix.platform == 'windows-latest'
@@ -155,15 +151,6 @@ jobs:
           path: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/nsis/*.exe
-
-      - name: Upload Cranelift Build (macOS)
-        if: matrix.platform == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-cranelift-build
-          path: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app
 
       - name: Upload Cranelift Build (Linux)
         if: matrix.platform == 'ubuntu-22.04'
@@ -175,7 +162,7 @@ jobs:
             src-tauri/target/release/bundle/deb/*.deb
 
   # ============================================
-  # LLVM + LTO 构建 - 编译慢，包最小
+  # LLVM + LTO 构建 - 编译慢，包最小（所有平台）
   # ============================================
   build-llvm-lto:
     if: ${{ github.event.inputs.build_mode != 'cranelift' }}
@@ -253,28 +240,29 @@ jobs:
             libxcb-xfixes0-dev \
             pkg-config
 
-      - name: Configure LLVM+LTO Build
+      - name: Configure LLVM+LTO Build (Unix)
+        if: matrix.platform != 'windows-latest'
         run: |
-          # 清除 Cranelift 配置，使用默认 LLVM
           rm -f .cargo/config.toml
+          rm -f src-tauri/rust-toolchain.toml
           mkdir -p .cargo
-          cat > .cargo/config.toml << 'EOF'
-          # LLVM + LTO 构建配置
-          [target.x86_64-unknown-linux-gnu]
-          rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+          echo '# LLVM + LTO build' > .cargo/config.toml
 
-          [target.x86_64-pc-windows-msvc]
-          rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-          EOF
-        shell: bash
+      - name: Configure LLVM+LTO Build (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          Remove-Item -Path .cargo/config.toml -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path src-tauri/rust-toolchain.toml -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path .cargo
+          "# LLVM + LTO build" | Out-File -FilePath .cargo/config.toml -Encoding utf8
 
       - name: Configure Cargo.toml for LLVM+LTO
+        shell: bash
         run: |
           cd src-tauri
-          # 确保使用 LTO 配置
           sed -i.bak 's/lto = false/lto = true/' Cargo.toml || true
           sed -i.bak 's/codegen-units = 16/codegen-units = 1/' Cargo.toml || true
-        shell: bash
 
       - name: Install Frontend Dependencies
         run: npm ci || npm install --legacy-peer-deps
@@ -286,15 +274,13 @@ jobs:
         run: npm install -g @tauri-apps/cli@latest
 
       - name: Build Tauri App (LLVM+LTO)
+        shell: bash
         run: |
           cd src-tauri
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
             export APPLE_SIGNING_IDENTITY="-"
-            tauri build ${{ matrix.args }}
-          else
-            tauri build ${{ matrix.args }}
           fi
-        shell: bash
+          tauri build ${{ matrix.args }}
 
       - name: Upload LLVM+LTO Build (Windows)
         if: matrix.platform == 'windows-latest'
@@ -338,21 +324,22 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 构建结果对比" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| 构建模式 | 特点 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 构建模式 | 平台 | 状态 |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 **Cranelift** | 编译快，包稍大 | ${{ needs.build-cranelift.result == 'success' && '✅ Success' || (needs.build-cranelift.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📦 **LLVM+LTO** | 编译慢，包最小 | ${{ needs.build-llvm-lto.result == 'success' && '✅ Success' || (needs.build-llvm-lto.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 **Cranelift** | Windows, Linux | ${{ needs.build-cranelift.result == 'success' && '✅ Success' || (needs.build-cranelift.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 **LLVM+LTO** | Windows, macOS, Linux | ${{ needs.build-llvm-lto.result == 'success' && '✅ Success' || (needs.build-llvm-lto.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📥 下载说明" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Cranelift 构建** (快速迭代版本):" >> $GITHUB_STEP_SUMMARY
+          echo "**Cranelift 构建** (快速编译版本，仅 Windows/Linux):" >> $GITHUB_STEP_SUMMARY
           echo "- \`windows-cranelift-build\` - Windows 安装包" >> $GITHUB_STEP_SUMMARY
-          echo "- \`macos-cranelift-build\` - macOS 安装包" >> $GITHUB_STEP_SUMMARY
           echo "- \`linux-cranelift-build\` - Linux 安装包" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**LLVM+LTO 构建** (正式发布版本):" >> $GITHUB_STEP_SUMMARY
+          echo "**LLVM+LTO 构建** (正式发布版本，所有平台):" >> $GITHUB_STEP_SUMMARY
           echo "- \`windows-llvm-lto-build\` - Windows 安装包 (最小体积)" >> $GITHUB_STEP_SUMMARY
           echo "- \`macos-llvm-lto-build\` - macOS 安装包 (最小体积)" >> $GITHUB_STEP_SUMMARY
           echo "- \`linux-llvm-lto-build\` - Linux 安装包 (最小体积)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 **建议**: 正式发布使用 LLVM+LTO 版本，测试使用 Cranelift 版本" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **注意**: macOS 仅支持 LLVM 构建（Cranelift 不支持 ARM64 某些指令）" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **建议**: 正式发布使用 LLVM+LTO 版本" >> $GITHUB_STEP_SUMMARY
