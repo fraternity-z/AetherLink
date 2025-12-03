@@ -28,8 +28,8 @@
       "description": "管理AI模型和API密钥"
     },
     "topicNaming": {
-      "title": "话题命名设置",
-      "description": "配置话题自动命名功能"
+      "title": "辅助模型设置",
+      "description": "配置话题命名、AI 意图分析等辅助功能"
     },
     "agentPrompts": {
       "title": "智能体提示词集合",

@@ -51,8 +51,14 @@ const DefaultModelSettingsPage: React.FC = () => {
   const topicNamingPrompt = useSelector((state: RootState) => state.settings.topicNamingPrompt);
   const topicNamingUseCurrentModel = useSelector((state: RootState) => state.settings.topicNamingUseCurrentModel);
 
+  // 🚀 AI 意图分析设置
+  const enableAIIntentAnalysis = useSelector((state: RootState) => state.settings.enableAIIntentAnalysis);
+  const aiIntentAnalysisUseCurrentModel = useSelector((state: RootState) => state.settings.aiIntentAnalysisUseCurrentModel);
+  const aiIntentAnalysisModelId = useSelector((state: RootState) => state.settings.aiIntentAnalysisModelId);
+
   // 模型选择器对话框状态
   const [modelSelectorOpen, setModelSelectorOpen] = useState<boolean>(false);
+  const [aiIntentModelSelectorOpen, setAiIntentModelSelectorOpen] = useState<boolean>(false);
 
   // 获取所有可用模型
   const allModels = useMemo(() => (
@@ -69,7 +75,7 @@ const DefaultModelSettingsPage: React.FC = () => {
       )
   ), [providers]);
 
-  // 当前选中的模型
+  // 当前选中的话题命名模型
   const selectedModel = useMemo(() => {
     const identity = parseModelIdentityKey(topicNamingModelId || defaultModelId);
     if (!identity) {
@@ -77,6 +83,15 @@ const DefaultModelSettingsPage: React.FC = () => {
     }
     return allModels.find(model => modelMatchesIdentity(model, identity, (model as any).providerId)) || null;
   }, [allModels, topicNamingModelId, defaultModelId]);
+
+  // 当前选中的 AI 意图分析模型
+  const selectedAIIntentModel = useMemo(() => {
+    const identity = parseModelIdentityKey(aiIntentAnalysisModelId || topicNamingModelId || defaultModelId);
+    if (!identity) {
+      return null;
+    }
+    return allModels.find(model => modelMatchesIdentity(model, identity, (model as any).providerId)) || null;
+  }, [allModels, aiIntentAnalysisModelId, topicNamingModelId, defaultModelId]);
 
   // 处理返回按钮点击
   const handleBack = () => {
@@ -122,6 +137,22 @@ const DefaultModelSettingsPage: React.FC = () => {
   // 关闭模型选择器
   const handleCloseModelSelector = () => {
     setModelSelectorOpen(false);
+  };
+
+  // 🚀 AI 意图分析相关处理函数
+  const handleEnableAIIntentAnalysisChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateSettings({ enableAIIntentAnalysis: event.target.checked }));
+  };
+
+  const handleAIIntentUseCurrentModelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateSettings({ aiIntentAnalysisUseCurrentModel: event.target.checked }));
+  };
+
+  const handleAIIntentModelChange = (model: any) => {
+    const providerId = model.provider || model.providerId;
+    const identityKey = getModelIdentityKey({ id: model.id, provider: providerId });
+    dispatch(updateSettings({ aiIntentAnalysisModelId: identityKey }));
+    setAiIntentModelSelectorOpen(false);
   };
 
   return (
@@ -329,6 +360,84 @@ const DefaultModelSettingsPage: React.FC = () => {
               </Button>
             )}
           </Box>
+        </Paper>
+
+        {/* 🚀 AI 意图分析设置 */}
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 2,
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            overflow: 'hidden',
+            bgcolor: 'background.paper',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          }}
+        >
+          <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.01)' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              {t('modelSettings.defaultModel.aiIntentAnalysis', 'AI 意图分析')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('modelSettings.defaultModel.aiIntentAnalysisDesc', '使用 AI 分析用户消息，判断是否需要进行网络搜索（仅在手动模式下生效）')}
+            </Typography>
+          </Box>
+
+          <Divider />
+
+          <List disablePadding>
+            <ListItem>
+              <ListItemText 
+                primary={t('modelSettings.defaultModel.enableAIIntentAnalysis', '启用 AI 意图分析')} 
+                secondary={t('modelSettings.defaultModel.enableAIIntentAnalysisDesc', '关闭时使用规则匹配（快速），开启时使用 AI 分析（更准确）')}
+              />
+              <CustomSwitch
+                checked={enableAIIntentAnalysis ?? false}
+                onChange={handleEnableAIIntentAnalysisChange}
+              />
+            </ListItem>
+          </List>
+
+          {enableAIIntentAnalysis && (
+            <>
+              <Divider />
+              <List disablePadding>
+                <ListItem>
+                  <ListItemText 
+                    primary={t('modelSettings.defaultModel.aiIntentUseCurrentModel', '使用当前话题模型')} 
+                    secondary={t('modelSettings.defaultModel.aiIntentUseCurrentModelDesc', '使用当前对话所选择的模型进行意图分析')}
+                  />
+                  <CustomSwitch
+                    checked={aiIntentAnalysisUseCurrentModel ?? true}
+                    onChange={handleAIIntentUseCurrentModelChange}
+                  />
+                </ListItem>
+              </List>
+
+              {aiIntentAnalysisUseCurrentModel === false && (
+                <>
+                  <Divider />
+                  <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Button variant="outlined" onClick={() => setAiIntentModelSelectorOpen(true)} size="small">
+                      {t('modelSettings.defaultModel.selectModel')}
+                    </Button>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedAIIntentModel ? t('modelSettings.defaultModel.currentModel', { model: selectedAIIntentModel.name }) : t('modelSettings.defaultModel.notSelected')}
+                    </Typography>
+                    <ModelSelector
+                      selectedModel={selectedAIIntentModel}
+                      availableModels={allModels}
+                      handleModelSelect={handleAIIntentModelChange}
+                      handleMenuClick={() => setAiIntentModelSelectorOpen(true)}
+                      handleMenuClose={() => setAiIntentModelSelectorOpen(false)}
+                      menuOpen={aiIntentModelSelectorOpen}
+                    />
+                  </Box>
+                </>
+              )}
+            </>
+          )}
         </Paper>
       </Box>
     </Box>

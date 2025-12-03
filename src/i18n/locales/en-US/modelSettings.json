@@ -66,7 +66,7 @@
     "corsPluginNote": "Disabled by default for standard requests"
   },
   "defaultModel": {
-    "title": "Topic Naming",
+    "title": "Assistant Model Settings",
     "namingModel": "Naming Model",
     "namingModelDesc": "Select AI model for auto-generating topic titles",
     "useCurrentTopicModel": "Use Current Topic Model",
@@ -79,7 +79,13 @@
     "namingPrompt": "Naming Prompt",
     "namingPromptDesc": "Custom prompt for topic naming. Leave empty for default.",
     "namingPromptPlaceholder": "You are a topic expert. Generate a concise, precise, descriptive title based on conversation. Keep it under 10 words. Return only the title text.",
-    "resetToDefault": "Reset"
+    "resetToDefault": "Reset",
+    "aiIntentAnalysis": "AI Intent Analysis",
+    "aiIntentAnalysisDesc": "Use AI to analyze user messages and determine if web search is needed (only effective in manual mode)",
+    "enableAIIntentAnalysis": "Enable AI Intent Analysis",
+    "enableAIIntentAnalysisDesc": "Off: use rule matching (fast), On: use AI analysis (more accurate)",
+    "aiIntentUseCurrentModel": "Use Current Topic Model",
+    "aiIntentUseCurrentModelDesc": "Use the model selected in current conversation for intent analysis"
   },
   "modelList": {
     "title": "Model Settings",
@@ -96,8 +102,8 @@
     "disabled": "Disabled",
     "modelCount": "{{count}} model(s)",
     "recommendedActions": "Quick Actions",
-    "topicNamingSettings": "Topic Naming",
-    "topicNamingSettingsDesc": "Configure auto topic naming model and options",
+    "topicNamingSettings": "Assistant Model Settings",
+    "topicNamingSettingsDesc": "Configure models for topic naming, AI intent analysis and other assistant features",
     "modelSelectorStyle": "Selector Style",
     "modelSelectorDialog": "Current: Dialog (click to switch to Dropdown)",
     "modelSelectorDropdown": "Current: Dropdown (click to switch to Dialog)",

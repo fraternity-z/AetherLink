@@ -165,21 +165,7 @@ export function extractSearchKeywords(message: string): ExtractedSearchKeywords 
   };
 }
 
-/**
- * 使用 AI 进行更精确的意图分析（可选，需要额外 API 调用）
- * 这个函数可以在未来实现，用于更复杂的场景
- */
-export async function analyzeSearchIntentWithAI(
-  userMessage: string,
-  _assistantId: string,
-  _model: any
-): Promise<SearchIntentResult> {
-  // 目前使用规则匹配，未来可以使用 AI 分析
-  return analyzeSearchIntent(userMessage);
-}
-
 export default {
   analyzeSearchIntent,
-  extractSearchKeywords,
-  analyzeSearchIntentWithAI
+  extractSearchKeywords
 };

@@ -24,6 +24,8 @@ jobs:
     env:
       TAURI_PROJECT_NAME: "aetherlink"
       IPA_OUTPUT_NAME: "AetherLink-iOS-unsigned.ipa"
+      IPA_SIZE: "未知"
+      APP_SIZE: "未知"
     
     steps:
       - name: Checkout repository

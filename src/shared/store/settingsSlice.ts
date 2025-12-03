@@ -28,6 +28,11 @@ interface SettingsState {
   topicNamingUseCurrentModel?: boolean; // 使用当前话题模型进行命名
   topicNamingPrompt: string; // 添加自定义提示词配置
   modelSelectorStyle: 'dialog' | 'dropdown';
+  
+  // 🚀 AI 意图分析设置（用于网络搜索手动模式）
+  enableAIIntentAnalysis?: boolean; // 是否启用 AI 意图分析
+  aiIntentAnalysisUseCurrentModel?: boolean; // 是否使用当前话题模型进行意图分析
+  aiIntentAnalysisModelId?: string; // 指定的意图分析模型 ID
   thinkingDisplayStyle: string;
   toolbarDisplayStyle: 'icon' | 'text' | 'both'; // 工具栏显示样式：仅图标、仅文字、图标+文字
   inputBoxStyle: 'default' | 'modern' | 'minimal'; // 输入框风格：默认、现代、简约
@@ -251,6 +256,11 @@ const getInitialState = (): SettingsState => {
     topicNamingUseCurrentModel: true, // 默认使用当前话题模型
     topicNamingPrompt: '', // 添加默认空提示词
     modelSelectorStyle: 'dialog' as 'dialog' | 'dropdown',
+    
+    // 🚀 AI 意图分析设置
+    enableAIIntentAnalysis: false, // 默认关闭，使用规则匹配
+    aiIntentAnalysisUseCurrentModel: true, // 默认使用当前话题模型
+    aiIntentAnalysisModelId: undefined as string | undefined,
     thinkingDisplayStyle: ThinkingDisplayStyle.COMPACT,
     toolbarDisplayStyle: 'both' as 'icon' | 'text' | 'both',
     inputBoxStyle: 'default' as 'default' | 'modern' | 'minimal', // 默认输入框风格

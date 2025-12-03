@@ -4,6 +4,8 @@
 import { dexieStorage } from '../../../../services/storage/DexieStorageService';
 import {
   analyzeSearchIntent,
+  analyzeSearchIntentWithAI,
+  isAIIntentAnalysisEnabled,
   createWebSearchToolDefinition,
   shouldEnableWebSearchTool
 } from '../../../../services/webSearch';
@@ -82,8 +84,20 @@ export async function configureWebSearchTool(
     console.log(`[WebSearch] 自动模式：已添加网络搜索工具，AI 将自主决定是否搜索`);
   } else {
     // 其他模式：使用意图分析
-    const intentResult = analyzeSearchIntent(userContent);
-    console.log(`[WebSearch] 意图分析结果:`, intentResult);
+    // 🚀 检查是否启用 AI 意图分析
+    const useAIAnalysis = isAIIntentAnalysisEnabled();
+    
+    let intentResult;
+    if (useAIAnalysis) {
+      // 使用 AI 意图分析（更准确，但需要额外 API 调用）
+      console.log(`[WebSearch] 使用 AI 意图分析...`);
+      intentResult = await analyzeSearchIntentWithAI(userContent);
+    } else {
+      // 使用规则匹配（快速，无额外开销）
+      intentResult = analyzeSearchIntent(userContent);
+    }
+    
+    console.log(`[WebSearch] 意图分析结果 (${useAIAnalysis ? 'AI' : '规则'}):`, intentResult);
 
     if (intentResult.needsWebSearch) {
       result.extractedKeywords = intentResult.websearch;

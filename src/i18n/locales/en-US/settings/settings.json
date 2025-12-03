@@ -28,8 +28,8 @@
       "description": "Manage AI models and API keys"
     },
     "topicNaming": {
-      "title": "Topic Naming Settings",
-      "description": "Configure automatic topic naming"
+      "title": "Assistant Model Settings",
+      "description": "Configure topic naming, AI intent analysis and other assistant features"
     },
     "agentPrompts": {
       "title": "Agent Prompts Collection",

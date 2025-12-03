@@ -66,7 +66,7 @@
     "corsPluginNote": "默认关闭以使用标准请求"
   },
   "defaultModel": {
-    "title": "话题命名设置",
+    "title": "辅助模型设置",
     "namingModel": "话题命名模型",
     "namingModelDesc": "选择用于自动为话题生成标题的AI模型",
     "useCurrentTopicModel": "使用当前话题模型",
@@ -79,7 +79,13 @@
     "namingPrompt": "话题命名提示词",
     "namingPromptDesc": "自定义话题命名时使用的提示词，留空则使用默认提示词",
     "namingPromptPlaceholder": "你是一个话题生成专家。根据对话内容生成一个简洁、精确、具有描述性的标题。标题应简洁，不超过10个字。你只需要返回标题文本，不需要解释或扩展。",
-    "resetToDefault": "重置为默认"
+    "resetToDefault": "重置为默认",
+    "aiIntentAnalysis": "AI 意图分析",
+    "aiIntentAnalysisDesc": "使用 AI 分析用户消息，判断是否需要进行网络搜索（仅在手动模式下生效）",
+    "enableAIIntentAnalysis": "启用 AI 意图分析",
+    "enableAIIntentAnalysisDesc": "关闭时使用规则匹配（快速），开启时使用 AI 分析（更准确）",
+    "aiIntentUseCurrentModel": "使用当前话题模型",
+    "aiIntentUseCurrentModelDesc": "使用当前对话所选择的模型进行意图分析"
   },
   "modelList": {
     "title": "模型设置",
@@ -96,8 +102,8 @@
     "disabled": "已禁用",
     "modelCount": "{{count}} 个模型",
     "recommendedActions": "推荐操作",
-    "topicNamingSettings": "话题命名设置",
-    "topicNamingSettingsDesc": "设置话题自动命名的模型和选项",
+    "topicNamingSettings": "辅助模型设置",
+    "topicNamingSettingsDesc": "设置话题命名、AI 意图分析等辅助功能的模型",
     "modelSelectorStyle": "模型选择器样式",
     "modelSelectorDialog": "当前：弹窗式选择器（点击切换为下拉式）",
     "modelSelectorDropdown": "当前：下拉式选择器（点击切换为弹窗式）",
