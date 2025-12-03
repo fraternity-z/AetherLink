@@ -3841,9 +3841,9 @@ caniuse-lite@^1.0.30001751:
   integrity sha512-x6OeBXueoAceOmotzx3PO4Zpt4rzpeIFsSr6AAePTZxSkXiYDUmpypEl7e2+8NCd9bD7bXjqyef8CJYPC1jfxg==
 
 capacitor-advanced-file-manager@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.npmjs.org/capacitor-advanced-file-manager/-/capacitor-advanced-file-manager-0.3.0.tgz"
-  integrity sha512-oCMrZnaWhx3ElFYw+4U4ACi3Exrgop0N0rvug+6ubTUhrVkb9abnhHXs1ZY6JJv6wVbbYDVcRR4bXwaHes6N3g==
+  version "0.3.1"
+  resolved "https://registry.npmjs.org/capacitor-advanced-file-manager/-/capacitor-advanced-file-manager-0.3.1.tgz"
+  integrity sha512-+FFtyRkbtjdytPDTIfx3iwlFIxUAyfFmeEf6Giw5MSnCxOME4faaeazd6yP3WG12Mot/YBynCueAruPTuOFG/w==
 
 capacitor-cors-bypass-enhanced@^1.2.2:
   version "1.2.2"
