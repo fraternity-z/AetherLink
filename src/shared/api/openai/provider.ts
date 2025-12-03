@@ -147,25 +147,17 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
 
   /**
-   * 构建系统提示
-   * 智能版本：根据模式自动注入 MCP 工具信息
-   * @param prompt 系统提示词
-   * @param mcpTools MCP 工具列表
-   * @returns 构建后的系统提示
-   */
-  protected buildSystemPrompt(prompt: string, mcpTools?: MCPTool[]): string {
-    return this.buildSystemPromptWithTools(prompt, mcpTools);
-  }
-
-  /**
    * 准备API消息格式
    * 将业务消息转换为API格式
    */
-  protected prepareAPIMessages(messages: Message[], systemPrompt?: string, mcpTools?: MCPTool[]): any[] {
+  protected async prepareAPIMessages(messages: Message[], systemPrompt?: string, mcpTools?: MCPTool[]): Promise<any[]> {
     const apiMessages = [];
 
+    // 获取工作区列表（用于注入到系统提示词）
+    const workspaces = mcpTools && mcpTools.length > 0 ? await this.getWorkspaces() : [];
+
     // 添加系统提示
-    const finalSystemPrompt = this.buildSystemPrompt(systemPrompt || '', mcpTools);
+    const finalSystemPrompt = this.buildSystemPromptWithTools(systemPrompt || '', mcpTools, workspaces);
     if (finalSystemPrompt.trim()) {
       apiMessages.push({
         role: 'system',
@@ -373,8 +365,8 @@ export class OpenAIProvider extends BaseOpenAIProvider {
       assistant
     } = options || {};
 
-    // 准备API消息格式
-    const apiMessages = this.prepareAPIMessages(messages, systemPrompt, mcpTools);
+    // 准备API消息格式（异步获取工作区信息）
+    const apiMessages = await this.prepareAPIMessages(messages, systemPrompt, mcpTools);
 
     // 配置工具
     const { tools } = this.setupToolsConfig({

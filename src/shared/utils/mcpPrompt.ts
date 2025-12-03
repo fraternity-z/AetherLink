@@ -150,6 +150,13 @@ ${availableTools}
 </tools>`
 }
 
+/** 工作区信息 */
+export interface WorkspaceInfo {
+  id: string;
+  name: string;
+  path: string;
+}
+
 export interface BuildSystemPromptOptions {
   /** 是否使用 Agentic 模式的完整提示词 */
   useAgenticPrompt?: boolean;
@@ -163,6 +170,8 @@ export interface BuildSystemPromptOptions {
   maxToolCalls?: number;
   /** 最大连续错误次数 */
   maxConsecutiveErrors?: number;
+  /** 工作区列表（直接注入提示词，无需 AI 调用 list_workspaces） */
+  workspaces?: WorkspaceInfo[];
 }
 
 export const buildSystemPrompt = (
@@ -184,6 +193,7 @@ export const buildSystemPrompt = (
         supportsBrowserUse: options?.supportsBrowserUse || false,
         maxToolCalls: options?.maxToolCalls || 25,
         maxConsecutiveErrors: options?.maxConsecutiveErrors || 3,
+        workspaces: options?.workspaces || [],
       };
       return buildAgenticSystemPrompt(agenticConfig);
     }

@@ -17,7 +17,6 @@ import { agenticFileTracker } from './AgenticFileTracker';
 export function initAgenticFileTracker(): void {
   // 订阅 Agentic 模式变化
   agenticFileTracker.onAgenticModeChange((enabled, topicId) => {
-    console.log('[AgenticFileTrackerInit] Agentic 模式变化:', enabled, topicId);
     store.dispatch(setAgenticMode(enabled));
     if (topicId) {
       store.dispatch(setCurrentTopicId(topicId));
@@ -26,9 +25,6 @@ export function initAgenticFileTracker(): void {
 
   // 订阅文件修改事件
   agenticFileTracker.onFileChange((change) => {
-    console.log('[AgenticFileTrackerInit] 收到文件修改事件:', change.path, change.operation);
     store.dispatch(addFileChange(change));
   });
-
-  console.log('[AgenticFileTrackerInit] 已初始化，监听器已注册');
 }

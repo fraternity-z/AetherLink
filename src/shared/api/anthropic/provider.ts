@@ -303,8 +303,11 @@ export class AnthropicProvider extends BaseProvider {
         finalSystemPrompt = content.text || '';
       }
 
+      // 获取工作区列表（用于注入到系统提示词）
+      const workspaces = mcpTools && mcpTools.length > 0 ? await this.getWorkspaces() : [];
+
       // 使用智能工具注入机制
-      const systemPromptWithTools = this.buildSystemPromptWithTools(finalSystemPrompt, mcpTools);
+      const systemPromptWithTools = this.buildSystemPromptWithTools(finalSystemPrompt, mcpTools, workspaces);
       if (systemPromptWithTools.trim()) {
         requestParams.system = systemPromptWithTools;
       }

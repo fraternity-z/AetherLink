@@ -20,6 +20,8 @@ import {
   Typography,
   Paper,
   Button,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   FileText,
@@ -307,6 +309,11 @@ const FileChangeItem: React.FC<FileChangeItemProps> = ({
 /** Agentic Files List 主组件 */
 const AgenticFilesList: React.FC = () => {
   const dispatch = useDispatch();
+  const theme = useTheme();
+  
+  // 与 IntegratedChatInput 使用相同的断点检测逻辑
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   // 从 Redux 获取状态
   const { changes, expandedFileId, isPanelVisible } = useSelector(
@@ -315,8 +322,8 @@ const AgenticFilesList: React.FC = () => {
   
   // 获取主题模式
   const isDarkMode = useSelector((state: RootState) => {
-    const theme = state.settings?.theme;
-    return theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const themeMode = state.settings?.theme;
+    return themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
 
   // 过滤出待处理的修改
@@ -412,19 +419,59 @@ const AgenticFilesList: React.FC = () => {
     return null;
   }
 
+  // 与 IntegratedChatInput/ExpandableContainer 完全一致的响应式样式
+  const getResponsiveStyles = () => {
+    if (isMobile) {
+      return {
+        maxWidth: '100%',
+        marginLeft: '0',
+        marginRight: '0',
+        paddingLeft: '8px',
+        paddingRight: '8px',
+      };
+    } else if (isTablet) {
+      return {
+        maxWidth: 'calc(100% - 40px)',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        paddingLeft: '0',
+        paddingRight: '0',
+      };
+    } else {
+      return {
+        maxWidth: 'calc(100% - 32px)',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        paddingLeft: '0',
+        paddingRight: '0',
+      };
+    }
+  };
+
+  const responsiveStyles = getResponsiveStyles();
+
   return (
-    <Paper
-      elevation={0}
+    <Box
       sx={{
-        mx: 2,
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
         mb: 0.5,
-        borderRadius: 1,
-        border: '1px solid',
-        borderColor: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-        backgroundColor: isDarkMode ? 'rgba(40,40,40,0.98)' : 'rgba(250,250,250,0.98)',
-        overflow: 'hidden',
+        ...responsiveStyles,
       }}
     >
+      <Paper
+        elevation={0}
+        sx={{
+          width: '100%',
+          borderRadius: 1,
+          border: '1px solid',
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+          background: 'var(--theme-bg-paper)',  // 与输入框使用相同的主题背景色
+          overflow: 'hidden',
+        }}
+      >
       {/* 紧凑标题栏 - 类似 Cursor 样式 */}
       <Box
         sx={{
@@ -549,7 +596,8 @@ const AgenticFilesList: React.FC = () => {
           ))}
         </Box>
       </Collapse>
-    </Paper>
+      </Paper>
+    </Box>
   );
 };
 

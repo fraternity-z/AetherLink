@@ -153,7 +153,6 @@ class AgenticFileTracker {
    * 记录文件创建
    */
   public trackFileCreate(path: string, content: string, backupPath?: string): void {
-    console.log('[AgenticFileTracker] trackFileCreate 被调用:', path, '监听器数量:', this.fileChangeListeners.size);
     this.trackFileChange({
       path,
       operation: 'create',

@@ -3,8 +3,9 @@
  * 定义了所有AI提供者必须实现的方法，并提供 MCP 工具调用的通用功能
  */
 import type { Message, MCPTool, Model } from '../types';
-import { buildSystemPrompt } from '../utils/mcpPrompt';
+import { buildSystemPrompt, type WorkspaceInfo } from '../utils/mcpPrompt';
 import { isFunctionCallingModel } from '../config/models';
+import { workspaceService } from '../services/WorkspaceService';
 
 /**
  * 基础提供者接口
@@ -127,11 +128,40 @@ export abstract class AbstractBaseProvider implements BaseProvider {
     return { tools };
   }
 
+  /** 缓存的工作区列表 */
+  private cachedWorkspaces: WorkspaceInfo[] = [];
+  private workspacesCacheTime: number = 0;
+  private static readonly WORKSPACE_CACHE_TTL = 30000; // 30秒缓存
+
+  /**
+   * 获取工作区列表（带缓存）
+   */
+  protected async getWorkspaces(): Promise<WorkspaceInfo[]> {
+    const now = Date.now();
+    if (this.cachedWorkspaces.length > 0 && (now - this.workspacesCacheTime) < AbstractBaseProvider.WORKSPACE_CACHE_TTL) {
+      return this.cachedWorkspaces;
+    }
+
+    try {
+      const result = await workspaceService.getWorkspaces();
+      this.cachedWorkspaces = result.workspaces.map(ws => ({
+        id: ws.id,
+        name: ws.name,
+        path: ws.path
+      }));
+      this.workspacesCacheTime = now;
+      return this.cachedWorkspaces;
+    } catch (error) {
+      console.warn('[MCP] 获取工作区列表失败:', error);
+      return this.cachedWorkspaces; // 返回缓存的数据
+    }
+  }
+
   /**
    * 构建包含 MCP 工具信息的系统提示词
    * 这是提供商层面的备用注入机制
    */
-  protected buildSystemPromptWithTools(basePrompt: string, mcpTools?: MCPTool[]): string {
+  protected buildSystemPromptWithTools(basePrompt: string, mcpTools?: MCPTool[], workspaces?: WorkspaceInfo[]): string {
     console.log(`[MCP] buildSystemPromptWithTools - 工具数量: ${mcpTools?.length || 0}, useSystemPromptForTools: ${this.useSystemPromptForTools}`);
 
     // 如果没有工具或不使用系统提示词模式，直接返回基础提示词
@@ -140,8 +170,10 @@ export abstract class AbstractBaseProvider implements BaseProvider {
       return basePrompt || '';
     }
 
-    console.log(`[MCP] 提供商层注入：将 ${mcpTools.length} 个工具注入到系统提示词中`);
-    const result = buildSystemPrompt(basePrompt || '', mcpTools);
+    console.log(`[MCP] 提供商层注入：将 ${mcpTools.length} 个工具注入到系统提示词中, 工作区数量: ${workspaces?.length || 0}`);
+    const result = buildSystemPrompt(basePrompt || '', mcpTools, {
+      workspaces: workspaces || []
+    });
     console.log(`[MCP] 注入后的系统提示词长度: ${result.length}`);
     return result;
   }

@@ -462,7 +462,7 @@ export async function deleteFile(params: {
       }
       await unifiedFileManager.deleteDirectory({ path });
     } else {
-      // 删除文件 (跟踪已在 UnifiedFileManagerService 中自动处理)
+      // 文件跟踪已在 UnifiedFileManagerService.deleteFile 中自动处理
       await unifiedFileManager.deleteFile({ path });
     }
 

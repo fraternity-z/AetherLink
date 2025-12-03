@@ -13,6 +13,13 @@ import { getRulesSection } from './sections/rules';
 import { getObjectiveSection } from './sections/objective';
 import { getToolsCatalogSection } from './sections/tools-catalog';
 
+/** 工作区信息 */
+export interface WorkspaceInfo {
+  id: string;
+  name: string;
+  path: string;
+}
+
 export interface AgenticPromptConfig {
   /** 用户自定义系统提示词 */
   userSystemPrompt?: string;
@@ -28,6 +35,8 @@ export interface AgenticPromptConfig {
   maxToolCalls?: number;
   /** 最大连续错误次数 */
   maxConsecutiveErrors?: number;
+  /** 工作区列表（直接注入提示词，无需 AI 调用 list_workspaces） */
+  workspaces?: WorkspaceInfo[];
 }
 
 /**
@@ -42,6 +51,7 @@ export function buildAgenticSystemPrompt(config: AgenticPromptConfig): string {
     supportsBrowserUse = false,
     maxToolCalls = 25,
     maxConsecutiveErrors = 3,
+    workspaces = [],
   } = config;
 
   // 检查是否有文件编辑工具
@@ -68,12 +78,13 @@ export function buildAgenticSystemPrompt(config: AgenticPromptConfig): string {
     hasFileEditorTools,
   }));
 
-  // 6. 规则约束
+  // 6. 规则约束（包含工作区信息）
   sections.push(getRulesSection({
     cwd,
     osType,
     hasFileEditorTools,
     supportsBrowserUse,
+    workspaces,
   }));
 
   // 7. 目标说明
