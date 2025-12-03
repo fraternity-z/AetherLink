@@ -4,6 +4,7 @@
 import { v4 as uuid } from 'uuid';
 import store from '../../../index';
 import { agenticLoopService } from '../../../../services/AgenticLoopService';
+import { agenticFileTracker } from '../../../../services/AgenticFileTracker';
 import type { MessageBlock, ToolMessageBlock } from '../../../../types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../../../types/newMessage';
 import { 
@@ -42,6 +43,8 @@ export function checkAgenticMode(mcpTools: { serverName?: string }[]): boolean {
 export function startAgenticLoop(topicId: string): void {
   console.log(`[Agentic] 检测到 @aether/file-editor，启用 Agentic 模式`);
   agenticLoopService.startLoop(topicId);
+  // 启用文件跟踪器
+  agenticFileTracker.enable(topicId);
 }
 
 /**

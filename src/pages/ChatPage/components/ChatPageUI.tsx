@@ -17,6 +17,7 @@ import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 import { useVisualViewport } from '../../../shared/hooks/useVisualViewport';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
 import ErrorBoundary from '../../../components/ErrorBoundary';
+import AgenticFilesList from '../../../components/AgenticFilesList';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import { createSelector } from 'reselect';
 import { contextCondenseService } from '../../../shared/services/ContextCondenseService';
@@ -725,6 +726,9 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         transition: shouldUseVisualViewport ? 'none' : 'bottom 0.2s ease-out, padding-bottom 0.2s ease-out',
       }}
     >
+      {/* Agentic 模式文件修改列表 - 紧贴输入框上方 */}
+      <AgenticFilesList />
+
       {shouldShowToolbar && (
         <Box sx={{
           width: '100%',

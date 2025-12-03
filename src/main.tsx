@@ -6,6 +6,7 @@ import App from './App';
 import './index.css';
 import { initStorageService, dexieStorage } from './shared/services/storage/storageService';
 import { initializeServices } from './shared/services';
+import { initAgenticFileTracker } from './shared/services/AgenticFileTrackerInit';
 // 🚀 性能优化：i18n 初始化改为静态导入，避免动态导入冲突
 import './i18n/config';
 // 移除旧的系统提示词slice引用
@@ -124,6 +125,9 @@ async function initializeInBackground() {
         throw new Error('数据库连接失败，无法初始化应用');
       }
     })();
+
+    // 初始化 Agentic 文件跟踪器（连接到 Redux store）
+    initAgenticFileTracker();
 
     // 等待数据库打开，但不等待其他初始化
     await dbPromise;

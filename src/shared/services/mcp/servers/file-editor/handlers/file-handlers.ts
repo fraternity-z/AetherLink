@@ -312,7 +312,7 @@ export async function createFile(params: {
       }
     }
 
-    // 创建文件
+    // 创建文件 (跟踪已在 UnifiedFileManagerService 中自动处理)
     await unifiedFileManager.createFile({
       path,
       content,
@@ -462,6 +462,7 @@ export async function deleteFile(params: {
       }
       await unifiedFileManager.deleteDirectory({ path });
     } else {
+      // 删除文件 (跟踪已在 UnifiedFileManagerService 中自动处理)
       await unifiedFileManager.deleteFile({ path });
     }
 

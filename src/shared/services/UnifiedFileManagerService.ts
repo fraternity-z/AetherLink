@@ -5,6 +5,7 @@
  */
 
 import { isTauri, isCapacitor } from '../utils/platformDetection';
+import { agenticFileTracker } from './AgenticFileTracker';
 import type {
   PermissionResult,
   FileInfo,
@@ -894,10 +895,12 @@ class UnifiedFileManagerService {
     return this.getImpl().deleteDirectory(options);
   }
 
-  // ========== 文件操作 ==========
+  // ========== 文件操作 (带自动跟踪) ==========
 
   async createFile(options: CreateFileOptions): Promise<void> {
-    return this.getImpl().createFile(options);
+    await this.getImpl().createFile(options);
+    // 自动跟踪文件创建
+    agenticFileTracker.trackFileCreate(options.path, options.content || '');
   }
 
   async readFile(options: ReadFileOptions): Promise<ReadFileResult> {
@@ -905,23 +908,62 @@ class UnifiedFileManagerService {
   }
 
   async writeFile(options: WriteFileOptions): Promise<void> {
-    return this.getImpl().writeFile(options);
+    // 先读取原始内容
+    let originalContent = '';
+    let isNewFile = false;
+    try {
+      const existing = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      originalContent = existing.content;
+    } catch {
+      isNewFile = true;
+    }
+
+    await this.getImpl().writeFile(options);
+
+    // 自动跟踪文件修改
+    if (isNewFile) {
+      agenticFileTracker.trackFileCreate(options.path, options.content);
+    } else {
+      agenticFileTracker.trackFileModify(options.path, originalContent, options.content);
+    }
   }
 
   async deleteFile(options: FileOperationOptions): Promise<void> {
-    return this.getImpl().deleteFile(options);
+    // 先读取原始内容
+    let originalContent: string | undefined;
+    try {
+      const existing = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      originalContent = existing.content;
+    } catch {
+      // 文件不存在或无法读取
+    }
+
+    await this.getImpl().deleteFile(options);
+    
+    // 自动跟踪文件删除
+    agenticFileTracker.trackFileDelete(options.path, originalContent);
   }
 
   async moveFile(options: MoveFileOptions): Promise<void> {
-    return this.getImpl().moveFile(options);
+    await this.getImpl().moveFile(options);
+    // 自动跟踪文件移动
+    agenticFileTracker.trackFileMove(options.sourcePath, options.destinationPath);
   }
 
   async copyFile(options: CopyFileOptions): Promise<void> {
-    return this.getImpl().copyFile(options);
+    await this.getImpl().copyFile(options);
+    // 复制不需要跟踪，因为原文件没有变化
   }
 
   async renameFile(options: RenameFileOptions): Promise<void> {
-    return this.getImpl().renameFile(options);
+    // 计算新路径
+    const pathParts = options.path.split(/[/\\]/);
+    pathParts[pathParts.length - 1] = options.newName;
+    const newPath = pathParts.join('/');
+
+    await this.getImpl().renameFile(options);
+    // 自动跟踪文件重命名
+    agenticFileTracker.trackFileRename(options.path, newPath);
   }
 
   // ========== 文件信息 ==========
@@ -940,22 +982,93 @@ class UnifiedFileManagerService {
     return this.getImpl().searchFiles(options);
   }
 
-  // ========== AI 编辑相关 ==========
+  // ========== AI 编辑相关 (带自动跟踪) ==========
 
   async readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
     return this.getImpl().readFileRange(options);
   }
 
   async insertContent(options: InsertContentOptions): Promise<void> {
-    return this.getImpl().insertContent(options);
+    // 先读取原始内容
+    let originalContent = '';
+    try {
+      const existing = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      originalContent = existing.content;
+    } catch {
+      // 文件不存在
+    }
+
+    await this.getImpl().insertContent(options);
+
+    // 读取修改后的内容
+    let newContent = '';
+    try {
+      const updated = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      newContent = updated.content;
+    } catch {
+      // 读取失败
+    }
+
+    // 自动跟踪
+    agenticFileTracker.trackFileModify(options.path, originalContent, newContent);
   }
 
   async replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
-    return this.getImpl().replaceInFile(options);
+    // 先读取原始内容
+    let originalContent = '';
+    try {
+      const existing = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      originalContent = existing.content;
+    } catch {
+      // 文件不存在
+    }
+
+    const result = await this.getImpl().replaceInFile(options);
+
+    // 读取修改后的内容
+    let newContent = '';
+    try {
+      const updated = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      newContent = updated.content;
+    } catch {
+      // 读取失败
+    }
+
+    // 自动跟踪
+    if (result.modified) {
+      agenticFileTracker.trackFileModify(options.path, originalContent, newContent);
+    }
+
+    return result;
   }
 
   async applyDiff(options: ApplyDiffOptions): Promise<ApplyDiffResult> {
-    return this.getImpl().applyDiff(options);
+    // 先读取原始内容
+    let originalContent = '';
+    try {
+      const existing = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      originalContent = existing.content;
+    } catch {
+      // 文件不存在
+    }
+
+    const result = await this.getImpl().applyDiff(options);
+
+    // 读取修改后的内容
+    let newContent = '';
+    try {
+      const updated = await this.getImpl().readFile({ path: options.path, encoding: 'utf8' });
+      newContent = updated.content;
+    } catch {
+      // 读取失败
+    }
+
+    // 自动跟踪
+    if (result.success) {
+      agenticFileTracker.trackFileModify(options.path, originalContent, newContent);
+    }
+
+    return result;
   }
 
   async getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult> {

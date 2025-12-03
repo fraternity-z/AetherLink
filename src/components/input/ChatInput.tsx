@@ -622,8 +622,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
         position: 'relative'
       }}
     >
-      {/* 移除URL解析状态显示以提升性能 */}
-
       {/* 知识库状态显示 */}
       {hasKnowledgeContext() && (() => {
         const contextData = getStoredKnowledgeContext();

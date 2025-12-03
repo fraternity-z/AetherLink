@@ -112,6 +112,8 @@ export async function writeToFile(params: {
     // 重置连续错误计数
     consecutiveMistakeCount = 0;
 
+    // 注意：文件跟踪已在 UnifiedFileManagerService 中自动处理
+
     return createSuccessResponse({
       message: fileExists ? '文件更新成功' : '文件创建成功',
       path,
@@ -191,6 +193,8 @@ export async function applyDiff(params: {
   // 获取或初始化该文件的重试计数
   const currentRetryCount = diffRetryCount.get(path) || 0;
 
+  // 注意：文件跟踪已在 UnifiedFileManagerService.applyDiff 中自动处理
+
   try {
     // 检测 Diff 策略
     const detectedStrategy = strategy === 'auto' 
@@ -255,6 +259,8 @@ export async function applyDiff(params: {
 
     // 计算 Diff 统计
     const diffStats = computeSearchReplaceDiffStats(diff);
+
+    // 注意：文件跟踪已在 UnifiedFileManagerService 中自动处理
 
     return createSuccessResponse({
       message: 'Diff 应用成功',
