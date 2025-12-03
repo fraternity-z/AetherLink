@@ -47,6 +47,15 @@ export {
   endAgenticLoop,
   cancelAgenticLoop,
   isInAgenticMode,
+  // 新增：提醒消息生成
+  buildNoToolsUsedMessage,
+  buildTooManyMistakesMessage,
+  buildMaxIterationsMessage,
+  incrementMistakeCount,
+  hasReachedMistakeLimit,
+  // 新增：AI 回复处理
+  getAssistantResponseContent,
+  buildAssistantMessage,
   type ToolCallResultInfo
 } from './agenticLoop';
 

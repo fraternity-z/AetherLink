@@ -6,6 +6,11 @@ import store from '../../../index';
 import { agenticLoopService } from '../../../../services/AgenticLoopService';
 import type { MessageBlock, ToolMessageBlock } from '../../../../types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../../../types/newMessage';
+import { 
+  getNoToolsUsedReminder, 
+  getTooManyMistakesMessage,
+  getMaxIterationsReachedMessage 
+} from '../../../../prompts/agentic/sections/responses';
 
 /**
  * 工具调用结果类型
@@ -191,4 +196,133 @@ export function cancelAgenticLoop(): void {
  */
 export function isInAgenticMode(): boolean {
   return agenticLoopService.getState().isAgenticMode;
+}
+
+/**
+ * 生成"没有使用工具"的提醒消息
+ * 当 AI 回复中没有工具调用时，注入此消息让 AI 继续
+ */
+export function buildNoToolsUsedMessage(isGeminiFormat: boolean): any {
+  const reminderText = getNoToolsUsedReminder();
+  
+  if (isGeminiFormat) {
+    return {
+      role: 'user',
+      parts: [{ text: reminderText }]
+    };
+  } else {
+    return {
+      role: 'user',
+      content: reminderText
+    };
+  }
+}
+
+/**
+ * 生成"连续错误过多"的提醒消息
+ */
+export function buildTooManyMistakesMessage(isGeminiFormat: boolean, feedback?: string): any {
+  const messageText = getTooManyMistakesMessage(feedback);
+  
+  if (isGeminiFormat) {
+    return {
+      role: 'user',
+      parts: [{ text: messageText }]
+    };
+  } else {
+    return {
+      role: 'user',
+      content: messageText
+    };
+  }
+}
+
+/**
+ * 生成"达到最大迭代次数"的提醒消息
+ */
+export function buildMaxIterationsMessage(isGeminiFormat: boolean): any {
+  const config = agenticLoopService.getConfig();
+  const messageText = getMaxIterationsReachedMessage(config.maxIterations);
+  
+  if (isGeminiFormat) {
+    return {
+      role: 'user',
+      parts: [{ text: messageText }]
+    };
+  } else {
+    return {
+      role: 'user',
+      content: messageText
+    };
+  }
+}
+
+/**
+ * 增加连续错误计数（当 AI 没有使用工具时）
+ */
+export function incrementMistakeCount(): number {
+  // 通过处理一个失败的工具结果来增加错误计数
+  agenticLoopService.processToolResult({
+    toolName: '_no_tool_used',
+    success: false,
+    isCompletion: false,
+    content: null,
+    error: 'AI did not use any tool in response'
+  });
+  return agenticLoopService.getState().consecutiveMistakeCount;
+}
+
+/**
+ * 检查是否达到连续错误限制
+ */
+export function hasReachedMistakeLimit(): boolean {
+  const state = agenticLoopService.getState();
+  const config = agenticLoopService.getConfig();
+  return state.consecutiveMistakeCount >= config.consecutiveMistakeLimit;
+}
+
+/**
+ * 获取 AI 回复的文本内容（用于添加到消息历史）
+ */
+export async function getAssistantResponseContent(messageId: string): Promise<string> {
+  const state = store.getState();
+  const message = state.messages.entities[messageId];
+
+  if (!message?.blocks) {
+    return '';
+  }
+
+  // 获取所有文本块的内容
+  const textContent = message.blocks
+    .map((blockId: string) => state.messageBlocks.entities[blockId])
+    .filter((block: MessageBlock | undefined): block is MessageBlock => 
+      block?.type === MessageBlockType.MAIN_TEXT || block?.type === MessageBlockType.THINKING
+    )
+    .map((block: MessageBlock) => {
+      // 安全地获取 content 属性
+      if ('content' in block && typeof block.content === 'string') {
+        return block.content;
+      }
+      return '';
+    })
+    .join('\n');
+
+  return textContent;
+}
+
+/**
+ * 构建 AI 回复消息（用于添加到消息历史）
+ */
+export function buildAssistantMessage(content: string, isGeminiFormat: boolean): any {
+  if (isGeminiFormat) {
+    return {
+      role: 'model',
+      parts: [{ text: content }]
+    };
+  } else {
+    return {
+      role: 'assistant',
+      content: content
+    };
+  }
 }

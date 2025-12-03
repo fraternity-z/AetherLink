@@ -35,6 +35,13 @@ import {
   endAgenticLoop,
   cancelAgenticLoop,
   isInAgenticMode,
+  // 新增：提醒消息生成
+  buildNoToolsUsedMessage,
+  incrementMistakeCount,
+  hasReachedMistakeLimit,
+  // 新增：AI 回复处理
+  getAssistantResponseContent,
+  buildAssistantMessage,
   fetchAssistantInfo,
   createPlaceholderBlock,
   fetchMcpTools,
@@ -125,9 +132,32 @@ async function handleTextGeneration(context: {
     console.log(`[Agentic] 收集到 ${toolResults.length} 个工具结果`);
 
     if (toolResults.length === 0) {
-      console.log(`[Agentic] 没有工具调用，结束循环`);
-      shouldContinueLoopFlag = false;
-      break;
+      // AI 没有使用任何工具，增加错误计数并注入提醒消息
+      const mistakeCount = incrementMistakeCount();
+      console.log(`[Agentic] AI 没有使用工具，连续错误次数: ${mistakeCount}`);
+
+      // 检查是否达到错误限制
+      if (hasReachedMistakeLimit()) {
+        console.log(`[Agentic] 达到连续错误限制，结束循环`);
+        shouldContinueLoopFlag = false;
+        break;
+      }
+
+      // 获取 AI 的回复内容，添加到消息历史
+      const assistantContent = await getAssistantResponseContent(assistantMessage.id);
+      if (assistantContent) {
+        const assistantMsg = buildAssistantMessage(assistantContent, isActualGeminiProvider);
+        currentMessagesToSend = [...currentMessagesToSend, assistantMsg];
+        console.log(`[Agentic] 添加 AI 回复到消息历史: ${assistantContent.substring(0, 100)}...`);
+      }
+
+      // 注入提醒消息，让 AI 继续
+      console.log(`[Agentic] 注入提醒消息，要求 AI 使用工具`);
+      const reminderMessage = buildNoToolsUsedMessage(isActualGeminiProvider);
+      currentMessagesToSend = [...currentMessagesToSend, reminderMessage];
+      
+      // 继续下一轮循环
+      continue;
     }
 
     // 检查完成信号
