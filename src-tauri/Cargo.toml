@@ -67,11 +67,11 @@ opt-level = 0
 [profile.release]
 # 优化大小而不是速度
 opt-level = "s"
-# 关闭 LTO 以支持 Cranelift
-lto = false
-# 增加代码生成单元以加速编译
-codegen-units = 16
-# 启用 panic = abort 以减少大小（Cranelift 要求）
+# 启用 LTO 以优化二进制大小
+lto = true
+# 减少代码生成单元以配合 LTO
+codegen-units = 1
+# 启用 panic = abort 以减少大小
 panic = "abort"
 # 去除调试信息
 debug = false
