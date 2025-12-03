@@ -183,9 +183,20 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
               // 2. 不执行工具！工具执行由 Provider 层通过 MCP_TOOL_IN_PROGRESS/COMPLETE 事件驱动
               // 参考项目：工具块的创建和状态更新通过事件分离，避免双重执行
               
-              // 3. 重置文本块状态，让下一轮自动创建新块
-              // 参考项目：onTextComplete 时 mainTextBlockId = null，下次 onTextStart 会创建新块
-              chunkProcessor.resetTextBlock();
+              // 3. 检查是否是完成工具（attempt_completion）
+              // 🔧 修复：完成工具之后不会有下一轮，不需要重置文本块状态
+              // 否则 TEXT_COMPLETE 事件会创建重复的文本块
+              const isCompletionTool = result.responses.some((r: any) => {
+                const toolName = r.name || r.toolName || '';
+                return toolName === 'attempt_completion' || toolName.endsWith('-attempt_completion');
+              });
+              
+              if (!isCompletionTool) {
+                // 非完成工具：重置文本块状态，让下一轮自动创建新块
+                chunkProcessor.resetTextBlock();
+              } else {
+                console.log(`[ResponseHandler] 检测到完成工具，不重置文本块状态`);
+              }
             }
             break;
         }
