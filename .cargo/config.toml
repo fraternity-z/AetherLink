@@ -8,6 +8,18 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
+# 使用 Cranelift 后端加速开发编译（仅 dev profile）
+# 编译速度提升约 30-50%，但生成代码运行稍慢
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+codegen-backend = "cranelift"
+
+# Release 模式使用 Cranelift（已关闭 LTO）
+[profile.release]
+codegen-backend = "cranelift"
+
 # macOS 目标不指定链接器，使用系统默认
 # [target.x86_64-apple-darwin]
 # [target.aarch64-apple-darwin]

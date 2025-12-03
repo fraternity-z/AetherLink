@@ -49,20 +49,26 @@ devtools = ["tauri/devtools"]
 debug = 0
 # 增加代码生成单元数量以提高并行度
 codegen-units = 256
+# 降低 LLVM 优化级别到 0（参考 Burn 108x 优化）
+opt-level = 0
 
 [profile.dev.build-override]
 # 为构建脚本和过程宏启用优化
 opt-level = 3
 
+# 依赖库在 dev 模式下也用低优化级别加速编译
+[profile.dev.package."*"]
+opt-level = 0
+
 # 发布版本优化配置
 [profile.release]
 # 优化大小而不是速度
 opt-level = "s"
-# 启用链接时优化
-lto = true
-# 减少代码生成单元以优化大小
-codegen-units = 1
-# 启用 panic = abort 以减少大小
+# 关闭 LTO 以支持 Cranelift
+lto = false
+# 增加代码生成单元以加速编译
+codegen-units = 16
+# 启用 panic = abort 以减少大小（Cranelift 要求）
 panic = "abort"
 # 去除调试信息
 debug = false
