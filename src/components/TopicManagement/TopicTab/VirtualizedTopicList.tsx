@@ -1,6 +1,5 @@
 import React, { memo, useMemo, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
-import { useSelector } from 'react-redux';
 import VirtualScroller from '../../common/VirtualScroller';
 import TopicItem from './TopicItem';
 import {
@@ -10,11 +9,11 @@ import {
   VIRTUALIZATION_CONFIG
 } from '../AssistantTab/virtualizationConfig';
 import type { ChatTopic } from '../../../shared/types';
-import type { RootState } from '../../../shared/store';
 
 interface VirtualizedTopicListProps {
   topics: ChatTopic[];
-  currentTopic: ChatTopic | null; // 保留兼容性，但不再使用
+  // 🚀 优化：移除 currentTopic prop，TopicItem 已经内部订阅 Redux 状态
+  currentTopic?: ChatTopic | null; // 保留兼容性，但不再使用
   onSelectTopic: (topic: ChatTopic) => void;
   onOpenMenu: (event: React.MouseEvent, topic: ChatTopic) => void;
   onDeleteTopic: (topicId: string, event: React.MouseEvent) => void;
@@ -32,7 +31,7 @@ interface VirtualizedTopicListProps {
  */
 const VirtualizedTopicList = memo(function VirtualizedTopicList({
   topics,
-  currentTopic, // 保留兼容性，但不再使用
+  currentTopic: _currentTopic, // 保留兼容性，但不再使用 (TopicItem 内部订阅 Redux)
   onSelectTopic,
   onOpenMenu,
   onDeleteTopic,
@@ -43,9 +42,6 @@ const VirtualizedTopicList = memo(function VirtualizedTopicList({
   searchQuery = '',
   getMainTextContent
 }: VirtualizedTopicListProps) {
-
-  // 🚀 Cherry Studio模式：直接从Redux获取当前话题ID，立即响应状态变化
-  const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
 
   // 过滤话题（搜索功能）
   const filteredTopics = useMemo(() => {
@@ -70,18 +66,18 @@ const VirtualizedTopicList = memo(function VirtualizedTopicList({
     });
   }, [topics, searchQuery, getMainTextContent]);
 
-  // 缓存渲染函数，避免每次重新创建 - 🚀 使用Redux状态立即响应
+  // 🚀 优化：移除 currentTopicId 依赖，TopicItem 内部订阅 Redux 状态
+  // 这样切换话题时 renderTopicItem 不会重建，只有选中/取消选中的两个 TopicItem 会重渲染
   const renderTopicItem = useCallback((topic: ChatTopic, _index: number) => {
     return (
       <TopicItem
         topic={topic}
-        isSelected={currentTopicId === topic.id} // 🌟 直接使用Redux状态，立即响应
         onSelectTopic={onSelectTopic}
         onOpenMenu={onOpenMenu}
         onDeleteTopic={onDeleteTopic}
       />
     );
-  }, [currentTopicId, onSelectTopic, onOpenMenu, onDeleteTopic]); // 🔧 依赖currentTopicId而不是currentTopic
+  }, [onSelectTopic, onOpenMenu, onDeleteTopic]); // 不再依赖 currentTopicId
 
   // 缓存话题键值函数
   const getTopicKey = useCallback((topic: ChatTopic, _index: number) => {
@@ -161,9 +157,9 @@ const VirtualizedTopicList = memo(function VirtualizedTopicList({
             },
           }}
         >
-          {filteredTopics.map((topic) => (
+          {filteredTopics.map((topic, index) => (
             <Box key={topic.id} sx={{ height: itemHeight }}>
-              {renderTopicItem(topic, 0)}
+              {renderTopicItem(topic, index)}
             </Box>
           ))}
         </Box>
@@ -187,10 +183,10 @@ const VirtualizedTopicList = memo(function VirtualizedTopicList({
     </Box>
   );
 }, (prevProps, nextProps) => {
-  // 自定义比较函数，只有在关键属性变化时才重新渲染
+  // 🚀 优化：移除 currentTopic 比较（TopicItem 内部订阅 Redux 状态）
+  // 只比较影响列表结构的属性
   const shouldSkipRender = (
     prevProps.topics.length === nextProps.topics.length &&
-    prevProps.currentTopic?.id === nextProps.currentTopic?.id &&
     prevProps.height === nextProps.height &&
     prevProps.itemHeight === nextProps.itemHeight &&
     prevProps.title === nextProps.title &&

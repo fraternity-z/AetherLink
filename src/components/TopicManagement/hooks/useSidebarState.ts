@@ -7,8 +7,6 @@ import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService
 import type { Assistant } from '../../../shared/types/Assistant';
 import type { RootState } from '../../../shared/store';
 import { setAssistants, setCurrentAssistant as setReduxCurrentAssistant } from '../../../shared/store/slices/assistantsSlice';
-import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
-import { topicCacheManager } from '../../../shared/services/TopicCacheManager';
 
 /**
  * 侧边栏状态管理钩子
@@ -48,76 +46,14 @@ export function useSidebarState() {
     refreshTopics,
   } = useAssistant(currentAssistant?.id || null);
 
-  // 从数据库获取当前话题 - 优化版本，合并重复的useEffect避免多次状态更新
-  const [currentTopic, setCurrentTopic] = useState<any>(null);
-  const previousTopicIdRef = useRef<string | null>(null);
-  const previousTopicUpdatedAtRef = useRef<string | undefined>(undefined);
-
-  // 🚀 优化的useEffect：只在currentTopicId变化时触发，避免重复更新
-  // 使用 topics 的长度和包含的 topicId 作为稳定的依赖
-  const topicsLength = assistantWithTopics?.topics?.length ?? 0;
-  const topicsContainsCurrentId = useMemo(() => {
-    if (!currentTopicId || !assistantWithTopics?.topics) return false;
-    return assistantWithTopics.topics.some(t => t.id === currentTopicId);
+  // 🚀 优化：使用 useMemo 直接从 assistantWithTopics.topics 计算 currentTopic
+  // 移除复杂的 useEffect 和异步逻辑，避免状态重复维护
+  // 注意：子组件 (VirtualizedTopicList, VirtualizedTopicGroups) 已经直接从 Redux 获取 currentTopicId
+  const currentTopic = useMemo(() => {
+    if (!currentTopicId) return null;
+    // 直接从已加载的话题列表中查找，无需额外的数据库查询
+    return assistantWithTopics?.topics?.find(t => t.id === currentTopicId) || null;
   }, [currentTopicId, assistantWithTopics?.topics]);
-
-  useEffect(() => {
-    // 如果话题ID没有变化，跳过
-    if (previousTopicIdRef.current === currentTopicId) {
-      // 但是，如果topics中有更新的话题，我们仍然需要检查（仅在topics包含当前ID时）
-      if (topicsContainsCurrentId && assistantWithTopics?.topics) {
-        const topicFromAssistant = assistantWithTopics.topics.find(t => t.id === currentTopicId);
-        if (topicFromAssistant && topicFromAssistant.updatedAt !== previousTopicUpdatedAtRef.current) {
-          // 话题被更新了，需要刷新
-          previousTopicUpdatedAtRef.current = topicFromAssistant.updatedAt;
-          setCurrentTopic(topicFromAssistant);
-          console.log('[useSidebarState] 话题已更新:', topicFromAssistant.name);
-        }
-      }
-      return;
-    }
-
-    const loadTopic = async () => {
-      if (!currentTopicId) {
-        previousTopicIdRef.current = null;
-        previousTopicUpdatedAtRef.current = undefined;
-        setCurrentTopic(null);
-        return;
-      }
-
-      // 更新ref，避免重复处理
-      previousTopicIdRef.current = currentTopicId;
-
-      try {
-        // 🌟 优先从assistantWithTopics中查找话题（立即响应新创建的话题）
-        if (assistantWithTopics?.topics) {
-          const topicFromAssistant = assistantWithTopics.topics.find(t => t.id === currentTopicId);
-          if (topicFromAssistant) {
-            previousTopicUpdatedAtRef.current = topicFromAssistant.updatedAt;
-            setCurrentTopic(topicFromAssistant);
-            console.log('[useSidebarState] 从助手话题中找到话题:', topicFromAssistant.name);
-            return;
-          }
-        }
-
-        // 🔄 兜底：从数据库加载话题 - 使用缓存管理器
-        const topic = await topicCacheManager.getTopic(currentTopicId);
-        if (topic) {
-          previousTopicUpdatedAtRef.current = topic.updatedAt;
-          setCurrentTopic(topic);
-          console.log('[useSidebarState] 从数据库加载话题:', topic.name);
-        } else {
-          console.warn('[useSidebarState] 话题不存在:', currentTopicId);
-          previousTopicUpdatedAtRef.current = undefined;
-          setCurrentTopic(null);
-        }
-      } catch (error) {
-        console.error('加载话题信息失败:', error);
-      }
-    };
-
-    loadTopic();
-  }, [currentTopicId, topicsLength, topicsContainsCurrentId]); // 使用稳定的依赖项
 
   // 简化状态设置函数，直接使用Redux
   const setUserAssistants = useCallback((assistants: Assistant[]) => {

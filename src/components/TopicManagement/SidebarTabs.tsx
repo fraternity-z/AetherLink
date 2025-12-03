@@ -12,7 +12,6 @@ import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { removeTopic } from '../../shared/store/slices/assistantsSlice';
 import type { ChatTopic } from '../../shared/types/Assistant';
 import SidebarTabsContent from './SidebarTabsContent';
-import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 
 interface SidebarTabsProps {
   mcpMode?: 'prompt' | 'function';
@@ -68,16 +67,15 @@ const SidebarTabs = React.memo(function SidebarTabs({
   // 话题管理 - 使用统一的创建Hook + 本地其他功能
   const { handleCreateTopic } = useTopicManagement();
 
-  // 本地话题管理功能 - Cherry Studio极简模式
+  // 🚀 优化：话题选择处理 - Cherry Studio 极简模式
+  // 移除冗余的 topicCacheManager.updateTopic 调用（useActiveTopic 中已包含）
+  // ⚡ 关键修复：移除 startTransition，让选中状态立即响应
+  // startTransition 会将更新标记为低优先级，导致 1-2 秒的延迟
   const handleSelectTopic = useCallback((topic: ChatTopic) => {
     console.log('[SidebarTabs] handleSelectTopic被调用:', topic.id, topic.name);
 
-    topicCacheManager.updateTopic(topic.id, topic);
-
-    // 🚀 Cherry Studio模式：只设置Redux状态，让useActiveTopic处理其余逻辑
-    startTransition(() => {
-      dispatch(newMessagesActions.setCurrentTopicId(topic.id));
-    });
+    // 直接 dispatch，立即更新 Redux 状态，UI 即时响应
+    dispatch(newMessagesActions.setCurrentTopicId(topic.id));
 
     console.log('[SidebarTabs] 话题切换完成');
   }, [dispatch]);

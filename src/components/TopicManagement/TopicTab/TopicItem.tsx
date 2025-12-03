@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback, startTransition } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import {
   ListItemButton,
   ListItemText,
@@ -16,7 +16,8 @@ import { selectMessagesForTopic, selectTopicStreaming } from '../../../shared/st
 
 interface TopicItemProps {
   topic: ChatTopic;
-  isSelected: boolean;
+  // 🚀 优化：移除 isSelected prop，改由组件内部从 Redux 订阅
+  // 这样切换话题时只有选中/取消选中的两个 TopicItem 会重渲染
   onSelectTopic: (topic: ChatTopic) => void;
   onOpenMenu: (event: React.MouseEvent, topic: ChatTopic) => void;
   onDeleteTopic: (topicId: string, event: React.MouseEvent) => void;
@@ -27,20 +28,20 @@ interface TopicItemProps {
  */
 const TopicItem = React.memo(function TopicItem({
   topic,
-  isSelected,
   onSelectTopic,
   onOpenMenu,
   onDeleteTopic
 }: TopicItemProps) {
+  // 🚀 优化：组件内部订阅 Redux 状态，避免父组件 renderTopicItem 重建导致所有可见项重渲染
+  const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
+  const isSelected = currentTopicId === topic.id;
   // 删除确认状态
   const [pendingDelete, setPendingDelete] = useState(false);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTopicClick = useCallback(() => {
-    // 🚀 使用startTransition优化话题切换性能
-    startTransition(() => {
-      onSelectTopic(topic);
-    });
+    // 🚀 优化：移除冗余的 startTransition 嵌套（SidebarTabs.handleSelectTopic 已包含）
+    onSelectTopic(topic);
   }, [topic, onSelectTopic]);
 
   const handleOpenMenu = (event: React.MouseEvent) => {
@@ -61,10 +62,8 @@ const TopicItem = React.memo(function TopicItem({
 
       console.log(`[TopicItem] 确认删除话题: ${topic.name} (${topic.id})`);
 
-      // 🚀 Cherry Studio模式：立即执行删除，UI会立即响应（乐观更新）
-      startTransition(() => {
-        onDeleteTopic(topic.id, event);
-      });
+      // 🚀 优化：移除冗余的 startTransition（SidebarTabs.handleDeleteTopic 已包含）
+      onDeleteTopic(topic.id, event);
     } else {
       // 第一次点击，进入确认状态
       setPendingDelete(true);

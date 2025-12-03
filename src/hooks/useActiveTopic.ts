@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
 import { loadTopicMessagesThunk } from '../shared/store/slices/newMessagesSlice';
-import { EventEmitter, EVENT_NAMES } from '../shared/services/EventService';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import { topicCacheManager } from '../shared/services/TopicCacheManager';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
@@ -128,10 +127,8 @@ export function useActiveTopic(assistant: Assistant, initialTopic?: ChatTopic) {
     activeTopicIdRef.current = activeTopic.id;
     console.log(`[useActiveTopic] 话题变更: ${activeTopic.name} (${activeTopic.id})`);
 
-    // 发送话题变更事件
-    EventEmitter.emit(EVENT_NAMES.CHANGE_TOPIC, activeTopic);
-
-    // 加载话题消息
+    // 🚀 优化：移除无用的 CHANGE_TOPIC 事件发送（无监听器）
+    // 直接加载话题消息
     dispatch(loadTopicMessagesThunk(activeTopic.id) as any);
   }, [activeTopic?.id, dispatch]); // 只依赖ID，避免对象引用变化
 

@@ -15,19 +15,19 @@ import {
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
 import { ChevronDown, MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { updateGroup, deleteGroup } from '../../../shared/store/slices/groupsSlice';
 import VirtualScroller from '../../common/VirtualScroller';
 import TopicItem from './TopicItem';
 import type { ChatTopic } from '../../../shared/types';
 import type { Group } from '../../../shared/types';
-import type { RootState } from '../../../shared/store';
 
 interface VirtualizedTopicGroupsProps {
   topicGroups: Group[];
   topics: ChatTopic[];
   topicGroupMap: Record<string, string>;
-  currentTopic: ChatTopic | null;
+  // 🚀 优化：移除 currentTopic prop，TopicItem 已经内部订阅 Redux 状态
+  currentTopic?: ChatTopic | null; // 保留兼容性，但不再使用
   onSelectTopic: (topic: ChatTopic) => void;
   onOpenMenu: (event: React.MouseEvent, topic: ChatTopic) => void;
   onDeleteTopic: (topicId: string, event: React.MouseEvent) => void;
@@ -42,14 +42,11 @@ const VirtualizedTopicGroups = memo(function VirtualizedTopicGroups({
   topicGroups,
   topics,
   topicGroupMap,
-  currentTopic: _currentTopic, // 保留兼容性，但不再使用 (eslint-disable-line @typescript-eslint/no-unused-vars)
+  currentTopic: _currentTopic, // 保留兼容性，但不再使用 (TopicItem 内部订阅 Redux)
   onSelectTopic,
   onOpenMenu,
   onDeleteTopic
 }: VirtualizedTopicGroupsProps) {
-
-  // 🚀 Cherry Studio模式：直接从Redux获取当前话题ID，立即响应状态变化
-  const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
 
   // 使用 useMemo 缓存分组话题的计算结果
   const groupedTopics = useMemo(() => {
@@ -65,18 +62,18 @@ const VirtualizedTopicGroups = memo(function VirtualizedTopicGroups({
     });
   }, [topicGroups, topics, topicGroupMap]);
 
-  // 缓存话题项渲染函数 - 🚀 使用Redux状态立即响应
+  // 🚀 优化：移除 currentTopicId 依赖，TopicItem 内部订阅 Redux 状态
+  // 这样切换话题时 renderTopicItem 不会重建，只有选中/取消选中的两个 TopicItem 会重渲染
   const renderTopicItem = useCallback((topic: ChatTopic, _index: number) => {
     return (
       <TopicItem
         topic={topic}
-        isSelected={currentTopicId === topic.id} // 🌟 直接使用Redux状态，立即响应
         onSelectTopic={onSelectTopic}
         onOpenMenu={onOpenMenu}
         onDeleteTopic={onDeleteTopic}
       />
     );
-  }, [currentTopicId, onSelectTopic, onOpenMenu, onDeleteTopic]); // 🔧 依赖currentTopicId而不是currentTopic
+  }, [onSelectTopic, onOpenMenu, onDeleteTopic]); // 不再依赖 currentTopicId
 
   // 缓存话题键值函数
   const getTopicKey = useCallback((topic: ChatTopic, _index: number) => {
