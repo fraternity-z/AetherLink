@@ -1,4 +1,6 @@
 import type { MCPTool } from '../types/index';
+import { buildAgenticSystemPrompt, isAgenticMode } from '../prompts/agentic';
+import type { AgenticPromptConfig } from '../prompts/agentic';
 
 export const SYSTEM_PROMPT = `In this environment you have access to a set of tools you can use to answer the user's question. \
 You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
@@ -43,8 +45,6 @@ Here are the rules you should always follow to solve your task:
 3. If no tool call is needed, just answer the question directly.
 4. Never re-do a tool call that you previously did with the exact same parameters.
 5. For tool use, MAKE SURE to use the XML tag format as shown in the examples above. Do not use any other format.
-
-{{ FILE_EDITOR_CAPABILITIES }}
 
 # User Instructions
 {{ USER_SYSTEM_PROMPT }}
@@ -122,66 +122,12 @@ User: <tool_use_result>
 Assistant: The population of Shanghai is 26 million, while Guangzhou has a population of 15 million. Therefore, Shanghai has the highest population.
 `
 
-// Agentic Mode 能力说明（仅当文件编辑工具可用时注入）
-export const FILE_EDITOR_CAPABILITIES = `
-## Agentic Mode
+// 注意：Agentic Mode 提示词已移至 src/shared/prompts/agentic/ 目录
+// 使用 buildAgenticSystemPrompt() 或 isAgenticMode() 来处理 Agentic 模式
 
-You are operating in **Agentic Mode**, which means:
-1. You can make multiple tool calls iteratively to complete complex tasks
-2. Tool results are automatically sent back to you for the next decision
-3. You MUST call attempt_completion when you finish - this is the ONLY way to end a task
-
-## Agentic Mode Rules
-6. When you've completed the task, you MUST use the attempt_completion tool to present the result to the user.
-7. Wait for the user's response after each tool use to confirm success before proceeding with the next step.
-8. The attempt_completion tool CANNOT be used until previous tool uses were confirmed successful.
-
-## Objective
-You accomplish tasks iteratively, breaking them down into clear steps:
-1. Analyze the task and set clear, achievable goals in logical order.
-2. Work through goals sequentially, using tools one at a time. Each goal should be a distinct step.
-3. Before calling a tool, analyze which tool is most relevant and ensure all required parameters are available.
-4. Once you've completed the task, you MUST use the attempt_completion tool to present the result.
-5. Do NOT end your responses with questions or offers for further assistance.
-
-## CRITICAL: Task Completion Protocol
-- You MUST call attempt_completion to signal completion. Without it, the task is considered FAILED.
-- Do NOT just reply with text - you MUST call the attempt_completion tool!
-
-**When to call attempt_completion:**
-- After successfully completing all requested tasks and verifying changes
-- When the task objective has been fully achieved
-
-**When NOT to call:**
-- When a tool call just failed (fix the error first)
-- In the middle of a multi-step task
-- When you need more information from the user
-
-**Limits:** Max 25 tool calls, max 3 consecutive errors.
-`;
-
-/**
- * 检查工具列表中是否包含文件编辑工具
- */
-export const hasFileEditorTools = (tools: MCPTool[]): boolean => {
-  if (!tools || tools.length === 0) return false;
-  
-  const fileEditorToolNames = [
-    'list_workspaces',
-    'get_workspace_files', 
-    'read_file',
-    'write_to_file',
-    'insert_content',
-    'replace_in_file',
-    'apply_diff',
-    'attempt_completion'  // Agentic 模式完成工具
-  ];
-  
-  return tools.some(tool => 
-    fileEditorToolNames.includes(tool.name) || 
-    tool.serverName === '@aether/file-editor'
-  );
-};
+// hasFileEditorTools 和 isAgenticMode 已移至 src/shared/prompts/agentic/index.ts
+// 这里保留一个简单的重导出以保持向后兼容
+export { checkHasFileEditorTools as hasFileEditorTools } from '../prompts/agentic';
 
 export const AvailableTools = (tools: MCPTool[]) => {
   const availableTools = tools
@@ -204,16 +150,52 @@ ${availableTools}
 </tools>`
 }
 
-export const buildSystemPrompt = (userSystemPrompt: string, tools?: MCPTool[]): string => {
+export interface BuildSystemPromptOptions {
+  /** 是否使用 Agentic 模式的完整提示词 */
+  useAgenticPrompt?: boolean;
+  /** 工作目录 */
+  cwd?: string;
+  /** 操作系统类型 */
+  osType?: string;
+  /** 是否支持浏览器操作 */
+  supportsBrowserUse?: boolean;
+  /** 最大工具调用次数 */
+  maxToolCalls?: number;
+  /** 最大连续错误次数 */
+  maxConsecutiveErrors?: number;
+}
+
+export const buildSystemPrompt = (
+  userSystemPrompt: string, 
+  tools?: MCPTool[],
+  options?: BuildSystemPromptOptions
+): string => {
   if (tools && tools.length > 0) {
-    // 检查是否有文件编辑工具，如果有则注入文件编辑能力说明
-    const fileEditorCapabilities = hasFileEditorTools(tools) ? FILE_EDITOR_CAPABILITIES : '';
+    // 检查是否为 Agentic 模式（包含 attempt_completion 工具）
+    const isAgentic = isAgenticMode(tools);
     
+    // 如果是 Agentic 模式且启用了 Agentic 提示词，使用新的提示词系统
+    if (isAgentic && options?.useAgenticPrompt !== false) {
+      const agenticConfig: AgenticPromptConfig = {
+        userSystemPrompt,
+        tools,
+        cwd: options?.cwd || '.',
+        osType: options?.osType || 'Unknown',
+        supportsBrowserUse: options?.supportsBrowserUse || false,
+        maxToolCalls: options?.maxToolCalls || 25,
+        maxConsecutiveErrors: options?.maxConsecutiveErrors || 3,
+      };
+      return buildAgenticSystemPrompt(agenticConfig);
+    }
+    
+    // 非 Agentic 模式，使用简化的提示词系统
     return SYSTEM_PROMPT.replace('{{ USER_SYSTEM_PROMPT }}', userSystemPrompt)
       .replace('{{ TOOL_USE_EXAMPLES }}', ToolUseExamples)
       .replace('{{ AVAILABLE_TOOLS }}', AvailableTools(tools))
-      .replace('{{ FILE_EDITOR_CAPABILITIES }}', fileEditorCapabilities)
   }
 
   return userSystemPrompt
 }
+
+// 重新导出 Agentic 相关函数，方便外部使用
+export { buildAgenticSystemPrompt, isAgenticMode, type AgenticPromptConfig } from '../prompts/agentic';
