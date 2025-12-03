@@ -2,12 +2,15 @@
 pub fn run() {
   let builder = tauri::Builder::default()
     .plugin(tauri_plugin_http::init())
-    .plugin(tauri_plugin_edge_to_edge::init())
     // 官方 dialog 插件 - 文件选择器
     .plugin(tauri_plugin_dialog::init())
     // 官方 fs 插件 - 文件系统操作
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_shell::init());
+
+  // 仅 Android 端：边缘到边缘显示插件
+  #[cfg(target_os = "android")]
+  let builder = builder.plugin(tauri_plugin_edge_to_edge::init());
 
   // 仅桌面端：添加窗口状态记忆插件
   #[cfg(not(any(target_os = "android", target_os = "ios")))]
