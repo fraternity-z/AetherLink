@@ -112,11 +112,19 @@ async function createProxiedTauriFetch(
 ): Promise<Response> {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
   
-  // 本地请求不使用代理
+  // 本地请求和 Tauri 内部 IPC 请求不使用代理
   try {
     const urlObj = new URL(url);
+    // 排除本地请求
     if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
       console.log('[Global Fetch Proxy] 本地请求，使用原始 fetch:', url);
+      return originalFetch(input, init);
+    }
+    // 排除 Tauri 内部 IPC 通信（关键！避免死循环）
+    if (urlObj.hostname === 'ipc.localhost' || 
+        urlObj.hostname.endsWith('.localhost') ||
+        urlObj.protocol === 'tauri:' ||
+        url.includes('plugin:')) {
       return originalFetch(input, init);
     }
   } catch {

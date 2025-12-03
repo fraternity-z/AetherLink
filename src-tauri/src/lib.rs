@@ -3,8 +3,10 @@ pub fn run() {
   let builder = tauri::Builder::default()
     .plugin(tauri_plugin_http::init())
     .plugin(tauri_plugin_edge_to_edge::init())
-    // 高级文件管理插件 - 整合 fs、dialog、opener 功能
-    .plugin(tauri_plugin_advanced_file_manager::init())
+    // 官方 dialog 插件 - 文件选择器
+    .plugin(tauri_plugin_dialog::init())
+    // 官方 fs 插件 - 文件系统操作
+    .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_shell::init());
 
   // 仅桌面端：添加窗口状态记忆插件

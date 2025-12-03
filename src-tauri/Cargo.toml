@@ -28,8 +28,10 @@ tauri-plugin-log = "2"
 tauri-plugin-http = { version = "2.5", features = ["socks"] }
 tauri-plugin-edge-to-edge = "0.3.3"
 
-# 高级文件管理插件 - 整合 fs、dialog、opener 功能
-tauri-plugin-advanced-file-manager = "0.1.5"
+# 官方 dialog 插件 - 文件选择器
+tauri-plugin-dialog = "2"
+# 官方 fs 插件 - 文件系统操作
+tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
 
 # 仅桌面端：窗口状态记忆插件

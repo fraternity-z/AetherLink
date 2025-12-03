@@ -3,7 +3,6 @@
  * 提供工作区的创建、管理和文件访问功能
  */
 
-import { Filesystem, Directory } from '@capacitor/filesystem';
 import { v4 as uuidv4 } from 'uuid';
 import { dexieStorage } from './storage/DexieStorageService';
 import { unifiedFileManager } from './UnifiedFileManagerService';
@@ -227,13 +226,15 @@ class WorkspaceService {
       // 构建完整路径
       const fullPath = subPath ? `${workspace.path}/${subPath}` : workspace.path;
 
-      // 读取目录内容
-      const result = await Filesystem.readdir({
+      // 使用统一文件管理器读取目录内容（支持 Tauri 和 Capacitor）
+      const result = await unifiedFileManager.listDirectory({
         path: fullPath,
-        directory: Directory.External
+        showHidden: false,
+        sortBy: 'name',
+        sortOrder: 'asc'
       });
 
-      if (!result.files) {
+      if (!result.files || result.files.length === 0) {
         return {
           files: [],
           currentPath: fullPath,
@@ -244,7 +245,7 @@ class WorkspaceService {
       // 转换文件信息
       const files: WorkspaceFile[] = result.files.map(file => ({
         name: file.name,
-        path: file.uri,
+        path: file.path,
         size: file.size || 0,
         isDirectory: file.type === 'directory',
         type: file.type || 'file',

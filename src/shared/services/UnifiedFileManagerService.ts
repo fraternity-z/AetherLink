@@ -43,21 +43,19 @@ import type {
 
 class TauriFileManagerImpl {
   private shellModule: typeof import('@tauri-apps/plugin-shell') | null = null;
-  private invokeModule: typeof import('@tauri-apps/api/core') | null = null;
+  private dialogModule: typeof import('@tauri-apps/plugin-dialog') | null = null;
+  private fsModule: typeof import('@tauri-apps/plugin-fs') | null = null;
 
   private async loadModules() {
-    if (!this.invokeModule) {
-      this.invokeModule = await import('@tauri-apps/api/core');
-    }
     if (!this.shellModule) {
       this.shellModule = await import('@tauri-apps/plugin-shell');
     }
-  }
-
-  // 调用合并插件的命令
-  private async invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-    await this.loadModules();
-    return this.invokeModule!.invoke(`plugin:advanced-file-manager|${cmd}`, args);
+    if (!this.dialogModule) {
+      this.dialogModule = await import('@tauri-apps/plugin-dialog');
+    }
+    if (!this.fsModule) {
+      this.fsModule = await import('@tauri-apps/plugin-fs');
+    }
   }
 
   async requestPermissions(): Promise<PermissionResult> {
@@ -71,30 +69,44 @@ class TauriFileManagerImpl {
 
   async openSystemFilePicker(options: SystemFilePickerOptions): Promise<SystemFilePickerResult> {
     await this.loadModules();
+    const dialog = this.dialogModule!;
 
     try {
-      // 使用合并插件的 dialog_open 命令
-      const result = await this.invoke<string | string[] | null>('dialog_open', {
-        title: options.title || '选择文件或文件夹',
-        directory: options.type === 'directory',
-        multiple: options.multiple,
-        filters: options.accept?.map(ext => ({
-          name: ext.replace('.', '').toUpperCase(),
-          extensions: [ext.replace('.', '')]
-        })),
-        defaultPath: options.startDirectory
-      });
+      let result: string | string[] | null = null;
+
+      if (options.type === 'directory') {
+        // 选择文件夹
+        result = await dialog.open({
+          title: options.title || '选择文件夹',
+          directory: true,
+          multiple: options.multiple,
+          defaultPath: options.startDirectory
+        });
+      } else {
+        // 选择文件
+        result = await dialog.open({
+          title: options.title || '选择文件',
+          directory: false,
+          multiple: options.multiple,
+          filters: options.accept?.length ? [{
+            name: '文件',
+            extensions: options.accept.map(ext => ext.replace('.', ''))
+          }] : undefined,
+          defaultPath: options.startDirectory
+        });
+      }
 
       if (!result) {
         return { files: [], directories: [], cancelled: true };
       }
 
       const paths = Array.isArray(result) ? result : [result];
+      const fs = this.fsModule!;
 
       const items: SelectedFileInfo[] = await Promise.all(
         paths.map(async (path) => {
           try {
-            const stat = await this.invoke<{ size: number; isDirectory: boolean; mtime: number | null }>('stat', { path });
+            const stat = await fs.stat(path);
             const name = path.split(/[/\\]/).pop() || '';
             return {
               name,
@@ -103,8 +115,8 @@ class TauriFileManagerImpl {
               size: stat.size,
               type: stat.isDirectory ? 'directory' : 'file',
               mimeType: stat.isDirectory ? 'inode/directory' : this.getMimeType(name),
-              mtime: stat.mtime || Date.now(),
-              ctime: stat.mtime || Date.now()
+              mtime: stat.mtime ? new Date(stat.mtime).getTime() : Date.now(),
+              ctime: stat.mtime ? new Date(stat.mtime).getTime() : Date.now()
             } as SelectedFileInfo;
           } catch {
             return {
@@ -159,22 +171,23 @@ class TauriFileManagerImpl {
 
   async listDirectory(options: ListDirectoryOptions): Promise<ListDirectoryResult> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      const entries = await this.invoke<Array<{ name: string; isDirectory: boolean }>>('read_dir', { path: options.path });
+      const entries = await fs.readDir(options.path);
       const files: FileInfo[] = await Promise.all(
-        entries.map(async (entry: { name: string; isDirectory: boolean }) => {
+        entries.map(async (entry) => {
           const fullPath = `${options.path}/${entry.name}`;
           try {
-            const stat = await this.invoke<{ size: number; isDirectory: boolean; mtime: number | null; mode: number | null }>('stat', { path: fullPath });
+            const stat = await fs.stat(fullPath);
             return {
               name: entry.name,
               path: fullPath,
               size: stat.size,
-              type: entry.isDirectory ? 'directory' : 'file',
-              mtime: stat.mtime || 0,
-              ctime: stat.mtime || 0,
-              permissions: stat.mode?.toString(8) || '',
+              type: stat.isDirectory ? 'directory' : 'file',
+              mtime: stat.mtime ? new Date(stat.mtime).getTime() : 0,
+              ctime: stat.mtime ? new Date(stat.mtime).getTime() : 0,
+              permissions: '',
               isHidden: entry.name.startsWith('.')
             } as FileInfo;
           } catch {
@@ -224,9 +237,10 @@ class TauriFileManagerImpl {
 
   async createDirectory(options: CreateDirectoryOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      await this.invoke('mkdir', { path: options.path, recursive: options.recursive });
+      await fs.mkdir(options.path, { recursive: options.recursive });
     } catch (error) {
       console.error('创建目录失败:', error);
       throw new Error('创建目录失败');
@@ -235,9 +249,10 @@ class TauriFileManagerImpl {
 
   async deleteDirectory(options: FileOperationOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      await this.invoke('remove', { path: options.path, recursive: true });
+      await fs.remove(options.path, { recursive: true });
     } catch (error) {
       console.error('删除目录失败:', error);
       throw new Error('删除目录失败');
@@ -246,13 +261,14 @@ class TauriFileManagerImpl {
 
   async createFile(options: CreateFileOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
       if (options.encoding === 'base64') {
-        const bytes = Array.from(Uint8Array.from(atob(options.content), c => c.charCodeAt(0)));
-        await this.invoke('write_file', { path: options.path, contents: bytes });
+        const bytes = Uint8Array.from(atob(options.content), c => c.charCodeAt(0));
+        await fs.writeFile(options.path, bytes);
       } else {
-        await this.invoke('write_text_file', { path: options.path, contents: options.content });
+        await fs.writeTextFile(options.path, options.content);
       }
     } catch (error) {
       console.error('创建文件失败:', error);
@@ -262,14 +278,22 @@ class TauriFileManagerImpl {
 
   async readFile(options: ReadFileOptions): Promise<ReadFileResult> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
       if (options.encoding === 'base64') {
-        const bytes = await this.invoke<number[]>('read_file', { path: options.path });
+        // 使用官方 fs 插件读取二进制文件
+        const bytes = await fs.readFile(options.path);
         const base64 = btoa(String.fromCharCode(...bytes));
         return { content: base64, encoding: 'base64' };
       } else {
-        const content = await this.invoke<string>('read_text_file', { path: options.path });
+        // 使用官方 fs 插件读取文本文件
+        const content = await fs.readTextFile(options.path);
+        // 确保返回的是字符串
+        if (typeof content !== 'string') {
+          console.warn('readTextFile 返回非字符串类型:', typeof content, content);
+          return { content: String(content), encoding: 'utf8' };
+        }
         return { content, encoding: 'utf8' };
       }
     } catch (error) {
@@ -280,13 +304,14 @@ class TauriFileManagerImpl {
 
   async writeFile(options: WriteFileOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
       if (options.encoding === 'base64') {
-        const bytes = Array.from(Uint8Array.from(atob(options.content), c => c.charCodeAt(0)));
-        await this.invoke('write_file', { path: options.path, contents: bytes, append: options.append });
+        const bytes = Uint8Array.from(atob(options.content), c => c.charCodeAt(0));
+        await fs.writeFile(options.path, bytes, { append: options.append });
       } else {
-        await this.invoke('write_text_file', { path: options.path, contents: options.content, append: options.append });
+        await fs.writeTextFile(options.path, options.content, { append: options.append });
       }
     } catch (error) {
       console.error('写入文件失败:', error);
@@ -296,9 +321,10 @@ class TauriFileManagerImpl {
 
   async deleteFile(options: FileOperationOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      await this.invoke('remove', { path: options.path });
+      await fs.remove(options.path);
     } catch (error) {
       console.error('删除文件失败:', error);
       throw new Error('删除文件失败');
@@ -307,9 +333,10 @@ class TauriFileManagerImpl {
 
   async moveFile(options: MoveFileOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      await this.invoke('rename', { oldPath: options.sourcePath, newPath: options.destinationPath });
+      await fs.rename(options.sourcePath, options.destinationPath);
     } catch (error) {
       console.error('移动文件失败:', error);
       throw new Error('移动文件失败');
@@ -318,9 +345,10 @@ class TauriFileManagerImpl {
 
   async copyFile(options: CopyFileOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      await this.invoke('copy_file', { fromPath: options.sourcePath, toPath: options.destinationPath });
+      await fs.copyFile(options.sourcePath, options.destinationPath);
     } catch (error) {
       console.error('复制文件失败:', error);
       throw new Error('复制文件失败');
@@ -329,11 +357,12 @@ class TauriFileManagerImpl {
 
   async renameFile(options: RenameFileOptions): Promise<void> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
       const dir = options.path.substring(0, options.path.lastIndexOf('/'));
       const newPath = `${dir}/${options.newName}`;
-      await this.invoke('rename', { oldPath: options.path, newPath });
+      await fs.rename(options.path, newPath);
     } catch (error) {
       console.error('重命名文件失败:', error);
       throw new Error('重命名文件失败');
@@ -342,18 +371,19 @@ class TauriFileManagerImpl {
 
   async getFileInfo(options: FileOperationOptions): Promise<FileInfo> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      const stat = await this.invoke<{ size: number; isDirectory: boolean; mtime: number | null; mode: number | null }>('stat', { path: options.path });
+      const stat = await fs.stat(options.path);
       const name = options.path.split(/[/\\]/).pop() || '';
       return {
         name,
         path: options.path,
         size: stat.size,
         type: stat.isDirectory ? 'directory' : 'file',
-        mtime: stat.mtime || 0,
-        ctime: stat.mtime || 0,
-        permissions: stat.mode?.toString(8) || '',
+        mtime: stat.mtime ? new Date(stat.mtime).getTime() : 0,
+        ctime: stat.mtime ? new Date(stat.mtime).getTime() : 0,
+        permissions: '',
         isHidden: name.startsWith('.')
       };
     } catch (error) {
@@ -364,20 +394,22 @@ class TauriFileManagerImpl {
 
   async exists(options: FileOperationOptions): Promise<{ exists: boolean }> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     try {
-      const result = await this.invoke<boolean>('exists', { path: options.path });
+      const result = await fs.exists(options.path);
       return { exists: Boolean(result) };
     } catch {
       return { exists: false };
     }
   }
 
-  // ========== AI 编辑相关（Tauri 使用软件实现）==========
+  // ========== AI 编辑相关（Tauri 使用官方 fs 插件）==========
 
   async readFileRange(options: ReadFileRangeOptions): Promise<ReadFileRangeResult> {
     await this.loadModules();
-    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const fs = this.fsModule!;
+    const content = await fs.readTextFile(options.path);
     const lines = content.split('\n');
     const totalLines = lines.length;
     const start = Math.max(1, options.startLine);
@@ -390,17 +422,19 @@ class TauriFileManagerImpl {
 
   async insertContent(options: InsertContentOptions): Promise<void> {
     await this.loadModules();
-    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const fs = this.fsModule!;
+    const content = await fs.readTextFile(options.path);
     const lines = content.split('\n');
     const insertIndex = Math.max(0, Math.min(lines.length, options.line - 1));
     const newLines = options.content.split('\n');
     lines.splice(insertIndex, 0, ...newLines);
-    await this.invoke('write_text_file', { path: options.path, contents: lines.join('\n') });
+    await fs.writeTextFile(options.path, lines.join('\n'));
   }
 
   async replaceInFile(options: ReplaceInFileOptions): Promise<ReplaceInFileResult> {
     await this.loadModules();
-    let content = await this.invoke<string>('read_text_file', { path: options.path });
+    const fs = this.fsModule!;
+    let content = await fs.readTextFile(options.path);
     let replacements = 0;
     const flags = options.caseSensitive ? 'g' : 'gi';
     
@@ -424,7 +458,7 @@ class TauriFileManagerImpl {
     }
     
     if (replacements > 0) {
-      await this.invoke('write_text_file', { path: options.path, contents: content });
+      await fs.writeTextFile(options.path, content);
     }
     return { replacements, modified: replacements > 0 };
   }
@@ -436,14 +470,16 @@ class TauriFileManagerImpl {
 
   async getFileHash(options: GetFileHashOptions): Promise<GetFileHashResult> {
     await this.loadModules();
-    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const fs = this.fsModule!;
+    const content = await fs.readTextFile(options.path);
     const hash = await this.simpleHash(content, options.algorithm);
     return { hash, algorithm: options.algorithm || 'md5' };
   }
 
   async getLineCount(options: FileOperationOptions): Promise<GetLineCountResult> {
     await this.loadModules();
-    const content = await this.invoke<string>('read_text_file', { path: options.path });
+    const fs = this.fsModule!;
+    const content = await fs.readTextFile(options.path);
     return { lines: content.split('\n').length };
   }
 
@@ -457,6 +493,7 @@ class TauriFileManagerImpl {
 
   async searchFiles(options: SearchFilesOptions): Promise<SearchFilesResult> {
     await this.loadModules();
+    const fs = this.fsModule!;
 
     const results: FileInfo[] = [];
     const maxResults = options.maxResults || 100;
@@ -466,7 +503,7 @@ class TauriFileManagerImpl {
       if (!options.recursive && depth > 0) return;
 
       try {
-        const entries = await this.invoke<Array<{ name: string; isDirectory: boolean }>>('read_dir', { path: dir });
+        const entries = await fs.readDir(dir);
         for (const entry of entries) {
           if (results.length >= maxResults) break;
 
@@ -479,14 +516,14 @@ class TauriFileManagerImpl {
 
           if (matchesName && matchesType) {
             try {
-              const stat = await this.invoke<{ size: number; isDirectory: boolean; mtime: number | null }>('stat', { path: fullPath });
+              const stat = await fs.stat(fullPath);
               results.push({
                 name: entry.name,
                 path: fullPath,
                 size: stat.size,
-                type: entry.isDirectory ? 'directory' : 'file',
-                mtime: stat.mtime || 0,
-                ctime: stat.mtime || 0,
+                type: stat.isDirectory ? 'directory' : 'file',
+                mtime: stat.mtime ? new Date(stat.mtime).getTime() : 0,
+                ctime: stat.mtime ? new Date(stat.mtime).getTime() : 0,
                 permissions: '',
                 isHidden: entry.name.startsWith('.')
               });

@@ -450,29 +450,29 @@ class CapacitorAdapter implements UnifiedPlatformAPI {
 }
 
 /**
- * Tauri 平台适配器
+ * Tauri 平台适配器 (Tauri v2)
  */
 class TauriAdapter implements UnifiedPlatformAPI {
   filesystem = {
     async writeFile(path: string, data: string): Promise<void> {
-      const { writeTextFile } = await import('@tauri-apps/api/fs');
-      await writeTextFile(path, data);
+      const fs = await import('@tauri-apps/plugin-fs');
+      await fs.writeTextFile(path, data);
     },
     
     async readFile(path: string): Promise<string> {
-      const { readTextFile } = await import('@tauri-apps/api/fs');
-      return await readTextFile(path);
+      const fs = await import('@tauri-apps/plugin-fs');
+      return await fs.readTextFile(path);
     },
     
     async deleteFile(path: string): Promise<void> {
-      const { removeFile } = await import('@tauri-apps/api/fs');
-      await removeFile(path);
+      const fs = await import('@tauri-apps/plugin-fs');
+      await fs.remove(path);
     },
     
     async exists(path: string): Promise<boolean> {
       try {
-        const { exists } = await import('@tauri-apps/api/fs');
-        return await exists(path);
+        const fs = await import('@tauri-apps/plugin-fs');
+        return await fs.exists(path);
       } catch {
         return false;
       }
@@ -481,52 +481,76 @@ class TauriAdapter implements UnifiedPlatformAPI {
 
   notifications = {
     async show(title: string, body: string): Promise<void> {
-      const { sendNotification } = await import('@tauri-apps/api/notification');
-      await sendNotification({ title, body });
+      // Tauri v2 通知需要 tauri-plugin-notification
+      // 暂时使用 Web Notification API 作为降级
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body });
+      }
     },
     
     async requestPermission(): Promise<boolean> {
-      const { isPermissionGranted, requestPermission } = await import('@tauri-apps/api/notification');
-      
-      let permissionGranted = await isPermissionGranted();
-      if (!permissionGranted) {
-        const permission = await requestPermission();
-        permissionGranted = permission === 'granted';
+      // 使用 Web Notification API
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
       }
-      
-      return permissionGranted;
+      return false;
     },
   };
 
   clipboard = {
     async writeText(text: string): Promise<void> {
-      const { writeText } = await import('@tauri-apps/api/clipboard');
-      await writeText(text);
+      // 使用 Web Clipboard API (Tauri v2 支持)
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      }
     },
     
     async readText(): Promise<string> {
-      const { readText } = await import('@tauri-apps/api/clipboard');
-      return await readText() || '';
+      // 使用 Web Clipboard API (Tauri v2 支持)
+      if (navigator.clipboard) {
+        return await navigator.clipboard.readText();
+      }
+      return '';
     },
   };
 
   device = {
     async getInfo(): Promise<DeviceInfo> {
-      const { platform, arch, version } = await import('@tauri-apps/api/os');
-
-      return {
-        platform: await platform(),
-        model: 'Desktop',
-        operatingSystem: await platform(),
-        architecture: await arch(),
-        osVersion: await version(),
-        manufacturer: 'Unknown',
-        isVirtual: false,
-      };
+      // Tauri v2 使用 @tauri-apps/api
+      try {
+        const { platform, arch, version } = await import('@tauri-apps/plugin-os');
+        return {
+          platform: await platform(),
+          model: 'Desktop',
+          operatingSystem: await platform(),
+          architecture: await arch(),
+          osVersion: await version(),
+          manufacturer: 'Unknown',
+          isVirtual: false,
+        };
+      } catch {
+        // 降级到基本信息
+        return {
+          platform: 'desktop',
+          model: 'Desktop',
+          operatingSystem: navigator.platform,
+          osVersion: 'Unknown',
+          manufacturer: 'Unknown',
+          isVirtual: false,
+        };
+      }
     },
     
     async getBatteryInfo(): Promise<BatteryInfo | null> {
-      // Tauri 目前不支持电池信息
+      // Tauri 目前不支持电池信息，使用 Web API
+      if ('getBattery' in navigator) {
+        const battery = await (navigator as any).getBattery();
+        return {
+          batteryLevel: battery.level,
+          isCharging: battery.charging,
+        };
+      }
       return null;
     },
   };
