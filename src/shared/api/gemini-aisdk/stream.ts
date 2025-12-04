@@ -211,6 +211,10 @@ export async function streamCompletion(
     const toolCalls: any[] = [];
     let groundingMetadata: any = null;
     let sources: any[] = [];
+    
+    // 精确计算思考时间：当收到第一个 text-delta 时停止计时
+    let reasoningEndTime: number | null = null;
+    let isReasoningPhase = true;
 
     // 处理流式响应
     for await (const part of result.fullStream) {
@@ -220,6 +224,17 @@ export async function streamCompletion(
           const textContent = (part as any).text || '';
           // Gemini 启用 thinkingConfig 后，text-delta 只包含普通文本（不含思考标签）
           if (textContent) {
+            // 收到第一个 text-delta 时，标记思考阶段结束
+            if (isReasoningPhase && fullReasoning) {
+              reasoningEndTime = Date.now();
+              isReasoningPhase = false;
+              // 发送思考完成事件（带精确时间）
+              onChunk?.({
+                type: ChunkType.THINKING_COMPLETE,
+                text: fullReasoning,
+                thinking_millsec: reasoningEndTime - startTime
+              });
+            }
             fullContent += textContent;
             onChunk?.({ type: ChunkType.TEXT_DELTA, text: textContent });
           }
@@ -276,6 +291,11 @@ export async function streamCompletion(
     // 检测是否有工具调用（需要继续迭代）
     const hasToolCalls = toolCalls.length > 0 || hasToolUseTags(fullContent);
     
+    // 计算最终的思考时间
+    const finalReasoningTime = fullReasoning 
+      ? (reasoningEndTime ? reasoningEndTime - startTime : Date.now() - startTime)
+      : undefined;
+    
     // 发送完成事件（如果有工具调用则跳过，由 provider 控制最终发送）
     // 这样可以避免多轮工具调用时重复创建块
     if (!hasToolCalls) {
@@ -283,11 +303,12 @@ export async function streamCompletion(
         onChunk?.({ type: ChunkType.TEXT_COMPLETE, text: fullContent });
       }
       
-      if (fullReasoning) {
+      // 如果思考阶段还没结束（没有收到 text-delta），在这里发送完成事件
+      if (fullReasoning && isReasoningPhase) {
         onChunk?.({
           type: ChunkType.THINKING_COMPLETE,
           text: fullReasoning,
-          thinking_millsec: Date.now() - startTime
+          thinking_millsec: finalReasoningTime || 0
         });
       }
     }
@@ -316,7 +337,7 @@ export async function streamCompletion(
     return {
       content: fullContent,
       reasoning: fullReasoning || undefined,
-      reasoningTime: fullReasoning ? (endTime - startTime) : undefined,
+      reasoningTime: finalReasoningTime,
       hasToolCalls,
       nativeToolCalls: toolCalls.length > 0 ? toolCalls : undefined,
       sources: sources.length > 0 ? sources : undefined,
@@ -435,7 +456,8 @@ export async function nonStreamCompletion(
     });
 
     const endTime = Date.now();
-    console.log(`[Gemini AI SDK NonStream] 完成，耗时: ${endTime - startTime}ms`);
+    const totalTime = endTime - startTime;
+    console.log(`[Gemini AI SDK NonStream] 完成，耗时: ${totalTime}ms`);
 
     // 提取推理内容和 grounding metadata
     // AI SDK v5: result.reasoningText 是字符串，result.reasoning 是数组
@@ -453,10 +475,26 @@ export async function nonStreamCompletion(
       sources = parsed.sources || [];
     }
 
+    // 估算思考时间：基于 token 比例计算
+    // 如果有 usageMetadata，可以通过 thoughtsTokenCount 和 totalTokenCount 估算
+    let reasoningTime: number | undefined;
+    if (reasoning) {
+      const usageMetadata = providerMetadata?.google?.usageMetadata;
+      if (usageMetadata?.thoughtsTokenCount && usageMetadata?.totalTokenCount) {
+        // 按 token 比例估算思考时间
+        const thoughtsRatio = usageMetadata.thoughtsTokenCount / usageMetadata.totalTokenCount;
+        reasoningTime = Math.round(totalTime * thoughtsRatio);
+        console.log(`[Gemini AI SDK NonStream] 思考时间估算: ${reasoningTime}ms (tokens: ${usageMetadata.thoughtsTokenCount}/${usageMetadata.totalTokenCount})`);
+      } else {
+        // 回退：使用总时间
+        reasoningTime = totalTime;
+      }
+    }
+
     return {
       content: result.text,
       reasoning,
-      reasoningTime: reasoning ? endTime - startTime : undefined,
+      reasoningTime,
       hasToolCalls: (result.toolCalls?.length ?? 0) > 0,
       nativeToolCalls: result.toolCalls as any[],
       sources: sources.length > 0 ? sources : undefined,
