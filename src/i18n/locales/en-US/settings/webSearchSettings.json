@@ -98,12 +98,6 @@
     },
     "searchOptions": {
       "title": "Search Options",
-      "searchMode": {
-        "label": "Search Mode",
-        "auto": "Auto Search (AI automatically determines when to search)",
-        "manual": "Always On (Keep search function enabled)",
-        "once": "Once Only (Auto-close after one search)"
-      },
       "maxResults": {
         "label": "Maximum Results: {{count}}",
         "description": "Adjust the maximum number of search results returned"
@@ -119,6 +113,11 @@
       },
       "searchWithTime": {
         "label": "Add current date to search query"
+      },
+      "aiIntentAnalysis": {
+        "label": "AI Intent Analysis",
+        "description": "Configure AI intent analysis model for more accurate search keyword extraction",
+        "configure": "Configure"
       }
     },
     "tavily": {

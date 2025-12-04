@@ -120,6 +120,10 @@ export function createWebSearchToolDefinition(
 /**
  * 执行网络搜索
  * 当 AI 决定调用 builtin_web_search 工具时，这个函数会被调用
+ * 
+ * 🚀 复刻 Cherry Studio 的并行搜索功能：
+ * - 支持多个搜索关键词并行执行
+ * - 合并所有搜索结果
  */
 export async function executeWebSearch(
   input: WebSearchToolInput,
@@ -134,16 +138,27 @@ export async function executeWebSearch(
       extractedKeywords
     });
 
-    // 确定最终的搜索查询
-    let finalQuery = input.query || input.additionalContext;
-    
-    // 如果没有提供查询，使用预提取的关键词
-    if (!finalQuery && extractedKeywords?.question?.length) {
-      finalQuery = extractedKeywords.question[0];
+    // 获取搜索提供商
+    const provider = EnhancedWebSearchService.getWebSearchProvider(webSearchProviderId);
+    if (!provider) {
+      throw new Error(`未找到搜索提供商: ${webSearchProviderId}`);
     }
 
-    // 如果仍然没有查询，返回空结果
-    if (!finalQuery || finalQuery === 'not_needed') {
+    // 🚀 确定最终的搜索查询列表
+    let searchQueries: string[] = [];
+    
+    // 优先使用 AI 提供的额外上下文
+    if (input.additionalContext?.trim()) {
+      searchQueries = [input.additionalContext.trim()];
+    } else if (input.query?.trim()) {
+      searchQueries = [input.query.trim()];
+    } else if (extractedKeywords?.question?.length) {
+      // 使用预提取的多个关键词
+      searchQueries = extractedKeywords.question.filter(q => q && q !== 'not_needed');
+    }
+
+    // 如果没有查询，返回空结果
+    if (searchQueries.length === 0) {
       console.log('[WebSearchTool] 无需搜索');
       return {
         query: '',
@@ -152,23 +167,44 @@ export async function executeWebSearch(
       };
     }
 
-    // 获取搜索提供商
-    const provider = EnhancedWebSearchService.getWebSearchProvider(webSearchProviderId);
-    if (!provider) {
-      throw new Error(`未找到搜索提供商: ${webSearchProviderId}`);
+    // 🚀 并行执行多个搜索查询（复刻 Cherry Studio 的 processWebsearch）
+    console.log('[WebSearchTool] 并行执行搜索，查询数量:', searchQueries.length);
+    
+    const searchPromises = searchQueries.map(query => 
+      EnhancedWebSearchService.search(provider, query)
+        .then(response => ({ query, results: response.results, success: true }))
+        .catch(error => {
+          console.warn(`[WebSearchTool] 搜索失败 "${query}":`, error);
+          return { query, results: [], success: false };
+        })
+    );
+
+    const searchResults = await Promise.all(searchPromises);
+
+    // 🚀 合并所有搜索结果并去重
+    const allResults: WebSearchResult[] = [];
+    const seenUrls = new Set<string>();
+    
+    for (const result of searchResults) {
+      for (const item of result.results) {
+        if (!seenUrls.has(item.url)) {
+          seenUrls.add(item.url);
+          allResults.push(item);
+        }
+      }
     }
 
-    // 执行搜索
-    const response = await EnhancedWebSearchService.search(provider, finalQuery);
-
+    const combinedQuery = searchQueries.join(' | ');
+    
     console.log('[WebSearchTool] 搜索完成:', {
-      query: finalQuery,
-      resultCount: response.results.length
+      queries: searchQueries,
+      totalResults: allResults.length,
+      successfulSearches: searchResults.filter(r => r.success).length
     });
 
     return {
-      query: finalQuery,
-      results: response.results,
+      query: combinedQuery,
+      results: allResults,
       success: true
     };
   } catch (error: any) {

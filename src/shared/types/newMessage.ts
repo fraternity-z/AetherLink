@@ -18,7 +18,6 @@ export const MessageBlockType = {
   TRANSLATION: 'translation',
   CHART: 'chart',
   MATH: 'math',
-  SEARCH_RESULTS: 'search_results',
   KNOWLEDGE_REFERENCE: 'knowledge_reference',
   CONTEXT_SUMMARY: 'context_summary'  // 上下文压缩摘要块
 } as const;
@@ -197,14 +196,6 @@ export interface MathMessageBlock extends BaseMessageBlock {
   displayMode: boolean;
 }
 
-// 搜索结果块
-export interface SearchResultsMessageBlock extends BaseMessageBlock {
-  type: typeof MessageBlockType.SEARCH_RESULTS;
-  content: string;
-  searchResults: import('../types').WebSearchResult[];
-  query: string;
-}
-
 // 知识库引用块
 export interface KnowledgeReferenceMessageBlock extends BaseMessageBlock {
   type: typeof MessageBlockType.KNOWLEDGE_REFERENCE;
@@ -259,7 +250,6 @@ export type MessageBlock =
   | TranslationMessageBlock
   | ChartMessageBlock
   | MathMessageBlock
-  | SearchResultsMessageBlock
   | KnowledgeReferenceMessageBlock
   | ContextSummaryMessageBlock;
 

@@ -76,6 +76,78 @@ export async function collectToolResults(messageId: string): Promise<ToolCallRes
 }
 
 /**
+ * 从工具响应中提取搜索结果
+ */
+function extractWebSearchResults(content: any): any[] | null {
+  if (!content) return null;
+  
+  // 1. 直接是搜索结果格式
+  if (content.results && Array.isArray(content.results)) {
+    return content.results;
+  }
+  
+  // 2. MCP 格式，包含 webSearchResult
+  if (content.webSearchResult?.results) {
+    return content.webSearchResult.results;
+  }
+  
+  // 3. MCP 格式，从 content[0].text 中提取（格式化后的文本）
+  if (content.content && Array.isArray(content.content)) {
+    const textContent = content.content.find((c: any) => c.type === 'text');
+    if (textContent?.text) {
+      // 直接返回格式化的文本给 AI
+      return null; // 让下面的逻辑处理
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * 格式化工具结果内容为 AI 可理解的文本
+ */
+function formatToolResultForAI(toolName: string, content: any, isError: boolean, errorMessage?: string): string {
+  if (isError) {
+    return `Error: ${errorMessage || 'Unknown error'}`;
+  }
+
+  // 🚀 特殊处理网络搜索工具结果
+  if (toolName === 'builtin_web_search' || toolName.includes('web_search')) {
+    const results = extractWebSearchResults(content);
+    
+    if (results && results.length > 0) {
+      const citationData = results.slice(0, 10).map((r: any, i: number) => 
+        `[${i + 1}] ${r.title || 'No title'}: ${(r.snippet || r.content || '').slice(0, 150)}`
+      );
+      
+      return `搜索完成，找到 ${results.length} 个结果：
+${citationData.join('\n')}
+
+请基于以上搜索结果回答用户问题，使用 [1]、[2] 等格式引用来源。`;
+    }
+    
+    // 如果有格式化的文本内容，直接使用
+    if (content?.content?.[0]?.text) {
+      return content.content[0].text;
+    }
+    
+    return '没有找到相关的搜索结果。';
+  }
+
+  // 其他工具结果
+  if (typeof content === 'string') {
+    return content;
+  }
+  
+  // MCP 格式的其他工具
+  if (content?.content?.[0]?.text) {
+    return content.content[0].text;
+  }
+  
+  return JSON.stringify(content);
+}
+
+/**
  * 构建包含工具结果的消息数组
  */
 export function buildMessagesWithToolResults(
@@ -86,6 +158,13 @@ export function buildMessagesWithToolResults(
   const toolResultMessages: any[] = [];
 
   for (const result of toolResults) {
+    const formattedContent = formatToolResultForAI(
+      result.toolName,
+      result.content,
+      result.isError,
+      result.error?.message
+    );
+
     if (isGeminiFormat) {
       // Gemini 格式的工具结果
       toolResultMessages.push({
@@ -94,9 +173,7 @@ export function buildMessagesWithToolResults(
           functionResponse: {
             name: result.toolName,
             response: {
-              content: result.isError
-                ? `Error: ${result.error?.message || 'Unknown error'}`
-                : (typeof result.content === 'string' ? result.content : JSON.stringify(result.content))
+              content: formattedContent
             }
           }
         }]
@@ -106,9 +183,7 @@ export function buildMessagesWithToolResults(
       toolResultMessages.push({
         role: 'tool',
         tool_call_id: `call_${result.toolName}_${uuid().slice(0, 8)}`,
-        content: result.isError
-          ? `Error: ${result.error?.message || 'Unknown error'}`
-          : (typeof result.content === 'string' ? result.content : JSON.stringify(result.content))
+        content: formattedContent
       });
     }
   }

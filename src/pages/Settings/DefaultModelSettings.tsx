@@ -524,7 +524,7 @@ const DefaultModelSettings: React.FC = () => {
           >
             <ListItem disablePadding>
               <ListItemButton
-                onClick={() => navigate('/settings/topic-naming-settings')}
+                onClick={() => navigate('/settings/assistant-model')}
                 sx={{
                   transition: 'all 0.2s',
                   '&:hover': {

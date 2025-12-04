@@ -1,18 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography, useTheme, Menu, MenuItem, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, ListItemIcon, ListItemSecondaryAction, Chip, Avatar, Button, alpha, useMediaQuery, IconButton } from '@mui/material';
-// Lucide Icons - 按需导入，高端简约设计
-import { Plus, Trash2, AlertTriangle, BookOpen, Video, Settings, Wrench, Database, Globe, ArrowLeft, X } from 'lucide-react';
+import { Box, Typography, useTheme, Menu, MenuItem, alpha } from '@mui/material';
+import { Plus, Trash2, AlertTriangle, BookOpen, Video, Wrench } from 'lucide-react';
 import { CustomIcon } from '../icons';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import WebSearchProviderSelector from '../WebSearchProviderSelector';
 import KnowledgeSelector from '../chat/KnowledgeSelector';
-import { useNavigate } from 'react-router-dom';
-import type { MCPServer, MCPServerType } from '../../shared/types';
-import { mcpService } from '../../shared/services/mcp';
-import CustomSwitch from '../CustomSwitch';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
+import MCPToolsDialog from './buttons/MCPToolsDialog';
 
 interface ToolsMenuProps {
   anchorEl: null | HTMLElement;
@@ -47,13 +43,9 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
   const [clearConfirmMode, setClearConfirmMode] = useState(false);
   const [showKnowledgeSelector, setShowKnowledgeSelector] = useState(false);
   const [showMCPDialog, setShowMCPDialog] = useState(false);
-  const [servers, setServers] = useState<MCPServer[]>([]);
-  const [activeServers, setActiveServers] = useState<MCPServer[]>([]);
 
   const theme = useTheme();
-  const isXs = useMediaQuery(theme.breakpoints.down('sm'));
   useInputStyles();
-  const navigate = useNavigate();
 
   // 使用统一的话题管理Hook
   const { handleCreateTopic } = useTopicManagement();
@@ -162,81 +154,13 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
     onClose();
   };
 
-  // MCP服务器相关函数
-  const loadServers = () => {
-    const allServers = mcpService.getServers();
-    const active = mcpService.getActiveServers();
-    setServers(allServers);
-    setActiveServers(active);
-  };
-
   // 处理MCP工具按钮点击
   const handleMCPToolsClick = () => {
     setShowMCPDialog(true);
-    loadServers();
   };
 
   const handleCloseMCPDialog = () => {
     setShowMCPDialog(false);
-  };
-
-  const handleToggleServer = async (serverId: string, isActive: boolean) => {
-    try {
-      await mcpService.toggleServer(serverId, isActive);
-      loadServers();
-
-      // 自动管理总开关逻辑
-      if (onToolsEnabledChange) {
-        const updatedActiveServers = mcpService.getActiveServers();
-
-        if (isActive && !toolsEnabled) {
-          // 开启任何服务器时，如果总开关是关闭的，自动开启
-          console.log('[MCP] 开启服务器，自动启用MCP工具总开关');
-          onToolsEnabledChange(true);
-        } else if (!isActive && updatedActiveServers.length === 0 && toolsEnabled) {
-          // 关闭所有服务器时，自动关闭总开关
-          console.log('[MCP] 所有服务器已关闭，自动禁用MCP工具总开关');
-          onToolsEnabledChange(false);
-        }
-      }
-    } catch (error) {
-      console.error('切换服务器状态失败:', error);
-    }
-  };
-
-  const handleNavigateToSettings = () => {
-    setShowMCPDialog(false);
-    navigate('/settings/mcp-server');
-  };
-
-  // 使用共享的MCP状态管理逻辑
-  const handleMCPToolsEnabledChange = (enabled: boolean) => {
-    if (onToolsEnabledChange) {
-      onToolsEnabledChange(enabled);
-    }
-    loadServers();
-  };
-
-  const getServerTypeIcon = (type: MCPServerType) => {
-    switch (type) {
-      case 'httpStream':
-        return <Globe size={16} />;
-      case 'inMemory':
-        return <Database size={16} />;
-      default:
-        return <Settings size={16} />;
-    }
-  };
-
-  const getServerTypeColor = (type: MCPServerType) => {
-    switch (type) {
-      case 'httpStream':
-        return theme.palette.secondary.main;
-      case 'inMemory':
-        return theme.palette.warning.main;
-      default:
-        return theme.palette.text.disabled;
-    }
   };
 
   // 定义所有可用的按钮配置
@@ -486,191 +410,13 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
         onSelect={handleKnowledgeSelect}
       />
 
-      {/* MCP工具对话框 */}
-      <Dialog
+      {/* MCP工具对话框 - 使用共享组件 */}
+      <MCPToolsDialog
         open={showMCPDialog}
         onClose={handleCloseMCPDialog}
-        maxWidth="sm"
-        fullWidth
-        fullScreen={isXs}
-        PaperProps={{
-          sx: {
-            borderRadius: { xs: 0, sm: 2 },
-            maxHeight: { xs: '100vh', sm: '80vh' },
-            margin: { xs: 0, sm: 'auto' }
-          }
-        }}
-      >
-        <DialogTitle sx={{ pb: 1, px: { xs: 2, sm: 3 }, pt: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
-              <IconButton onClick={handleCloseMCPDialog} sx={{ mr: 1, p: 0.5, display: { xs: 'inline-flex', sm: 'none' } }} >
-                <ArrowLeft size={22} />
-              </IconButton>
-              <Box sx={{ 
-                '& svg': { 
-                  width: { xs: '18px', sm: '20px' }, 
-                  height: { xs: '18px', sm: '20px' },
-                  color: theme.palette.success.main,
-                  display: { xs: 'none', sm: 'inline-flex'}
-                } 
-              }}>
-              </Box>
-              <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                MCP 工具服务器
-              </Typography>
-              {activeServers.length > 0 && (
-                <Chip
-                  label={`${activeServers.length} 个运行中`}
-                  size="small"
-                  color="success"
-                  variant="outlined"
-                  sx={{ ml: { xs: 0.5, sm: 1 } }}
-                />
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              {onToolsEnabledChange && (
-                <CustomSwitch
-                  checked={toolsEnabled}
-                  onChange={(e) => handleMCPToolsEnabledChange(e.target.checked)}
-                />
-              )}
-               <IconButton onClick={handleCloseMCPDialog} sx={{ ml: 1, display: { xs: 'none', sm: 'inline-flex' } }}>
-                <X size={22} />
-              </IconButton>
-            </Box>
-          </Box>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 0 }}>
-          {servers.length === 0 ? (
-            <Box sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
-              <Box sx={{ 
-                '& svg': { 
-                  width: { xs: '40px', sm: '48px' }, 
-                  height: { xs: '40px', sm: '48px' } 
-                },
-                mb: { xs: 1.5, sm: 2 }
-              }}>
-                <Wrench size={48} color={theme.palette.text.disabled} />
-              </Box>
-              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
-                还没有配置 MCP 服务器
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: { xs: 2, sm: 3 }, fontSize: { xs: '13px', sm: '14px' } }}>
-                MCP 服务器可以为 AI 提供额外的工具和功能
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={
-                  <Box sx={{ 
-                    '& svg': { 
-                      width: { xs: '14px', sm: '16px' }, 
-                      height: { xs: '14px', sm: '16px' } 
-                    } 
-                  }}>
-                    <Plus size={16} />
-                  </Box>
-                }
-                onClick={handleNavigateToSettings}
-                sx={{
-                  bgcolor: theme.palette.success.main,
-                  '&:hover': { bgcolor: theme.palette.success.dark },
-                  fontSize: { xs: '14px', sm: '16px' }
-                }}
-              >
-                添加服务器
-              </Button>
-            </Box>
-          ) : (
-            <>
-              <List sx={{ px: { xs: 0, sm: 1 } }}>
-                {servers.map((server) => (
-                  <ListItem
-                    key={server.id}
-                    sx={{
-                      padding: { xs: '12px 16px', sm: '12px' },
-                      borderRadius: 2,
-                      mb: 1.5,
-                      backgroundColor: alpha(theme.palette.text.primary, 0.05),
-                      transition: 'background-color 0.2s',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.text.primary, 0.08),
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ minWidth: 40, mt: 0.5 }}>
-                      <Avatar
-                        sx={{
-                          bgcolor: alpha(getServerTypeColor(server.type), 0.1),
-                          color: getServerTypeColor(server.type),
-                          width: { xs: 28, sm: 32 },
-                          height: { xs: 28, sm: 32 },
-                          '& svg': {
-                            width: { xs: '14px', sm: '16px' },
-                            height: { xs: '14px', sm: '16px' }
-                          }
-                        }}
-                      >
-                        {getServerTypeIcon(server.type)}
-                      </Avatar>
-                    </ListItemIcon>
-                    <Box sx={{ flex: 1, pr: 7 }}> 
-                      <ListItemText
-                        primary={server.name}
-                        secondary={server.description}
-                        primaryTypographyProps={{
-                          fontWeight: 600,
-                          fontSize: '1rem',
-                          color: theme.palette.text.primary,
-                        }}
-                        secondaryTypographyProps={{
-                          fontSize: '0.875rem',
-                          color: theme.palette.text.secondary,
-                          whiteSpace: 'normal',
-                          sx: { wordBreak: 'break-word' },
-                        }}
-                      />
-                    </Box>
-                    <ListItemSecondaryAction>
-                      <CustomSwitch
-                        checked={server.isActive}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                          void handleToggleServer(server.id, event.target.checked);
-                        }}
-                      />
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
-              </List>
-
-              <Box sx={{ p: { xs: 1.5, sm: 2 }, borderTop: '1px solid', borderColor: 'divider' }}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={
-                    <Box sx={{ 
-                      '& svg': { 
-                        width: { xs: '14px', sm: '16px' }, 
-                        height: { xs: '14px', sm: '16px' } 
-                      } 
-                    }}>
-                      <Settings size={16} />
-                    </Box>
-                  }
-                  onClick={handleNavigateToSettings}
-                  sx={{ fontSize: { xs: '14px', sm: '16px' } }}
-                >
-                  管理服务器
-                </Button>
-              </Box>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+        toolsEnabled={toolsEnabled}
+        onToolsEnabledChange={onToolsEnabledChange}
+      />
     </>
   );
 };

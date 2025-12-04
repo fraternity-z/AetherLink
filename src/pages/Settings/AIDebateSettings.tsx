@@ -3,11 +3,9 @@ import {
   Box,
   Paper,
   Typography,
-  FormControlLabel,
   TextField,
   Button,
   IconButton,
-
   Chip,
   DialogTitle,
   DialogContent,
@@ -834,27 +832,21 @@ const AIDebateSettings: React.FC = () => {
           <Divider />
 
           <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            <FormControlLabel
-            control={
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body1">{t('aiDebate.basicSettings.enable')}</Typography>
               <CustomSwitch
                 checked={config.enabled}
                 onChange={(e) => saveConfig({ ...config, enabled: e.target.checked })}
               />
-            }
-            label={t('aiDebate.basicSettings.enable')}
-            sx={{ mb: 2 }}
-          />
+            </Box>
 
-          <FormControlLabel
-            control={
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="body1">{t('aiDebate.basicSettings.showButton')}</Typography>
               <CustomSwitch
                 checked={showAIDebateButton}
                 onChange={(e) => dispatch(setShowAIDebateButton(e.target.checked))}
               />
-            }
-            label={t('aiDebate.basicSettings.showButton')}
-            sx={{ mb: 2 }}
-          />
+            </Box>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
             <TextField
@@ -906,26 +898,21 @@ const AIDebateSettings: React.FC = () => {
           </Box>
 
           <Box sx={{ mt: 2 }}>
-            <FormControlLabel
-              control={
-                <CustomSwitch
-                  checked={config.moderatorEnabled}
-                  onChange={(e) => saveConfig({ ...config, moderatorEnabled: e.target.checked })}
-                />
-              }
-              label={t('aiDebate.basicSettings.enableModerator')}
-            />
-            <FormControlLabel
-              control={
-                <CustomSwitch
-                  checked={config.summaryEnabled}
-                  onChange={(e) => saveConfig({ ...config, summaryEnabled: e.target.checked })}
-                />
-              }
-              label={t('aiDebate.basicSettings.enableSummary')}
-              sx={{ ml: 2 }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+              <Typography variant="body1">{t('aiDebate.basicSettings.enableModerator')}</Typography>
+              <CustomSwitch
+                checked={config.moderatorEnabled}
+                onChange={(e) => saveConfig({ ...config, moderatorEnabled: e.target.checked })}
+              />
             </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body1">{t('aiDebate.basicSettings.enableSummary')}</Typography>
+              <CustomSwitch
+                checked={config.summaryEnabled}
+                onChange={(e) => saveConfig({ ...config, summaryEnabled: e.target.checked })}
+              />
+            </Box>
+          </Box>
           </Box>
         </Paper>
 

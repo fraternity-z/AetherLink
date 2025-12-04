@@ -302,7 +302,9 @@ export class ToolResponseHandler {
             // 🎯 特殊处理 attempt_completion 工具
             const toolName = toolResponse.tool?.name || '';
             const isCompletion = isAttemptCompletionTool(toolName);
-            let displayContent = toolResponse.response;
+            
+            // 保存完整的工具响应（UI 组件会自行解析需要的数据）
+            let displayContent: any = toolResponse.response;
             
             if (isCompletion && finalStatus === MessageBlockStatus.SUCCESS) {
               // 解析 attempt_completion 的结果，格式化显示

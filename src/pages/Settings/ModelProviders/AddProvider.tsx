@@ -36,7 +36,6 @@ const providerTypes = [
   { value: 'siliconflow', label: '硅基流动 (SiliconFlow)' },
   { value: 'volcengine', label: '火山引擎' },
   { value: 'minimax', label: 'MiniMax' },
-  { value: 'custom', label: '其他' },
 ];
 
 const AddProviderPage: React.FC = () => {
@@ -55,26 +54,15 @@ const AddProviderPage: React.FC = () => {
     setProviderType(type);
 
     // 自动设置头像字母
-    if (type === 'custom') {
-      if (providerName) {
-        setAvatarLetter(providerName.charAt(0).toUpperCase());
-      }
-    } else {
-      const selectedProvider = providerTypes.find(p => p.value === type);
-      if (selectedProvider) {
-        setAvatarLetter(selectedProvider.label.charAt(0).toUpperCase());
-      }
+    const selectedProvider = providerTypes.find(p => p.value === type);
+    if (selectedProvider) {
+      setAvatarLetter(selectedProvider.label.charAt(0).toUpperCase());
     }
   };
 
   const handleProviderNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const name = event.target.value;
     setProviderName(name);
-
-    // 如果是自定义类型，自动更新头像字母
-    if (providerType === 'custom' && name) {
-      setAvatarLetter(name.charAt(0).toUpperCase());
-    }
   };
 
   // 获取供应商类型对应的默认baseURL

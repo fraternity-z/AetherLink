@@ -578,3 +578,55 @@ mjx-container {
     font-size: 12px;
   }
 }
+
+/* ==================== 引用链接样式 ==================== */
+
+/* 引用角标样式 */
+.markdown sup[data-citation] {
+  cursor: pointer;
+  color: #1976d2;
+  font-size: 0.7em;
+  font-weight: 600;
+  vertical-align: super;
+  padding: 1px 4px;
+  margin: 0 1px;
+  background-color: rgba(25, 118, 210, 0.1);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: inline-block;
+  line-height: 1.2;
+  min-width: 1em;
+  text-align: center;
+}
+
+.markdown sup[data-citation]:hover {
+  color: #1565c0;
+  background-color: rgba(25, 118, 210, 0.2);
+}
+
+.markdown sup[data-citation]:active {
+  transform: scale(0.95);
+}
+
+/* 深色模式引用样式 */
+@media (prefers-color-scheme: dark) {
+  .markdown sup[data-citation] {
+    color: #90caf9;
+    background-color: rgba(144, 202, 249, 0.15);
+  }
+
+  .markdown sup[data-citation]:hover {
+    color: #64b5f6;
+    background-color: rgba(144, 202, 249, 0.25);
+  }
+}
+
+[data-theme="dark"] .markdown sup[data-citation] {
+  color: #90caf9;
+  background-color: rgba(144, 202, 249, 0.15);
+}
+
+[data-theme="dark"] .markdown sup[data-citation]:hover {
+  color: #64b5f6;
+  background-color: rgba(144, 202, 249, 0.25);
+}

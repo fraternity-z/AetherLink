@@ -34,7 +34,7 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/appearance': '/settings',
     '/settings/behavior': '/settings',
     '/settings/default-model': '/settings',
-    '/settings/topic-naming-settings': '/settings',
+    '/settings/assistant-model': '/settings',
     '/settings/agent-prompts': '/settings',
     '/settings/ai-debate': '/settings',
     '/settings/model-combo': '/settings',

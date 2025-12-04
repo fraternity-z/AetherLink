@@ -11,9 +11,7 @@ import {
   IconButton,
   AppBar,
   Toolbar,
-  Divider,
-  FormControlLabel,
-  FormGroup
+  Divider
 } from '@mui/material';
 import { ArrowLeft, Info, Brain, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -217,17 +215,15 @@ const ThinkingProcessSettings: React.FC = () => {
               </Select>
             </FormControl>
 
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <CustomSwitch
-                    checked={thoughtAutoCollapse}
-                    onChange={handleThoughtAutoCollapseChange}
-                  />
-                }
-                label={t('settings.appearance.thinkingProcess.display.autoCollapse')}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+              <Typography variant="body1">
+                {t('settings.appearance.thinkingProcess.display.autoCollapse')}
+              </Typography>
+              <CustomSwitch
+                checked={thoughtAutoCollapse}
+                onChange={handleThoughtAutoCollapseChange}
               />
-            </FormGroup>
+            </Box>
 
             <Typography
               variant="body2"

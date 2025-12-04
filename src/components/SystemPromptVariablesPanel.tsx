@@ -6,7 +6,6 @@ import {
   TextField,
   Divider,
   Chip,
-  FormControlLabel,
   IconButton,
   Alert,
   alpha
@@ -165,28 +164,24 @@ const SystemPromptVariablesPanel: React.FC = () => {
 
           {/* 时间变量配置 */}
           <Box sx={{ mb: 3 }}>
-            <FormControlLabel
-              control={
-                <CustomSwitch
-                  checked={variableConfig.enableTimeVariable ?? false}
-                  onChange={(e) => handleTimeVariableToggle(e.target.checked)}
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    <AccessTimeIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                    {t('settings.systemPromptVariables.timeVariable.label')}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    {t('settings.systemPromptVariables.timeVariable.description', { time: getCurrentTimeString() })}
-                  </Typography>
-                </Box>
-              }
-            />
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <AccessTimeIcon size={16} />
+                  {t('settings.systemPromptVariables.timeVariable.label')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mt: 0.5 }}>
+                  {t('settings.systemPromptVariables.timeVariable.description', { time: getCurrentTimeString() })}
+                </Typography>
+              </Box>
+              <CustomSwitch
+                checked={variableConfig.enableTimeVariable ?? false}
+                onChange={(e) => handleTimeVariableToggle(e.target.checked)}
+              />
+            </Box>
 
             {variableConfig.enableTimeVariable && (
-              <Box sx={{ mt: 1, ml: 4, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
+              <Box sx={{ mt: 1.5, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                 <Typography variant="caption" color="text.secondary">
                   {t('settings.systemPromptVariables.timeVariable.hint')}
                 </Typography>
@@ -196,28 +191,24 @@ const SystemPromptVariablesPanel: React.FC = () => {
 
           {/* 位置变量配置 */}
           <Box sx={{ mb: 3 }}>
-            <FormControlLabel
-              control={
-                <CustomSwitch
-                  checked={variableConfig.enableLocationVariable ?? false}
-                  onChange={(e) => handleLocationVariableToggle(e.target.checked)}
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    <LocationOnIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                    {t('settings.systemPromptVariables.locationVariable.label')}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    {t('settings.systemPromptVariables.locationVariable.description', { location: getLocationString(variableConfig.customLocation) })}
-                  </Typography>
-                </Box>
-              }
-            />
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <LocationOnIcon size={16} />
+                  {t('settings.systemPromptVariables.locationVariable.label')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mt: 0.5 }}>
+                  {t('settings.systemPromptVariables.locationVariable.description', { location: getLocationString(variableConfig.customLocation) })}
+                </Typography>
+              </Box>
+              <CustomSwitch
+                checked={variableConfig.enableLocationVariable ?? false}
+                onChange={(e) => handleLocationVariableToggle(e.target.checked)}
+              />
+            </Box>
 
             {variableConfig.enableLocationVariable && (
-              <Box sx={{ mt: 1, ml: 4 }}>
+              <Box sx={{ mt: 1.5 }}>
                 <TextField
                   fullWidth
                   size="small"
@@ -239,28 +230,24 @@ const SystemPromptVariablesPanel: React.FC = () => {
 
           {/* 操作系统变量配置 */}
           <Box>
-            <FormControlLabel
-              control={
-                <CustomSwitch
-                  checked={variableConfig.enableOSVariable ?? false}
-                  onChange={(e) => handleOSVariableToggle(e.target.checked)}
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    <ComputerIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                    {t('settings.systemPromptVariables.osVariable.label')}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    {t('settings.systemPromptVariables.osVariable.description', { os: getOperatingSystemString() })}
-                  </Typography>
-                </Box>
-              }
-            />
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <ComputerIcon size={16} />
+                  {t('settings.systemPromptVariables.osVariable.label')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mt: 0.5 }}>
+                  {t('settings.systemPromptVariables.osVariable.description', { os: getOperatingSystemString() })}
+                </Typography>
+              </Box>
+              <CustomSwitch
+                checked={variableConfig.enableOSVariable ?? false}
+                onChange={(e) => handleOSVariableToggle(e.target.checked)}
+              />
+            </Box>
 
             {variableConfig.enableOSVariable && (
-              <Box sx={{ mt: 1, ml: 4, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
+              <Box sx={{ mt: 1.5, p: 1, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 1 }}>
                 <Typography variant="caption" color="text.secondary">
                   {t('settings.systemPromptVariables.osVariable.hint')}
                 </Typography>

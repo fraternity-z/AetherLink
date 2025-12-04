@@ -75,7 +75,6 @@ const loadFromStorage = async (): Promise<WebSearchSettings> => {
     maxResults: 5,
     showTimestamp: true,
     filterSafeSearch: true,
-    searchMode: 'manual',
     searchWithTime: false,
     excludeDomains: [],
     providers: getDefaultProviders(),
@@ -113,7 +112,6 @@ const initialState: WebSearchSettings = {
   maxResults: 5,
   showTimestamp: true,
   filterSafeSearch: true,
-  searchMode: 'manual',
   searchWithTime: false,
   excludeDomains: [],
   providers: getDefaultProviders(),
@@ -172,7 +170,6 @@ const saveToStorage = (state: WebSearchSettings) => {
     maxResults: state.maxResults,
     showTimestamp: state.showTimestamp,
     filterSafeSearch: state.filterSafeSearch,
-    searchMode: state.searchMode,
     searchWithTime: state.searchWithTime,
     excludeDomains: [...(state.excludeDomains || [])],
     providers: state.providers.map(p => ({ ...p })),
@@ -268,10 +265,6 @@ const webSearchSlice = createSlice({
     },
     toggleFilterSafeSearch: (state) => {
       state.filterSafeSearch = !state.filterSafeSearch;
-      saveToStorage(state);
-    },
-    setSearchMode: (state, action: PayloadAction<'auto' | 'manual' | 'once'>) => {
-      state.searchMode = action.payload;
       saveToStorage(state);
     },
 
@@ -428,7 +421,6 @@ export const {
   toggleIncludeInContext,
   toggleShowTimestamp,
   toggleFilterSafeSearch,
-  setSearchMode,
   addCustomProvider,
   updateCustomProvider,
   deleteCustomProvider,

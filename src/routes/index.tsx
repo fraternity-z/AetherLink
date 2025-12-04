@@ -17,7 +17,8 @@ const DefaultModelSettings = lazy(() => import('../pages/Settings/DefaultModelSe
 const KnowledgeBaseDetail = lazy(() => import('../pages/KnowledgeBase/KnowledgeBaseDetail'));
 const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings'));
 
-const TopicNamingSettings = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
+// 辅助模型设置（话题命名、AI意图分析等）
+const AssistantModelSettingsPage = lazy(() => import('../pages/Settings/DefaultModelSettings/index'));
 const ModelProviderSettings = lazy(() => import('../pages/Settings/ModelProviders'));
 const MultiKeyManagementPage = lazy(() => import('../pages/Settings/ModelProviders/MultiKeyManagement'));
 const AdvancedAPIConfigPage = lazy(() => import('../pages/Settings/ModelProviders/AdvancedAPIConfig'));
@@ -155,7 +156,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/appearance/top-toolbar" element={<TopToolbarDIYSettings />} />
         <Route path="/settings/behavior" element={<BehaviorSettings />} />
         <Route path="/settings/default-model" element={<DefaultModelSettings />} />
-        <Route path="/settings/topic-naming-settings" element={<TopicNamingSettings />} />
+        <Route path="/settings/assistant-model" element={<AssistantModelSettingsPage />} />
         <Route path="/settings/agent-prompts" element={<AgentPromptsSettings />} />
         <Route path="/settings/ai-debate" element={<AIDebateSettings />} />
         <Route path="/settings/quick-phrases" element={<QuickPhraseSettings />} />

@@ -98,12 +98,6 @@
     },
     "searchOptions": {
       "title": "搜索选项",
-      "searchMode": {
-        "label": "搜索模式",
-        "auto": "自动搜索 (AI 自动判断何时搜索)",
-        "manual": "永久开启 (保持搜索功能开启)",
-        "once": "只开启一次 (搜索完一次自动关闭)"
-      },
       "maxResults": {
         "label": "最大结果数量: {{count}}",
         "description": "调整搜索返回的最大结果数量"
@@ -119,6 +113,11 @@
       },
       "searchWithTime": {
         "label": "在搜索查询中添加当前日期"
+      },
+      "aiIntentAnalysis": {
+        "label": "AI 意图分析",
+        "description": "配置 AI 意图分析模型，提取更精准的搜索关键词",
+        "configure": "去配置"
       }
     },
     "tavily": {

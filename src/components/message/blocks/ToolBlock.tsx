@@ -9,6 +9,7 @@ import '../markdown.css';
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { ToolMessageBlock } from '../../../shared/types/newMessage';
 import { EventEmitter } from '../../../shared/services/EventEmitter';
+import { MessageWebSearchTool } from '../MessageWebSearchTool';
 
 interface Props {
   block: ToolMessageBlock;
@@ -28,11 +29,26 @@ const isCompletionTool = (block: ToolMessageBlock): boolean => {
 };
 
 /**
+ * 检查是否是网络搜索工具
+ */
+const isWebSearchTool = (block: ToolMessageBlock): boolean => {
+  const toolName = block.toolName || block.metadata?.rawMcpToolResponse?.tool?.name || '';
+  return toolName === 'builtin_web_search' || 
+         toolName === 'web_search' ||
+         toolName.includes('web_search');
+};
+
+/**
  * 工具调用块组件 - 简约版
  */
 const ToolBlock: React.FC<Props> = ({ block }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
+  
+  // 🚀 检查是否是网络搜索工具，使用专门的 UI 组件
+  if (isWebSearchTool(block)) {
+    return <MessageWebSearchTool block={block} />;
+  }
   
   // 检查是否是完成工具
   const isCompletion = isCompletionTool(block);

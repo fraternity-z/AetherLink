@@ -149,7 +149,6 @@ export interface WebSearchSettings {
   maxResults: number;         // 最大结果数量
   showTimestamp: boolean;     // 是否显示结果时间戳
   filterSafeSearch: boolean;  // 是否过滤不安全内容
-  searchMode: 'auto' | 'manual' | 'once'; // 自动搜索 | 永久手动 | 只开启一次(对话完关闭)
   searchWithTime: boolean;    // 是否在搜索查询中添加当前日期
   excludeDomains: string[];   // 要排除的域名列表
   contentLimit?: number;      // 内容限制
@@ -437,6 +436,18 @@ export interface MCPCallToolResponse {
     mimeType?: string;
   }>;
   isError?: boolean;
+  // 🚀 网络搜索原始结果（用于 UI 显示）
+  webSearchResult?: {
+    query: string;
+    results: Array<{
+      title: string;
+      url: string;
+      snippet?: string;
+      content?: string;
+    }>;
+    success: boolean;
+    error?: string;
+  };
 }
 
 export interface MCPToolResponse {

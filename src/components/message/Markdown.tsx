@@ -12,7 +12,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import type { PluggableList } from 'unified';
 import { Link } from '@mui/material';
-import { isEmpty } from 'lodash';
+import { isEmpty, omit } from 'lodash';
 import type { MainTextMessageBlock, TranslationMessageBlock, ThinkingMessageBlock } from '../../shared/types/newMessage';
 import { processLatexBrackets, removeSvgEmptyLines } from '../../utils/formats';
 import { getCodeBlockId, removeTrailingDoubleSpaces } from '../../utils/markdown';
@@ -20,6 +20,8 @@ import { getAppSettings } from '../../shared/utils/settingsUtils';
 import remarkDisableConstructs from '../../utils/remarkDisableConstructs';
 import MarkdownCodeBlock from './blocks/MarkdownCodeBlock';
 import AdvancedImagePreview from './blocks/AdvancedImagePreview';
+import CitationTooltip from './CitationTooltip';
+import { findCitationInChildren, parseCitationData } from '../../shared/utils/citation';
 
 const ALLOWED_ELEMENTS = /<(style|p|div|span|b|i|strong|em|ul|ol|li|table|tr|td|th|thead|tbody|h[1-6]|blockquote|pre|code|br|hr|svg|path|circle|rect|line|polyline|polygon|text|g|defs|title|desc|tspan|sub|sup)/i;
 const DISALLOWED_ELEMENTS = ['iframe'];
@@ -33,9 +35,11 @@ interface Props {
   messageRole?: 'user' | 'assistant' | 'system';
   // 新增：是否正在流式输出
   isStreaming?: boolean;
+  // 新增：内容后处理函数（用于引用转换等）
+  postProcess?: (content: string) => string;
 }
 
-const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageRole, isStreaming = false }) => {
+const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageRole, isStreaming = false, postProcess }) => {
   // 从用户设置获取数学引擎配置
   // 使用 useState 和 useEffect 来监听设置变化
   const [mathEngine, setMathEngine] = React.useState<string>('KaTeX');
@@ -108,9 +112,14 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
     processedContent = removeTrailingDoubleSpaces(processedContent);
     processedContent = processLatexBrackets(processedContent);
     processedContent = removeSvgEmptyLines(processedContent);
+    
+    // 应用自定义后处理（如引用转换）
+    if (postProcess) {
+      processedContent = postProcess(processedContent);
+    }
 
     return processedContent;
-  }, [block, content]);
+  }, [block, content, postProcess]);
 
   const rehypePlugins = useMemo(() => {
     const plugins: any[] = [];
@@ -135,7 +144,37 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
 
   const components = useMemo(() => {
     return {
-      a: (props: any) => <Link {...props} target="_blank" rel="noopener noreferrer" />,
+      // 自定义链接渲染：检测引用链接并包装 CitationTooltip
+      a: (props: any) => {
+        // 检查子元素中是否包含 <sup> 标签（引用格式）
+        const isCitation = React.Children.toArray(props.children).some((child: any) => {
+          if (typeof child === 'object' && child !== null && 'type' in child) {
+            return child.type === 'sup';
+          }
+          return false;
+        });
+        
+        // 查找引用数据
+        const citationDataStr = findCitationInChildren(props.children);
+        const citationData = citationDataStr ? parseCitationData(citationDataStr) : null;
+        
+        // 如果是引用链接且有引用数据，使用 CitationTooltip 包装
+        // 注意：移除 href 和默认点击行为，由 CitationTooltip 控制
+        if (isCitation && citationData) {
+          return (
+            <CitationTooltip citation={citationData}>
+              <span
+                style={{ cursor: 'pointer', textDecoration: 'none' }}
+              >
+                {props.children}
+              </span>
+            </CitationTooltip>
+          );
+        }
+        
+        // 普通链接
+        return <Link {...omit(props, ['node'])} target="_blank" rel="noopener noreferrer" />;
+      },
       code: (props: any) => (
         <MarkdownCodeBlock
           {...props}

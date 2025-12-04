@@ -154,6 +154,7 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
       
       console.log(`[WebSearch] 搜索完成，找到 ${searchResult.results?.length || 0} 个结果`);
       
+      // 🚀 返回结果时同时包含原始搜索结果和格式化文本
       return {
         isError: false,
         content: [
@@ -161,7 +162,9 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
             type: 'text',
             text: formattedResult
           }
-        ]
+        ],
+        // 保存原始搜索结果供 UI 显示
+        webSearchResult: searchResult
       };
     }
 

@@ -193,3 +193,26 @@ export function removeSpecialCharactersForFileName(fileName: string): string {
 
   return result.slice(0, 100) || 'Untitled'; // 限制长度并提供默认名称
 }
+
+/**
+ * HTML 实体编码
+ * 用于将字符串安全地嵌入 HTML 属性中
+ */
+export function encodeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * 清理 Markdown 内容
+ * 移除多余的换行和空格
+ */
+export function cleanMarkdownContent(content: string): string {
+  return content
+    .replace(/\n{3,}/g, '\n\n')  // 多个换行符替换为两个
+    .replace(/^\s+|\s+$/g, '');  // 移除首尾空白
+}

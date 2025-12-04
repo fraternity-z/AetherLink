@@ -243,6 +243,7 @@ export const Row: React.FC<RowProps> = ({ children, sx }) => {
         alignItems: 'center',
         padding: '14px 16px',
         minHeight: 'auto',
+        gap: 2, // 增加左右元素之间的间距
         borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         '&:last-child': {
           borderBottom: 'none',

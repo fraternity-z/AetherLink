@@ -1,14 +1,19 @@
 /**
  * 网络搜索工具配置模块
+ * 
+ * 复刻 Cherry Studio 的搜索编排流程：
+ * 1. 意图识别：使用 AI 分析用户消息，提取搜索关键词
+ * 2. 工具配置：根据意图分析结果配置搜索工具
+ * 3. 搜索执行：AI 调用工具时执行并行搜索
  */
 import { dexieStorage } from '../../../../services/storage/DexieStorageService';
 import {
-  analyzeSearchIntent,
-  analyzeSearchIntentWithAI,
-  isAIIntentAnalysisEnabled,
   createWebSearchToolDefinition,
-  shouldEnableWebSearchTool
+  shouldEnableWebSearchTool,
+  analyzeSearchIntentWithAI,
+  isAIIntentAnalysisEnabled
 } from '../../../../services/webSearch';
+import { analyzeSearchIntent } from '../../../../services/webSearch/SearchIntentAnalyzer';
 import type { ExtractedSearchKeywords } from '../../../../services/webSearch';
 import type { MCPTool } from '../../../../types';
 import type { Message } from '../../../../types/newMessage';
@@ -29,7 +34,12 @@ interface WebSearchContext {
 
 /**
  * 配置网络搜索工具
- * 根据助手配置和全局设置决定是否启用网络搜索
+ * 
+ * 流程（复刻 Cherry Studio）：
+ * 1. 检查是否启用网络搜索
+ * 2. 获取用户消息内容
+ * 3. 使用 AI 进行意图分析，提取搜索关键词
+ * 4. 根据意图分析结果配置搜索工具
  */
 export async function configureWebSearchTool(
   context: WebSearchContext
@@ -42,10 +52,7 @@ export async function configureWebSearchTool(
     webSearchProviderId: undefined
   };
 
-  // 获取网络搜索配置：
-  // 1. 优先从助手配置获取 webSearchProviderId
-  // 2. 其次从全局 webSearch 状态的 activeProviderId 获取（用户点击搜索按钮选择引擎后才会设置）
-  // 注意：不再从 webSearchState.provider 获取，因为那只是设置中的默认提供商
+  // 获取网络搜索配置
   const webSearchState = getState().webSearch;
   const webSearchProviderId = assistant?.webSearchProviderId || webSearchState?.activeProviderId;
 
@@ -54,17 +61,16 @@ export async function configureWebSearchTool(
   }
 
   result.webSearchProviderId = webSearchProviderId;
-  const isAutoSearchMode = webSearchState?.searchMode === 'auto';
-  console.log(`[WebSearch] 检测到网络搜索配置: ${webSearchProviderId}, 模式: ${isAutoSearchMode ? 'auto' : 'manual'}`);
 
   // 获取最后一条用户消息
   const topicMessages = await dexieStorage.getTopicMessages(topicId);
-  const lastUserMsg = topicMessages
+  const sortedUserMessages = topicMessages
     .filter((m: Message) => m.role === 'user')
     .sort((a: Message, b: Message) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )[0];
-
+    );
+  
+  const lastUserMsg = sortedUserMessages[0];
   if (!lastUserMsg) {
     return result;
   }
@@ -74,36 +80,61 @@ export async function configureWebSearchTool(
   const mainTextBlock = userBlocks.find((b: any) => b.type === MessageBlockType.MAIN_TEXT) as any;
   const userContent = mainTextBlock?.content || '';
 
-  if (isAutoSearchMode) {
-    // 自动模式：总是添加搜索工具，让 AI 自主决定是否搜索
-    result.extractedKeywords = {
+  if (!userContent.trim()) {
+    return result;
+  }
+
+  // 获取上一条助手消息（用于上下文）
+  const sortedAssistantMessages = topicMessages
+    .filter((m: Message) => m.role === 'assistant')
+    .sort((a: Message, b: Message) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  
+  let lastAssistantContent: string | undefined;
+  if (sortedAssistantMessages.length > 0) {
+    const assistantBlocks = await dexieStorage.getMessageBlocksByMessageId(sortedAssistantMessages[0].id);
+    const assistantMainBlock = assistantBlocks.find((b: any) => b.type === MessageBlockType.MAIN_TEXT) as any;
+    lastAssistantContent = assistantMainBlock?.content;
+  }
+
+  // 🚀 Step 1: 检查是否启用 AI 意图分析
+  const useAIAnalysis = isAIIntentAnalysisEnabled();
+
+  if (!useAIAnalysis) {
+    // 使用规则匹配（SearchIntentAnalyzer）
+    const ruleResult = analyzeSearchIntent(userContent, lastAssistantContent);
+    
+    if (!ruleResult.needsWebSearch) {
+      console.log('[WebSearch] 规则匹配：不需要搜索');
+      return result;
+    }
+    
+    // 规则匹配认为需要搜索
+    result.extractedKeywords = ruleResult.websearch || {
       question: [userContent],
       links: undefined
     };
     result.webSearchTool = createWebSearchToolDefinition(result.extractedKeywords);
-    console.log(`[WebSearch] 自动模式：已添加网络搜索工具，AI 将自主决定是否搜索`);
-  } else {
-    // 其他模式：使用意图分析
-    // 🚀 检查是否启用 AI 意图分析
-    const useAIAnalysis = isAIIntentAnalysisEnabled();
-    
-    let intentResult;
-    if (useAIAnalysis) {
-      // 使用 AI 意图分析（更准确，但需要额外 API 调用）
-      console.log(`[WebSearch] 使用 AI 意图分析...`);
-      intentResult = await analyzeSearchIntentWithAI(userContent);
-    } else {
-      // 使用规则匹配（快速，无额外开销）
-      intentResult = analyzeSearchIntent(userContent);
-    }
-    
-    console.log(`[WebSearch] 意图分析结果 (${useAIAnalysis ? 'AI' : '规则'}):`, intentResult);
+    console.log('[WebSearch] 规则匹配模式：已添加搜索工具');
+    return result;
+  }
 
-    if (intentResult.needsWebSearch) {
-      result.extractedKeywords = intentResult.websearch;
-      result.webSearchTool = createWebSearchToolDefinition(result.extractedKeywords);
-      console.log(`[WebSearch] 已创建网络搜索工具，预设查询:`, result.extractedKeywords?.question);
-    }
+  // 🚀 Step 2: AI 意图分析（复刻 Cherry Studio 的 searchOrchestrationPlugin）
+  console.log('[WebSearch] 开始 AI 意图分析...');
+  
+  const intentResult = await analyzeSearchIntentWithAI(userContent, lastAssistantContent);
+  
+  if (!intentResult.needsWebSearch) {
+    console.log('[WebSearch] AI 分析：不需要搜索');
+    return result;
+  }
+
+  // 🚀 Step 3: 配置搜索工具（使用预提取的关键词）
+  if (intentResult.websearch) {
+    result.extractedKeywords = intentResult.websearch;
+    result.webSearchTool = createWebSearchToolDefinition(result.extractedKeywords);
+    console.log('[WebSearch] AI 分析完成，提取的搜索关键词:', result.extractedKeywords.question);
   }
 
   return result;

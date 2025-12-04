@@ -41,7 +41,6 @@ import {
   toggleIncludeInContext,
   toggleShowTimestamp,
   toggleFilterSafeSearch,
-  setSearchMode,
   addCustomProvider,
   updateCustomProvider,
   deleteCustomProvider,
@@ -87,7 +86,6 @@ const WebSearchSettings: React.FC = () => {
     maxResults: 5,
     showTimestamp: true,
     filterSafeSearch: true,
-    searchMode: 'auto' as 'auto' | 'manual',
     searchWithTime: false,
     excludeDomains: [],
     providers: [],
@@ -145,10 +143,6 @@ const WebSearchSettings: React.FC = () => {
 
   const handleToggleFilterSafeSearch = () => {
     dispatch(toggleFilterSafeSearch());
-  };
-
-  const handleSearchModeChange = (event: SelectChangeEvent) => {
-    dispatch(setSearchMode(event.target.value as 'auto' | 'manual' | 'once'));
   };
 
   const handleAddCustomProvider = () => {
@@ -258,7 +252,7 @@ const WebSearchSettings: React.FC = () => {
             </Row>
 
             <Row>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100 }}>
                 <Typography>{t('settings.webSearch.basic.provider.label')}</Typography>
                 <Chip
                   label={getProviderStatusConfig(webSearchSettings.provider).label}
@@ -272,7 +266,7 @@ const WebSearchSettings: React.FC = () => {
                   }}
                 />
               </Box>
-              <FormControl size="small" sx={{ minWidth: 200 }}>
+              <FormControl size="small" sx={{ flex: 1 }}>
                 <Select
                   value={webSearchSettings.provider}
                   onChange={handleProviderChange}
@@ -295,7 +289,7 @@ const WebSearchSettings: React.FC = () => {
             {webSearchSettings.provider !== 'custom' && (
               <>
                 <Row>
-                  <Box sx={{ flex: 1 }}>
+                  <Box sx={{ minWidth: 100 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography>{t('settings.webSearch.basic.apiKey.label')}</Typography>
                       {((webSearchSettings.apiKeys && webSearchSettings.apiKeys[webSearchSettings.provider]) || webSearchSettings.apiKey) ? (
@@ -331,7 +325,7 @@ const WebSearchSettings: React.FC = () => {
                     onChange={handleApiKeyChange}
                     disabled={!webSearchSettings.enabled}
                     placeholder={t('settings.webSearch.basic.apiKey.placeholder', { provider: webSearchSettings.provider })}
-                    sx={{ minWidth: 220 }}
+                    sx={{ flex: 1 }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -586,32 +580,13 @@ const WebSearchSettings: React.FC = () => {
           {/* 搜索选项 */}
           <SettingGroup title={t('settings.webSearch.searchOptions.title')}>
             <Row>
-              <Typography sx={{ flex: 1 }}>{t('settings.webSearch.searchOptions.searchMode.label')}</Typography>
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <Select
-                  value={webSearchSettings.searchMode}
-                  onChange={handleSearchModeChange}
-                  disabled={!webSearchSettings.enabled}
-                  MenuProps={{
-                    disableAutoFocus: true,
-                    disableRestoreFocus: true
-                  }}
-                >
-                  <MenuItem value="auto">{t('settings.webSearch.searchOptions.searchMode.auto')}</MenuItem>
-                  <MenuItem value="manual">{t('settings.webSearch.searchOptions.searchMode.manual')}</MenuItem>
-                  <MenuItem value="once">{t('settings.webSearch.searchOptions.searchMode.once')}</MenuItem>
-                </Select>
-              </FormControl>
-            </Row>
-
-            <Row>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ minWidth: 100 }}>
                 <Typography>{t('settings.webSearch.searchOptions.maxResults.label', { count: webSearchSettings.maxResults })}</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.3 }}>
                   {t('settings.webSearch.searchOptions.maxResults.description')}
                 </Typography>
               </Box>
-              <Box sx={{ minWidth: 220 }}>
+              <Box sx={{ flex: 1, maxWidth: 280 }}>
                 <Slider
                   value={webSearchSettings.maxResults}
                   onChange={handleMaxResultsChange}
@@ -674,6 +649,39 @@ const WebSearchSettings: React.FC = () => {
                 disabled={!webSearchSettings.enabled}
               />
             </Row>
+
+            {/* 🚀 AI 意图分析设置入口 */}
+            <Box
+              sx={{ 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                py: 1.5,
+                px: 2,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'action.hover' },
+                borderRadius: 1
+              }}
+              onClick={() => navigate('/settings/assistant-model')}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Typography>{t('settings.webSearch.searchOptions.aiIntentAnalysis.label', 'AI 意图分析')}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.3 }}>
+                  {t('settings.webSearch.searchOptions.aiIntentAnalysis.description', '配置 AI 意图分析模型，提取更精准的搜索关键词')}
+                </Typography>
+              </Box>
+              <Typography 
+                variant="body2" 
+                color="primary"
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  gap: 0.5
+                }}
+              >
+                {t('settings.webSearch.searchOptions.aiIntentAnalysis.configure', '去配置')} →
+              </Typography>
+            </Box>
           </SettingGroup>
 
           {/* 🚀 Tavily最佳实践设置 */}

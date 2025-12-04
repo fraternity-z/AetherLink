@@ -125,12 +125,12 @@ const SettingsPage: React.FC = () => {
           onClick: () => navigateTo('/settings/default-model'),
         },
         {
-          id: 'topic-naming-settings',
+          id: 'assistant-model',
           title: t('settings.items.topicNaming.title'),
           description: t('settings.items.topicNaming.description'),
           icon: <TuneIcon size={24} />,
-          path: '/settings/topic-naming-settings',
-          onClick: () => navigateTo('/settings/topic-naming-settings'),
+          path: '/settings/assistant-model',
+          onClick: () => navigateTo('/settings/assistant-model'),
         },
         {
           id: 'agent-prompts',

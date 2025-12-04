@@ -17,7 +17,6 @@ import {
   Divider,
   Chip,
   Alert,
-  FormControlLabel,
   AppBar,
   Toolbar,
   alpha
@@ -219,15 +218,13 @@ const QuickPhraseSettings: React.FC = () => {
           <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
             {t('settings.quickPhraseManagement.displaySettings.title')}
           </Typography>
-          <FormControlLabel
-            control={
-              <CustomSwitch
-                checked={showQuickPhraseButton}
-                onChange={(e) => dispatch(setShowQuickPhraseButton(e.target.checked))}
-              />
-            }
-            label={t('settings.quickPhraseManagement.displaySettings.showButton')}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="body1">{t('settings.quickPhraseManagement.displaySettings.showButton')}</Typography>
+            <CustomSwitch
+              checked={showQuickPhraseButton}
+              onChange={(e) => dispatch(setShowQuickPhraseButton(e.target.checked))}
+            />
+          </Box>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
             {t('settings.quickPhraseManagement.displaySettings.showButtonDescription')}
           </Typography>

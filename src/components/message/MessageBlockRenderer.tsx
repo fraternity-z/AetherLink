@@ -22,7 +22,6 @@ import MathBlock from './blocks/MathBlock';
 import ChartBlock from './blocks/ChartBlock';
 import FileBlock from './blocks/FileBlock';
 import PlaceholderBlock from './blocks/PlaceholderBlock';
-import SearchResultsBlock from './blocks/SearchResultsBlock';
 import KnowledgeReferenceBlock from './blocks/KnowledgeReferenceBlock';
 import ContextSummaryBlock from './blocks/ContextSummaryBlock';
 import ToolBlock from './blocks/ToolBlock';
@@ -341,9 +340,6 @@ const MessageBlockRenderer: React.FC<Props> = ({
               case MessageBlockType.TOOL:
                 // 工具块按 message.blocks 顺序独立渲染
                 blockComponent = <ToolBlock key={block.id} block={block as any} />;
-                break;
-              case MessageBlockType.SEARCH_RESULTS:
-                blockComponent = <SearchResultsBlock key={block.id} block={block as any} />;
                 break;
               case MessageBlockType.KNOWLEDGE_REFERENCE:
                 blockComponent = <KnowledgeReferenceBlock key={block.id} block={block as any} />;
