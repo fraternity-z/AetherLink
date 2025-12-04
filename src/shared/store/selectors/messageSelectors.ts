@@ -8,9 +8,6 @@ import {
   selectLastMessageForTopic as selectNormalizedLastMessageForTopic
 } from '../slices/newMessagesSlice';
 
-// 创建一个稳定的空数组引用，避免每次返回新引用导致不必要的重渲染
-const EMPTY_TOPICS_ARRAY: any[] = [];
-
 // 基础选择器
 export const selectMessagesState = (state: RootState) => state.messages;
 export const selectMessageBlocksState = (state: RootState) => state.messageBlocks;
@@ -68,6 +65,9 @@ export const selectCurrentTopic = createSelector(
     return { id: currentTopicId };
   }
 );
+
+// 创建一个稳定的空数组引用
+const EMPTY_TOPICS_ARRAY: any[] = [];
 
 // 选择所有主题 - 返回稳定的常量引用
 export const selectTopics = () => EMPTY_TOPICS_ARRAY;

@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
 import { useTheme } from '@mui/material';
 import type { RootState } from '../../../shared/store';
-import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
 import type { Message, MessageBlock } from '../../../shared/types/newMessage';
 import { getMessageDividerSetting } from '../../../shared/utils/settingsUtils';
 import { getUserAvatar, getAssistantAvatar, getModelAvatar } from '../../../shared/utils/avatarUtils';
@@ -20,7 +19,7 @@ export const useMessageData = (message: Message) => {
 
   // 获取设置
   const settings = useSelector((state: RootState) => state.settings);
-  const providers = useSelector(selectProviders);
+  const providers = useSelector((state: RootState) => state.settings.providers || []);
 
   // 获取主题样式（仅用于传递，不再需要 getThemeColors）
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);

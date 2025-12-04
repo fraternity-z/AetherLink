@@ -34,7 +34,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
-import { selectProviders } from '../../shared/store/selectors/settingsSelectors';
 import { DropdownModelSelector } from '../ChatPage/components/DropdownModelSelector';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 import { setShowAIDebateButton } from '../../shared/store/settingsSlice';
@@ -93,7 +92,7 @@ const AIDebateSettings: React.FC = () => {
   const { t } = useTranslation();
 
   // 从Redux获取提供商和模型
-  const providers = useSelector(selectProviders);
+  const providers = useSelector((state: RootState) => state.settings.providers || []);
 
   // 从Redux获取AI辩论按钮显示设置
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);

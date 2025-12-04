@@ -171,8 +171,12 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
       });
     }
 
-    // 处理用户和助手消息
+    // 处理用户和助手消息（跳过 system 消息，因为已通过 buildSystemPromptWithTools 合并）
     for (const message of messages) {
+      // 跳过 system 消息，避免重复
+      if (message.role === 'system') {
+        continue;
+      }
       try {
         const content = (message as any).content;
         if (content !== undefined) {

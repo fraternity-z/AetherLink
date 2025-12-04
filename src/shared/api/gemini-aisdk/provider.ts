@@ -130,8 +130,12 @@ export abstract class BaseGeminiAISDKProvider extends AbstractBaseProvider {
       }
     }
 
-    // 处理用户和助手消息
+    // 处理用户和助手消息（跳过 system 消息，因为已通过 buildSystemPromptWithTools 合并）
     for (const message of messages) {
+      // 跳过 system 消息，避免重复
+      if (message.role === 'system') {
+        continue;
+      }
       try {
         // 优先使用 getMainTextContent 从 blocks 中提取内容
         // 如果消息已经有 content 属性（API 格式消息），则直接使用

@@ -59,7 +59,10 @@ const loadFromStorage = async (): Promise<WebSearchSettings> => {
         ...savedSettings,
         searchWithTime: savedSettings.searchWithTime ?? false,
         excludeDomains: savedSettings.excludeDomains ?? [],
-        providers: savedSettings.providers ?? getDefaultProviders()
+        providers: savedSettings.providers ?? getDefaultProviders(),
+        // 🚀 重要：activeProviderId 是临时状态，每次启动时重置
+        // 只有用户在当前会话中点击搜索按钮选择引擎后才会设置
+        activeProviderId: undefined
       };
     }
   } catch (error) {
@@ -192,10 +195,10 @@ const saveToStorage = (state: WebSearchSettings) => {
     newsSearchDays: state.newsSearchDays,
 
     // 🚀 新增：搜索引擎选择相关字段
-    selectedSearchEngine: state.selectedSearchEngine,
+    selectedSearchEngine: state.selectedSearchEngine
 
-    // 🚀 新增：当前激活的搜索提供商ID
-    activeProviderId: state.activeProviderId
+    // 🚀 注意：activeProviderId 是临时状态，不持久化
+    // 只有用户点击搜索按钮选择引擎后才设置，会话结束后清除
   };
 
   setStorageItem(STORAGE_KEY, serializableState).catch(error => {

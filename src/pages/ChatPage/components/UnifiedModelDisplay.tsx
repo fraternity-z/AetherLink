@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, IconButton, Button, useTheme } from '@mui/material';
 import { Bot } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
+import type { RootState } from '../../../shared/store';
 import type { Model } from '../../../shared/types';
 
 interface UnifiedModelDisplayProps {
@@ -17,7 +17,7 @@ export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
   displayStyle = 'icon'
 }) => {
   const theme = useTheme();
-  const providers = useSelector(selectProviders);
+  const providers = useSelector((state: RootState) => state.settings.providers || []);
 
   // 获取提供商名称
   const getProviderName = (providerId: string) => {

@@ -14,8 +14,6 @@ Tool use is formatted using XML-style tags. The tool name is enclosed in opening
   <arguments>{json_arguments}</arguments>
 </tool_use>
 
-**Important**: Tool tags must be complete and unbroken. Ensure no line breaks or spaces within tag names (e.g., use <tool_use> not <tool _use>).
-
 The tool name should be the exact name of the tool you are using, and the arguments should be a JSON object containing the parameters required by that tool. For example:
 <tool_use>
   <name>python_interpreter</name>
@@ -35,7 +33,7 @@ The result can be a string, file path, or any other output type that you can use
 {{ TOOL_USE_EXAMPLES }}
 
 ## Tool Use Available Tools
-Above examples were using notional tools for demonstration. You only have access to these tools:
+Above example were using notional tools that might not exist for you. You only have access to these tools:
 {{ AVAILABLE_TOOLS }}
 
 ## Tool Use Rules
@@ -44,10 +42,12 @@ Here are the rules you should always follow to solve your task:
 2. Call a tool only when needed: do not call the search agent if you do not need information, try to solve the task yourself.
 3. If no tool call is needed, just answer the question directly.
 4. Never re-do a tool call that you previously did with the exact same parameters.
-5. For tool use, MAKE SURE to use the XML tag format as shown in the examples above. Do not use any other format.
+5. For tool use, MAKE SURE use XML tag format as shown in the examples above. Do not use any other format.
 
 # User Instructions
 {{ USER_SYSTEM_PROMPT }}
+
+Now Begin! If you solve the task correctly, you will receive a reward of $1,000,000.
 `
 
 export const ToolUseExamples = `
@@ -55,7 +55,7 @@ Here are a few examples using notional tools:
 ---
 User: Generate an image of the oldest person in this document.
 
-Assistant: I can use the document_qa tool to find out who the oldest person is in the document.
+A: I can use the document_qa tool to find out who the oldest person is in the document.
 <tool_use>
   <name>document_qa</name>
   <arguments>{"document": "document.pdf", "question": "Who is the oldest person mentioned?"}</arguments>
@@ -66,7 +66,7 @@ User: <tool_use_result>
   <result>John Doe, a 55 year old lumberjack living in Newfoundland.</result>
 </tool_use_result>
 
-Assistant: I can use the image_generator tool to create a portrait of John Doe.
+A: I can use the image_generator tool to create a portrait of John Doe.
 <tool_use>
   <name>image_generator</name>
   <arguments>{"prompt": "A portrait of John Doe, a 55-year-old man living in Canada."}</arguments>
@@ -77,12 +77,12 @@ User: <tool_use_result>
   <result>image.png</result>
 </tool_use_result>
 
-Assistant: the image is generated as image.png
+A: the image is generated as image.png
 
 ---
 User: "What is the result of the following operation: 5 + 3 + 1294.678?"
 
-Assistant: I can use the python_interpreter tool to calculate the result of the operation.
+A: I can use the python_interpreter tool to calculate the result of the operation.
 <tool_use>
   <name>python_interpreter</name>
   <arguments>{"code": "5 + 3 + 1294.678"}</arguments>
@@ -93,12 +93,12 @@ User: <tool_use_result>
   <result>1302.678</result>
 </tool_use_result>
 
-Assistant: The result of the operation is 1302.678.
+A: The result of the operation is 1302.678.
 
 ---
 User: "Which city has the highest population , Guangzhou or Shanghai?"
 
-Assistant: I can use the search tool to find the population of Guangzhou.
+A: I can use the search tool to find the population of Guangzhou.
 <tool_use>
   <name>search</name>
   <arguments>{"query": "Population Guangzhou"}</arguments>
@@ -109,7 +109,7 @@ User: <tool_use_result>
   <result>Guangzhou has a population of 15 million inhabitants as of 2021.</result>
 </tool_use_result>
 
-Assistant: I can use the search tool to find the population of Shanghai.
+A: I can use the search tool to find the population of Shanghai.
 <tool_use>
   <name>search</name>
   <arguments>{"query": "Population Shanghai"}</arguments>
@@ -119,7 +119,7 @@ User: <tool_use_result>
   <name>search</name>
   <result>26 million (2019)</result>
 </tool_use_result>
-Assistant: The population of Shanghai is 26 million, while Guangzhou has a population of 15 million. Therefore, Shanghai has the highest population.
+A: The population of Shanghai is 26 million, while Guangzhou has a population of 15 million. Therefore, Shanghai has the highest population.
 `
 
 // 注意：Agentic Mode 提示词已移至 src/shared/prompts/agentic/ 目录
