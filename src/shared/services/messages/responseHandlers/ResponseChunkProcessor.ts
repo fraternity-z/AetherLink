@@ -35,6 +35,11 @@ abstract class ContentAccumulator {
 // 2. 文本累积器
 class TextAccumulator extends ContentAccumulator {
   accumulate(newText: string): void {
+    // 防御性检查：确保输入是字符串
+    if (typeof newText !== 'string') {
+      console.warn('[TextAccumulator] 输入不是字符串，跳过:', typeof newText);
+      return;
+    }
     // 🔧 修复：处理流式增量和非流式全量两种情况
     if (newText.length > this.content.length && newText.startsWith(this.content)) {
       // 全量替换（流式累积或非流式全量）
@@ -52,6 +57,11 @@ class TextAccumulator extends ContentAccumulator {
 // 3. 思考内容累积器
 class ThinkingAccumulator extends ContentAccumulator {
   accumulate(newText: string): void {
+    // 防御性检查：确保输入是字符串
+    if (typeof newText !== 'string') {
+      console.warn('[ThinkingAccumulator] 输入不是字符串，跳过:', typeof newText);
+      return;
+    }
     if (newText.length > this.content.length && newText.startsWith(this.content)) {
       this.content = newText;
     } else if (newText !== this.content && !this.content.endsWith(newText)) {
@@ -132,9 +142,12 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
   }
 
   async createBlock(block: MessageBlock): Promise<void> {
+    // 关键：先同步更新 Redux store（addBlock 和 addBlockReference），再异步保存到数据库
+    // 这样 calculateFinalBlockIds 可以立即看到新块
     this.stateService.addBlock(block);
-    await this.storageService.saveBlock(block);
     this.stateService.addBlockReference(block.messageId, block.id, block.status);
+    // 异步保存到数据库（不阻塞 UI 更新）
+    await this.storageService.saveBlock(block);
     this.lastBlockType = block.type;
     this.lastBlockId = block.id;
   }

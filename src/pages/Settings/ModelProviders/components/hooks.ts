@@ -108,6 +108,9 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   // showApiKey 已改用 Signals 管理
   const keyManager = ApiKeyManager.getInstance();
 
+  // Responses API 开关状态（仅对 OpenAI 类型有效）
+  const [useResponsesAPI, setUseResponsesAPI] = useState(false);
+
   // 防抖处理的URL输入
   const debouncedBaseUrl = useDebounce(baseUrl, CONSTANTS.DEBOUNCE_DELAY);
 
@@ -132,6 +135,9 @@ export const useProviderSettings = (provider: Provider | undefined) => {
 
       // 检查是否启用了多 Key 模式
       setMultiKeyEnabled(!!(provider.apiKeys && provider.apiKeys.length > 0));
+
+      // 初始化 Responses API 开关状态
+      setUseResponsesAPI(!!(provider as any).useResponsesAPI);
     }
   }, [provider]);
 
@@ -266,6 +272,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
           isEnabled,
           extraHeaders,
           extraBody,
+          useResponsesAPI, // 保存 Responses API 开关状态
           ...updates
         }
       }));
@@ -275,7 +282,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       setBaseUrlError('保存配置失败，请重试');
       return false;
     }
-  }, [provider, baseUrl, apiKey, isEnabled, extraHeaders, extraBody, dispatch]);
+  }, [provider, baseUrl, apiKey, isEnabled, extraHeaders, extraBody, useResponsesAPI, dispatch]);
 
   // 保存并返回
   const handleSave = useCallback(() => {
@@ -878,6 +885,9 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     setCustomEndpointError,
     multiKeyEnabled,
     setMultiKeyEnabled,
+    // Responses API 开关状态
+    useResponsesAPI,
+    setUseResponsesAPI,
     // showApiKey 不再从这里返回，直接在组件中导入使用
     keyManager,
     buttonStyles,

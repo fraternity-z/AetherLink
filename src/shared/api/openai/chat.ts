@@ -199,18 +199,3 @@ export async function sendChatMessage(
   }
 }
 
-/**
- * 兼容性函数：保持旧的API接口
- * @deprecated 请使用 sendChatMessage 替代
- */
-export async function sendChatRequest(
-  messages: Message[],
-  model: Model,
-  abortSignal?: AbortSignal
-): Promise<string | ChatResponse> {
-  console.warn('[OpenAI Chat] sendChatRequest 已废弃，请使用 sendChatMessage');
-
-  return sendChatMessage(messages, model, {
-    abortSignal
-  });
-}

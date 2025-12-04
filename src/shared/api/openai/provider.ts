@@ -54,6 +54,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    * 检查模型是否支持多模态
    * @param model 模型对象（可选）
    * @returns 是否支持多模态
+   * @remarks 此方法为子类提供重写入口，内部委托给 client.supportsMultimodal
    */
   protected supportsMultimodal(model?: Model): boolean {
     const actualModel = model || this.model;
@@ -62,6 +63,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
   /**
    * 检查模型是否支持网页搜索
+   * @remarks 此方法为子类提供重写入口，内部委托给 client.supportsWebSearch
    */
   protected supportsWebSearch(): boolean {
     return supportsWebSearch(this.model);
@@ -69,6 +71,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
   /**
    * 检查模型是否支持推理优化
+   * @remarks 此方法为子类提供重写入口，内部委托给 isReasoningModel
    */
   protected supportsReasoning(): boolean {
     // 使用导入的模型检测函数
@@ -78,6 +81,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   /**
    * 获取温度参数
    * @param assistant 助手配置（可选）
+   * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
    */
   protected getTemperature(assistant?: any): number {
     this.parameterManager.updateAssistant(assistant);
@@ -87,6 +91,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   /**
    * 获取top_p参数
    * @param assistant 助手配置（可选）
+   * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
    */
   protected getTopP(assistant?: any): number {
     this.parameterManager.updateAssistant(assistant);
@@ -96,6 +101,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   /**
    * 获取max_tokens参数
    * @param assistant 助手配置（可选）
+   * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
    */
   protected getMaxTokens(assistant?: any): number {
     this.parameterManager.updateAssistant(assistant);

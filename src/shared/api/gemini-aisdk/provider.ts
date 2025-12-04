@@ -1,43 +1,41 @@
 /**
- * AI SDK OpenAI Provider
- * 使用 @ai-sdk/openai 实现的 OpenAI 供应商
- * 继承自 AbstractBaseProvider，一比一实现 OpenAIProvider 功能
+ * AI SDK Gemini Provider
+ * 使用 @ai-sdk/google 实现的 Gemini 供应商
+ * 继承自 AbstractBaseProvider，支持 Google Search、思考预算等特性
  */
 import { generateText } from 'ai';
-import type { OpenAIProvider as AISDKOpenAIProvider } from '@ai-sdk/openai';
-import { createClient, supportsMultimodal, supportsWebSearch, getWebSearchParams } from './client';
+import type { GoogleGenerativeAIProvider } from '@ai-sdk/google';
+import { createClient, supportsMultimodal, supportsGoogleSearch, supportsThinking, isGemmaModel } from './client';
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
-import { OpenAIParameterManager, createParameterManager } from '../openai/parameterManager';
-import { isReasoningModel } from '../../utils/modelDetection';
-import { getStreamOutputSetting } from '../../utils/settingsUtils';
+import { isGeminiReasoningModel } from './configBuilder';
+import { getStreamOutputSetting, getThinkingBudget } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
 import {
-  convertMcpToolsToOpenAI,
-  mcpToolCallResponseToOpenAIMessage,
+  convertMcpToolsToGemini,
+  mcpToolCallResponseToGeminiMessage,
   convertToolCallsToMcpResponses
 } from './tools';
 import { ChunkType, type Chunk } from '../../types/chunk';
+import { getMainTextContent } from '../../utils/blockUtils';
 
 /**
- * AI SDK OpenAI Provider 基类
+ * AI SDK Gemini Provider 基类
  */
-export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
-  protected client: AISDKOpenAIProvider;
-  protected parameterManager: OpenAIParameterManager;
+export abstract class BaseGeminiAISDKProvider extends AbstractBaseProvider {
+  protected client: GoogleGenerativeAIProvider;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterManager = createParameterManager({ model });
   }
 
   /**
-   * 将 MCP 工具转换为 OpenAI 工具格式
+   * 将 MCP 工具转换为 Gemini 工具格式
    */
   public convertMcpTools<T>(mcpTools: MCPTool[]): T[] {
-    return convertMcpToolsToOpenAI<T>(mcpTools);
+    return convertMcpToolsToGemini<T>(mcpTools);
   }
 
   /**
@@ -48,60 +46,64 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 检查模型是否支持网页搜索
+   * 检查模型是否支持 Google Search
    */
-  protected supportsWebSearch(): boolean {
-    return supportsWebSearch(this.model);
+  protected supportsGoogleSearch(): boolean {
+    return supportsGoogleSearch(this.model);
   }
 
   /**
-   * 检查模型是否支持推理优化
+   * 检查模型是否支持思考（推理）
    */
-  protected supportsReasoning(): boolean {
-    return isReasoningModel(this.model);
+  protected supportsThinking(): boolean {
+    return supportsThinking(this.model);
+  }
+
+  /**
+   * 检查是否为 Gemma 模型
+   */
+  protected isGemmaModel(): boolean {
+    return isGemmaModel(this.model);
   }
 
   /**
    * 获取温度参数
    */
   protected getTemperature(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().temperature;
+    return assistant?.settings?.temperature || 
+           assistant?.temperature || 
+           this.model?.temperature || 
+           0.7;
   }
 
   /**
    * 获取 top_p 参数
    */
   protected getTopP(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().top_p;
+    return assistant?.settings?.topP || 
+           assistant?.topP || 
+           (this.model as any)?.topP || 
+           0.95;
   }
 
   /**
    * 获取 max_tokens 参数
    */
   protected getMaxTokens(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().max_tokens;
+    return assistant?.settings?.maxTokens || 
+           assistant?.maxTokens || 
+           this.model.maxTokens || 
+           4096;
   }
 
   /**
-   * 获取 OpenAI 专属参数
+   * 获取思考预算
    */
-  protected getOpenAISpecificParameters(assistant?: any): any {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getOpenAISpecificParameters();
-  }
-
-  /**
-   * 获取推理优化参数
-   */
-  protected getReasoningEffort(assistant?: any, model?: Model): any {
-    if (model && model !== this.model) {
-      this.parameterManager.updateModel(model);
+  protected getThinkingBudget(assistant?: any): number {
+    if (!isGeminiReasoningModel(this.model)) {
+      return 0;
     }
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getReasoningParameters();
+    return assistant?.thinkingBudget || getThinkingBudget() || 1024;
   }
 
   /**
@@ -117,34 +119,36 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
     // 获取工作区列表
     const workspaces = mcpTools && mcpTools.length > 0 ? await this.getWorkspaces() : [];
 
-    // 添加系统提示
-    const finalSystemPrompt = this.buildSystemPromptWithTools(systemPrompt || '', mcpTools, workspaces);
-    if (finalSystemPrompt.trim()) {
-      apiMessages.push({
-        role: 'system',
-        content: finalSystemPrompt
-      });
+    // 添加系统提示（Gemma 模型不支持系统指令）
+    if (!this.isGemmaModel()) {
+      const finalSystemPrompt = this.buildSystemPromptWithTools(systemPrompt || '', mcpTools, workspaces);
+      if (finalSystemPrompt.trim()) {
+        apiMessages.push({
+          role: 'system',
+          content: finalSystemPrompt
+        });
+      }
     }
 
     // 处理用户和助手消息
     for (const message of messages) {
       try {
-        const content = (message as any).content;
-        if (content !== undefined) {
-          apiMessages.push({
-            role: message.role,
-            content: content
-          });
+        // 优先使用 getMainTextContent 从 blocks 中提取内容
+        // 如果消息已经有 content 属性（API 格式消息），则直接使用
+        let content = (message as any).content;
+        if (content === undefined) {
+          // 尝试从 blocks 中提取
+          content = getMainTextContent(message);
         }
-      } catch (error) {
-        console.error(`[AI SDK Provider] 处理消息失败:`, error);
-        const content = (message as any).content;
+        
         if (content && typeof content === 'string' && content.trim()) {
           apiMessages.push({
             role: message.role,
             content: content
           });
         }
+      } catch (error) {
+        console.error(`[Gemini AI SDK Provider] 处理消息失败:`, error);
       }
     }
 
@@ -164,15 +168,14 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
    */
   public async testConnection(): Promise<boolean> {
     try {
-      // 使用 .chat() 调用 Chat Completions API（兼容 OpenAI 兼容 API）
       const result = await generateText({
-        model: this.client.chat(this.model.id) as any,
+        model: this.client(this.model.id),
         prompt: 'Hello',
         maxOutputTokens: 5,
       });
       return Boolean(result.text);
     } catch (error) {
-      console.error('[AI SDK Provider] API 连接测试失败:', error);
+      console.error('[Gemini AI SDK Provider] API 连接测试失败:', error);
       return false;
     }
   }
@@ -185,9 +188,9 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
     mcpToolResponse: MCPToolResponse,
     resp: MCPCallToolResponse,
     model: Model,
-    useXmlFormat: boolean = false
+    useXmlFormat: boolean = true
   ): any {
-    return mcpToolCallResponseToOpenAIMessage(mcpToolResponse, resp, model, useXmlFormat);
+    return mcpToolCallResponseToGeminiMessage(mcpToolResponse, resp, model, useXmlFormat);
   }
 
   /**
@@ -222,7 +225,7 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
     const toolNames = toolCalls.map(tc => tc.function?.name || tc.name || '');
     const hasCompletion = this.hasCompletionTool(toolNames);
 
-    console.log(`[AI SDK Provider] 处理 ${toolCalls.length} 个工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
+    console.log(`[Gemini AI SDK Provider] 处理 ${toolCalls.length} 个工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
 
     const mcpToolResponses = this.convertToolCallsToMcpResponses(toolCalls, mcpTools);
     const results = await parseAndCallTools(mcpToolResponses, mcpTools, onChunk);
@@ -250,7 +253,7 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
     const toolNames = toolResponses.map(tr => tr.tool?.name || tr.tool?.id || '');
     const hasCompletion = this.hasCompletionTool(toolNames);
 
-    console.log(`[AI SDK Provider] 处理 ${toolResponses.length} 个 XML 工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
+    console.log(`[Gemini AI SDK Provider] 处理 ${toolResponses.length} 个 XML 工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
 
     const results = await parseAndCallTools(content, mcpTools, onChunk);
     const messages: any[] = [];
@@ -283,12 +286,12 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
 }
 
 /**
- * AI SDK OpenAI Provider 实现类
+ * AI SDK Gemini Provider 实现类
  */
-export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
+export class GeminiAISDKProvider extends BaseGeminiAISDKProvider {
   constructor(model: Model) {
     super(model);
-    console.log(`[OpenAIAISDKProvider] 初始化完成，模型: ${model.id}`);
+    console.log(`[GeminiAISDKProvider] 初始化完成，模型: ${model.id}`);
   }
 
   /**
@@ -307,7 +310,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       assistant?: any;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
-    console.log(`[OpenAIAISDKProvider] 开始 API 调用, 模型: ${this.model.id}`);
+    console.log(`[GeminiAISDKProvider] 开始 API 调用, 模型: ${this.model.id}`);
 
     const {
       onChunk,
@@ -335,31 +338,26 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
     // 获取流式设置
     const streamEnabled = getStreamOutputSetting();
 
-    // 更新参数管理器
-    this.parameterManager.updateAssistant(assistant);
-
     // 获取参数
     const temperature = this.getTemperature(assistant);
     const maxTokens = this.getMaxTokens(assistant);
+    const thinkingBudget = this.getThinkingBudget(assistant);
 
-    console.log(`[OpenAIAISDKProvider] API 请求参数:`, {
+    console.log(`[GeminiAISDKProvider] API 请求参数:`, {
       model: this.model.id,
       temperature,
       maxTokens,
       stream: streamEnabled,
-      工具数量: tools.length
+      工具数量: tools.length,
+      enableWebSearch,
+      thinkingBudget: isGeminiReasoningModel(this.model) ? thinkingBudget : 'N/A'
     });
 
     // 检查 API 密钥
     if (!this.model.apiKey) {
-      console.error('[OpenAIAISDKProvider] 错误: API 密钥未设置');
-      throw new Error('API 密钥未设置，请在设置中配置 OpenAI API 密钥');
+      console.error('[GeminiAISDKProvider] 错误: API 密钥未设置');
+      throw new Error('API 密钥未设置，请在设置中配置 Gemini API 密钥');
     }
-
-    // 添加网页搜索参数
-    const webSearchParams = enableWebSearch && this.supportsWebSearch()
-      ? getWebSearchParams(this.model, enableWebSearch)
-      : {};
 
     try {
       if (streamEnabled) {
@@ -371,7 +369,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           mcpMode,
           onChunk,
           abortSignal,
-          webSearchParams
+          enableWebSearch,
+          thinkingBudget
         });
       } else {
         return await this.handleNonStreamResponse(apiMessages, {
@@ -381,12 +380,14 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           mcpTools,
           mcpMode,
           onChunk,
-          abortSignal
+          abortSignal,
+          enableWebSearch,
+          thinkingBudget
         });
       }
     } catch (error: any) {
       if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
-        console.log('[OpenAIAISDKProvider] 请求被用户中断');
+        console.log('[GeminiAISDKProvider] 请求被用户中断');
         throw new DOMException('Operation aborted', 'AbortError');
       }
 
@@ -395,7 +396,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
         throw new Error(`模型 ${modelName} 不支持当前的最大输出 token 设置 (${maxTokens})。`);
       }
 
-      console.error('[OpenAIAISDKProvider] API 请求失败:', error);
+      console.error('[GeminiAISDKProvider] API 请求失败:', error);
       throw error;
     }
   }
@@ -413,7 +414,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpMode: 'prompt' | 'function';
       onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
-      webSearchParams?: any;
+      enableWebSearch?: boolean;
+      thinkingBudget?: number;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     const {
@@ -423,7 +425,9 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpTools,
       mcpMode,
       onChunk,
-      abortSignal
+      abortSignal,
+      enableWebSearch,
+      thinkingBudget
     } = options;
 
     let currentMessages = [...messages];
@@ -432,7 +436,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
 
     while (iteration < maxIterations) {
       iteration++;
-      console.log(`[OpenAIAISDKProvider] 流式工具调用迭代 ${iteration}`);
+      console.log(`[GeminiAISDKProvider] 流式工具调用迭代 ${iteration}`);
 
       // 准备工具配置
       const usePromptMode = this.getUseSystemPromptForTools();
@@ -450,14 +454,17 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           mcpTools,
           mcpMode,
           model: this.model,
-          tools: streamTools
+          tools: streamTools,
+          enableGoogleSearch: enableWebSearch && this.supportsGoogleSearch(),
+          thinkingBudget: isGeminiReasoningModel(this.model) ? thinkingBudget : undefined,
+          includeThoughts: isGeminiReasoningModel(this.model)
         },
         onChunk
       );
 
       // 检查是否有工具调用
       if (result.hasToolCalls) {
-        console.log(`[OpenAIAISDKProvider] 检测到工具调用`);
+        console.log(`[GeminiAISDKProvider] 检测到工具调用`);
 
         const content = result.content;
         const nativeToolCalls = result.nativeToolCalls;
@@ -475,14 +482,16 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
             currentMessages.push(...xmlToolResults);
 
             if (hasCompletion) {
-              console.log(`[OpenAIAISDKProvider] attempt_completion 已执行`);
+              console.log(`[GeminiAISDKProvider] attempt_completion 已执行`);
               return this.formatResult(result);
             }
             continue;
           }
         } else if (nativeToolCalls && nativeToolCalls.length > 0) {
           // 函数调用模式：使用 AI SDK 期望的 AssistantModelMessage 格式
+          // 参考：https://sdk.vercel.ai/docs/reference/ai-sdk-core/model-message#assistantmodelmessage
           const toolCallParts = nativeToolCalls.map((tc: any) => {
+            // 解析 arguments（可能是字符串或对象）
             let input = tc.function?.arguments || tc.args || {};
             if (typeof input === 'string') {
               try {
@@ -499,6 +508,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
             };
           });
           
+          // AI SDK 格式：content 可以是字符串或 Part 数组
           const assistantContent = content 
             ? [{ type: 'text' as const, text: content }, ...toolCallParts]
             : toolCallParts;
@@ -518,7 +528,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
             currentMessages.push(...toolResults);
 
             if (hasCompletion) {
-              console.log(`[OpenAIAISDKProvider] attempt_completion 已执行`);
+              console.log(`[GeminiAISDKProvider] attempt_completion 已执行`);
               return this.formatResult(result);
             }
             continue;
@@ -530,7 +540,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       return this.formatResult(result);
     }
 
-    console.warn(`[OpenAIAISDKProvider] 达到最大迭代次数 ${maxIterations}`);
+    console.warn(`[GeminiAISDKProvider] 达到最大迭代次数 ${maxIterations}`);
     return '';
   }
 
@@ -547,6 +557,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpMode: 'prompt' | 'function';
       onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
+      enableWebSearch?: boolean;
+      thinkingBudget?: number;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     const {
@@ -556,7 +568,9 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpTools,
       mcpMode,
       onChunk,
-      abortSignal
+      abortSignal,
+      enableWebSearch,
+      thinkingBudget
     } = options;
 
     let currentMessages = [...messages];
@@ -582,7 +596,10 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           mcpTools,
           mcpMode,
           model: this.model,
-          tools: streamTools
+          tools: streamTools,
+          enableGoogleSearch: enableWebSearch && this.supportsGoogleSearch(),
+          thinkingBudget: isGeminiReasoningModel(this.model) ? thinkingBudget : undefined,
+          includeThoughts: isGeminiReasoningModel(this.model)
         }
       );
 
@@ -704,4 +721,4 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
 }
 
 // 导出
-export { BaseOpenAIAISDKProvider as BaseOpenAIProvider };
+export { BaseGeminiAISDKProvider as BaseGeminiProvider };

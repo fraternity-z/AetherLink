@@ -2,7 +2,7 @@
  * 图像生成处理模块
  */
 import { generateImage as generateOpenAIImage } from '../../../../api/openai/image';
-import { generateImage as generateGeminiImage } from '../../../../api/gemini/image';
+import { generateImage as generateGeminiImage } from '../../../../api/gemini-aisdk/image';
 import { createImageBlock } from '../../../../utils/messageUtils';
 import { dexieStorage } from '../../../../services/storage/DexieStorageService';
 import { newMessagesActions } from '../../../slices/newMessagesSlice';

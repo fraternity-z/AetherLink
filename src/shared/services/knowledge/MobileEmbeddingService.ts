@@ -8,7 +8,7 @@ import { isEmbeddingModel } from '../../config/models';
 import { getEmbeddingDimensions } from '../../config/embeddingModels';
 import { universalFetch } from '../../utils/universalFetch';
 import store from '../../store';
-import { createGeminiEmbeddingService } from '../../api/gemini/embeddingService';
+import { createGeminiEmbeddingService } from "../../api/gemini-aisdk/embeddingService";
 
 /**
  * 获取模型的维度
@@ -135,14 +135,10 @@ export class MobileEmbeddingService {
       // 如果用户选择的是 Gemini 供应商，使用专门的 Gemini 嵌入服务
       if (isGeminiEmbeddingModel(model)) {
         const geminiService = createGeminiEmbeddingService(model);
-        const result = await geminiService.getEmbedding({
-          text,
-          model,
-          taskType: 'SEMANTIC_SIMILARITY'
-        });
+        const embedding = await geminiService.getEmbedding(text, model);
 
         // 缓存结果
-        this.embeddingCache.set(cacheKey, result.embedding);
+        this.embeddingCache.set(cacheKey, embedding);
 
         // 限制缓存大小
         if (this.embeddingCache.size > 100) {
@@ -152,7 +148,7 @@ export class MobileEmbeddingService {
           }
         }
 
-        return result.embedding;
+        return embedding;
       }
 
       if (!model.apiKey) {

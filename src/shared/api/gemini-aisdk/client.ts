@@ -1,16 +1,15 @@
 /**
- * AI SDK OpenAI 客户端模块
- * 使用 @ai-sdk/openai 替代原生 OpenAI SDK
+ * AI SDK Gemini 客户端模块
+ * 使用 @ai-sdk/google 实现 Gemini API 调用
  * 支持多平台（Tauri、Capacitor、Web）和代理配置
  */
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import type { OpenAIProvider as AISDKOpenAIProvider } from '@ai-sdk/openai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import type { GoogleGenerativeAIProvider } from '@ai-sdk/google';
 import type { Model } from '../../types';
 import { universalFetch } from '../../utils/universalFetch';
 import { isTauri } from '../../utils/platformDetection';
 import { Capacitor } from '@capacitor/core';
-import { isReasoningModel } from '../../utils/modelDetection';
 
 /**
  * 检查是否需要使用 CORS 代理
@@ -42,12 +41,12 @@ function createProxyFetch() {
     
     if (needsCORSProxy(urlStr)) {
       const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(urlStr)}`;
-      console.log(`[AI SDK ProxyFetch] 使用代理: ${urlStr.substring(0, 50)}...`);
+      console.log(`[Gemini AI SDK ProxyFetch] 使用代理: ${urlStr.substring(0, 50)}...`);
       
       try {
         return await fetch(proxyUrl, init);
       } catch (error) {
-        console.error(`[AI SDK ProxyFetch] 代理请求失败:`, error);
+        console.error(`[Gemini AI SDK ProxyFetch] 代理请求失败:`, error);
         throw error;
       }
     }
@@ -65,7 +64,7 @@ function createPlatformFetch(model: Model): typeof fetch | undefined {
   const isWeb = !isTauriEnv && !isCapacitorNative;
 
   if (isTauriEnv) {
-    console.log(`[AI SDK Client] Tauri 平台：使用 universalFetch`);
+    console.log(`[Gemini AI SDK Client] Tauri 平台：使用 universalFetch`);
     return async (url: RequestInfo | URL, init?: RequestInit) => {
       return universalFetch(url.toString(), init);
     };
@@ -73,7 +72,7 @@ function createPlatformFetch(model: Model): typeof fetch | undefined {
 
   if (isCapacitorNative) {
     const fetchMode = model.useCorsPlugin ? 'CorsBypass Plugin' : 'Standard Fetch';
-    console.log(`[AI SDK Client] Capacitor Native 平台：使用 ${fetchMode}`);
+    console.log(`[Gemini AI SDK Client] Capacitor Native 平台：使用 ${fetchMode}`);
     return async (url: RequestInfo | URL, init?: RequestInit) => {
       const fetchOptions = { ...init, useCorsPlugin: model.useCorsPlugin };
       return universalFetch(url.toString(), fetchOptions);
@@ -81,7 +80,7 @@ function createPlatformFetch(model: Model): typeof fetch | undefined {
   }
 
   if (isWeb) {
-    console.log(`[AI SDK Client] Web 端：使用 CORS 代理服务器`);
+    console.log(`[Gemini AI SDK Client] Web 端：使用 CORS 代理服务器`);
     return createProxyFetch();
   }
 
@@ -101,17 +100,6 @@ function createHeaderFilterFetch(
 
       headersToRemove.forEach(headerName => {
         headers.delete(headerName);
-        
-        // 对于 stainless 相关头部，进行模糊匹配删除
-        if (headerName.includes('stainless')) {
-          const keysToDelete: string[] = [];
-          for (const [key] of headers.entries()) {
-            if (key.toLowerCase().includes('stainless')) {
-              keysToDelete.push(key);
-            }
-          }
-          keysToDelete.forEach(key => headers.delete(key));
-        }
       });
 
       init.headers = headers;
@@ -121,118 +109,103 @@ function createHeaderFilterFetch(
 }
 
 /**
- * 检查是否为 Azure OpenAI
- */
-export function isAzureOpenAI(model: Model): boolean {
-  return Boolean(
-    (model as any).providerType === 'azure-openai' ||
-    model.provider === 'azure-openai' ||
-    (model.baseUrl && model.baseUrl.includes('openai.azure.com'))
-  );
-}
-
-/**
  * 检查模型是否支持多模态
  */
 export function supportsMultimodal(model: Model): boolean {
-  const modelId = model.id;
+  const modelId = model.id.toLowerCase();
   return Boolean(
     model.capabilities?.multimodal ||
-    modelId.includes('gpt-4') ||
-    modelId.includes('gpt-4o') ||
-    modelId.includes('vision') ||
-    modelId.includes('gemini') ||
-    modelId.includes('claude-3')
+    modelId.includes('gemini-1.5') ||
+    modelId.includes('gemini-2') ||
+    modelId.includes('gemini-pro-vision')
   );
 }
 
 /**
- * 检查模型是否支持网页搜索
+ * 检查模型是否支持图像生成
  */
-export function supportsWebSearch(model: Model): boolean {
-  const modelId = model.id;
+export function supportsImageGeneration(model: Model): boolean {
+  const modelId = model.id.toLowerCase();
+  return Boolean(
+    model.capabilities?.imageGeneration ||
+    modelId.includes('image') ||
+    modelId.includes('gemini-2.5-flash-preview-image') ||
+    modelId.includes('gemini-2.0-flash-exp-image')
+  );
+}
+
+/**
+ * 检查模型是否支持 Google 搜索
+ */
+export function supportsGoogleSearch(model: Model): boolean {
+  const modelId = model.id.toLowerCase();
   return Boolean(
     model.capabilities?.webSearch ||
-    modelId.includes('gpt-4o-search-preview') ||
-    modelId.includes('gpt-4o-mini-search-preview')
+    modelId.includes('gemini-2.5') ||
+    modelId.includes('gemini-2.0') ||
+    modelId.includes('gemini-1.5')
   );
 }
 
 /**
- * 检查模型是否支持推理优化
+ * 检查模型是否为推理模型（支持思考）
  */
-export function supportsReasoning(model: Model): boolean {
-  if (model.modelTypes && model.modelTypes.includes('reasoning')) {
-    return true;
-  }
-  return isReasoningModel(model);
+export function supportsThinking(model: Model): boolean {
+  const modelId = model.id.toLowerCase();
+  return Boolean(
+    model.capabilities?.reasoning ||
+    modelId.includes('gemini-2.5-pro') ||
+    modelId.includes('gemini-2.5-flash') ||
+    modelId.includes('thinking')
+  );
 }
 
 /**
- * 获取 Web 搜索参数配置
+ * 检查模型是否为 Gemma 模型
  */
-export function getWebSearchParams(model: Model, enableSearch: boolean): Record<string, any> {
-  if (!supportsWebSearch(model) || !enableSearch) {
-    return {};
-  }
-
-  switch (model.provider) {
-    case 'hunyuan':
-      return { enable_enhancement: enableSearch, citation: true, search_info: true };
-    case 'dashscope':
-      return { enable_search: true, search_options: { forced_search: true } };
-    case 'openrouter':
-      return { plugins: [{ id: 'web', search_prompts: ['Search the web for...'] }] };
-    case 'openai':
-      if (supportsWebSearch(model)) {
-        return { web_search_options: {} };
-      }
-      return { tools: [{ type: 'retrieval' }] };
-    default:
-      return enableSearch ? { tools: [{ type: 'retrieval' }] } : {};
-  }
+export function isGemmaModel(model: Model): boolean {
+  return model.id.toLowerCase().includes('gemma');
 }
 
 /**
- * 创建 AI SDK OpenAI 客户端
+ * 获取 Gemini 默认基础 URL
+ */
+function getDefaultBaseUrl(): string {
+  return 'https://generativelanguage.googleapis.com/v1beta';
+}
+
+/**
+ * 创建 AI SDK Gemini 客户端
  * @param model 模型配置
- * @returns AI SDK OpenAI Provider 实例
+ * @returns AI SDK Google Generative AI Provider 实例
  */
-export function createClient(model: Model): AISDKOpenAIProvider {
+export function createClient(model: Model): GoogleGenerativeAIProvider {
   try {
     const apiKey = model.apiKey;
     if (!apiKey) {
-      console.error('[AI SDK Client] 错误: 未提供 API 密钥');
-      throw new Error('未提供 OpenAI API 密钥，请在设置中配置');
+      console.error('[Gemini AI SDK Client] 错误: 未提供 API 密钥');
+      throw new Error('未提供 Gemini API 密钥，请在设置中配置');
     }
 
     // 处理基础 URL
-    let baseURL = model.baseUrl || 'https://api.openai.com/v1';
+    let baseURL = model.baseUrl || getDefaultBaseUrl();
 
     // 开发环境下自动转换为代理 URL
     if (import.meta.env.DEV && baseURL.includes('code.newcli.com')) {
       const proxyPath = baseURL.replace('https://code.newcli.com', '/api/newcli');
       baseURL = `${window.location.origin}${proxyPath}`;
-      console.log(`[AI SDK Client] 开发环境代理转换`);
+      console.log(`[Gemini AI SDK Client] 开发环境代理转换`);
     }
-
-    // 检查是否需要特殊处理
-    const shouldUseOriginal = baseURL.endsWith('/') || baseURL.endsWith('volces.com/api/v3');
 
     // 确保 baseURL 格式正确
     if (baseURL.endsWith('/')) {
       baseURL = baseURL.slice(0, -1);
     }
 
-    // 确保 baseURL 包含 /v1（特殊情况除外）
-    if (!baseURL.includes('/v1') && !shouldUseOriginal) {
-      baseURL = `${baseURL}/v1`;
-    }
-
-    console.log(`[AI SDK Client] 创建客户端, 模型ID: ${model.id}, baseURL: ${baseURL.substring(0, 30)}...`);
+    console.log(`[Gemini AI SDK Client] 创建客户端, 模型ID: ${model.id}, baseURL: ${baseURL.substring(0, 40)}...`);
 
     // 构建配置
-    const config: Parameters<typeof createOpenAI>[0] = {
+    const config: Parameters<typeof createGoogleGenerativeAI>[0] = {
       apiKey,
       baseURL,
     };
@@ -244,16 +217,10 @@ export function createClient(model: Model): AISDKOpenAIProvider {
     const customHeaders: Record<string, string> = {};
     const headersToRemove: string[] = [];
 
-    // Azure OpenAI 特殊配置
-    if (isAzureOpenAI(model)) {
-      customHeaders['api-version'] = (model as any).apiVersion || '2024-02-15-preview';
-      console.log(`[AI SDK Client] 检测到 Azure OpenAI`);
-    }
-
     // 添加模型级别额外头部
     if (model.extraHeaders) {
       Object.assign(customHeaders, model.extraHeaders);
-      console.log(`[AI SDK Client] 设置模型额外头部: ${Object.keys(model.extraHeaders).join(', ')}`);
+      console.log(`[Gemini AI SDK Client] 设置模型额外头部: ${Object.keys(model.extraHeaders).join(', ')}`);
     }
 
     // 添加供应商级别额外头部
@@ -269,7 +236,7 @@ export function createClient(model: Model): AISDKOpenAIProvider {
       });
 
       if (headersToRemove.length > 0) {
-        console.log(`[AI SDK Client] 配置删除请求头: ${headersToRemove.join(', ')}`);
+        console.log(`[Gemini AI SDK Client] 配置删除请求头: ${headersToRemove.join(', ')}`);
       }
     }
 
@@ -287,26 +254,20 @@ export function createClient(model: Model): AISDKOpenAIProvider {
       config.headers = customHeaders;
     }
 
-    // 添加组织信息
-    if ((model as any).organization) {
-      config.organization = (model as any).organization;
-      console.log(`[AI SDK Client] 设置组织ID: ${(model as any).organization}`);
-    }
-
-    // 创建并返回 AI SDK OpenAI Provider
-    const client = createOpenAI(config);
-    console.log(`[AI SDK Client] 客户端创建成功`);
+    // 创建并返回 AI SDK Google Generative AI Provider
+    const client = createGoogleGenerativeAI(config);
+    console.log(`[Gemini AI SDK Client] 客户端创建成功`);
     return client;
 
   } catch (error) {
-    console.error('[AI SDK Client] 创建客户端失败:', error);
+    console.error('[Gemini AI SDK Client] 创建客户端失败:', error);
     
     // 创建后备客户端
-    const fallbackClient = createOpenAI({
-      apiKey: 'sk-missing-key-please-configure',
-      baseURL: 'https://api.openai.com/v1',
+    const fallbackClient = createGoogleGenerativeAI({
+      apiKey: 'missing-key-please-configure',
+      baseURL: getDefaultBaseUrl(),
     });
-    console.warn('[AI SDK Client] 使用后备客户端配置');
+    console.warn('[Gemini AI SDK Client] 使用后备客户端配置');
     return fallbackClient;
   }
 }
@@ -318,18 +279,18 @@ export async function testConnection(model: Model): Promise<boolean> {
   try {
     const client = createClient(model);
     
-    console.log(`[AI SDK Client] 测试连接: ${model.id}`);
+    console.log(`[Gemini AI SDK Client] 测试连接: ${model.id}`);
     
-    // 使用 .chat() 调用 Chat Completions API（兼容 OpenAI 兼容 API）
+    // 使用简单的生成请求测试连接
     const result = await generateText({
-      model: client.chat(model.id) as any,
+      model: client(model.id),
       prompt: 'Hello',
       maxOutputTokens: 5,
     });
 
     return Boolean(result.text);
   } catch (error) {
-    console.error('[AI SDK Client] 连接测试失败:', error);
+    console.error('[Gemini AI SDK Client] 连接测试失败:', error);
     return false;
   }
 }

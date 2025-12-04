@@ -13,8 +13,8 @@ import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 // 导出OpenAI API模块
 export * as openaiApi from './openai';
 
-// 导出Gemini API模块
-export * as geminiApi from './gemini';
+// 导出Gemini API模块 (使用 AI SDK 实现)
+export * as geminiApi from './gemini-aisdk';
 
 // 导出Anthropic API模块
 export * as anthropicApi from './anthropic';

@@ -144,9 +144,12 @@ export async function universalFetch(url: string, options: UniversalFetchOptions
         const isExplicitlyNonStream = bodyStr.includes('"stream":false') || bodyStr.includes('"stream": false');
         const isExplicitlyStream = bodyStr.includes('"stream":true') || bodyStr.includes('"stream": true');
         
-        // 只有当明确指定 "stream":true 时才使用流式 API
+        // 检测流式 API 请求
+        // 1. OpenAI 兼容格式：/chat/completions + "stream":true
+        // 2. Gemini SSE 格式：streamGenerateContent?alt=sse
         const isChatApiUrl = url.includes('/chat/completions') || url.includes('/v1/completions');
-        const isChatStreamRequest = isChatApiUrl && isExplicitlyStream && !isExplicitlyNonStream;
+        const isGeminiSseUrl = url.includes('streamGenerateContent') && url.includes('alt=sse');
+        const isChatStreamRequest = (isChatApiUrl && isExplicitlyStream && !isExplicitlyNonStream) || isGeminiSseUrl;
         const isMcpRequest = url.includes('/mcp') || bodyStr.includes('"jsonrpc"');
         
         if (isChatStreamRequest && !isMcpRequest) {

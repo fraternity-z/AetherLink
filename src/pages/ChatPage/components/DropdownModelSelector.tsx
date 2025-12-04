@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import type { Model } from '../../../shared/types';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../../shared/store';
+import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
 import type { SelectChangeEvent } from '@mui/material';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../../shared/utils/modelUtils';
@@ -32,7 +32,7 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const providers = useSelector((state: RootState) => state.settings.providers || []);
+  const providers = useSelector(selectProviders);
 
   // 获取提供商名称的函数
   const getProviderName = React.useCallback((providerId: string) => {

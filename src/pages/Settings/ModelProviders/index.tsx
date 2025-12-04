@@ -136,6 +136,8 @@ const ModelProviderSettings: React.FC = () => {
     customEndpointError,
     setCustomEndpointError,
     multiKeyEnabled,
+    useResponsesAPI,
+    setUseResponsesAPI,
     buttonStyles,
     handleToggleMultiKey,
     toggleShowApiKey,
@@ -536,7 +538,7 @@ const ModelProviderSettings: React.FC = () => {
                         >
                           {baseUrl.endsWith('#') ? t('modelSettings.provider.baseUrlForce') :
                            baseUrl.endsWith('/') ? t('modelSettings.provider.baseUrlKeep') : t('modelSettings.provider.baseUrlComplete')}
-                          {getCompleteApiUrl(baseUrl, provider?.providerType)}
+                          {getCompleteApiUrl(baseUrl, provider?.providerType, useResponsesAPI)}
                         </span>
                       )}
                     </span>
@@ -550,6 +552,56 @@ const ModelProviderSettings: React.FC = () => {
                   }}
                 />
               </Box>
+
+              {/* Responses API 开关（仅对 OpenAI 类型供应商显示） */}
+              {isOpenAIProvider(provider?.providerType) && (
+                <Box sx={{ mb: 3 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {t('modelSettings.provider.responsesAPI', 'Responses API')}
+                      </Typography>
+                      <Tooltip 
+                        title={t('modelSettings.provider.responsesAPIDesc', 'OpenAI 新版 Responses API，支持更多高级功能。仅在使用官方 OpenAI API 时建议启用。')}
+                        arrow
+                        placement="top"
+                      >
+                        <IconButton 
+                          size="small" 
+                          sx={{ 
+                            p: 0.5,
+                            color: 'text.secondary',
+                            '&:hover': {
+                              color: 'primary.main',
+                              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                            }
+                          }}
+                        >
+                          <Info size={16} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <FormControlLabel
+                      control={
+                        <CustomSwitch
+                          checked={useResponsesAPI}
+                          onChange={(e) => setUseResponsesAPI(e.target.checked)}
+                        />
+                      }
+                      label={useResponsesAPI ? t('modelSettings.provider.enabled') : t('modelSettings.provider.disabled')}
+                      labelPlacement="start"
+                      sx={{ ml: 2, mr: 0 }}
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    {t('modelSettings.provider.responsesAPIHint', '注意：大多数 OpenAI 兼容 API（如硅基流动、DeepSeek）不支持 Responses API，请保持关闭。')}
+                  </Typography>
+                </Box>
+              )}
 
               {/* 高级 API 配置按钮 */}
               <Box sx={{ mb: 3 }}>

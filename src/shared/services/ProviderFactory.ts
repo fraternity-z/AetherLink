@@ -5,13 +5,12 @@
 import type { Model } from '../types';
 import * as openaiApi from '../api/openai';
 import * as anthropicApi from '../api/anthropic';
-import * as geminiApi from '../api/gemini';
 import { modelComboService } from './ModelComboService';
 import { OpenAIAISDKProvider } from '../api/openai-aisdk';
+import { GeminiAISDKProvider } from '../api/gemini-aisdk';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 import { getDefaultGroupName } from '../utils/modelUtils';
 import ApiKeyManager from './ApiKeyManager';
-
 
 /**
  * 获取实际的提供商类型 - 支持智能路由
@@ -107,7 +106,18 @@ export function getProviderApi(model: Model): any {
     case 'anthropic':
       return anthropicApi;
     case 'gemini':
-      return geminiApi;
+      // 统一使用 AI SDK Gemini Provider
+      console.log(`[ProviderFactory] 使用AI SDK Gemini API`);
+      return {
+        sendChatRequest: async (messages: any[], model: Model) => {
+          const provider = new GeminiAISDKProvider(model);
+          return await provider.sendChatMessage(messages, {});
+        },
+        testConnection: async (model: Model) => {
+          const provider = new GeminiAISDKProvider(model);
+          return await provider.testConnection();
+        }
+      };
     case 'azure-openai':
       // Azure OpenAI使用OpenAI兼容API，但有特殊配置
       console.log(`[ProviderFactory] 使用Azure OpenAI API`);
@@ -119,21 +129,29 @@ export function getProviderApi(model: Model): any {
           const provider = new OpenAIAISDKProvider(model);
           return await provider.sendChatMessage(messages, {});
         },
-        testConnection: async (_model: Model) => {
-          try {
-            // 简单的连接测试
-            return true;
-          } catch (error) {
-            console.error('AI SDK连接测试失败:', error);
-            return false;
-          }
+        testConnection: async (model: Model) => {
+          const provider = new OpenAIAISDKProvider(model);
+          return await provider.testConnection();
+        }
+      };
+    case 'gemini-aisdk':
+      console.log(`[ProviderFactory] 使用AI SDK Gemini API`);
+      return {
+        sendChatRequest: async (messages: any[], model: Model) => {
+          const provider = new GeminiAISDKProvider(model);
+          return await provider.sendChatMessage(messages, {});
+        },
+        testConnection: async (model: Model) => {
+          const provider = new GeminiAISDKProvider(model);
+          return await provider.testConnection();
         }
       };
     case 'openai':
-    case 'deepseek': // DeepSeek使用OpenAI兼容API
-    case 'google':   // Google使用OpenAI兼容API
-    case 'grok':     // Grok使用OpenAI兼容API
-    case 'siliconflow': // 硅基流动使用OpenAI兼容API
+    case 'deepseek': 
+    case 'google':   
+    case 'grok':     
+    case 'siliconflow': 
+    case 'volcengine':  
     case 'volcengine':  // 火山引擎使用OpenAI兼容API
     default:
       // 默认使用OpenAI兼容API，与最佳实例保持一致
@@ -324,15 +342,46 @@ async function fetchModelsFromEndpoint(provider: any, providerType: string): Pro
           rawModels = await anthropicApi.fetchModels(providerWithKey);
           break;
         case 'gemini':
-          // Gemini的fetchModels需要Model对象格式，需要转换
-          const geminiModel = {
-            id: provider.id,
-            name: provider.name || 'Gemini',
-            apiKey: apiKey,
-            baseUrl: provider.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-            provider: 'gemini'
-          };
-          rawModels = await geminiApi.fetchModels(geminiModel);
+        case 'gemini-aisdk':
+          // Gemini 尝试从 API 动态获取模型列表
+          try {
+            const geminiBaseUrl = providerWithKey.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
+            const geminiModelsUrl = `${geminiBaseUrl}/models?key=${apiKey}`;
+            console.log(`[fetchModelsFromEndpoint] Gemini获取模型列表: ${geminiBaseUrl}/models`);
+            
+            const geminiResponse = await fetch(geminiModelsUrl);
+            if (geminiResponse.ok) {
+              const geminiData = await geminiResponse.json();
+              if (geminiData.models && Array.isArray(geminiData.models)) {
+                // 过滤出 generateContent 支持的模型
+                rawModels = geminiData.models
+                  .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+                  .map((m: any) => ({
+                    id: m.name?.replace('models/', '') || m.name,
+                    name: m.displayName || m.name?.replace('models/', ''),
+                    description: m.description || '',
+                    owned_by: 'google'
+                  }));
+                console.log(`[fetchModelsFromEndpoint] Gemini API获取到 ${rawModels.length} 个模型`);
+              }
+            }
+          } catch (geminiError) {
+            console.warn(`[fetchModelsFromEndpoint] Gemini API获取失败，使用预设列表:`, geminiError);
+          }
+          
+          // 如果 API 获取失败或没有模型，使用预设列表
+          if (!rawModels || rawModels.length === 0) {
+            console.log(`[fetchModelsFromEndpoint] Gemini使用预设模型列表`);
+            rawModels = [
+              { id: 'gemini-2.5-pro-preview-06-05', name: 'Gemini 2.5 Pro Preview', description: 'Gemini最新的推理模型，支持思考', owned_by: 'google' },
+              { id: 'gemini-2.5-flash-preview-05-20', name: 'Gemini 2.5 Flash Preview', description: 'Gemini 2.5快速版，平衡性能与速度', owned_by: 'google' },
+              { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Gemini 2.0快速版', owned_by: 'google' },
+              { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite', description: 'Gemini 2.0轻量版', owned_by: 'google' },
+              { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Gemini 1.5专业版，支持长上下文', owned_by: 'google' },
+              { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Gemini 1.5快速版', owned_by: 'google' },
+              { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash 8B', description: 'Gemini 1.5轻量版', owned_by: 'google' }
+            ];
+          }
           break;
         case 'deepseek':
           // DeepSeek使用OpenAI兼容API，失败时返回预设列表

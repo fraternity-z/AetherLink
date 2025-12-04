@@ -52,6 +52,7 @@ export interface ModelProvider {
   extraBody?: Record<string, any>; // 额外的请求体参数
   customModelEndpoint?: string; // 自定义模型端点URL
   useCorsPlugin?: boolean; // 移动端是否使用CORS插件（默认false，插件现已支持流式输出）
+  useResponsesAPI?: boolean; // 是否使用 OpenAI Responses API（仅对 openai 和 openai-aisdk 类型有效）
 }
 
 // 默认模型供应商配置

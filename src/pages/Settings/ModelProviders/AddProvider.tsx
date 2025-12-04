@@ -21,22 +21,12 @@ import { useAppDispatch } from '../../../shared/store';
 import { addProvider } from '../../../shared/store/settingsSlice';
 import { generateId } from '../../../shared/utils';
 import { SafeAreaContainer } from "../../../components/settings/SettingComponents";
+import { providerTypeOptions } from './components/constants';
 
-// 供应商类型列表
-const providerTypes = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'openai-response', label: 'OpenAI (Responses API) - 新版API' },
-  { value: 'openai-aisdk', label: 'OpenAI (AI SDK) - 流式优化' },
-  { value: 'azure-openai', label: 'Azure OpenAI' },
-  { value: 'gemini', label: 'Gemini' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'grok', label: 'xAI (Grok)' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'zhipu', label: '智谱AI' },
-  { value: 'siliconflow', label: '硅基流动 (SiliconFlow)' },
-  { value: 'volcengine', label: '火山引擎' },
-  { value: 'minimax', label: 'MiniMax' },
-];
+// 使用统一的供应商类型列表（排除 custom 和 google，添加时应选择具体类型）
+const providerTypes = providerTypeOptions.filter(
+  opt => !['custom', 'google'].includes(opt.value)
+);
 
 const AddProviderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -69,9 +59,6 @@ const AddProviderPage: React.FC = () => {
   const getDefaultBaseUrl = (type: string): string => {
     switch (type) {
       case 'openai':
-        return 'https://api.openai.com/v1';
-      case 'openai-response':
-        return 'https://api.openai.com/v1';
       case 'openai-aisdk':
         return 'https://api.openai.com/v1';
       case 'azure-openai':
@@ -92,6 +79,8 @@ const AddProviderPage: React.FC = () => {
         return 'https://ark.cn-beijing.volces.com/api/v3';
       case 'minimax':
         return 'https://api.minimaxi.com';
+      case 'google':
+        return 'https://generativelanguage.googleapis.com/v1beta';
       default:
         return '';
     }

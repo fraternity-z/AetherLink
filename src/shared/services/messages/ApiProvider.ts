@@ -4,7 +4,7 @@ import { getActualProviderType, testConnection } from '../ProviderFactory';
 import { OpenAIProvider } from '../../api/openai';
 import { OpenAIAISDKProvider } from '../../api/openai-aisdk';
 import { AnthropicProvider } from '../../api/anthropic';
-import GeminiProvider from '../../api/gemini/provider';
+import { GeminiAISDKProvider } from '../../api/gemini-aisdk';
 import { ModelComboProvider } from './ModelComboProvider';
 import { EnhancedApiProvider } from '../network/EnhancedApiProvider';
 import { OpenAIResponseProvider } from '../../providers/OpenAIResponseProvider';
@@ -39,13 +39,9 @@ function createProviderInstance(model: Model, providerType: string): any {
     case 'anthropic':
       return new AnthropicProvider(model);
     case 'gemini':
-      return new GeminiProvider({
-        id: model.id,
-        name: model.name || 'Gemini',
-        apiKey: model.apiKey,
-        apiHost: model.baseUrl || 'https://generativelanguage.googleapis.com/v1beta',
-        models: [{ id: model.id }]
-      });
+    case 'gemini-aisdk':
+      // 统一使用 AI SDK Gemini Provider
+      return new GeminiAISDKProvider(model);
     case 'openai-aisdk':
       return new OpenAIAISDKProvider(model);
     case 'openai-response':
@@ -145,32 +141,23 @@ function isVideoGenerationModel(model: Model): boolean {
 
 /**
  * 检查是否应该使用 OpenAI Responses API
+ * 优先级：供应商配置 > 模型配置 > 默认关闭
  */
 function shouldUseResponsesAPI(model: Model): boolean {
-  // 检查模型是否支持 Responses API
-  const responsesAPIModels = [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gpt-4o-2024-11-20',
-    'gpt-4o-2024-08-06',
-    'gpt-4o-mini-2024-07-18',
-    'o1-preview',
-    'o1-mini'
-  ];
-
-  // 检查模型ID是否在支持列表中
-  if (responsesAPIModels.includes(model.id)) {
+  // 1. 检查供应商级别的 useResponsesAPI 设置
+  const providerConfig = getProviderConfig(model);
+  if (providerConfig?.useResponsesAPI === true) {
+    console.log(`[ApiProvider] 供应商 ${providerConfig.name} 启用了 Responses API`);
     return true;
   }
 
-  // 检查是否明确启用了 Responses API
+  // 2. 检查模型级别是否明确启用了 Responses API
   if ((model as any).useResponsesAPI === true) {
+    console.log(`[ApiProvider] 模型 ${model.id} 启用了 Responses API`);
     return true;
   }
 
-  // 检查全局设置（暂时跳过，因为移动端设置结构不同）
-  // 可以在后续版本中添加全局 Responses API 开关
-
+  // 默认关闭 Responses API（兼容更多 OpenAI 兼容服务）
   return false;
 }
 

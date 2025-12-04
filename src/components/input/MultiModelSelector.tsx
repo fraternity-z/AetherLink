@@ -6,7 +6,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { SolidBridge } from '../../shared/bridges/SolidBridge';
-import type { RootState } from '../../shared/store';
+import { selectProviders } from '../../shared/store/selectors/settingsSelectors';
 import type { Model } from '../../shared/types';
 
 export interface MultiModelSelectorProps {
@@ -53,7 +53,7 @@ const MultiModelSelector: React.FC<MultiModelSelectorProps> = ({
   }, []);
 
   // 从 Redux 获取提供商配置
-  const providers = useSelector((state: RootState) => state.settings.providers || []);
+  const providers = useSelector(selectProviders);
 
   // 准备传递给 SolidJS 组件的 props
   const solidProps = useMemo(() => ({

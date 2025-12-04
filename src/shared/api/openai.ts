@@ -7,7 +7,7 @@
 export * from './openai/index';
 
 // 导入并重新导出具体函数，以保持向后兼容性
-import { sendChatRequest } from './openai/chat';
+import { sendChatRequest } from './openai/index';
 import { testConnection } from './openai/client';
 
 // 重新导出主要函数
