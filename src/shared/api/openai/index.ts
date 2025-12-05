@@ -66,17 +66,16 @@ export {
   OpenAIProvider
 } from './provider';
 
-// 导出参数管理器
+// 导出统一参数适配器（推荐使用）
 export {
-  OpenAIParameterManager,
-  createParameterManager,
-  getParameterManager,
-  type ParameterConfig,
-  type BaseParameters,
-  type OpenAISpecificParameters,
-  type ReasoningParameters,
-  type CompleteAPIParameters
-} from './parameterManager';
+  OpenAIParameterAdapter,
+  createOpenAIAdapter,
+  type ReasoningParameters as UnifiedReasoningParameters,
+  type ResponsesAPIReasoningParameters,
+  type BaseAPIParameters,
+  type CompleteAPIParameters as UnifiedCompleteAPIParameters
+} from '../parameters';
+
 
 // 导出统一聊天模块
 export {

@@ -7,7 +7,7 @@ import { generateText } from 'ai';
 import type { OpenAIProvider as AISDKOpenAIProvider } from '@ai-sdk/openai';
 import { createClient, supportsMultimodal, supportsWebSearch, getWebSearchParams } from './client';
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
-import { OpenAIParameterManager, createParameterManager } from '../openai/parameterManager';
+import { OpenAIParameterAdapter, createOpenAIAdapter } from '../parameters';
 import { isReasoningModel } from '../../utils/modelDetection';
 import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
@@ -25,12 +25,12 @@ import { ChunkType, type Chunk } from '../../types/chunk';
  */
 export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
   protected client: AISDKOpenAIProvider;
-  protected parameterManager: OpenAIParameterManager;
+  protected parameterAdapter: OpenAIParameterAdapter;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterManager = createParameterManager({ model });
+    this.parameterAdapter = createOpenAIAdapter({ model });
   }
 
   /**
@@ -64,33 +64,33 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
   /**
    * 获取温度参数
    */
-  protected getTemperature(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().temperature;
+  protected getTemperature(assistant?: any): number | undefined {
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getBaseAPIParameters().temperature;
   }
 
   /**
    * 获取 top_p 参数
    */
-  protected getTopP(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().top_p;
+  protected getTopP(assistant?: any): number | undefined {
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getBaseAPIParameters().top_p;
   }
 
   /**
    * 获取 max_tokens 参数
    */
-  protected getMaxTokens(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().max_tokens;
+  protected getMaxTokens(assistant?: any): number | undefined {
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getBaseAPIParameters().max_tokens;
   }
 
   /**
    * 获取 OpenAI 专属参数
    */
   protected getOpenAISpecificParameters(assistant?: any): any {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getOpenAISpecificParameters();
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getOpenAISpecificParameters();
   }
 
   /**
@@ -98,10 +98,10 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
    */
   protected getReasoningEffort(assistant?: any, model?: Model): any {
     if (model && model !== this.model) {
-      this.parameterManager.updateModel(model);
+      this.parameterAdapter.updateModel(model);
     }
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getReasoningParameters();
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getReasoningParameters();
   }
 
   /**
@@ -340,7 +340,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
     const streamEnabled = getStreamOutputSetting();
 
     // 更新参数管理器
-    this.parameterManager.updateAssistant(assistant);
+    this.parameterAdapter.updateAssistant(assistant);
 
     // 获取参数
     const temperature = this.getTemperature(assistant);
@@ -410,8 +410,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
   private async handleStreamResponse(
     messages: any[],
     options: {
-      temperature: number;
-      maxTokens: number;
+      temperature?: number;
+      maxTokens?: number;
       tools: any[];
       mcpTools: MCPTool[];
       mcpMode: 'prompt' | 'function';
@@ -544,8 +544,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
   private async handleNonStreamResponse(
     messages: any[],
     options: {
-      temperature: number;
-      maxTokens: number;
+      temperature?: number;
+      maxTokens?: number;
       tools: any[];
       mcpTools: MCPTool[];
       mcpMode: 'prompt' | 'function';

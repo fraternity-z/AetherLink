@@ -49,7 +49,6 @@ export function useSettingsManagement() {
   ];
 
   const settingsArray = [
-    { id: 'streamOutput', name: '流式输出', defaultValue: settings.streamOutput, description: '实时显示AI回答，打字机效果' },
     { id: 'showMessageDivider', name: '消息分割线', defaultValue: settings.showMessageDivider, description: '在消息之间显示分割线' },
     { id: 'copyableCodeBlocks', name: '代码块可复制', defaultValue: settings.copyableCodeBlocks, description: '允许复制代码块的内容' },
     { id: 'renderUserInputAsMarkdown', name: '渲染用户输入', defaultValue: settings.renderUserInputAsMarkdown, description: '是否渲染用户输入的Markdown格式（关闭后用户消息将显示为纯文本）' },

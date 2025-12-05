@@ -23,20 +23,16 @@ import {
   convertToolCallsToMcpResponses
 } from './tools';
 import { ChunkType, type Chunk } from '../../types/chunk';
-import {
-  EFFORT_RATIO,
-  findTokenLimit
-} from '../../config/constants';
 import { getMainTextContent } from '../../utils/blockUtils';
-import { getDefaultThinkingEffort, getAppSettings } from '../../utils/settingsUtils';
+import { AnthropicParameterAdapter, createAnthropicAdapter } from '../parameters';
 
 /**
  * Anthropic 参数接口
  */
 export interface AnthropicParameters {
-  temperature: number;
-  top_p: number;
-  max_tokens: number;
+  temperature?: number;
+  top_p?: number;
+  max_tokens?: number;
   top_k?: number;
   stop_sequences?: string[];
 }
@@ -54,10 +50,12 @@ export interface ThinkingParameters {
  */
 export abstract class BaseAnthropicAISDKProvider extends AbstractBaseProvider {
   protected client: AISDKAnthropicProvider;
+  protected parameterAdapter: AnthropicParameterAdapter;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
+    this.parameterAdapter = createAnthropicAdapter({ model });
   }
 
   /**
@@ -96,107 +94,62 @@ export abstract class BaseAnthropicAISDKProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 获取基础参数
+   * 获取基础参数 - 使用统一参数适配器
    */
   protected getBaseParameters(assistant?: any): AnthropicParameters {
-    const temperature = assistant?.settings?.temperature ?? 
-                       assistant?.temperature ?? 
-                       this.model.temperature ?? 
-                       1.0;
+    this.parameterAdapter.updateAssistant(assistant);
+    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
+    
+    const params: AnthropicParameters = {};
 
-    const topP = assistant?.settings?.topP ?? 
-                assistant?.topP ?? 
-                (this.model as any).top_p ?? 
-                1.0;
-
-    const maxTokens = assistant?.settings?.maxTokens ?? 
-                     assistant?.maxTokens ?? 
-                     this.model.maxTokens ?? 
-                     4096;
-
-    const params: AnthropicParameters = {
-      temperature,
-      top_p: topP,
-      max_tokens: maxTokens
-    };
-
-    // 检查是否启用了最大输出Token参数
-    const appSettings = getAppSettings();
-    if (appSettings.enableMaxOutputTokens === false) {
-      // 如果禁用了，从参数中移除max_tokens
-      delete (params as any).max_tokens;
-      console.log(`[AnthropicProvider] 最大输出Token已禁用，从 API 参数中移除 max_tokens`);
+    // 只有当参数存在时才设置
+    if (resolved.base.temperature !== undefined) {
+      params.temperature = resolved.base.temperature;
+    }
+    if (resolved.base.topP !== undefined) {
+      params.top_p = resolved.base.topP;
+    }
+    if (resolved.base.maxOutputTokens !== undefined) {
+      params.max_tokens = resolved.base.maxOutputTokens;
     }
 
-    // Top-K
-    if (assistant?.topK !== undefined && assistant.topK !== 40) {
-      params.top_k = assistant.topK;
+    // 添加特定参数
+    if (resolved.providerSpecific.top_k !== undefined) {
+      params.top_k = resolved.providerSpecific.top_k;
     }
-
-    // Stop Sequences
-    if (assistant?.stopSequences && Array.isArray(assistant.stopSequences) && assistant.stopSequences.length > 0) {
-      params.stop_sequences = assistant.stopSequences;
+    if (resolved.providerSpecific.stop_sequences) {
+      params.stop_sequences = resolved.providerSpecific.stop_sequences;
     }
 
     return params;
   }
 
   /**
-   * 获取工具选择参数
+   * 获取工具选择参数 - 使用统一参数适配器
    */
   protected getToolChoice(assistant?: any): string | undefined {
-    // Tool Choice
-    if (assistant?.toolChoice && assistant.toolChoice !== 'auto') {
-      return assistant.toolChoice;
-    }
-    return undefined;
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getToolChoice();
   }
 
   /**
-   * 获取 Extended Thinking 参数
+   * 获取 Extended Thinking 参数 - 使用统一参数适配器
    */
   protected getThinkingParameters(assistant?: any): ThinkingParameters | null {
-    // 如果模型不支持 Extended Thinking，返回 null
     if (!this.supportsExtendedThinking()) {
       return null;
     }
 
-    // 获取推理努力程度
-    const reasoningEffort = assistant?.settings?.reasoning_effort || getDefaultThinkingEffort();
-
-    console.log(`[AnthropicProvider] 模型 ${this.model.id} 推理努力程度: ${reasoningEffort}`);
-
-    // 如果明确禁用
-    if (reasoningEffort === 'disabled' || reasoningEffort === 'none' || reasoningEffort === 'off') {
-      return { type: 'disabled' };
+    this.parameterAdapter.updateAssistant(assistant);
+    const thinking = this.parameterAdapter.getThinkingParameters();
+    
+    if (!thinking) {
+      return null;
     }
 
-    // 计算推理 token 预算
-    const effortRatio = EFFORT_RATIO[reasoningEffort as keyof typeof EFFORT_RATIO] || 0.3;
-    const tokenLimit = findTokenLimit(this.model.id);
+    console.log(`[AnthropicProvider] 模型 ${this.model.id} Extended Thinking: ${thinking.type}`);
 
-    let budgetTokens: number;
-    if (tokenLimit) {
-      budgetTokens = Math.floor(
-        (tokenLimit.max - tokenLimit.min) * effortRatio + tokenLimit.min
-      );
-    } else {
-      // 默认预算
-      const defaultBudgets: Record<string, number> = {
-        'low': 5000,
-        'medium': 10000,
-        'high': 20000
-      };
-      budgetTokens = defaultBudgets[reasoningEffort] || 10000;
-    }
-
-    // 确保在有效范围内 (1024 - 128000)
-    budgetTokens = Math.max(1024, Math.min(budgetTokens, 128000));
-
-    return {
-      type: 'enabled',
-      budgetTokens
-    };
+    return thinking;
   }
 
   /**
@@ -579,8 +532,8 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
   private async handleStreamResponse(
     messages: any[],
     options: {
-      temperature: number;
-      maxTokens: number;
+      temperature?: number;
+      maxTokens?: number;
       tools: any[];
       mcpTools: MCPTool[];
       mcpMode: 'prompt' | 'function';
@@ -713,8 +666,8 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
   private async handleNonStreamResponse(
     messages: any[],
     options: {
-      temperature: number;
-      maxTokens: number;
+      temperature?: number;
+      maxTokens?: number;
       tools: any[];
       mcpTools: MCPTool[];
       mcpMode: 'prompt' | 'function';

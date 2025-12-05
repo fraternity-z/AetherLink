@@ -441,8 +441,8 @@ export async function unifiedStreamCompletion(
   const stream = await client.chat.completions.create({
     model: modelId,
     messages,
-    temperature: temperature || 1.0,
-    max_tokens: maxTokens,
+    ...(temperature !== undefined && { temperature }),
+    ...(maxTokens !== undefined && { max_tokens: maxTokens }),
     stream: true,
     ...apiParams
   });

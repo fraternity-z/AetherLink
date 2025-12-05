@@ -16,8 +16,10 @@ import {
   type Theme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { ChevronLeft, User, Sparkles } from 'lucide-react';
+import { ChevronLeft, User, Sparkles, Settings2 } from 'lucide-react';
 import { useKeyboard } from '../../../shared/hooks/useKeyboard';
+import { ParameterEditor } from '../../ParameterEditor';
+import { detectProviderFromModel } from '../../../shared/config/parameterMetadata';
 
 // 样式常量
 const styles = {
@@ -119,10 +121,20 @@ export interface EditAssistantDialogProps {
   assistantName: string;
   assistantPrompt: string;
   assistantAvatar: string;
+  /** 当前使用的模型 ID */
+  modelId?: string;
+  /** 参数值 */
+  parameterValues?: Record<string, any>;
+  /** 已启用的参数 */
+  enabledParams?: Record<string, boolean>;
   onNameChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onPromptChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onAvatarClick: () => void;
   onPromptSelectorClick: () => void;
+  /** 参数变化回调 */
+  onParameterChange?: (key: string, value: any) => void;
+  /** 参数启用状态变化 */
+  onParameterToggle?: (key: string, enabled: boolean) => void;
 }
 
 /**
@@ -135,10 +147,15 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   assistantName,
   assistantPrompt,
   assistantAvatar,
+  modelId = 'gpt-4',
+  parameterValues: externalParamValues = {},
+  enabledParams: externalEnabledParams = {},
   onNameChange,
   onPromptChange,
   onAvatarClick,
-  onPromptSelectorClick
+  onPromptSelectorClick,
+  onParameterChange,
+  onParameterToggle
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -147,6 +164,24 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   useKeyboard({ lock: isMobile && open });
   
   const [tabValue, setTabValue] = useState(0);
+  
+  // 内部状态管理参数（当外部没有提供时使用）
+  const [localParamValues, setLocalParamValues] = useState<Record<string, any>>(externalParamValues);
+  const [localEnabledParams, setLocalEnabledParams] = useState<Record<string, boolean>>(externalEnabledParams);
+  
+  // 参数变化处理
+  const handleParamChange = (key: string, value: any) => {
+    setLocalParamValues(prev => ({ ...prev, [key]: value }));
+    onParameterChange?.(key, value);
+  };
+  
+  const handleParamToggle = (key: string, enabled: boolean) => {
+    setLocalEnabledParams(prev => ({ ...prev, [key]: enabled }));
+    onParameterToggle?.(key, enabled);
+  };
+  
+  // 检测供应商类型
+  const providerType = detectProviderFromModel(modelId);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -318,6 +353,12 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
           }}
         >
           <Tab label="提示词" />
+          <Tab 
+            label="参数" 
+            icon={<Settings2 size={16} />} 
+            iconPosition="start"
+            sx={{ minHeight: isMobile ? 40 : 36 }}
+          />
         </Tabs>
       </Box>
 
@@ -435,6 +476,19 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
                 </Button>
               </Box>
             </Paper>
+          </Box>
+        )}
+
+        {/* 参数 Tab 内容 */}
+        {tabValue === 1 && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <ParameterEditor
+              providerType={providerType}
+              values={localParamValues}
+              enabledParams={localEnabledParams}
+              onChange={handleParamChange}
+              onToggle={handleParamToggle}
+            />
           </Box>
         )}
       </DialogContent>

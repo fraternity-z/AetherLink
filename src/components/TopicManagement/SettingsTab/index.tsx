@@ -18,7 +18,7 @@ import SettingGroups from './SettingGroups';
 import AvatarUploader from '../../settings/AvatarUploader';
 import MCPSidebarControls from './MCPSidebarControls';
 import ThrottleLevelSelector from './ThrottleLevelSelector';
-import ContextSettings from './ContextSettings';
+import DynamicContextSettings from './DynamicContextSettings';
 import CodeBlockSettings from './CodeBlockSettings';
 import InputSettings from './InputSettings';
 import MathSettings from './MathSettings';
@@ -39,6 +39,8 @@ interface SettingsTabProps {
   settings: Setting[];
   /** 设置变更回调函数 */
   onSettingChange: (settingId: string, value: boolean | string) => void;
+  /** 当前模型 ID (用于动态参数显示) */
+  modelId?: string;
   /** 初始上下文长度 */
   initialContextLength?: number;
   /** 上下文长度变更回调 */
@@ -71,6 +73,7 @@ interface SettingsTabProps {
 export default function SettingsTab({
   settings,
   onSettingChange,
+  modelId = 'gpt-4',
   mcpMode = 'function',
   toolsEnabled = true,
   onMCPModeChange,
@@ -238,24 +241,22 @@ export default function SettingsTab({
       <CodeBlockSettings onSettingChange={handleSettingChange} />
       <Divider sx={{ my: 0.5 }} />
 
-      {/* 可折叠的上下文设置 */}
-      <ContextSettings
+      {/* 动态上下文设置 */}
+      <DynamicContextSettings
+        modelId={modelId}
         contextWindowSize={getSetting('contextWindowSize', 0)}
         contextCount={getSetting('contextCount', 20)}
         maxOutputTokens={getSetting('maxOutputTokens', 8192)}
         enableMaxOutputTokens={getSetting('enableMaxOutputTokens', true)}
-        thinkingEffort={getSetting('defaultThinkingEffort', 'medium')}
         thinkingBudget={getSetting('thinkingBudget', 1024)}
         onContextWindowSizeChange={(value: number) => updateSetting('contextWindowSize', value)}
-        onContextCountChange={(value) => updateSetting('contextCount', value)}
-        onMaxOutputTokensChange={async (value) => {
+        onContextCountChange={(value: number) => updateSetting('contextCount', value)}
+        onMaxOutputTokensChange={async (value: number) => {
           updateSetting('maxOutputTokens', value);
-          // 同步更新所有助手的maxTokens
           await syncAssistantMaxTokens(value);
         }}
-        onEnableMaxOutputTokensChange={(value) => updateSetting('enableMaxOutputTokens', value)}
-        onThinkingEffortChange={(value) => updateSetting('defaultThinkingEffort', value)}
-        onThinkingBudgetChange={(value) => updateSetting('thinkingBudget', value)}
+        onEnableMaxOutputTokensChange={(value: boolean) => updateSetting('enableMaxOutputTokens', value)}
+        onThinkingBudgetChange={(value: number) => updateSetting('thinkingBudget', value)}
       />
       <Divider sx={{ my: 0.5 }} />
 

@@ -146,24 +146,25 @@ export function AppSidebar(props: AppSidebarProps) {
 
   return (
     <Portal>
-      {/* 遮罩层 - 仅移动端显示 */}
-      {!isDesktop() && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            "z-index": 1200,
-            "background-color": `rgba(0, 0, 0, ${getMaskOpacity()})`,
-            opacity: shouldShow() ? 1 : 0,
-            "pointer-events": shouldShow() ? 'auto' : 'none',
-            transition: 'opacity 0.3s, background-color 0.3s',
-          }}
-          onClick={() => props.onOpenChange(false)}
-        />
-      )}
+      {/* 遮罩层 - 仅移动端显示，始终渲染避免首次创建开销 */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          "z-index": 1200,
+          "background-color": `rgba(0, 0, 0, ${getMaskOpacity()})`,
+          opacity: shouldShow() && !isDesktop() ? 1 : 0,
+          "pointer-events": shouldShow() && !isDesktop() ? 'auto' : 'none',
+          transition: isDragging() ? 'none' : 'opacity 0.3s, background-color 0.3s',
+          // GPU 加速
+          "will-change": 'opacity, background-color',
+          contain: 'strict',
+        }}
+        onClick={() => props.onOpenChange(false)}
+      />
       
       {/* 侧边栏 */}
       <div
@@ -189,6 +190,12 @@ export function AppSidebar(props: AppSidebarProps) {
           overflow: 'hidden',
           // 隔离混合模式，防止被父元素透明度影响
           isolation: 'isolate',
+          // GPU 加速优化 - 预先创建合成层，避免首次动画掉帧
+          "will-change": 'transform',
+          "backface-visibility": 'hidden',
+          "-webkit-backface-visibility": 'hidden',
+          // 限制重绘范围
+          contain: 'layout style paint',
         }}
         onClick={(e) => e.stopPropagation()}
       >

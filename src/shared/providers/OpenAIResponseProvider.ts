@@ -4,7 +4,7 @@ import { BaseOpenAIResponseProvider } from './BaseAIProvider';
 import type { Chunk } from '../types/chunk';
 import { ChunkType } from '../types/chunk';
 import { parseAndCallTools } from '../utils/mcpToolParser';
-import { getParameterManager } from '../api/openai/parameterManager';
+import { createOpenAIAdapter, type OpenAIParameterAdapter } from '../api/parameters';
 import { Capacitor } from '@capacitor/core';
 
 /**
@@ -13,7 +13,7 @@ import { Capacitor } from '@capacitor/core';
  */
 export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
   protected sdk: OpenAI;
-  private parameterManager: any;
+  private parameterAdapter: OpenAIParameterAdapter;
 
   constructor(model: Model) {
     super(model);
@@ -32,8 +32,8 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
       defaultHeaders: this.getDefaultHeaders()
     });
 
-    // 初始化参数管理器
-    this.parameterManager = getParameterManager(model);
+    // 初始化参数适配器
+    this.parameterAdapter = createOpenAIAdapter({ model });
   }
 
   /**
@@ -209,16 +209,16 @@ export class OpenAIResponseProvider extends BaseOpenAIResponseProvider {
    * 获取 Responses API 格式的推理参数 - 重写基类方法
    */
   protected getResponseReasoningEffort(assistant: any, model?: Model): any {
-    // 如果传入了不同的模型，更新参数管理器
+    // 如果传入了不同的模型，更新参数适配器
     if (model && model !== this.model) {
-      this.parameterManager = getParameterManager(model);
+      this.parameterAdapter.updateModel(model);
     }
 
     // 更新助手配置
-    this.parameterManager.updateAssistant(assistant);
+    this.parameterAdapter.updateAssistant(assistant);
 
     // 获取 Responses API 格式的推理参数
-    return this.parameterManager.getResponsesAPIReasoningParameters();
+    return this.parameterAdapter.getResponsesAPIReasoningParameters();
   }
 
   /**

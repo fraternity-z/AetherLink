@@ -1,0 +1,285 @@
+/**
+ * 统一参数同步服务
+ * 负责在侧边栏设置和助手设置之间同步所有参数
+ */
+
+// 参数同步服务 - 用于在侧边栏和助手设置之间同步参数
+
+/**
+ * 所有可同步的参数键
+ */
+export const SYNCABLE_PARAMETERS = [
+  // 基础参数
+  'temperature',
+  'topP', 
+  'maxOutputTokens',
+  'topK',
+  // 高级参数
+  'frequencyPenalty',
+  'presencePenalty',
+  'seed',
+  'stopSequences',
+  'responseFormat',
+  'parallelToolCalls',
+  // 推理参数
+  'thinkingBudget',
+  'reasoningEffort',
+  // 其他
+  'streamOutput',
+] as const;
+
+export type SyncableParameterKey = typeof SYNCABLE_PARAMETERS[number];
+
+/**
+ * 参数启用开关的键名映射
+ */
+export const ENABLE_KEY_MAP: Partial<Record<SyncableParameterKey, string>> = {
+  temperature: 'enableTemperature',
+  topP: 'enableTopP',
+  maxOutputTokens: 'enableMaxOutputTokens',
+  topK: 'enableTopK',
+  frequencyPenalty: 'enableFrequencyPenalty',
+  presencePenalty: 'enablePresencePenalty',
+  seed: 'enableSeed',
+  thinkingBudget: 'enableThinkingBudget',
+};
+
+/**
+ * 参数默认值
+ */
+export const PARAMETER_DEFAULTS: Record<SyncableParameterKey, any> = {
+  temperature: 0.7,
+  topP: 1.0,
+  maxOutputTokens: 8192,
+  topK: 40,
+  frequencyPenalty: 0,
+  presencePenalty: 0,
+  seed: null,
+  stopSequences: [],
+  responseFormat: 'text',
+  parallelToolCalls: true,
+  thinkingBudget: 1024,
+  reasoningEffort: 'medium',
+  streamOutput: true,
+};
+
+/**
+ * 参数变化事件名称映射
+ */
+export const PARAMETER_EVENT_MAP: Record<SyncableParameterKey, string> = {
+  temperature: 'temperatureChanged',
+  topP: 'topPChanged',
+  maxOutputTokens: 'maxOutputTokensChanged',
+  topK: 'topKChanged',
+  frequencyPenalty: 'frequencyPenaltyChanged',
+  presencePenalty: 'presencePenaltyChanged',
+  seed: 'seedChanged',
+  stopSequences: 'stopSequencesChanged',
+  responseFormat: 'responseFormatChanged',
+  parallelToolCalls: 'parallelToolCallsChanged',
+  thinkingBudget: 'thinkingBudgetChanged',
+  reasoningEffort: 'reasoningEffortChanged',
+  streamOutput: 'streamOutputChanged',
+};
+
+/**
+ * 参数同步服务
+ */
+class ParameterSyncService {
+  private listeners: Map<string, Set<(data: any) => void>> = new Map();
+
+  /**
+   * 获取 appSettings
+   */
+  getSettings(): Record<string, any> {
+    try {
+      return JSON.parse(localStorage.getItem('appSettings') || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * 保存 appSettings
+   */
+  saveSettings(settings: Record<string, any>): void {
+    localStorage.setItem('appSettings', JSON.stringify(settings));
+  }
+
+  /**
+   * 获取参数值
+   */
+  getParameter<T>(key: SyncableParameterKey, defaultValue?: T): T {
+    const settings = this.getSettings();
+    return settings[key] ?? defaultValue ?? PARAMETER_DEFAULTS[key];
+  }
+
+  /**
+   * 获取参数是否启用
+   */
+  isParameterEnabled(key: SyncableParameterKey): boolean {
+    const enableKey = ENABLE_KEY_MAP[key];
+    if (!enableKey) return true; // 没有开关的参数默认启用
+    const settings = this.getSettings();
+    // maxOutputTokens 默认启用
+    if (key === 'maxOutputTokens') {
+      return settings[enableKey] !== false;
+    }
+    return settings[enableKey] === true;
+  }
+
+  /**
+   * 设置参数值并触发同步
+   */
+  setParameter(key: SyncableParameterKey, value: any, enabled?: boolean): void {
+    const settings = this.getSettings();
+    settings[key] = value;
+    
+    // 如果提供了 enabled 状态，也保存它
+    const enableKey = ENABLE_KEY_MAP[key];
+    if (enableKey && enabled !== undefined) {
+      settings[enableKey] = enabled;
+    }
+    
+    this.saveSettings(settings);
+    
+    // 触发事件通知其他组件
+    this.dispatchParameterChange(key, value, enabled);
+  }
+
+  /**
+   * 设置参数启用状态
+   */
+  setParameterEnabled(key: SyncableParameterKey, enabled: boolean): void {
+    const enableKey = ENABLE_KEY_MAP[key];
+    if (!enableKey) return;
+    
+    const settings = this.getSettings();
+    settings[enableKey] = enabled;
+    this.saveSettings(settings);
+    
+    // 触发事件，包含当前值
+    const value = settings[key] ?? PARAMETER_DEFAULTS[key];
+    this.dispatchParameterChange(key, value, enabled);
+  }
+
+  /**
+   * 触发参数变化事件
+   */
+  dispatchParameterChange(key: SyncableParameterKey, value: any, enabled?: boolean): void {
+    const eventName = PARAMETER_EVENT_MAP[key];
+    const detail = { value, enabled, key };
+    
+    // 触发 CustomEvent
+    window.dispatchEvent(new CustomEvent(eventName, { detail }));
+    
+    // 触发通用事件
+    window.dispatchEvent(new CustomEvent('parameterChanged', { detail }));
+    
+    // 调用本地监听器
+    const listeners = this.listeners.get(key);
+    if (listeners) {
+      listeners.forEach(cb => cb(detail));
+    }
+  }
+
+  /**
+   * 监听参数变化
+   */
+  onParameterChange(key: SyncableParameterKey, callback: (data: { value: any; enabled?: boolean }) => void): () => void {
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, new Set());
+    }
+    this.listeners.get(key)!.add(callback);
+    
+    // 返回取消监听的函数
+    return () => {
+      this.listeners.get(key)?.delete(callback);
+    };
+  }
+
+  /**
+   * 批量获取所有启用的参数
+   * 用于传递给 UnifiedParameterManager
+   */
+  getEnabledParameters(): Record<string, any> {
+    const settings = this.getSettings();
+    const result: Record<string, any> = {};
+    
+    for (const key of SYNCABLE_PARAMETERS) {
+      if (this.isParameterEnabled(key)) {
+        const value = settings[key] ?? PARAMETER_DEFAULTS[key];
+        // 跳过默认值或空值
+        if (value !== null && value !== undefined) {
+          result[key] = value;
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * 批量设置参数
+   */
+  setParameters(params: Partial<Record<SyncableParameterKey, any>>): void {
+    const settings = this.getSettings();
+    
+    for (const [key, value] of Object.entries(params)) {
+      if (SYNCABLE_PARAMETERS.includes(key as SyncableParameterKey)) {
+        settings[key] = value;
+      }
+    }
+    
+    this.saveSettings(settings);
+    
+    // 触发每个参数的变化事件
+    for (const [key, value] of Object.entries(params)) {
+      if (SYNCABLE_PARAMETERS.includes(key as SyncableParameterKey)) {
+        this.dispatchParameterChange(key as SyncableParameterKey, value);
+      }
+    }
+  }
+
+  /**
+   * 同步参数到所有助手
+   */
+  async syncToAssistants(params?: Partial<Record<SyncableParameterKey, any>>): Promise<boolean> {
+    try {
+      const { dexieStorage } = await import('./storage/DexieStorageService');
+      const assistants = await dexieStorage.getAllAssistants();
+      
+      const paramsToSync = params || this.getEnabledParameters();
+      
+      for (const assistant of assistants) {
+        const updatedAssistant = { ...assistant, ...paramsToSync };
+        await dexieStorage.saveAssistant(updatedAssistant);
+      }
+      
+      console.log(`[ParameterSyncService] 已同步 ${Object.keys(paramsToSync).length} 个参数到 ${assistants.length} 个助手`);
+      return true;
+    } catch (error) {
+      console.error('[ParameterSyncService] 同步失败:', error);
+      return false;
+    }
+  }
+}
+
+// 导出单例
+export const parameterSyncService = new ParameterSyncService();
+
+/**
+ * React Hook: 使用参数同步
+ */
+export function useParameterSync(key: SyncableParameterKey) {
+  const getValue = () => parameterSyncService.getParameter(key);
+  const getEnabled = () => parameterSyncService.isParameterEnabled(key);
+  
+  return {
+    value: getValue(),
+    enabled: getEnabled(),
+    setValue: (value: any) => parameterSyncService.setParameter(key, value),
+    setEnabled: (enabled: boolean) => parameterSyncService.setParameterEnabled(key, enabled),
+    setValueAndEnabled: (value: any, enabled: boolean) => parameterSyncService.setParameter(key, value, enabled),
+  };
+}

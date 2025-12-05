@@ -264,8 +264,8 @@ export async function streamCompletion(
     const result = await streamText({
       model: modelInstance,
       messages: processedMessages,
-      temperature: temperature ?? 1.0,
-      maxTokens: maxTokens ?? 2000,
+      ...(temperature !== undefined && { temperature }),
+      ...(maxTokens !== undefined && { maxTokens }),
       abortSignal: signal,
       ...(tools && { tools }),
       ...(providerOptions && { providerOptions }),
@@ -485,8 +485,8 @@ export async function nonStreamCompletion(
     const result = await generateText({
       model: modelInstance,
       messages: processedMessages,
-      temperature: temperature ?? 1.0,
-      maxTokens: maxTokens ?? 2000,
+      ...(temperature !== undefined && { temperature }),
+      ...(maxTokens !== undefined && { maxTokens }),
       abortSignal: signal,
       ...(tools && { tools }),
       ...(providerOptions && { providerOptions }),

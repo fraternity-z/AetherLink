@@ -8,7 +8,7 @@ import type { GoogleGenerativeAIProvider } from '@ai-sdk/google';
 import { createClient, supportsMultimodal, supportsGoogleSearch, supportsThinking, isGemmaModel } from './client';
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
 import { isGeminiReasoningModel } from './configBuilder';
-import { getStreamOutputSetting, getThinkingBudget } from '../../utils/settingsUtils';
+import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
@@ -19,16 +19,19 @@ import {
 } from './tools';
 import { ChunkType, type Chunk } from '../../types/chunk';
 import { getMainTextContent } from '../../utils/blockUtils';
+import { GeminiParameterAdapter, createGeminiAdapter } from '../parameters';
 
 /**
  * AI SDK Gemini Provider 基类
  */
 export abstract class BaseGeminiAISDKProvider extends AbstractBaseProvider {
   protected client: GoogleGenerativeAIProvider;
+  protected parameterAdapter: GeminiParameterAdapter;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
+    this.parameterAdapter = createGeminiAdapter({ model });
   }
 
   /**
@@ -67,43 +70,38 @@ export abstract class BaseGeminiAISDKProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 获取温度参数
+   * 获取温度参数 - 使用统一参数适配器
    */
   protected getTemperature(assistant?: any): number {
-    return assistant?.settings?.temperature || 
-           assistant?.temperature || 
-           this.model?.temperature || 
-           0.7;
+    this.parameterAdapter.updateAssistant(assistant);
+    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
+    return resolved.base.temperature;
   }
 
   /**
-   * 获取 top_p 参数
+   * 获取 top_p 参数 - 使用统一参数适配器
    */
   protected getTopP(assistant?: any): number {
-    return assistant?.settings?.topP || 
-           assistant?.topP || 
-           (this.model as any)?.topP || 
-           0.95;
+    this.parameterAdapter.updateAssistant(assistant);
+    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
+    return resolved.base.topP;
   }
 
   /**
-   * 获取 max_tokens 参数
+   * 获取 max_tokens 参数 - 使用统一参数适配器
    */
   protected getMaxTokens(assistant?: any): number {
-    return assistant?.settings?.maxTokens || 
-           assistant?.maxTokens || 
-           this.model.maxTokens || 
-           4096;
+    this.parameterAdapter.updateAssistant(assistant);
+    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
+    return resolved.base.maxOutputTokens;
   }
 
   /**
-   * 获取思考预算
+   * 获取思考预算 - 使用统一参数适配器
    */
   protected getThinkingBudget(assistant?: any): number {
-    if (!isGeminiReasoningModel(this.model)) {
-      return 0;
-    }
-    return assistant?.thinkingBudget || getThinkingBudget() || 1024;
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getThinkingBudget();
   }
 
   /**

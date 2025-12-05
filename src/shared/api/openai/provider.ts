@@ -5,7 +5,7 @@
 import OpenAI from 'openai';
 import { createClient } from './client';
 import { unifiedStreamCompletion } from './unifiedStreamProcessor';
-import { OpenAIParameterManager, createParameterManager } from './parameterManager';
+import { OpenAIParameterAdapter, createOpenAIAdapter } from '../parameters';
 
 import {
   supportsMultimodal,
@@ -35,12 +35,12 @@ import { ChunkType } from '../../types/chunk';
  */
 export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   protected client: OpenAI;
-  protected parameterManager: OpenAIParameterManager;
+  protected parameterAdapter: OpenAIParameterAdapter;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterManager = createParameterManager({ model });
+    this.parameterAdapter = createOpenAIAdapter({ model });
   }
 
   /**
@@ -83,9 +83,9 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    * @param assistant 助手配置（可选）
    * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
    */
-  protected getTemperature(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().temperature;
+  protected getTemperature(assistant?: any): number | undefined {
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getBaseAPIParameters().temperature;
   }
 
   /**
@@ -93,9 +93,9 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    * @param assistant 助手配置（可选）
    * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
    */
-  protected getTopP(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().top_p;
+  protected getTopP(assistant?: any): number | undefined {
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getBaseAPIParameters().top_p;
   }
 
   /**
@@ -103,9 +103,9 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    * @param assistant 助手配置（可选）
    * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
    */
-  protected getMaxTokens(assistant?: any): number {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getBaseParameters().max_tokens;
+  protected getMaxTokens(assistant?: any): number | undefined {
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getBaseAPIParameters().max_tokens;
   }
 
   /**
@@ -113,8 +113,8 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    * @param assistant 助手配置（可选）
    */
   protected getOpenAISpecificParameters(assistant?: any): any {
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getOpenAISpecificParameters();
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getOpenAISpecificParameters();
   }
 
   /**
@@ -127,11 +127,11 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   protected getReasoningEffort(assistant?: any, model?: Model): any {
     // 如果传入了不同的模型，更新参数管理器
     if (model && model !== this.model) {
-      this.parameterManager.updateModel(model);
+      this.parameterAdapter.updateModel(model);
     }
 
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getReasoningParameters();
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getReasoningParameters();
   }
 
   /**
@@ -143,11 +143,11 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   protected getResponsesAPIReasoningEffort(assistant?: any, model?: Model): any {
     // 如果传入了不同的模型，更新参数管理器
     if (model && model !== this.model) {
-      this.parameterManager.updateModel(model);
+      this.parameterAdapter.updateModel(model);
     }
 
-    this.parameterManager.updateAssistant(assistant);
-    return this.parameterManager.getResponsesAPIReasoningParameters();
+    this.parameterAdapter.updateAssistant(assistant);
+    return this.parameterAdapter.getResponsesAPIReasoningParameters();
   }
 
 
@@ -215,7 +215,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   public async testConnection(): Promise<boolean> {
     try {
       // 使用参数管理器获取基础参数进行连接测试
-      const baseParams = this.parameterManager.getBaseParameters();
+      const baseParams = this.parameterAdapter.getBaseAPIParameters();
 
       const response = await this.client.chat.completions.create({
         model: this.model.id,
@@ -390,10 +390,10 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     const streamEnabled = getStreamOutputSetting();
 
     // 更新参数管理器的助手配置
-    this.parameterManager.updateAssistant(assistant);
+    this.parameterAdapter.updateAssistant(assistant);
 
     // 获取完整的API参数
-    const requestParams = this.parameterManager.getCompleteParameters(apiMessages, {
+    const requestParams = this.parameterAdapter.getCompleteParameters(apiMessages, {
       enableWebSearch,
       enableTools,
       tools: tools.length > 0 ? tools : undefined,
@@ -404,7 +404,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
     requestParams.stream = streamEnabled;
 
     // 验证参数有效性
-    const validation = this.parameterManager.validateParameters(requestParams);
+    const validation = this.parameterAdapter.validateParameters(requestParams);
     if (!validation.valid) {
       console.error(`[OpenAIProvider] 参数验证失败:`, validation.errors);
       throw new Error(`参数验证失败: ${validation.errors.join(', ')}`);

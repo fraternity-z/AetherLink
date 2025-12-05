@@ -4,7 +4,7 @@
  * 包括安全设置、思考预算、图像生成等
  */
 import type { Model } from '../../types';
-import { getThinkingBudget, getAppSettings } from '../../utils/settingsUtils';
+import { getThinkingBudget } from '../../utils/settingsUtils';
 
 /**
  * 安全等级阈值
@@ -92,28 +92,23 @@ export function isGemmaModel(model: Model): boolean {
 
 /**
  * Gemini AI SDK 配置构建器类
+ * 负责构建 Gemini 特有配置（安全设置、思考配置、图像生成、Google Search）
+ * 
+ * 注意：基础参数（温度、TopP、MaxTokens）已迁移到 GeminiParameterAdapter
+ * @see src/shared/api/parameters/adapters/gemini.ts
  */
 export class GeminiConfigBuilder {
   private assistant: any;
   private model: Model;
-  private maxTokens: number;
-  private _systemInstruction?: string;
-  private _tools: any[];
   private enableGoogleSearch: boolean;
 
   constructor(
     assistant: any,
     model: Model,
-    maxTokens: number,
-    systemInstruction?: string,
-    tools: any[] = [],
     enableGoogleSearch: boolean = false
   ) {
     this.assistant = assistant;
     this.model = model;
-    this.maxTokens = maxTokens;
-    this._systemInstruction = systemInstruction;
-    this._tools = tools;
     this.enableGoogleSearch = enableGoogleSearch;
   }
 
@@ -207,68 +202,6 @@ export class GeminiConfigBuilder {
   }
 
   /**
-   * 获取温度参数
-   */
-  getTemperature(): number {
-    return this.assistant?.settings?.temperature || 
-           this.assistant?.temperature || 
-           this.model?.temperature || 
-           0.7;
-  }
-
-  /**
-   * 获取 TopP 参数
-   */
-  getTopP(): number {
-    return this.assistant?.settings?.topP || 
-           this.assistant?.topP || 
-           (this.model as any)?.topP || 
-           0.95;
-  }
-
-  /**
-   * 获取最大输出 tokens
-   */
-  getMaxTokens(): number {
-    const appSettings = getAppSettings();
-    const appMaxOutputTokens = appSettings.maxOutputTokens;
-
-    // 优先级：助手设置 > 应用设置 > 模型设置 > 构造函数传入值 > 默认值
-    const maxTokens = this.assistant?.settings?.maxTokens ??
-                     this.assistant?.maxTokens ??
-                     appMaxOutputTokens ??
-                     this.model.maxTokens ??
-                     this.maxTokens ??
-                     4096;
-
-    return Math.max(maxTokens, 1);
-  }
-
-  /**
-   * 设置系统指令
-   */
-  setSystemInstruction(systemInstruction: string): GeminiConfigBuilder {
-    this._systemInstruction = systemInstruction;
-    return this;
-  }
-
-  /**
-   * 设置工具
-   */
-  setTools(tools: any[]): GeminiConfigBuilder {
-    this._tools = tools;
-    return this;
-  }
-
-  /**
-   * 设置最大输出 tokens
-   */
-  setMaxTokens(maxTokens: number): GeminiConfigBuilder {
-    this.maxTokens = maxTokens;
-    return this;
-  }
-
-  /**
    * 启用 Google Search
    */
   setEnableGoogleSearch(enable: boolean): GeminiConfigBuilder {
@@ -283,17 +216,7 @@ export class GeminiConfigBuilder {
 export function createGeminiConfigBuilder(
   assistant: any,
   model: Model,
-  maxTokens: number,
-  systemInstruction?: string,
-  tools: any[] = [],
   enableGoogleSearch: boolean = false
 ): GeminiConfigBuilder {
-  return new GeminiConfigBuilder(
-    assistant,
-    model,
-    maxTokens,
-    systemInstruction,
-    tools,
-    enableGoogleSearch
-  );
+  return new GeminiConfigBuilder(assistant, model, enableGoogleSearch);
 }

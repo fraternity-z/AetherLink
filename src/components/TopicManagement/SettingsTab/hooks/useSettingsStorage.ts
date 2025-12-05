@@ -33,10 +33,17 @@ const DEFAULT_SETTINGS: AppSettings = {
   contextWindowSize: 100000,
   maxOutputTokens: 8192,
   enableMaxOutputTokens: true,
+  // 模型参数
+  temperature: 0.7,
+  enableTemperature: false,
+  topP: 1.0,
+  enableTopP: false,
+  // 其他设置
   mathRenderer: 'KaTeX' as MathRendererType,
-  mathEnableSingleDollar: true, // 默认启用单美元符号
+  mathEnableSingleDollar: true,
   defaultThinkingEffort: 'medium' as ThinkingOption,
   thinkingBudget: 1024,
+  enableThinkingBudget: false,
   streamOutput: true,
   showMessageDivider: true,
   copyableCodeBlocks: true,
@@ -174,5 +181,65 @@ export async function syncAssistantMaxTokens(maxTokens: number): Promise<boolean
   } catch (error) {
     console.error('同步助手maxTokens失败:', error);
     return false;
+  }
+}
+
+/**
+ * 同步所有参数到助手
+ */
+export async function syncAssistantParameters(params: {
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number;
+  topK?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+}): Promise<boolean> {
+  try {
+    const { dexieStorage } = await import('../../../../shared/services/storage/DexieStorageService');
+    const assistants = await dexieStorage.getAllAssistants();
+
+    for (const assistant of assistants) {
+      const updatedAssistant = { ...assistant, ...params };
+      await dexieStorage.saveAssistant(updatedAssistant);
+    }
+
+    console.log(`[SettingsStorage] 已同步更新 ${assistants.length} 个助手的参数:`, params);
+    return true;
+  } catch (error) {
+    console.error('同步助手参数失败:', error);
+    return false;
+  }
+}
+
+/**
+ * 获取当前启用的统一参数
+ * 用于传递给 UnifiedParameterManager
+ */
+export function getEnabledUnifiedParameters(): Record<string, any> {
+  try {
+    const appSettingsJSON = localStorage.getItem('appSettings');
+    const settings = appSettingsJSON ? JSON.parse(appSettingsJSON) : {};
+    
+    const params: Record<string, any> = {};
+    
+    // 只返回已启用的参数
+    if (settings.enableTemperature) {
+      params.temperature = settings.temperature ?? 0.7;
+    }
+    if (settings.enableTopP) {
+      params.topP = settings.topP ?? 1.0;
+    }
+    if (settings.enableMaxOutputTokens !== false) {
+      params.maxOutputTokens = settings.maxOutputTokens ?? 8192;
+    }
+    if (settings.enableThinkingBudget) {
+      params.thinkingBudget = settings.thinkingBudget ?? 1024;
+    }
+    
+    return params;
+  } catch (error) {
+    console.error('获取统一参数失败:', error);
+    return {};
   }
 }

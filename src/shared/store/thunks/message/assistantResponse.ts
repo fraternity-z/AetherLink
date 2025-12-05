@@ -94,10 +94,8 @@ async function handleTextGeneration(context: {
     console.log('[WebSearch] 网络搜索工具已添加到工具列表，AI 可自主决定是否调用');
   }
 
-  // 提取系统提示词（Gemini）
-  const systemPromptForProvider = isActualGeminiProvider
-    ? extractGeminiSystemPrompt(apiMessages)
-    : undefined;
+  // 提取系统提示词（所有供应商都需要）
+  const systemPromptForProvider = extractGeminiSystemPrompt(apiMessages);
 
   // Agentic 循环
   let shouldContinueLoopFlag = true;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, IconButton, Button, useTheme } from '@mui/material';
+import { Box, Typography, IconButton, Button, useTheme, useMediaQuery } from '@mui/material';
 import { Bot } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
@@ -17,6 +17,7 @@ export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
   displayStyle = 'icon'
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const providers = useSelector((state: RootState) => state.settings.providers || []);
 
   // 获取提供商名称
@@ -80,7 +81,7 @@ export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
             fontWeight: 500,
             fontSize: dynamicFontSize,
             color: theme.palette.text.primary,
-            maxWidth: '120px',
+            maxWidth: isMobile ? '120px' : 'none',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -98,7 +99,7 @@ export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
               color: theme.palette.text.secondary,
               lineHeight: 1,
               mt: 0.25,
-              maxWidth: '120px',
+              maxWidth: isMobile ? '120px' : 'none',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'

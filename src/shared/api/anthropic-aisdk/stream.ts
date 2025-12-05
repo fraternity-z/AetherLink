@@ -13,28 +13,6 @@ import type { Model, MCPTool } from '../../types';
 import { convertMcpToolsToAISDK } from './tools';
 import { supportsExtendedThinking, isClaudeReasoningModel } from './client';
 import { getAppropriateTag, type ReasoningTag, DEFAULT_REASONING_TAGS } from '../../config/reasoningTags';
-import store from '../../store';
-import type { ModelProvider } from '../../config/defaultModels';
-
-/**
- * 获取模型对应的供应商配置
- */
-function getProviderConfig(model: Model): ModelProvider | null {
-  try {
-    const state = store.getState();
-    const providers = state.settings?.providers;
-
-    if (!providers || !Array.isArray(providers)) {
-      return null;
-    }
-
-    const provider = providers.find((p: ModelProvider) => p.id === model.provider);
-    return provider || null;
-  } catch (error) {
-    console.error('[Anthropic SDK Stream] 获取供应商配置失败:', error);
-    return null;
-  }
-}
 
 /**
  * 解析推理标签内容（用于兼容非原生推理模式）
@@ -258,8 +236,8 @@ export async function streamCompletion(
     const result = await streamText({
       model: client(modelId),
       messages: processedMessages,
-      temperature: temperature ?? 1.0,
-      maxTokens: maxTokens ?? 4096,
+      ...(temperature !== undefined && { temperature }),
+      ...(maxTokens !== undefined && { maxTokens }),
       abortSignal: signal,
       ...(tools && { tools }),
       ...(Object.keys(providerOptions).length > 0 && { providerOptions }),
@@ -488,8 +466,8 @@ export async function nonStreamCompletion(
     const result = await generateText({
       model: client(modelId),
       messages: processedMessages,
-      temperature: temperature ?? 1.0,
-      maxTokens: maxTokens ?? 4096,
+      ...(temperature !== undefined && { temperature }),
+      ...(maxTokens !== undefined && { maxTokens }),
       abortSignal: signal,
       ...(tools && { tools }),
       ...(Object.keys(providerOptions).length > 0 && { providerOptions }),

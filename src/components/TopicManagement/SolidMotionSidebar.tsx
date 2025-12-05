@@ -147,7 +147,7 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   // 获取主题模式
   const themeMode = theme.palette.mode;
 
-  // 侧边栏内容
+  // 侧边栏内容 - 添加 GPU 加速和 contain 优化
   const drawerContent = useMemo(() => (
     <Box
       sx={{
@@ -159,6 +159,12 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         backgroundColor: theme.palette.background.paper,
         backgroundImage: 'none',
         opacity: 1,
+        // GPU 加速优化
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        // 限制重绘范围
+        contain: 'layout style paint',
         '&::-webkit-scrollbar': {
           width: '1px',
         },
@@ -232,27 +238,44 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
     }
   }, [handleOpen, handleClose]);
 
-  // Portal 容器
+  // Portal 容器 - 使用 ref 避免不必要的重渲染
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const portalContainerRef = useRef<HTMLElement | null>(null);
 
-  // 持续监听 Portal 容器（移动端和桌面端都需要）
+  // 优化: 使用更高效的方式获取 Portal 容器
   useEffect(() => {
+    let rafId: number;
+    let attempts = 0;
+    const maxAttempts = 20; // 最多尝试 20 次 (1秒)
+    
     const checkContainer = () => {
       const container = document.getElementById('solid-sidebar-content');
-      if (container !== portalContainer) {
+      if (container && container !== portalContainerRef.current) {
+        portalContainerRef.current = container;
         setPortalContainer(container);
+        return true;
       }
+      return !!container;
     };
 
-    // 初始检查
-    checkContainer();
+    // 首次立即检查
+    if (checkContainer()) return;
 
-    // 使用 MutationObserver 监听 DOM 变化
-    const observer = new MutationObserver(checkContainer);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // 使用 requestAnimationFrame 轮询，比 MutationObserver 更高效
+    const poll = () => {
+      if (checkContainer() || attempts >= maxAttempts) {
+        return;
+      }
+      attempts++;
+      rafId = requestAnimationFrame(poll);
+    };
+    
+    rafId = requestAnimationFrame(poll);
 
-    return () => observer.disconnect();
-  }, [portalContainer]);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []); // 只在组件挂载时运行一次
 
   // 移动端和桌面端都使用 SolidJS AppSidebar
   // 移动端：启用手势支持
@@ -273,8 +296,28 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         debug={false}
         style={{ display: 'contents' }}
       />
-      {/* 通过 Portal 将 React 内容渲染到 Solid 组件内部 */}
-      {portalContainer && createPortal(drawerContent, portalContainer)}
+      {/* 
+        预渲染优化：始终渲染 React 内容
+        - 当 Portal 容器存在时，渲染到 Solid 组件内部
+        - 当 Portal 容器不存在时，渲染到隐藏的预渲染容器（保持 DOM 树已创建）
+        这样首次滑动时不需要创建 DOM，只需要做 transform 动画
+      */}
+      {portalContainer 
+        ? createPortal(drawerContent, portalContainer)
+        : (
+          <div style={{ 
+            position: 'fixed', 
+            left: -9999, 
+            top: 0, 
+            width: drawerWidth,
+            height: '100vh',
+            visibility: 'hidden',
+            pointerEvents: 'none',
+          }}>
+            {drawerContent}
+          </div>
+        )
+      }
     </>
   );
 }, areSolidMotionSidebarPropsEqual);

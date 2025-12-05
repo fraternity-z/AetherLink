@@ -143,6 +143,13 @@ const AssistantModelSettings: React.FC = () => {
       }
       // 初始化最大输出Token开关状态
       setEnableMaxTokens(appSettings.enableMaxOutputTokens !== false);
+      // 同步温度和TopP
+      if (appSettings.enableTemperature && appSettings.temperature !== undefined) {
+        setTemperature(appSettings.temperature);
+      }
+      if (appSettings.enableTopP && appSettings.topP !== undefined) {
+        setTopP(appSettings.topP);
+      }
     };
     loadContextSettings();
 
@@ -160,8 +167,100 @@ const AssistantModelSettings: React.FC = () => {
       }
     };
 
+    // 监听温度参数变化
+    const handleTemperatureChange = (e: CustomEvent) => {
+      const { value, enabled } = e.detail;
+      if (value !== undefined) {
+        setTemperature(value);
+      }
+      // 开关状态仅在侧边栏生效，助手设置页不显示开关
+      console.log('[AssistantModelSettings] 温度参数同步:', { value, enabled });
+    };
+
+    // 监听 TopP 参数变化
+    const handleTopPChange = (e: CustomEvent) => {
+      const { value, enabled } = e.detail;
+      if (value !== undefined) {
+        setTopP(value);
+      }
+      console.log('[AssistantModelSettings] TopP参数同步:', { value, enabled });
+    };
+
+    // 监听最大输出Token变化
+    const handleMaxOutputTokensChange = (e: CustomEvent) => {
+      const newValue = e.detail;
+      if (newValue && newValue !== maxTokens) {
+        setMaxTokens(newValue);
+      }
+    };
+
+    // 监听最大输出Token开关变化
+    const handleEnableMaxTokensChange = (e: CustomEvent) => {
+      const newValue = e.detail;
+      setEnableMaxTokens(newValue);
+    };
+
+    // 监听 TopK 变化
+    const handleTopKChange = (e: CustomEvent) => {
+      const { value } = e.detail;
+      if (value !== undefined) {
+        setTopK(value);
+      }
+    };
+
+    // 监听频率惩罚变化
+    const handleFrequencyPenaltyChange = (e: CustomEvent) => {
+      const { value } = e.detail;
+      if (value !== undefined) {
+        setFrequencyPenalty(value);
+      }
+    };
+
+    // 监听存在惩罚变化
+    const handlePresencePenaltyChange = (e: CustomEvent) => {
+      const { value } = e.detail;
+      if (value !== undefined) {
+        setPresencePenalty(value);
+      }
+    };
+
+    // 监听随机种子变化
+    const handleSeedChange = (e: CustomEvent) => {
+      const { value } = e.detail;
+      setSeed(value);
+    };
+
+    // 监听思考预算变化
+    const handleThinkingBudgetChange = (e: CustomEvent) => {
+      const { value } = e.detail;
+      if (value !== undefined) {
+        setThinkingBudget(value);
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('temperatureChanged', handleTemperatureChange as EventListener);
+    window.addEventListener('topPChanged', handleTopPChange as EventListener);
+    window.addEventListener('maxOutputTokensChanged', handleMaxOutputTokensChange as EventListener);
+    window.addEventListener('enableMaxTokensChanged', handleEnableMaxTokensChange as EventListener);
+    window.addEventListener('topKChanged', handleTopKChange as EventListener);
+    window.addEventListener('frequencyPenaltyChanged', handleFrequencyPenaltyChange as EventListener);
+    window.addEventListener('presencePenaltyChanged', handlePresencePenaltyChange as EventListener);
+    window.addEventListener('seedChanged', handleSeedChange as EventListener);
+    window.addEventListener('thinkingBudgetChanged', handleThinkingBudgetChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('temperatureChanged', handleTemperatureChange as EventListener);
+      window.removeEventListener('topPChanged', handleTopPChange as EventListener);
+      window.removeEventListener('maxOutputTokensChanged', handleMaxOutputTokensChange as EventListener);
+      window.removeEventListener('enableMaxTokensChanged', handleEnableMaxTokensChange as EventListener);
+      window.removeEventListener('topKChanged', handleTopKChange as EventListener);
+      window.removeEventListener('frequencyPenaltyChanged', handleFrequencyPenaltyChange as EventListener);
+      window.removeEventListener('presencePenaltyChanged', handlePresencePenaltyChange as EventListener);
+      window.removeEventListener('seedChanged', handleSeedChange as EventListener);
+      window.removeEventListener('thinkingBudgetChanged', handleThinkingBudgetChange as EventListener);
+    };
   }, [maxTokens]);
 
   // 初始化助手数据
@@ -728,7 +827,14 @@ const AssistantModelSettings: React.FC = () => {
             </Typography>
             <Slider
               value={temperature}
-              onChange={(_, value) => setTemperature(value as number)}
+              onChange={(_, value) => {
+                const newValue = value as number;
+                setTemperature(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, temperature: newValue });
+                window.dispatchEvent(new CustomEvent('temperatureChanged', { detail: { value: newValue, enabled: appSettings.enableTemperature } }));
+              }}
               min={0}
               max={2}
               step={0.01}
@@ -755,7 +861,14 @@ const AssistantModelSettings: React.FC = () => {
             </Typography>
             <Slider
               value={topP}
-              onChange={(_, value) => setTopP(value as number)}
+              onChange={(_, value) => {
+                const newValue = value as number;
+                setTopP(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, topP: newValue });
+                window.dispatchEvent(new CustomEvent('topPChanged', { detail: { value: newValue, enabled: appSettings.enableTopP } }));
+              }}
               min={0}
               max={1}
               step={0.01}
@@ -781,7 +894,14 @@ const AssistantModelSettings: React.FC = () => {
             </Typography>
             <Slider
               value={topK}
-              onChange={(_, value) => setTopK(value as number)}
+              onChange={(_, value) => {
+                const newValue = value as number;
+                setTopK(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, topK: newValue });
+                window.dispatchEvent(new CustomEvent('topKChanged', { detail: { value: newValue, enabled: appSettings.enableTopK } }));
+              }}
               min={1}
               max={100}
               step={1}
@@ -808,7 +928,14 @@ const AssistantModelSettings: React.FC = () => {
             </Typography>
             <Slider
               value={frequencyPenalty}
-              onChange={(_, value) => setFrequencyPenalty(value as number)}
+              onChange={(_, value) => {
+                const newValue = value as number;
+                setFrequencyPenalty(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, frequencyPenalty: newValue });
+                window.dispatchEvent(new CustomEvent('frequencyPenaltyChanged', { detail: { value: newValue, enabled: appSettings.enableFrequencyPenalty } }));
+              }}
               min={-2}
               max={2}
               step={0.01}
@@ -835,7 +962,14 @@ const AssistantModelSettings: React.FC = () => {
             </Typography>
             <Slider
               value={presencePenalty}
-              onChange={(_, value) => setPresencePenalty(value as number)}
+              onChange={(_, value) => {
+                const newValue = value as number;
+                setPresencePenalty(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, presencePenalty: newValue });
+                window.dispatchEvent(new CustomEvent('presencePenaltyChanged', { detail: { value: newValue, enabled: appSettings.enablePresencePenalty } }));
+              }}
               min={-2}
               max={2}
               step={0.01}
@@ -863,7 +997,14 @@ const AssistantModelSettings: React.FC = () => {
             <TextField
               type="number"
               value={seed ?? ''}
-              onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : null)}
+              onChange={(e) => {
+                const newValue = e.target.value ? parseInt(e.target.value) : null;
+                setSeed(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, seed: newValue });
+                window.dispatchEvent(new CustomEvent('seedChanged', { detail: { value: newValue, enabled: appSettings.enableSeed } }));
+              }}
               placeholder="留空使用随机种子"
               size="small"
               fullWidth
