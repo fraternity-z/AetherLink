@@ -1,17 +1,15 @@
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ChevronDown as ExpandMoreIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { throttle } from 'lodash';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import MessageItem from './MessageItem';
 import MultiModelMessageGroup from './MultiModelMessageGroup';
 import ConversationDivider from './ConversationDivider';
 import type { Message } from '../../shared/types/newMessage';
-import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
 import { getMessageDividerSetting, shouldShowConversationDivider } from '../../shared/utils/settingsUtils';
 
 /**
@@ -86,7 +84,6 @@ interface MessageGroupProps {
   messages: Message[];
   expanded?: boolean;
   onToggleExpand?: () => void;
-  forceUpdate?: () => void;
   startIndex?: number; // 当前组在全局消息列表中的起始索引
   onRegenerate?: (messageId: string) => void;
   onDelete?: (messageId: string) => void;
@@ -103,7 +100,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
   messages,
   expanded = true,
   onToggleExpand,
-  forceUpdate: parentForceUpdate,
   startIndex = 0,
   onRegenerate,
   onDelete,
@@ -164,46 +160,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     }
   }, [date]);
 
-  // 添加强制更新机制，优先使用父组件传入的forceUpdate
-  const [, setLocalUpdateCounter] = useState(0);
-  const localForceUpdate = useCallback(() => {
-    setLocalUpdateCounter(prev => prev + 1);
-  }, []);
-  const forceUpdate = parentForceUpdate || localForceUpdate;
-
-  // 添加流式输出事件监听
-  useEffect(() => {
-    // 检查是否有正在流式输出的消息
-    const hasStreamingMessage = messages.some(message => message.status === 'streaming');
-
-    if (hasStreamingMessage) {
-      // 🚀 使用节流的事件处理器，避免过度更新
-      const throttledForceUpdate = throttle(() => {
-        forceUpdate();
-      }, 200); // 200ms节流，减少更新频率
-
-      // 监听流式输出事件
-      const textDeltaHandler = () => {
-        throttledForceUpdate();
-      };
-
-      // 订阅事件
-      const unsubscribeTextDelta = EventEmitter.on(EVENT_NAMES.STREAM_TEXT_DELTA, textDeltaHandler);
-      const unsubscribeTextComplete = EventEmitter.on(EVENT_NAMES.STREAM_TEXT_COMPLETE, textDeltaHandler);
-      const unsubscribeThinkingDelta = EventEmitter.on(EVENT_NAMES.STREAM_THINKING_DELTA, textDeltaHandler);
-
-      // 🚀 移除定期强制更新，改为仅在事件触发时更新
-      // 这样可以避免不必要的重渲染，减少抖动
-
-      return () => {
-        unsubscribeTextDelta();
-        unsubscribeTextComplete();
-        unsubscribeThinkingDelta();
-        throttledForceUpdate.cancel(); // 清理节流函数
-      };
-    }
-  }, [messages, forceUpdate]);
-
   // 将消息按 askId 分组，识别多模型响应
   const groupedMessages = useMemo(() => groupMessagesByAskId(messages), [messages]);
 
@@ -216,7 +172,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
           key={`multi-${item.userMessage.id}`}
           userMessage={item.userMessage}
           assistantMessages={item.assistantMessages}
-          forceUpdate={forceUpdate}
           onRegenerate={onRegenerate}
           onDelete={onDelete}
           onSwitchVersion={onSwitchVersion}
@@ -229,7 +184,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
         <React.Fragment key={item.id}>
           <MessageItem
             message={item}
-            forceUpdate={forceUpdate}
             messageIndex={startIndex + index}
             onRegenerate={onRegenerate}
             onDelete={onDelete}

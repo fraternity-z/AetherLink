@@ -14,6 +14,7 @@ import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
+import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
@@ -119,20 +120,24 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [displayCount] = useState(optimizedConfig.virtualScrollThreshold); // 🚀 使用优化配置
 
-  // 添加强制更新机制 - 使用更稳定的实现
-  const [, setUpdateCounter] = useState(0);
-  const forceUpdate = useCallback(() => {
-    setUpdateCounter(prev => prev + 1);
-  }, []);
+  // 汇总当前消息涉及的块ID列表，用于按需查询
+  const allBlockIds = useMemo(() => {
+    const ids: string[] = [];
+    messages.forEach(m => {
+      if (m.blocks && m.blocks.length > 0) {
+        ids.push(...m.blocks);
+      }
+    });
+    return ids;
+  }, [messages]);
 
-  // 使用 ref 存储 forceUpdate，避免依赖项变化
-  const forceUpdateRef = useRef(forceUpdate);
-  useEffect(() => {
-    forceUpdateRef.current = forceUpdate;
-  }, [forceUpdate]);
-
-  // 获取所有消息块的状态
-  const messageBlocks = useSelector((state: RootState) => state.messageBlocks.entities);
+  // 仅选择当前消息涉及的块实体，避免订阅整个 entities
+  const relatedBlocks = useSelector((state: RootState) => selectBlocksByIds(state, allBlockIds));
+  const relatedBlockSet = useMemo(() => {
+    const set = new Set<string>();
+    relatedBlocks.forEach(b => set.add(b.id));
+    return set;
+  }, [relatedBlocks]);
 
   // 从 Redux 获取当前话题ID
   const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
@@ -290,33 +295,33 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     unifiedScrollManagerRef.current = unifiedScrollManager;
   }, [unifiedScrollManager]);
 
-  // 简化的流式输出检查
+  // 精确的流式输出检查：只看当前消息状态
+  const hasStreamingMessage = useMemo(
+    () => messages.some(message => message.status === 'streaming'),
+    [messages]
+  );
+
   useEffect(() => {
     if (!autoScrollToBottom) return;
-
-    // 检查是否有正在流式输出的块
-    const hasStreamingBlock = Object.values(messageBlocks || {}).some(
-      block => block?.status === 'streaming'
-    );
-
-    // 检查是否有正在流式输出的消息
-    const hasStreamingMessage = messages.some(
-      message => message.status === 'streaming'
-    );
-
-    // 如果有正在流式输出的块或消息，滚动到底部
-    if (hasStreamingBlock || hasStreamingMessage) {
+    if (hasStreamingMessage) {
       unifiedScrollManagerRef.current.scrollToBottom('streamingCheck');
     }
-  }, [messageBlocks, messages, autoScrollToBottom]);
+  }, [hasStreamingMessage, autoScrollToBottom]);
 
   // 修复：优化流式输出事件监听，移除未使用的性能检测代码
   useEffect(() => {
+    if (!hasStreamingMessage) return;
 
     // 修复：使用统一滚动管理器处理流式输出滚动
     const throttledTextDeltaHandler = throttle(() => {
+      const container = containerRef.current;
+      if (container) {
+        const gap = container.scrollHeight - container.scrollTop - container.clientHeight;
+        const isNearBottom = gap < 120;
+        if (!isNearBottom) return;
+      }
       unifiedScrollManagerRef.current.scrollToBottom('textDelta');
-    }, 300); // 增加节流时间到300ms，减少滚动频率
+    }, 500); // 拉长节流间隔并仅在接近底部时滚动
 
     // 修复：统一的滚动到底部事件处理器
     const scrollToBottomHandler = () => {
@@ -337,7 +342,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
       // 取消节流函数
       throttledTextDeltaHandler.cancel();
     };
-  }, []); // 空依赖数组，避免重复创建事件监听器
+  }, [hasStreamingMessage]); // 仅在有流式消息时监听事件
 
   // 修复：当消息数量变化时滚动到底部 - 使用统一滚动管理器
   const throttledMessageLengthScroll = useMemo(
@@ -397,7 +402,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
         if (!message.blocks || message.blocks.length === 0) continue;
 
         for (const blockId of message.blocks) {
-          if (messageBlocks[blockId]) continue;
+          if (relatedBlockSet.has(blockId)) continue;
           if (loadedBlockIdsRef.current.has(blockId)) continue;
 
           pendingBlockIds.push(blockId);
@@ -440,7 +445,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     return () => {
       isActive = false;
     };
-  }, [messages, messageBlocks, dispatch, handleError]);
+  }, [messages, relatedBlockSet, dispatch, handleError]);
 
   // 改造为：直接使用有序消息，无需去重
   const filteredMessages = useMemo(() => {
@@ -503,6 +508,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   const groupedMessages = useMemo(() => {
     return Object.entries(getGroupedMessages(displayMessages, messageGroupingType as MessageGroupingType));
   }, [displayMessages, messageGroupingType]);
+
+  // 预计算每个分组的起始索引，避免渲染时重复累加
+  const groupStartIndices = useMemo(() => {
+    const indices = new Map<string, number>();
+    let cumulative = 0;
+    for (const [date, msgs] of groupedMessages) {
+      indices.set(date, cumulative);
+      cumulative += msgs.length;
+    }
+    return indices;
+  }, [groupedMessages]);
 
   // 移除虚拟滚动相关的函数，使用简单的DOM渲染
 
@@ -661,11 +677,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
             style={{ overflow: 'visible', display: 'flex', flexDirection: 'column' }}
           >
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              {groupedMessages.map(([date, messages], groupIndex) => {
-                // 计算当前组之前的所有消息数量，用于计算全局索引
-                const previousMessagesCount = groupedMessages
-                  .slice(0, groupIndex)
-                  .reduce((total, [, msgs]) => total + msgs.length, 0);
+              {groupedMessages.map(([date, messages]) => {
+                // 从预计算表获取当前组的起始索引
+                const previousMessagesCount = groupStartIndices.get(date) || 0;
 
                 return (
                   <MessageGroup
@@ -673,7 +687,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
                     date={date}
                     messages={messages}
                     expanded={true}
-                    forceUpdate={forceUpdateRef.current}
                     startIndex={previousMessagesCount} // 传递起始索引
                     onRegenerate={onRegenerate}
                     onDelete={onDelete}

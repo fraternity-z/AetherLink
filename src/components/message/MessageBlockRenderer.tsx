@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Box, Fade } from '@mui/material';
 import type { RootState } from '../../shared/store';
-import { messageBlocksSelectors } from '../../shared/store/slices/messageBlocksSlice';
+import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
 import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
 
@@ -143,23 +143,10 @@ const MessageBlockRenderer: React.FC<Props> = ({
   extraPaddingLeft = 0,
   extraPaddingRight = 0
 }) => {
-  // const theme = useTheme(); // 暂时不需要
-  // 从Redux状态中获取块实体
-  const blockEntities = useSelector((state: RootState) => messageBlocksSelectors.selectEntities(state));
-
-  // 简化版本，不依赖事件监听，直接从Redux状态读取
-
-  // 获取所有有效的块 - 与最佳实例保持一致，不进行排序
-  const renderedBlocks = useMemo(() => {
-    // 只渲染存在于Redux状态中的块，按照 blocks 数组的原始顺序
-    const validBlocks = blocks
-      .map((blockId) => blockEntities[blockId])
-      .filter(Boolean) as MessageBlock[];
-
-    // 与最佳实例保持一致：不对块进行排序，保持原始顺序
-    // 这样确保工具块显示在正确的位置（通常在主文本块之后）
-    return validBlocks;
-  }, [blocks, blockEntities]);
+  // 仅依赖自身块ID映射，避免全局实体导致重渲染
+  const renderedBlocks = useSelector((state: RootState) =>
+    selectBlocksByIds(state, blocks)
+  );
 
   // 对块进行分组（图片分组、视频去重）
   const groupedBlocks = useMemo(() => groupSimilarBlocks(renderedBlocks), [renderedBlocks]);
