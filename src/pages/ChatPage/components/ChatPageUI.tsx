@@ -418,11 +418,24 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         ) : null;
 
       case 'topicName':
-        return shouldShow('showTopicName') && currentTopic ? (
-          <Typography key={componentId} variant="h6" noWrap component="div" sx={{ ml: isDIYLayout ? 0 : 1 }}>
-            {currentTopic.name}
+        if (!shouldShow('showTopicName') || !currentTopic) return null;
+        // 字数限制：移动端 8 个字符，桌面端 18 个字符
+        const maxLength = isMobile ? 8 : 18;
+        const displayName = currentTopic.name.length > maxLength
+          ? currentTopic.name.slice(0, maxLength) + '...'
+          : currentTopic.name;
+        return (
+          <Typography
+            key={componentId}
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ ml: isDIYLayout ? 0 : 1 }}
+            title={currentTopic.name} // 鼠标悬停显示完整名称
+          >
+            {displayName}
           </Typography>
-        ) : null;
+        );
 
       case 'newTopicButton':
         return shouldShow('showNewTopicButton') ? (
