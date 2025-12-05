@@ -185,7 +185,7 @@ export const useChatFeatures = (
         // 检查是否是Google Veo模型
         if (selectedModel.id === 'veo-2.0-generate-001' || selectedModel.provider === 'google') {
           // 使用Google Veo API - 分离提交和轮询以支持任务恢复
-          const { submitVeoGeneration, pollVeoOperation } = await import('../../../shared/api/google/veo');
+          const { submitVeoGeneration, pollVeoOperation } = await import('../../../shared/api/gemini-aisdk/veo');
 
           if (!selectedModel.apiKey) {
             throw new Error('Google API密钥未设置');

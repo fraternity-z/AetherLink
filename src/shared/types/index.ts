@@ -362,7 +362,7 @@ export interface PresetModel {
 export * from './newMessage.ts';
 
 // 导出Google Veo相关类型
-export type { GoogleVeoParams, GoogleVeoResult } from '../api/google/veo';
+export type { GoogleVeoParams, GoogleVeoResult } from '../api/gemini-aisdk/veo';
 
 // 快捷短语类型定义
 export interface QuickPhrase {

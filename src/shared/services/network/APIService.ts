@@ -5,9 +5,9 @@ import type { ImageGenerationParams, GeneratedImage } from '../../types';
 import { ModelType } from '../../types';
 import { log } from '../LoggerService';
 import { generateImage as openaiGenerateImage, generateVideo as openaiGenerateVideo } from '../../api/openai';
-import { generateVideoWithVeo } from '../../api/google/veo';
+import { generateVideoWithVeo } from '../../api/gemini-aisdk/veo';
 import type { VideoGenerationParams } from '../../api/openai/video';
-import type { GoogleVeoParams } from '../../api/google/veo';
+import type { GoogleVeoParams } from '../../api/gemini-aisdk/veo';
 import { fetchModels as factoryFetchModels } from '../ProviderFactory';
 import { getModelIdentityKey } from '../../utils/modelUtils';
 

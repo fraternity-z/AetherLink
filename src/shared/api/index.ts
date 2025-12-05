@@ -16,8 +16,8 @@ export * as openaiApi from './openai';
 // 导出Gemini API模块 (使用 AI SDK 实现)
 export * as geminiApi from './gemini-aisdk';
 
-// 导出Anthropic API模块
-export * as anthropicApi from './anthropic';
+// 导出Anthropic API模块 (使用 AI SDK 实现)
+export * as anthropicApi from './anthropic-aisdk';
 
 // 导出视频生成功能
 export { generateVideo, type GeneratedVideo } from '../services/network/APIService';

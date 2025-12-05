@@ -68,5 +68,14 @@ export {
   type ImageGenerationOptions
 } from './image';
 
+// 导出视频生成 (Google Veo)
+export {
+  generateVideoWithVeo,
+  submitVeoGeneration,
+  pollVeoOperation,
+  type GoogleVeoParams,
+  type GoogleVeoResult
+} from './veo';
+
 // 重新导出类型
 export type { Model, Message, MCPTool } from '../../types';

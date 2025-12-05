@@ -4,10 +4,11 @@
  */
 import type { Model } from '../types';
 import * as openaiApi from '../api/openai';
-import * as anthropicApi from '../api/anthropic';
+import * as anthropicApi from '../api/anthropic-aisdk';
 import { modelComboService } from './ModelComboService';
 import { OpenAIAISDKProvider } from '../api/openai-aisdk';
 import { GeminiAISDKProvider } from '../api/gemini-aisdk';
+import { AnthropicAISDKProvider } from '../api/anthropic-aisdk';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 import { getDefaultGroupName } from '../utils/modelUtils';
 import ApiKeyManager from './ApiKeyManager';
@@ -104,7 +105,32 @@ export function getProviderApi(model: Model): any {
         }
       };
     case 'anthropic':
-      return anthropicApi;
+      // 使用 AI SDK Anthropic Provider
+      console.log(`[ProviderFactory] 使用AI SDK Anthropic API`);
+      return {
+        sendChatRequest: async (messages: any[], model: Model) => {
+          const provider = new AnthropicAISDKProvider(model);
+          return await provider.sendChatMessage(messages, {});
+        },
+        testConnection: async (model: Model) => {
+          const provider = new AnthropicAISDKProvider(model);
+          return await provider.testConnection();
+        },
+        fetchModels: anthropicApi.fetchModels
+      };
+    case 'anthropic-aisdk':
+      console.log(`[ProviderFactory] 使用AI SDK Anthropic API`);
+      return {
+        sendChatRequest: async (messages: any[], model: Model) => {
+          const provider = new AnthropicAISDKProvider(model);
+          return await provider.sendChatMessage(messages, {});
+        },
+        testConnection: async (model: Model) => {
+          const provider = new AnthropicAISDKProvider(model);
+          return await provider.testConnection();
+        },
+        fetchModels: anthropicApi.fetchModels
+      };
     case 'gemini':
       // 统一使用 AI SDK Gemini Provider
       console.log(`[ProviderFactory] 使用AI SDK Gemini API`);

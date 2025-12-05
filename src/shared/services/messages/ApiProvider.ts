@@ -3,7 +3,7 @@ import type { ModelProvider } from '../../config/defaultModels';
 import { getActualProviderType, testConnection } from '../ProviderFactory';
 import { OpenAIProvider } from '../../api/openai';
 import { OpenAIAISDKProvider } from '../../api/openai-aisdk';
-import { AnthropicProvider } from '../../api/anthropic';
+import { AnthropicAISDKProvider } from '../../api/anthropic-aisdk';
 import { GeminiAISDKProvider } from '../../api/gemini-aisdk';
 import { ModelComboProvider } from './ModelComboProvider';
 import { EnhancedApiProvider } from '../network/EnhancedApiProvider';
@@ -37,7 +37,9 @@ function getProviderConfig(model: Model): ModelProvider | null {
 function createProviderInstance(model: Model, providerType: string): any {
   switch (providerType) {
     case 'anthropic':
-      return new AnthropicProvider(model);
+    case 'anthropic-aisdk':
+      // 统一使用 AI SDK Anthropic Provider
+      return new AnthropicAISDKProvider(model);
     case 'gemini':
     case 'gemini-aisdk':
       // 统一使用 AI SDK Gemini Provider
