@@ -23,9 +23,6 @@ export interface DialogModelSelectorProps {
 }
 
 export function DialogModelSelector(props: DialogModelSelectorProps) {
-  // 确认 SolidJS 组件已加载
-  console.log('🚀 [SolidJS] DialogModelSelector 已加载');
-  
   const [activeTab, setActiveTab] = createSignal<string>('all');
   const [showLeftArrow, setShowLeftArrow] = createSignal(false);
   const [showRightArrow, setShowRightArrow] = createSignal(false);
@@ -33,6 +30,7 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
   const [startX, setStartX] = createSignal(0);
   const [scrollLeftStart, setScrollLeftStart] = createSignal(0);
   let tabsContainerRef: HTMLDivElement | undefined;
+  let modelListRef: HTMLDivElement | undefined;
 
   // 提供商名称映射
   const providerNameMap = createMemo(() => {
@@ -46,6 +44,26 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
   // 获取提供商名称
   const getProviderName = (providerId: string) => {
     return providerNameMap().get(providerId) || providerId;
+  };
+
+  // 🚀 性能优化：预计算所有模型的图标并缓存
+  // 只在 availableModels 或 themeMode 变化时重新计算
+  const iconCache = createMemo(() => {
+    const isDark = props.themeMode === 'dark';
+    const cache = new Map<string, string>();
+    props.availableModels.forEach(model => {
+      const key = getModelIdentityKey({ id: model.id, provider: model.provider });
+      if (!cache.has(key)) {
+        cache.set(key, getModelOrProviderIcon(model.id, model.provider || model.providerType || '', isDark));
+      }
+    });
+    return cache;
+  });
+
+  // 从缓存获取图标
+  const getIconFromCache = (model: Model): string => {
+    const key = getModelIdentityKey({ id: model.id, provider: model.provider });
+    return iconCache().get(key) || '/images/providerIcons/dark/custom.png';
   };
 
   // 按提供商分组的模型
@@ -104,6 +122,14 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
     props.selectedModel ? getIdentityValue(props.selectedModel) : ''
   );
 
+  // 滚动到当前选中的模型位置
+  const scrollToSelectedModel = () => {
+    modelListRef?.querySelector('.solid-model-item.selected')?.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center' 
+    });
+  };
+
   // 当对话框打开时，如果有当前供应商且activeTab还是初始值，自动切换到"常用"
   // 只在对话框刚打开时执行一次
   createEffect(
@@ -116,6 +142,10 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
           if (providerId && activeTab() === 'all') {
             setActiveTab('frequently-used');
           }
+          // 使用 requestAnimationFrame 等待 DOM 渲染完成
+          requestAnimationFrame(() => {
+            requestAnimationFrame(scrollToSelectedModel);
+          });
         }
         // 对话框关闭时重置为"全部"标签
         if (!isOpen) {
@@ -218,8 +248,8 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
     groupedModels();
     currentProviderId();
     
-    // 延迟检查，等待DOM更新
-    setTimeout(updateScrollButtons, 0);
+    // 使用 requestAnimationFrame 等待 DOM 更新
+    requestAnimationFrame(updateScrollButtons);
   });
 
   // 点击背景关闭对话框
@@ -239,11 +269,7 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
     
     if (isOpen) {
       // 注册到全局对话框栈，提供关闭回调
-      openDialog(dialogId, () => {
-        console.log('[SolidJS DialogModelSelector] 通过返回键关闭');
-        props.handleMenuClose();
-      });
-      console.log('[SolidJS DialogModelSelector] 已注册到全局对话框栈');
+      openDialog(dialogId, props.handleMenuClose);
     } else {
       // 从对话框栈中移除
       closeDialog(dialogId);
@@ -311,14 +337,16 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
               >
                 <div class="solid-tabs">
                 <button
-                  class={`solid-tab ${activeTab() === 'all' ? 'active' : ''}`}
+                  class="solid-tab"
+                  classList={{ active: activeTab() === 'all' }}
                   onClick={() => setActiveTab('all')}
                 >
                   全部
                 </button>
                 <Show when={currentProviderId() && groupedModels().groups[currentProviderId()!]}>
                   <button
-                    class={`solid-tab ${activeTab() === 'frequently-used' ? 'active' : ''}`}
+                    class="solid-tab"
+                    classList={{ active: activeTab() === 'frequently-used' }}
                     onClick={() => setActiveTab('frequently-used')}
                   >
                     {getProviderName(currentProviderId()!)}
@@ -327,7 +355,8 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
                 <For each={groupedModels().providers.filter(p => p.id !== currentProviderId())}>
                   {(provider) => (
                     <button
-                      class={`solid-tab ${activeTab() === provider.id ? 'active' : ''}`}
+                      class="solid-tab"
+                      classList={{ active: activeTab() === provider.id }}
                       onClick={() => setActiveTab(provider.id)}
                     >
                       {provider.displayName}
@@ -351,7 +380,7 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
             </div>
 
             {/* 模型列表 */}
-            <div class="solid-dialog-content">
+            <div class="solid-dialog-content" ref={modelListRef}>
               <div class="solid-model-list">
                 <For each={displayedModels()}>
                   {(model) => (
@@ -360,7 +389,7 @@ export function DialogModelSelector(props: DialogModelSelectorProps) {
                       isSelected={selectedIdentity() === getIdentityValue(model)}
                       onSelect={() => props.handleModelSelect(model)}
                       providerDisplayName={getProviderName(model.provider || model.providerType || '未知')}
-                      isDark={props.themeMode === 'dark'}
+                      iconUrl={getIconFromCache(model)}
                     />
                   )}
                 </For>
@@ -378,26 +407,20 @@ interface ModelItemProps {
   isSelected: boolean;
   onSelect: () => void;
   providerDisplayName: string;
-  isDark: boolean;
+  iconUrl: string;  // 🚀 从父组件缓存传入，避免重复计算
 }
 
-// ModelItem 子组件
+// ModelItem 子组件 - 使用父组件缓存的图标
 function ModelItem(props: ModelItemProps) {
-  // 获取模型或供应商图标
-  const providerIcon = createMemo(() => {
-    const modelId = props.model.id || '';
-    const providerId = props.model.provider || props.model.providerType || '';
-    return getModelOrProviderIcon(modelId, providerId, props.isDark);
-  });
-
   return (
     <div
-      class={`solid-model-item ${props.isSelected ? 'selected' : ''}`}
+      class="solid-model-item"
+      classList={{ selected: props.isSelected }}
       onClick={props.onSelect}
     >
       <div class="solid-model-icon">
         <img 
-          src={providerIcon()}
+          src={props.iconUrl}
           alt={props.providerDisplayName}
           onError={(e) => {
             // 如果图片加载失败，显示首字母
@@ -413,7 +436,7 @@ function ModelItem(props: ModelItemProps) {
         </div>
       </div>
       <div class="solid-model-info">
-        <div class={`solid-model-name ${props.isSelected ? 'selected' : ''}`}>
+        <div class="solid-model-name" classList={{ selected: props.isSelected }}>
           {props.model.name}
         </div>
         <div class="solid-model-description">

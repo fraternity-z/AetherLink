@@ -224,22 +224,12 @@ export function getProviderIcon(providerId: string, isDark: boolean = false): st
   const providerIcons = isDark ? PROVIDER_ICONS_DARK : PROVIDER_ICONS_LIGHT;
   const normalizedId = providerId.toLowerCase().replace(/_/g, '-');
   
-  // 调试信息
-  console.log('[getProviderIcon]', {
-    originalId: providerId,
-    normalizedId,
-    isDark,
-    matched: !!providerIcons[normalizedId as SystemProviderId],
-    icon: providerIcons[normalizedId as SystemProviderId] || 'NOT_FOUND'
-  });
-  
   // 直接匹配
   if (providerIcons[normalizedId as SystemProviderId]) {
     return providerIcons[normalizedId as SystemProviderId];
   }
   
   // 返回默认图标
-  console.warn(`[getProviderIcon] 供应商 "${providerId}" (normalized: "${normalizedId}") 未找到图标，使用默认图标`);
   return providerIcons.custom;
 }
 
