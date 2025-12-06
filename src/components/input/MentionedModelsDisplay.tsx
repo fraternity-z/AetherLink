@@ -6,8 +6,8 @@ import React from 'react';
 import { Box, Chip, IconButton, Tooltip, Typography } from '@mui/material';
 import { X, AtSign } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../shared/store';
 import type { Model } from '../../shared/types';
+import { selectProviders } from '../../shared/store/selectors/settingsSelectors';
 import { getModelIdentityKey } from '../../shared/utils/modelUtils';
 
 interface MentionedModelsDisplayProps {
@@ -37,7 +37,7 @@ const MentionedModelsDisplay: React.FC<MentionedModelsDisplayProps> = ({
   onClearAll
 }) => {
   // 获取提供商配置
-  const providers = useSelector((state: RootState) => state.settings.providers || []);
+  const providers = useSelector(selectProviders);
 
   // 获取提供商名称
   const getProviderName = (providerId: string): string => {

@@ -20,6 +20,7 @@ import {
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
+import { selectProviders } from '../../shared/store/selectors/settingsSelectors';
 import { generateImage } from '../../shared/services/network/APIService';
 import { addGeneratedImage } from '../../shared/store/settingsSlice';
 import type { ImageGenerationParams, Model } from '../../shared/types';
@@ -49,7 +50,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
     ) || []
   );
 
-  const providers = useSelector((state: RootState) => state.settings.providers || []);
+  const providers = useSelector(selectProviders);
 
   // 从providers获取支持图像生成的模型
   const providersModels = useMemo(() => (
@@ -69,9 +70,9 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
     const mapped = combined.map(model => {
       // 使用 {id, provider} 组合查找，避免同名模型冲突
       const modelIdentity = { id: model.id, provider: model.provider || model.providerType };
-      const provider = providers.find(p => {
+      const provider = providers.find((p: any) => {
         if (!p.models) return false;
-        return p.models.some(m => modelMatchesIdentity(m, modelIdentity, p.id));
+        return p.models.some((m: any) => modelMatchesIdentity(m, modelIdentity, p.id));
       });
       const providerId = model.provider || model.providerType || provider?.id || '';
       return {

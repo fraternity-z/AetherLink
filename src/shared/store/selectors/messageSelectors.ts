@@ -8,9 +8,17 @@ import {
   selectLastMessageForTopic as selectNormalizedLastMessageForTopic
 } from '../slices/newMessagesSlice';
 
+// 创建一个稳定的空数组引用
+const EMPTY_TOPICS_ARRAY: any[] = [];
+
 // 基础选择器
 export const selectMessagesState = (state: RootState) => state.messages;
 export const selectMessageBlocksState = (state: RootState) => state.messageBlocks;
+
+// 从 newMessagesSlice 中获取消息
+export const selectMessageById = (state: RootState, messageId: string) => {
+  return state.messages.entities[messageId];
+};
 
 // 选择特定主题的消息 - 使用 newMessagesSlice 中的选择器
 export const selectMessagesForTopic = selectMessagesByTopicId;
@@ -27,24 +35,60 @@ export const selectMessageBlockEntities = createSelector(
   }
 );
 
-// 选择特定消息的块
-export const selectBlocksForMessage = createSelector(
-  [
-    selectMessageBlockEntities,
-    (state: RootState, messageId: string) => {
-      // 从 state.messages 中获取消息
-      const message = selectMessageById(state, messageId);
-      return message?.blocks || EMPTY_TOPICS_ARRAY;
-    }
-  ],
-  (blockEntities, blockIds) => {
-    return blockIds.map((id: string) => blockEntities[id]).filter(Boolean);
+// 数组浅比较工具函数
+const shallowArrayEqual = <T>(a: T[], b: T[]): boolean => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
   }
-);
+  return true;
+};
 
-// 从 newMessagesSlice 中获取消息
-export const selectMessageById = (state: RootState, messageId: string) => {
-  return state.messages.entities[messageId];
+// 选择特定消息的块 - 优化版本
+// 使用 Map 缓存每个 messageId 的结果
+const blocksForMessageCache = new Map<string, {
+  blockEntities: Record<string, any>;
+  blockIds: string[];
+  result: any[];
+}>();
+
+export const selectBlocksForMessage = (state: RootState, messageId: string): any[] => {
+  const blockEntities = selectMessageBlockEntities(state);
+  const message = selectMessageById(state, messageId);
+  const blockIds = message?.blocks || EMPTY_TOPICS_ARRAY;
+
+  // 获取缓存
+  const cached = blocksForMessageCache.get(messageId);
+
+  if (cached &&
+      cached.blockEntities === blockEntities &&
+      shallowArrayEqual(cached.blockIds, blockIds)) {
+    return cached.result;
+  }
+
+  // 计算新结果
+  const result = blockIds.map((id: string) => blockEntities[id]).filter(Boolean);
+
+  // 检查结果是否相等（浅比较）
+  if (cached && shallowArrayEqual(result, cached.result)) {
+    // 更新缓存引用，但返回旧结果
+    blocksForMessageCache.set(messageId, {
+      blockEntities,
+      blockIds,
+      result: cached.result
+    });
+    return cached.result;
+  }
+
+  // 更新缓存
+  blocksForMessageCache.set(messageId, {
+    blockEntities,
+    blockIds,
+    result
+  });
+
+  return result;
 };
 
 // 选择主题的加载状态
@@ -65,9 +109,6 @@ export const selectCurrentTopic = createSelector(
     return { id: currentTopicId };
   }
 );
-
-// 创建一个稳定的空数组引用
-const EMPTY_TOPICS_ARRAY: any[] = [];
 
 // 选择所有主题 - 返回稳定的常量引用
 export const selectTopics = () => EMPTY_TOPICS_ARRAY;

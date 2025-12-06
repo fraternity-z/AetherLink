@@ -30,6 +30,13 @@ export class StatusBarService {
    * @param themeStyle 主题风格
    */
   public async initialize(theme: 'light' | 'dark', themeStyle: ThemeStyle = 'default'): Promise<void> {
+    // 防重入保护：如果已初始化，只更新主题
+    if (this.isInitialized) {
+      console.log('[StatusBarService] 已初始化，仅更新主题');
+      await this.updateTheme(theme, themeStyle);
+      return;
+    }
+
     this.currentTheme = theme;
     this.currentThemeStyle = themeStyle;
 

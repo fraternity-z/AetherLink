@@ -8,6 +8,8 @@ import Markdown from '../Markdown';
 import { selectCitationsForMessage } from '../../../shared/store/selectors/messageBlockSelectors';
 import type { Citation } from '../../../shared/types/citation';
 
+// 稳定的空数组引用
+const EMPTY_CITATIONS: Citation[] = [];
 
 interface Props {
   block: MainTextMessageBlock;
@@ -28,7 +30,7 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
   
   // 🔍 动态获取同消息的引用信息（参数化 selector）
   const citations = useSelector((state: RootState): Citation[] => {
-    if (role !== 'assistant') return [];
+    if (role !== 'assistant') return EMPTY_CITATIONS;
     return selectCitationsForMessage(state, messageId);
   });
   

@@ -2,8 +2,8 @@ import React from 'react';
 import { Box, Typography, IconButton, Button, useTheme, useMediaQuery } from '@mui/material';
 import { Bot } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import type { RootState } from '../../../shared/store';
 import type { Model } from '../../../shared/types';
+import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
 
 interface UnifiedModelDisplayProps {
   selectedModel: Model | null;
@@ -18,7 +18,7 @@ export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const providers = useSelector((state: RootState) => state.settings.providers || []);
+  const providers = useSelector(selectProviders);
 
   // 获取提供商名称
   const getProviderName = (providerId: string) => {

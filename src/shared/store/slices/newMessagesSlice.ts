@@ -43,6 +43,7 @@ export interface NormalizedMessagesState extends EntityState<Message, string> {
   currentTopicId: string | null;
   loadingByTopic: Record<string, boolean>;
   streamingByTopic: Record<string, boolean>;
+  fulfilledByTopic: Record<string, boolean>; // 追踪是否已完成加载
   displayCount: number;
   errors: ErrorInfo[]; // 错误信息数组，记录多个错误
   errorsByTopic: Record<string, ErrorInfo[]>; // 按主题分组的错误信息
@@ -55,6 +56,7 @@ const initialState: NormalizedMessagesState = messagesAdapter.getInitialState({
   currentTopicId: null,
   loadingByTopic: {},
   streamingByTopic: {},
+  fulfilledByTopic: {}, // 追踪是否已完成加载
   displayCount: 20,
   errors: [],
   errorsByTopic: {},
@@ -148,6 +150,12 @@ const newMessagesSlice = createSlice({
     setTopicStreaming(state, action: PayloadAction<SetTopicStreamingPayload>) {
       const { topicId, streaming } = action.payload;
       state.streamingByTopic[topicId] = streaming;
+    },
+
+    // 设置话题是否已完成加载
+    setTopicFulfilled(state, action: PayloadAction<{ topicId: string; fulfilled: boolean }>) {
+      const { topicId, fulfilled } = action.payload;
+      state.fulfilledByTopic[topicId] = fulfilled;
     },
 
     // 移除了额外的状态跟踪
@@ -347,22 +355,68 @@ export const {
 } = messagesAdapter.getSelectors<RootState>(selectMessagesState);
 
 // 创建稳定的空数组引用
-const EMPTY_MESSAGES_ARRAY: any[] = [];
+const EMPTY_MESSAGES_ARRAY: Message[] = [];
 
-// 自定义选择器 - 使用 createSelector 进行记忆化
-export const selectMessagesByTopicId = createSelector(
-  [
-    (state: RootState) => state.messages,
-    (_state: RootState, topicId: string) => topicId
-  ],
-  (messagesState, topicId) => {
-    if (!messagesState) {
-      return EMPTY_MESSAGES_ARRAY;
-    }
-    const messageIds = messagesState.messageIdsByTopic[topicId] || EMPTY_MESSAGES_ARRAY;
-    return messageIds.map((id: string) => messagesState.entities[id]).filter(Boolean);
+// 数组浅比较工具函数
+const shallowArrayEqual = <T>(a: T[], b: T[]): boolean => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
   }
-);
+  return true;
+};
+
+// 自定义选择器 - 使用闭包缓存优化记忆化
+// 使用 Map 缓存每个 topicId 的结果
+const messagesByTopicCache = new Map<string, {
+  messageIds: string[];
+  entities: Record<string, Message | undefined>;
+  result: Message[];
+}>();
+
+export const selectMessagesByTopicId = (state: RootState, topicId: string): Message[] => {
+  if (!state.messages) {
+    return EMPTY_MESSAGES_ARRAY;
+  }
+
+  const messageIds = state.messages.messageIdsByTopic[topicId] || [];
+  const entities = state.messages.entities;
+
+  // 获取缓存
+  const cached = messagesByTopicCache.get(topicId);
+
+  if (cached &&
+      cached.messageIds === messageIds &&
+      cached.entities === entities) {
+    return cached.result;
+  }
+
+  // 计算新结果
+  const result = messageIds
+    .map((id: string) => entities[id])
+    .filter((msg): msg is Message => msg !== undefined);
+
+  // 检查结果是否相等（浅比较）
+  if (cached && shallowArrayEqual(result, cached.result)) {
+    // 更新缓存引用，但返回旧结果
+    messagesByTopicCache.set(topicId, {
+      messageIds,
+      entities,
+      result: cached.result
+    });
+    return cached.result;
+  }
+
+  // 更新缓存
+  messagesByTopicCache.set(topicId, {
+    messageIds,
+    entities,
+    result
+  });
+
+  return result;
+};
 
 export const selectCurrentTopicId = (state: RootState) =>
   state.messages ? state.messages.currentTopicId : null;
@@ -450,6 +504,13 @@ export const loadTopicMessagesThunk = createAsyncThunk(
     try {
       const state = getState() as any;
 
+      // 优化：检查是否已完成加载（fulfilledByTopic）
+      if (state.messages.fulfilledByTopic[topicId]) {
+        console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 已加载，跳过`);
+        dispatch(newMessagesActions.setCurrentTopicId(topicId));
+        return [];
+      }
+
       // 优化缓存检查 - 确保有实际消息数据才跳过加载
       const existingMessageIds = state.messages.messageIdsByTopic[topicId] || [];
       const hasActualMessages = existingMessageIds.length > 0 &&
@@ -459,6 +520,8 @@ export const loadTopicMessagesThunk = createAsyncThunk(
 
       if (hasActualMessages) {
         console.log(`[loadTopicMessagesThunk] 话题 ${topicId} 消息已缓存，跳过加载`);
+        // 标记为已完成加载
+        dispatch(newMessagesActions.setTopicFulfilled({ topicId, fulfilled: true }));
         return []; // 直接返回，不重新加载
       }
 
@@ -511,6 +574,9 @@ export const loadTopicMessagesThunk = createAsyncThunk(
       } else {
         dispatch(newMessagesActions.messagesReceived({ topicId, messages: [] }));
       }
+
+      // 🚀 标记为已完成加载
+      dispatch(newMessagesActions.setTopicFulfilled({ topicId, fulfilled: true }));
 
       return messagesFromTopic;
     } catch (error) {

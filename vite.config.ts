@@ -79,8 +79,8 @@ export default defineConfig(({ mode }) => ({
       host: process.env.TAURI_DEV_HOST,
       port: 5174,
     } : {
-      port: 5174,
-      host: '0.0.0.0'
+      port: 5174
+      // 不指定 host，Vite 会自动使用正确的地址（如 localhost）
     }
     // 注意：CORS 代理已迁移到独立的 scripts/cors-proxy.js
     // 所有跨域请求通过 http://localhost:8888/proxy 统一处理

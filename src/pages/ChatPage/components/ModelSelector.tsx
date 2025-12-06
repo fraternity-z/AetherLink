@@ -2,6 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { useTheme, useMediaQuery } from '@mui/material';
 import type { RootState } from '../../../shared/store';
+import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
 import { SolidBridge } from '../../../shared/bridges/SolidBridge';
 import { DialogModelSelector as SolidDialogModelSelector } from '../../../solid/components/ModelSelector/DialogModelSelector.solid';
 import DropdownModelSelector from './DropdownModelSelector';
@@ -19,7 +20,7 @@ interface ModelSelectorProps {
 // 导出ModelSelector组件 - 根据设置选择不同的选择器样式
 export const ModelSelector: React.FC<ModelSelectorProps> = (props) => {
   const modelSelectorStyle = useSelector((state: RootState) => state.settings.modelSelectorStyle);
-  const providers = useSelector((state: RootState) => state.settings.providers || []);
+  const providers = useSelector(selectProviders);
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const themeMode = theme.palette.mode;

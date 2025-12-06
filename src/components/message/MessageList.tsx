@@ -24,11 +24,8 @@ import { scrollContainerStyles, scrollbarStyles, getOptimizedConfig, debugScroll
 const LOAD_MORE_COUNT = 20;
 
 // 修复：简化消息显示逻辑，支持正确的无限滚动
+// 🚀 优化：移除冗余日志，避免 StrictMode 双重渲染导致的重复输出
 const computeDisplayMessages = (messages: Message[], startIndex: number, displayCount: number) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[computeDisplayMessages] 输入 ${messages.length} 条消息，从索引 ${startIndex} 开始，显示 ${displayCount} 条`);
-  }
-
   const totalMessages = messages.length;
 
   if (totalMessages === 0) {
@@ -40,12 +37,7 @@ const computeDisplayMessages = (messages: Message[], startIndex: number, display
   const actualStartIndex = Math.max(0, startIndex);
   const actualEndIndex = Math.min(totalMessages, startIndex + displayCount);
 
-  const displayMessages = messages.slice(actualStartIndex, actualEndIndex);
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[computeDisplayMessages] 返回 ${displayMessages.length} 条消息，索引范围: ${actualStartIndex}-${actualEndIndex}`);
-  }
-  return displayMessages;
+  return messages.slice(actualStartIndex, actualEndIndex);
 };
 
 interface MessageListProps {
@@ -448,13 +440,11 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
   }, [messages, relatedBlockSet, dispatch, handleError]);
 
   // 改造为：直接使用有序消息，无需去重
+  // 🚀 优化：移除冗余日志，避免 StrictMode 双重渲染导致的重复输出
   const filteredMessages = useMemo(() => {
-    if (isDevMode) {
-      console.log(`[MessageList] 使用，直接使用 ${messages.length} 条有序消息，无需去重`);
-    }
-    // ：假设消息已经按时间顺序存储且无重复，直接使用
+    // 消息已经按时间顺序存储且无重复，直接使用
     return messages;
-  }, [messages, isDevMode]);
+  }, [messages]);
 
   // 修复：计算显示的消息 - 使用记忆化避免重复计算
   const memoizedDisplayMessages = useMemo(() => {
