@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Box,
   List,
@@ -18,7 +18,9 @@ import {
   DialogActions,
   Button,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  InputBase,
+  Collapse
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
 import {
@@ -30,10 +32,14 @@ import {
   ArrowLeft,
   Edit2,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Search,
+  X
 } from 'lucide-react';
 import { simpleNoteService } from '../../../shared/services/notes/SimpleNoteService';
+import { useNotesSearch } from '../../../shared/hooks/useNotesSearch';
 import type { NoteFile } from '../../../shared/types/note';
+import type { SearchResult } from '../../../shared/services/notes/NotesSearchService';
 import { toastManager } from '../../EnhancedToast';
 
 interface NoteListProps {
@@ -46,6 +52,18 @@ const NoteList: React.FC<NoteListProps> = ({ onSelectNote }) => {
   const [loading, setLoading] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedItem, setSelectedItem] = useState<NoteFile | null>(null);
+  
+  // 搜索状态
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { 
+    search, 
+    reset: resetSearch, 
+    keyword, 
+    isSearching, 
+    results: searchResults,
+    stats 
+  } = useNotesSearch({ debounceMs: 300 });
   
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -66,6 +84,21 @@ const NoteList: React.FC<NoteListProps> = ({ onSelectNote }) => {
       loadNotes();
     }
   }, [currentPath, hasConfig]);
+  
+  // 进入搜索模式时聚焦输入框
+  useEffect(() => {
+    if (isSearchMode && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchMode]);
+  
+  // 当前显示的列表项
+  const displayItems = useMemo(() => {
+    if (isSearchMode && keyword) {
+      return searchResults;
+    }
+    return notes;
+  }, [isSearchMode, keyword, searchResults, notes]);
 
   const checkConfig = async () => {
     const valid = await simpleNoteService.hasValidConfig();
@@ -88,15 +121,37 @@ const NoteList: React.FC<NoteListProps> = ({ onSelectNote }) => {
     }
   };
 
-  const handleItemClick = (item: NoteFile) => {
+  const handleItemClick = (item: NoteFile | SearchResult) => {
     if (item.isDirectory) {
-      setCurrentPath(currentPath ? `${currentPath}/${item.name}` : item.name);
+      // 进入文件夹
+      setCurrentPath(item.path);
+      // 退出搜索模式
+      if (isSearchMode) {
+        setIsSearchMode(false);
+        resetSearch();
+      }
     } else {
-      onSelectNote(currentPath ? `${currentPath}/${item.name}` : item.name);
+      onSelectNote(item.path);
     }
+  };
+  
+  // 切换搜索模式
+  const toggleSearchMode = () => {
+    setIsSearchMode(prev => {
+      if (prev) {
+        resetSearch();
+      }
+      return !prev;
+    });
   };
 
   const handleBreadcrumbClick = (index: number) => {
+    // 退出搜索模式
+    if (isSearchMode) {
+      setIsSearchMode(false);
+      resetSearch();
+    }
+    
     if (index === -1) {
       setCurrentPath('');
     } else {
@@ -240,6 +295,15 @@ const NoteList: React.FC<NoteListProps> = ({ onSelectNote }) => {
           </Breadcrumbs>
         </Box>
 
+        <Tooltip title="搜索">
+          <IconButton 
+            onClick={toggleSearchMode} 
+            size="small"
+            color={isSearchMode ? 'primary' : 'default'}
+          >
+            <Search size={18} />
+          </IconButton>
+        </Tooltip>
         <Tooltip title="刷新">
           <IconButton onClick={loadNotes} size="small">
             <RefreshCw size={18} />
@@ -256,6 +320,42 @@ const NoteList: React.FC<NoteListProps> = ({ onSelectNote }) => {
           </IconButton>
         </Tooltip>
       </Box>
+      
+      {/* 搜索输入框 */}
+      <Collapse in={isSearchMode}>
+        <Box sx={{ 
+          p: 1, 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Search size={16} style={{ opacity: 0.5 }} />
+          <InputBase
+            inputRef={searchInputRef}
+            placeholder="搜索笔记名称或内容..."
+            value={keyword}
+            onChange={(e) => search(e.target.value)}
+            fullWidth
+            size="small"
+            sx={{ fontSize: 14 }}
+          />
+          {isSearching && <CircularProgress size={16} />}
+          {keyword && (
+            <IconButton size="small" onClick={() => { resetSearch(); setIsSearchMode(false); }}>
+              <X size={14} />
+            </IconButton>
+          )}
+        </Box>
+        {/* 搜索统计 */}
+        {keyword && stats.total > 0 && (
+          <Box sx={{ px: 1.5, py: 0.5, fontSize: 11, color: 'text.secondary', borderBottom: 1, borderColor: 'divider' }}>
+            找到 {stats.total} 个结果
+            {stats.bothMatches > 0 && ` (其中 ${stats.bothMatches} 个全匹配)`}
+          </Box>
+        )}
+      </Collapse>
 
       {/* List */}
       <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
@@ -263,38 +363,98 @@ const NoteList: React.FC<NoteListProps> = ({ onSelectNote }) => {
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress size={24} />
           </Box>
-        ) : notes.length === 0 ? (
+        ) : displayItems.length === 0 ? (
           <Box sx={{ p: 4, textAlign: 'center' }}>
-            <Typography color="text.secondary">空文件夹</Typography>
+            <Typography color="text.secondary">
+              {isSearchMode ? (keyword ? '未找到匹配的笔记' : '输入关键词搜索') : '空文件夹'}
+            </Typography>
           </Box>
         ) : (
           <List dense>
-            {notes.map((item) => (
-              <ListItem
-                key={item.id || item.name}
-                disablePadding
-                secondaryAction={
-                  <IconButton edge="end" onClick={(e) => handleMenuOpen(e, item)} size="small">
-                    <MoreVertical size={16} />
-                  </IconButton>
-                }
-              >
-                <ListItemButton onClick={() => handleItemClick(item)}>
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    {item.isDirectory ? (
-                      <FolderIcon size={20} color="#FBC02D" />
-                    ) : (
-                      <FileIcon size={20} color="#42A5F5" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.name}
-                    secondary={item.size ? `${(item.size / 1024).toFixed(1)} KB` : null}
-                    primaryTypographyProps={{ noWrap: true }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
+            {displayItems.map((item) => {
+              const isSearchResult = 'matchType' in item;
+              const searchItem = isSearchResult ? item as SearchResult : null;
+              
+              return (
+                <ListItem
+                  key={item.id || item.name}
+                  disablePadding
+                  secondaryAction={
+                    <IconButton edge="end" onClick={(e) => handleMenuOpen(e, item)} size="small">
+                      <MoreVertical size={16} />
+                    </IconButton>
+                  }
+                >
+                  <ListItemButton onClick={() => handleItemClick(item)}>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      {item.isDirectory ? (
+                        <FolderIcon size={20} color="#FBC02D" />
+                      ) : (
+                        <FileIcon size={20} color="#42A5F5" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <span>{item.name}</span>
+                          {searchItem?.matchType === 'both' && (
+                            <Box component="span" sx={{ 
+                              fontSize: 10, 
+                              px: 0.5, 
+                              py: 0.25, 
+                              borderRadius: 0.5,
+                              bgcolor: 'primary.main',
+                              color: 'primary.contrastText',
+                              opacity: 0.8
+                            }}>
+                              全
+                            </Box>
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <>
+                          {/* 搜索模式下显示路径 */}
+                          {isSearchMode && item.path.includes('/') && (
+                            <Typography component="span" variant="caption" sx={{ display: 'block', opacity: 0.7 }}>
+                              {item.path}
+                            </Typography>
+                          )}
+                          {/* 显示匹配上下文 */}
+                          {searchItem?.matches && searchItem.matches.length > 0 && (
+                            <Typography 
+                              component="span" 
+                              variant="caption" 
+                              sx={{ 
+                                display: 'block',
+                                '& mark': {
+                                  bgcolor: 'warning.light',
+                                  color: 'inherit',
+                                  px: 0.25,
+                                  borderRadius: 0.25
+                                }
+                              }}
+                              dangerouslySetInnerHTML={{
+                                __html: (() => {
+                                  const m = searchItem.matches[0];
+                                  const before = m.context.substring(0, m.matchStart);
+                                  const match = m.context.substring(m.matchStart, m.matchEnd);
+                                  const after = m.context.substring(m.matchEnd);
+                                  return `${before}<mark>${match}</mark>${after}`;
+                                })()
+                              }}
+                            />
+                          )}
+                          {/* 默认显示文件大小 */}
+                          {!isSearchMode && item.size ? `${(item.size / 1024).toFixed(1)} KB` : null}
+                        </>
+                      }
+                      primaryTypographyProps={{ noWrap: true }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
           </List>
         )}
       </Box>

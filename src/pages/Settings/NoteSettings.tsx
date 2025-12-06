@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   AppBar,
   Box,
@@ -47,11 +47,13 @@ import {
 import { useDispatch } from 'react-redux';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
 import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { useNotesSearch } from '../../shared/hooks/useNotesSearch';
 import { toastManager } from '../../components/EnhancedToast';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 import { updateSettings } from '../../shared/store/slices/settingsSlice';
 import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
 import type { NoteFile } from '../../shared/types/note';
+import type { SearchResult } from '../../shared/services/notes/NotesSearchService';
 
 interface FolderCache {
   [path: string]: NoteFile[];
@@ -72,7 +74,17 @@ const NoteSettings: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<NoteFile | null>(null);
   const [sortType, setSortType] = useState<'name' | 'date'>('name');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // 全文搜索
+  const { 
+    search, 
+    reset: _resetSearch, 
+    keyword: searchQuery, 
+    isSearching, 
+    results: searchResults,
+    stats 
+  } = useNotesSearch({ debounceMs: 300 });
+  void _resetSearch; // 显式标记为已使用（预留清空搜索功能）
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createType, setCreateType] = useState<'file' | 'folder'>('file');
   const [createTargetDir, setCreateTargetDir] = useState('');
@@ -287,7 +299,13 @@ const NoteSettings: React.FC = () => {
     }
   };
 
-  const filteredItems = useCallback((items: NoteFile[]) => {
+  // 当前显示的列表项（搜索模式下使用搜索结果，否则使用当前目录）
+  const displayItems = useMemo(() => {
+    if (searchOpen && searchQuery) {
+      return searchResults;
+    }
+    
+    const items = folderCache[currentPath] || [];
     let result = [...items];
     result.sort((a, b) => {
       if (a.isDirectory !== b.isDirectory) {
@@ -298,33 +316,39 @@ const NoteSettings: React.FC = () => {
       }
       return a.name.localeCompare(b.name);
     });
-
-    if (searchQuery) {
-      const lower = searchQuery.toLowerCase();
-      result = result.filter((item) => item.name.toLowerCase().includes(lower));
-    }
     return result;
-  }, [sortType, searchQuery]);
+  }, [searchOpen, searchQuery, searchResults, folderCache, currentPath, sortType]);
 
   // 渲染当前目录的文件列表
   const renderFileList = useCallback(() => {
-    const items = folderCache[currentPath];
-    
-    if (!items) {
-      if (loadingPaths[currentPath]) {
-        return (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-            <CircularProgress size={24} />
-            <Typography variant="body2" sx={{ ml: 2 }}>加载中...</Typography>
-          </Box>
-        );
+    // 搜索模式下不需要等待 folderCache
+    if (!searchOpen || !searchQuery) {
+      const items = folderCache[currentPath];
+      
+      if (!items) {
+        if (loadingPaths[currentPath]) {
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+              <CircularProgress size={24} />
+              <Typography variant="body2" sx={{ ml: 2 }}>加载中...</Typography>
+            </Box>
+          );
+        }
+        return null;
       }
-      return null;
+    }
+    
+    // 搜索中状态
+    if (searchOpen && isSearching) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+          <CircularProgress size={24} />
+          <Typography variant="body2" sx={{ ml: 2 }}>搜索中...</Typography>
+        </Box>
+      );
     }
 
-    const itemsToRender = filteredItems(items);
-
-    if (itemsToRender.length === 0 && !searchQuery) {
+    if (displayItems.length === 0 && !searchQuery) {
       return (
         <ListItem>
           <ListItemText primary={<Typography color="text.secondary">此文件夹为空</Typography>} />
@@ -332,64 +356,137 @@ const NoteSettings: React.FC = () => {
       );
     }
 
-    if (itemsToRender.length === 0 && searchQuery) {
+    if (displayItems.length === 0 && searchQuery) {
       return (
         <ListItem>
-          <ListItemText primary={<Typography color="text.secondary">未找到匹配的文件</Typography>} />
+          <ListItemText primary={
+            <Box>
+              <Typography color="text.secondary">未找到匹配的笔记</Typography>
+              <Typography variant="caption" color="text.secondary">尝试使用其他关键词</Typography>
+            </Box>
+          } />
         </ListItem>
       );
     }
+    
+    // 搜索统计
+    const searchStats = searchOpen && searchQuery && stats.total > 0 ? (
+      <Box sx={{ px: 1.5, py: 0.5, fontSize: 11, color: 'text.secondary' }}>
+        找到 {stats.total} 个结果
+        {stats.bothMatches > 0 && ` (其中 ${stats.bothMatches} 个全匹配)`}
+      </Box>
+    ) : null;
 
-    return itemsToRender.map((item) => {
-      const isSelected = selectedItem?.path === item.path;
-      return (
-        <ListItem
-          key={item.path}
-          disablePadding
-          sx={{ display: 'block' }}
-          onContextMenu={(event) => handleMenuOpen(event, item)}
-        >
-          <ListItemButton
-            selected={isSelected}
-            onClick={() => handleFileClick(item)}
-            sx={{
-              pl: 1.5,
-              pr: 1,
-              minHeight: 40,
-              '&.Mui-selected': {
-                bgcolor: 'action.selected',
-              },
-              '&:hover': {
-                bgcolor: 'action.hover',
-              }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
-              <Box sx={{ color: item.isDirectory ? '#FBC02D' : '#42A5F5', display: 'flex' }}>
-                {item.isDirectory ? <Folder size={18} /> : <FileText size={18} />}
-              </Box>
-              <ListItemText
-                primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                primary={item.name}
-                secondary={item.isDirectory ? undefined : new Date(item.lastModified).toLocaleString('zh-CN')}
-                secondaryTypographyProps={{ variant: 'caption' }}
-              />
-              {item.isDirectory && (
-                <ChevronRight size={16} style={{ opacity: 0.5 }} />
-              )}
-              <IconButton 
-                size="small" 
-                onClick={(event) => handleMenuOpen(event, item)}
-                sx={{ ml: 'auto' }}
+    return (
+      <>
+        {searchStats}
+        {displayItems.map((item: NoteFile | SearchResult) => {
+          const isSelected = selectedItem?.path === item.path;
+          const isSearchResult = 'matchType' in item;
+          const searchItem = isSearchResult ? item as SearchResult : null;
+          
+          return (
+            <ListItem
+              key={item.path}
+              disablePadding
+              sx={{ display: 'block' }}
+              onContextMenu={(event) => handleMenuOpen(event, item as NoteFile)}
+            >
+              <ListItemButton
+                selected={isSelected}
+                onClick={() => handleFileClick(item as NoteFile)}
+                sx={{
+                  pl: 1.5,
+                  pr: 1,
+                  minHeight: 40,
+                  '&.Mui-selected': {
+                    bgcolor: 'action.selected',
+                  },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  }
+                }}
               >
-                <MoreVertical size={14} />
-              </IconButton>
-            </Box>
-          </ListItemButton>
-        </ListItem>
-      );
-    });
-  }, [currentPath, filteredItems, handleFileClick, selectedItem?.path, folderCache, loadingPaths, searchQuery]);
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                  <Box sx={{ color: item.isDirectory ? '#FBC02D' : '#42A5F5', display: 'flex' }}>
+                    {item.isDirectory ? <Folder size={18} /> : <FileText size={18} />}
+                  </Box>
+                  <ListItemText
+                    primaryTypographyProps={{ variant: 'body2', noWrap: true }}
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <span>{item.name}</span>
+                        {searchItem?.matchType === 'both' && (
+                          <Box component="span" sx={{ 
+                            fontSize: 10, 
+                            px: 0.5, 
+                            py: 0.25, 
+                            borderRadius: 0.5,
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText'
+                          }}>
+                            全
+                          </Box>
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <>
+                        {/* 搜索模式下显示路径 */}
+                        {searchOpen && item.path.includes('/') && (
+                          <Typography component="span" variant="caption" sx={{ display: 'block', opacity: 0.7 }}>
+                            {item.path}
+                          </Typography>
+                        )}
+                        {/* 显示匹配上下文 */}
+                        {searchItem?.matches && searchItem.matches.length > 0 && (
+                          <Typography 
+                            component="span" 
+                            variant="caption" 
+                            sx={{ 
+                              display: 'block',
+                              '& mark': {
+                                bgcolor: 'warning.light',
+                                color: 'inherit',
+                                px: 0.25,
+                                borderRadius: 0.25
+                              }
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: (() => {
+                                const m = searchItem.matches[0];
+                                const before = m.context.substring(0, m.matchStart);
+                                const match = m.context.substring(m.matchStart, m.matchEnd);
+                                const after = m.context.substring(m.matchEnd);
+                                return `${before}<mark>${match}</mark>${after}`;
+                              })()
+                            }}
+                          />
+                        )}
+                        {/* 非搜索模式显示时间 */}
+                        {!searchOpen && !item.isDirectory && new Date(item.lastModified).toLocaleString('zh-CN')}
+                      </>
+                    }
+                    secondaryTypographyProps={{ variant: 'caption' }}
+                  />
+                  {item.isDirectory && (
+                    <ChevronRight size={16} style={{ opacity: 0.5 }} />
+                  )}
+                  <IconButton 
+                    size="small" 
+                    onClick={(event) => handleMenuOpen(event, item as NoteFile)}
+                    sx={{ ml: 'auto' }}
+                  >
+                    <MoreVertical size={14} />
+                  </IconButton>
+                </Box>
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </>
+    );
+  }, [currentPath, displayItems, handleFileClick, selectedItem?.path, folderCache, loadingPaths, searchQuery, searchOpen, isSearching, stats]);
 
   return (
     <SafeAreaContainer>
@@ -483,9 +580,9 @@ const NoteSettings: React.FC = () => {
               <TextField
                 size="small"
                 fullWidth
-                placeholder="搜索笔记名称..."
+                placeholder="搜索笔记名称或内容..."
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => search(event.target.value)}
                 InputProps={{ startAdornment: <Search size={14} style={{ marginRight: 6, opacity: 0.6 }} /> }}
               />
             </Box>

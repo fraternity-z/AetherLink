@@ -118,6 +118,7 @@ export default defineConfig(({ mode }) => ({
       'axios',
       'solid-js',
       'solid-js/web',
+      'capacitor-advanced-file-manager',
     ],
     // 移除 force: true，避免每次都重新构建
     // force: true

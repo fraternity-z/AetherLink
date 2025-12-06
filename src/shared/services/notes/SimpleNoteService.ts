@@ -1,7 +1,6 @@
 import { unifiedFileManager } from '../UnifiedFileManagerService';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
 import type { NoteFile } from '../../types/note';
-import { v4 as uuidv4 } from 'uuid';
 
 export const NOTE_STORAGE_PATH_KEY = 'NOTE_STORAGE_PATH';
 export const ENABLE_NOTE_SIDEBAR_KEY = 'ENABLE_NOTE_SIDEBAR';
@@ -76,7 +75,7 @@ class SimpleNoteService {
       });
 
       return result.files.map(file => ({
-        id: uuidv4(), // 临时ID，因为文件系统没有固定ID
+        id: subPath ? `${subPath}/${file.name}` : file.name, // 使用路径作为稳定ID
         name: file.name,
         path: subPath ? `${subPath}/${file.name}` : file.name,
         isDirectory: file.type === 'directory',
