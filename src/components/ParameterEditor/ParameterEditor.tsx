@@ -584,7 +584,12 @@ const ParameterEditor: React.FC<ParameterEditorProps> = ({
                       setNewParamValue('');
                     }
                   }}
-                  sx={{ minWidth: 'auto', px: 1.5 }}
+                  sx={{ 
+                    minWidth: 70,
+                    px: 1.5, 
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
                 >
                   添加
                 </Button>

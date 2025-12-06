@@ -32,6 +32,16 @@ export function AppSidebar(props: AppSidebarProps) {
   
   const handleTouchStart = (e: TouchEvent) => {
     const touch = e.touches[0];
+    const target = e.target as HTMLElement;
+    
+    // 检查触摸目标是否是需要排除手势捕获的元素（如 Slider）
+    // 通过检查元素或其父元素是否有 data-gesture-exclude 属性或 MuiSlider 类名
+    const shouldExclude = target.closest('[data-gesture-exclude], .MuiSlider-root, .MuiSlider-thumb, .MuiSlider-track, .MuiSlider-rail');
+    if (shouldExclude) {
+      setIsValidSwipe(false);
+      return;
+    }
+    
     setTouchStartX(touch.clientX);
     setTouchStartY(touch.clientY);
     setIsValidSwipe(false);

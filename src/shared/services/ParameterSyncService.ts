@@ -28,6 +28,10 @@ export const SYNCABLE_PARAMETERS = [
   // 推理参数
   'thinkingBudget',
   'reasoningEffort',
+  // 应用级设置
+  'contextLength',
+  'contextCount',
+  'defaultThinkingEffort',
   // 其他
   'streamOutput',
   // 自定义参数
@@ -73,6 +77,10 @@ export const PARAMETER_DEFAULTS: Record<SyncableParameterKey, any> = {
   user: '',
   thinkingBudget: 1024,
   reasoningEffort: 'medium',
+  // 应用级设置默认值
+  contextLength: 16000,
+  contextCount: 5,
+  defaultThinkingEffort: 'medium',
   streamOutput: true,
   customParameters: [],
 };
@@ -94,6 +102,10 @@ export const PARAMETER_EVENT_MAP: Record<SyncableParameterKey, string> = {
   user: 'userChanged',
   thinkingBudget: 'thinkingBudgetChanged',
   reasoningEffort: 'reasoningEffortChanged',
+  // 应用级设置事件
+  contextLength: 'contextLengthChanged',
+  contextCount: 'contextCountChanged',
+  defaultThinkingEffort: 'defaultThinkingEffortChanged',
   streamOutput: 'streamOutputChanged',
   customParameters: 'customParametersChanged',
 };

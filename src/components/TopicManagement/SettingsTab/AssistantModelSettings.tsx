@@ -35,8 +35,7 @@ import { updateAssistant } from '../../../shared/store/slices/assistantsSlice';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import type { Assistant, CustomParameter, CustomParameterType } from '../../../shared/types/Assistant';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
-import { getAppSettings, saveAppSettings } from '../../../shared/utils/settingsUtils';
-// import ModelSelector from './ModelSelector';
+import { parameterSyncService } from '../../../shared/services/ParameterSyncService';
 
 // TabPanel组件
 interface TabPanelProps {
@@ -125,22 +124,23 @@ const AssistantModelSettings: React.FC = () => {
   // 初始化上下文设置
   useEffect(() => {
     const loadContextSettings = async () => {
-      const appSettings = getAppSettings();
-      setContextLength(appSettings.contextLength || 16000);
-      setContextCount(appSettings.contextCount || 5);
-      setThinkingEffort(appSettings.defaultThinkingEffort || 'medium');
+      // 使用统一参数服务获取应用级设置
+      setContextLength(parameterSyncService.getParameter('contextLength', 16000));
+      setContextCount(parameterSyncService.getParameter('contextCount', 5));
+      setThinkingEffort(parameterSyncService.getParameter('defaultThinkingEffort', 'medium'));
       // 同步maxOutputTokens到上下文设置
-      if (appSettings.maxOutputTokens && appSettings.maxOutputTokens !== maxTokens) {
-        setMaxTokens(appSettings.maxOutputTokens);
+      const currentMaxTokens = parameterSyncService.getParameter('maxOutputTokens', 4096);
+      if (currentMaxTokens !== maxTokens) {
+        setMaxTokens(currentMaxTokens);
       }
       // 初始化最大输出Token开关状态
-      setEnableMaxTokens(appSettings.enableMaxOutputTokens !== false);
+      setEnableMaxTokens(parameterSyncService.isParameterEnabled('maxOutputTokens'));
       // 同步温度和TopP
-      if (appSettings.enableTemperature && appSettings.temperature !== undefined) {
-        setTemperature(appSettings.temperature);
+      if (parameterSyncService.isParameterEnabled('temperature')) {
+        setTemperature(parameterSyncService.getParameter('temperature', DEFAULT_TEMPERATURE));
       }
-      if (appSettings.enableTopP && appSettings.topP !== undefined) {
-        setTopP(appSettings.topP);
+      if (parameterSyncService.isParameterEnabled('topP')) {
+        setTopP(parameterSyncService.getParameter('topP', DEFAULT_TOP_P));
       }
     };
     loadContextSettings();
@@ -149,9 +149,9 @@ const AssistantModelSettings: React.FC = () => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'appSettings' && e.newValue) {
         try {
-          const newSettings = JSON.parse(e.newValue);
-          if (newSettings.maxOutputTokens && newSettings.maxOutputTokens !== maxTokens) {
-            setMaxTokens(newSettings.maxOutputTokens);
+          const newMaxTokens = parameterSyncService.getParameter('maxOutputTokens', 4096);
+          if (newMaxTokens !== maxTokens) {
+            setMaxTokens(newMaxTokens);
           }
         } catch (error) {
           console.error('解析localStorage变化失败:', error);
@@ -410,14 +410,9 @@ const AssistantModelSettings: React.FC = () => {
         ...(seed !== null && { seed }),
         ...(stopSequences.length > 0 && { stopSequences }),
         maxTokens,
-        // 同时保存到上下文设置
+        // 同时使用统一参数服务同步到全局设置
         ...((() => {
-          const appSettings = getAppSettings();
-          saveAppSettings({
-            ...appSettings,
-            maxOutputTokens: maxTokens,
-            enableMaxOutputTokens: enableMaxTokens
-          });
+          parameterSyncService.setParameter('maxOutputTokens', maxTokens, enableMaxTokens);
           return {};
         })()),
         // OpenAI 专属参数
@@ -777,10 +772,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(_, value) => {
                 const newValue = value as number;
                 setTemperature(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, temperature: newValue });
-                window.dispatchEvent(new CustomEvent('temperatureChanged', { detail: { value: newValue, enabled: appSettings.enableTemperature } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('temperature', newValue);
               }}
               min={0}
               max={2}
@@ -811,10 +804,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(_, value) => {
                 const newValue = value as number;
                 setTopP(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, topP: newValue });
-                window.dispatchEvent(new CustomEvent('topPChanged', { detail: { value: newValue, enabled: appSettings.enableTopP } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('topP', newValue);
               }}
               min={0}
               max={1}
@@ -844,10 +835,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(_, value) => {
                 const newValue = value as number;
                 setTopK(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, topK: newValue });
-                window.dispatchEvent(new CustomEvent('topKChanged', { detail: { value: newValue, enabled: appSettings.enableTopK } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('topK', newValue);
               }}
               min={1}
               max={100}
@@ -878,10 +867,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(_, value) => {
                 const newValue = value as number;
                 setFrequencyPenalty(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, frequencyPenalty: newValue });
-                window.dispatchEvent(new CustomEvent('frequencyPenaltyChanged', { detail: { value: newValue, enabled: appSettings.enableFrequencyPenalty } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('frequencyPenalty', newValue);
               }}
               min={-2}
               max={2}
@@ -912,10 +899,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(_, value) => {
                 const newValue = value as number;
                 setPresencePenalty(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, presencePenalty: newValue });
-                window.dispatchEvent(new CustomEvent('presencePenaltyChanged', { detail: { value: newValue, enabled: appSettings.enablePresencePenalty } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('presencePenalty', newValue);
               }}
               min={-2}
               max={2}
@@ -947,10 +932,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(e) => {
                 const newValue = e.target.value ? parseInt(e.target.value) : null;
                 setSeed(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, seed: newValue });
-                window.dispatchEvent(new CustomEvent('seedChanged', { detail: { value: newValue, enabled: appSettings.enableSeed } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('seed', newValue);
               }}
               placeholder="留空使用随机种子"
               size="small"
@@ -977,10 +960,8 @@ const AssistantModelSettings: React.FC = () => {
               onChange={(e) => {
                 const newValue = e.target.value;
                 setUser(newValue);
-                // 同步到全局设置并通知其他组件
-                const appSettings = getAppSettings();
-                saveAppSettings({ ...appSettings, user: newValue });
-                window.dispatchEvent(new CustomEvent('userChanged', { detail: { value: newValue } }));
+                // 使用统一参数服务同步
+                parameterSyncService.setParameter('user', newValue);
               }}
               placeholder="输入用户标识"
               size="small"
@@ -1002,11 +983,8 @@ const AssistantModelSettings: React.FC = () => {
                   onChange={(e) => {
                     const newValue = e.target.checked;
                     setEnableMaxTokens(newValue);
-                    // 保存到localStorage
-                    const appSettings = getAppSettings();
-                    saveAppSettings({ ...appSettings, enableMaxOutputTokens: newValue });
-                    // 触发自定义事件通知其他组件
-                    window.dispatchEvent(new CustomEvent('enableMaxTokensChanged', { detail: newValue }));
+                    // 使用统一参数服务同步
+                    parameterSyncService.setParameterEnabled('maxOutputTokens', newValue);
                   }}
                 />
               </Box>
@@ -1028,11 +1006,8 @@ const AssistantModelSettings: React.FC = () => {
                 onChange={(_, value) => {
                   const newValue = value as number;
                   setMaxTokens(newValue);
-                  // 同步到上下文设置
-                  const appSettings = getAppSettings();
-                  saveAppSettings({ ...appSettings, maxOutputTokens: newValue });
-                  // 触发自定义事件通知其他组件
-                  window.dispatchEvent(new CustomEvent('maxOutputTokensChanged', { detail: newValue }));
+                  // 使用统一参数服务同步
+                  parameterSyncService.setParameter('maxOutputTokens', newValue);
                 }}
                 disabled={!enableMaxTokens}
                 min={256}
@@ -1070,11 +1045,8 @@ const AssistantModelSettings: React.FC = () => {
                     const numValue = value === '' ? 0 : parseInt(value);
                     if (numValue <= 2000000) {
                       setMaxTokens(numValue);
-                      // 同步到上下文设置
-                      const appSettings = getAppSettings();
-                      saveAppSettings({ ...appSettings, maxOutputTokens: numValue });
-                      // 触发自定义事件通知其他组件
-                      window.dispatchEvent(new CustomEvent('maxOutputTokensChanged', { detail: numValue }));
+                      // 使用统一参数服务同步
+                      parameterSyncService.setParameter('maxOutputTokens', numValue);
                     }
                   }
                 }}
@@ -1120,9 +1092,8 @@ const AssistantModelSettings: React.FC = () => {
                 onChange={(_, value) => {
                   const newValue = value as number;
                   setContextLength(newValue);
-                  // 保存到localStorage
-                  const appSettings = getAppSettings();
-                  saveAppSettings({ ...appSettings, contextLength: newValue });
+                  // 使用统一参数服务同步
+                  parameterSyncService.setParameter('contextLength', newValue);
                 }}
                 min={0}
                 max={64000}
@@ -1146,9 +1117,8 @@ const AssistantModelSettings: React.FC = () => {
                 onChange={(_, value) => {
                   const newValue = value as number;
                   setContextCount(newValue);
-                  // 保存到localStorage
-                  const appSettings = getAppSettings();
-                  saveAppSettings({ ...appSettings, contextCount: newValue });
+                  // 使用统一参数服务同步
+                  parameterSyncService.setParameter('contextCount', newValue);
                 }}
                 min={0}
                 max={100}
@@ -1174,9 +1144,8 @@ const AssistantModelSettings: React.FC = () => {
                   onChange={(e) => {
                     const newValue = e.target.value as ThinkingOption;
                     setThinkingEffort(newValue);
-                    // 保存到localStorage
-                    const appSettings = getAppSettings();
-                    saveAppSettings({ ...appSettings, defaultThinkingEffort: newValue });
+                    // 使用统一参数服务同步
+                    parameterSyncService.setParameter('defaultThinkingEffort', newValue);
                   }}
                   label="思维链长度"
                 >

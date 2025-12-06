@@ -229,19 +229,7 @@ export default function SettingsTab({
       <SettingGroups groups={settingGroups} onSettingChange={handleSettingChange} />
       <Divider sx={{ my: 0.5 }} />
 
-      {/* 输入设置 */}
-      <InputSettings />
-      <Divider sx={{ my: 0.5 }} />
-
-      {/* 节流强度选择器 */}
-      <ThrottleLevelSelector />
-      <Divider sx={{ my: 0.5 }} />
-
-      {/* 代码块设置 */}
-      <CodeBlockSettings onSettingChange={handleSettingChange} />
-      <Divider sx={{ my: 0.5 }} />
-
-      {/* 动态上下文设置 */}
+      {/* 动态上下文设置（放在常规设置下面） */}
       <DynamicContextSettings
         modelId={modelId}
         contextWindowSize={getSetting('contextWindowSize', 0)}
@@ -258,6 +246,18 @@ export default function SettingsTab({
         onEnableMaxOutputTokensChange={(value: boolean) => updateSetting('enableMaxOutputTokens', value)}
         onThinkingBudgetChange={(value: number) => updateSetting('thinkingBudget', value)}
       />
+      <Divider sx={{ my: 0.5 }} />
+
+      {/* 输入设置 */}
+      <InputSettings />
+      <Divider sx={{ my: 0.5 }} />
+
+      {/* 节流强度选择器 */}
+      <ThrottleLevelSelector />
+      <Divider sx={{ my: 0.5 }} />
+
+      {/* 代码块设置 */}
+      <CodeBlockSettings onSettingChange={handleSettingChange} />
       <Divider sx={{ my: 0.5 }} />
 
       {/* 数学公式设置 */}
