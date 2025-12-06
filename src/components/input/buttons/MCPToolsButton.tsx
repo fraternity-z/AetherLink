@@ -14,13 +14,19 @@ import { mcpService } from '../../../shared/services/mcp';
 import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../InputToolbar';
 import MCPToolsDialog from './MCPToolsDialog';
 
+// 稳定的选择器函数，避免每次渲染创建新引用
+const selectToolbarDisplayStyle = (state: RootState) => 
+  state.settings?.toolbarDisplayStyle || 'both';
+const selectToolbarStyle = (state: RootState) => 
+  state.settings?.toolbarStyle || 'glassmorphism';
+
 interface MCPToolsButtonProps {
   toolsEnabled?: boolean;
   onToolsEnabledChange?: (enabled: boolean) => void;
   variant?: 'toolbar' | 'icon-button-compact' | 'icon-button-integrated';
 }
 
-const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
+const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
   toolsEnabled = false,
   onToolsEnabledChange,
   variant = 'toolbar'
@@ -30,15 +36,9 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
   const [open, setOpen] = useState(false);
   const [servers, setServers] = useState<MCPServer[]>([]);
 
-  // 获取工具栏显示样式设置
-  const toolbarDisplayStyle = useSelector((state: RootState) =>
-    state.settings?.toolbarDisplayStyle || 'both'
-  ) as 'icon' | 'text' | 'both';
-
-  // 获取工具栏样式设置
-  const toolbarStyle = useSelector((state: RootState) =>
-    state.settings?.toolbarStyle || 'glassmorphism'
-  ) as 'glassmorphism' | 'transparent';
+  // 使用稳定的选择器
+  const toolbarDisplayStyle = useSelector(selectToolbarDisplayStyle) as 'icon' | 'text' | 'both';
+  const toolbarStyle = useSelector(selectToolbarStyle) as 'glassmorphism' | 'transparent';
 
   // 计算活跃服务器
   const activeServers = useMemo(
@@ -70,8 +70,9 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
 
   const handleOpen = useCallback(() => {
     setOpen(true);
-    loadServers();
-  }, [loadServers]);
+    // 移除这里的 loadServers() 调用
+    // MCPToolsDialog 在 open 变为 true 时会自动加载
+  }, []);
 
   const handleClose = useCallback(() => {
     setOpen(false);
@@ -246,5 +247,8 @@ const MCPToolsButton: React.FC<MCPToolsButtonProps> = ({
     </>
   );
 };
+
+// 使用 React.memo 避免父组件重渲染时的不必要更新
+const MCPToolsButton = React.memo(MCPToolsButtonInner);
 
 export default MCPToolsButton;

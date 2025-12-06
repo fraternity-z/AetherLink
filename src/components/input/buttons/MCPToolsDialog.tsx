@@ -66,7 +66,7 @@ interface MCPToolsDialogProps {
  * MCP 工具服务器对话框组件
  * 可被 MCPToolsButton 和 ToolsMenu 共用
  */
-const MCPToolsDialog: React.FC<MCPToolsDialogProps> = ({
+const MCPToolsDialogInner: React.FC<MCPToolsDialogProps> = ({
   open,
   onClose,
   toolsEnabled = false,
@@ -355,5 +355,8 @@ const MCPToolsDialog: React.FC<MCPToolsDialogProps> = ({
     </BackButtonDialog>
   );
 };
+
+// 使用 React.memo 包装，避免父组件重渲染时的不必要更新
+const MCPToolsDialog = React.memo(MCPToolsDialogInner);
 
 export default MCPToolsDialog;
