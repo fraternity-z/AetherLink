@@ -8,7 +8,6 @@ import type { GoogleGenerativeAIProvider } from '@ai-sdk/google';
 import { createClient, supportsMultimodal, supportsGoogleSearch, supportsThinking, isGemmaModel } from './client';
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
 import { isGeminiReasoningModel } from './configBuilder';
-import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
@@ -19,19 +18,20 @@ import {
 } from './tools';
 import { ChunkType, type Chunk } from '../../types/chunk';
 import { getMainTextContent } from '../../utils/blockUtils';
-import { GeminiParameterAdapter, createGeminiAdapter } from '../parameters';
+import { UnifiedParameterManager } from '../parameters/UnifiedParameterManager';
+import { GeminiParameterFormatter } from '../parameters/formatters';
 
 /**
  * AI SDK Gemini Provider 基类
  */
 export abstract class BaseGeminiAISDKProvider extends AbstractBaseProvider {
   protected client: GoogleGenerativeAIProvider;
-  protected parameterAdapter: GeminiParameterAdapter;
+  protected parameterManager: UnifiedParameterManager;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterAdapter = createGeminiAdapter({ model });
+    this.parameterManager = new UnifiedParameterManager({ model, providerType: 'gemini' });
   }
 
   /**
@@ -70,38 +70,26 @@ export abstract class BaseGeminiAISDKProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 获取温度参数 - 使用统一参数适配器
+   * 获取统一参数并转换为 Gemini API 格式
    */
-  protected getTemperature(assistant?: any): number {
-    this.parameterAdapter.updateAssistant(assistant);
-    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
-    return resolved.base.temperature;
-  }
-
-  /**
-   * 获取 top_p 参数 - 使用统一参数适配器
-   */
-  protected getTopP(assistant?: any): number {
-    this.parameterAdapter.updateAssistant(assistant);
-    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
-    return resolved.base.topP;
-  }
-
-  /**
-   * 获取 max_tokens 参数 - 使用统一参数适配器
-   */
-  protected getMaxTokens(assistant?: any): number {
-    this.parameterAdapter.updateAssistant(assistant);
-    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
-    return resolved.base.maxOutputTokens;
-  }
-
-  /**
-   * 获取思考预算 - 使用统一参数适配器
-   */
-  protected getThinkingBudget(assistant?: any): number {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getThinkingBudget();
+  protected getApiParams(assistant?: any): {
+    unified: ReturnType<UnifiedParameterManager['getUnifiedParameters']>;
+    apiParams: Record<string, any>;
+  } {
+    if (assistant) {
+      this.parameterManager.updateAssistant(assistant);
+    }
+    const unified = this.parameterManager.getUnifiedParameters(isGeminiReasoningModel(this.model));
+    const { customParameters, ...standardParams } = unified;
+    const apiParams = GeminiParameterFormatter.toAPIFormat(standardParams, this.model);
+    
+    // 🆕 合并自定义参数到 API 请求
+    const finalParams = {
+      ...apiParams,
+      ...customParameters, // 自定义参数直接展开到请求中
+    };
+    
+    return { unified, apiParams: finalParams };
   }
 
   /**
@@ -337,13 +325,12 @@ export class GeminiAISDKProvider extends BaseGeminiAISDKProvider {
     // 准备 API 消息格式（会根据 useSystemPromptForTools 决定是否注入工具提示词）
     const apiMessages = await this.prepareAPIMessages(messages, systemPrompt, mcpTools);
 
-    // 获取流式设置
-    const streamEnabled = getStreamOutputSetting();
-
-    // 获取参数
-    const temperature = this.getTemperature(assistant);
-    const maxTokens = this.getMaxTokens(assistant);
-    const thinkingBudget = this.getThinkingBudget(assistant);
+    // 获取统一参数与 API 格式参数
+    const { unified, apiParams } = this.getApiParams(assistant);
+    const streamEnabled = unified.stream ?? true;
+    const temperature = apiParams.temperature;
+    const maxTokens = apiParams.maxOutputTokens;
+    const thinkingBudget = apiParams.thinkingConfig?.thinkingBudget;
 
     console.log(`[GeminiAISDKProvider] API 请求参数:`, {
       model: this.model.id,

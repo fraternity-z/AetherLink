@@ -91,11 +91,7 @@ const ParameterRow: React.FC<{
     switch (param.inputType) {
       case 'slider':
         return (
-          <Box 
-            sx={{ width: '100%', mt: 1, px: 1, touchAction: 'none' }}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchMove={(e) => e.stopPropagation()}
-          >
+          <Box sx={{ width: '100%', mt: 1, px: 1 }}>
             <Slider
               value={currentValue}
               onChange={(_, v) => onChange(v)}
@@ -110,42 +106,48 @@ const ParameterRow: React.FC<{
 
       case 'number':
         return (
-          <TextField
-            type="number"
-            value={currentValue ?? ''}
-            onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-            size="small"
-            sx={{ width: 80 }}
-            variant="outlined"
-          />
+          <Box sx={{ width: '100%', mt: 1, px: 1 }}>
+            <TextField
+              type="number"
+              value={currentValue ?? ''}
+              onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+              size="small"
+              fullWidth
+              variant="outlined"
+            />
+          </Box>
         );
 
       case 'select':
         return (
-          <FormControl size="small" sx={{ minWidth: 100 }}>
-            <Select
-              value={currentValue ?? ''}
-              onChange={(e) => onChange(e.target.value)}
-              variant="outlined"
-            >
-              {param.options?.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ width: '100%', mt: 1, px: 1 }}>
+            <FormControl size="small" fullWidth>
+              <Select
+                value={currentValue ?? ''}
+                onChange={(e) => onChange(e.target.value)}
+                variant="outlined"
+              >
+                {param.options?.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
         );
 
       case 'text':
         return (
-          <TextField
-            value={currentValue ?? ''}
-            onChange={(e) => onChange(e.target.value)}
-            size="small"
-            sx={{ width: 120 }}
-            placeholder="输入..."
-          />
+          <Box sx={{ width: '100%', mt: 1, px: 1 }}>
+            <TextField
+              value={currentValue ?? ''}
+              onChange={(e) => onChange(e.target.value)}
+              size="small"
+              fullWidth
+              placeholder="输入..."
+            />
+          </Box>
         );
 
       default:
@@ -153,27 +155,56 @@ const ParameterRow: React.FC<{
     }
   };
 
-  // Switch 类型特殊处理 - 直接控制值
+  // Switch 类型特殊处理 - 左边启用开关+标签，右边显示状态
   if (param.inputType === 'switch') {
     return (
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
           py: 1,
           px: 1.5,
           borderRadius: 1,
+          bgcolor: currentValue ? alpha(theme.palette.primary.main, 0.04) : 'transparent',
+          opacity: 1,
+          transition: 'all 0.2s',
           '&:hover': {
             bgcolor: alpha(theme.palette.primary.main, 0.04)
           }
         }}
       >
-        <Typography variant="body2">{param.label}</Typography>
-        <CustomSwitch
-          checked={!!currentValue}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.checked)}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CustomSwitch
+            checked={!!currentValue}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.checked)}
+          />
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ color: currentValue ? 'text.primary' : 'text.secondary' }}
+            >
+              {showKey ? param.key : param.label}
+            </Typography>
+            <Tooltip title={showKey ? '显示中文名' : `API: ${param.key}`} arrow>
+              <IconButton 
+                size="small" 
+                onClick={() => setShowKey(!showKey)}
+                sx={{ 
+                  p: 0.25, 
+                  opacity: showKey ? 1 : 0.4,
+                  '&:hover': { opacity: 1 }
+                }}
+              >
+                <Code size={12} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Typography 
+            variant="caption" 
+            color={currentValue ? 'primary' : 'text.secondary'}
+            sx={{ fontWeight: currentValue ? 500 : 400 }}
+          >
+            {currentValue ? '开' : '关'}
+          </Typography>
+        </Box>
       </Box>
     );
   }
@@ -224,11 +255,10 @@ const ParameterRow: React.FC<{
         >
           {formatValue(currentValue)}
         </Typography>
-        {enabled && param.inputType !== 'slider' && renderCompactInput()}
       </Box>
       
-      {/* Slider 展开显示 */}
-      {enabled && param.inputType === 'slider' && renderCompactInput()}
+      {/* 所有输入控件单独一行显示 */}
+      {enabled && renderCompactInput()}
     </Box>
   );
 };

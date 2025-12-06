@@ -5,7 +5,8 @@
 import OpenAI from 'openai';
 import { createClient } from './client';
 import { unifiedStreamCompletion } from './unifiedStreamProcessor';
-import { OpenAIParameterAdapter, createOpenAIAdapter } from '../parameters';
+import { UnifiedParameterManager } from '../parameters/UnifiedParameterManager';
+import { OpenAIParameterFormatter } from '../parameters/formatters';
 
 import {
   supportsMultimodal,
@@ -16,8 +17,6 @@ import {
 import {
   isReasoningModel
 } from '../../utils/modelDetection';
-
-import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
@@ -35,12 +34,12 @@ import { ChunkType } from '../../types/chunk';
  */
 export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   protected client: OpenAI;
-  protected parameterAdapter: OpenAIParameterAdapter;
+  protected parameterManager: UnifiedParameterManager;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterAdapter = createOpenAIAdapter({ model });
+    this.parameterManager = new UnifiedParameterManager({ model, providerType: 'openai' });
   }
 
   /**
@@ -79,75 +78,26 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 获取温度参数
-   * @param assistant 助手配置（可选）
-   * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
+   * 获取统一参数并转换为 OpenAI API 格式
    */
-  protected getTemperature(assistant?: any): number | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getBaseAPIParameters().temperature;
-  }
-
-  /**
-   * 获取top_p参数
-   * @param assistant 助手配置（可选）
-   * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
-   */
-  protected getTopP(assistant?: any): number | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getBaseAPIParameters().top_p;
-  }
-
-  /**
-   * 获取max_tokens参数
-   * @param assistant 助手配置（可选）
-   * @remarks 此方法为子类提供重写入口，内部委托给 parameterManager
-   */
-  protected getMaxTokens(assistant?: any): number | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getBaseAPIParameters().max_tokens;
-  }
-
-  /**
-   * 获取OpenAI专属参数
-   * @param assistant 助手配置（可选）
-   */
-  protected getOpenAISpecificParameters(assistant?: any): any {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getOpenAISpecificParameters();
-  }
-
-  /**
-   * 获取推理优化参数 - 使用参数管理器 (Chat Completions API 格式)
-   * 根据模型类型和助手设置返回不同的推理参数
-   * @param assistant 助手对象
-   * @param model 模型对象
-   * @returns 推理参数
-   */
-  protected getReasoningEffort(assistant?: any, model?: Model): any {
-    // 如果传入了不同的模型，更新参数管理器
-    if (model && model !== this.model) {
-      this.parameterAdapter.updateModel(model);
+  protected getApiParams(assistant?: any): {
+    unified: ReturnType<UnifiedParameterManager['getUnifiedParameters']>;
+    apiParams: Record<string, any>;
+  } {
+    if (assistant) {
+      this.parameterManager.updateAssistant(assistant);
     }
-
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getReasoningParameters();
-  }
-
-  /**
-   * 获取 Responses API 格式的推理参数
-   * @param assistant 助手对象
-   * @param model 模型对象
-   * @returns Responses API 格式的推理参数
-   */
-  protected getResponsesAPIReasoningEffort(assistant?: any, model?: Model): any {
-    // 如果传入了不同的模型，更新参数管理器
-    if (model && model !== this.model) {
-      this.parameterAdapter.updateModel(model);
-    }
-
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getResponsesAPIReasoningParameters();
+    const unified = this.parameterManager.getUnifiedParameters(isReasoningModel(this.model));
+    const { customParameters, ...standardParams } = unified;
+    const apiParams = OpenAIParameterFormatter.toAPIFormat(standardParams, this.model);
+    
+    // 🆕 合并自定义参数到 API 请求
+    const finalParams = {
+      ...apiParams,
+      ...customParameters, // 自定义参数直接展开到请求中
+    };
+    
+    return { unified, apiParams: finalParams };
   }
 
 
@@ -214,14 +164,13 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
    */
   public async testConnection(): Promise<boolean> {
     try {
-      // 使用参数管理器获取基础参数进行连接测试
-      const baseParams = this.parameterAdapter.getBaseAPIParameters();
+      const { apiParams } = this.getApiParams();
 
       const response = await this.client.chat.completions.create({
         model: this.model.id,
         messages: [{ role: 'user', content: 'Hello' }],
         max_tokens: 5,
-        temperature: baseParams.temperature,
+        temperature: apiParams.temperature,
         stream: false
       });
       return Boolean(response.choices[0].message);
@@ -386,57 +335,23 @@ export class OpenAIProvider extends BaseOpenAIProvider {
       mcpMode
     });
 
-    // 构建请求参数 - 使用参数管理器统一管理
-    const streamEnabled = getStreamOutputSetting();
+    // 获取统一参数与 API 格式参数
+    const { unified, apiParams } = this.getApiParams(assistant);
+    const streamEnabled = unified.stream ?? true;
 
-    // 更新参数管理器的助手配置
-    this.parameterAdapter.updateAssistant(assistant);
+    // 构建请求参数
+    const requestParams: any = {
+      model: this.model.id,
+      messages: apiMessages,
+      stream: streamEnabled,
+      ...apiParams
+    };
 
-    // 获取完整的API参数
-    const requestParams = this.parameterAdapter.getCompleteParameters(apiMessages, {
-      enableWebSearch,
-      enableTools,
-      tools: tools.length > 0 ? tools : undefined,
-      abortSignal
-    });
-
-    // 覆盖流式设置（从全局设置中读取）
-    requestParams.stream = streamEnabled;
-
-    // 验证参数有效性
-    const validation = this.parameterAdapter.validateParameters(requestParams);
-    if (!validation.valid) {
-      console.error(`[OpenAIProvider] 参数验证失败:`, validation.errors);
-      throw new Error(`参数验证失败: ${validation.errors.join(', ')}`);
+    // 添加工具
+    if (enableTools && tools.length > 0 && !this.getUseSystemPromptForTools()) {
+      requestParams.tools = tools;
     }
 
-    // 添加调试日志显示使用的参数
-    console.log(`[OpenAIProvider] API请求参数:`, {
-      model: requestParams.model,
-      temperature: requestParams.temperature,
-      top_p: requestParams.top_p,
-      max_tokens: requestParams.max_tokens,
-      stream: requestParams.stream,
-      工具数量: requestParams.tools?.length || 0,
-      assistantInfo: assistant ? {
-        id: assistant.id,
-        name: assistant.name,
-        temperature: assistant.temperature,
-        topP: assistant.topP,
-        maxTokens: assistant.maxTokens
-      } : '无助手信息'
-    });
-
-    // 处理工具参数 - 在提示词模式下移除 tools 参数避免冲突
-    if (this.getUseSystemPromptForTools()) {
-      delete requestParams.tools;
-      delete requestParams.tool_choice;
-      console.log(`[OpenAIProvider] 提示词模式：移除 API 中的 tools 参数`);
-    } else if (enableTools && tools.length > 0) {
-      console.log(`[OpenAIProvider] 函数调用模式：使用 ${tools.length} 个 MCP 工具`);
-    } else {
-      console.log(`[OpenAIProvider] 不使用工具 - 模式: ${this.getUseSystemPromptForTools() ? '提示词' : '函数调用'}, 工具数量: ${tools.length}, 启用: ${enableTools}`);
-    }
 
     // 检查API密钥和基础URL是否设置
     if (!this.model.apiKey) {

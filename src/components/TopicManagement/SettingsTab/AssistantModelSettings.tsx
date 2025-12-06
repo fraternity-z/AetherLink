@@ -33,13 +33,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { updateAssistant } from '../../../shared/store/slices/assistantsSlice';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
-import type { Assistant } from '../../../shared/types/Assistant';
+import type { Assistant, CustomParameter, CustomParameterType } from '../../../shared/types/Assistant';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
 import { getAppSettings, saveAppSettings } from '../../../shared/utils/settingsUtils';
 // import ModelSelector from './ModelSelector';
-
-// 自定义参数类型定义
-export type CustomParameterType = 'string' | 'number' | 'boolean' | 'json';
 
 // TabPanel组件
 interface TabPanelProps {
@@ -68,12 +65,6 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-export interface CustomParameter {
-  name: string;
-  value: string | number | boolean | object;
-  type: CustomParameterType;
-}
-
 // 默认值常量
 const DEFAULT_TEMPERATURE = 0.7;
 const DEFAULT_TOP_P = 1.0;
@@ -96,6 +87,7 @@ const AssistantModelSettings: React.FC = () => {
   const [frequencyPenalty, setFrequencyPenalty] = useState(0);
   const [presencePenalty, setPresencePenalty] = useState(0);
   const [seed, setSeed] = useState<number | null>(null);
+  const [user, setUser] = useState<string>('');
   const [stopSequences, setStopSequences] = useState<string[]>([]);
   const [maxTokens, setMaxTokens] = useState<number>(4096);
 
@@ -167,99 +159,53 @@ const AssistantModelSettings: React.FC = () => {
       }
     };
 
-    // 监听温度参数变化
-    const handleTemperatureChange = (e: CustomEvent) => {
-      const { value, enabled } = e.detail;
-      if (value !== undefined) {
-        setTemperature(value);
-      }
-      // 开关状态仅在侧边栏生效，助手设置页不显示开关
-      console.log('[AssistantModelSettings] 温度参数同步:', { value, enabled });
+    // 统一的参数变化处理器
+    const parameterHandlers: Record<string, { setter: (value: any) => void; eventName: string }> = {
+      temperature: { setter: setTemperature, eventName: 'temperatureChanged' },
+      topP: { setter: setTopP, eventName: 'topPChanged' },
+      maxOutputTokens: { setter: setMaxTokens, eventName: 'maxOutputTokensChanged' },
+      topK: { setter: setTopK, eventName: 'topKChanged' },
+      frequencyPenalty: { setter: setFrequencyPenalty, eventName: 'frequencyPenaltyChanged' },
+      presencePenalty: { setter: setPresencePenalty, eventName: 'presencePenaltyChanged' },
+      seed: { setter: setSeed, eventName: 'seedChanged' },
+      user: { setter: setUser, eventName: 'userChanged' },
+      thinkingBudget: { setter: setThinkingBudget, eventName: 'thinkingBudgetChanged' },
     };
 
-    // 监听 TopP 参数变化
-    const handleTopPChange = (e: CustomEvent) => {
-      const { value, enabled } = e.detail;
-      if (value !== undefined) {
-        setTopP(value);
-      }
-      console.log('[AssistantModelSettings] TopP参数同步:', { value, enabled });
+    // 创建通用事件处理器
+    const createHandler = (setter: (value: any) => void) => {
+      return ((e: CustomEvent) => {
+        const value = e.detail.value ?? e.detail;
+        if (value !== undefined) {
+          setter(value);
+        }
+      }) as EventListener;
     };
 
-    // 监听最大输出Token变化
-    const handleMaxOutputTokensChange = (e: CustomEvent) => {
-      const newValue = e.detail;
-      if (newValue && newValue !== maxTokens) {
-        setMaxTokens(newValue);
-      }
-    };
+    // 特殊处理：最大输出Token开关
+    const handleEnableMaxTokensChange = ((e: CustomEvent) => {
+      setEnableMaxTokens(e.detail);
+    }) as EventListener;
 
-    // 监听最大输出Token开关变化
-    const handleEnableMaxTokensChange = (e: CustomEvent) => {
-      const newValue = e.detail;
-      setEnableMaxTokens(newValue);
-    };
-
-    // 监听 TopK 变化
-    const handleTopKChange = (e: CustomEvent) => {
-      const { value } = e.detail;
-      if (value !== undefined) {
-        setTopK(value);
-      }
-    };
-
-    // 监听频率惩罚变化
-    const handleFrequencyPenaltyChange = (e: CustomEvent) => {
-      const { value } = e.detail;
-      if (value !== undefined) {
-        setFrequencyPenalty(value);
-      }
-    };
-
-    // 监听存在惩罚变化
-    const handlePresencePenaltyChange = (e: CustomEvent) => {
-      const { value } = e.detail;
-      if (value !== undefined) {
-        setPresencePenalty(value);
-      }
-    };
-
-    // 监听随机种子变化
-    const handleSeedChange = (e: CustomEvent) => {
-      const { value } = e.detail;
-      setSeed(value);
-    };
-
-    // 监听思考预算变化
-    const handleThinkingBudgetChange = (e: CustomEvent) => {
-      const { value } = e.detail;
-      if (value !== undefined) {
-        setThinkingBudget(value);
-      }
-    };
-
+    // 注册事件监听器
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('temperatureChanged', handleTemperatureChange as EventListener);
-    window.addEventListener('topPChanged', handleTopPChange as EventListener);
-    window.addEventListener('maxOutputTokensChanged', handleMaxOutputTokensChange as EventListener);
-    window.addEventListener('enableMaxTokensChanged', handleEnableMaxTokensChange as EventListener);
-    window.addEventListener('topKChanged', handleTopKChange as EventListener);
-    window.addEventListener('frequencyPenaltyChanged', handleFrequencyPenaltyChange as EventListener);
-    window.addEventListener('presencePenaltyChanged', handlePresencePenaltyChange as EventListener);
-    window.addEventListener('seedChanged', handleSeedChange as EventListener);
-    window.addEventListener('thinkingBudgetChanged', handleThinkingBudgetChange as EventListener);
+    window.addEventListener('enableMaxTokensChanged', handleEnableMaxTokensChange);
+
+    // 统一注册参数变化事件
+    const handlers = Object.entries(parameterHandlers).map(([_key, { setter, eventName }]) => {
+      const handler = createHandler(setter);
+      window.addEventListener(eventName, handler);
+      return { eventName, handler };
+    });
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('temperatureChanged', handleTemperatureChange as EventListener);
-      window.removeEventListener('topPChanged', handleTopPChange as EventListener);
-      window.removeEventListener('maxOutputTokensChanged', handleMaxOutputTokensChange as EventListener);
-      window.removeEventListener('enableMaxTokensChanged', handleEnableMaxTokensChange as EventListener);
-      window.removeEventListener('topKChanged', handleTopKChange as EventListener);
-      window.removeEventListener('frequencyPenaltyChanged', handleFrequencyPenaltyChange as EventListener);
-      window.removeEventListener('presencePenaltyChanged', handlePresencePenaltyChange as EventListener);
-      window.removeEventListener('seedChanged', handleSeedChange as EventListener);
-      window.removeEventListener('thinkingBudgetChanged', handleThinkingBudgetChange as EventListener);
+      window.removeEventListener('enableMaxTokensChanged', handleEnableMaxTokensChange);
+      
+      // 统一移除参数变化事件
+      handlers.forEach(({ eventName, handler }) => {
+        window.removeEventListener(eventName, handler);
+      });
     };
   }, [maxTokens]);
 
@@ -280,6 +226,7 @@ const AssistantModelSettings: React.FC = () => {
       setFrequencyPenalty((assistant as any).frequencyPenalty ?? 0);
       setPresencePenalty((assistant as any).presencePenalty ?? 0);
       setSeed((assistant as any).seed ?? null);
+      setUser((assistant as any).user ?? '');
       setStopSequences((assistant as any).stopSequences ?? []);
       setMaxTokens(assistant.maxTokens ?? 4096);
 
@@ -300,9 +247,9 @@ const AssistantModelSettings: React.FC = () => {
 
       setSelectedModel(assistant.model || '');
 
-      // 这里需要从assistant中获取自定义参数，暂时使用空数组
-      // TODO: 当Assistant类型支持customParameters时，从assistant.customParameters获取
-      setCustomParameters([]);
+      // 从assistant中获取自定义参数
+      setCustomParameters(assistant.customParameters || []);
+
     }
   }, [assistant]);
 
@@ -485,10 +432,9 @@ const AssistantModelSettings: React.FC = () => {
         ...(enableThinking && { enableThinking, thinkingBudget }),
         ...(mediaResolution !== 'medium' && { mediaResolution }),
         model: selectedModel,
-        // TODO: 当Assistant类型支持customParameters时，添加这行
-        // customParameters,
+        customParameters, // 保存自定义参数
         updatedAt: new Date().toISOString()
-      } as any;
+      };
 
       console.log('AssistantModelSettings: 保存助手设置', {
         assistantId: assistant.id,
@@ -523,6 +469,7 @@ const AssistantModelSettings: React.FC = () => {
     setFrequencyPenalty(0);
     setPresencePenalty(0);
     setSeed(null);
+    setUser('');
     setStopSequences([]);
     setMaxTokens(4096);
 
@@ -1006,6 +953,36 @@ const AssistantModelSettings: React.FC = () => {
                 window.dispatchEvent(new CustomEvent('seedChanged', { detail: { value: newValue, enabled: appSettings.enableSeed } }));
               }}
               placeholder="留空使用随机种子"
+              size="small"
+              fullWidth
+            />
+          </ListItem>
+
+          <Divider />
+
+          {/* 用户标识设置 */}
+          <ListItem sx={{ flexDirection: 'column', alignItems: 'stretch', py: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'medium' }}>
+                用户标识 (User)
+              </Typography>
+              <Chip label={user || '未设置'} size="small" />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              用于追踪和分析的用户 ID，可用于日志记录和使用统计。
+            </Typography>
+            <TextField
+              type="text"
+              value={user}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setUser(newValue);
+                // 同步到全局设置并通知其他组件
+                const appSettings = getAppSettings();
+                saveAppSettings({ ...appSettings, user: newValue });
+                window.dispatchEvent(new CustomEvent('userChanged', { detail: { value: newValue } }));
+              }}
+              placeholder="输入用户标识"
               size="small"
               fullWidth
             />

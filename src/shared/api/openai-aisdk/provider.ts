@@ -7,9 +7,9 @@ import { generateText } from 'ai';
 import type { OpenAIProvider as AISDKOpenAIProvider } from '@ai-sdk/openai';
 import { createClient, supportsMultimodal, supportsWebSearch, getWebSearchParams } from './client';
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
-import { OpenAIParameterAdapter, createOpenAIAdapter } from '../parameters';
+import { UnifiedParameterManager } from '../parameters/UnifiedParameterManager';
+import { OpenAIParameterFormatter } from '../parameters/formatters';
 import { isReasoningModel } from '../../utils/modelDetection';
-import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
@@ -25,12 +25,12 @@ import { ChunkType, type Chunk } from '../../types/chunk';
  */
 export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
   protected client: AISDKOpenAIProvider;
-  protected parameterAdapter: OpenAIParameterAdapter;
+  protected parameterManager: UnifiedParameterManager;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterAdapter = createOpenAIAdapter({ model });
+    this.parameterManager = new UnifiedParameterManager({ model, providerType: 'openai' });
   }
 
   /**
@@ -62,46 +62,26 @@ export abstract class BaseOpenAIAISDKProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 获取温度参数
+   * 获取统一参数并转换为 OpenAI API 格式
    */
-  protected getTemperature(assistant?: any): number | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getBaseAPIParameters().temperature;
-  }
-
-  /**
-   * 获取 top_p 参数
-   */
-  protected getTopP(assistant?: any): number | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getBaseAPIParameters().top_p;
-  }
-
-  /**
-   * 获取 max_tokens 参数
-   */
-  protected getMaxTokens(assistant?: any): number | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getBaseAPIParameters().max_tokens;
-  }
-
-  /**
-   * 获取 OpenAI 专属参数
-   */
-  protected getOpenAISpecificParameters(assistant?: any): any {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getOpenAISpecificParameters();
-  }
-
-  /**
-   * 获取推理优化参数
-   */
-  protected getReasoningEffort(assistant?: any, model?: Model): any {
-    if (model && model !== this.model) {
-      this.parameterAdapter.updateModel(model);
+  protected getApiParams(assistant?: any): {
+    unified: ReturnType<UnifiedParameterManager['getUnifiedParameters']>;
+    apiParams: Record<string, any>;
+  } {
+    if (assistant) {
+      this.parameterManager.updateAssistant(assistant);
     }
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getReasoningParameters();
+    const unified = this.parameterManager.getUnifiedParameters(isReasoningModel(this.model));
+    const { customParameters, ...standardParams } = unified;
+    const apiParams = OpenAIParameterFormatter.toAPIFormat(standardParams, this.model);
+    
+    // 🆕 合并自定义参数到 API 请求
+    const finalParams = {
+      ...apiParams,
+      ...customParameters, // 自定义参数直接展开到请求中
+    };
+    
+    return { unified, apiParams: finalParams };
   }
 
   /**
@@ -336,20 +316,13 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
     // 准备 API 消息格式（会根据 useSystemPromptForTools 决定是否注入工具提示词）
     const apiMessages = await this.prepareAPIMessages(messages, systemPrompt, mcpTools);
 
-    // 获取流式设置
-    const streamEnabled = getStreamOutputSetting();
-
-    // 更新参数管理器
-    this.parameterAdapter.updateAssistant(assistant);
-
-    // 获取参数
-    const temperature = this.getTemperature(assistant);
-    const maxTokens = this.getMaxTokens(assistant);
+    // 获取统一参数与 API 格式参数
+    const { unified, apiParams } = this.getApiParams(assistant);
+    const streamEnabled = unified.stream ?? true;
 
     console.log(`[OpenAIAISDKProvider] API 请求参数:`, {
       model: this.model.id,
-      temperature,
-      maxTokens,
+      apiParams,
       stream: streamEnabled,
       工具数量: tools.length
     });
@@ -368,24 +341,26 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
     try {
       if (streamEnabled) {
         return await this.handleStreamResponse(apiMessages, {
-          temperature,
-          maxTokens,
+          temperature: apiParams.temperature,
+          maxTokens: apiParams.max_tokens,
           tools,
           mcpTools,
           mcpMode,
           onChunk,
           abortSignal,
-          webSearchParams
+          webSearchParams,
+          extraBody: apiParams
         });
       } else {
         return await this.handleNonStreamResponse(apiMessages, {
-          temperature,
-          maxTokens,
+          temperature: apiParams.temperature,
+          maxTokens: apiParams.max_tokens,
           tools,
           mcpTools,
           mcpMode,
           onChunk,
-          abortSignal
+          abortSignal,
+          extraBody: apiParams
         });
       }
     } catch (error: any) {
@@ -396,7 +371,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
 
       if (error?.status === 400 && error?.message?.includes('max_tokens')) {
         const modelName = this.model.name || this.model.id;
-        throw new Error(`模型 ${modelName} 不支持当前的最大输出 token 设置 (${maxTokens})。`);
+        throw new Error(`模型 ${modelName} 不支持当前的最大输出 token 设置 (${apiParams.max_tokens})。`);
       }
 
       console.error('[OpenAIAISDKProvider] API 请求失败:', error);
@@ -418,6 +393,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
       webSearchParams?: any;
+      extraBody?: Record<string, any>;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     const {
@@ -427,7 +403,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpTools,
       mcpMode,
       onChunk,
-      abortSignal
+      abortSignal,
+      extraBody
     } = options;
 
     let currentMessages = [...messages];
@@ -454,7 +431,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           mcpTools,
           mcpMode,
           model: this.model,
-          tools: streamTools
+          tools: streamTools,
+          extraBody
         },
         onChunk
       );
@@ -551,6 +529,7 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpMode: 'prompt' | 'function';
       onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
+      extraBody?: Record<string, any>;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     const {
@@ -560,7 +539,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
       mcpTools,
       mcpMode,
       onChunk,
-      abortSignal
+      abortSignal,
+      extraBody
     } = options;
 
     let currentMessages = [...messages];
@@ -586,7 +566,8 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           mcpTools,
           mcpMode,
           model: this.model,
-          tools: streamTools
+          tools: streamTools,
+          extraBody
         }
       );
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { MathRendererType } from '../../../../shared/types';
 import type { ThinkingOption } from '../../../../shared/config/reasoningConfig';
 import { getUserAvatar, saveUserAvatar } from '../../../../shared/utils/avatarUtils';
+import { dexieStorage } from '../../../../shared/services/storage/DexieStorageService';
 
 // 设置项的类型定义
 export interface AppSettings {
@@ -168,7 +169,6 @@ export function useSettingsStorage() {
  */
 export async function syncAssistantMaxTokens(maxTokens: number): Promise<boolean> {
   try {
-    const { dexieStorage } = await import('../../../../shared/services/storage/DexieStorageService');
     const assistants = await dexieStorage.getAllAssistants();
 
     for (const assistant of assistants) {
@@ -196,7 +196,6 @@ export async function syncAssistantParameters(params: {
   presencePenalty?: number;
 }): Promise<boolean> {
   try {
-    const { dexieStorage } = await import('../../../../shared/services/storage/DexieStorageService');
     const assistants = await dexieStorage.getAllAssistants();
 
     for (const assistant of assistants) {

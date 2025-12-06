@@ -52,6 +52,13 @@ export {
   createGeminiAdapter
 } from './adapters/gemini';
 
+// 格式转换器
+export {
+  OpenAIParameterFormatter,
+  AnthropicParameterFormatter,
+  GeminiParameterFormatter
+} from './formatters';
+
 /**
  * 根据供应商类型创建对应的参数适配器
  */

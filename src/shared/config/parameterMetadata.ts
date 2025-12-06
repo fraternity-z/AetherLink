@@ -202,6 +202,15 @@ export const PARAMETER_METADATA: ParameterMetadata[] = [
     ]
   },
   {
+    key: 'streamOutput',
+    label: '流式输出',
+    description: '启用流式输出，实时显示生成内容。关闭后将等待完整响应后一次性显示',
+    inputType: 'switch',
+    defaultValue: true,
+    category: 'advanced',
+    providers: ['openai', 'anthropic', 'gemini', 'openai-compatible']
+  },
+  {
     key: 'parallelToolCalls',
     label: '并行工具调用',
     description: '允许模型同时调用多个工具',

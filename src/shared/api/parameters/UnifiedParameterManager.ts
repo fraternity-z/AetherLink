@@ -4,6 +4,7 @@
  */
 
 import type { Model } from '../../types';
+import type { CustomParameter } from '../../types/Assistant';
 import type {
   ProviderType,
   ParameterAdapter,
@@ -13,7 +14,7 @@ import type {
   UnifiedExtendedParameters,
   UnifiedReasoningParameters
 } from './types';
-import { getAppSettings, getStreamOutputSetting, getDefaultThinkingEffort } from '../../utils/settingsUtils';
+import { parameterSyncService } from '../../services/ParameterSyncService';
 
 /**
  * 统一参数管理器类
@@ -73,55 +74,24 @@ export class UnifiedParameterManager {
 
   /**
    * 解析基础参数
-   * 优先级: 全局设置(如已启用) > assistant.settings > assistant > model > 不发送
+   * 统一规则：只有启用开关打开才发送参数
    */
   public getBaseParameters(overrides?: Partial<UnifiedBaseParameters>): UnifiedBaseParameters {
-    const assistantSettings = this.assistant?.settings || {};
-    const appSettings = getAppSettings();
-
     const params: UnifiedBaseParameters = {
-      stream: overrides?.stream ?? getStreamOutputSetting()
+      stream: overrides?.stream ?? parameterSyncService.getParameter('streamOutput', true)
     };
 
-    // 温度: 只有启用时才发送
-    if (appSettings.enableTemperature) {
-      params.temperature = appSettings.temperature ?? 0.7;
-    } else if (overrides?.temperature !== undefined) {
-      params.temperature = overrides.temperature;
-    } else if (assistantSettings.temperature !== undefined) {
-      params.temperature = assistantSettings.temperature;
-    } else if (this.assistant?.temperature !== undefined) {
-      params.temperature = this.assistant.temperature;
-    } else if (this.model?.temperature !== undefined) {
-      params.temperature = this.model.temperature;
+    // 检查启用开关后才添加参数
+    if (parameterSyncService.isParameterEnabled('temperature')) {
+      params.temperature = parameterSyncService.getParameter('temperature', 0.7);
     }
-    // 如果都没设置，不发送 temperature 参数
 
-    // TopP: 只有启用时才发送
-    if (appSettings.enableTopP) {
-      params.topP = appSettings.topP ?? 1.0;
-    } else if (overrides?.topP !== undefined) {
-      params.topP = overrides.topP;
-    } else if (assistantSettings.topP !== undefined) {
-      params.topP = assistantSettings.topP;
-    } else if (this.assistant?.topP !== undefined) {
-      params.topP = this.assistant.topP;
-    } else if ((this.model as any)?.topP !== undefined) {
-      params.topP = (this.model as any).topP;
-    } else if ((this.model as any)?.top_p !== undefined) {
-      params.topP = (this.model as any).top_p;
+    if (parameterSyncService.isParameterEnabled('topP')) {
+      params.topP = parameterSyncService.getParameter('topP', 1.0);
     }
-    // 如果都没设置，不发送 topP 参数
 
-    // maxOutputTokens: 只有启用时才发送
-    if (appSettings.enableMaxOutputTokens !== false) {
-      params.maxOutputTokens = overrides?.maxOutputTokens ??
-                               assistantSettings.maxTokens ??
-                               assistantSettings.maxOutputTokens ??
-                               this.assistant?.maxTokens ??
-                               this.model?.maxTokens ??
-                               appSettings.maxOutputTokens ??
-                               4096;
+    if (parameterSyncService.isParameterEnabled('maxOutputTokens')) {
+      params.maxOutputTokens = parameterSyncService.getParameter('maxOutputTokens', 4096);
     }
 
     return params;
@@ -129,122 +99,127 @@ export class UnifiedParameterManager {
 
   /**
    * 解析扩展参数
-   * 优先级: 全局设置(如已启用) > assistant.settings > assistant > model > 不发送
+   * 来源：ParameterSyncService（侧边栏设置）
    */
-  public getExtendedParameters(overrides?: Partial<UnifiedExtendedParameters>): UnifiedExtendedParameters {
-    const assistantSettings = this.assistant?.settings || {};
-    const appSettings = getAppSettings();
+  public getExtendedParameters(_overrides?: Partial<UnifiedExtendedParameters>): UnifiedExtendedParameters {
     const params: UnifiedExtendedParameters = {};
 
-    // Top-K: 只有启用时才发送
-    if (appSettings.enableTopK) {
-      params.topK = appSettings.topK ?? 40;
-    } else if (overrides?.topK !== undefined) {
-      params.topK = overrides.topK;
-    } else if (assistantSettings.topK !== undefined) {
-      params.topK = assistantSettings.topK;
-    } else if (this.assistant?.topK !== undefined && this.assistant.topK !== 40) {
-      params.topK = this.assistant.topK;
-    }
+    // 统一处理：只有启用的参数才添加
+    const parameterList: Array<{
+      key: any;
+      targetKey?: string;
+      defaultValue: any;
+      validator?: (value: any) => boolean;
+      transformer?: (value: any) => any;
+    }> = [
+      { key: 'topK', defaultValue: 40 },
+      { key: 'frequencyPenalty', defaultValue: 0 },
+      { key: 'presencePenalty', defaultValue: 0 },
+      { key: 'seed', defaultValue: null, validator: (v) => v !== null },
+      { 
+        key: 'stopSequences', 
+        defaultValue: [], 
+        validator: (v) => Array.isArray(v) && v.length > 0 
+      },
+      { 
+        key: 'responseFormat', 
+        defaultValue: 'text',
+        validator: (v) => v && v !== 'text',
+        transformer: (v) => ({ type: v })
+      },
+      { key: 'parallelToolCalls', defaultValue: true },
+      { 
+        key: 'user', 
+        defaultValue: '', 
+        validator: (v) => typeof v === 'string' && v.trim().length > 0 
+      },
+      { 
+        key: 'reasoningEffort', 
+        defaultValue: 'medium',
+        validator: (v) => v && v !== 'off' && v !== 'disabled' && v !== 'none'
+      },
+      { key: 'thinkingBudget', defaultValue: 1024, validator: (v) => !!v }
+    ];
 
-    // Presence Penalty: 只有启用时才发送
-    if (appSettings.enablePresencePenalty) {
-      params.presencePenalty = appSettings.presencePenalty ?? 0;
-    } else if (overrides?.presencePenalty !== undefined) {
-      params.presencePenalty = overrides.presencePenalty;
-    } else if (assistantSettings.presencePenalty !== undefined) {
-      params.presencePenalty = assistantSettings.presencePenalty;
-    } else if (this.assistant?.presencePenalty !== undefined && this.assistant.presencePenalty !== 0) {
-      params.presencePenalty = this.assistant.presencePenalty;
-    }
-
-    // Frequency Penalty: 只有启用时才发送
-    if (appSettings.enableFrequencyPenalty) {
-      params.frequencyPenalty = appSettings.frequencyPenalty ?? 0;
-    } else if (overrides?.frequencyPenalty !== undefined) {
-      params.frequencyPenalty = overrides.frequencyPenalty;
-    } else if (assistantSettings.frequencyPenalty !== undefined) {
-      params.frequencyPenalty = assistantSettings.frequencyPenalty;
-    } else if (this.assistant?.frequencyPenalty !== undefined && this.assistant.frequencyPenalty !== 0) {
-      params.frequencyPenalty = this.assistant.frequencyPenalty;
-    }
-
-    // Stop Sequences
-    const stopSequences = overrides?.stopSequences ?? 
-                         assistantSettings.stopSequences ?? 
-                         this.assistant?.stopSequences;
-    if (stopSequences && Array.isArray(stopSequences) && stopSequences.length > 0) {
-      params.stopSequences = stopSequences;
-    }
-
-    // Seed: 只有启用时才发送
-    if (appSettings.enableSeed) {
-      params.seed = appSettings.seed;
-    } else if (overrides?.seed !== undefined) {
-      params.seed = overrides.seed;
-    } else if (assistantSettings.seed !== undefined) {
-      params.seed = assistantSettings.seed;
-    } else if (this.assistant?.seed !== undefined && this.assistant.seed !== null) {
-      params.seed = this.assistant.seed;
-    }
-
-    // Response Format
-    const responseFormat = assistantSettings.responseFormat ?? this.assistant?.responseFormat;
-    if (responseFormat && responseFormat !== 'text') {
-      params.responseFormat = { type: responseFormat };
-    }
-
-    // Tool Choice
-    const toolChoice = assistantSettings.toolChoice ?? this.assistant?.toolChoice;
-    if (toolChoice && toolChoice !== 'auto') {
-      params.toolChoice = toolChoice;
+    for (const { key, targetKey, defaultValue, validator, transformer } of parameterList) {
+      if (parameterSyncService.isParameterEnabled(key)) {
+        let value = parameterSyncService.getParameter(key, defaultValue);
+        
+        // 验证值
+        if (!validator || validator(value)) {
+          // 转换值
+          if (transformer) {
+            value = transformer(value);
+          }
+          // 添加到参数对象
+          (params as any)[targetKey || key] = value;
+        }
+      }
     }
 
     return params;
   }
 
   /**
-   * 解析推理参数
+   * 解析推理参数（保留接口兼容性，实际已移到扩展参数中）
    */
-  public getReasoningParameters(isReasoningModel: boolean): UnifiedReasoningParameters | undefined {
-    if (!isReasoningModel) {
-      return undefined;
-    }
-
-    const settings = this.assistant?.settings || {};
-    const effort = settings.reasoning_effort || getDefaultThinkingEffort();
-
-    // 检查是否禁用
-    if (effort === 'disabled' || effort === 'none' || effort === 'off') {
-      return {
-        enabled: false,
-        effort: 'disabled'
-      };
-    }
-
-    return {
-      enabled: true,
-      effort: effort as any,
-      budgetTokens: settings.thinkingBudget || settings.budgetTokens
-    };
+  public getReasoningParameters(_isReasoningModel?: boolean): UnifiedReasoningParameters | undefined {
+    return undefined;
   }
 
   /**
-   * 获取完整的统一参数
+   * 获取自定义参数（转换为 API 格式）
+   * 参考 Cherry Studio 实现
+   */
+  public getCustomParameters(): Record<string, any> {
+    const customParams: CustomParameter[] = parameterSyncService.getCustomParameters();
+    
+    return customParams.reduce((acc: Record<string, any>, param: CustomParameter) => {
+      if (!param.name?.trim()) {
+        return acc;
+      }
+      
+      if (param.type === 'json') {
+        const value = param.value as string;
+        if (value === 'undefined') {
+          return { ...acc, [param.name]: undefined };
+        }
+        try {
+          return { ...acc, [param.name]: JSON.parse(value as string) };
+        } catch {
+          return { ...acc, [param.name]: value };
+        }
+      }
+      
+      return {
+        ...acc,
+        [param.name]: param.value
+      };
+    }, {});
+  }
+
+  /**
+   * 获取完整的统一参数（包含自定义参数）
    */
   public getUnifiedParameters(
     isReasoningModel: boolean = false,
     overrides?: Partial<UnifiedParameters>
-  ): UnifiedParameters {
+  ): UnifiedParameters & { customParameters?: Record<string, any> } {
     const base = this.getBaseParameters(overrides);
     const extended = this.getExtendedParameters(overrides);
     const reasoning = this.getReasoningParameters(isReasoningModel);
+    const customParameters = this.getCustomParameters(); // 🆕 添加
 
-    return {
+    const unified = {
       ...base,
       ...extended,
-      reasoning
+      reasoning,
+      customParameters, // 🆕 添加
     };
+
+    console.log('[UnifiedParameterManager] 参数:', unified);
+
+    return unified;
   }
 
   /**

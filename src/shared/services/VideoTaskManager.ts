@@ -3,7 +3,8 @@ import { log } from './LoggerService';
 import { TopicService } from './topics/TopicService';
 import { MessageBlockStatus } from '../types/newMessage';
 import store from '../store';
-import { updateOneBlock } from '../store/slices/messageBlocksSlice';
+import { updateOneBlock, upsertOneBlock } from '../store/slices/messageBlocksSlice';
+import { dexieStorage } from './storage/DexieStorageService';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
 import { AssistantMessageStatus } from '../types/newMessage';
 
@@ -287,8 +288,6 @@ export class VideoTaskManager {
       });
 
       // 创建视频块
-      const { upsertOneBlock } = await import('../store/slices/messageBlocksSlice');
-      const { dexieStorage } = await import('./storage/DexieStorageService');
 
       const videoBlock = {
         id: `video-${Date.now()}`,

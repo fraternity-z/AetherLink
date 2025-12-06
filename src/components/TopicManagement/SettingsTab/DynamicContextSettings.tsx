@@ -59,8 +59,10 @@ interface DynamicContextSettingsProps {
 /**
  * 动态上下文设置组件
  */
-// 导出 CustomParameter 类型供外部使用
-export { type CustomParameter } from '../../ParameterEditor/ParameterEditor';
+// 导入类型
+import type { CustomParameter as EditorCustomParameter } from '../../ParameterEditor/ParameterEditor';
+import type { CustomParameter as AssistantCustomParameter, CustomParameterType } from '../../../shared/types/Assistant';
+export type { EditorCustomParameter as CustomParameter };
 
 export default function DynamicContextSettings({
   modelId = 'gpt-4',
@@ -75,6 +77,74 @@ export default function DynamicContextSettings({
   const [expanded, setExpanded] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   
+  // 使用 useMemo 计算初始值，避免在 useState 初始化中调用 setState
+  const initialData = useMemo(() => {
+    const params = parameterSyncService.getCustomParameters();
+    const types: Record<string, CustomParameterType> = {};
+    params.forEach(p => {
+      types[p.name] = p.type;
+    });
+    const editorParams = params.map(p => ({
+      key: p.name,
+      value: typeof p.value === 'object' ? JSON.stringify(p.value) : String(p.value),
+      enabled: true
+    }));
+    return { types, editorParams };
+  }, []);
+  
+  // 保存原始类型信息的映射
+  const [typeMap, setTypeMap] = useState<Record<string, CustomParameterType>>(initialData.types);
+  
+  // 自定义参数状态
+  const [customParams, setCustomParams] = useState<EditorCustomParameter[]>(initialData.editorParams);
+  
+  // 推断参数类型
+  const inferType = useCallback((value: string, existingType?: CustomParameterType): CustomParameterType => {
+    // 如果有现有类型，保留它
+    if (existingType) return existingType;
+    // 尝试推断类型
+    if (value === 'true' || value === 'false') return 'boolean';
+    if (!isNaN(Number(value)) && value.trim() !== '') return 'number';
+    try {
+      const parsed = JSON.parse(value);
+      if (typeof parsed === 'object' && parsed !== null) return 'json';
+    } catch {}
+    return 'string';
+  }, []);
+  
+  // 处理自定义参数变化
+  const handleCustomParamsChange = useCallback((params: EditorCustomParameter[]) => {
+    setCustomParams(params);
+    // 转换为 Assistant 格式并保存，保留类型信息
+    const syncParams: AssistantCustomParameter[] = params.map(p => {
+      const paramType = inferType(p.value, typeMap[p.key]);
+      let parsedValue: string | number | boolean | object = p.value;
+      
+      // 根据类型转换值
+      if (paramType === 'number') {
+        parsedValue = Number(p.value);
+      } else if (paramType === 'boolean') {
+        parsedValue = p.value === 'true';
+      } else if (paramType === 'json') {
+        try {
+          parsedValue = JSON.parse(p.value);
+        } catch {
+          parsedValue = p.value;
+        }
+      }
+      
+      // 更新类型映射
+      setTypeMap(prev => ({ ...prev, [p.key]: paramType }));
+      
+      return {
+        name: p.key,
+        value: parsedValue,
+        type: paramType
+      };
+    });
+    parameterSyncService.setCustomParameters(syncParams);
+  }, [typeMap, inferType]);
+  
   // 检测供应商类型
   const providerType = useMemo(() => detectProviderFromModel(modelId), [modelId]);
   
@@ -86,44 +156,41 @@ export default function DynamicContextSettings({
     'openai-compatible': '兼容 API'
   };
 
+  // 参数配置列表（统一管理）
+  const paramConfig = [
+    { key: 'temperature', defaultValue: 0.7, defaultEnabled: false },
+    { key: 'topP', defaultValue: 1.0, defaultEnabled: false },
+    { key: 'maxOutputTokens', defaultValue: maxOutputTokens, defaultEnabled: true },
+    { key: 'topK', defaultValue: 40, defaultEnabled: false },
+    { key: 'frequencyPenalty', defaultValue: 0, defaultEnabled: false },
+    { key: 'presencePenalty', defaultValue: 0, defaultEnabled: false },
+    { key: 'seed', defaultValue: null, defaultEnabled: false },
+    { key: 'stopSequences', defaultValue: '', defaultEnabled: false },
+    { key: 'responseFormat', defaultValue: 'text', defaultEnabled: false },
+    { key: 'parallelToolCalls', defaultValue: true, defaultEnabled: true },
+    { key: 'user', defaultValue: '', defaultEnabled: false },
+    { key: 'thinkingBudget', defaultValue: 1024, defaultEnabled: false },
+    { key: 'reasoningEffort', defaultValue: 'medium', defaultEnabled: false },
+    { key: 'streamOutput', defaultValue: true, defaultEnabled: true },
+  ];
+
   // 参数值状态（从 parameterSyncService 加载）
   const [paramValues, setParamValues] = useState<Record<string, any>>(() => {
     const settings = parameterSyncService.getSettings();
-    return {
-      temperature: settings.temperature ?? 0.7,
-      topP: settings.topP ?? 1.0,
-      maxOutputTokens: settings.maxOutputTokens ?? maxOutputTokens,
-      topK: settings.topK ?? 40,
-      frequencyPenalty: settings.frequencyPenalty ?? 0,
-      presencePenalty: settings.presencePenalty ?? 0,
-      seed: settings.seed ?? null,
-      stopSequences: settings.stopSequences ?? '',
-      responseFormat: settings.responseFormat ?? 'text',
-      parallelToolCalls: settings.parallelToolCalls ?? true,
-      thinkingBudget: settings.thinkingBudget ?? 1024,
-      reasoningEffort: settings.reasoningEffort ?? 'medium',
-      streamOutput: settings.streamOutput ?? true,
-    };
+    return Object.fromEntries(
+      paramConfig.map(({ key, defaultValue }) => [key, settings[key] ?? defaultValue])
+    );
   });
 
   // 参数启用状态
   const [enabledParams, setEnabledParams] = useState<Record<string, boolean>>(() => {
     const settings = parameterSyncService.getSettings();
-    return {
-      temperature: settings.enableTemperature ?? false,
-      topP: settings.enableTopP ?? false,
-      maxOutputTokens: settings.enableMaxOutputTokens !== false,
-      topK: settings.enableTopK ?? false,
-      frequencyPenalty: settings.enableFrequencyPenalty ?? false,
-      presencePenalty: settings.enablePresencePenalty ?? false,
-      seed: settings.enableSeed ?? false,
-      stopSequences: settings.enableStopSequences ?? false,
-      responseFormat: settings.enableResponseFormat ?? false,
-      parallelToolCalls: true,
-      thinkingBudget: settings.enableThinkingBudget ?? false,
-      reasoningEffort: settings.enableReasoningEffort ?? false,
-      streamOutput: true,
-    };
+    return Object.fromEntries(
+      paramConfig.map(({ key, defaultEnabled }) => {
+        const enableKey = `enable${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+        return [key, settings[enableKey] ?? defaultEnabled];
+      })
+    );
   });
 
   // 处理参数值变化
@@ -280,24 +347,18 @@ export default function DynamicContextSettings({
             <Typography variant="body2" fontWeight="medium">
               上下文消息数: {contextCount === 100 ? '最大' : contextCount} 条
             </Typography>
-            <Box 
-              sx={{ touchAction: 'none' }}
-              onTouchStart={(e) => e.stopPropagation()}
-              onTouchMove={(e) => e.stopPropagation()}
-            >
-              <Slider
-                value={contextCount}
-                onChange={handleContextCountChange}
-                min={0}
-                max={100}
-                step={1}
-                marks={[
-                  { value: 0, label: '0' },
-                  { value: 50, label: '50' },
-                  { value: 100, label: '最大' }
-                ]}
-              />
-            </Box>
+            <Slider
+              value={contextCount}
+              onChange={handleContextCountChange}
+              min={0}
+              max={100}
+              step={1}
+              marks={[
+                { value: 0, label: '0' },
+                { value: 50, label: '50' },
+                { value: 100, label: '最大' }
+              ]}
+            />
           </Box>
           <Divider sx={{ my: 2 }} />
 
@@ -308,6 +369,8 @@ export default function DynamicContextSettings({
             enabledParams={enabledParams}
             onChange={handleParamChange}
             onToggle={handleParamToggle}
+            customParams={customParams}
+            onCustomParamsChange={handleCustomParamsChange}
           />
         </Box>
       </Collapse>
@@ -349,6 +412,8 @@ export default function DynamicContextSettings({
             enabledParams={enabledParams}
             onChange={handleParamChange}
             onToggle={handleParamToggle}
+            customParams={customParams}
+            onCustomParamsChange={handleCustomParamsChange}
           />
         </DialogContent>
       </Dialog>

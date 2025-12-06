@@ -13,7 +13,6 @@ import {
   isClaudeReasoningModel
 } from './client';
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
-import { getStreamOutputSetting } from '../../utils/settingsUtils';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
@@ -24,7 +23,8 @@ import {
 } from './tools';
 import { ChunkType, type Chunk } from '../../types/chunk';
 import { getMainTextContent } from '../../utils/blockUtils';
-import { AnthropicParameterAdapter, createAnthropicAdapter } from '../parameters';
+import { UnifiedParameterManager } from '../parameters/UnifiedParameterManager';
+import { AnthropicParameterFormatter } from '../parameters/formatters';
 
 /**
  * Anthropic 参数接口
@@ -50,12 +50,12 @@ export interface ThinkingParameters {
  */
 export abstract class BaseAnthropicAISDKProvider extends AbstractBaseProvider {
   protected client: AISDKAnthropicProvider;
-  protected parameterAdapter: AnthropicParameterAdapter;
+  protected parameterManager: UnifiedParameterManager;
 
   constructor(model: Model) {
     super(model);
     this.client = createClient(model);
-    this.parameterAdapter = createAnthropicAdapter({ model });
+    this.parameterManager = new UnifiedParameterManager({ model, providerType: 'anthropic' });
   }
 
   /**
@@ -94,62 +94,51 @@ export abstract class BaseAnthropicAISDKProvider extends AbstractBaseProvider {
   }
 
   /**
-   * 获取基础参数 - 使用统一参数适配器
+   * 获取统一参数并转换为 Anthropic API 格式
    */
-  protected getBaseParameters(assistant?: any): AnthropicParameters {
-    this.parameterAdapter.updateAssistant(assistant);
-    const resolved = this.parameterAdapter.resolve({ model: this.model, assistant });
+  protected getApiParams(assistant?: any): {
+    unified: ReturnType<UnifiedParameterManager['getUnifiedParameters']>;
+    apiParams: Record<string, any>;
+  } {
+    if (assistant) {
+      this.parameterManager.updateAssistant(assistant);
+    }
+    const unified = this.parameterManager.getUnifiedParameters(isClaudeReasoningModel(this.model));
+    const { customParameters, ...standardParams } = unified;
+    const apiParams = AnthropicParameterFormatter.toAPIFormat(standardParams, this.model);
     
-    const params: AnthropicParameters = {};
-
-    // 只有当参数存在时才设置
-    if (resolved.base.temperature !== undefined) {
-      params.temperature = resolved.base.temperature;
-    }
-    if (resolved.base.topP !== undefined) {
-      params.top_p = resolved.base.topP;
-    }
-    if (resolved.base.maxOutputTokens !== undefined) {
-      params.max_tokens = resolved.base.maxOutputTokens;
-    }
-
-    // 添加特定参数
-    if (resolved.providerSpecific.top_k !== undefined) {
-      params.top_k = resolved.providerSpecific.top_k;
-    }
-    if (resolved.providerSpecific.stop_sequences) {
-      params.stop_sequences = resolved.providerSpecific.stop_sequences;
-    }
-
-    return params;
+    // 🆕 合并自定义参数到 API 请求
+    const finalParams = {
+      ...apiParams,
+      ...customParameters, // 自定义参数直接展开到请求中
+    };
+    
+    return { unified, apiParams: finalParams };
   }
 
   /**
-   * 获取工具选择参数 - 使用统一参数适配器
-   */
-  protected getToolChoice(assistant?: any): string | undefined {
-    this.parameterAdapter.updateAssistant(assistant);
-    return this.parameterAdapter.getToolChoice();
-  }
-
-  /**
-   * 获取 Extended Thinking 参数 - 使用统一参数适配器
+   * 获取 Extended Thinking 参数
    */
   protected getThinkingParameters(assistant?: any): ThinkingParameters | null {
     if (!this.supportsExtendedThinking()) {
       return null;
     }
 
-    this.parameterAdapter.updateAssistant(assistant);
-    const thinking = this.parameterAdapter.getThinkingParameters();
+    if (assistant) {
+      this.parameterManager.updateAssistant(assistant);
+    }
+    const unified = this.parameterManager.getUnifiedParameters(true);
     
-    if (!thinking) {
-      return null;
+    if (!unified.reasoning?.enabled) {
+      return { type: 'disabled' };
     }
 
-    console.log(`[AnthropicProvider] 模型 ${this.model.id} Extended Thinking: ${thinking.type}`);
+    console.log(`[AnthropicProvider] 模型 ${this.model.id} Extended Thinking: enabled`);
 
-    return thinking;
+    return {
+      type: 'enabled',
+      budgetTokens: unified.reasoning.budgetTokens
+    };
   }
 
   /**
@@ -449,7 +438,6 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
 
     const {
       onChunk,
-      enableThinking = true,
       systemPrompt = '',
       enableTools = true,
       mcpTools = [],
@@ -469,20 +457,15 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
     // 准备 API 消息格式
     const apiMessages = await this.prepareAPIMessages(messages, systemPrompt, mcpTools);
 
-    // 获取流式设置
-    const streamEnabled = getStreamOutputSetting();
-
-    // 获取参数
-    const baseParams = this.getBaseParameters(assistant);
-    const thinkingParams = enableThinking ? this.getThinkingParameters(assistant) : null;
+    // 获取统一参数与 API 格式参数
+    const { unified, apiParams } = this.getApiParams(assistant);
+    const streamEnabled = unified.stream ?? true;
 
     console.log(`[AnthropicAISDKProvider] API 请求参数:`, {
       model: this.model.id,
-      temperature: baseParams.temperature,
-      maxTokens: baseParams.max_tokens,
+      apiParams,
       stream: streamEnabled,
-      工具数量: tools.length,
-      思考模式: thinkingParams?.type || 'disabled'
+      工具数量: tools.length
     });
 
     // 检查 API 密钥
@@ -494,25 +477,25 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
     try {
       if (streamEnabled) {
         return await this.handleStreamResponse(apiMessages, {
-          temperature: baseParams.temperature,
-          maxTokens: baseParams.max_tokens,
+          temperature: apiParams.temperature,
+          maxTokens: apiParams.max_tokens,
           tools,
           mcpTools,
           mcpMode,
           onChunk,
           abortSignal,
-          thinkingParams
+          extraBody: apiParams
         });
       } else {
         return await this.handleNonStreamResponse(apiMessages, {
-          temperature: baseParams.temperature,
-          maxTokens: baseParams.max_tokens,
+          temperature: apiParams.temperature,
+          maxTokens: apiParams.max_tokens,
           tools,
           mcpTools,
           mcpMode,
           onChunk,
           abortSignal,
-          thinkingParams
+          extraBody: apiParams
         });
       }
     } catch (error: any) {
@@ -539,7 +522,7 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
       mcpMode: 'prompt' | 'function';
       onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
-      thinkingParams?: ThinkingParameters | null;
+      extraBody?: Record<string, any>;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     const {
@@ -550,7 +533,7 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
       mcpMode,
       onChunk,
       abortSignal,
-      thinkingParams
+      extraBody
     } = options;
 
     let currentMessages = [...messages];
@@ -577,8 +560,7 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
           mcpMode,
           model: this.model,
           tools: streamTools,
-          enableThinking: thinkingParams?.type === 'enabled',
-          thinkingBudgetTokens: thinkingParams?.budgetTokens
+          extraBody
         },
         onChunk
       );
@@ -673,7 +655,7 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
       mcpMode: 'prompt' | 'function';
       onChunk?: (chunk: Chunk) => void;
       abortSignal?: AbortSignal;
-      thinkingParams?: ThinkingParameters | null;
+      extraBody?: Record<string, any>;
     }
   ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
     const {
@@ -684,7 +666,7 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
       mcpMode,
       onChunk,
       abortSignal,
-      thinkingParams
+      extraBody
     } = options;
 
     let currentMessages = [...messages];
@@ -711,8 +693,7 @@ export class AnthropicAISDKProvider extends BaseAnthropicAISDKProvider {
           mcpMode,
           model: this.model,
           tools: streamTools,
-          enableThinking: thinkingParams?.type === 'enabled',
-          thinkingBudgetTokens: thinkingParams?.budgetTokens
+          extraBody
         }
       );
 

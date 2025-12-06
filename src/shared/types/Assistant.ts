@@ -2,6 +2,15 @@ import type { ReactNode } from 'react';
 import type { Message, QuickPhrase } from '.'; // 从当前目录的 index.ts 导入 Message 和 QuickPhrase
 import type { Message as NewMessage } from './newMessage.ts'; // 从 newMessage.ts 导入 NewMessage
 
+// 自定义参数类型定义
+export type CustomParameterType = 'string' | 'number' | 'boolean' | 'json';
+
+export interface CustomParameter {
+  name: string;
+  value: string | number | boolean | object;
+  type: CustomParameterType;
+}
+
 export interface Assistant {
   id: string;
   name: string;
@@ -47,6 +56,9 @@ export interface Assistant {
   // 🚀 网络搜索配置 - AI Tool Use 模式
   webSearchProviderId?: string; // 选择的网络搜索提供商ID，如 'bing-free', 'tavily' 等
   enableWebSearch?: boolean; // 是否启用模型内置的网络搜索（如 Gemini/OpenAI 内置搜索）
+  
+  // 🆕 自定义参数
+  customParameters?: CustomParameter[];
 }
 
 export interface ChatTopic {

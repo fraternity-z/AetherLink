@@ -3,6 +3,9 @@
  * 负责在侧边栏设置和助手设置之间同步所有参数
  */
 
+import type { CustomParameter } from '../types/Assistant';
+import { dexieStorage } from './storage/DexieStorageService';
+
 // 参数同步服务 - 用于在侧边栏和助手设置之间同步参数
 
 /**
@@ -21,11 +24,14 @@ export const SYNCABLE_PARAMETERS = [
   'stopSequences',
   'responseFormat',
   'parallelToolCalls',
+  'user',
   // 推理参数
   'thinkingBudget',
   'reasoningEffort',
   // 其他
   'streamOutput',
+  // 自定义参数
+  'customParameters',
 ] as const;
 
 export type SyncableParameterKey = typeof SYNCABLE_PARAMETERS[number];
@@ -41,7 +47,13 @@ export const ENABLE_KEY_MAP: Partial<Record<SyncableParameterKey, string>> = {
   frequencyPenalty: 'enableFrequencyPenalty',
   presencePenalty: 'enablePresencePenalty',
   seed: 'enableSeed',
+  stopSequences: 'enableStopSequences',
+  responseFormat: 'enableResponseFormat',
+  parallelToolCalls: 'enableParallelToolCalls',
+  user: 'enableUser',
   thinkingBudget: 'enableThinkingBudget',
+  reasoningEffort: 'enableReasoningEffort',
+  customParameters: 'enableCustomParameters',
 };
 
 /**
@@ -58,9 +70,11 @@ export const PARAMETER_DEFAULTS: Record<SyncableParameterKey, any> = {
   stopSequences: [],
   responseFormat: 'text',
   parallelToolCalls: true,
+  user: '',
   thinkingBudget: 1024,
   reasoningEffort: 'medium',
   streamOutput: true,
+  customParameters: [],
 };
 
 /**
@@ -77,9 +91,11 @@ export const PARAMETER_EVENT_MAP: Record<SyncableParameterKey, string> = {
   stopSequences: 'stopSequencesChanged',
   responseFormat: 'responseFormatChanged',
   parallelToolCalls: 'parallelToolCallsChanged',
+  user: 'userChanged',
   thinkingBudget: 'thinkingBudgetChanged',
   reasoningEffort: 'reasoningEffortChanged',
   streamOutput: 'streamOutputChanged',
+  customParameters: 'customParametersChanged',
 };
 
 /**
@@ -242,11 +258,28 @@ class ParameterSyncService {
   }
 
   /**
+   * 获取自定义参数
+   */
+  getCustomParameters(): CustomParameter[] {
+    const settings = this.getSettings();
+    return settings.customParameters || [];
+  }
+
+  /**
+   * 设置自定义参数
+   */
+  setCustomParameters(params: CustomParameter[]): void {
+    const settings = this.getSettings();
+    settings.customParameters = params;
+    this.saveSettings(settings);
+    this.dispatchParameterChange('customParameters', params);
+  }
+
+  /**
    * 同步参数到所有助手
    */
   async syncToAssistants(params?: Partial<Record<SyncableParameterKey, any>>): Promise<boolean> {
     try {
-      const { dexieStorage } = await import('./storage/DexieStorageService');
       const assistants = await dexieStorage.getAllAssistants();
       
       const paramsToSync = params || this.getEnabledParameters();
