@@ -96,6 +96,16 @@ const getTTSServices = (t: any) => [
     features: t('settings.voice.services.minimax.features', { returnObjects: true }),
     status: 'premium',
     path: '/settings/voice/tts/minimax'
+  },
+  {
+    id: 'volcano',
+    name: t('settings.voice.services.volcano.name'),
+    description: t('settings.voice.services.volcano.description'),
+    icon: '🌋',
+    color: '#FF4500',
+    features: t('settings.voice.services.volcano.features', { returnObjects: true }),
+    status: 'free',
+    path: '/settings/voice/tts/volcano'
   }
 ];
 

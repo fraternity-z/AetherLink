@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   Stack,
   Typography,
@@ -12,7 +12,10 @@ import {
   Slider,
   FormControlLabel,
   Box,
+  InputAdornment,
 } from '@mui/material';
+import { ChevronRight } from 'lucide-react';
+import FullScreenSelector, { type SelectorGroup } from './FullScreenSelector';
 import CustomSwitch from '../CustomSwitch';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useTranslation } from '../../i18n';
@@ -132,6 +135,47 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
   onSettingsChange,
 }) => {
   const { t } = useTranslation();
+
+  // 全屏选择器状态
+  const [voiceSelectorOpen, setVoiceSelectorOpen] = useState(false);
+  const [styleSelectorOpen, setStyleSelectorOpen] = useState(false);
+
+  // 音色分组数据
+  const voiceGroups: SelectorGroup[] = useMemo(() => [
+    {
+      name: '中文语音',
+      items: AZURE_VOICES.filter(v => v.value.startsWith('zh-')).map(v => ({
+        key: v.value,
+        label: v.label,
+      })),
+    },
+    {
+      name: '英文语音',
+      items: AZURE_VOICES.filter(v => v.value.startsWith('en-')).map(v => ({
+        key: v.value,
+        label: v.label,
+      })),
+    },
+  ], []);
+
+  // 风格分组数据
+  const styleGroups: SelectorGroup[] = useMemo(() => [{
+    name: '说话风格',
+    items: AZURE_STYLES.map(s => ({
+      key: s.value,
+      label: s.label,
+    })),
+  }], []);
+
+  // 获取当前选中的名称
+  const selectedVoiceName = useMemo(() => 
+    AZURE_VOICES.find(v => v.value === settings.voiceName)?.label || settings.voiceName,
+  [settings.voiceName]);
+
+  const selectedStyleName = useMemo(() => 
+    AZURE_STYLES.find(s => s.value === settings.style)?.label || settings.style,
+  [settings.style]);
+
   // 🚀 性能优化：使用useCallback缓存事件处理函数
   const handleApiKeyChange = useCallback((value: string) => {
     onSettingsChange({ ...settings, apiKey: value });
@@ -143,10 +187,6 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
 
   const handleRegionChange = useCallback((value: string) => {
     onSettingsChange({ ...settings, region: value });
-  }, [settings, onSettingsChange]);
-
-  const handleVoiceChange = useCallback((value: string) => {
-    onSettingsChange({ ...settings, voiceName: value });
   }, [settings, onSettingsChange]);
 
   const handleOutputFormatChange = useCallback((value: string) => {
@@ -163,10 +203,6 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
 
   const handleVolumeChange = useCallback((value: string) => {
     onSettingsChange({ ...settings, volume: value });
-  }, [settings, onSettingsChange]);
-
-  const handleStyleChange = useCallback((value: string) => {
-    onSettingsChange({ ...settings, style: value });
   }, [settings, onSettingsChange]);
 
   const handleStyleDegreeChange = useCallback((value: number) => {
@@ -241,27 +277,24 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
           </FormHelperText>
         </FormControl>
 
-        <FormControl fullWidth>
-          <InputLabel>{t('settings.voice.tabSettings.azure.voice')}</InputLabel>
-          <Select
-            value={settings.voiceName}
-            onChange={(e) => handleVoiceChange(e.target.value)}
-            label={t('settings.voice.tabSettings.azure.voice')}
-            MenuProps={{
-              disableAutoFocus: true,
-              disableRestoreFocus: true
-            }}
-          >
-            {AZURE_VOICES.map((voice) => (
-              <MenuItem key={voice.value} value={voice.value}>
-                {voice.label}
-              </MenuItem>
-            ))}
-          </Select>
-          <FormHelperText>
-            {t('settings.voice.tabSettings.azure.voiceHelper')}
-          </FormHelperText>
-        </FormControl>
+        {/* 音色选择 - 点击打开全屏选择器 */}
+        <TextField
+          fullWidth
+          label={t('settings.voice.tabSettings.azure.voice')}
+          value={selectedVoiceName}
+          onClick={() => setVoiceSelectorOpen(true)}
+          InputProps={{
+            readOnly: true,
+            endAdornment: (
+              <InputAdornment position="end">
+                <ChevronRight size={18} />
+              </InputAdornment>
+            ),
+            sx: { cursor: 'pointer' }
+          }}
+          helperText={t('settings.voice.tabSettings.azure.voiceHelper')}
+          sx={{ cursor: 'pointer' }}
+        />
 
         <FormControl fullWidth>
           <InputLabel>{t('settings.voice.tabSettings.azure.outputFormat')}</InputLabel>
@@ -330,20 +363,23 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
             </Select>
           </FormControl>
 
-          <FormControl fullWidth>
-            <InputLabel>{t('settings.voice.tabSettings.azure.style')}</InputLabel>
-            <Select
-              value={settings.style}
-              onChange={(e) => handleStyleChange(e.target.value)}
-              label={t('settings.voice.tabSettings.azure.style')}
-            >
-              {AZURE_STYLES.map((style) => (
-                <MenuItem key={style.value} value={style.value}>
-                  {style.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* 风格选择 - 点击打开全屏选择器 */}
+          <TextField
+            fullWidth
+            label={t('settings.voice.tabSettings.azure.style')}
+            value={selectedStyleName}
+            onClick={() => setStyleSelectorOpen(true)}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <ChevronRight size={18} />
+                </InputAdornment>
+              ),
+              sx: { cursor: 'pointer' }
+            }}
+            sx={{ cursor: 'pointer' }}
+          />
         </Box>
 
         <FormControl fullWidth>
@@ -398,6 +434,26 @@ export const AzureTTSTab: React.FC<AzureTTSTabProps> = ({
         </FormHelperText>
         </Stack>
       </form>
+
+      {/* 音色全屏选择器 */}
+      <FullScreenSelector
+        open={voiceSelectorOpen}
+        onClose={() => setVoiceSelectorOpen(false)}
+        title="选择语音"
+        groups={voiceGroups}
+        selectedKey={settings.voiceName}
+        onSelect={(key) => onSettingsChange({ ...settings, voiceName: key })}
+      />
+
+      {/* 风格全屏选择器 */}
+      <FullScreenSelector
+        open={styleSelectorOpen}
+        onClose={() => setStyleSelectorOpen(false)}
+        title="选择风格"
+        groups={styleGroups}
+        selectedKey={settings.style}
+        onSelect={(key) => onSettingsChange({ ...settings, style: key })}
+      />
     </>
   );
 };

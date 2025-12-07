@@ -14,7 +14,7 @@ interface TTSTestSectionProps {
   handleTestTTS: () => Promise<void>;
   isTestPlaying: boolean;
   enableTTS: boolean;
-  selectedTTSService: 'siliconflow' | 'openai' | 'azure' | 'capacitor' | 'gemini' | 'elevenlabs' | 'minimax' | 'webspeech';
+  selectedTTSService: 'siliconflow' | 'openai' | 'azure' | 'capacitor' | 'gemini' | 'elevenlabs' | 'minimax' | 'volcano' | 'webspeech';
   openaiApiKey?: string;
   azureApiKey?: string;
   siliconFlowApiKey?: string;

@@ -21,7 +21,8 @@ import {
 import {
   ArrowLeft,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TTSManager, type MiniMaxTTSConfig, MINIMAX_VOICES, MINIMAX_MODELS, MINIMAX_EMOTIONS, MINIMAX_LANGUAGE_BOOST } from '../../../shared/services/tts-v2';
@@ -31,6 +32,7 @@ import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import FullScreenSelector, { type SelectorGroup } from '../../../components/TTS/FullScreenSelector';
 
 interface MiniMaxSettings {
   apiKey: string;
@@ -75,6 +77,39 @@ const MiniMaxTTSSettings: React.FC = () => {
   const [testText, setTestText] = useState('');
   const [enableTTS, setEnableTTS] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
+
+  // 全屏选择器状态
+  const [voiceSelectorOpen, setVoiceSelectorOpen] = useState(false);
+  const [emotionSelectorOpen, setEmotionSelectorOpen] = useState(false);
+
+  // 音色分组数据
+  const voiceGroups: SelectorGroup[] = useMemo(() => [{
+    name: '可用音色',
+    items: MINIMAX_VOICES.map(v => ({
+      key: v.id,
+      label: v.name,
+      subLabel: v.description,
+    })),
+  }], []);
+
+  // 情感分组数据
+  const emotionGroups: SelectorGroup[] = useMemo(() => [{
+    name: '情感风格',
+    items: MINIMAX_EMOTIONS.map(e => ({
+      key: e.id,
+      label: e.name,
+      subLabel: e.description,
+    })),
+  }], []);
+
+  // 获取当前选中的名称
+  const selectedVoiceName = useMemo(() => 
+    MINIMAX_VOICES.find(v => v.id === settings.voiceId)?.name || settings.voiceId,
+  [settings.voiceId]);
+
+  const selectedEmotionName = useMemo(() => 
+    MINIMAX_EMOTIONS.find(e => e.id === settings.emotion)?.name || settings.emotion,
+  [settings.emotion]);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -419,40 +454,44 @@ const MiniMaxTTSSettings: React.FC = () => {
                 </FormControl>
               </Box>
 
-              {/* 语音选择 */}
+              {/* 语音选择 - 点击打开全屏选择器 */}
               <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>语音</InputLabel>
-                  <Select
-                    value={settings.voiceId}
-                    label="语音"
-                    onChange={(e) => setSettings(prev => ({ ...prev, voiceId: e.target.value }))}
-                  >
-                    {MINIMAX_VOICES.map((voice) => (
-                      <MenuItem key={voice.id} value={voice.id}>
-                        {voice.name} - {voice.description}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  label="语音"
+                  value={selectedVoiceName}
+                  onClick={() => setVoiceSelectorOpen(true)}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <ChevronRight size={18} />
+                      </InputAdornment>
+                    ),
+                    sx: { cursor: 'pointer' }
+                  }}
+                  sx={{ cursor: 'pointer' }}
+                />
               </Box>
 
-              {/* 情感 */}
+              {/* 情感 - 点击打开全屏选择器 */}
               <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>情感</InputLabel>
-                  <Select
-                    value={settings.emotion}
-                    label="情感"
-                    onChange={(e) => setSettings(prev => ({ ...prev, emotion: e.target.value }))}
-                  >
-                    {MINIMAX_EMOTIONS.map((emotion) => (
-                      <MenuItem key={emotion.id} value={emotion.id}>
-                        {emotion.name} - {emotion.description}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  label="情感"
+                  value={selectedEmotionName}
+                  onClick={() => setEmotionSelectorOpen(true)}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <ChevronRight size={18} />
+                      </InputAdornment>
+                    ),
+                    sx: { cursor: 'pointer' }
+                  }}
+                  sx={{ cursor: 'pointer' }}
+                />
               </Box>
 
               {/* 语言增强 */}
@@ -522,6 +561,26 @@ const MiniMaxTTSSettings: React.FC = () => {
           />
         </Box>
       </Box>
+
+      {/* 音色全屏选择器 */}
+      <FullScreenSelector
+        open={voiceSelectorOpen}
+        onClose={() => setVoiceSelectorOpen(false)}
+        title="选择语音"
+        groups={voiceGroups}
+        selectedKey={settings.voiceId}
+        onSelect={(key) => setSettings(prev => ({ ...prev, voiceId: key }))}
+      />
+
+      {/* 情感全屏选择器 */}
+      <FullScreenSelector
+        open={emotionSelectorOpen}
+        onClose={() => setEmotionSelectorOpen(false)}
+        title="选择情感"
+        groups={emotionGroups}
+        selectedKey={settings.emotion}
+        onSelect={(key) => setSettings(prev => ({ ...prev, emotion: key }))}
+      />
     </SafeAreaContainer>
   );
 };

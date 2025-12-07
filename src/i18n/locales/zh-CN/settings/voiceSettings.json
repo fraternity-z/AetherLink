@@ -58,6 +58,11 @@
         "name": "MiniMax TTS",
         "description": "专业中文语音合成服务，支持粤语和情感控制",
         "features": ["中文优化", "粤语支持", "情感控制", "多种音色"]
+      },
+      "volcano": {
+        "name": "火山引擎 TTS",
+        "description": "字节跳动语音合成服务，100+音色，22种情感",
+        "features": ["100+音色", "22种情感", "方言支持", "免费额度"]
       }
     },
     "common": {
@@ -115,6 +120,15 @@
       "testText": "你好，这是 MiniMax 语音合成的测试。",
       "apiKeyHelper": "从 MiniMax 控制台获取 API Key",
       "groupIdHelper": "从 MiniMax 控制台获取 Group ID"
+    },
+    "volcano": {
+      "title": "火山引擎 TTS 设置",
+      "enableDesc": "启用后，将使用火山引擎进行语音合成，支持100+音色和22种情感",
+      "testText": "你好，这是火山引擎语音合成的测试。",
+      "appIdHelper": "从火山引擎控制台获取 App ID",
+      "accessTokenHelper": "从火山引擎控制台获取 Access Token",
+      "appIdRequired": "启用服务时 App ID 不能为空",
+      "accessTokenRequired": "启用服务时 Access Token 不能为空"
     },
     "capacitorTTS": {
       "title": "Capacitor TTS 设置",
@@ -251,6 +265,28 @@
         "voiceHelper": "选择您喜欢的语音风格",
         "stylePrompt": "风格提示词（可选）",
         "stylePromptHelper": "使用自然语言控制语音风格、语调和情感"
+      },
+      "volcano": {
+        "title": "火山引擎 TTS API 设置",
+        "appId": "App ID",
+        "appIdPlaceholder": "请输入火山引擎 App ID",
+        "appIdHelper": "从火山引擎控制台获取: https://console.volcengine.com/speech/service/8",
+        "accessToken": "Access Token",
+        "accessTokenPlaceholder": "请输入火山引擎 Access Token",
+        "accessTokenHelper": "从火山引擎控制台获取 Access Token",
+        "voice": "音色选择",
+        "voiceHelper": "选择您喜欢的音色，灿灿系列支持22种情感",
+        "emotion": "情感风格",
+        "emotionHelper": "选择语音的情感风格（仅部分音色支持）",
+        "emotionNone": "无（默认）",
+        "speed": "语速",
+        "speedHelper": "调整语音播放速度 (0.5-2.0，默认1.0)",
+        "volume": "音量",
+        "volumeHelper": "调整语音音量 (0.5-2.0，默认1.0)",
+        "pitch": "音调",
+        "pitchHelper": "调整语音音调 (0.5-2.0，默认1.0)",
+        "encoding": "音频格式",
+        "encodingHelper": "选择输出音频格式，推荐MP3"
       },
       "whisper": {
         "title": "OpenAI Whisper 语音识别设置",

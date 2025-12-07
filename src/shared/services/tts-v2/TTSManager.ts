@@ -21,6 +21,7 @@ import { OpenAIEngine } from './engines/OpenAIEngine';
 import { SiliconFlowEngine } from './engines/SiliconFlowEngine';
 import { ElevenLabsEngine } from './engines/ElevenLabsEngine';
 import { MiniMaxEngine } from './engines/MiniMaxEngine';
+import { VolcanoEngine } from './engines/VolcanoEngine';
 import { WebSpeechEngine } from './engines/WebSpeechEngine';
 
 /**
@@ -159,6 +160,7 @@ export class TTSManager {
       new SiliconFlowEngine(),
       new ElevenLabsEngine(),
       new MiniMaxEngine(),
+      new VolcanoEngine(),
       new WebSpeechEngine(),
     ];
     

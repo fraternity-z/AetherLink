@@ -11,17 +11,14 @@ import {
   FormControlLabel,
   Divider,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Slider,
   InputAdornment
 } from '@mui/material';
 import {
   ArrowLeft,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TTSManager, type ElevenLabsTTSConfig, ELEVENLABS_VOICES, ELEVENLABS_MODELS, ELEVENLABS_OUTPUT_FORMATS } from '../../../shared/services/tts-v2';
@@ -31,6 +28,7 @@ import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import FullScreenSelector, { type SelectorGroup } from '../../../components/TTS/FullScreenSelector';
 
 interface ElevenLabsSettings {
   apiKey: string;
@@ -77,6 +75,54 @@ const ElevenLabsTTSSettings: React.FC = () => {
   const [testText, setTestText] = useState('');
   const [enableTTS, setEnableTTS] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
+
+  // 全屏选择器状态
+  const [voiceSelectorOpen, setVoiceSelectorOpen] = useState(false);
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [formatSelectorOpen, setFormatSelectorOpen] = useState(false);
+
+  // 音色分组数据
+  const voiceGroups: SelectorGroup[] = useMemo(() => [{
+    name: '预设语音',
+    items: ELEVENLABS_VOICES.map(v => ({
+      key: v.id,
+      label: v.name,
+      subLabel: v.description,
+    })),
+  }], []);
+
+  // 模型分组数据
+  const modelGroups: SelectorGroup[] = useMemo(() => [{
+    name: '可用模型',
+    items: ELEVENLABS_MODELS.map(m => ({
+      key: m.id,
+      label: m.name,
+      subLabel: m.description,
+    })),
+  }], []);
+
+  // 格式分组数据
+  const formatGroups: SelectorGroup[] = useMemo(() => [{
+    name: '输出格式',
+    items: ELEVENLABS_OUTPUT_FORMATS.map(f => ({
+      key: f.id,
+      label: f.name,
+      subLabel: f.description,
+    })),
+  }], []);
+
+  // 获取当前选中的名称
+  const selectedVoiceName = useMemo(() => 
+    ELEVENLABS_VOICES.find(v => v.id === settings.voiceId)?.name || settings.voiceId,
+  [settings.voiceId]);
+
+  const selectedModelName = useMemo(() => 
+    ELEVENLABS_MODELS.find(m => m.id === settings.modelId)?.name || settings.modelId,
+  [settings.modelId]);
+
+  const selectedFormatName = useMemo(() => 
+    ELEVENLABS_OUTPUT_FORMATS.find(f => f.id === settings.outputFormat)?.name || settings.outputFormat,
+  [settings.outputFormat]);
 
   // 加载设置
   useEffect(() => {
@@ -409,58 +455,64 @@ const ElevenLabsTTSSettings: React.FC = () => {
             />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              {/* 模型选择 */}
+              {/* 模型选择 - 点击打开全屏选择器 */}
               <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>模型</InputLabel>
-                  <Select
-                    value={settings.modelId}
-                    label="模型"
-                    onChange={(e) => setSettings(prev => ({ ...prev, modelId: e.target.value }))}
-                  >
-                    {ELEVENLABS_MODELS.map((model) => (
-                      <MenuItem key={model.id} value={model.id}>
-                        {model.name} - {model.description}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  label="模型"
+                  value={selectedModelName}
+                  onClick={() => setModelSelectorOpen(true)}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <ChevronRight size={18} />
+                      </InputAdornment>
+                    ),
+                    sx: { cursor: 'pointer' }
+                  }}
+                  sx={{ cursor: 'pointer' }}
+                />
               </Box>
 
-              {/* 语音选择 */}
+              {/* 语音选择 - 点击打开全屏选择器 */}
               <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>语音</InputLabel>
-                  <Select
-                    value={settings.voiceId}
-                    label="语音"
-                    onChange={(e) => setSettings(prev => ({ ...prev, voiceId: e.target.value }))}
-                  >
-                    {ELEVENLABS_VOICES.map((voice) => (
-                      <MenuItem key={voice.id} value={voice.id}>
-                        {voice.name} - {voice.description}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  label="语音"
+                  value={selectedVoiceName}
+                  onClick={() => setVoiceSelectorOpen(true)}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <ChevronRight size={18} />
+                      </InputAdornment>
+                    ),
+                    sx: { cursor: 'pointer' }
+                  }}
+                  sx={{ cursor: 'pointer' }}
+                />
               </Box>
 
-              {/* 输出格式 */}
+              {/* 输出格式 - 点击打开全屏选择器 */}
               <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>输出格式</InputLabel>
-                  <Select
-                    value={settings.outputFormat}
-                    label="输出格式"
-                    onChange={(e) => setSettings(prev => ({ ...prev, outputFormat: e.target.value }))}
-                  >
-                    {ELEVENLABS_OUTPUT_FORMATS.map((format) => (
-                      <MenuItem key={format.id} value={format.id}>
-                        {format.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <TextField
+                  fullWidth
+                  label="输出格式"
+                  value={selectedFormatName}
+                  onClick={() => setFormatSelectorOpen(true)}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <ChevronRight size={18} />
+                      </InputAdornment>
+                    ),
+                    sx: { cursor: 'pointer' }
+                  }}
+                  sx={{ cursor: 'pointer' }}
+                />
               </Box>
 
               {/* 语速 */}
@@ -540,6 +592,36 @@ const ElevenLabsTTSSettings: React.FC = () => {
           />
         </Box>
       </Box>
+
+      {/* 模型全屏选择器 */}
+      <FullScreenSelector
+        open={modelSelectorOpen}
+        onClose={() => setModelSelectorOpen(false)}
+        title="选择模型"
+        groups={modelGroups}
+        selectedKey={settings.modelId}
+        onSelect={(key) => setSettings(prev => ({ ...prev, modelId: key }))}
+      />
+
+      {/* 语音全屏选择器 */}
+      <FullScreenSelector
+        open={voiceSelectorOpen}
+        onClose={() => setVoiceSelectorOpen(false)}
+        title="选择语音"
+        groups={voiceGroups}
+        selectedKey={settings.voiceId}
+        onSelect={(key) => setSettings(prev => ({ ...prev, voiceId: key }))}
+      />
+
+      {/* 格式全屏选择器 */}
+      <FullScreenSelector
+        open={formatSelectorOpen}
+        onClose={() => setFormatSelectorOpen(false)}
+        title="选择输出格式"
+        groups={formatGroups}
+        selectedKey={settings.outputFormat}
+        onSelect={(key) => setSettings(prev => ({ ...prev, outputFormat: key }))}
+      />
     </SafeAreaContainer>
   );
 };

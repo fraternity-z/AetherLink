@@ -11,6 +11,7 @@ export type TTSEngineType =
   | 'siliconflow'  // 硅基流动 TTS
   | 'elevenlabs'   // ElevenLabs TTS
   | 'minimax'      // MiniMax TTS
+  | 'volcano'      // 火山引擎 TTS (字节跳动)
   | 'webspeech';   // 浏览器 Web Speech API
 
 // 基础配置接口
@@ -106,6 +107,19 @@ export interface MiniMaxTTSConfig extends TTSBaseConfig {
   useStream?: boolean;       // 是否使用流式传输
 }
 
+// 火山引擎 TTS 配置 (字节跳动)
+export interface VolcanoTTSConfig extends TTSBaseConfig {
+  appId: string;             // 火山引擎 App ID
+  accessToken: string;       // Access Token
+  cluster?: string;          // 集群，默认 volcano_tts
+  voiceType: string;         // 音色类型 (BV700_streaming, BV001_streaming 等)
+  emotion?: string;          // 情感 (happy, sad, angry 等)
+  speed?: number;            // 语速 0.5-2.0
+  volume?: number;           // 音量 0.5-2.0
+  pitch?: number;            // 音调 0.5-2.0
+  encoding?: 'mp3' | 'ogg_opus' | 'wav' | 'pcm';  // 音频编码格式
+}
+
 // Web Speech API 配置
 export interface WebSpeechTTSConfig extends TTSBaseConfig {
   voice?: string;
@@ -123,6 +137,7 @@ export type TTSEngineConfig =
   | { type: 'siliconflow'; config: SiliconFlowTTSConfig }
   | { type: 'elevenlabs'; config: ElevenLabsTTSConfig }
   | { type: 'minimax'; config: MiniMaxTTSConfig }
+  | { type: 'volcano'; config: VolcanoTTSConfig }
   | { type: 'webspeech'; config: WebSpeechTTSConfig };
 
 // TTS 引擎接口
