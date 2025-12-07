@@ -14,7 +14,13 @@ export class OpenAIParameterFormatter {
     if (unified.temperature !== undefined) params.temperature = unified.temperature;
     if (unified.topP !== undefined) params.top_p = unified.topP;
     if (unified.maxOutputTokens !== undefined) params.max_tokens = unified.maxOutputTokens;
-    if (unified.stream !== undefined) params.stream = unified.stream;
+    if (unified.stream !== undefined) {
+      params.stream = unified.stream;
+      // 流式模式下添加 stream_options 以获取 usage 信息
+      if (unified.stream) {
+        params.stream_options = { include_usage: true };
+      }
+    }
 
     // 扩展参数
     if (unified.topK !== undefined) params.top_k = unified.topK;

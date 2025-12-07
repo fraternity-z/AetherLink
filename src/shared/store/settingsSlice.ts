@@ -759,15 +759,16 @@ const settingsSlice = createSlice({
       if (providerIndex !== -1) {
         state.providers[providerIndex] = { ...state.providers[providerIndex], ...updates };
 
-        // 如果apiKey、baseUrl、extraHeaders、extraBody、apiKeys或useCorsPlugin更新了，也要更新所有关联模型
-        if (updates.apiKey !== undefined || updates.baseUrl !== undefined || updates.extraHeaders !== undefined || updates.extraBody !== undefined || updates.apiKeys !== undefined || updates.useCorsPlugin !== undefined) {
+        // 如果apiKey、baseUrl、extraHeaders、extraBody、apiKeys、useCorsPlugin或providerType更新了，也要更新所有关联模型
+        if (updates.apiKey !== undefined || updates.baseUrl !== undefined || updates.extraHeaders !== undefined || updates.extraBody !== undefined || updates.apiKeys !== undefined || updates.useCorsPlugin !== undefined || updates.providerType !== undefined) {
           state.providers[providerIndex].models = state.providers[providerIndex].models.map((model: Model) => ({
             ...model,
             apiKey: updates.apiKey !== undefined ? updates.apiKey : model.apiKey,
             baseUrl: updates.baseUrl !== undefined ? updates.baseUrl : model.baseUrl,
             providerExtraHeaders: updates.extraHeaders !== undefined ? updates.extraHeaders : (model as any).providerExtraHeaders,
             providerExtraBody: updates.extraBody !== undefined ? updates.extraBody : (model as any).providerExtraBody,
-            useCorsPlugin: updates.useCorsPlugin !== undefined ? updates.useCorsPlugin : model.useCorsPlugin
+            useCorsPlugin: updates.useCorsPlugin !== undefined ? updates.useCorsPlugin : model.useCorsPlugin,
+            providerType: updates.providerType !== undefined ? updates.providerType : (model as any).providerType
           }));
         }
       }

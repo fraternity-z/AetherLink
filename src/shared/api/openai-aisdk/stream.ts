@@ -269,6 +269,8 @@ export async function streamCompletion(
       abortSignal: signal,
       ...(tools && { tools }),
       ...(providerOptions && { providerOptions }),
+      // 启用原始 chunk 输出，用于提取第三方 API 的 reasoning_content 字段
+      includeRawChunks: true,
     });
 
     // 解析器 - 使用动态配置的推理标签
@@ -335,6 +337,39 @@ export async function streamCompletion(
               text: reasoningText,
               thinking_millsec: Date.now() - startTime
             });
+          }
+          break;
+
+        case 'raw':
+          // 处理原始 chunk 数据，提取第三方 API 的 reasoning_content 字段
+          // 这是 OpenAI 兼容 API（如 Gemini、DeepSeek 等）返回思考内容的方式
+          try {
+            const rawChunk = (part as any).rawValue || (part as any).chunk;
+            if (rawChunk?.choices?.[0]?.delta?.reasoning_content) {
+              const rawReasoningContent = rawChunk.choices[0].delta.reasoning_content;
+              if (rawReasoningContent && typeof rawReasoningContent === 'string') {
+                fullReasoning += rawReasoningContent;
+                onChunk?.({
+                  type: ChunkType.THINKING_DELTA,
+                  text: rawReasoningContent,
+                  thinking_millsec: Date.now() - startTime
+                });
+              }
+            }
+            // 同时检查 message.reasoning_content（非流式格式）
+            if (rawChunk?.choices?.[0]?.message?.reasoning_content) {
+              const msgReasoningContent = rawChunk.choices[0].message.reasoning_content;
+              if (msgReasoningContent && typeof msgReasoningContent === 'string' && !fullReasoning.includes(msgReasoningContent)) {
+                fullReasoning += msgReasoningContent;
+                onChunk?.({
+                  type: ChunkType.THINKING_DELTA,
+                  text: msgReasoningContent,
+                  thinking_millsec: Date.now() - startTime
+                });
+              }
+            }
+          } catch (e) {
+            // 忽略解析错误
           }
           break;
 

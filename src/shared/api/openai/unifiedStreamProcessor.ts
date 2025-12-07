@@ -444,6 +444,7 @@ export async function unifiedStreamCompletion(
     ...(temperature !== undefined && { temperature }),
     ...(maxTokens !== undefined && { max_tokens: maxTokens }),
     stream: true,
+    stream_options: { include_usage: true },
     ...apiParams
   });
 
