@@ -5,6 +5,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
+import { isTauri } from '../shared/utils/platformDetection';
 
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
@@ -139,6 +140,28 @@ export async function exportMessageAsMarkdown(message: Message, exportReasoning 
         // 回退到复制到剪贴板
         await Clipboard.write({ string: markdown });
         toastManager.warning('分享失败，内容已复制到剪贴板', '导出提醒');
+      }
+    } else if (isTauri()) {
+      // Tauri 桌面端：使用保存对话框
+      try {
+        const dialog = await import('@tauri-apps/plugin-dialog');
+        const fs = await import('@tauri-apps/plugin-fs');
+        
+        const filePath = await dialog.save({
+          title: '保存Markdown文件',
+          defaultPath: fileName,
+          filters: [{ name: 'Markdown', extensions: ['md'] }]
+        });
+        
+        if (filePath) {
+          await fs.writeTextFile(filePath, markdown);
+          toastManager.success('文件已保存', '导出成功');
+        }
+      } catch (tauriError) {
+        console.error('Tauri保存失败:', tauriError);
+        // 回退到复制到剪贴板
+        await Clipboard.write({ string: markdown });
+        toastManager.warning('保存失败，内容已复制到剪贴板', '导出提醒');
       }
     } else {
       // Web端：使用下载链接
@@ -314,6 +337,28 @@ export async function shareContentAsFile(message: Message): Promise<void> {
         await Clipboard.write({ string: textContent });
         toastManager.warning('分享失败，内容已复制到剪贴板', '保存提醒');
       }
+    } else if (isTauri()) {
+      // Tauri 桌面端：使用保存对话框
+      try {
+        const dialog = await import('@tauri-apps/plugin-dialog');
+        const fs = await import('@tauri-apps/plugin-fs');
+        
+        const filePath = await dialog.save({
+          title: '保存文本文件',
+          defaultPath: fileName,
+          filters: [{ name: '文本文件', extensions: ['txt'] }]
+        });
+        
+        if (filePath) {
+          await fs.writeTextFile(filePath, textContent);
+          toastManager.success('文件已保存', '保存成功');
+        }
+      } catch (tauriError) {
+        console.error('Tauri保存失败:', tauriError);
+        // 回退到复制到剪贴板
+        await Clipboard.write({ string: textContent });
+        toastManager.warning('保存失败，内容已复制到剪贴板', '保存提醒');
+      }
     } else {
       // Web端：使用下载链接
       const blob = new Blob([textContent], { type: 'text/plain' });
@@ -383,6 +428,23 @@ export async function captureMessageAsImage(messageElement: HTMLElement): Promis
         console.warn('分享失败:', shareError);
         toastManager.error('复制图片失败', '操作失败');
       }
+    } else if (isTauri()) {
+      // Tauri 桌面端：复制到剪贴板
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toastManager.error('截图失败', '操作失败');
+          return;
+        }
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          toastManager.success('图片已复制到剪贴板', '复制成功');
+        } catch (clipboardError) {
+          console.warn('复制到剪贴板失败:', clipboardError);
+          toastManager.error('复制图片失败', '操作失败');
+        }
+      }, 'image/png');
     } else {
       // Web端：转换为blob并复制到剪贴板
       canvas.toBlob(async (blob) => {
@@ -473,6 +535,35 @@ export async function exportMessageAsImage(messageElement: HTMLElement): Promise
         console.warn('分享失败:', shareError);
         toastManager.error('导出图片失败', '导出失败');
       }
+    } else if (isTauri()) {
+      // Tauri 桌面端：使用保存对话框
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toastManager.error('导出图片失败', '导出失败');
+          return;
+        }
+        try {
+          const dialog = await import('@tauri-apps/plugin-dialog');
+          const fs = await import('@tauri-apps/plugin-fs');
+          
+          const filePath = await dialog.save({
+            title: '保存图片',
+            defaultPath: fileName,
+            filters: [{ name: 'PNG图片', extensions: ['png'] }]
+          });
+          
+          if (filePath) {
+            // 将 blob 转为 Uint8Array
+            const arrayBuffer = await blob.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            await fs.writeFile(filePath, uint8Array);
+            toastManager.success('图片已保存', '导出成功');
+          }
+        } catch (tauriError) {
+          console.error('Tauri保存图片失败:', tauriError);
+          toastManager.error('导出图片失败', '导出失败');
+        }
+      }, 'image/png');
     } else {
       // Web端：直接下载
       canvas.toBlob((blob) => {

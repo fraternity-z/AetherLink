@@ -24,18 +24,15 @@ import {
   RefreshCw,
   Trash2,
   Edit,
-  Save,
   Plus,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  NotebookPen
+  FileText
 } from 'lucide-react';
 import TokenDisplay from '../chat/TokenDisplay';
 import type { Message, MessageVersion } from '../../shared/types/newMessage.ts';
 import MessageEditor from './MessageEditor';
-import ExportMenu from './ExportMenu';
-// 使用 TTS V2 新架构
+import UnifiedExportMenu from './UnifiedExportMenu';
 import { TTSManager } from '../../shared/services/tts-v2';
 import { getMainTextContent } from '../../shared/utils/messageUtils';
 import { toastManager } from '../EnhancedToast';
@@ -47,9 +44,6 @@ import { useAppSelector } from '../../shared/store';
 import { Clipboard } from '@capacitor/clipboard';
 import { Z_INDEX } from '../../shared/constants/zIndex';
 import { debugLog } from '../../shared/utils/debugLogger';
-import { shareContentAsFile } from '../../utils/exportUtils';
-import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
-import { useNavigate } from 'react-router-dom';
 
 interface MessageActionsProps {
   message: Message;
@@ -143,7 +137,6 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 }) => {
   const isUser = message.role === 'user';
   const theme = useTheme();
-  const navigate = useNavigate();
 
   // 获取工具栏按钮样式
   const toolbarIconButtonStyle = getToolbarIconButtonStyle(customTextColor);
@@ -166,9 +159,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   const [versionAnchorEl, setVersionAnchorEl] = useState<null | HTMLElement>(null);
   const versionPopoverOpen = Boolean(versionAnchorEl);
 
-  // 导出菜单状态 - 内存泄漏防护：避免存储DOM引用
-  const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
-  const exportMenuOpen = Boolean(exportAnchorEl);
+  // 导出菜单状态 - 使用布尔值控制上拉抽屉
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   // 内存泄漏防护：组件卸载时清理DOM引用和定时器
   useEffect(() => {
@@ -176,7 +168,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       mountedRef.current = false;
       setAnchorEl(null);
       setVersionAnchorEl(null);
-      setExportAnchorEl(null);
+      setExportMenuOpen(false);
       // 清理删除按钮定时器
       if (deleteTimerRef.current) {
         clearTimeout(deleteTimerRef.current);
@@ -369,68 +361,6 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     handleMenuClose();
   }, [onResend, message.id, handleMenuClose]);
 
-  // 分享保存消息内容 - 改为使用分享方式
-  const handleSaveContent = useCallback(async () => {
-    try {
-      await shareContentAsFile(message);
-    } catch (error) {
-      console.error('分享保存消息内容失败:', error);
-      toastManager.error('分享保存失败', '操作失败');
-    }
-    handleMenuClose();
-  }, [message, handleMenuClose]);
-
-  // 保存为笔记 - 将消息内容保存到笔记功能
-  const handleSaveToNote = useCallback(async () => {
-    try {
-      // 检查笔记功能是否配置
-      const hasConfig = await simpleNoteService.hasValidConfig();
-      if (!hasConfig) {
-        toastManager.warning('请先在设置中配置笔记存储目录', '未配置笔记');
-        navigate('/settings/notes');
-        return;
-      }
-
-      // 获取消息内容
-      const textContent = getMainTextContent(message);
-      if (!textContent || !textContent.trim()) {
-        toastManager.warning('没有可保存的内容', '提示');
-        return;
-      }
-
-      // 生成笔记标题：使用消息内容的前30个字符或时间戳
-      // 清理文件名：移除换行符、非法字符（包括中英文标点）
-      const contentPreview = textContent
-        .trim()
-        .replace(/[\r\n]+/g, ' ')  // 换行符替换为空格
-        .substring(0, 30)
-        .replace(/[\\/:*?"<>|！？。，、；：""''【】（）\s]+/g, '_')  // 非法字符替换为下划线
-        .replace(/_+/g, '_')  // 多个连续下划线合并
-        .replace(/^_|_$/g, '');  // 去除首尾下划线
-      const timestamp = new Date().toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).replace(/[\/\s:]/g, '-');
-      const noteTitle = contentPreview || `消息-${timestamp}`;
-
-      // 添加来源标记
-      const roleLabel = message.role === 'user' ? '👤 用户' : '🤖 AI';
-      const noteContent = `# ${roleLabel}\n\n${textContent}\n\n---\n*保存时间: ${new Date().toLocaleString('zh-CN')}*`;
-
-      // 保存到笔记根目录
-      await simpleNoteService.createNote('', noteTitle, noteContent);
-      
-      toastManager.success('已保存到笔记', '成功');
-    } catch (error) {
-      console.error('保存为笔记失败:', error);
-      toastManager.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'), '错误');
-    }
-    handleMenuClose();
-  }, [message, handleMenuClose, navigate]);
-
   // 创建分支 - 使用最佳实例的事件机制
   const handleCreateBranch = useCallback(() => {
     if (messageIndex === undefined) {
@@ -593,14 +523,14 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     setVersionAnchorEl(null);
   }, [onSwitchVersion]);
 
-  // 导出功能处理
-  const handleExportClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setExportAnchorEl(event.currentTarget);
+  // 导出功能处理 - 打开上拉抽屉
+  const handleExportClick = useCallback(() => {
+    setExportMenuOpen(true);
     handleMenuClose();
   }, [handleMenuClose]);
 
   const handleExportMenuClose = useCallback(() => {
-    setExportAnchorEl(null);
+    setExportMenuOpen(false);
   }, []);
 
   // 删除特定版本 - 保留原有函数
@@ -853,36 +783,14 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </IconButton>
           </Tooltip>
 
-          {/* 分享文件按钮 */}
-          <Tooltip title="分享文件">
-            <IconButton
-              size="small"
-              onClick={handleSaveContent}
-              sx={toolbarIconButtonStyle}
-            >
-              <Save size={16} />
-            </IconButton>
-          </Tooltip>
-
-          {/* 导出按钮 */}
-          <Tooltip title="导出信息">
+          {/* 导出/保存按钮 - 合并了分享文件、导出信息、保存为笔记 */}
+          <Tooltip title="导出/保存">
             <IconButton
               size="small"
               onClick={handleExportClick}
               sx={toolbarIconButtonStyle}
             >
               <FileText size={16} />
-            </IconButton>
-          </Tooltip>
-
-          {/* 保存为笔记按钮 */}
-          <Tooltip title="保存为笔记">
-            <IconButton
-              size="small"
-              onClick={handleSaveToNote}
-              sx={toolbarIconButtonStyle}
-            >
-              <NotebookPen size={16} />
             </IconButton>
           </Tooltip>
 
@@ -1234,14 +1142,9 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         >
           复制内容
         </MenuItem>
-        <MenuItem onClick={handleSaveContent}>分享文件</MenuItem>
         <MenuItem onClick={handleExportClick} sx={{ display: 'flex', alignItems: 'center' }}>
           <FileText size={16} style={{ marginRight: '8px' }} />
-          导出信息
-        </MenuItem>
-        <MenuItem onClick={handleSaveToNote} sx={{ display: 'flex', alignItems: 'center' }}>
-          <NotebookPen size={16} style={{ marginRight: '8px' }} />
-          保存为笔记
+          导出/保存
         </MenuItem>
         <MenuItem onClick={handleEditClick}>编辑</MenuItem>
 
@@ -1277,10 +1180,9 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
 
 
 
-      {/* 导出菜单 */}
-      <ExportMenu
+      {/* 统一导出/保存菜单 */}
+      <UnifiedExportMenu
         message={message}
-        anchorEl={exportAnchorEl}
         open={exportMenuOpen}
         onClose={handleExportMenuClose}
       />
