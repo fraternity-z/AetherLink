@@ -5,24 +5,20 @@ FROM node:22-bookworm AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 启用 Corepack 以使用 Yarn
-RUN corepack enable
+# 设置npm镜像源（可选，提高国内下载速度）
+RUN npm config set registry https://registry.npmmirror.com
 
-# 设置yarn镜像源（可选，提高国内下载速度）
-RUN yarn config set registry https://registry.npmmirror.com
-
-# 复制package文件
+# 复制package文件和lock文件
 COPY package*.json ./
-COPY yarn.lock ./
 
-# 安装依赖（使用yarn获得更快、更可靠的构建）
-RUN yarn install --frozen-lockfile
+# 安装依赖
+RUN npm ci
 
 # 复制源代码
 COPY . .
 
 # 构建应用
-RUN yarn build
+RUN npm run build
 
 # 阶段2: 生产阶段
 FROM nginx:alpine AS production
