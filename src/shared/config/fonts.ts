@@ -1,1359 +1,260 @@
 // 字体配置文件
+// 整合 Google Fonts 动态加载方案
+
+import { 
+  fetchGoogleFonts, 
+  loadFont as loadGoogleFont,
+  getCustomFonts,
+  getCustomFontFamily,
+  isCustomFont,
+  type GoogleFont,
+  type CustomFont
+} from '../services/GoogleFontsService';
+
+// 字体分类类型
+export type FontCategory = 'system' | 'custom' | 'sans-serif' | 'serif' | 'monospace' | 'monospace-cn' | 'display' | 'handwriting';
+
+// 字体选项接口
 export interface FontOption {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   fontFamily: string[];
   preview: string;
-  category: 'system' | 'chinese' | 'english' | 'monospace' | 'monospace-cn';
+  category: FontCategory;
+  isGoogleFont?: boolean;
+  variants?: string[];
 }
 
-// 预设字体选项
-export const fontOptions: FontOption[] = [
-  {
-    id: 'system',
-    name: '系统默认',
-    description: '跟随系统字体设置，兼容性最佳',
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
-    ],
-    preview: '系统默认字体 System Font',
-    category: 'system',
-  },
-  {
-    id: 'pingfang',
-    name: '苹方',
-    description: '苹果设计的中文字体，现代简洁',
-    fontFamily: [
-      '"PingFang SC"',
-      '"PingFang TC"',
-      '"PingFang HK"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      'sans-serif',
-    ],
-    preview: '苹方字体 PingFang Font',
-    category: 'chinese',
-  },
-  {
-    id: 'noto-sans',
-    name: '思源黑体',
-    description: 'Google设计的开源中文字体',
-    fontFamily: [
-      '"Noto Sans SC"',
-      '"Noto Sans TC"',
-      '"Noto Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      'sans-serif',
-    ],
-    preview: '思源黑体 Noto Sans',
-    category: 'chinese',
-  },
-  {
-    id: 'microsoft-yahei',
-    name: '微软雅黑',
-    description: '微软设计的中文字体，Windows系统常用',
-    fontFamily: [
-      '"Microsoft YaHei"',
-      '"Microsoft YaHei UI"',
-      '"Segoe UI"',
-      'Tahoma',
-      'Arial',
-      'sans-serif',
-    ],
-    preview: '微软雅黑 Microsoft YaHei',
-    category: 'chinese',
-  },
-  {
-    id: 'source-han-sans',
-    name: '思源黑体',
-    description: 'Adobe与Google合作开发的开源字体',
-    fontFamily: [
-      '"Source Han Sans SC"',
-      '"Source Han Sans TC"',
-      '"Source Han Sans"',
-      '"Noto Sans SC"',
-      'sans-serif',
-    ],
-    preview: '思源黑体 Source Han Sans',
-    category: 'chinese',
-  },
-  {
-    id: 'harmonyos-sans',
-    name: 'HarmonyOS Sans',
-    description: '华为鸿蒙系统字体，现代简洁',
-    fontFamily: [
-      '"HarmonyOS Sans SC"',
-      '"HarmonyOS Sans"',
-      '"PingFang SC"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      'sans-serif',
-    ],
-    preview: 'HarmonyOS Sans 鸿蒙字体',
-    category: 'chinese',
-  },
-  {
-    id: 'alibaba-puhuiti',
-    name: '阿里巴巴普惠体',
-    description: '阿里巴巴设计的免费商用字体',
-    fontFamily: [
-      '"Alibaba PuHuiTi"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '阿里巴巴普惠体 Alibaba PuHuiTi',
-    category: 'chinese',
-  },
-  {
-    id: 'oppo-sans',
-    name: 'OPPO Sans',
-    description: 'OPPO设计的现代字体',
-    fontFamily: [
-      '"OPPO Sans"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: 'OPPO Sans 现代设计',
-    category: 'chinese',
-  },
-  {
-    id: 'smiley-sans',
-    name: '得意黑',
-    description: '开源中文字体，现代可爱风格',
-    fontFamily: [
-      '"SmileySans"',
-      '"Smiley Sans"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '得意黑 SmileySans 可爱风格',
-    category: 'chinese',
-  },
-  {
-    id: 'xiaomi-lanting',
-    name: '小米兰亭',
-    description: '小米定制的中文字体',
-    fontFamily: [
-      '"MiLanTing"',
-      '"Xiaomi Lanting"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '小米兰亭 MiLanTing',
-    category: 'chinese',
-  },
-  {
-    id: 'source-han-serif',
-    name: '思源宋体',
-    description: 'Adobe与Google合作开发的宋体',
-    fontFamily: [
-      '"Source Han Serif SC"',
-      '"Source Han Serif"',
-      '"Noto Serif SC"',
-      '"Noto Serif CJK SC"',
-      'serif',
-    ],
-    preview: '思源宋体 Source Han Serif',
-    category: 'chinese',
-  },
-  {
-    id: 'lxgw-wenkai',
-    name: '霞鹜文楷',
-    description: '开源中文楷体，优雅美观',
-    fontFamily: [
-      '"LXGW WenKai"',
-      '"LXGW WenKai Screen"',
-      '"KaiTi"',
-      '"STKaiti"',
-      'serif',
-    ],
-    preview: '霞鹜文楷 LXGW 优雅楷体',
-    category: 'chinese',
-  },
-  {
-    id: 'zcool-kuaile',
-    name: '站酷快乐体',
-    description: '站酷设计的活泼字体',
-    fontFamily: [
-      '"ZCOOL KuaiLe"',
-      '"站酷快乐体"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '站酷快乐体 活泼可爱',
-    category: 'chinese',
-  },
-  {
-    id: 'zcool-kuheiti',
-    name: '站酷酷黑',
-    description: '站酷设计的黑体字体',
-    fontFamily: [
-      '"ZCOOL QingKe HuangYou"',
-      '"站酷酷黑"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '站酷酷黑 现代设计',
-    category: 'chinese',
-  },
-  {
-    id: 'fangzheng-heiti',
-    name: '方正黑体',
-    description: '方正经典黑体字体',
-    fontFamily: [
-      '"FZHei-B01"',
-      '"方正黑体"',
-      '"SimHei"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '方正黑体 经典设计',
-    category: 'chinese',
-  },
-  {
-    id: 'fangzheng-shusong',
-    name: '方正书宋',
-    description: '方正经典书宋字体',
-    fontFamily: [
-      '"FZShuSong-Z01"',
-      '"方正书宋"',
-      '"SimSun"',
-      '"宋体"',
-      'serif',
-    ],
-    preview: '方正书宋 传统印刷风格',
-    category: 'chinese',
-  },
-  {
-    id: 'hanyi-qihei',
-    name: '汉仪旗黑',
-    description: '汉仪设计的现代黑体',
-    fontFamily: [
-      '"HYQiHei"',
-      '"汉仪旗黑"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '汉仪旗黑 专业品质',
-    category: 'chinese',
-  },
-  {
-    id: 'canger-yuyang',
-    name: '仓耳渔阳体',
-    description: '仓耳设计的优雅字体',
-    fontFamily: [
-      '"Canger YuYang"',
-      '"仓耳渔阳体"',
-      '"PingFang SC"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '仓耳渔阳体 优雅设计',
-    category: 'chinese',
-  },
-  {
-    id: 'wenquanyi-microhei',
-    name: '文泉驿微米黑',
-    description: '开源中文黑体，Linux常用',
-    fontFamily: [
-      '"WenQuanYi Micro Hei"',
-      '"文泉驿微米黑"',
-      '"Noto Sans SC"',
-      'sans-serif',
-    ],
-    preview: '文泉驿微米黑 开源字体',
-    category: 'chinese',
-  },
-  {
-    id: 'simhei',
-    name: '黑体',
-    description: 'Windows经典中文黑体',
-    fontFamily: [
-      '"SimHei"',
-      '"黑体"',
-      '"Microsoft YaHei"',
-      'sans-serif',
-    ],
-    preview: '黑体 SimHei 经典字体',
-    category: 'chinese',
-  },
-  {
-    id: 'simsun',
-    name: '宋体',
-    description: 'Windows经典中文宋体',
-    fontFamily: [
-      '"SimSun"',
-      '"宋体"',
-      '"NSimSun"',
-      'serif',
-    ],
-    preview: '宋体 SimSun 传统风格',
-    category: 'chinese',
-  },
-  {
-    id: 'kaiti',
-    name: '楷体',
-    description: '经典中文楷体',
-    fontFamily: [
-      '"KaiTi"',
-      '"楷体"',
-      '"STKaiti"',
-      '"华文楷体"',
-      'serif',
-    ],
-    preview: '楷体 KaiTi 书法风格',
-    category: 'chinese',
-  },
-  {
-    id: 'inter',
-    name: 'Inter',
-    description: '专为屏幕显示优化的现代字体，UI设计首选',
-    fontFamily: [
-      '"Inter"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      'sans-serif',
-    ],
-    preview: 'Inter Font Family - Modern UI Design',
-    category: 'english',
-  },
-  {
-    id: 'poppins',
-    name: 'Poppins',
-    description: '几何风格的现代字体，清晰易读',
-    fontFamily: [
-      '"Poppins"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Poppins - Geometric Sans Serif',
-    category: 'english',
-  },
-  {
-    id: 'dm-sans',
-    name: 'DM Sans',
-    description: '低对比度几何字体，适合现代界面',
-    fontFamily: [
-      '"DM Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'DM Sans - Clean & Modern',
-    category: 'english',
-  },
-  {
-    id: 'manrope',
-    name: 'Manrope',
-    description: '开源现代字体，平衡的字母形状',
-    fontFamily: [
-      '"Manrope"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Manrope - Balanced Modern Font',
-    category: 'english',
-  },
-  {
-    id: 'lexend',
-    name: 'Lexend',
-    description: '提高阅读效率的现代字体',
-    fontFamily: [
-      '"Lexend"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Lexend - Reading Proficiency',
-    category: 'english',
-  },
-  {
-    id: 'public-sans',
-    name: 'Public Sans',
-    description: '美国政府开源的现代字体',
-    fontFamily: [
-      '"Public Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Public Sans - Government Grade',
-    category: 'english',
-  },
-  {
-    id: 'nunito',
-    name: 'Nunito',
-    description: '圆润友好的现代字体',
-    fontFamily: [
-      '"Nunito"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Nunito - Rounded & Friendly',
-    category: 'english',
-  },
-  {
-    id: 'outfit',
-    name: 'Outfit',
-    description: '现代几何字体，适合标题和正文',
-    fontFamily: [
-      '"Outfit"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Outfit - Modern Geometric',
-    category: 'english',
-  },
-  {
-    id: 'roboto',
-    name: 'Roboto',
-    description: 'Google设计的经典现代字体',
-    fontFamily: [
-      '"Roboto"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Arial',
-      'sans-serif',
-    ],
-    preview: 'Roboto - Google Material Design',
-    category: 'english',
-  },
-  {
-    id: 'open-sans',
-    name: 'Open Sans',
-    description: '人文主义字体，友好易读',
-    fontFamily: [
-      '"Open Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Arial',
-      'sans-serif',
-    ],
-    preview: 'Open Sans - Humanist Sans',
-    category: 'english',
-  },
-  {
-    id: 'plus-jakarta-sans',
-    name: 'Plus Jakarta Sans',
-    description: '印尼设计的现代几何字体',
-    fontFamily: [
-      '"Plus Jakarta Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Plus Jakarta Sans - Modern Geometric',
-    category: 'english',
-  },
-  {
-    id: 'geist',
-    name: 'Geist',
-    description: 'Vercel设计的现代字体',
-    fontFamily: [
-      '"Geist"',
-      '"Geist Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Geist - Vercel Modern Font',
-    category: 'english',
-  },
-  {
-    id: 'sf-pro',
-    name: 'SF Pro',
-    description: 'Apple设计的系统字体',
-    fontFamily: [
-      '"SF Pro Display"',
-      '"SF Pro Text"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'SF Pro - Apple System Font',
-    category: 'english',
-  },
-  {
-    id: 'lato',
-    name: 'Lato',
-    description: '温暖友好的无衬线字体',
-    fontFamily: [
-      '"Lato"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Lato - Warm & Friendly',
-    category: 'english',
-  },
-  {
-    id: 'montserrat',
-    name: 'Montserrat',
-    description: '几何风格的都市字体',
-    fontFamily: [
-      '"Montserrat"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Montserrat - Urban Geometric',
-    category: 'english',
-  },
-  {
-    id: 'work-sans',
-    name: 'Work Sans',
-    description: '屏幕优化的现代字体',
-    fontFamily: [
-      '"Work Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Work Sans - Screen Optimized',
-    category: 'english',
-  },
-  {
-    id: 'raleway',
-    name: 'Raleway',
-    description: '优雅的无衬线显示字体',
-    fontFamily: [
-      '"Raleway"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Raleway - Elegant Display',
-    category: 'english',
-  },
-  {
-    id: 'quicksand',
-    name: 'Quicksand',
-    description: '圆润可爱的显示字体',
-    fontFamily: [
-      '"Quicksand"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Quicksand - Rounded Display',
-    category: 'english',
-  },
-  {
-    id: 'ubuntu',
-    name: 'Ubuntu',
-    description: 'Canonical设计的人文字体',
-    fontFamily: [
-      '"Ubuntu"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Ubuntu - Humanist Sans Serif',
-    category: 'english',
-  },
-  {
-    id: 'mulish',
-    name: 'Mulish',
-    description: '极简主义的现代字体',
-    fontFamily: [
-      '"Mulish"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Mulish - Minimalist Modern',
-    category: 'english',
-  },
-  {
-    id: 'space-grotesk',
-    name: 'Space Grotesk',
-    description: '比例等宽风格的现代字体',
-    fontFamily: [
-      '"Space Grotesk"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Space Grotesk - Proportional Mono',
-    category: 'english',
-  },
-  {
-    id: 'sora',
-    name: 'Sora',
-    description: '日本设计的现代几何字体',
-    fontFamily: [
-      '"Sora"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Sora - Japanese Modern Geometric',
-    category: 'english',
-  },
-  {
-    id: 'figtree',
-    name: 'Figtree',
-    description: '友好的几何字体',
-    fontFamily: [
-      '"Figtree"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Figtree - Friendly Geometric',
-    category: 'english',
-  },
-  {
-    id: 'urbanist',
-    name: 'Urbanist',
-    description: '低对比度几何字体',
-    fontFamily: [
-      '"Urbanist"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Urbanist - Low Contrast Geometric',
-    category: 'english',
-  },
-  {
-    id: 'atkinson-hyperlegible',
-    name: 'Atkinson Hyperlegible',
-    description: '盲文协会设计的高可读性字体',
-    fontFamily: [
-      '"Atkinson Hyperlegible"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Atkinson - High Legibility',
-    category: 'english',
-  },
-  {
-    id: 'barlow',
-    name: 'Barlow',
-    description: '轻微圆润的低对比字体',
-    fontFamily: [
-      '"Barlow"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Barlow - Slightly Rounded Grotesk',
-    category: 'english',
-  },
-  {
-    id: 'source-sans-pro',
-    name: 'Source Sans Pro',
-    description: 'Adobe首款开源字体',
-    fontFamily: [
-      '"Source Sans Pro"',
-      '"Source Sans 3"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Source Sans Pro - Adobe Open Source',
-    category: 'english',
-  },
-  {
-    id: 'ibm-plex-sans',
-    name: 'IBM Plex Sans',
-    description: 'IBM设计的现代字体',
-    fontFamily: [
-      '"IBM Plex Sans"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'IBM Plex Sans - Corporate Modern',
-    category: 'english',
-  },
-  {
-    id: 'commissioner',
-    name: 'Commissioner',
-    description: '可变字重的低对比字体',
-    fontFamily: [
-      '"Commissioner"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Commissioner - Variable Weight',
-    category: 'english',
-  },
-  {
-    id: 'be-vietnam-pro',
-    name: 'Be Vietnam Pro',
-    description: '越南设计的现代字体',
-    fontFamily: [
-      '"Be Vietnam Pro"',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif',
-    ],
-    preview: 'Be Vietnam Pro - Vietnamese Modern',
-    category: 'english',
-  },
-  {
-    id: 'fira-code',
-    name: 'Fira Code',
-    description: '支持连字的等宽编程字体',
-    fontFamily: [
-      '"Fira Code"',
-      '"Cascadia Code"',
-      '"JetBrains Mono"',
-      '"Source Code Pro"',
-      'Consolas',
-      'Monaco',
-      'monospace',
-    ],
-    preview: 'Fira Code => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'jetbrains-mono',
-    name: 'JetBrains Mono',
-    description: 'JetBrains设计的现代编程字体',
-    fontFamily: [
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      '"Source Code Pro"',
-      'Consolas',
-      'Monaco',
-      'monospace',
-    ],
-    preview: 'JetBrains Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'cascadia-code',
-    name: 'Cascadia Code',
-    description: '微软开发的现代编程字体',
-    fontFamily: [
-      '"Cascadia Code"',
-      '"Cascadia Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Cascadia Code => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'source-code-pro',
-    name: 'Source Code Pro',
-    description: 'Adobe设计的开源编程字体',
-    fontFamily: [
-      '"Source Code Pro"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'Monaco',
-      'monospace',
-    ],
-    preview: 'Source Code Pro => != ===',
-    category: 'monospace',
-  },
-  {
-    id: 'victor-mono',
-    name: 'Victor Mono',
-    description: '支持斜体和连字的现代编程字体',
-    fontFamily: [
-      '"Victor Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Victor Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'monaco',
-    name: 'Monaco',
-    description: 'macOS经典等宽字体',
-    fontFamily: [
-      'Monaco',
-      '"SF Mono"',
-      'Menlo',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Monaco => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'sf-mono',
-    name: 'SF Mono',
-    description: 'Apple设计的等宽字体',
-    fontFamily: [
-      '"SF Mono"',
-      'Monaco',
-      'Menlo',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'SF Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'menlo',
-    name: 'Menlo',
-    description: 'macOS内置的编程字体',
-    fontFamily: [
-      'Menlo',
-      'Monaco',
-      '"SF Mono"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Menlo => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'consolas',
-    name: 'Consolas',
-    description: 'Windows内置的编程字体',
-    fontFamily: [
-      'Consolas',
-      '"Cascadia Code"',
-      'Monaco',
-      'monospace',
-    ],
-    preview: 'Consolas => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'iosevka',
-    name: 'Iosevka',
-    description: '高度可定制的窄等宽字体',
-    fontFamily: [
-      '"Iosevka"',
-      '"Iosevka Term"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'monospace',
-    ],
-    preview: 'Iosevka => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'hack',
-    name: 'Hack',
-    description: '专为源代码设计的开源字体',
-    fontFamily: [
-      '"Hack"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Hack => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'inconsolata',
-    name: 'Inconsolata',
-    description: '人文主义等宽字体',
-    fontFamily: [
-      '"Inconsolata"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Inconsolata => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'ibm-plex-mono',
-    name: 'IBM Plex Mono',
-    description: 'IBM设计的等宽字体',
-    fontFamily: [
-      '"IBM Plex Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'IBM Plex Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'geist-mono',
-    name: 'Geist Mono',
-    description: 'Vercel设计的等宽字体',
-    fontFamily: [
-      '"Geist Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Geist Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'monaspace',
-    name: 'Monaspace',
-    description: 'GitHub设计的创新编程字体',
-    fontFamily: [
-      '"Monaspace Neon"',
-      '"Monaspace Argon"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'monospace',
-    ],
-    preview: 'Monaspace => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'anonymous-pro',
-    name: 'Anonymous Pro',
-    description: '适合编程的传统等宽字体',
-    fontFamily: [
-      '"Anonymous Pro"',
-      '"JetBrains Mono"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Anonymous Pro => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'ubuntu-mono',
-    name: 'Ubuntu Mono',
-    description: 'Ubuntu系统的等宽字体',
-    fontFamily: [
-      '"Ubuntu Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Ubuntu Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'droid-sans-mono',
-    name: 'Droid Sans Mono',
-    description: 'Android系统的等宽字体',
-    fontFamily: [
-      '"Droid Sans Mono"',
-      '"JetBrains Mono"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Droid Sans Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'dejavu-sans-mono',
-    name: 'DejaVu Sans Mono',
-    description: '开源高覆盖度等宽字体',
-    fontFamily: [
-      '"DejaVu Sans Mono"',
-      '"JetBrains Mono"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'DejaVu Sans Mono => != ===',
-    category: 'monospace',
-  },
-  {
-    id: 'roboto-mono',
-    name: 'Roboto Mono',
-    description: 'Google设计的等宽字体',
-    fontFamily: [
-      '"Roboto Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Roboto Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'space-mono',
-    name: 'Space Mono',
-    description: '有个性的等宽显示字体',
-    fontFamily: [
-      '"Space Mono"',
-      '"JetBrains Mono"',
-      '"Fira Code"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Space Mono => != === </>',
-    category: 'monospace',
-  },
-  {
-    id: 'input-mono',
-    name: 'Input Mono',
-    description: '专为编程设计的灵活等宽字体',
-    fontFamily: [
-      '"Input Mono"',
-      '"Input"',
-      '"JetBrains Mono"',
-      'Consolas',
-      'monospace',
-    ],
-    preview: 'Input Mono => != === </>',
-    category: 'monospace',
-  },
-  // ============ 中文等宽字体 ============
-  {
-    id: 'maple-mono-cn',
-    name: 'Maple Mono CN',
-    description: '支持中文的等宽字体，代码与中文完美对齐',
-    fontFamily: [
-      '"Maple Mono NF CN"',
-      '"Maple Mono CN"',
-      '"Maple Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: '枫叶等宽 Maple => != === 中文对齐',
+// 系统默认字体（兜底）
+const SYSTEM_FONT: FontOption = {
+  id: 'system',
+  name: '系统默认',
+  description: '跟随系统字体设置，兼容性最佳',
+  fontFamily: [
+    '-apple-system',
+    'BlinkMacSystemFont',
+    '"Segoe UI"',
+    'Roboto',
+    '"Helvetica Neue"',
+    'Arial',
+    'sans-serif',
+    '"Apple Color Emoji"',
+    '"Segoe UI Emoji"',
+    '"Segoe UI Symbol"',
+  ],
+  preview: '系统默认字体 System Font Aa字',
+  category: 'system',
+  isGoogleFont: false,
+};
+
+// 中文等宽字体（通过 CDN 加载）
+const CHINESE_MONOSPACE_FONTS: FontOption[] = [
+  {
+    id: 'Sarasa Mono SC',
+    name: '更纱黑体 Mono',
+    description: '基于 Iosevka 和思源黑体的中文等宽字体',
+    fontFamily: ['"Sarasa Mono SC"', '"Sarasa Mono"', 'monospace'],
+    preview: '更纱黑体 Mono 中文等宽 Code',
     category: 'monospace-cn',
+    isGoogleFont: false,
   },
   {
-    id: 'sarasa-mono',
-    name: '更纱黑体等宽',
-    description: '思源黑体与等宽字体的完美融合，中英文等宽',
-    fontFamily: [
-      '"Sarasa Mono SC"',
-      '"Sarasa Mono TC"',
-      '"Sarasa Mono"',
-      '"Source Han Mono SC"',
-      '"Noto Sans Mono CJK SC"',
-      'monospace',
-    ],
-    preview: '更纱黑体 Sarasa => != 中文等宽',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'source-han-mono',
-    name: '思源等宽',
-    description: 'Adobe与Google合作的中文等宽字体',
-    fontFamily: [
-      '"Source Han Mono SC"',
-      '"Source Han Mono"',
-      '"Noto Sans Mono CJK SC"',
-      '"Sarasa Mono SC"',
-      'monospace',
-    ],
-    preview: '思源等宽 Source Han => != 中文',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'noto-sans-mono-cjk',
-    name: 'Noto Sans Mono CJK',
-    description: 'Google思源等宽字体，支持中日韩文字',
-    fontFamily: [
-      '"Noto Sans Mono CJK SC"',
-      '"Noto Sans Mono CJK TC"',
-      '"Noto Sans Mono"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: 'Noto 等宽 => != === 中文对齐',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'lxgw-wenkai-mono',
+    id: 'LXGW WenKai Mono',
     name: '霞鹜文楷等宽',
-    description: '开源中文楷体等宽字体，优雅美观',
-    fontFamily: [
-      '"LXGW WenKai Mono"',
-      '"LXGW WenKai"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: '霞鹜文楷 LXGW => != 优雅等宽',
+    description: '开源中文仿宋/楷体等宽字体',
+    fontFamily: ['"LXGW WenKai Mono"', '"LXGW WenKai"', 'monospace'],
+    preview: '霞鹜文楷 等宽 中文 Code',
     category: 'monospace-cn',
+    isGoogleFont: false,
   },
   {
-    id: 'jetbrains-mono-nerd',
-    name: 'JetBrains Mono + 中文',
-    description: 'JetBrains Mono 配合中文等宽字体',
-    fontFamily: [
-      '"JetBrains Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Microsoft YaHei Mono"',
-      'monospace',
-    ],
-    preview: 'JetBrains => != 中文等宽混排',
+    id: 'Maple Mono NF CN',
+    name: 'Maple Mono 中文',
+    description: '枫叶等宽字体，支持中文和 Nerd Fonts',
+    fontFamily: ['"Maple Mono NF CN"', '"Maple Mono"', 'monospace'],
+    preview: 'Maple Mono 枫叶等宽 Code',
     category: 'monospace-cn',
+    isGoogleFont: false,
   },
   {
-    id: 'consolas-yahei-mono',
-    name: 'Consolas + 雅黑等宽',
-    description: 'Windows经典组合，Consolas配合雅黑',
-    fontFamily: [
-      'Consolas',
-      '"Microsoft YaHei Mono"',
-      '"Microsoft YaHei"',
-      '"Sarasa Mono SC"',
-      'monospace',
-    ],
-    preview: 'Consolas => != 微软雅黑等宽',
+    id: 'Source Han Mono SC',
+    name: '思源等宽',
+    description: 'Adobe 与 Google 合作开发的等宽字体',
+    fontFamily: ['"Source Han Mono SC"', '"Source Han Mono"', 'monospace'],
+    preview: '思源等宽 中文 Code',
     category: 'monospace-cn',
-  },
-  {
-    id: 'sarasa-term',
-    name: '等距更纱黑体',
-    description: '更纱黑体的等距版本，终端专用',
-    fontFamily: [
-      '"Sarasa Term SC"',
-      '"Sarasa Term TC"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: '等距更纱 Sarasa Term => != 终端',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'iosevka-cn',
-    name: 'Iosevka + 中文',
-    description: 'Iosevka 配合中文等宽字体',
-    fontFamily: [
-      '"Iosevka"',
-      '"Iosevka Term"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: 'Iosevka => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'wenquanyi-mono',
-    name: '文泉驿等宽微米黑',
-    description: '开源中文等宽字体，Linux常用',
-    fontFamily: [
-      '"WenQuanYi Micro Hei Mono"',
-      '"WenQuanYi Zen Hei Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: '文泉驿等宽 => != 开源中文',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'fira-code-cn',
-    name: 'Fira Code + 中文',
-    description: 'Fira Code 配合中文等宽字体',
-    fontFamily: [
-      '"Fira Code"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Microsoft YaHei Mono"',
-      'monospace',
-    ],
-    preview: 'Fira Code => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'cascadia-code-cn',
-    name: 'Cascadia Code + 中文',
-    description: 'Cascadia Code 配合中文等宽字体',
-    fontFamily: [
-      '"Cascadia Code"',
-      '"Cascadia Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      'monospace',
-    ],
-    preview: 'Cascadia => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'hack-cn',
-    name: 'Hack + 中文',
-    description: 'Hack 配合中文等宽字体',
-    fontFamily: [
-      '"Hack"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Microsoft YaHei Mono"',
-      'monospace',
-    ],
-    preview: 'Hack => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'victor-mono-cn',
-    name: 'Victor Mono + 中文',
-    description: 'Victor Mono 配合中文等宽字体',
-    fontFamily: [
-      '"Victor Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Microsoft YaHei Mono"',
-      'monospace',
-    ],
-    preview: 'Victor => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'ibm-plex-mono-cn',
-    name: 'IBM Plex Mono + 中文',
-    description: 'IBM Plex Mono 配合中文等宽字体',
-    fontFamily: [
-      '"IBM Plex Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Microsoft YaHei Mono"',
-      'monospace',
-    ],
-    preview: 'IBM Plex => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'monaco-cn',
-    name: 'Monaco + 中文',
-    description: 'Monaco 配合中文等宽字体',
-    fontFamily: [
-      'Monaco',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"PingFang SC"',
-      'monospace',
-    ],
-    preview: 'Monaco => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'sf-mono-cn',
-    name: 'SF Mono + 中文',
-    description: 'SF Mono 配合中文等宽字体',
-    fontFamily: [
-      '"SF Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"PingFang SC"',
-      'monospace',
-    ],
-    preview: 'SF Mono => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'ubuntu-mono-cn',
-    name: 'Ubuntu Mono + 中文',
-    description: 'Ubuntu Mono 配合中文等宽字体',
-    fontFamily: [
-      '"Ubuntu Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Noto Sans Mono CJK SC"',
-      'monospace',
-    ],
-    preview: 'Ubuntu => != 中文等宽混排',
-    category: 'monospace-cn',
-  },
-  {
-    id: 'geist-mono-cn',
-    name: 'Geist Mono + 中文',
-    description: 'Geist Mono 配合中文等宽字体',
-    fontFamily: [
-      '"Geist Mono"',
-      '"Sarasa Mono SC"',
-      '"Source Han Mono SC"',
-      '"Microsoft YaHei Mono"',
-      'monospace',
-    ],
-    preview: 'Geist => != 中文等宽混排',
-    category: 'monospace-cn',
+    isGoogleFont: false,
   },
 ];
 
-// 按分类获取字体选项
-export const getFontsByCategory = (category: FontOption['category']) => {
-  return fontOptions.filter(font => font.category === category);
-};
-
-// 根据ID获取字体选项
-export const getFontById = (id: string): FontOption | undefined => {
-  return fontOptions.find(font => font.id === id);
-};
-
-// 获取字体的CSS字符串
-export const getFontFamilyString = (fontId: string): string => {
-  const font = getFontById(fontId);
-  return font ? font.fontFamily.join(', ') : fontOptions[0].fontFamily.join(', ');
-};
+// 静态字体选项（系统字体 + 中文等宽字体）
+export const staticFontOptions: FontOption[] = [SYSTEM_FONT, ...CHINESE_MONOSPACE_FONTS];
 
 // 字体分类标签
-export const fontCategoryLabels = {
-  system: '系统字体',
-  chinese: '中文字体',
-  english: '英文字体',
-  monospace: '等宽字体',
-  'monospace-cn': '中文等宽字体',
+export const fontCategoryLabels: Record<FontCategory, string> = {
+  'system': '系统字体',
+  'custom': '自定义字体',
+  'sans-serif': '无衬线体',
+  'serif': '衬线体',
+  'monospace': '等宽字体',
+  'monospace-cn': '中文等宽',
+  'display': '展示字体',
+  'handwriting': '手写体',
+};
+
+// 分类图标（可选）
+export const fontCategoryIcons: Record<FontCategory, string> = {
+  'system': '⚙️',
+  'custom': '📁',
+  'sans-serif': 'Aa',
+  'serif': 'Aa',
+  'monospace': '</>',
+  'monospace-cn': '中',
+  'display': '✨',
+  'handwriting': '✍️',
 };
 
 // 默认字体ID
 export const DEFAULT_FONT_ID = 'system';
+
+/**
+ * 将 Google Font 转换为 FontOption
+ * 注意：使用原始字体名称作为 ID，避免大小写转换问题
+ */
+export function googleFontToOption(gf: GoogleFont): FontOption {
+  return {
+    id: gf.family, // 使用原始名称作为 ID，保持大小写
+    name: gf.family,
+    fontFamily: [`"${gf.family}"`, 'sans-serif'],
+    preview: `${gf.family} Aa字 中文`,
+    category: gf.category as FontCategory,
+    isGoogleFont: true,
+    variants: gf.variants,
+  };
+}
+
+/**
+ * 将自定义字体转换为 FontOption
+ */
+function customFontToOption(cf: CustomFont): FontOption {
+  return {
+    id: cf.id,
+    name: cf.name,
+    description: '本地自定义字体',
+    fontFamily: [cf.fontFamily, 'sans-serif'],
+    preview: `${cf.name} 自定义字体 Aa`,
+    category: 'custom',
+    isGoogleFont: false,
+  };
+}
+
+/**
+ * 获取所有字体选项（静态 + 自定义 + Google Fonts）
+ */
+export async function getAllFontOptions(): Promise<FontOption[]> {
+  try {
+    // 获取自定义字体
+    const customFonts = getCustomFonts();
+    const customOptions = customFonts.map(customFontToOption);
+    
+    // 获取 Google Fonts
+    const googleFonts = await fetchGoogleFonts();
+    const googleOptions = googleFonts.map(googleFontToOption);
+    
+    return [...staticFontOptions, ...customOptions, ...googleOptions];
+  } catch (error) {
+    console.error('[Fonts] 获取字体列表失败:', error);
+    const customFonts = getCustomFonts();
+    const customOptions = customFonts.map(customFontToOption);
+    return [...staticFontOptions, ...customOptions];
+  }
+}
+
+/**
+ * 按分类获取字体选项
+ */
+export async function getFontsByCategory(category: FontCategory): Promise<FontOption[]> {
+  const allFonts = await getAllFontOptions();
+  return allFonts.filter(font => font.category === category);
+}
+
+/**
+ * 根据ID获取字体选项
+ */
+export async function getFontById(id: string): Promise<FontOption | undefined> {
+  if (id === 'system') return SYSTEM_FONT;
+  
+  const allFonts = await getAllFontOptions();
+  return allFonts.find(font => font.id === id);
+}
+
+/**
+ * 同步获取字体（仅静态字体，用于初始渲染）
+ */
+export function getFontByIdSync(id: string): FontOption | undefined {
+  if (id === 'system') return SYSTEM_FONT;
+  return staticFontOptions.find(font => font.id === id);
+}
+
+/**
+ * 获取字体的CSS字符串
+ */
+export function getFontFamilyString(fontId: string): string {
+  // 检查静态字体
+  const font = getFontByIdSync(fontId);
+  if (font) {
+    return font.fontFamily.join(', ');
+  }
+  
+  // 检查自定义字体
+  if (isCustomFont(fontId)) {
+    const customFamily = getCustomFontFamily(fontId);
+    if (customFamily) {
+      return `${customFamily}, sans-serif`;
+    }
+  }
+  
+  // 其他情况，fontId 就是 Google Font 的原始名称
+  return `"${fontId}", sans-serif`;
+}
+
+/**
+ * 加载字体（自动判断是否需要从 Google Fonts 加载）
+ */
+export async function loadFont(fontId: string): Promise<boolean> {
+  if (fontId === 'system') return true;
+  
+  // 自定义字体已经在添加时加载，无需再次加载
+  if (isCustomFont(fontId)) {
+    return true;
+  }
+  
+  // Google Font，通过 CDN 加载
+  return loadGoogleFont(fontId);
+}
+
+/**
+ * 搜索字体
+ */
+export async function searchFonts(query: string): Promise<FontOption[]> {
+  const allFonts = await getAllFontOptions();
+  const q = query.toLowerCase().trim();
+  if (!q) return allFonts;
+  return allFonts.filter(f => 
+    f.name.toLowerCase().includes(q) || 
+    f.id.toLowerCase().includes(q)
+  );
+}
+
+/**
+ * 获取热门字体
+ */
+export async function getPopularFonts(limit = 30): Promise<FontOption[]> {
+  const allFonts = await getAllFontOptions();
+  // 系统字体 + 前 N 个 Google Fonts（已按人气排序）
+  return allFonts.slice(0, limit + 1);
+}
+
+// 兼容旧版：导出静态 fontOptions
+export const fontOptions = staticFontOptions;

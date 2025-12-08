@@ -34,7 +34,18 @@ import { ArrowLeft, ChevronRight, ChevronRight as ChevronRightIcon, MessageSquar
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor, setShowDevToolsFloatingButton, updateSettings } from '../../shared/store/settingsSlice';
-import { fontOptions, fontCategoryLabels, getFontById } from '../../shared/config/fonts';
+import { 
+  fontCategoryLabels, 
+  getFontByIdSync, 
+  getAllFontOptions, 
+  loadFont,
+  type FontOption
+} from '../../shared/config/fonts';
+import { 
+  addCustomFontFromFile, 
+  removeCustomFont,
+  getCustomFonts 
+} from '../../shared/services/GoogleFontsService';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useLanguageSettings } from '../../i18n/useLanguageSettings';
 import { supportedLanguages } from '../../i18n';
@@ -63,9 +74,75 @@ const AppearanceSettings: React.FC = () => {
   
   // 字体全屏选择器状态
   const [fontSelectorOpen, setFontSelectorOpen] = useState(false);
+  const [fontOptions, setFontOptions] = useState<FontOption[]>([]);
+  const [fontsLoading, setFontsLoading] = useState(false);
+  
+  // 自定义字体文件输入
+  const fontFileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // 刷新字体列表
+  const refreshFontOptions = async () => {
+    setFontsLoading(true);
+    try {
+      const fonts = await getAllFontOptions();
+      setFontOptions(fonts);
+    } catch (err) {
+      console.error('加载字体列表失败:', err);
+    } finally {
+      setFontsLoading(false);
+    }
+  };
+  
+  // 异步加载 Google Fonts 列表
+  useEffect(() => {
+    if (fontSelectorOpen && fontOptions.length === 0 && !fontsLoading) {
+      refreshFontOptions();
+    }
+  }, [fontSelectorOpen, fontOptions.length, fontsLoading]);
+  
+  // 处理自定义字体文件选择
+  const handleFontFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const customFont = await addCustomFontFromFile(file);
+      if (customFont) {
+        // 刷新字体列表
+        await refreshFontOptions();
+        // 自动选择新添加的字体
+        dispatch(setFontFamily(customFont.id));
+      }
+    } catch (error: any) {
+      alert(error.message || '添加字体失败');
+    }
+    
+    // 清空 input 以便再次选择同一文件
+    event.target.value = '';
+  };
+  
+  // 删除自定义字体
+  const handleRemoveCustomFont = async (fontId: string) => {
+    const success = await removeCustomFont(fontId);
+    if (success) {
+      // 如果删除的是当前字体，切换回系统默认
+      if (settings.fontFamily === fontId) {
+        dispatch(setFontFamily('system'));
+      }
+      // 刷新字体列表
+      await refreshFontOptions();
+    }
+  };
   
   // 将字体选项转换为 SelectorGroup 格式
   const fontGroups: SelectorGroup[] = useMemo(() => {
+    if (fontOptions.length === 0) {
+      return [{ name: '加载中...', items: [] }];
+    }
+    
+    // 获取自定义字体 ID 列表
+    const customFontIds = new Set(getCustomFonts().map(f => f.id));
+    
     return Object.entries(fontCategoryLabels).map(([category, label]) => ({
       name: label,
       items: fontOptions
@@ -74,9 +151,14 @@ const AppearanceSettings: React.FC = () => {
           key: font.id,
           label: font.name,
           subLabel: font.preview,
+          // 自定义字体添加删除操作
+          action: customFontIds.has(font.id) ? {
+            label: '删除',
+            onClick: () => handleRemoveCustomFont(font.id),
+          } : undefined,
         })),
     })).filter(group => group.items.length > 0);
-  }, []);
+  }, [fontOptions, settings.fontFamily]);
 
   // 使用滚动位置保存功能
   const {
@@ -139,7 +221,10 @@ const AppearanceSettings: React.FC = () => {
   };
 
   // 全屏选择器字体选择处理
-  const handleFontSelect = (key: string) => {
+  const handleFontSelect = async (key: string) => {
+    // 先加载字体
+    await loadFont(key);
+    // 再设置字体
     dispatch(setFontFamily(key));
   };
 
@@ -161,8 +246,20 @@ const AppearanceSettings: React.FC = () => {
 
   // 获取当前字体的描述
   const getCurrentFontLabel = (fontId: string) => {
-    const font = getFontById(fontId);
-    return font ? font.name : t('settings.appearance.fontFamily.systemDefault');
+    // 优先从已加载的字体列表中查找
+    const loadedFont = fontOptions.find(f => f.id === fontId);
+    if (loadedFont) return loadedFont.name;
+    
+    // 同步获取静态字体
+    const staticFont = getFontByIdSync(fontId);
+    if (staticFont) return staticFont.name;
+    
+    // 如果是 Google Font，将 ID 转换为显示名称
+    if (fontId && fontId !== 'system') {
+      return fontId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    
+    return t('settings.appearance.fontFamily.systemDefault') as string;
   };
 
   const handleNavigateToChatInterface = () => {
@@ -476,6 +573,25 @@ const AppearanceSettings: React.FC = () => {
                 ),
                 sx: { cursor: 'pointer' }
               }}
+            />
+            
+            {/* 添加自定义字体按钮 */}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => fontFileInputRef.current?.click()}
+              sx={{ mt: 1 }}
+            >
+              添加本地字体
+            </Button>
+            
+            {/* 隐藏的文件输入 */}
+            <input
+              ref={fontFileInputRef}
+              type="file"
+              accept=".ttf,.otf,.woff,.woff2"
+              style={{ display: 'none' }}
+              onChange={handleFontFileSelect}
             />
           </Box>
           </Box>
