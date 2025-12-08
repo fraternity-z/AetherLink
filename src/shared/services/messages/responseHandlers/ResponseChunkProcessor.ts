@@ -1,4 +1,5 @@
 import { throttle } from 'lodash';
+import { LRUCache } from 'lru-cache';
 import { MessageBlockStatus, MessageBlockType } from '../../../types/newMessage';
 import type { MessageBlock } from '../../../types/newMessage';
 import type { Chunk, TextDeltaChunk, TextCompleteChunk, ThinkingDeltaChunk, ThinkingCompleteChunk } from '../../../types/chunk';
@@ -32,7 +33,7 @@ abstract class ContentAccumulator {
   }
 }
 
-// 2. 文本累积器
+// 2. 文本累积器（简化版 - 供应商已发送累积内容）
 class TextAccumulator extends ContentAccumulator {
   accumulate(newText: string): void {
     // 防御性检查：确保输入是字符串
@@ -40,21 +41,12 @@ class TextAccumulator extends ContentAccumulator {
       console.warn('[TextAccumulator] 输入不是字符串，跳过:', typeof newText);
       return;
     }
-    // 🔧 修复：处理流式增量和非流式全量两种情况
-    if (newText.length > this.content.length && newText.startsWith(this.content)) {
-      // 全量替换（流式累积或非流式全量）
-      this.content = newText;
-    } else if (newText === this.content) {
-      // 相同内容，不处理（避免重复累积）
-      return;
-    } else {
-      // 增量追加（流式增量）
-      this.content += newText;
-    }
+    // 供应商已发送累积内容，直接替换即可
+    this.content = newText;
   }
 }
 
-// 3. 思考内容累积器
+// 3. 思考内容累积器（简化版 - 供应商已发送累积内容）
 class ThinkingAccumulator extends ContentAccumulator {
   accumulate(newText: string): void {
     // 防御性检查：确保输入是字符串
@@ -62,102 +54,235 @@ class ThinkingAccumulator extends ContentAccumulator {
       console.warn('[ThinkingAccumulator] 输入不是字符串，跳过:', typeof newText);
       return;
     }
-    if (newText.length > this.content.length && newText.startsWith(this.content)) {
-      this.content = newText;
-    } else if (newText !== this.content && !this.content.endsWith(newText)) {
-      this.content += newText;
-    }
+    // 供应商已发送累积内容，直接替换即可
+    this.content = newText;
   }
 }
 
 // 4. 改进的块更新器 - 智能更新策略
+
+/**
+ * 活跃块信息（参考 Cherry Studio）
+ * 用于追踪当前正在流式输出的块
+ */
+interface ActiveBlockInfo {
+  id: string;
+  type: MessageBlockType;
+}
+
 interface BlockUpdater {
   updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete?: boolean): Promise<void>;
   createBlock(block: MessageBlock): Promise<void>;
 }
 
 /**
- * 智能节流块更新器
+ * 智能节流块更新器 (参考 Cherry Studio 设计)
  * 
- * - 块类型变化时：立即更新（取消节流）
+ * 核心设计：
+ * 1. 每个块有独立的节流器（LRUCache 管理，防止内存泄漏）
+ * 2. 使用 requestAnimationFrame 优化 UI 更新（与浏览器渲染周期同步）
+ * 3. UI 更新和数据库更新分离
+ * 4. 支持单个块的取消操作
+ * 
+ * 更新策略：
+ * - 块类型变化时：取消前一个块的节流，立即更新
  * - 同类型连续更新：节流更新
- * - 块完成时：立即更新并刷新
+ * - 块完成时：取消节流，立即更新
  */
 class SmartThrottledBlockUpdater implements BlockUpdater {
-  private throttledStorageUpdate: ReturnType<typeof throttle>;
-  private throttledStateUpdate: ReturnType<typeof throttle>;
-  private lastBlockType: MessageBlockType | null = null;
-  private lastBlockId: string | null = null;
+  // 每个块独立的节流器（参考 Cherry Studio）
+  private blockThrottlers = new LRUCache<string, ReturnType<typeof throttle>>({
+    max: 100,           // 最多管理 100 个块的节流器
+    ttl: 1000 * 60 * 5, // 5分钟后自动清理不活跃的节流器
+  });
+
+  // RAF (requestAnimationFrame) 缓存，用于管理 UI 更新调度
+  private blockRafs = new LRUCache<string, number>({max: 100,
+    ttl: 1000 * 60 * 5,
+  });
+
+  // ⭐ 活跃块追踪（参考 Cherry Studio）
+  // 区别于 lastBlockId/Type：完成后清空，表示“当前正在处理的块”
+  private _activeBlockInfo: ActiveBlockInfo | null = null;
+  
+  // 保留 lastBlockType 用于块类型变化检测
+  private _lastBlockType: MessageBlockType | null = null;
+  private throttleInterval: number;
 
   constructor(
     private stateService: StateService,
     private storageService: StorageService,
     throttleInterval: number
   ) {
-    this.throttledStorageUpdate = throttle(
-      (blockId: string, changes: any) => storageService.updateBlock(blockId, changes),
-      throttleInterval
-    );
+    this.throttleInterval = throttleInterval;
+  }
 
-    this.throttledStateUpdate = throttle(
-      (blockId: string, changes: any) => {
-        stateService.updateBlock(blockId, changes);
-      },
-      throttleInterval
-    );
+  // ========== Getters ==========
+  
+  /**
+   * 获取当前活跃块信息
+   * 用于错误处理、完成处理时找到正确的块
+   */
+  get activeBlockInfo(): ActiveBlockInfo | null {
+    return this._activeBlockInfo;
+  }
+
+  /**
+   * 获取上一个块类型（用于块类型变化检测）
+   */
+  get lastBlockType(): MessageBlockType | null {
+    return this._lastBlockType;
+  }
+
+  /**
+   * 是否有活跃块
+   */
+  get hasActiveBlock(): boolean {
+    return this._activeBlockInfo !== null;
+  }
+
+  /**
+   * 获取活跃块 ID
+   */
+  get activeBlockId(): string | null {
+    return this._activeBlockInfo?.id || null;
+  }
+
+  /**
+   * 获取活跃块类型
+   */
+  get activeBlockType(): MessageBlockType | null {
+    return this._activeBlockInfo?.type || null;
+  }
+
+  // ========== Setters ==========
+  
+  /**
+   * 设置活跃块信息（供外部手动设置）
+   */
+  set activeBlockInfo(value: ActiveBlockInfo | null) {
+    this._activeBlockInfo = value;
+  }
+
+  /**
+   * 获取或创建块专用的节流函数
+   */
+  private getBlockThrottler(blockId: string): ReturnType<typeof throttle> {
+    if (!this.blockThrottlers.has(blockId)) {
+      const throttler = throttle(
+        async (changes: any) => {
+          // 取消之前的 RAF
+          const existingRAF = this.blockRafs.get(blockId);
+          if (existingRAF) {
+            cancelAnimationFrame(existingRAF);
+          }
+
+          // ⭐ 使用 requestAnimationFrame 调度 UI 更新
+          // 确保与浏览器渲染周期同步，减少不必要的重绘
+          const rafId = requestAnimationFrame(() => {
+            this.stateService.updateBlock(blockId, changes);
+            this.blockRafs.delete(blockId);
+          });
+
+          this.blockRafs.set(blockId, rafId);
+
+          // 数据库更新（不受 RAF 影响，独立执行）
+          await this.storageService.updateBlock(blockId, changes);
+        },
+        this.throttleInterval
+      );
+
+      this.blockThrottlers.set(blockId, throttler);
+    }
+
+    return this.blockThrottlers.get(blockId)!;
+  }
+
+  /**
+   * 取消单个块的节流更新
+   */
+  private cancelBlockThrottler(blockId: string): void {
+    // 取消 RAF
+    const rafId = this.blockRafs.get(blockId);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      this.blockRafs.delete(blockId);
+    }
+
+    // 取消节流器
+    const throttler = this.blockThrottlers.get(blockId);
+    if (throttler) {
+      throttler.cancel();
+      this.blockThrottlers.delete(blockId);
+    }
+  }
+
+  /**
+   * 刷新单个块的节流更新
+   */
+  private flushBlockThrottler(blockId: string): void {
+    const throttler = this.blockThrottlers.get(blockId);
+    if (throttler) {
+      throttler.flush();
+    }
   }
 
   /**
    * 智能更新策略：根据块类型连续性自动判断使用节流还是立即更新
-   * 参考 Cherry Studio 的 BlockManager.smartBlockUpdate
    */
   async updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete: boolean = false): Promise<void> {
-    const isBlockTypeChanged = this.lastBlockType !== null && this.lastBlockType !== blockType;
-    const isBlockIdChanged = this.lastBlockId !== null && this.lastBlockId !== blockId;
+    const isBlockTypeChanged = this._lastBlockType !== null && this._lastBlockType !== blockType;
+    const isBlockIdChanged = this._activeBlockInfo !== null && this._activeBlockInfo.id !== blockId;
     const needsImmediateUpdate = isBlockTypeChanged || isBlockIdChanged || isComplete;
 
     if (needsImmediateUpdate) {
-      // ⭐ 块类型变化时：取消前一个块的节流更新，确保内容完整
-      if (isBlockTypeChanged && this.lastBlockId) {
-        this.throttledStateUpdate.cancel();
-        this.throttledStorageUpdate.cancel();
+      // ⭐ 块类型/ID变化时：取消前一个块的节流更新
+      if ((isBlockTypeChanged || isBlockIdChanged) && this._activeBlockInfo) {
+        this.cancelBlockThrottler(this._activeBlockInfo.id);
       }
       
-      // 先刷新所有待处理的节流更新
-      this.throttledStateUpdate.flush();
-      this.throttledStorageUpdate.flush();
+      // 块完成时：取消当前块的节流，清空活跃块
+      if (isComplete) {
+        this.cancelBlockThrottler(blockId);
+        this._activeBlockInfo = null;  // ⭐ 完成时清空活跃块
+      } else {
+        this._activeBlockInfo = { id: blockId, type: blockType };  // 更新活跃块
+      }
 
-      // 立即更新
+      // 立即更新（不经过节流和 RAF）
       this.stateService.updateBlock(blockId, changes);
       await this.storageService.updateBlock(blockId, changes);
     } else {
-      // 同类型连续更新：使用节流
-      this.throttledStateUpdate(blockId, changes);
-      this.throttledStorageUpdate(blockId, changes);
+      // 同类型连续更新：使用节流 + RAF
+      this._activeBlockInfo = { id: blockId, type: blockType };  // 更新活跃块
+      const throttler = this.getBlockThrottler(blockId);
+      throttler(changes);
     }
 
-    // 更新追踪状态
-    this.lastBlockType = blockType;
-    this.lastBlockId = blockId;
+    // 更新 lastBlockType（用于下次块类型变化检测）
+    this._lastBlockType = blockType;
   }
 
   async createBlock(block: MessageBlock): Promise<void> {
     // 关键：先同步更新 Redux store（addBlock 和 addBlockReference），再异步保存到数据库
-    // 这样 calculateFinalBlockIds 可以立即看到新块
     this.stateService.addBlock(block);
     this.stateService.addBlockReference(block.messageId, block.id, block.status);
     // 异步保存到数据库（不阻塞 UI 更新）
     await this.storageService.saveBlock(block);
-    this.lastBlockType = block.type;
-    this.lastBlockId = block.id;
+    
+    // ⭐ 设置新创建的块为活跃块
+    this._activeBlockInfo = { id: block.id, type: block.type };
+    this._lastBlockType = block.type;
   }
 
   /**
    * 刷新所有待处理的节流更新
    */
   flush(): void {
-    this.throttledStateUpdate.flush();
-    this.throttledStorageUpdate.flush();
+    // 遍历所有节流器并刷新
+    for (const [blockId] of this.blockThrottlers.entries()) {
+      this.flushBlockThrottler(blockId);
+    }
   }
 
   /**
@@ -165,9 +290,9 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
    * 用于响应结束时，确保最后的内容被正确写入
    */
   async forceUpdate(blockId: string, changes: any): Promise<void> {
-    // 先刷新所有待处理的节流更新
-    this.flush();
-    // 然后立即执行最终更新
+    // 取消该块的节流更新
+    this.cancelBlockThrottler(blockId);
+    // 立即执行最终更新
     this.stateService.updateBlock(blockId, changes);
     await this.storageService.updateBlock(blockId, changes);
   }
@@ -176,8 +301,34 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
    * 取消所有待处理的节流更新
    */
   cancel(): void {
-    this.throttledStateUpdate.cancel();
-    this.throttledStorageUpdate.cancel();
+    // 取消所有 RAF
+    for (const [blockId, rafId] of this.blockRafs.entries()) {
+      cancelAnimationFrame(rafId);
+      this.blockRafs.delete(blockId);
+    }
+    // 取消所有节流器
+    for (const [blockId, throttler] of this.blockThrottlers.entries()) {
+      throttler.cancel();
+      this.blockThrottlers.delete(blockId);
+    }
+  }
+
+  /**
+   * 清理资源（响应完成后调用）
+   */
+  cleanup(): void {
+    this.cancel();
+    this.blockThrottlers.clear();
+    this.blockRafs.clear();
+    this._activeBlockInfo = null;
+    this._lastBlockType = null;
+  }
+
+  /**
+   * 清空活跃块（手动调用）
+   */
+  clearActiveBlock(): void {
+    this._activeBlockInfo = null;
   }
 }
 
@@ -316,45 +467,22 @@ export class ResponseChunkProcessor {
 
 
   private async handleTextDelta(chunk: TextDeltaChunk): Promise<void> {
-    // 🔧 检查是否需要清空累积器（新一轮开始）
-    const willCreateNewBlock = this.blockStateManager.getTextBlockId() === null;
-    if (willCreateNewBlock && this.textAccumulator.getContent()) {
-      this.textAccumulator.clear();
-    }
-    
+    // 供应商已发送累积内容，直接累积即可
     this.textAccumulator.accumulate(chunk.text);
     await this.processTextContent();
   }
 
   private async handleTextComplete(chunk: TextCompleteChunk): Promise<void> {
-    // 非流式多轮：如果开始新一轮，先清空累积器
-    const willCreateNewBlock = this.blockStateManager.getTextBlockId() === null;
-    if (willCreateNewBlock && this.textAccumulator.getContent()) {
-      this.textAccumulator.clear();
-    }
-    
     this.textAccumulator.accumulate(chunk.text);
     await this.processTextContent(true);
   }
 
   private async handleThinkingDelta(chunk: ThinkingDeltaChunk): Promise<void> {
-    // 非流式多轮：如果开始新一轮，先清空累积器
-    const willCreateNewBlock = this.blockStateManager.getThinkingBlockId() === null;
-    if (willCreateNewBlock && this.thinkingAccumulator.getContent()) {
-      this.thinkingAccumulator.clear();
-    }
-    
     this.thinkingAccumulator.accumulate(chunk.text);
     await this.processThinkingContent(chunk.thinking_millsec);
   }
 
   private async handleThinkingComplete(chunk: ThinkingCompleteChunk): Promise<void> {
-    // 非流式多轮：如果开始新一轮，先清空累积器
-    const willCreateNewBlock = this.blockStateManager.getThinkingBlockId() === null;
-    if (willCreateNewBlock && this.thinkingAccumulator.getContent()) {
-      this.thinkingAccumulator.clear();
-    }
-    
     this.thinkingAccumulator.accumulate(chunk.text);
     await this.processThinkingContent(chunk.thinking_millsec, true);
   }
