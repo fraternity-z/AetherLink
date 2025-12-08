@@ -29,7 +29,7 @@ import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
-import FullScreenSelector, { type SelectorGroup } from '../../../components/TTS/FullScreenSelector';
+import FullScreenSelector, { type SelectorGroup } from '../../../components/TTS/FullScreenSelectorSolid';
 
 // 音色分组 (完整版 - 基于官方文档)
 const VOICE_GROUPS = {

@@ -1,0 +1,381 @@
+/**
+ * FullScreenSelector - SolidJS 版本样式
+ * 全屏音色/情感选择器
+ * 使用 CSS Variables 主题系统
+ */
+
+/* ==================== 主题变量（后备值） ==================== */
+:root {
+  --theme-bg-paper: #ffffff;
+  --theme-bg-default: #fafafa;
+  --theme-text-primary: rgba(0, 0, 0, 0.87);
+  --theme-text-secondary: rgba(0, 0, 0, 0.6);
+  --theme-border-default: rgba(0, 0, 0, 0.12);
+  --theme-hover-bg: rgba(0, 0, 0, 0.04);
+  --theme-primary: #1976d2;
+}
+
+/* ==================== 动画 ==================== */
+@keyframes selectorFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes selectorSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ==================== 遮罩层 ==================== */
+.solid-selector-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1300;
+  background: rgba(0, 0, 0, 0.5);
+  animation: selectorFadeIn 0.2s ease-out;
+}
+
+.solid-selector-backdrop.dark {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* ==================== 全屏面板 ==================== */
+.solid-selector-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--theme-bg-default, #fafafa);
+  display: flex;
+  flex-direction: column;
+  animation: selectorSlideIn 0.3s ease-out;
+}
+
+.solid-selector-panel.dark {
+  background: var(--theme-bg-default, #121212);
+}
+
+/* ==================== 顶部导航栏 ==================== */
+.solid-selector-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  background: var(--theme-bg-paper, #ffffff);
+  border-bottom: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  flex-shrink: 0;
+}
+
+.solid-selector-panel.dark .solid-selector-header {
+  background: var(--theme-bg-paper, #1e1e1e);
+  border-bottom-color: var(--theme-border-default, rgba(255, 255, 255, 0.12));
+}
+
+.solid-selector-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--theme-primary, #1976d2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.solid-selector-back-btn:hover {
+  background: var(--theme-hover-bg, rgba(0, 0, 0, 0.04));
+  transform: translateY(-1px);
+}
+
+.solid-selector-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--theme-text-primary, rgba(0, 0, 0, 0.87));
+}
+
+.solid-selector-panel.dark .solid-selector-title {
+  color: var(--theme-text-primary, #fff);
+}
+
+/* ==================== Tab 标签页 ==================== */
+.solid-selector-tabs-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--theme-bg-paper, #ffffff);
+  border-bottom: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  flex-shrink: 0;
+  position: relative;
+}
+
+.solid-selector-panel.dark .solid-selector-tabs-wrapper {
+  background: var(--theme-bg-paper, #1e1e1e);
+  border-bottom-color: var(--theme-border-default, rgba(255, 255, 255, 0.12));
+}
+
+.solid-selector-tabs-container {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+}
+
+.solid-selector-tabs-container::-webkit-scrollbar {
+  display: none;
+}
+
+.solid-selector-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.solid-selector-tab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.solid-selector-tab:hover {
+  background: var(--theme-hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+.solid-selector-tab.active {
+  background: var(--theme-primary, #1976d2);
+  color: #fff;
+}
+
+.solid-selector-panel.dark .solid-selector-tab {
+  color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.solid-selector-panel.dark .solid-selector-tab:hover {
+  background: var(--theme-hover-bg, rgba(255, 255, 255, 0.08));
+}
+
+.solid-selector-panel.dark .solid-selector-tab.active {
+  background: var(--theme-primary, #1976d2);
+  color: #fff;
+}
+
+/* ==================== SolidJS 标识 ==================== */
+.solid-selector-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(25, 118, 210, 0.1);
+  color: var(--theme-primary, #1976d2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.solid-selector-panel.dark .solid-selector-badge {
+  background: rgba(144, 202, 249, 0.15);
+  color: #90caf9;
+}
+
+/* ==================== 搜索栏 ==================== */
+.solid-selector-search {
+  padding: 12px 16px;
+  background: var(--theme-bg-paper, #ffffff);
+  border-bottom: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  flex-shrink: 0;
+}
+
+.solid-selector-panel.dark .solid-selector-search {
+  background: var(--theme-bg-paper, #1e1e1e);
+  border-bottom-color: var(--theme-border-default, rgba(255, 255, 255, 0.12));
+}
+
+.solid-selector-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.solid-selector-search-icon {
+  position: absolute;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.solid-selector-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  background: var(--theme-bg-default, #fafafa);
+  color: var(--theme-text-primary, rgba(0, 0, 0, 0.87));
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.solid-selector-panel.dark .solid-selector-search-input {
+  background: var(--theme-bg-default, #121212);
+  border-color: var(--theme-border-default, rgba(255, 255, 255, 0.12));
+  color: var(--theme-text-primary, #fff);
+}
+
+.solid-selector-search-input:focus {
+  outline: none;
+  border-color: var(--theme-primary, #1976d2);
+}
+
+.solid-selector-search-input::placeholder {
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+}
+
+/* ==================== 内容区域 ==================== */
+.solid-selector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ==================== 空选项 ==================== */
+.solid-selector-empty-option {
+  margin: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.solid-selector-empty-option:hover {
+  background: var(--theme-hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+.solid-selector-empty-option.selected {
+  border-color: var(--theme-primary, #1976d2);
+  background: rgba(25, 118, 210, 0.08);
+}
+
+.solid-selector-empty-label {
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+  font-size: 14px;
+}
+
+.solid-selector-panel.dark .solid-selector-empty-label {
+  color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.solid-selector-check {
+  color: var(--theme-primary, #1976d2);
+}
+
+/* ==================== 分组 ==================== */
+.solid-selector-group {
+  margin-bottom: 8px;
+}
+
+.solid-selector-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 12px 16px;
+  background: var(--theme-bg-paper, #ffffff);
+  border-bottom: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+}
+
+.solid-selector-panel.dark .solid-selector-group-title {
+  background: var(--theme-bg-paper, #1e1e1e);
+  border-bottom-color: var(--theme-border-default, rgba(255, 255, 255, 0.12));
+  color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+/* ==================== 选项网格 ==================== */
+.solid-selector-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+/* ==================== 选项标签 ==================== */
+.solid-selector-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  background: var(--theme-bg-paper, #ffffff);
+  color: var(--theme-text-primary, rgba(0, 0, 0, 0.87));
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.solid-selector-panel.dark .solid-selector-chip {
+  background: var(--theme-bg-paper, #1e1e1e);
+  border-color: var(--theme-border-default, rgba(255, 255, 255, 0.12));
+  color: var(--theme-text-primary, #fff);
+}
+
+.solid-selector-chip:hover {
+  background: var(--theme-hover-bg, rgba(0, 0, 0, 0.04));
+  transform: translateY(-1px);
+}
+
+.solid-selector-panel.dark .solid-selector-chip:hover {
+  background: var(--theme-hover-bg, rgba(255, 255, 255, 0.08));
+}
+
+.solid-selector-chip.selected {
+  background: var(--theme-primary, #1976d2);
+  border-color: var(--theme-primary, #1976d2);
+  color: #fff;
+}
+
+.solid-selector-chip.selected:hover {
+  background: #1565c0;
+}
+
+.solid-selector-chip-check {
+  display: flex;
+  align-items: center;
+}
+
+/* ==================== 无结果 ==================== */
+.solid-selector-no-results {
+  text-align: center;
+  padding: 64px 16px;
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+  font-size: 14px;
+}
+
+.solid-selector-panel.dark .solid-selector-no-results {
+  color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+}

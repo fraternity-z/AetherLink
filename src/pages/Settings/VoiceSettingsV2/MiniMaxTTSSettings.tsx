@@ -32,7 +32,7 @@ import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
-import FullScreenSelector, { type SelectorGroup } from '../../../components/TTS/FullScreenSelector';
+import FullScreenSelector, { type SelectorGroup } from '../../../components/TTS/FullScreenSelectorSolid';
 
 interface MiniMaxSettings {
   apiKey: string;

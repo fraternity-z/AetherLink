@@ -15,7 +15,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { ChevronRight } from 'lucide-react';
-import FullScreenSelector, { type SelectorGroup } from './FullScreenSelector';
+import FullScreenSelector, { type SelectorGroup } from './FullScreenSelectorSolid';
 import CustomSwitch from '../CustomSwitch';
 import { Eye as VisibilityIcon, EyeOff as VisibilityOffIcon } from 'lucide-react';
 import { useTranslation } from '../../i18n';
