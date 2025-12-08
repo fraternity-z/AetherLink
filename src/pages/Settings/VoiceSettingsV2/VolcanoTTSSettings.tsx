@@ -492,54 +492,58 @@ const VolcanoTTSSettings: React.FC = () => {
               <MenuItem value="pcm">PCM</MenuItem>
             </TextField>
 
-            <Divider sx={{ mb: 3 }} />
+            {/* 语音参数 - 简约风格 */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* 语速 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ minWidth: 40 }}>语速</Typography>
+                <Slider
+                  value={settings.speed}
+                  onChange={(_, value) => setSettings(prev => ({ ...prev, speed: value as number }))}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  size="small"
+                  sx={{ flex: 1 }}
+                />
+                <Typography variant="body2" sx={{ minWidth: 32, fontWeight: 600, color: 'primary.main' }}>
+                  {settings.speed.toFixed(1)}
+                </Typography>
+              </Box>
 
-            {/* 语速 */}
-            <Box sx={{ mb: 3 }}>
-              <Typography gutterBottom>{t('settings.voice.tabSettings.volcano.speed')}: {settings.speed.toFixed(1)}</Typography>
-              <Slider
-                value={settings.speed}
-                onChange={(_, value) => setSettings(prev => ({ ...prev, speed: value as number }))}
-                min={0.5}
-                max={2.0}
-                step={0.1}
-                valueLabelDisplay="auto"
-              />
-              <Typography variant="caption" color="text.secondary">
-                {t('settings.voice.tabSettings.volcano.speedHelper')}
-              </Typography>
-            </Box>
+              {/* 音量 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ minWidth: 40 }}>音量</Typography>
+                <Slider
+                  value={settings.volume}
+                  onChange={(_, value) => setSettings(prev => ({ ...prev, volume: value as number }))}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  size="small"
+                  sx={{ flex: 1 }}
+                />
+                <Typography variant="body2" sx={{ minWidth: 32, fontWeight: 600, color: 'primary.main' }}>
+                  {settings.volume.toFixed(1)}
+                </Typography>
+              </Box>
 
-            {/* 音量 */}
-            <Box sx={{ mb: 3 }}>
-              <Typography gutterBottom>{t('settings.voice.tabSettings.volcano.volume')}: {settings.volume.toFixed(1)}</Typography>
-              <Slider
-                value={settings.volume}
-                onChange={(_, value) => setSettings(prev => ({ ...prev, volume: value as number }))}
-                min={0.5}
-                max={2.0}
-                step={0.1}
-                valueLabelDisplay="auto"
-              />
-              <Typography variant="caption" color="text.secondary">
-                {t('settings.voice.tabSettings.volcano.volumeHelper')}
-              </Typography>
-            </Box>
-
-            {/* 音调 */}
-            <Box sx={{ mb: 2 }}>
-              <Typography gutterBottom>{t('settings.voice.tabSettings.volcano.pitch')}: {settings.pitch.toFixed(1)}</Typography>
-              <Slider
-                value={settings.pitch}
-                onChange={(_, value) => setSettings(prev => ({ ...prev, pitch: value as number }))}
-                min={0.5}
-                max={2.0}
-                step={0.1}
-                valueLabelDisplay="auto"
-              />
-              <Typography variant="caption" color="text.secondary">
-                {t('settings.voice.tabSettings.volcano.pitchHelper')}
-              </Typography>
+              {/* 音调 */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ minWidth: 40 }}>音调</Typography>
+                <Slider
+                  value={settings.pitch}
+                  onChange={(_, value) => setSettings(prev => ({ ...prev, pitch: value as number }))}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  size="small"
+                  sx={{ flex: 1 }}
+                />
+                <Typography variant="body2" sx={{ minWidth: 32, fontWeight: 600, color: 'primary.main' }}>
+                  {settings.pitch.toFixed(1)}
+                </Typography>
+              </Box>
             </Box>
           </Paper>
 
