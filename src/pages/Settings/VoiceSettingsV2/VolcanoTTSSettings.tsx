@@ -51,6 +51,14 @@ const VOICE_GROUPS = {
   '日语': ['元气少女', '萌系少女', '气质女声', '日语男声'],
   '葡萄牙语': ['活力男声-Carlos', '活力女声-葡语'],
   '西班牙语': ['气质御姐-西语'],
+  // 豆包大模型音色 (完整版)
+  '豆包-通用': ['[豆包]Vivi', '[豆包]灿灿', '[豆包]爽快思思', '[豆包]温暖阿虎', '[豆包]少年梓辛', '[豆包]邻家女孩', '[豆包]渊博小叔', '[豆包]阳光青年', '[豆包]甜美小源', '[豆包]清澈梓梓', '[豆包]邻家男孩', '[豆包]甜美悦悦', '[豆包]心灵鸡汤', '[豆包]解说小明', '[豆包]开朗姐姐', '[豆包]亲切女声', '[豆包]温柔小雅', '[豆包]快乐小东', '[豆包]文静毛毛', '[豆包]悠悠君子', '[豆包]魅力苏菲', '[豆包]阳光阿辰', '[豆包]甜美桃子', '[豆包]清新女声', '[豆包]知性女声', '[豆包]清爽男大', '[豆包]温柔小哥'],
+  '豆包-角色扮演': ['[豆包]傲娇霸总', '[豆包]病娇姐姐', '[豆包]妩媚御姐', '[豆包]傲娇女友', '[豆包]冷酷哥哥', '[豆包]成熟姐姐', '[豆包]贴心女友', '[豆包]性感御姐', '[豆包]病娇弟弟', '[豆包]傲慢少爷', '[豆包]腹黑公子', '[豆包]暖心学姐', '[豆包]可爱女生', '[豆包]知性温婉', '[豆包]暖心体贴', '[豆包]开朗轻快', '[豆包]活泼爽朗', '[豆包]率真小伙', '[豆包]温柔文雅', '[豆包]温柔女神', '[豆包]炀炀'],
+  '豆包-视频配音': ['[豆包]擎苍', '[豆包]霸气青叔', '[豆包]温柔淑女', '[豆包]儒雅青年', '[豆包]悬疑解说', '[豆包]古风少御', '[豆包]活力小哥', '[豆包]鸡汤妹妹', '[豆包]贴心女声', '[豆包]萌丫头', '[豆包]磁性解说男声', '[豆包]广告解说', '[豆包]少儿故事', '[豆包]天才童声', '[豆包]俏皮女声', '[豆包]懒音绵宝', '[豆包]亮嗓萌仔', '[豆包]暖阳女声'],
+  '豆包-IP音色': ['[豆包]猴哥', '[豆包]熊二', '[豆包]佩奇猪', '[豆包]樱桃丸子', '[豆包]武则天', '[豆包]顾姐', '[豆包]四郎', '[豆包]鲁班七号'],
+  '豆包-多情感': ['[豆包]冷酷哥哥-多情感', '[豆包]高冷御姐-多情感', '[豆包]傲娇霸总-多情感', '[豆包]邻居阿姨-多情感', '[豆包]儒雅男友-多情感', '[豆包]俊朗男友-多情感', '[豆包]柔美女友-多情感', '[豆包]阳光青年-多情感', '[豆包]爽快思思-多情感', '[豆包]深夜播客'],
+  '豆包-英文': ['[豆包]Lauren', '[豆包]Amanda', '[豆包]Adam', '[豆包]Jackson', '[豆包]Emily', '[豆包]Smith', '[豆包]Anna', '[豆包]Sarah', '[豆包]Dryw', '[豆包]Nara', '[豆包]Bruce', '[豆包]Michael', '[豆包]Daisy', '[豆包]Luna', '[豆包]Owen', '[豆包]Lucas', '[豆包]Candice-多情感', '[豆包]Serena-多情感', '[豆包]Glen-多情感', '[豆包]Sylus-多情感'],
+  '豆包-客服': ['[豆包]理性圆子', '[豆包]清甜桃桃', '[豆包]清晰小雪', '[豆包]开朗婷婷', '[豆包]温婉珊珊', '[豆包]甜美小雨', '[豆包]灵动欣欣', '[豆包]乖巧可儿', '[豆包]阳光洋洋'],
 };
 
 const VolcanoTTSSettings: React.FC = () => {
@@ -100,13 +108,14 @@ const VolcanoTTSSettings: React.FC = () => {
     }));
   }, []);
 
-  // 情感分组
+  // 情感分组 (完整版)
   const emotionGroups: SelectorGroup[] = useMemo(() => {
-    const basicEmotions = ['happy', 'sad', 'angry', 'scare', 'hate', 'surprise', 'tear', 'novel_dialog'];
-    const communicationEmotions = ['pleased', 'sorry', 'annoyed'];
-    const professionalStyles = ['customer_service', 'professional', 'serious', 'assistant', 'advertising'];
+    const basicEmotions = ['happy', 'sad', 'angry', 'scare', 'fear', 'hate', 'surprise', 'tear', 'novel_dialog', 'excited', 'coldness', 'neutral', 'depressed'];
+    const communicationEmotions = ['pleased', 'sorry', 'annoyed', 'shy', 'tender'];
+    const professionalStyles = ['customer_service', 'professional', 'serious', 'assistant', 'advertising', 'news', 'entertainment'];
     const narrativeStyles = ['narrator', 'narrator_immersive', 'storytelling', 'radio', 'chat'];
-    const specialStyles = ['comfort', 'lovey-dovey', 'energetic', 'conniving', 'tsundere', 'charming', 'yoga'];
+    const specialStyles = ['comfort', 'lovey-dovey', 'energetic', 'conniving', 'tsundere', 'charming', 'yoga', 'tension', 'magnetic', 'vocal-fry', 'asmr', 'dialect'];
+    const englishEmotions = ['warm', 'affectionate', 'authoritative'];
 
     const createItems = (keys: string[]) => keys
       .filter(key => key in VOLCANO_EMOTIONS)
@@ -122,6 +131,7 @@ const VolcanoTTSSettings: React.FC = () => {
       { name: '专业风格', items: createItems(professionalStyles) },
       { name: '叙述风格', items: createItems(narrativeStyles) },
       { name: '特色风格', items: createItems(specialStyles) },
+      { name: '英文专用', items: createItems(englishEmotions) },
     ];
   }, []);
 

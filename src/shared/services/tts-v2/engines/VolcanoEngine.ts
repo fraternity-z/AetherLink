@@ -14,6 +14,7 @@
 
 import { BaseTTSEngine } from './BaseTTSEngine';
 import type { TTSEngineType, TTSSynthesisResult, VolcanoTTSConfig } from '../types';
+import { universalFetch } from '../../../utils/universalFetch';
 
 // 火山引擎音色列表 (完整版 - 基于官方文档 https://www.volcengine.com/docs/6561/97465)
 export const VOLCANO_VOICES = {
@@ -151,9 +152,137 @@ export const VOLCANO_VOICES = {
   
   // ========== 西班牙语 ==========
   '气质御姐-西语': 'BV065_streaming',
+  
+  // ========== 豆包大模型音色 (bigtts) - 完整版 ==========
+  // 通用场景
+  '[豆包]Vivi': 'zh_female_vv_mars_bigtts',
+  '[豆包]灿灿': 'zh_female_cancan_mars_bigtts',
+  '[豆包]爽快思思': 'zh_female_shuangkuaisisi_moon_bigtts',
+  '[豆包]温暖阿虎': 'zh_male_wennuanahu_moon_bigtts',
+  '[豆包]少年梓辛': 'zh_male_shaonianzixin_moon_bigtts',
+  '[豆包]邻家女孩': 'zh_female_linjianvhai_moon_bigtts',
+  '[豆包]渊博小叔': 'zh_male_yuanboxiaoshu_moon_bigtts',
+  '[豆包]阳光青年': 'zh_male_yangguangqingnian_moon_bigtts',
+  '[豆包]甜美小源': 'zh_female_tianmeixiaoyuan_moon_bigtts',
+  '[豆包]清澈梓梓': 'zh_female_qingchezizi_moon_bigtts',
+  '[豆包]邻家男孩': 'zh_male_linjiananhai_moon_bigtts',
+  '[豆包]甜美悦悦': 'zh_female_tianmeiyueyue_moon_bigtts',
+  '[豆包]心灵鸡汤': 'zh_female_xinlingjitang_moon_bigtts',
+  '[豆包]解说小明': 'zh_male_jieshuoxiaoming_moon_bigtts',
+  '[豆包]开朗姐姐': 'zh_female_kailangjiejie_moon_bigtts',
+  '[豆包]亲切女声': 'zh_female_qinqienvsheng_moon_bigtts',
+  '[豆包]温柔小雅': 'zh_female_wenrouxiaoya_moon_bigtts',
+  '[豆包]快乐小东': 'zh_male_xudong_conversation_wvae_bigtts',
+  '[豆包]文静毛毛': 'zh_female_maomao_conversation_wvae_bigtts',
+  '[豆包]悠悠君子': 'zh_male_M100_conversation_wvae_bigtts',
+  '[豆包]魅力苏菲': 'zh_female_sophie_conversation_wvae_bigtts',
+  '[豆包]阳光阿辰': 'zh_male_qingyiyuxuan_mars_bigtts',
+  '[豆包]甜美桃子': 'zh_female_tianmeitaozi_mars_bigtts',
+  '[豆包]清新女声': 'zh_female_qingxinnvsheng_mars_bigtts',
+  '[豆包]知性女声': 'zh_female_zhixingnvsheng_mars_bigtts',
+  '[豆包]清爽男大': 'zh_male_qingshuangnanda_mars_bigtts',
+  '[豆包]温柔小哥': 'zh_male_wenrouxiaoge_mars_bigtts',
+  
+  // 角色扮演
+  '[豆包]傲娇霸总': 'zh_male_aojiaobazong_moon_bigtts',
+  '[豆包]病娇姐姐': 'ICL_zh_female_bingjiaojiejie_tob',
+  '[豆包]妩媚御姐': 'ICL_zh_female_wumeiyujie_tob',
+  '[豆包]傲娇女友': 'ICL_zh_female_aojiaonvyou_tob',
+  '[豆包]冷酷哥哥': 'ICL_zh_male_lengkugege_v1_tob',
+  '[豆包]成熟姐姐': 'ICL_zh_female_chengshujiejie_tob',
+  '[豆包]贴心女友': 'ICL_zh_female_tiexinnvyou_tob',
+  '[豆包]性感御姐': 'ICL_zh_female_xingganyujie_tob',
+  '[豆包]病娇弟弟': 'ICL_zh_male_bingjiaodidi_tob',
+  '[豆包]傲慢少爷': 'ICL_zh_male_aomanshaoye_tob',
+  '[豆包]腹黑公子': 'ICL_zh_male_fuheigongzi_tob',
+  '[豆包]暖心学姐': 'ICL_zh_female_nuanxinxuejie_tob',
+  '[豆包]可爱女生': 'ICL_zh_female_keainvsheng_tob',
+  '[豆包]知性温婉': 'ICL_zh_female_zhixingwenwan_tob',
+  '[豆包]暖心体贴': 'ICL_zh_male_nuanxintitie_tob',
+  '[豆包]开朗轻快': 'ICL_zh_male_kailangqingkuai_tob',
+  '[豆包]活泼爽朗': 'ICL_zh_male_huoposhuanglang_tob',
+  '[豆包]率真小伙': 'ICL_zh_male_shuaizhenxiaohuo_tob',
+  '[豆包]温柔文雅': 'ICL_zh_female_wenrouwenya_tob',
+  '[豆包]温柔女神': 'ICL_zh_female_wenrounvshen_239eff5e8ffa_tob',
+  '[豆包]炀炀': 'ICL_zh_male_BV705_streaming_cs_tob',
+  
+  // 视频配音
+  '[豆包]擎苍': 'zh_male_qingcang_mars_bigtts',
+  '[豆包]霸气青叔': 'zh_male_baqiqingshu_mars_bigtts',
+  '[豆包]温柔淑女': 'zh_female_wenroushunv_mars_bigtts',
+  '[豆包]儒雅青年': 'zh_male_ruyaqingnian_mars_bigtts',
+  '[豆包]悬疑解说': 'zh_male_changtianyi_mars_bigtts',
+  '[豆包]古风少御': 'zh_female_gufengshaoyu_mars_bigtts',
+  '[豆包]活力小哥': 'zh_male_yangguangqingnian_mars_bigtts',
+  '[豆包]鸡汤妹妹': 'zh_female_jitangmeimei_mars_bigtts',
+  '[豆包]贴心女声': 'zh_female_tiexinnvsheng_mars_bigtts',
+  '[豆包]萌丫头': 'zh_female_mengyatou_mars_bigtts',
+  '[豆包]磁性解说男声': 'zh_male_jieshuonansheng_mars_bigtts',
+  '[豆包]广告解说': 'zh_male_chunhui_mars_bigtts',
+  '[豆包]少儿故事': 'zh_female_shaoergushi_mars_bigtts',
+  '[豆包]天才童声': 'zh_male_tiancaitongsheng_mars_bigtts',
+  '[豆包]俏皮女声': 'zh_female_qiaopinvsheng_mars_bigtts',
+  '[豆包]懒音绵宝': 'zh_male_lanxiaoyang_mars_bigtts',
+  '[豆包]亮嗓萌仔': 'zh_male_dongmanhaimian_mars_bigtts',
+  '[豆包]暖阳女声': 'zh_female_kefunvsheng_mars_bigtts',
+  
+  // 特色/IP音色
+  '[豆包]猴哥': 'zh_male_sunwukong_mars_bigtts',
+  '[豆包]熊二': 'zh_male_xionger_mars_bigtts',
+  '[豆包]佩奇猪': 'zh_female_peiqi_mars_bigtts',
+  '[豆包]樱桃丸子': 'zh_female_yingtaowanzi_mars_bigtts',
+  '[豆包]武则天': 'zh_female_wuzetian_mars_bigtts',
+  '[豆包]顾姐': 'zh_female_gujie_mars_bigtts',
+  '[豆包]四郎': 'zh_male_silang_mars_bigtts',
+  '[豆包]鲁班七号': 'zh_male_lubanqihao_mars_bigtts',
+  
+  // 多情感音色
+  '[豆包]冷酷哥哥-多情感': 'zh_male_lengkugege_emo_v2_mars_bigtts',
+  '[豆包]高冷御姐-多情感': 'zh_female_gaolengyujie_emo_v2_mars_bigtts',
+  '[豆包]傲娇霸总-多情感': 'zh_male_aojiaobazong_emo_v2_mars_bigtts',
+  '[豆包]邻居阿姨-多情感': 'zh_female_linjuayi_emo_v2_mars_bigtts',
+  '[豆包]儒雅男友-多情感': 'zh_male_ruyayichen_emo_v2_mars_bigtts',
+  '[豆包]俊朗男友-多情感': 'zh_male_junlangnanyou_emo_v2_mars_bigtts',
+  '[豆包]柔美女友-多情感': 'zh_female_roumeinvyou_emo_v2_mars_bigtts',
+  '[豆包]阳光青年-多情感': 'zh_male_yangguangqingnian_emo_v2_mars_bigtts',
+  '[豆包]爽快思思-多情感': 'zh_female_shuangkuaisisi_emo_v2_mars_bigtts',
+  '[豆包]深夜播客': 'zh_male_shenyeboke_emo_v2_mars_bigtts',
+  
+  // 英文音色
+  '[豆包]Lauren': 'en_female_lauren_moon_bigtts',
+  '[豆包]Amanda': 'en_female_amanda_mars_bigtts',
+  '[豆包]Adam': 'en_male_adam_mars_bigtts',
+  '[豆包]Jackson': 'en_male_jackson_mars_bigtts',
+  '[豆包]Emily': 'en_female_emily_mars_bigtts',
+  '[豆包]Smith': 'en_male_smith_mars_bigtts',
+  '[豆包]Anna': 'en_female_anna_mars_bigtts',
+  '[豆包]Sarah': 'en_female_sarah_mars_bigtts',
+  '[豆包]Dryw': 'en_male_dryw_mars_bigtts',
+  '[豆包]Nara': 'en_female_nara_moon_bigtts',
+  '[豆包]Bruce': 'en_male_bruce_moon_bigtts',
+  '[豆包]Michael': 'en_male_michael_moon_bigtts',
+  '[豆包]Daisy': 'en_female_dacey_conversation_wvae_bigtts',
+  '[豆包]Luna': 'en_female_sarah_new_conversation_wvae_bigtts',
+  '[豆包]Owen': 'en_male_charlie_conversation_wvae_bigtts',
+  '[豆包]Lucas': 'zh_male_M100_conversation_wvae_bigtts',
+  '[豆包]Candice-多情感': 'en_female_candice_emo_v2_mars_bigtts',
+  '[豆包]Serena-多情感': 'en_female_skye_emo_v2_mars_bigtts',
+  '[豆包]Glen-多情感': 'en_male_glen_emo_v2_mars_bigtts',
+  '[豆包]Sylus-多情感': 'en_male_sylus_emo_v2_mars_bigtts',
+  
+  // 客服场景
+  '[豆包]理性圆子': 'ICL_zh_female_lixingyuanzi_cs_tob',
+  '[豆包]清甜桃桃': 'ICL_zh_female_qingtiantaotao_cs_tob',
+  '[豆包]清晰小雪': 'ICL_zh_female_qingxixiaoxue_cs_tob',
+  '[豆包]开朗婷婷': 'ICL_zh_female_kailangtingting_cs_tob',
+  '[豆包]温婉珊珊': 'ICL_zh_female_wenwanshanshan_cs_tob',
+  '[豆包]甜美小雨': 'ICL_zh_female_tianmeixiaoyu_cs_tob',
+  '[豆包]灵动欣欣': 'ICL_zh_female_lingdongxinxin_cs_tob',
+  '[豆包]乖巧可儿': 'ICL_zh_female_guaiqiaokeer_cs_tob',
+  '[豆包]阳光洋洋': 'ICL_zh_male_yangguangyangyang_cs_tob',
 } as const;
 
-// 支持的情感/风格列表 (完整版 - 基于官方文档)
+// 支持的情感/风格列表 (完整版 - 基于官方文档 https://www.volcengine.com/docs/6561/1257544)
 export const VOLCANO_EMOTIONS = {
   // ========== 基础情感 ==========
   'happy': '开心',
@@ -164,11 +293,18 @@ export const VOLCANO_EMOTIONS = {
   'surprise': '惊讶',
   'tear': '哭腔',
   'novel_dialog': '平和',
+  'excited': '激动',
+  'coldness': '冷漠',
+  'neutral': '中性',
+  'depressed': '沮丧',
+  'fear': '恐惧',
   
   // ========== 交流情感 ==========
   'pleased': '愉悦',
   'sorry': '抱歉',
   'annoyed': '嗔怪',
+  'shy': '害羞',
+  'tender': '温柔',
   
   // ========== 专业风格 ==========
   'customer_service': '客服',
@@ -176,6 +312,8 @@ export const VOLCANO_EMOTIONS = {
   'serious': '严肃',
   'assistant': '助手',
   'advertising': '广告',
+  'news': '新闻播报',
+  'entertainment': '娱乐八卦',
   
   // ========== 叙述风格 ==========
   'narrator': '旁白-舒缓',
@@ -192,6 +330,16 @@ export const VOLCANO_EMOTIONS = {
   'tsundere': '傲娇',
   'charming': '娇媚',
   'yoga': '瑜伽',
+  'tension': '咆哮/焦急',
+  'magnetic': '磁性',
+  'vocal-fry': '气泡音',
+  'asmr': '低语ASMR',
+  'dialect': '方言',
+  
+  // ========== 英文专用情感 ==========
+  'warm': '温暖',
+  'affectionate': '深情',
+  'authoritative': '权威',
 } as const;
 
 export class VolcanoEngine extends BaseTTSEngine {
@@ -229,7 +377,7 @@ export class VolcanoEngine extends BaseTTSEngine {
     try {
       const requestBody = this.buildRequestBody(text);
       
-      const response = await fetch(VolcanoEngine.HTTP_API_URL, {
+      const response = await universalFetch(VolcanoEngine.HTTP_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -289,14 +437,35 @@ export class VolcanoEngine extends BaseTTSEngine {
   }
   
   /**
+   * 根据音色类型自动选择 cluster
+   * 
+   * cluster 说明：
+   * - volcano_tts: 语音合成（包括传统音色和大模型音色 bigtts）
+   * - volcano_mega: 声音复刻大模型 1.0
+   * - volcano_icl: 声音复刻大模型 2.0
+   */
+  private getClusterForVoice(_voiceType: string): string {
+    // 如果用户手动指定了 cluster，优先使用
+    if (this.config.cluster) {
+      return this.config.cluster;
+    }
+    
+    // 所有语音合成音色（包括传统和大模型）都使用 volcano_tts
+    return 'volcano_tts';
+  }
+  
+  /**
    * 构建请求体
    */
   private buildRequestBody(text: string): Record<string, unknown> {
+    const voiceType = this.config.voiceType;
+    const cluster = this.getClusterForVoice(voiceType);
+    
     const request: Record<string, unknown> = {
       app: {
         appid: this.config.appId,
         token: this.config.accessToken,
-        cluster: this.config.cluster || 'volcano_tts',
+        cluster: cluster,
       },
       user: {
         uid: 'aetherlink_user',
