@@ -188,11 +188,11 @@ export class UnifiedStreamProcessor {
         } as Chunk);
       }
 
-      // 发送文本增量事件
+      // ⭐ 累积模式：发送完整累积内容（参考 Cherry Studio）
       if (this.options.onChunk) {
         this.options.onChunk({
           type: ChunkType.TEXT_DELTA,
-          text: chunk.textDelta,
+          text: this.state.content,  // 发送累积内容
           messageId: this.options.messageId,
           blockId: this.options.blockId,
           topicId: this.options.topicId
@@ -205,10 +205,11 @@ export class UnifiedStreamProcessor {
 
       this.state.reasoning += chunk.textDelta;
 
-if (this.options.onChunk) {
+      // ⭐ 累积模式：发送完整累积内容
+      if (this.options.onChunk) {
         this.options.onChunk({
           type: ChunkType.THINKING_DELTA,
-          text: chunk.textDelta,
+          text: this.state.reasoning,  // 发送累积内容
           blockId: this.options.thinkingBlockId
         } as Chunk);
       }

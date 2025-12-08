@@ -236,7 +236,8 @@ export async function streamCompletion(
               });
             }
             fullContent += textContent;
-            onChunk?.({ type: ChunkType.TEXT_DELTA, text: textContent });
+            // ⭐ 累积模式：发送完整累积内容（参考 Cherry Studio）
+            onChunk?.({ type: ChunkType.TEXT_DELTA, text: fullContent });  // 发送累积内容
           }
           break;
 
@@ -268,9 +269,10 @@ export async function streamCompletion(
           const reasoningText = (part as any).text || '';
           if (reasoningText) {
             fullReasoning += reasoningText;
+            // ⭐ 累积模式：发送完整累积内容
             onChunk?.({
               type: ChunkType.THINKING_DELTA,
-              text: reasoningText,
+              text: fullReasoning,  // 发送累积内容
               thinking_millsec: Date.now() - startTime
             });
           }

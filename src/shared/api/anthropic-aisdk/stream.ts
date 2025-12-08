@@ -257,16 +257,17 @@ export async function streamCompletion(
           const rawTextContent = (part as any).text || (part as any).textDelta || '';
           const { normalText, thinkText } = thinkParser.processChunk(rawTextContent);
           
+          // ⭐ 累积模式：发送完整累积内容（参考 Cherry Studio）
           if (normalText) {
             fullContent += normalText;
-            onChunk?.({ type: ChunkType.TEXT_DELTA, text: normalText });
+            onChunk?.({ type: ChunkType.TEXT_DELTA, text: fullContent });  // 发送累积内容
           }
           
           if (thinkText) {
             fullReasoning += thinkText;
             onChunk?.({
               type: ChunkType.THINKING_DELTA,
-              text: thinkText,
+              text: fullReasoning,  // 发送累积内容
               thinking_millsec: thinkParser.getReasoningTime()
             });
           }
@@ -282,7 +283,7 @@ export async function streamCompletion(
             fullReasoning += reasoningText;
             onChunk?.({
               type: ChunkType.THINKING_DELTA,
-              text: reasoningText,
+              text: fullReasoning,  // ⭐ 发送累积内容
               thinking_millsec: Date.now() - reasoningStartTime
             });
           }
@@ -334,13 +335,13 @@ export async function streamCompletion(
     const { normalText: finalNormal, thinkText: finalThink } = thinkParser.flush();
     if (finalNormal) {
       fullContent += finalNormal;
-      onChunk?.({ type: ChunkType.TEXT_DELTA, text: finalNormal });
+      onChunk?.({ type: ChunkType.TEXT_DELTA, text: fullContent });  // ⭐ 发送累积内容
     }
     if (finalThink) {
       fullReasoning += finalThink;
       onChunk?.({
         type: ChunkType.THINKING_DELTA,
-        text: finalThink,
+        text: fullReasoning,  // ⭐ 发送累积内容
         thinking_millsec: thinkParser.getReasoningTime()
       });
     }

@@ -219,11 +219,34 @@ export async function streamCompletion(
   const reasoningTag = model ? getAppropriateTag(model) : DEFAULT_REASONING_TAGS[0];
 
   try {
-    // 准备消息
-    const processedMessages = messages.map(msg => ({
-      role: msg.role as 'system' | 'user' | 'assistant',
-      content: msg.content
-    }));
+    // 准备消息 - 转换多模态内容格式
+    const processedMessages = messages.map(msg => {
+      const role = msg.role as 'system' | 'user' | 'assistant';
+      let content = msg.content;
+      
+      // 处理多模态消息内容（OpenAI 格式 -> AI SDK 格式）
+      if (Array.isArray(content)) {
+        content = content.map((part: any) => {
+          // OpenAI 格式的图片: { type: 'image_url', image_url: { url: '...' } }
+          // AI SDK 格式: { type: 'image', image: '...' }
+          if (part.type === 'image_url' && part.image_url?.url) {
+            return {
+              type: 'image',
+              image: part.image_url.url,
+              ...(part.image_url.detail && { providerOptions: { openai: { imageDetail: part.image_url.detail } } })
+            };
+          }
+          // 文本部分保持不变
+          if (part.type === 'text') {
+            return { type: 'text', text: part.text };
+          }
+          // 其他格式直接返回
+          return part;
+        });
+      }
+      
+      return { role, content };
+    });
 
     // 记录 API 请求
     logApiRequest('AI SDK OpenAI Stream', 'INFO', {
@@ -287,16 +310,17 @@ export async function streamCompletion(
           const textContent = (part as any).text || (part as any).textDelta || '';
           const { normalText, thinkText } = thinkParser.processChunk(textContent);
           
+          // ⭐ 累积模式：发送完整累积内容（参考 Cherry Studio）
           if (normalText) {
             fullContent += normalText;
-            onChunk?.({ type: ChunkType.TEXT_DELTA, text: normalText });
+            onChunk?.({ type: ChunkType.TEXT_DELTA, text: fullContent });  // 发送累积内容
           }
           
           if (thinkText) {
             fullReasoning += thinkText;
             onChunk?.({
               type: ChunkType.THINKING_DELTA,
-              text: thinkText,
+              text: fullReasoning,  // 发送累积内容
               thinking_millsec: thinkParser.getReasoningTime()
             });
           }
@@ -334,7 +358,7 @@ export async function streamCompletion(
             fullReasoning += reasoningText;
             onChunk?.({
               type: ChunkType.THINKING_DELTA,
-              text: reasoningText,
+              text: fullReasoning,  // ⭐ 发送累积内容
               thinking_millsec: Date.now() - startTime
             });
           }
@@ -351,7 +375,7 @@ export async function streamCompletion(
                 fullReasoning += rawReasoningContent;
                 onChunk?.({
                   type: ChunkType.THINKING_DELTA,
-                  text: rawReasoningContent,
+                  text: fullReasoning,  // ⭐ 发送累积内容
                   thinking_millsec: Date.now() - startTime
                 });
               }
@@ -363,7 +387,7 @@ export async function streamCompletion(
                 fullReasoning += msgReasoningContent;
                 onChunk?.({
                   type: ChunkType.THINKING_DELTA,
-                  text: msgReasoningContent,
+                  text: fullReasoning,  // ⭐ 发送累积内容
                   thinking_millsec: Date.now() - startTime
                 });
               }
@@ -383,13 +407,13 @@ export async function streamCompletion(
     const { normalText: finalNormal, thinkText: finalThink } = thinkParser.flush();
     if (finalNormal) {
       fullContent += finalNormal;
-      onChunk?.({ type: ChunkType.TEXT_DELTA, text: finalNormal });
+      onChunk?.({ type: ChunkType.TEXT_DELTA, text: fullContent });  // ⭐ 发送累积内容
     }
     if (finalThink) {
       fullReasoning += finalThink;
       onChunk?.({
         type: ChunkType.THINKING_DELTA,
-        text: finalThink,
+        text: fullReasoning,  // ⭐ 发送累积内容
         thinking_millsec: thinkParser.getReasoningTime()
       });
     }

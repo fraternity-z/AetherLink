@@ -109,6 +109,7 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
 
   /**
    * 智能更新策略：根据块类型连续性自动判断使用节流还是立即更新
+   * 参考 Cherry Studio 的 BlockManager.smartBlockUpdate
    */
   async updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete: boolean = false): Promise<void> {
     const isBlockTypeChanged = this.lastBlockType !== null && this.lastBlockType !== blockType;
@@ -116,16 +117,15 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
     const needsImmediateUpdate = isBlockTypeChanged || isBlockIdChanged || isComplete;
 
     if (needsImmediateUpdate) {
-      // 块类型变化、块ID变化或完成时：取消之前的节流，立即更新
-      if (isBlockTypeChanged || isBlockIdChanged) {
-        this.throttledStateUpdate.flush();
-        this.throttledStorageUpdate.flush();
+      // ⭐ 块类型变化时：取消前一个块的节流更新，确保内容完整
+      if (isBlockTypeChanged && this.lastBlockId) {
+        this.throttledStateUpdate.cancel();
+        this.throttledStorageUpdate.cancel();
       }
       
-      if (isComplete) {
-        this.throttledStateUpdate.flush();
-        this.throttledStorageUpdate.flush();
-      }
+      // 先刷新所有待处理的节流更新
+      this.throttledStateUpdate.flush();
+      this.throttledStorageUpdate.flush();
 
       // 立即更新
       this.stateService.updateBlock(blockId, changes);
@@ -158,6 +158,18 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
   flush(): void {
     this.throttledStateUpdate.flush();
     this.throttledStorageUpdate.flush();
+  }
+
+  /**
+   * 强制最终更新（确保内容完整）
+   * 用于响应结束时，确保最后的内容被正确写入
+   */
+  async forceUpdate(blockId: string, changes: any): Promise<void> {
+    // 先刷新所有待处理的节流更新
+    this.flush();
+    // 然后立即执行最终更新
+    this.stateService.updateBlock(blockId, changes);
+    await this.storageService.updateBlock(blockId, changes);
   }
 
   /**
@@ -443,7 +455,13 @@ export class ResponseChunkProcessor {
       status: isComplete ? MessageBlockStatus.SUCCESS : MessageBlockStatus.STREAMING,
       updatedAt: new Date().toISOString()
     };
-    await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.MAIN_TEXT, isComplete);
+    
+    if (isComplete) {
+      // 完成时使用强制更新，确保内容完整
+      await this.blockUpdater.forceUpdate(blockId, changes);
+    } else {
+      await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.MAIN_TEXT, isComplete);
+    }
   }
 
   private async updateThinkingBlock(blockId: string, thinkingMillis?: number, isComplete: boolean = false): Promise<void> {
@@ -456,7 +474,13 @@ export class ResponseChunkProcessor {
     if (typeof thinkingMillis === 'number') {
       changes.thinking_millsec = thinkingMillis;
     }
-    await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.THINKING, isComplete);
+    
+    if (isComplete) {
+      // 完成时使用强制更新，确保内容完整
+      await this.blockUpdater.forceUpdate(blockId, changes);
+    } else {
+      await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.THINKING, isComplete);
+    }
   }
 
   /**
