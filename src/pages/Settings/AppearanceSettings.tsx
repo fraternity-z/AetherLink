@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -10,6 +10,8 @@ import {
   Slider,
   FormHelperText,
   Chip,
+  TextField,
+  InputAdornment,
   AppBar,
   Toolbar,
   IconButton,
@@ -28,7 +30,7 @@ import {
   DialogActions
 } from '@mui/material';
 import BackButtonDialog from '../../components/common/BackButtonDialog';
-import { ArrowLeft, ChevronRight, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles, Share2, Upload } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronRight as ChevronRightIcon, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles, Share2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor, setShowDevToolsFloatingButton, updateSettings } from '../../shared/store/settingsSlice';
@@ -44,6 +46,7 @@ import ShareAppearanceDialog from '../../components/dialogs/ShareAppearanceDialo
 import ImportAppearanceDialog from '../../components/dialogs/ImportAppearanceDialog';
 import { extractAppearanceConfig, extractShareConfigFromUrl } from '../../shared/utils/appearanceConfig';
 import type { AppearanceConfig } from '../../shared/utils/appearanceConfig';
+import FullScreenSelectorSolid, { type SelectorGroup } from '../../components/TTS/FullScreenSelectorSolid';
 
 const AppearanceSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -57,6 +60,23 @@ const AppearanceSettings: React.FC = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingConfig, setPendingConfig] = useState<AppearanceConfig | null>(null);
+  
+  // 字体全屏选择器状态
+  const [fontSelectorOpen, setFontSelectorOpen] = useState(false);
+  
+  // 将字体选项转换为 SelectorGroup 格式
+  const fontGroups: SelectorGroup[] = useMemo(() => {
+    return Object.entries(fontCategoryLabels).map(([category, label]) => ({
+      name: label,
+      items: fontOptions
+        .filter(font => font.category === category)
+        .map(font => ({
+          key: font.id,
+          label: font.name,
+          subLabel: font.preview,
+        })),
+    })).filter(group => group.items.length > 0);
+  }, []);
 
   // 使用滚动位置保存功能
   const {
@@ -118,9 +138,9 @@ const AppearanceSettings: React.FC = () => {
     dispatch(setFontSize(newValue as number));
   };
 
-  // 字体家族处理函数
-  const handleFontFamilyChange = (event: any) => {
-    dispatch(setFontFamily(event.target.value));
+  // 全屏选择器字体选择处理
+  const handleFontSelect = (key: string) => {
+    dispatch(setFontFamily(key));
   };
 
   // 字体大小预设值
@@ -433,106 +453,30 @@ const AppearanceSettings: React.FC = () => {
             </FormHelperText>
           </Box>
 
-          {/* 全局字体选择 */}
+          {/* 全局字体选择 - 点击打开全屏选择器 */}
           <Box sx={{ mb: 2 }}>
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 2
-            }}>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontWeight: 500,
-                  fontSize: { xs: '0.9rem', sm: '1rem' },
-                }}
-              >
-                {t('settings.appearance.fontFamily.label')}
-              </Typography>
-              <Chip
-                label={getCurrentFontLabel(settings.fontFamily || 'system')}
-                size="small"
-                color="secondary"
-                variant="outlined"
-                sx={{
-                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                  fontWeight: 500,
-                }}
-              />
-            </Box>
-
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>{t('settings.appearance.fontFamily.label')}</InputLabel>
-              <Select
-                value={settings.fontFamily || 'system'}
-                onChange={handleFontFamilyChange}
-                label={t('settings.appearance.fontFamily.label')}
-                MenuProps={{
-                  disableAutoFocus: true,
-                  disableRestoreFocus: true,
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                    },
-                  },
-                }}
-                sx={{
-                  '& .MuiSelect-select': {
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderRadius: 2,
-                  },
-                }}
-              >
-                {Object.entries(fontCategoryLabels).map(([category]) => [
-                  <MenuItem key={`category-${category}`} disabled sx={{
-                    fontWeight: 600,
-                    color: 'primary.main',
-                    fontSize: '0.875rem',
-                    opacity: '1 !important'
-                  }}>
-                    {t(`settings.appearance.fontCategory.${category}`)}
-                  </MenuItem>,
-                  ...fontOptions
-                    .filter(font => font.category === category)
-                    .map(font => (
-                      <MenuItem
-                        key={font.id}
-                        value={font.id}
-                        sx={{
-                          fontFamily: font.fontFamily.join(', '),
-                          pl: 3,
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          }
-                        }}
-                      >
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {font.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{
-                              display: 'block',
-                              fontFamily: font.fontFamily.join(', '),
-                              mt: 0.5
-                            }}
-                          >
-                            {font.preview}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))
-                ]).flat()}
-              </Select>
-              <FormHelperText sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                {t('settings.appearance.fontFamily.helperText')}
-              </FormHelperText>
-            </FormControl>
+            <TextField
+              fullWidth
+              label={t('settings.appearance.fontFamily.label')}
+              value={getCurrentFontLabel(settings.fontFamily || 'system')}
+              onClick={() => setFontSelectorOpen(true)}
+              sx={{ 
+                cursor: 'pointer',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderRadius: 2,
+                },
+              }}
+              helperText={t('settings.appearance.fontFamily.helperText')}
+              InputProps={{
+                readOnly: true,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <ChevronRightIcon size={18} />
+                  </InputAdornment>
+                ),
+                sx: { cursor: 'pointer' }
+              }}
+            />
           </Box>
           </Box>
         </Paper>
@@ -928,6 +872,16 @@ const AppearanceSettings: React.FC = () => {
           </Button>
         </DialogActions>
       </BackButtonDialog>
+
+      {/* 字体全屏选择器 */}
+      <FullScreenSelectorSolid
+        open={fontSelectorOpen}
+        onClose={() => setFontSelectorOpen(false)}
+        title={t('settings.appearance.fontFamily.label') as string}
+        groups={fontGroups}
+        selectedKey={settings.fontFamily || 'system'}
+        onSelect={(key) => handleFontSelect(key)}
+      />
     </SafeAreaContainer>
   );
 };

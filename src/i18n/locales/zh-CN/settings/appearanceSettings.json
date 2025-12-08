@@ -35,7 +35,8 @@
       "system": "系统字体",
       "chinese": "中文字体",
       "english": "英文字体",
-      "monospace": "等宽字体"
+      "monospace": "等宽字体",
+      "monospace-cn": "中文等宽字体"
     },
     "customization": {
       "title": "界面定制",

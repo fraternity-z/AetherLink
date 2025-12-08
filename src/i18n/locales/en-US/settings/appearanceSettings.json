@@ -35,7 +35,8 @@
       "system": "System Fonts",
       "chinese": "Chinese Fonts",
       "english": "English Fonts",
-      "monospace": "Monospace Fonts"
+      "monospace": "Monospace Fonts",
+      "monospace-cn": "CJK Monospace Fonts"
     },
     "customization": {
       "title": "Interface Customization",
