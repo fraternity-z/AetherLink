@@ -5,6 +5,7 @@ import type { MessageBlock } from '../../../types/newMessage';
 import type { Chunk, TextDeltaChunk, TextCompleteChunk, ThinkingDeltaChunk, ThinkingCompleteChunk } from '../../../types/chunk';
 import { ChunkType } from '../../../types/chunk';
 import { v4 as uuid } from 'uuid';
+import { EventEmitter, EVENT_NAMES } from '../../EventService';
 
 // 1. 定义服务接口，便于测试和解耦
 interface StorageService {
@@ -71,8 +72,8 @@ interface ActiveBlockInfo {
 }
 
 interface BlockUpdater {
-  updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete?: boolean): Promise<void>;
-  createBlock(block: MessageBlock): Promise<void>;
+  updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete?: boolean): void;
+  createBlock(block: MessageBlock): void;
 }
 
 /**
@@ -230,7 +231,7 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
   /**
    * 智能更新策略：根据块类型连续性自动判断使用节流还是立即更新
    */
-  async updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete: boolean = false): Promise<void> {
+  updateBlock(blockId: string, changes: any, blockType: MessageBlockType, isComplete: boolean = false): void {
     const isBlockTypeChanged = this._lastBlockType !== null && this._lastBlockType !== blockType;
     const isBlockIdChanged = this._activeBlockInfo !== null && this._activeBlockInfo.id !== blockId;
     const needsImmediateUpdate = isBlockTypeChanged || isBlockIdChanged || isComplete;
@@ -249,9 +250,12 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
         this._activeBlockInfo = { id: blockId, type: blockType };  // 更新活跃块
       }
 
-      // 立即更新（不经过节流和 RAF）
+      // 立即更新 UI（不经过节流和 RAF）
       this.stateService.updateBlock(blockId, changes);
-      await this.storageService.updateBlock(blockId, changes);
+      // ⭐ 数据库异步保存，不阻塞（参考 Cherry Studio）
+      this.storageService.updateBlock(blockId, changes).catch(err => 
+        console.error('[SmartThrottledBlockUpdater] 数据库更新失败:', err)
+      );
     } else {
       // 同类型连续更新：使用节流 + RAF
       this._activeBlockInfo = { id: blockId, type: blockType };  // 更新活跃块
@@ -263,12 +267,14 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
     this._lastBlockType = blockType;
   }
 
-  async createBlock(block: MessageBlock): Promise<void> {
-    // 关键：先同步更新 Redux store（addBlock 和 addBlockReference），再异步保存到数据库
+  createBlock(block: MessageBlock): void {
+    // 关键：先同步更新 Redux store（addBlock 和 addBlockReference）
     this.stateService.addBlock(block);
     this.stateService.addBlockReference(block.messageId, block.id, block.status);
-    // 异步保存到数据库（不阻塞 UI 更新）
-    await this.storageService.saveBlock(block);
+    // ⭐ 数据库异步保存，不阻塞（参考 Cherry Studio）
+    this.storageService.saveBlock(block).catch(err => 
+      console.error('[SmartThrottledBlockUpdater] 数据库保存失败:', err)
+    );
     
     // ⭐ 设置新创建的块为活跃块
     this._activeBlockInfo = { id: block.id, type: block.type };
@@ -289,12 +295,15 @@ class SmartThrottledBlockUpdater implements BlockUpdater {
    * 强制最终更新（确保内容完整）
    * 用于响应结束时，确保最后的内容被正确写入
    */
-  async forceUpdate(blockId: string, changes: any): Promise<void> {
+  forceUpdate(blockId: string, changes: any): void {
     // 取消该块的节流更新
     this.cancelBlockThrottler(blockId);
     // 立即执行最终更新
     this.stateService.updateBlock(blockId, changes);
-    await this.storageService.updateBlock(blockId, changes);
+    // ⭐ 数据库异步保存，不阻塞（参考 Cherry Studio）
+    this.storageService.updateBlock(blockId, changes).catch(err => 
+      console.error('[SmartThrottledBlockUpdater] 强制更新数据库失败:', err)
+    );
   }
 
   /**
@@ -435,7 +444,7 @@ export class ResponseChunkProcessor {
     this.blockUpdater = new SmartThrottledBlockUpdater(stateService, storageService, throttleInterval);
   }
 
-  async handleChunk(chunk: Chunk): Promise<void> {
+  handleChunk(chunk: Chunk): void {
     if (!chunk) {
       throw new Error('Chunk 不能为空');
     }
@@ -443,16 +452,16 @@ export class ResponseChunkProcessor {
     try {
       switch (chunk.type) {
         case ChunkType.TEXT_DELTA:
-          await this.handleTextDelta(chunk as TextDeltaChunk);
+          this.handleTextDelta(chunk as TextDeltaChunk);
           break;
         case ChunkType.TEXT_COMPLETE:
-          await this.handleTextComplete(chunk as TextCompleteChunk);
+          this.handleTextComplete(chunk as TextCompleteChunk);
           break;
         case ChunkType.THINKING_DELTA:
-          await this.handleThinkingDelta(chunk as ThinkingDeltaChunk);
+          this.handleThinkingDelta(chunk as ThinkingDeltaChunk);
           break;
         case ChunkType.THINKING_COMPLETE:
-          await this.handleThinkingComplete(chunk as ThinkingCompleteChunk);
+          this.handleThinkingComplete(chunk as ThinkingCompleteChunk);
           break;
         default:
           console.warn(`[ResponseChunkProcessor] 未知的 chunk 类型: ${chunk.type}`);
@@ -466,37 +475,37 @@ export class ResponseChunkProcessor {
 
 
 
-  private async handleTextDelta(chunk: TextDeltaChunk): Promise<void> {
+  private handleTextDelta(chunk: TextDeltaChunk): void {
     // 供应商已发送累积内容，直接累积即可
     this.textAccumulator.accumulate(chunk.text);
-    await this.processTextContent();
+    this.processTextContent();
   }
 
-  private async handleTextComplete(chunk: TextCompleteChunk): Promise<void> {
+  private handleTextComplete(chunk: TextCompleteChunk): void {
     this.textAccumulator.accumulate(chunk.text);
-    await this.processTextContent(true);
+    this.processTextContent(true);
   }
 
-  private async handleThinkingDelta(chunk: ThinkingDeltaChunk): Promise<void> {
+  private handleThinkingDelta(chunk: ThinkingDeltaChunk): void {
     this.thinkingAccumulator.accumulate(chunk.text);
-    await this.processThinkingContent(chunk.thinking_millsec);
+    this.processThinkingContent(chunk.thinking_millsec);
   }
 
-  private async handleThinkingComplete(chunk: ThinkingCompleteChunk): Promise<void> {
+  private handleThinkingComplete(chunk: ThinkingCompleteChunk): void {
     this.thinkingAccumulator.accumulate(chunk.text);
-    await this.processThinkingContent(chunk.thinking_millsec, true);
+    this.processThinkingContent(chunk.thinking_millsec, true);
   }
 
-  private async processTextContent(isComplete: boolean = false): Promise<void> {
+  private processTextContent(isComplete: boolean = false): void {
     const { blockId, isNewBlock } = this.blockStateManager.transitionToText();
 
     if (isNewBlock) {
-      await this.createTextBlock(blockId);
+      this.createTextBlock(blockId);
       if (isComplete) {
-        await this.updateTextBlock(blockId, true);
+        this.updateTextBlock(blockId, true);
       }
     } else {
-      await this.updateTextBlock(blockId, isComplete);
+      this.updateTextBlock(blockId, isComplete);
     }
 
     // 完成后重置状态，让下一轮可以创建新块
@@ -505,17 +514,17 @@ export class ResponseChunkProcessor {
     }
   }
 
-  private async processThinkingContent(thinkingMillsec?: number, isComplete: boolean = false): Promise<void> {
+  private processThinkingContent(thinkingMillsec?: number, isComplete: boolean = false): void {
     const { blockId, isNewBlock } = this.blockStateManager.transitionToThinking();
     const computedThinkingMillis = this.updateThinkingTimer(thinkingMillsec);
     
     if (isNewBlock) {
-      await this.createThinkingBlock(blockId);
+      this.createThinkingBlock(blockId);
       if (isComplete) {
-        await this.updateThinkingBlock(blockId, computedThinkingMillis, true);
+        this.updateThinkingBlock(blockId, computedThinkingMillis, true);
       }
     } else {
-      await this.updateThinkingBlock(blockId, computedThinkingMillis, isComplete);
+      this.updateThinkingBlock(blockId, computedThinkingMillis, isComplete);
     }
     
     // 完成后重置状态，让下一轮可以创建新块
@@ -551,7 +560,7 @@ export class ResponseChunkProcessor {
     return this.lastThinkingMilliseconds;
   }
 
-  private async createTextBlock(blockId: string): Promise<void> {
+  private createTextBlock(blockId: string): void {
     const block: MessageBlock = {
       id: blockId,
       messageId: this.messageId,
@@ -560,10 +569,10 @@ export class ResponseChunkProcessor {
       createdAt: new Date().toISOString(),
       status: MessageBlockStatus.STREAMING
     };
-    await this.blockUpdater.createBlock(block);
+    this.blockUpdater.createBlock(block);
   }
 
-  private async createThinkingBlock(blockId: string): Promise<void> {
+  private createThinkingBlock(blockId: string): void {
     const block: MessageBlock = {
       id: blockId,
       messageId: this.messageId,
@@ -573,10 +582,10 @@ export class ResponseChunkProcessor {
       status: MessageBlockStatus.STREAMING,
       thinking_millsec: 0
     } as MessageBlock;
-    await this.blockUpdater.createBlock(block);
+    this.blockUpdater.createBlock(block);
   }
 
-  private async updateTextBlock(blockId: string, isComplete: boolean = false): Promise<void> {
+  private updateTextBlock(blockId: string, isComplete: boolean = false): void {
     const changes = {
       type: MessageBlockType.MAIN_TEXT,
       content: this.textAccumulator.getContent(),
@@ -586,13 +595,19 @@ export class ResponseChunkProcessor {
     
     if (isComplete) {
       // 完成时使用强制更新，确保内容完整
-      await this.blockUpdater.forceUpdate(blockId, changes);
+      this.blockUpdater.forceUpdate(blockId, changes);
     } else {
-      await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.MAIN_TEXT, isComplete);
+      this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.MAIN_TEXT, isComplete);
+      // ⭐ 发送流式文本事件，触发自动滚动
+      EventEmitter.emit(EVENT_NAMES.STREAM_TEXT_DELTA, {
+        blockId,
+        messageId: this.messageId,
+        content: this.textAccumulator.getContent()
+      });
     }
   }
 
-  private async updateThinkingBlock(blockId: string, thinkingMillis?: number, isComplete: boolean = false): Promise<void> {
+  private updateThinkingBlock(blockId: string, thinkingMillis?: number, isComplete: boolean = false): void {
     const changes: any = {
       type: MessageBlockType.THINKING,
       content: this.thinkingAccumulator.getContent(),
@@ -605,19 +620,25 @@ export class ResponseChunkProcessor {
     
     if (isComplete) {
       // 完成时使用强制更新，确保内容完整
-      await this.blockUpdater.forceUpdate(blockId, changes);
+      this.blockUpdater.forceUpdate(blockId, changes);
     } else {
-      await this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.THINKING, isComplete);
+      this.blockUpdater.updateBlock(blockId, changes, MessageBlockType.THINKING, isComplete);
+      // ⭐ 发送流式思考事件，触发自动滚动
+      EventEmitter.emit(EVENT_NAMES.STREAM_THINKING_DELTA, {
+        blockId,
+        messageId: this.messageId,
+        content: this.thinkingAccumulator.getContent()
+      });
     }
   }
 
   /**
    * 完成当前文本块（检测到工具时调用）
    */
-  async completeCurrentTextBlock(): Promise<string | null> {
+  completeCurrentTextBlock(): string | null {
     const textBlockId = this.blockStateManager.getTextBlockId();
     if (textBlockId && this.textAccumulator.getContent()) {
-      await this.updateTextBlock(textBlockId, true);
+      this.updateTextBlock(textBlockId, true);
       return textBlockId;
     }
     return null;

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { IconButton, Tooltip, Box } from '@mui/material';
 import KnowledgeChip from '../chat/KnowledgeChip';
 import { Keyboard, Mic, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
+import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import MultiModelSelector from './MultiModelSelector';
@@ -71,7 +72,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       setUploadMenuAnchorEl(null);
     };
   }, []);
-  const [isIOS, setIsIOS] = useState(false); // 新增: 是否是iOS设备
+  // 使用统一的平台检测，用 useMemo 缓存结果避免重复计算
+  const isIOS = useMemo(() => checkIsIOS(), []);
   // 语音识别三状态管理
   const [voiceState, setVoiceState] = useState<'normal' | 'voice-mode' | 'recording'>('normal');
   const [shouldHideVoiceButton, setShouldHideVoiceButton] = useState(false); // 是否隐藏语音按钮
@@ -207,13 +209,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const { border, borderRadius, boxShadow } = styles;
   const iconColor = isDarkMode ? '#ffffff' : '#000000';
   const disabledColor = isDarkMode ? '#555' : '#ccc';
-
-  // 检测iOS设备
-  useEffect(() => {
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                       (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-    setIsIOS(isIOSDevice);
-  }, []);
 
 
 

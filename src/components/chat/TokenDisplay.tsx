@@ -6,6 +6,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../../shared/store';
 import { estimateTokens } from '../../shared/utils';
 import { getMainTextContent } from '../../shared/utils/messageUtils';
+import { isMobile as checkIsMobile } from '../../shared/utils/platformDetection';
 import type { Message } from '../../shared/types/newMessage';
 
 interface TokenDisplayProps {
@@ -38,21 +39,18 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
 
-  // 检测是否为移动端设备
+  // 检测是否为移动端设备（使用统一的平台检测 + 小屏幕检测）
   useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent;
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const checkMobileScreen = () => {
       const isSmallScreen = window.innerWidth <= 768;
-
-      // 更精确的判断：移动设备 或 小屏幕
-      setIsMobile(isMobileDevice || isSmallScreen);
+      // 使用统一的平台检测，同时兼容小屏幕
+      setIsMobile(checkIsMobile() || isSmallScreen);
     };
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
+    checkMobileScreen();
+    window.addEventListener('resize', checkMobileScreen);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobileScreen);
   }, []);
   
   // 获取当前话题的所有消息

@@ -14,6 +14,7 @@ import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition'; // 导入 useVoiceRecognition
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { getBasicIcons, getExpandedIcons } from '../../shared/config/inputIcons';
+import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 
 import { Plus, X, Send, Square, Paperclip, ChevronUp, ChevronDown } from 'lucide-react';
 import { useSelector } from 'react-redux';
@@ -74,8 +75,10 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   const [inputHeight, setInputHeight] = useState(40); // 输入框容器高度
   const [isFullExpanded, setIsFullExpanded] = useState(false); // 是否全展开
   const [isActivated, setIsActivated] = useState(false); // 冷激活状态
-  const [isIOS, setIsIOS] = useState(false); // 是否是iOS设备
   const [isVoiceMode, setIsVoiceMode] = useState(false); // 语音输入模式状态
+  
+  // 使用统一的平台检测，用 useMemo 缓存结果避免重复计算
+  const isIOS = useMemo(() => checkIsIOS(), []);
 
   // 新增功能状态
   const [multiModelSelectorOpen, setMultiModelSelectorOpen] = useState(false); // 多模型选择器
@@ -204,13 +207,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
 
     loadTopic();
   }, [currentTopicId]);
-
-  // 检测iOS设备
-  useEffect(() => {
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                       (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
-    setIsIOS(isIOSDevice);
-  }, []);
 
   // 监听知识库选择事件，刷新显示
   useEffect(() => {

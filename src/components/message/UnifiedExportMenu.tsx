@@ -53,7 +53,7 @@ import { toastManager } from '../EnhancedToast';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
 import { getMainTextContent } from '../../shared/utils/messageUtils';
 import { useNavigate } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
+import { getPlatformInfo } from '../../shared/utils/platformDetection';
 
 interface UnifiedExportMenuProps {
   message: Message;
@@ -69,27 +69,8 @@ interface ObsidianDialogState {
   includeReasoning: boolean;
 }
 
-/**
- * 检测当前运行平台
- */
-const getPlatformInfo = () => {
-  const isCapacitorNative = Capacitor.isNativePlatform();
-  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
-  // 鸿蒙检测：检查 HarmonyOS 特有的 API
-  const isHarmonyOS = typeof window !== 'undefined' && (
-    navigator.userAgent.includes('HarmonyOS') ||
-    navigator.userAgent.includes('OpenHarmony') ||
-    'harmony' in window
-  );
-  
-  return {
-    isCapacitorNative,
-    isTauri,
-    isHarmonyOS,
-    isWeb: !isCapacitorNative && !isTauri && !isHarmonyOS,
-    isMobile: isCapacitorNative || isHarmonyOS
-  };
-};
+// 使用统一的平台检测工具 (src/shared/utils/platformDetection.ts)
+// getPlatformInfo() 返回 { isMobile, isDesktop, isWeb, isTauri, isCapacitor, isHarmonyOS, ... }
 
 export const UnifiedExportMenu: React.FC<UnifiedExportMenuProps> = ({
   message,

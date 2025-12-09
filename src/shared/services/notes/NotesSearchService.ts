@@ -1,5 +1,5 @@
 import { simpleNoteService, NOTE_STORAGE_PATH_KEY } from './SimpleNoteService';
-import { Capacitor } from '@capacitor/core';
+import { isCapacitor } from '../../utils/platformDetection';
 import type { NoteFile } from '../../types/note';
 import { dexieStorage } from '../storage/DexieStorageService';
 import { AdvancedFileManager } from 'capacitor-advanced-file-manager';
@@ -216,13 +216,6 @@ async function getAllFilesRecursive(
 }
 
 /**
- * 检查是否为原生平台
- */
-function isNativePlatform(): boolean {
-  return Capacitor.isNativePlatform();
-}
-
-/**
  * 获取笔记存储根目录
  */
 async function getNotesRootPath(): Promise<string> {
@@ -383,7 +376,7 @@ export async function searchNotes(
   }
 
   // 原生平台使用原生搜索 API
-  if (isNativePlatform()) {
+  if (isCapacitor()) {
     return searchNotesNative(keyword, options);
   }
   

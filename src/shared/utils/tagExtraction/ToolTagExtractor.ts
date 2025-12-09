@@ -110,9 +110,24 @@ export class ToolTagExtractor {
 
   /**
    * 处理文本块
+   * 支持增量模式和累积模式输入：
+   * - 增量模式：每次传入新增的文本片段
+   * - 累积模式：每次传入完整的累积文本（供应商层已累积）
    */
   processText(newText: string): ToolTagExtractionResult[] {
-    this.textBuffer += newText;
+    // ⭐ 智能检测输入模式：
+    // 如果新文本以当前缓冲区内容开头，说明是累积模式，直接替换
+    // 否则是增量模式，追加
+    if (newText.length > this.textBuffer.length && newText.startsWith(this.textBuffer)) {
+      // 累积模式：新文本包含旧内容，直接替换
+      this.textBuffer = newText;
+    } else if (newText === this.textBuffer) {
+      // 相同内容，跳过
+      return [];
+    } else {
+      // 增量模式：追加
+      this.textBuffer += newText;
+    }
     const results: ToolTagExtractionResult[] = [];
 
     while (this.textBuffer.length > 0) {

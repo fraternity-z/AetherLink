@@ -3,6 +3,8 @@
  * 支持 RGB、HSV、HEX 之间的相互转换
  */
 
+import { isMobile } from '../../../../shared/utils/platformDetection';
+
 export interface RGB {
   r: number; // 0-255
   g: number; // 0-255
@@ -155,12 +157,10 @@ export const getHueColor = (hue: number): string => {
 
 /**
  * 检测是否为移动设备
+ * @deprecated 请使用 isMobile() from 'src/shared/utils/platformDetection'
  */
 export const isMobileDevice = (): boolean => {
-  const userAgent = navigator.userAgent;
-  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const isSmallScreen = window.innerWidth <= 768;
-
-  return isMobileUA || (isTouchDevice && isSmallScreen);
+  // 使用统一的平台检测，同时保留小屏幕检测逻辑
+  const isSmallScreen = typeof window !== 'undefined' && window.innerWidth <= 768;
+  return isMobile() || isSmallScreen;
 };

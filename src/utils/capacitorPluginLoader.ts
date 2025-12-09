@@ -148,19 +148,9 @@ export function isPluginAvailable(pluginName: string): boolean {
   return Capacitor.isPluginAvailable(pluginName);
 }
 
-/**
- * 检查是否在原生平台
- */
-export function isNativePlatform(): boolean {
-  return Capacitor.isNativePlatform();
-}
-
-/**
- * 获取平台名称
- */
-export function getPlatform(): 'web' | 'ios' | 'android' {
-  return Capacitor.getPlatform();
-}
+// ⚠️ 平台检测函数已统一到 src/shared/utils/platformDetection.ts
+// 请使用以下导入方式:
+// import { isCapacitor, isTauri, isMobile, isIOS, isAndroid } from '../shared/utils/platformDetection';
 
 // 导出常用的插件类型（用于类型提示）
 export type CapacitorPlugin = 

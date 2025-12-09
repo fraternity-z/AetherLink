@@ -1,7 +1,8 @@
 import { dexieStorage } from '../../../services/storage/DexieStorageService';
-import { getMainTextContent, findImageBlocks, findFileBlocks } from '../../../utils/blockUtils';
+import { getMainTextContent, findImageBlocks, findFileBlocks, findToolBlocks } from '../../../utils/blockUtils';
 import { getFileTypeByExtension, readFileContent, FileTypes } from '../../../utils/fileUtils';
 import type { MCPTool, Message } from '../../../types'; // 补充Message类型
+import type { ToolMessageBlock } from '../../../types/newMessage';
 import { REFERENCE_PROMPT } from '../../../config/prompts';
 import { MobileKnowledgeService } from '../../../services/knowledge/MobileKnowledgeService';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
@@ -360,6 +361,24 @@ export const prepareMessagesForApi = async (
     const imageBlocks = findImageBlocks(message);
     const fileBlocks = findFileBlocks(message);
 
+    // 如果是 assistant 消息且有工具块，需要在内容后面添加 <tool_use> 标签
+    // 这样 AI 才能看到自己发出的工具调用，理解工具结果的来源
+    if (message.role === 'assistant') {
+      const toolBlocksForContent = findToolBlocks(message);
+      if (toolBlocksForContent.length > 0) {
+        const toolUseTags = toolBlocksForContent
+          .map((block) => {
+            const toolBlock = block as ToolMessageBlock;
+            const toolName = toolBlock.toolName || toolBlock.toolId || 'unknown_tool';
+            const args = toolBlock.arguments || {};
+            return `<tool_use>\n  <name>${toolName}</name>\n  <arguments>${JSON.stringify(args)}</arguments>\n</tool_use>`;
+          })
+          .join('\n\n');
+        content = (content || '') + '\n\n' + toolUseTags;
+        console.log(`[prepareMessagesForApi] 为 assistant 消息添加工具调用标签，工具数量: ${toolBlocksForContent.length}`);
+      }
+    }
+
     // 如果没有文件和图片，使用简单格式
     if (imageBlocks.length === 0 && fileBlocks.length === 0) {
       apiMessages.push({
@@ -425,6 +444,44 @@ export const prepareMessagesForApi = async (
         role: message.role,
         content: parts
       });
+    }
+
+    // 处理工具块：如果是 assistant 消息且有工具块，需要添加工具结果消息
+    // 参考 Cherry Studio：工具结果以 <tool_use_result> 格式作为 user 消息添加
+    if (message.role === 'assistant') {
+      const toolBlocks = findToolBlocks(message);
+      if (toolBlocks.length > 0) {
+        // 构建工具结果消息
+        const toolResults = toolBlocks
+          .map((block) => {
+            const toolBlock = block as ToolMessageBlock;
+            const toolName = toolBlock.toolName || toolBlock.toolId || 'unknown_tool';
+            // 获取工具结果内容
+            let resultContent = '';
+            if (typeof toolBlock.content === 'string') {
+              resultContent = toolBlock.content;
+            } else if (toolBlock.content) {
+              resultContent = JSON.stringify(toolBlock.content);
+            }
+            // 如果有 metadata.rawMcpToolResponse，检查是否有额外结果
+            const rawResponse = toolBlock.metadata?.rawMcpToolResponse as any;
+            if (rawResponse?.result) {
+              const rawResult = rawResponse.result;
+              resultContent = typeof rawResult === 'string' ? rawResult : JSON.stringify(rawResult);
+            }
+            return `<tool_use_result>\n  <name>${toolName}</name>\n  <result>${resultContent}</result>\n</tool_use_result>`;
+          })
+          .join('\n\n');
+        
+        // 添加工具结果作为 user 消息
+        if (toolResults) {
+          apiMessages.push({
+            role: 'user',
+            content: toolResults
+          });
+          console.log(`[prepareMessagesForApi] 添加工具结果消息，工具数量: ${toolBlocks.length}`);
+        }
+      }
     }
   }
 

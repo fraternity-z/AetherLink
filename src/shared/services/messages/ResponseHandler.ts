@@ -81,6 +81,12 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
   const completionHandler = new ResponseCompletionHandler(messageId, blockId, topicId);
   const errorHandler = new ResponseErrorHandler(messageId, blockId, topicId);
 
+  // 跟踪已处理的文本长度（用于从累积内容中提取增量部分）
+  // 参考 Cherry Studio：工具提取器应该处理增量内容，而不是累积内容
+  let lastProcessedTextLength = 0;
+  // 累积过滤后的文本内容（工具标签已移除）
+  let accumulatedCleanText = '';
+
   // 事件监听器清理函数
   let eventCleanupFunctions: (() => void)[] = [];
 
@@ -144,10 +150,13 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
     /**
      * 处理文本内容并检测工具调用
      * 
-     * 参考项目设计：检测到工具时完成当前块，创建工具块，后续文本创建新块
+     * ⭐ 参考 Cherry Studio 架构：
+     * 1. 从累积内容提取增量部分
+     * 2. 增量部分给工具提取器处理
+     * 3. 累积过滤后的文本（工具标签已移除）
+     * 4. 发送累积内容给 chunkProcessor
      * 
      * 重要：此处只负责块切换逻辑，不执行工具！
-     * 工具执行由 Provider 层的 processToolUses 统一处理，避免双重执行。
      */
     async handleTextWithToolExtraction(chunk: TextDeltaChunk | { type: ChunkType.TEXT_COMPLETE; text: string }): Promise<void> {
       const text = chunk.text;
@@ -156,46 +165,57 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
       // 保存原始 chunk 类型（DELTA 或 COMPLETE）
       const originalChunkType = chunk.type;
 
-      // 通过工具提取处理器处理文本
-      const results = toolExtractionProcessor.processText(text);
+      // ⭐ Step 1: 从累积内容中提取增量部分（参考 Cherry Studio）
+      let incrementalText = text;
+      if (text.length > lastProcessedTextLength) {
+        // 累积模式：只提取新增的部分
+        incrementalText = text.slice(lastProcessedTextLength);
+        lastProcessedTextLength = text.length;
+      } else if (text.length < lastProcessedTextLength) {
+        // 新一轮开始（内容变短了），重置跟踪和累积
+        lastProcessedTextLength = text.length;
+        accumulatedCleanText = '';
+      }
+      // 如果没有新增内容，跳过处理
+      if (!incrementalText) return;
 
+      // ⭐ Step 2: 通过工具提取处理器处理增量文本
+      const results = toolExtractionProcessor.processText(incrementalText);
+
+      // ⭐ Step 3: 处理结果，累积过滤后的文本
       for (const result of results) {
         switch (result.type) {
           case 'text':
-            // 保持原始chunk类型，不强制转换
             if (result.content) {
+              // 累积过滤后的文本（工具标签已移除）
+              accumulatedCleanText += result.content;
+              
+              // ⭐ Step 4: 发送累积内容给 chunkProcessor（参考 Cherry Studio TextChunkMiddleware）
               const textChunk: Chunk = {
                 type: originalChunkType,
-                text: result.content
+                text: accumulatedCleanText  // 发送累积内容，不是增量
               };
-              await chunkProcessor.handleChunk(textChunk);
+              chunkProcessor.handleChunk(textChunk);
             }
             break;
 
           case 'tool_created':
-            // 参考项目：检测到工具时的块切换逻辑
-            // 关键：不立即创建新文本块，让下一轮的 thinking/text 自然触发新块创建
+            // 检测到工具时的块切换逻辑
             if (result.responses && result.responses.length > 0) {
-              // 1. 完成当前文本块（保持排序正确）
-              const completedBlockId = await chunkProcessor.completeCurrentTextBlock();
+              // 1. 完成当前文本块
+              const completedBlockId = chunkProcessor.completeCurrentTextBlock();
               console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}`);
               
-              // 2. 不执行工具！工具执行由 Provider 层通过 MCP_TOOL_IN_PROGRESS/COMPLETE 事件驱动
-              // 参考项目：工具块的创建和状态更新通过事件分离，避免双重执行
-              
-              // 3. 检查是否是完成工具（attempt_completion）
-              // 🔧 修复：完成工具之后不会有下一轮，不需要重置文本块状态
-              // 否则 TEXT_COMPLETE 事件会创建重复的文本块
+              // 2. 检查是否是完成工具
               const isCompletionTool = result.responses.some((r: any) => {
                 const toolName = r.name || r.toolName || '';
                 return toolName === 'attempt_completion' || toolName.endsWith('-attempt_completion');
               });
               
               if (!isCompletionTool) {
-                // 非完成工具：重置文本块状态，让下一轮自动创建新块
+                // 非完成工具：重置状态，让下一轮自动创建新块
                 chunkProcessor.resetTextBlock();
-              } else {
-                console.log(`[ResponseHandler] 检测到完成工具，不重置文本块状态`);
+                accumulatedCleanText = '';  // 重置累积内容
               }
             }
             break;

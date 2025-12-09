@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Box } from '@mui/material';
 import KnowledgeChip from '../chat/KnowledgeChip';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
+import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
 
 import type { FileStatus } from '../FilePreview';
@@ -69,8 +70,8 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   toggleWebSearch,
   onToolsEnabledChange
 }) => {
-  // 基础状态
-  const [isIOS, setIsIOS] = useState(false); // 新增: 是否是iOS设备
+  // 使用统一的平台检测，用 useMemo 缓存结果避免重复计算
+  const isIOS = useMemo(() => checkIsIOS(), []);
 
   // 知识库状态刷新标记
   const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
@@ -160,12 +161,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 极简键盘管理 - 模仿 rikkahub
   const { hideKeyboard } = useKeyboard();
 
-  // 包装 handleSubmit，在发送时隐藏键盘
-  const wrappedHandleSubmit = useCallback(() => {
-    hideKeyboard();
-    handleSubmit();
-  }, [hideKeyboard, handleSubmit]);
-
   // Toast消息订阅
   useEffect(() => {
     const unsubscribe = toastManager.subscribe(setToastMessages);
@@ -188,13 +183,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   const { border, borderRadius, boxShadow } = styles;
   const iconColor = isDarkMode ? '#ffffff' : '#000000'; // 深色主题用白色，浅色主题用黑色
   const disabledColor = isDarkMode ? '#555' : '#ccc';
-
-  // 检测iOS设备
-  useEffect(() => {
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                       (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-    setIsIOS(isIOSDevice);
-  }, []);
 
   // 图片处理公共函数
   const processImages = async () => {

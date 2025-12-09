@@ -268,10 +268,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     }
   }, [hasStreamingMessage, autoScrollToBottom]);
 
+  // ⭐ 始终监听流式事件，避免竞态条件（事件在 hasStreamingMessage 更新前发送）
   useEffect(() => {
-    if (!hasStreamingMessage) return;
-
     const throttledTextDeltaHandler = throttle(() => {
+      // 在事件处理器内部检查设置
+      if (!autoScrollToBottom) return;
+      
       const container = containerRef.current;
       if (container) {
         const gap = container.scrollHeight - container.scrollTop - container.clientHeight;
@@ -279,9 +281,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
         if (!isNearBottom) return;
       }
       unifiedScrollManagerRef.current.scrollToBottom('textDelta');
-    }, 500);
+    }, 150);  // ⭐ 降低节流间隔，响应更及时
 
     const scrollToBottomHandler = () => {
+      if (!autoScrollToBottom) return;
       unifiedScrollManagerRef.current.scrollToBottom('eventHandler', { force: true });
     };
 
@@ -297,7 +300,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
       unsubscribeScrollToBottom();
       throttledTextDeltaHandler.cancel();
     };
-  }, [hasStreamingMessage]);
+  }, [autoScrollToBottom]);  // ⭐ 只依赖设置，不依赖 hasStreamingMessage
 
   const throttledMessageLengthScroll = useMemo(
     () => throttle(() => {
