@@ -346,6 +346,10 @@ const registeredCustomFonts = new Map<string, FontFace>();
 // 内存缓存的字体元数据
 let customFontsCache: CustomFont[] | null = null;
 
+// 字体初始化标志
+let fontsInitialized = false;
+let fontsInitPromise: Promise<void> | null = null;
+
 // IndexedDB 数据库名和表名
 const FONT_DB_NAME = 'CustomFontsDB';
 const FONT_STORE_NAME = 'fonts';
@@ -377,34 +381,6 @@ export function getCustomFonts(): CustomFont[] {
   return customFontsCache || [];
 }
 
-/**
- * 从 IndexedDB 加载字体元数据列表
- */
-async function loadCustomFontsMetadata(): Promise<CustomFont[]> {
-  try {
-    const db = await openFontDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(FONT_STORE_NAME, 'readonly');
-      const store = transaction.objectStore(FONT_STORE_NAME);
-      const request = store.getAll();
-      
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const fonts = (request.result as CustomFontWithData[]).map(f => ({
-          id: f.id,
-          name: f.name,
-          fontFamily: f.fontFamily,
-          addedAt: f.addedAt,
-        }));
-        customFontsCache = fonts;
-        resolve(fonts);
-      };
-    });
-  } catch (e) {
-    console.error('[CustomFonts] 读取自定义字体失败:', e);
-    return [];
-  }
-}
 
 /**
  * 从文件添加自定义字体
@@ -514,46 +490,64 @@ export async function removeCustomFont(fontId: string): Promise<boolean> {
 }
 
 /**
- * 加载所有已保存的自定义字体（应用启动时调用）
+ * 加载所有已保存的自定义字体（模块加载时自动调用，支持外部重复调用）
  */
 export async function loadSavedCustomFonts(): Promise<void> {
-  try {
-    const db = await openFontDB();
-    const fonts = await new Promise<CustomFontWithData[]>((resolve, reject) => {
-      const transaction = db.transaction(FONT_STORE_NAME, 'readonly');
-      const store = transaction.objectStore(FONT_STORE_NAME);
-      const request = store.getAll();
-      
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-    });
-
-    // 更新缓存
-    customFontsCache = fonts.map(f => ({
-      id: f.id,
-      name: f.name,
-      fontFamily: f.fontFamily,
-      addedAt: f.addedAt,
-    }));
-
-    // 注册所有字体
-    for (const font of fonts) {
-      try {
-        if (!registeredCustomFonts.has(font.id)) {
-          const fontFace = new FontFace(font.fontFamily, font.fontData);
-          await fontFace.load();
-          document.fonts.add(fontFace);
-          registeredCustomFonts.set(font.id, fontFace);
-          loadedFonts.add(`${font.fontFamily}:400`);
-          console.log(`[CustomFonts] 恢复自定义字体: ${font.name}`);
-        }
-      } catch (e) {
-        console.warn(`[CustomFonts] 恢复自定义字体失败: ${font.name}`, e);
-      }
-    }
-  } catch (e) {
-    console.error('[CustomFonts] 加载自定义字体失败:', e);
+  // 防止重复初始化，复用已有的 Promise
+  if (fontsInitPromise) {
+    return fontsInitPromise;
   }
+  
+  if (fontsInitialized) {
+    return;
+  }
+
+  fontsInitPromise = (async () => {
+    try {
+      const db = await openFontDB();
+      const fonts = await new Promise<CustomFontWithData[]>((resolve, reject) => {
+        const transaction = db.transaction(FONT_STORE_NAME, 'readonly');
+        const store = transaction.objectStore(FONT_STORE_NAME);
+        const request = store.getAll();
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+      });
+
+      // 更新缓存
+      customFontsCache = fonts.map(f => ({
+        id: f.id,
+        name: f.name,
+        fontFamily: f.fontFamily,
+        addedAt: f.addedAt,
+      }));
+
+      // 注册所有字体
+      for (const font of fonts) {
+        try {
+          if (!registeredCustomFonts.has(font.id)) {
+            const fontFace = new FontFace(font.fontFamily, font.fontData);
+            await fontFace.load();
+            document.fonts.add(fontFace);
+            registeredCustomFonts.set(font.id, fontFace);
+            loadedFonts.add(`${font.fontFamily}:400`);
+            console.log(`[CustomFonts] 恢复自定义字体: ${font.name}`);
+          }
+        } catch (e) {
+          console.warn(`[CustomFonts] 恢复自定义字体失败: ${font.name}`, e);
+        }
+      }
+      
+      fontsInitialized = true;
+      console.log(`[CustomFonts] 初始化完成，共 ${fonts.length} 个自定义字体`);
+    } catch (e) {
+      console.error('[CustomFonts] 加载自定义字体失败:', e);
+    } finally {
+      fontsInitPromise = null;
+    }
+  })();
+
+  return fontsInitPromise;
 }
 
 /**
@@ -571,8 +565,8 @@ export function getCustomFontFamily(fontId: string): string | null {
   return font ? font.fontFamily : null;
 }
 
-// 初始化时加载字体元数据
-loadCustomFontsMetadata().catch(console.error);
+// 模块加载时自动初始化自定义字体
+loadSavedCustomFonts().catch(console.error);
 
 // 导出服务实例
 export const googleFontsService = {

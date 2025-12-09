@@ -3,10 +3,11 @@ import { useSelector } from 'react-redux';
 import { createCustomTheme, getValidThemeStyle } from '../shared/config/themes';
 import { statusBarService } from '../shared/services/StatusBarService';
 import { applyCSSVariables } from '../shared/utils/cssVariables';
-import type { ThemeStyle } from '../shared/design-tokens';
+import { loadSavedCustomFonts } from '../shared/services/GoogleFontsService';
 
 export const useTheme = () => {
   const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const [fontsReady, setFontsReady] = useState(false);
 
   const themePreference = useSelector((state: any) => state.settings.theme);
   const themeStyleRaw = useSelector((state: any) => state.settings.themeStyle);
@@ -15,6 +16,13 @@ export const useTheme = () => {
   const themeStyle = getValidThemeStyle(themeStyleRaw);
   const fontSize = useSelector((state: any) => state.settings.fontSize);
   const fontFamily = useSelector((state: any) => state.settings.fontFamily || 'system');
+
+  // 🎨 加载自定义字体（确保在创建 theme 前完成）
+  useEffect(() => {
+    loadSavedCustomFonts().then(() => {
+      setFontsReady(true);
+    });
+  }, []);
 
   // 监听系统主题变化
   useEffect(() => {
@@ -62,9 +70,11 @@ export const useTheme = () => {
   }, [mode, themeStyle]);
 
   // 创建主题对象 - 使用稳定的依赖
+  // fontsReady 作为依赖确保字体加载完成后重新创建 theme
   const theme = useMemo(() => {
     return createCustomTheme(mode, themeStyle, fontSize, fontFamily);
-  }, [mode, themeStyle, fontSize, fontFamily]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, themeStyle, fontSize, fontFamily, fontsReady]);
 
   return { theme, mode, fontSize, fontFamily };
 };

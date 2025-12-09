@@ -8,9 +8,16 @@ import { Portal } from 'solid-js/web';
 import { useAppState } from '../../../shared/hooks/useAppState';
 import './FullScreenSelector.solid.css';
 
+export interface SelectorItem {
+  key: string;
+  label: string;
+  subLabel?: string;
+  deletable?: boolean; // 是否可删除
+}
+
 export interface SelectorGroup {
   name: string;
-  items: { key: string; label: string; subLabel?: string }[];
+  items: SelectorItem[];
 }
 
 export interface FullScreenSelectorProps {
@@ -20,6 +27,7 @@ export interface FullScreenSelectorProps {
   groups: SelectorGroup[];
   selectedKey: string;
   onSelect: (key: string, label: string) => void;
+  onDelete?: (key: string) => void; // 删除回调
   allowEmpty?: boolean;
   emptyLabel?: string;
   themeMode?: 'light' | 'dark';
@@ -218,7 +226,7 @@ export function FullScreenSelector(props: FullScreenSelectorProps) {
                       <For each={group.items}>
                         {(item) => (
                           <div
-                            class={`solid-selector-chip ${props.selectedKey === item.key ? 'selected' : ''}`}
+                            class={`solid-selector-chip ${props.selectedKey === item.key ? 'selected' : ''} ${item.deletable ? 'deletable' : ''}`}
                             onClick={() => handleSelect(item.key, item.label)}
                           >
                             <span>{item.label}</span>
@@ -226,6 +234,21 @@ export function FullScreenSelector(props: FullScreenSelectorProps) {
                               <span class="solid-selector-chip-check">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                   <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                              </span>
+                            </Show>
+                            {/* 删除按钮 */}
+                            <Show when={item.deletable && props.onDelete}>
+                              <span 
+                                class="solid-selector-chip-delete"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  props.onDelete?.(item.key);
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <line x1="18" y1="6" x2="6" y2="18"/>
+                                  <line x1="6" y1="6" x2="18" y2="18"/>
                                 </svg>
                               </span>
                             </Show>

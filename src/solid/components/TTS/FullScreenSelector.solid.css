@@ -368,6 +368,41 @@
   align-items: center;
 }
 
+/* 删除按钮 */
+.solid-selector-chip-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.6));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+
+.solid-selector-chip-delete:hover {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.solid-selector-panel.dark .solid-selector-chip-delete {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.solid-selector-panel.dark .solid-selector-chip-delete:hover {
+  background: rgba(244, 67, 54, 0.3);
+  color: #ef5350;
+}
+
+/* 可删除的 chip 需要更多空间 */
+.solid-selector-chip.deletable {
+  padding-right: 8px;
+}
+
 /* ==================== 无结果 ==================== */
 .solid-selector-no-results {
   text-align: center;

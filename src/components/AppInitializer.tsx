@@ -178,7 +178,8 @@ const AppInitializer = () => {
 
     // 执行初始化
     initializeApp();
-  }, [dispatch]); // 🔥 修复：移除会导致循环的依赖项
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]); // 🔥 修复：移除会导致循环的依赖项，仅在组件挂载时执行一次
 
   // 这是一个纯逻辑组件，不渲染任何UI
   return null;

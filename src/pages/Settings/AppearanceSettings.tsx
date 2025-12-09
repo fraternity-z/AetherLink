@@ -44,7 +44,8 @@ import {
 import { 
   addCustomFontFromFile, 
   removeCustomFont,
-  getCustomFonts 
+  getCustomFonts,
+  loadSavedCustomFonts
 } from '../../shared/services/GoogleFontsService';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useLanguageSettings } from '../../i18n/useLanguageSettings';
@@ -84,6 +85,8 @@ const AppearanceSettings: React.FC = () => {
   const refreshFontOptions = async () => {
     setFontsLoading(true);
     try {
+      // 确保自定义字体已加载
+      await loadSavedCustomFonts();
       const fonts = await getAllFontOptions();
       setFontOptions(fonts);
     } catch (err) {
@@ -151,14 +154,11 @@ const AppearanceSettings: React.FC = () => {
           key: font.id,
           label: font.name,
           subLabel: font.preview,
-          // 自定义字体添加删除操作
-          action: customFontIds.has(font.id) ? {
-            label: '删除',
-            onClick: () => handleRemoveCustomFont(font.id),
-          } : undefined,
+          // 自定义字体标记为可删除
+          deletable: customFontIds.has(font.id),
         })),
     })).filter(group => group.items.length > 0);
-  }, [fontOptions, settings.fontFamily]);
+  }, [fontOptions]);
 
   // 使用滚动位置保存功能
   const {
@@ -997,6 +997,7 @@ const AppearanceSettings: React.FC = () => {
         groups={fontGroups}
         selectedKey={settings.fontFamily || 'system'}
         onSelect={(key) => handleFontSelect(key)}
+        onDelete={handleRemoveCustomFont}
       />
     </SafeAreaContainer>
   );

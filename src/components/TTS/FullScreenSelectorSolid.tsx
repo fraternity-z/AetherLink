@@ -5,7 +5,7 @@
 import React, { useMemo } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { SolidBridge } from '../../shared/bridges/SolidBridge';
-import { FullScreenSelector as SolidFullScreenSelector, type SelectorGroup } from '../../solid/components/TTS/FullScreenSelector.solid';
+import { FullScreenSelector as SolidFullScreenSelector, type SelectorGroup, type SelectorItem } from '../../solid/components/TTS/FullScreenSelector.solid';
 
 interface FullScreenSelectorSolidProps {
   open: boolean;
@@ -14,6 +14,7 @@ interface FullScreenSelectorSolidProps {
   groups: SelectorGroup[];
   selectedKey: string;
   onSelect: (key: string, label: string) => void;
+  onDelete?: (key: string) => void; // 删除回调
   allowEmpty?: boolean;
   emptyLabel?: string;
 }
@@ -29,6 +30,7 @@ const FullScreenSelectorSolid: React.FC<FullScreenSelectorSolidProps> = ({
   groups,
   selectedKey,
   onSelect,
+  onDelete,
   allowEmpty = false,
   emptyLabel = '无',
 }) => {
@@ -42,10 +44,11 @@ const FullScreenSelectorSolid: React.FC<FullScreenSelectorSolidProps> = ({
     groups,
     selectedKey,
     onSelect,
+    onDelete,
     allowEmpty,
     emptyLabel,
     themeMode: themeMode as 'light' | 'dark',
-  }), [open, onClose, title, groups, selectedKey, onSelect, allowEmpty, emptyLabel, themeMode]);
+  }), [open, onClose, title, groups, selectedKey, onSelect, onDelete, allowEmpty, emptyLabel, themeMode]);
 
   // 只在打开时渲染 SolidJS 组件
   if (!open) return null;
@@ -60,4 +63,4 @@ const FullScreenSelectorSolid: React.FC<FullScreenSelectorSolidProps> = ({
 };
 
 export default FullScreenSelectorSolid;
-export type { SelectorGroup };
+export type { SelectorGroup, SelectorItem };
