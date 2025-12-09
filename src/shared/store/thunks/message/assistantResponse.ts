@@ -176,6 +176,16 @@ async function handleTextGeneration(context: {
       break;
     }
 
+    // 🔧 关键修复：先添加 AI 的 assistant 消息（包含工具调用），再添加工具结果
+    // 参考 Roo-Code: Task.ts 第 2981-2987 行
+    // 这样 AI 才能看到自己之前调用了什么工具，避免"失忆"问题
+    const assistantContent = await getAssistantResponseContent(assistantMessage.id);
+    if (assistantContent) {
+      const assistantMsg = buildAssistantMessage(assistantContent, isActualGeminiProvider);
+      currentMessagesToSend = [...currentMessagesToSend, assistantMsg];
+      console.log(`[Agentic] 添加 AI 的 assistant 消息（含工具调用）到消息历史`);
+    }
+
     // 将工具结果添加到消息历史
     console.log(`[Agentic] 工具执行完成，将结果发回 AI 继续下一轮`);
     currentMessagesToSend = buildMessagesWithToolResults(
