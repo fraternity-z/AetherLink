@@ -119,6 +119,12 @@ export default defineConfig(({ mode }) => ({
       'solid-js',
       'solid-js/web',
       'capacitor-advanced-file-manager',
+      // Capacitor 核心包 - 确保正确预构建
+      '@capacitor/core',
+      '@capacitor/app',
+      '@capacitor/haptics',
+      '@capacitor/keyboard',
+      '@capacitor/status-bar',
     ],
     // 移除 force: true，避免每次都重新构建
     // force: true
@@ -139,7 +145,7 @@ export default defineConfig(({ mode }) => ({
   // 解析配置
   resolve: {
     alias: {
-      '@': '/src'
+      '@': '/src',
     },
     // 处理符号链接问题
     preserveSymlinks: false,
