@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import path from 'path' // 引入 path 模块
 import react from '@vitejs/plugin-react-swc'  // SWC 高性能编译，基于 Rust，比 Babel 快 10-75 倍
 import solidPlugin from 'vite-plugin-solid'
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
@@ -140,10 +141,11 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': '/src',
-      // CI 修复：显式将 @capacitor/core 指向覆盖后的包
-      '@capacitor/core': 'aetherlink-capacitor-core',
-      '@capacitor/android': 'aetherlink-capacitor-android',
-      '@capacitor/ios': 'aetherlink-capacitor-ios',
+      // CI 修复：显式将 @capacitor/core 指向 node_modules 下的绝对路径
+      // 使用 path.resolve 确保构建工具能正确找到被 override 的包
+      '@capacitor/core': path.resolve(__dirname, 'node_modules/aetherlink-capacitor-core'),
+      '@capacitor/android': path.resolve(__dirname, 'node_modules/aetherlink-capacitor-android'),
+      '@capacitor/ios': path.resolve(__dirname, 'node_modules/aetherlink-capacitor-ios'),
     },
     // 处理符号链接问题
     preserveSymlinks: false,
