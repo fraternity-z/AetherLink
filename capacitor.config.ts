@@ -54,6 +54,36 @@ const config: CapacitorConfig = {
       },
       timeout: 5000,
     },
+    // 💾 结果缓存配置 - 缓存读取结果避免重复调用
+    // 注意：当前项目主要用 IndexedDB 存储，Capacitor 插件调用不频繁，缓存收益不大
+    ResultCache: {
+      enabled: false,  // 暂时关闭
+      methods: {
+        // 设备信息 - 几乎不变，缓存 5 分钟
+        'Device': {
+          'getInfo': 300000,
+          'getId': 300000,
+          'getBatteryInfo': 30000,
+          'getLanguageCode': 300000,
+        },
+        // 应用信息 - 不变，缓存 5 分钟
+        'App': {
+          'getInfo': 300000,
+          'getState': 5000,
+          'getLaunchUrl': 300000,
+        },
+        // 偏好设置 - 缓存 30 秒（配合同步调用，二次读取直接返回）
+        'Preferences': {
+          'get': 30000,
+          'keys': 30000,
+        },
+        // 状态栏信息 - 缓存 10 秒
+        'StatusBar': {
+          'getInfo': 10000,
+        },
+      },
+      maxEntries: 100,
+    },
     CapacitorHttp: {
       enabled: false  //  禁用CapacitorHttp，使用标准fetch支持流式输出
     },
