@@ -146,11 +146,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': '/src',
-      // 自定义 Capacitor 包别名 - 确保 CI 环境和本地构建一致
-      // npm alias 在某些 CI 环境可能不生效，这里显式指定
-      '@capacitor/core': 'aetherlink-capacitor-core',
-      '@capacitor/android': 'aetherlink-capacitor-android',
-      '@capacitor/ios': 'aetherlink-capacitor-ios',
     },
     // 处理符号链接问题
     preserveSymlinks: false,
