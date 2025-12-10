@@ -172,7 +172,7 @@
     "ai": "^5.0.99",
     "axios": "^1.9.0",
     "buffer": "6.0.3",
-    "capacitor-advanced-file-manager": "^2.1.0",
+    "capacitor-advanced-file-manager": "^2.1.2",
     "capacitor-cors-bypass-enhanced": "^2.1.0",
     "capacitor-edge-to-edge": "^2.1.0",
     "chart.js": "^4.4.9",
