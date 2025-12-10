@@ -139,7 +139,11 @@ export default defineConfig(({ mode }) => ({
   // 解析配置
   resolve: {
     alias: {
-      '@': '/src'
+      '@': '/src',
+      // CI 修复：显式将 @capacitor/core 指向覆盖后的包
+      '@capacitor/core': 'aetherlink-capacitor-core',
+      '@capacitor/android': 'aetherlink-capacitor-android',
+      '@capacitor/ios': 'aetherlink-capacitor-ios',
     },
     // 处理符号链接问题
     preserveSymlinks: false,
