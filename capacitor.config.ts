@@ -1,6 +1,6 @@
 /// <reference types="capacitor-edge-to-edge" />
 
-import { CapacitorConfig } from '@capacitor/cli';
+import { CapacitorConfig } from 'aetherlink-capacitor-cli';
 
 const config: CapacitorConfig = {
   appId: 'com.llmhouse.app',
