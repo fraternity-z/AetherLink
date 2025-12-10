@@ -139,7 +139,7 @@ export class DexieStorageService extends Dexie {
       const errorMessage = error instanceof Error
         ? `${error.name}: ${error.message}`
         : String(error);
-      console.error(`保存助手 ${assistant.id} 失败: ${errorMessage}`);
+      console.error(`[DexieStorageService] 保存助手失败: ${errorMessage}`);
       throw error;
     }
   }
@@ -175,19 +175,34 @@ export class DexieStorageService extends Dexie {
       const errorMessage = error instanceof Error
         ? `${error.name}: ${error.message}`
         : String(error);
-      console.error(`更新助手 ${id} 失败: ${errorMessage}`);
+      console.error(`[DexieStorageService] 更新助手失败: ${errorMessage}`);
       throw error;
     }
   }
 
   async deleteAssistant(id: string): Promise<void> {
-    const assistant = await this.getAssistant(id);
-    if (assistant && assistant.topicIds && assistant.topicIds.length > 0) {
-      for (const topicId of assistant.topicIds) {
-        await this.deleteTopic(topicId);
-      }
+    try {
+      await this.transaction('rw', [this.assistants, this.topics, this.messages, this.message_blocks], async () => {
+        const assistant = await this.assistants.get(id);
+        if (assistant?.topicIds?.length) {
+          for (const topicId of assistant.topicIds) {
+            // 批量删除消息块
+            const messages = await this.messages.where('topicId').equals(topicId).toArray();
+            const blockIds = messages.flatMap(m => m.blocks || []);
+            if (blockIds.length > 0) {
+              await this.message_blocks.bulkDelete(blockIds);
+            }
+            // 删除消息和话题
+            await this.messages.where('topicId').equals(topicId).delete();
+            await this.topics.delete(topicId);
+          }
+        }
+        await this.assistants.delete(id);
+      });
+    } catch (error) {
+      console.error(`[DexieStorageService] 删除助手失败: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
-    await this.assistants.delete(id);
   }
 
   async getAllTopics(): Promise<ChatTopic[]> {
@@ -283,11 +298,22 @@ export class DexieStorageService extends Dexie {
 
   async deleteTopic(id: string): Promise<void> {
     try {
-      // 删除关联的消息和消息块
-      await this.deleteMessagesByTopicId(id);
-
-      // 删除主题
-      await this.topics.delete(id);
+      await this.transaction('rw', [this.topics, this.messages, this.message_blocks], async () => {
+        // 批量获取消息并收集所有块ID
+        const messages = await this.messages.where('topicId').equals(id).toArray();
+        const blockIds = messages.flatMap(m => m.blocks || []);
+        
+        // 批量删除消息块
+        if (blockIds.length > 0) {
+          await this.message_blocks.bulkDelete(blockIds);
+        }
+        
+        // 删除消息
+        await this.messages.where('topicId').equals(id).delete();
+        
+        // 删除主题
+        await this.topics.delete(id);
+      });
     } catch (error) {
       console.error(`[DexieStorageService] 删除话题失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
@@ -336,35 +362,49 @@ export class DexieStorageService extends Dexie {
 
   async deleteMessageFromTopic(topicId: string, messageId: string): Promise<void> {
     try {
-      // 删除消息及其关联的块
-      await this.deleteMessage(messageId);
-
-      // 更新主题的messageIds数组
-      const topic = await this.getTopic(topicId);
-      if (!topic) return;
-
-      // 更新messageIds数组
-      if (topic.messageIds) {
-        topic.messageIds = topic.messageIds.filter(id => id !== messageId);
-      }
-
-      // 为了兼容性，同时更新messages数组
-      if (topic.messages) {
-        topic.messages = topic.messages.filter(m => m.id !== messageId);
-      }
-
-      // 更新lastMessageTime
-      if (topic.messageIds && topic.messageIds.length > 0) {
-        const lastMessageId = topic.messageIds[topic.messageIds.length - 1];
-        const lastMessage = await this.getMessage(lastMessageId);
-        if (lastMessage) {
-          topic.lastMessageTime = lastMessage.createdAt || lastMessage.updatedAt || new Date().toISOString();
+      await this.transaction('rw', [this.topics, this.messages, this.message_blocks], async () => {
+        // 删除消息及其关联的块
+        const message = await this.messages.get(messageId);
+        if (message?.blocks?.length) {
+          await this.message_blocks.bulkDelete(message.blocks);
         }
-      } else {
-        topic.lastMessageTime = new Date().toISOString();
-      }
+        await this.messages.delete(messageId);
 
-      await this.saveTopic(topic);
+        // 更新主题
+        const topic = await this.topics.get(topicId);
+        if (!topic) return;
+
+        // 更新messageIds数组
+        if (topic.messageIds) {
+          topic.messageIds = topic.messageIds.filter(id => id !== messageId);
+        }
+
+        // 为了兼容性，同时更新messages数组
+        if (topic.messages) {
+          topic.messages = topic.messages.filter(m => m.id !== messageId);
+        }
+
+        // 更新lastMessageTime
+        if (topic.messageIds && topic.messageIds.length > 0) {
+          const lastMessageId = topic.messageIds[topic.messageIds.length - 1];
+          const lastMessage = await this.messages.get(lastMessageId);
+          if (lastMessage) {
+            topic.lastMessageTime = lastMessage.createdAt || lastMessage.updatedAt || new Date().toISOString();
+          }
+        } else {
+          topic.lastMessageTime = new Date().toISOString();
+        }
+
+        // 设置 _lastMessageTimeNum 用于排序
+        const lastMessageTime = topic.lastMessageTime || topic.updatedAt || new Date().toISOString();
+        const topicToStore = {
+          ...topic,
+          _lastMessageTimeNum: new Date(lastMessageTime).getTime()
+        };
+        delete (topicToStore as any).messages;
+
+        await this.topics.put(topicToStore);
+      });
     } catch (error) {
       console.error(`[DexieStorageService] 从话题中删除消息失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
@@ -373,36 +413,49 @@ export class DexieStorageService extends Dexie {
 
   async addMessageToTopic(topicId: string, message: Message): Promise<void> {
     try {
-      // 保存消息到messages表
-      await this.saveMessage(message);
+      await this.transaction('rw', [this.topics, this.messages, this.message_blocks], async () => {
+        // 确保消息有ID
+        if (!message.id) {
+          message.id = uuid();
+        }
 
-      // 更新主题的messageIds数组
-      const topic = await this.getTopic(topicId);
-      if (!topic) return;
+        // 保存消息到messages表
+        await this.messages.put(message);
 
-      if (!topic.messageIds) {
-        topic.messageIds = [];
-      }
+        // 更新主题
+        const topic = await this.topics.get(topicId);
+        if (!topic) return;
 
-      if (!topic.messageIds.includes(message.id)) {
-        topic.messageIds.push(message.id);
-      }
+        if (!topic.messageIds) {
+          topic.messageIds = [];
+        }
 
-      // 为了兼容性，同时更新messages数组
-      const messages = topic.messages || [];
+        if (!topic.messageIds.includes(message.id)) {
+          topic.messageIds.push(message.id);
+        }
 
-      const messageIndex = messages.findIndex(m => m.id === message.id);
-      if (messageIndex >= 0) {
-        messages[messageIndex] = message;
-      } else {
-        messages.push(message);
-      }
+        // 为了兼容性，同时更新messages数组
+        const messages = topic.messages || [];
+        const messageIndex = messages.findIndex(m => m.id === message.id);
+        if (messageIndex >= 0) {
+          messages[messageIndex] = message;
+        } else {
+          messages.push(message);
+        }
+        topic.messages = messages;
 
-      // 更新topic.messages
-      topic.messages = messages;
+        // 更新时间
+        topic.lastMessageTime = message.createdAt || message.updatedAt || new Date().toISOString();
 
-      topic.lastMessageTime = message.createdAt || message.updatedAt || new Date().toISOString();
-      await this.saveTopic(topic);
+        // 设置 _lastMessageTimeNum 用于排序
+        const topicToStore = {
+          ...topic,
+          _lastMessageTimeNum: new Date(topic.lastMessageTime).getTime()
+        };
+        delete (topicToStore as any).messages;
+
+        await this.topics.put(topicToStore);
+      });
     } catch (error) {
       console.error(`[DexieStorageService] 添加消息到话题失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
@@ -643,7 +696,7 @@ export class DexieStorageService extends Dexie {
 
       return id;
     } catch (error) {
-      console.error('保存base64图片失败:', error);
+      console.error(`[DexieStorageService] 保存base64图片失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -771,6 +824,7 @@ export class DexieStorageService extends Dexie {
   /**
    * 获取话题的所有消息
    * 使用新消息系统：从messageIds加载消息
+   * 优化：使用 bulkGet 批量查询，避免 N+1 问题
    */
   async getTopicMessages(topicId: string): Promise<Message[]> {
     try {
@@ -780,15 +834,13 @@ export class DexieStorageService extends Dexie {
 
       // 从messageIds加载消息
       if (topic.messageIds && Array.isArray(topic.messageIds) && topic.messageIds.length > 0) {
-        console.log(`[DexieStorageService] 从messageIds加载 ${topic.messageIds.length} 条消息`);
+        console.log(`[DexieStorageService] 使用 bulkGet 加载 ${topic.messageIds.length} 条消息`);
 
-        const messages: Message[] = [];
-
-        // 从messages表加载消息
-        for (const messageId of topic.messageIds) {
-          const message = await this.messages.get(messageId);
-          if (message) messages.push(message);
-        }
+        // 使用 bulkGet 批量查询，1次查询替代N次查询
+        const messagesResult = await this.messages.bulkGet(topic.messageIds);
+        
+        // 过滤掉 undefined（不存在的消息）并保持顺序
+        const messages = messagesResult.filter((m): m is Message => m !== undefined);
 
         return messages;
       }
@@ -1040,7 +1092,7 @@ export class DexieStorageService extends Dexie {
       const combosData = await this.getMetadata('model_combos');
       return combosData || [];
     } catch (error) {
-      console.error('[DexieStorageService] 获取模型组合失败:', error);
+      console.error(`[DexieStorageService] 获取模型组合失败: ${error instanceof Error ? error.message : String(error)}`);
       return [];
     }
   }
@@ -1051,7 +1103,7 @@ export class DexieStorageService extends Dexie {
       const combos = await this.getAllModelCombos();
       return combos.find(combo => combo.id === id) || null;
     } catch (error) {
-      console.error('[DexieStorageService] 获取模型组合失败:', error);
+      console.error(`[DexieStorageService] 获取模型组合失败: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   }
@@ -1070,7 +1122,7 @@ export class DexieStorageService extends Dexie {
 
       await this.saveMetadata('model_combos', combos);
     } catch (error) {
-      console.error('[DexieStorageService] 保存模型组合失败:', error);
+      console.error(`[DexieStorageService] 保存模型组合失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -1082,7 +1134,7 @@ export class DexieStorageService extends Dexie {
       const filteredCombos = combos.filter(combo => combo.id !== id);
       await this.saveMetadata('model_combos', filteredCombos);
     } catch (error) {
-      console.error('[DexieStorageService] 删除模型组合失败:', error);
+      console.error(`[DexieStorageService] 删除模型组合失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -1097,7 +1149,7 @@ export class DexieStorageService extends Dexie {
       const phrases = await this.quick_phrases.toArray();
       return phrases.sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
     } catch (error) {
-      console.error('[DexieStorageService] 获取快捷短语失败:', error);
+      console.error(`[DexieStorageService] 获取快捷短语失败: ${error instanceof Error ? error.message : String(error)}`);
       return [];
     }
   }
@@ -1107,25 +1159,26 @@ export class DexieStorageService extends Dexie {
     try {
       return await this.quick_phrases.get(id) || null;
     } catch (error) {
-      console.error('[DexieStorageService] 获取快捷短语失败:', error);
+      console.error(`[DexieStorageService] 获取快捷短语失败: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   }
 
   // 添加快捷短语
+  // 优化：使用 bulkPut 批量更新，避免 N+1 问题
   async addQuickPhrase(data: Pick<QuickPhrase, 'title' | 'content'>): Promise<QuickPhrase> {
     try {
       const now = Date.now();
       const phrases = await this.getAllQuickPhrases();
 
-      // 更新现有短语的顺序
-      await Promise.all(
-        phrases.map((phrase) =>
-          this.quick_phrases.update(phrase.id, {
-            order: (phrase.order ?? 0) + 1
-          })
-        )
-      );
+      // 批量更新现有短语的顺序
+      if (phrases.length > 0) {
+        const updatedPhrases = phrases.map((phrase) => ({
+          ...phrase,
+          order: (phrase.order ?? 0) + 1
+        }));
+        await this.quick_phrases.bulkPut(updatedPhrases);
+      }
 
       const phrase: QuickPhrase = {
         id: uuid(),
@@ -1139,7 +1192,7 @@ export class DexieStorageService extends Dexie {
       await this.quick_phrases.add(phrase);
       return phrase;
     } catch (error) {
-      console.error('[DexieStorageService] 添加快捷短语失败:', error);
+      console.error(`[DexieStorageService] 添加快捷短语失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
@@ -1152,45 +1205,48 @@ export class DexieStorageService extends Dexie {
         updatedAt: Date.now()
       });
     } catch (error) {
-      console.error('[DexieStorageService] 更新快捷短语失败:', error);
+      console.error(`[DexieStorageService] 更新快捷短语失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
 
   // 删除快捷短语
+  // 优化：使用 bulkPut 批量更新，避免 N+1 问题
   async deleteQuickPhrase(id: string): Promise<void> {
     try {
       await this.quick_phrases.delete(id);
       const phrases = await this.getAllQuickPhrases();
 
-      // 重新排序剩余的短语
-      await Promise.all(
-        phrases.map((phrase, index) =>
-          this.quick_phrases.update(phrase.id, {
-            order: phrases.length - 1 - index
-          })
-        )
-      );
+      // 批量重新排序剩余的短语
+      if (phrases.length > 0) {
+        const updatedPhrases = phrases.map((phrase, index) => ({
+          ...phrase,
+          order: phrases.length - 1 - index
+        }));
+        await this.quick_phrases.bulkPut(updatedPhrases);
+      }
     } catch (error) {
-      console.error('[DexieStorageService] 删除快捷短语失败:', error);
+      console.error(`[DexieStorageService] 删除快捷短语失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
 
   // 更新快捷短语顺序
+  // 优化：使用 bulkPut 批量更新，避免 N+1 问题
   async updateQuickPhrasesOrder(phrases: QuickPhrase[]): Promise<void> {
     try {
+      if (phrases.length === 0) return;
+      
       const now = Date.now();
-      await Promise.all(
-        phrases.map((phrase, index) =>
-          this.quick_phrases.update(phrase.id, {
-            order: phrases.length - 1 - index,
-            updatedAt: now
-          })
-        )
-      );
+      const updatedPhrases = phrases.map((phrase, index) => ({
+        ...phrase,
+        order: phrases.length - 1 - index,
+        updatedAt: now
+      }));
+      
+      await this.quick_phrases.bulkPut(updatedPhrases);
     } catch (error) {
-      console.error('[DexieStorageService] 更新快捷短语顺序失败:', error);
+      console.error(`[DexieStorageService] 更新快捷短语顺序失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
