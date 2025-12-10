@@ -8,7 +8,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "postinstall": "patch-package || echo 'patch-package not found, skipping...'",
+    "postinstall": "node scripts/fix-capacitor-paths.cjs && (patch-package || echo 'patch-package not found, skipping...')",
     "dev": "concurrently \"node scripts/cors-proxy.js\" \"vite\" --names \"PROXY,VITE\" --prefix \"[{name}]\" --kill-others-on-fail",
     "build": "vite build",
     "build:turbo": "node scripts/turbo-build.js",
