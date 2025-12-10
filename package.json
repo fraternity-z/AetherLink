@@ -75,9 +75,9 @@
   "overrides": {
     "vite": "npm:rolldown-vite@latest",
     "mathjax-full": "3.2.2",
-    "@capacitor/core": "npm:aetherlink-capacitor-core@^7.4.4",
-    "@capacitor/android": "npm:aetherlink-capacitor-android@^7.4.4",
-    "@capacitor/ios": "npm:aetherlink-capacitor-ios@^7.4.4"
+    "@capacitor/core": "npm:aetherlink-capacitor-core@^7.4.9",
+    "@capacitor/android": "npm:aetherlink-capacitor-android@^7.4.9",
+    "@capacitor/ios": "npm:aetherlink-capacitor-ios@^7.4.9"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
@@ -161,10 +161,10 @@
     "@uiw/codemirror-theme-vscode": "^4.25.3",
     "@uiw/react-codemirror": "^4.23.13",
     "@use-gesture/react": "^10.3.1",
-    "aetherlink-capacitor-android": "^7.4.7",
-    "aetherlink-capacitor-cli": "^7.4.7",
-    "aetherlink-capacitor-core": "^7.4.7",
-    "aetherlink-capacitor-ios": "^7.4.7",
+    "aetherlink-capacitor-android": "^7.4.9",
+    "aetherlink-capacitor-cli": "^7.4.9",
+    "aetherlink-capacitor-core": "^7.4.9",
+    "aetherlink-capacitor-ios": "^7.4.9",
     "ai": "^5.0.99",
     "axios": "^1.9.0",
     "buffer": "6.0.3",
