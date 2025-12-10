@@ -77,7 +77,7 @@
     "mathjax-full": "3.2.2",
     "@capacitor/core": "npm:aetherlink-capacitor-core@^7.4.9",
     "@capacitor/android": "npm:aetherlink-capacitor-android@^7.4.9",
-    "@capacitor/ios": "npm:aetherlink-capacitor-ios@^7.4.9"
+    "@capacitor/ios": "npm:aetherlink-capacitor-ios@^7.4.10"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
