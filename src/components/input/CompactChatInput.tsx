@@ -8,6 +8,7 @@ import MultiModelSelector from './MultiModelSelector';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 import { useFileUpload } from '../../shared/hooks/useFileUpload';
+import { useLongTextPaste } from '../../shared/hooks/useLongTextPaste';
 
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
@@ -105,9 +106,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
   const showQuickPhraseButton = useSelector((state: RootState) => state.settings.showQuickPhraseButton ?? true);
   const currentAssistant = useSelector((state: RootState) => state.assistants.currentAssistant);
-
-  // 获取长文本粘贴设置
-  const settings = useSelector((state: RootState) => state.settings);
 
   // 移除URL解析功能以提升性能
 
@@ -483,69 +481,44 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     setIsActivated(true); // 插入短语后激活输入框
   };
 
+  // 使用统一的长文本粘贴 Hook
+  const { handlePaste: handleLongTextPaste, shouldConvertToFile } = useLongTextPaste({
+    onFileAdd: (file) => {
+      setFiles(prev => [...prev, file]);
+    },
+    onSuccess: (message) => {
+      toastManager.show({
+        message,
+        type: 'success',
+        duration: 3000
+      });
+    },
+    onError: (error) => {
+      console.error('长文本转文件失败:', error);
+      toastManager.show({
+        message: '长文本转文件失败，请重试',
+        type: 'error',
+        duration: 3000
+      });
+    }
+  });
+
   // 剪贴板粘贴事件处理函数
   const handlePaste = async (e: React.ClipboardEvent) => {
     const clipboardData = e.clipboardData;
     if (!clipboardData) return;
 
-    // 获取长文本粘贴设置
-    const pasteLongTextAsFile = settings.pasteLongTextAsFile ?? false;
-    const pasteLongTextThreshold = settings.pasteLongTextThreshold ?? 1500;
-
-    // 优先处理文本粘贴（长文本转文件功能）
+    // 获取粘贴的文本
     const textData = clipboardData.getData('text');
-    if (textData && pasteLongTextAsFile && textData.length > pasteLongTextThreshold) {
-      e.preventDefault(); // 阻止默认粘贴行为
-
+    
+    // 检查是否需要转换为文件（同步检查，异步处理）
+    // 必须在异步操作前调用 preventDefault，否则文本会被粘贴到输入框
+    if (textData && shouldConvertToFile(textData)) {
+      e.preventDefault(); // 立即阻止默认粘贴行为
+      
+      setUploadingMedia(true);
       try {
-        setUploadingMedia(true);
-
-        // 使用移动端文件存储服务创建文件
-        const { MobileFileStorageService } = await import('../../shared/services/MobileFileStorageService');
-        const fileStorageService = MobileFileStorageService.getInstance();
-
-        const fileName = `粘贴的文本_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '')}.txt`;
-
-        // 将文本转换为 base64 (支持中文等多字节字符)
-        const encoder = new TextEncoder();
-        const data = encoder.encode(textData);
-        const base64Data = btoa(String.fromCharCode(...data));
-
-        const fileData = {
-          name: fileName,
-          size: new Blob([textData], { type: 'text/plain' }).size,
-          mimeType: 'text/plain',
-          base64Data: `data:text/plain;base64,${base64Data}`
-        };
-
-        const fileRecord = await fileStorageService.uploadFile(fileData);
-
-        // 转换为 FileContent 格式
-        const fileContent = {
-          name: fileRecord.origin_name,
-          mimeType: fileRecord.mimeType || 'text/plain',
-          extension: fileRecord.ext || '.txt',
-          size: fileRecord.size,
-          base64Data: fileRecord.base64Data,
-          url: fileRecord.path || '',
-          fileId: fileRecord.id,
-          fileRecord: fileRecord
-        };
-
-        setFiles(prev => [...prev, fileContent]);
-
-        toastManager.show({
-          message: `长文本已转换为文件: ${fileName}`,
-          type: 'success',
-          duration: 3000
-        });
-      } catch (error) {
-        console.error('长文本转文件失败:', error);
-        toastManager.show({
-          message: '长文本转文件失败，请重试',
-          type: 'error',
-          duration: 3000
-        });
+        await handleLongTextPaste(e);
       } finally {
         setUploadingMedia(false);
       }
@@ -569,12 +542,14 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
           const reader = new FileReader();
           reader.onload = (event) => {
             const base64Data = event.target?.result as string;
+            const timestamp = Date.now();
+            const uniqueId = `paste-img-${timestamp}-${Math.random().toString(36).substring(2, 11)}`;
             const newImage: ImageContent = {
-              id: `${Date.now()}-${Math.random()}`,
+              id: uniqueId,
               url: base64Data,
               base64Data: base64Data,
               mimeType: file.type,
-              name: `粘贴的图片_${Date.now()}.${file.type && typeof file.type === 'string' && file.type.includes('/') ? file.type.split('/')[1] : 'png'}`,
+              name: `粘贴的图片_${timestamp}.${file.type && typeof file.type === 'string' && file.type.includes('/') ? file.type.split('/')[1] : 'png'}`,
               size: file.size
             };
             setImages(prev => [...prev, newImage]);
