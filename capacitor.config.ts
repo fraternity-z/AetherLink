@@ -25,6 +25,35 @@ const config: CapacitorConfig = {
     cleartext: true  // 允许HTTP明文传输
   },
   plugins: {
+    // 🚀 同步桥接配置 - 提升原生调用性能 10-50 倍
+    SyncBridge: {
+      enabled: true,
+      // 对这些插件启用同步调用
+      enabledPlugins: [
+        'Preferences',    // 偏好设置
+        'Device',         // 设备信息
+        'App',            // 应用状态
+        'Clipboard',      // 剪贴板
+        'Haptics',        // 触觉反馈
+        'StatusBar',      // 状态栏
+        'Toast',          // 提示框
+        'SplashScreen',   // 启动屏
+        'LocalNotifications', // 通知权限检查
+      ],
+      // 细粒度方法控制
+      enabledMethods: {
+        'Preferences': ['get', 'set', 'remove', 'keys', 'clear'],
+        'Device': ['getInfo', 'getId', 'getBatteryInfo', 'getLanguageCode'],
+        'App': ['getInfo', 'getState', 'getLaunchUrl'],
+        'Clipboard': ['read', 'write'],
+        'Haptics': ['impact', 'notification', 'vibrate', 'selectionStart', 'selectionEnd', 'selectionChanged'],
+        'StatusBar': ['setStyle', 'setBackgroundColor', 'show', 'hide', 'getInfo', 'setOverlaysWebView'],
+        'Toast': ['show'],
+        'SplashScreen': ['show', 'hide'],
+        'LocalNotifications': ['checkPermissions', 'areEnabled'],
+      },
+      timeout: 5000,
+    },
     CapacitorHttp: {
       enabled: false  //  禁用CapacitorHttp，使用标准fetch支持流式输出
     },
