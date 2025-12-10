@@ -73,7 +73,8 @@
     "build:tauri-debug": "tauri build --debug"
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@latest"
+    "vite": "npm:rolldown-vite@latest",
+    "mathjax-full": "3.2.2"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
@@ -165,8 +166,8 @@
     "axios": "^1.9.0",
     "buffer": "6.0.3",
     "capacitor-advanced-file-manager": "^0.5.0",
-    "capacitor-cors-bypass-enhanced": "^1.2.2",
-    "capacitor-edge-to-edge": "^1.6.4",
+    "capacitor-cors-bypass-enhanced": "^2.0.0",
+    "capacitor-edge-to-edge": "^2.0.0",
     "chart.js": "^4.4.9",
     "cheerio": "^1.1.0",
     "class-variance-authority": "^0.7.1",
