@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => ({
     // SWC 高性能 React 插件（基于 Rust，比 Babel 快 10-75 倍）
     react(),
     // 🖼️ 图片优化插件 - 仅在构建时启用，开发环境跳过
-    ...(mode === 'production' ? [
+    // 在 CI 环境中禁用图片优化以节省资源
+    ...(mode === 'production' && !process.env.CI ? [
       ViteImageOptimizer({
         // PNG 优化 (有损压缩，质量 80)
         png: {
