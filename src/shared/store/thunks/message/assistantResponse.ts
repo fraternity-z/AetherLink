@@ -9,7 +9,7 @@ import { createAbortController } from '../../../utils/abortController';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { upsertOneBlock } from '../../slices/messageBlocksSlice';
 import { prepareMessagesForApi, performKnowledgeSearchIfNeeded } from './apiPreparation';
-import { getActualProviderType } from '../../../services/ProviderFactory';
+import { dexieStorage } from '../../../services/storage/DexieStorageService';
 
 import type { Message } from '../../../types/newMessage';
 import type { Model, MCPTool } from '../../../types';
@@ -73,14 +73,15 @@ async function handleTextGeneration(context: {
   } = context;
 
   const apiProvider = ApiProviderRegistry.get(model);
-  const actualProviderType = getActualProviderType(model);
-  const isActualGeminiProvider = actualProviderType === 'gemini';
+  // 优化：直接使用 model.provider 判断，避免重复调用 getActualProviderType
+  // ApiProvider.get 内部已经调用过一次了
+  const isActualGeminiProvider = model.provider === 'gemini';
 
   let currentMessagesToSend = isActualGeminiProvider
     ? [...filteredOriginalMessages]
     : [...apiMessages];
 
-  console.log(`[processAssistantResponse] Provider类型: ${model.provider} -> 实际类型: ${actualProviderType}, 使用${isActualGeminiProvider ? '原始' : 'API'}格式消息，消息数量: ${currentMessagesToSend.length}`);
+  console.log(`[processAssistantResponse] Provider类型: ${model.provider}, 使用${isActualGeminiProvider ? '原始' : 'API'}格式消息，消息数量: ${currentMessagesToSend.length}`);
 
   // 获取 MCP 模式设置
   const mcpMode = localStorage.getItem('mcp-mode') as 'prompt' | 'function' || 'function';
@@ -248,9 +249,18 @@ export const processAssistantResponse = async (
       assistant
     });
 
-    // 8. 准备 API 消息
-    const apiMessages = await prepareMessagesForApi(topicId, assistantMessage.id, mcpTools, { skipKnowledgeSearch: true });
-    const filteredOriginalMessages = await prepareOriginalMessages(topicId, assistantMessage);
+    // 8. 准备消息（参考 Cherry-Studio：一次加载，多格式输出）
+    // 只加载一次消息列表
+    const messages = await dexieStorage.getTopicMessages(topicId);
+    console.log(`[processAssistantResponse] 加载消息列表，消息数: ${messages.length}`);
+    
+    // 传递给两个函数，避免重复查询
+    const apiMessages = await prepareMessagesForApi(topicId, assistantMessage.id, mcpTools, { 
+      skipKnowledgeSearch: true,
+      assistant,  // 传入已获取的 assistant 信息
+      messages    // 传入已加载的消息列表
+    });
+    const filteredOriginalMessages = await prepareOriginalMessages(topicId, assistantMessage, messages);
 
     // 9. 更新数据库
     await updateMessageAndTopic(assistantMessage.id, topicId, {

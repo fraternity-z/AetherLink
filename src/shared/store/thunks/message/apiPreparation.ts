@@ -134,7 +134,11 @@ export const prepareMessagesForApi = async (
   topicId: string,
   assistantMessageId: string,
   _mcpTools?: MCPTool[], // 添加下划线前缀表示未使用的参数
-  options?: { skipKnowledgeSearch?: boolean }
+  options?: { 
+    skipKnowledgeSearch?: boolean;
+    assistant?: any; // 新增：支持传入缓存的 assistant 信息
+    messages?: Message[]; // 新增：支持传入缓存的消息列表，避免重复查询
+  }
 ) => {
   console.log('[prepareMessagesForApi] 开始准备API消息', { topicId, assistantMessageId, options });
 
@@ -152,7 +156,11 @@ export const prepareMessagesForApi = async (
   console.log(`[prepareMessagesForApi] 上下文设置: contextCount=${contextCount}, contextWindowSize=${contextWindowSize}, maxOutputTokens=${maxOutputTokens}`);
 
   // 3. 获取包含content字段的消息
-  const messages = await dexieStorage.getTopicMessages(topicId);
+  // 优先使用传入的 messages，避免重复查询数据库
+  const messages = options?.messages || await dexieStorage.getTopicMessages(topicId);
+  if (options?.messages) {
+    console.log(`[prepareMessagesForApi] 使用缓存的消息列表，消息数: ${messages.length}`);
+  }
 
   // 按创建时间排序消息，确保顺序正确
   const sortedMessages = [...messages].sort((a, b) => {
@@ -242,29 +250,37 @@ export const prepareMessagesForApi = async (
     }
   }
 
-  // 获取当前助手ID，用于获取系统提示词
-  const topic = await dexieStorage.getTopic(topicId);
-  const assistantId = topic?.assistantId;
-
   // 获取系统提示词
+  // 优先使用传入的 assistant，避免重复查询数据库
+  let systemPrompt = '';
+  let assistant = options?.assistant;
+  
+  // 如果没有传入 assistant，才从数据库获取
+  if (!assistant) {
+    const topic = await dexieStorage.getTopic(topicId);
+    const assistantId = topic?.assistantId;
+    if (assistantId) {
+      assistant = await dexieStorage.getAssistant(assistantId);
+    }
+  }
+  
+  // 获取话题信息（用于话题提示词）
+  const topic = await dexieStorage.getTopic(topicId);
+  
   // 修改：实现追加模式 - 如果设置了话题提示词，则追加到助手提示词之后
   // 逻辑：助手提示词 + 话题提示词追加（如果有的话）
-  let systemPrompt = '';
-  if (assistantId) {
-    const assistant = await dexieStorage.getAssistant(assistantId);
-    if (assistant) {
-      // 使用助手的系统提示词作为基础
-      systemPrompt = assistant.systemPrompt || '';
+  if (assistant) {
+    // 使用助手的系统提示词作为基础
+    systemPrompt = assistant.systemPrompt || '';
 
-      // 只有当话题提示词不为空时才追加
-      if (topic && topic.prompt && topic.prompt.trim()) {
-        if (systemPrompt) {
-          // 如果助手有提示词，则追加话题提示词
-          systemPrompt = systemPrompt + '\n\n' + topic.prompt;
-        } else {
-          // 如果助手没有提示词，则单独使用话题提示词
-          systemPrompt = topic.prompt;
-        }
+    // 只有当话题提示词不为空时才追加
+    if (topic && topic.prompt && topic.prompt.trim()) {
+      if (systemPrompt) {
+        // 如果助手有提示词，则追加话题提示词
+        systemPrompt = systemPrompt + '\n\n' + topic.prompt;
+      } else {
+        // 如果助手没有提示词，则单独使用话题提示词
+        systemPrompt = topic.prompt;
       }
     }
   } else if (topic && topic.prompt && topic.prompt.trim()) {

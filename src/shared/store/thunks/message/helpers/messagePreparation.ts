@@ -6,12 +6,21 @@ import type { Message } from '../../../../types/newMessage';
 
 /**
  * 准备原始消息（用于 Gemini provider）
+ * @param topicId 话题ID
+ * @param assistantMessage 助手消息
+ * @param cachedMessages 可选：缓存的消息列表，避免重复查询数据库
  */
 export async function prepareOriginalMessages(
   topicId: string,
-  assistantMessage: Message
+  assistantMessage: Message,
+  cachedMessages?: Message[]
 ): Promise<Message[]> {
-  const originalMessages = await dexieStorage.getTopicMessages(topicId);
+  // 优先使用缓存的消息，避免重复查询
+  const originalMessages = cachedMessages || await dexieStorage.getTopicMessages(topicId);
+  if (cachedMessages) {
+    console.log(`[prepareOriginalMessages] 使用缓存的消息列表，消息数: ${originalMessages.length}`);
+  }
+  
   const sortedMessages = [...originalMessages].sort((a, b) =>
     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
