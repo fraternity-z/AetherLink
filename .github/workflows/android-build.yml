@@ -54,6 +54,14 @@ jobs:
             }
           }
 
+      - name: Verify Capacitor packages
+        run: |
+          echo "=== Checking @capacitor packages ==="
+          npm list @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios || true
+          echo ""
+          echo "=== @capacitor/core package.json ==="
+          cat node_modules/@capacitor/core/package.json | head -20 || echo "NOT FOUND"
+
       - name: Build Web App
         run: npm run build
 
