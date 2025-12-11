@@ -81,8 +81,20 @@ jobs:
             libxcb-xfixes0-dev \
             pkg-config
 
+      - name: Install macOS Dependencies
+        if: matrix.platform == 'macos-latest'
+        run: |
+          brew install create-dmg
+
       - name: Clear npm cache
         run: npm cache clean --force
+
+      - name: Install WiX Toolset 3.x (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          choco install wixtoolset --version=3.14.1 -y --no-progress
+          echo "C:\Program Files (x86)\WiX Toolset v3.14\bin" >> $env:GITHUB_PATH
+        shell: pwsh
 
       - name: Install Frontend Dependencies
         env:
