@@ -19,6 +19,11 @@ jobs:
       - name: Clear npm cache
         run: npm cache clean --force
 
+      - name: Setup private npm registry
+        run: |
+          echo "registry=http://154.37.208.52:4873" > .npmrc
+          echo "Private npm registry configured"
+
       - name: Install Dependencies with retry
         run: |
           # 尝试多种方法安装依赖
