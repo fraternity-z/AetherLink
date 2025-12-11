@@ -84,12 +84,9 @@ jobs:
       - name: Clear npm cache
         run: npm cache clean --force
 
-      - name: Setup private npm registry
-        run: |
-          echo "registry=http://154.37.208.52:4873" > .npmrc
-          echo "Private npm registry configured"
-
       - name: Install Frontend Dependencies
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm ci || {
             echo "npm ci failed, trying alternative approaches..."

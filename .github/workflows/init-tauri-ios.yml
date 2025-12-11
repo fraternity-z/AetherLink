@@ -17,12 +17,9 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Setup private npm registry
-        run: |
-          echo "registry=http://154.37.208.52:4873" > .npmrc
-          echo "Private npm registry configured"
-
       - name: Install dependencies
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm install
 
       - name: Setup Rust

@@ -27,12 +27,13 @@ jobs:
       - name: Clear npm cache
         run: npm cache clean --force
 
-      - name: Setup private npm registry
+      - name: Test private registry connection
         run: |
-          echo "registry=http://154.37.208.52:4873" > .npmrc
-          echo "Private npm registry configured"
+          curl -s http://154.37.208.52:4873 > /dev/null && echo "✅ Private registry reachable" || echo "❌ Cannot reach private registry"
 
       - name: Install Dependencies with retry
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # 尝试多种方法安装依赖
           echo "Attempting npm ci..."
