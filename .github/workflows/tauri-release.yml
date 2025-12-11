@@ -89,11 +89,18 @@ jobs:
       - name: Clear npm cache
         run: npm cache clean --force
 
-      - name: Install WiX Toolset 3.x (Windows)
+      - name: Setup WiX Toolset (Windows)
         if: matrix.platform == 'windows-latest'
         run: |
-          choco install wixtoolset --version=3.14.1 -y --no-progress
-          echo "C:\Program Files (x86)\WiX Toolset v3.14\bin" >> $env:GITHUB_PATH
+          # 检查 WiX 是否已安装，如果没有则安装
+          if (!(Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+            choco install wixtoolset -y --no-progress
+          }
+          # 添加 WiX 到 PATH
+          $wixPath = (Get-ChildItem "C:\Program Files (x86)\WiX Toolset*\bin" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+          if ($wixPath) {
+            echo $wixPath >> $env:GITHUB_PATH
+          }
         shell: pwsh
 
       - name: Install Frontend Dependencies
