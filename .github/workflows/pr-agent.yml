@@ -5,6 +5,8 @@ on:
     types: [opened, reopened, ready_for_review]
   issue_comment:
     types: [created]
+  issues:
+    types: [opened, edited]
 
 permissions:
   issues: write
