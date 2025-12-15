@@ -5,8 +5,6 @@ on:
     types: [opened, reopened, ready_for_review]
   issue_comment:
     types: [created]
-  issues:
-    types: [opened, edited]
 
 permissions:
   issues: write
@@ -21,16 +19,12 @@ jobs:
     steps:
       - name: PR Agent action step
         id: pragent
-        uses: Codium-ai/pr-agent@main
+        uses: qodo-ai/pr-agent@main
         env:
-          # OpenAI 兼容 API 配置
-          OPENAI.KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI.API_BASE: ${{ secrets.OPENAI_API_BASE }}
-          # 自定义模型名称 (如 gpt-4, claude-3, deepseek-chat 等)
-          CONFIG.MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4' }}
-          # GitHub Token
+          config.model: ${{ secrets.OPENAI_MODEL || 'gpt-4' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # 自动功能开关
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
           github_action_config.auto_improve: "true"
