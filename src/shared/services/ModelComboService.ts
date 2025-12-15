@@ -253,19 +253,23 @@ export class ModelComboService {
       if (!model) return null;
 
       try {
-        // 暂时简化实现，直接返回模拟响应
-        const response = `Mock response from ${modelConfig.modelId} for: ${prompt.substring(0, 50)}...`;
-
-        return {
-          modelId: modelConfig.modelId,
-          role: modelConfig.role,
-          content: response,
-          reasoning: undefined,
-          confidence: 0.8,
-          cost: 0,
-          status: 'success' as const
-        };
+        // 调用真实的模型 API
+        const result = await this.callSingleModel(modelConfig.modelId, prompt);
+        if (result) {
+          return {
+            modelId: modelConfig.modelId,
+            role: modelConfig.role,
+            content: result.content,
+            reasoning: result.reasoning,
+            confidence: result.confidence || 0.8,
+            cost: result.cost || 0,
+            latency: result.latency,
+            status: 'success' as const
+          };
+        }
+        return null;
       } catch (error) {
+        console.error(`[ModelComboService] Ensemble 模型 ${modelConfig.modelId} 调用失败:`, error);
         return {
           modelId: modelConfig.modelId,
           role: modelConfig.role,

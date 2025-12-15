@@ -323,9 +323,8 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           margin: 0,
           maxHeight: '100vh',
           height: '100vh',
-          // 全屏模式下不随键盘上移，键盘覆盖在内容上方
-          // 底部安全区域适配
-          paddingBottom: 'var(--safe-area-bottom-computed, 0px)'
+          display: 'flex',
+          flexDirection: 'column'
         })
       }
     }}
