@@ -98,7 +98,9 @@ const RegexTab: React.FC<RegexTabProps> = ({ rules, onChange }) => {
     if (over && active.id !== over.id) {
       const oldIndex = rules.findIndex(r => r.id === active.id);
       const newIndex = rules.findIndex(r => r.id === over.id);
-      onChange(arrayMove(rules, oldIndex, newIndex));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onChange(arrayMove(rules, oldIndex, newIndex));
+      }
     }
   };
 

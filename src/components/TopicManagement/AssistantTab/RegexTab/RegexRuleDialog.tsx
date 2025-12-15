@@ -51,6 +51,7 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
   const [scopes, setScopes] = useState<AssistantRegexScope[]>(['user']);
   const [visualOnly, setVisualOnly] = useState(false);
   const [patternError, setPatternError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   // 初始化或重置表单
   useEffect(() => {
@@ -69,6 +70,7 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
         setVisualOnly(false);
       }
       setPatternError(null);
+      setNameError(null);
     }
   }, [open, rule]);
 
@@ -105,6 +107,7 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
   // 保存处理
   const handleSave = () => {
     if (!name.trim()) {
+      setNameError('规则名称不能为空');
       return;
     }
     if (!validatePattern(pattern)) {
@@ -214,8 +217,13 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
             fullWidth
             size="small"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (nameError) setNameError(null);
+            }}
             placeholder="例如：隐藏敏感信息"
+            error={!!nameError}
+            helperText={nameError}
             sx={inputStyles}
           />
         </Box>
