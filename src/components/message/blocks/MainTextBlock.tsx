@@ -7,6 +7,7 @@ import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import Markdown from '../Markdown';
 import { selectCitationsForMessage } from '../../../shared/store/selectors/messageBlockSelectors';
 import type { Citation } from '../../../shared/types/citation';
+import { applyRegexRulesForDisplay } from '../../../shared/utils/regexUtils';
 
 // 稳定的空数组引用
 const EMPTY_CITATIONS: Citation[] = [];
@@ -22,11 +23,21 @@ interface Props {
  * 工具块在 MessageBlockRenderer 中独立渲染
  */
 const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
-  const content = block.content || '';
+  const rawContent = block.content || '';
   const isUserMessage = role === 'user';
 
   // 获取用户输入渲染设置
   const renderUserInputAsMarkdown = useSelector((state: RootState) => state.settings.renderUserInputAsMarkdown);
+  
+  // 获取当前助手的正则规则
+  const regexRules = useSelector((state: RootState) => state.assistants.currentAssistant?.regexRules);
+  
+  // 应用正则规则进行显示处理（包括 visualOnly 规则）
+  const content = useMemo(() => {
+    if (!regexRules || regexRules.length === 0) return rawContent;
+    const scope = role as 'user' | 'assistant';
+    return applyRegexRulesForDisplay(rawContent, regexRules, scope);
+  }, [rawContent, regexRules, role]);
   
   // 🔍 动态获取同消息的引用信息（参数化 selector）
   const citations = useSelector((state: RootState): Citation[] => {

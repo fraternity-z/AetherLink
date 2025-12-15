@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Typography,
   Button,
-  useTheme
+  useTheme,
+  Snackbar,
+  Alert
 } from '@mui/material';
-import { Plus, Wand2 } from 'lucide-react';
+import { Plus, Wand2, Upload } from 'lucide-react';
+import { importSillyTavernRegexScripts } from '../../../../shared/utils/sillyTavernRegexImport';
 import {
   DndContext,
   closestCenter,
@@ -79,6 +82,40 @@ const RegexTab: React.FC<RegexTabProps> = ({ rules, onChange }) => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AssistantRegex | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 处理导入酒馆正则
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const content = await file.text();
+      const importedRules = importSillyTavernRegexScripts(content);
+      
+      if (importedRules.length === 0) {
+        setSnackbar({ open: true, message: '没有找到有效的正则规则', severity: 'error' });
+        return;
+      }
+
+      // 合并导入的规则
+      onChange([...rules, ...importedRules]);
+      setSnackbar({ open: true, message: `成功导入 ${importedRules.length} 条正则规则`, severity: 'success' });
+    } catch (error) {
+      console.error('[RegexTab] 导入失败:', error);
+      setSnackbar({ open: true, message: `导入失败: ${(error as Error).message}`, severity: 'error' });
+    } finally {
+      // 清空文件输入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   // 拖拽传感器配置
   const sensors = useSensors(
@@ -175,18 +212,42 @@ const RegexTab: React.FC<RegexTabProps> = ({ rules, onChange }) => {
         >
           正则替换可以自动处理消息内容，如隐藏敏感信息、格式化文本等
         </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Plus size={18} />}
-          onClick={handleAddRule}
-          sx={{
-            borderRadius: '10px',
-            textTransform: 'none',
-            px: 3
-          }}
-        >
-          添加正则规则
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            startIcon={<Plus size={18} />}
+            onClick={handleAddRule}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              px: 3
+            }}
+          >
+            添加正则规则
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Upload size={18} />}
+            onClick={handleImportClick}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              px: 3,
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'
+            }}
+          >
+            导入酒馆正则
+          </Button>
+        </Box>
+
+        {/* 隐藏的文件输入 */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
 
         <RegexRuleDialog
           open={dialogOpen}
@@ -194,6 +255,18 @@ const RegexTab: React.FC<RegexTabProps> = ({ rules, onChange }) => {
           onSave={handleSaveRule}
           rule={editingRule}
         />
+
+        {/* 提示消息 */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     );
   }
@@ -212,19 +285,43 @@ const RegexTab: React.FC<RegexTabProps> = ({ rules, onChange }) => {
         <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
           拖拽调整规则执行顺序
         </Typography>
-        <Button
-          size="small"
-          startIcon={<Plus size={16} />}
-          onClick={handleAddRule}
-          sx={{
-            borderRadius: '8px',
-            textTransform: 'none',
-            fontSize: '0.8rem'
-          }}
-        >
-          添加规则
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            size="small"
+            startIcon={<Upload size={14} />}
+            onClick={handleImportClick}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontSize: '0.75rem',
+              color: theme.palette.text.secondary
+            }}
+          >
+            导入
+          </Button>
+          <Button
+            size="small"
+            startIcon={<Plus size={16} />}
+            onClick={handleAddRule}
+            sx={{
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontSize: '0.8rem'
+            }}
+          >
+            添加
+          </Button>
+        </Box>
       </Box>
+
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
 
       {/* 规则列表 */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -254,6 +351,18 @@ const RegexTab: React.FC<RegexTabProps> = ({ rules, onChange }) => {
         onSave={handleSaveRule}
         rule={editingRule}
       />
+
+      {/* 提示消息 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

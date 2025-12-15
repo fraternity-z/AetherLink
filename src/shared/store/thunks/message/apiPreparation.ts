@@ -11,6 +11,8 @@ import store, { type RootState } from '../../index';
 import { injectSystemPromptVariables } from '../../../utils/systemPromptVariables';
 import { EventEmitter, EVENT_NAMES } from '../../../services/EventService';
 import { getContextSettings, estimateMessagesTokenCount, truncateConversation } from '../../../services/messages/messageService';
+import { applyRegexRulesForSending } from '../../../utils/regexUtils';
+import type { AssistantRegex } from '../../../types/Assistant';
 
 /**
  * 在API调用前检查是否需要进行知识库搜索（风格：新模式）
@@ -296,11 +298,26 @@ export const prepareMessagesForApi = async (
   // 注意：limitedMessages 已经过滤掉了当前助手消息和 system 消息
   const apiMessages = [];
 
+  // 获取助手的正则规则
+  const regexRules: AssistantRegex[] = assistant?.regexRules || [];
+  const hasRegexRules = regexRules.length > 0;
+  if (hasRegexRules) {
+    console.log(`[prepareMessagesForApi] 检测到 ${regexRules.length} 条正则规则`);
+  }
+
   for (const message of limitedMessages) {
     // 获取消息内容 - 检查是否有知识库缓存（风格）
     let content = getMainTextContent(message);
 
-
+    // 应用正则规则（非 visualOnly 的规则，用于发送）
+    if (hasRegexRules && content) {
+      const scope = message.role as 'user' | 'assistant';
+      const originalContent = content;
+      content = applyRegexRulesForSending(content, regexRules, scope);
+      if (content !== originalContent) {
+        console.log(`[prepareMessagesForApi] 对 ${scope} 消息应用了正则规则`);
+      }
+    }
 
     // 如果是用户消息，检查是否有知识库搜索结果或选中的知识库
     if (message.role === 'user') {
