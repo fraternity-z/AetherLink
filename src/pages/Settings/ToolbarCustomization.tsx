@@ -936,41 +936,58 @@ const ToolbarCustomization: React.FC = () => {
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               sx={{
-                                mb: 1,
-                                bgcolor: snapshot.isDragging ? 'primary.light' : 'background.paper',
+                                mb: 0.75,
+                                py: 0.5,
+                                px: 1.5,
+                                bgcolor: snapshot.isDragging 
+                                  ? 'primary.light' 
+                                  : (isVisible ? 'background.paper' : 'action.hover'),
                                 borderRadius: 1,
-                                border: '1px solid',
-                                borderColor: snapshot.isDragging ? 'primary.main' : 'divider',
+                                borderWidth: '1px',
+                                borderStyle: snapshot.isDragging ? 'solid' : (isVisible ? 'solid' : 'dashed'),
+                                borderColor: snapshot.isDragging 
+                                  ? 'primary.main' 
+                                  : (isVisible ? 'divider' : 'text.disabled'),
                                 transform: snapshot.isDragging ? 'rotate(2deg)' : 'none',
                                 transition: 'all 0.2s ease',
-                                opacity: isVisible ? 1 : 0.5,
+                                filter: isVisible ? 'none' : 'grayscale(100%)',
+                                opacity: 1,
                                 cursor: 'grab',
                                 '&:active': { cursor: 'grabbing' },
                                 '&:hover': {
                                   borderColor: 'primary.main',
+                                  borderStyle: 'solid',
                                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                                 }
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 40 }}>
+                              <ListItemIcon sx={{ minWidth: 36 }}>
                                 <GripVertical size={16} color="rgba(0,0,0,0.4)" />
                               </ListItemIcon>
 
-                              <ListItemIcon sx={{ minWidth: 40 }}>
+                              <ListItemIcon sx={{ minWidth: 36 }}>
                                 <IconComponent
-                                  size={20}
+                                  size={18}
                                   color={buttonConfig.color}
                                 />
                               </ListItemIcon>
 
                               <ListItemText
                                 primary={
-                                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
                                     {buttonConfig.label}
                                   </Typography>
                                 }
                                 secondary={buttonConfig.description}
-                                sx={{ flex: 1 }}
+                                secondaryTypographyProps={{
+                                  variant: 'caption',
+                                  sx: { 
+                                    lineHeight: 1.3,
+                                    display: 'block',
+                                    mt: 0.25
+                                  }
+                                }}
+                                sx={{ flex: 1, my: 0 }}
                               />
 
                               <IconButton

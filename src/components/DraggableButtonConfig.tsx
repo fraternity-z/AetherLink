@@ -142,18 +142,23 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
             ref={provided.innerRef}
             {...provided.draggableProps}
             sx={{
-              mb: 1,
+              mb: 0.75,
+              py: 0.5,
+              px: 1.5,
               bgcolor: snapshot.isDragging ? 'primary.light' : 'background.paper',
               borderRadius: 1,
-              border: '1px solid',
-              borderColor: snapshot.isDragging ? 'primary.main' : 'divider',
+              borderWidth: '1px',
+              borderStyle: snapshot.isDragging ? 'solid' : (isVisible ? 'solid' : 'dashed'),
+              borderColor: snapshot.isDragging ? 'primary.main' : (isVisible ? 'divider' : 'text.disabled'),
               transform: snapshot.isDragging ? 'rotate(2deg)' : 'none',
               transition: 'all 0.2s ease',
-              opacity: isVisible ? 1 : 0.6,
+              filter: isVisible ? 'none' : 'grayscale(100%)',
+              opacity: 1,
               cursor: 'grab',
               '&:active': { cursor: 'grabbing' },
               '&:hover': {
                 borderColor: 'primary.main',
+                borderStyle: 'solid',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
               },
               // 优化触摸设备样式
@@ -167,7 +172,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
             <ListItemIcon 
               {...provided.dragHandleProps}
               sx={{ 
-                minWidth: 40,
+                minWidth: 36,
                 cursor: 'grab',
                 '&:active': { cursor: 'grabbing' },
                 ...(isTouchDevice && {
@@ -187,18 +192,27 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
               />
             </ListItemIcon>
 
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <IconComponent size={20} color={button.color} />
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <IconComponent size={18} color={button.color} />
             </ListItemIcon>
 
             <ListItemText
               primary={
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
                   {button.label}
                 </Typography>
               }
               secondary={button.description}
-              sx={{ flex: 1 }}
+              secondaryTypographyProps={{
+                variant: 'caption',
+                sx: { 
+                  lineHeight: 1.3,
+                  display: 'block',
+                  mt: 0.25,
+                  fontSize: '0.75rem'
+                }
+              }}
+              sx={{ flex: 1, my: 0 }}
             />
 
             <IconButton
@@ -237,9 +251,9 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
     <DragDropContext onDragEnd={handleDragEnd}>
       <Box sx={{ 
         display: 'flex', 
-        gap: 2, 
+        gap: 1.5, 
         flexDirection: { xs: 'column', md: 'row' },
-        padding: isMobile ? 1 : 2
+        padding: 0
       }}>
         {/* 左侧按钮区域 */}
         <Box sx={{ 
@@ -247,7 +261,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
           minWidth: isMobile ? '100%' : '300px',
           maxWidth: isMobile ? '100%' : '50%'
         }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.9rem' }}>
             {t('settings.appearance.inputBox.draggableButtonConfig.leftButtons')}
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
               ({leftButtons.length}{t('settings.appearance.inputBox.draggableButtonConfig.count')})
@@ -256,8 +270,8 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
 
           <Paper 
             sx={{ 
-              p: 1, 
-              minHeight: 200, 
+              p: 0.75, 
+              minHeight: 150, 
               backgroundColor: 'rgba(25, 118, 210, 0.02)',
               border: '1px dashed #90caf9'
             }}
@@ -268,7 +282,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   sx={{ 
-                    minHeight: 150,
+                    minHeight: 120,
                     padding: 0
                   }}
                 >
@@ -284,8 +298,9 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                       color="text.secondary" 
                       sx={{ 
                         textAlign: 'center', 
-                        py: 4,
-                        fontStyle: 'italic'
+                        py: 3,
+                        fontStyle: 'italic',
+                        fontSize: '0.8rem'
                       }}
                     >
                       {t('settings.appearance.inputBox.draggableButtonConfig.dragHere')}
@@ -303,7 +318,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
           minWidth: isMobile ? '100%' : '300px',
           maxWidth: isMobile ? '100%' : '50%'
         }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.9rem' }}>
             {t('settings.appearance.inputBox.draggableButtonConfig.rightButtons')}
             <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
               ({rightButtons.length}{t('settings.appearance.inputBox.draggableButtonConfig.count')})
@@ -312,8 +327,8 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
 
           <Paper 
             sx={{ 
-              p: 1, 
-              minHeight: 200, 
+              p: 0.75, 
+              minHeight: 150, 
               backgroundColor: 'rgba(76, 175, 80, 0.02)',
               border: '1px dashed #a5d6a7'
             }}
@@ -324,7 +339,7 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   sx={{ 
-                    minHeight: 150,
+                    minHeight: 120,
                     padding: 0
                   }}
                 >
@@ -340,8 +355,9 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                       color="text.secondary" 
                       sx={{ 
                         textAlign: 'center', 
-                        py: 4,
-                        fontStyle: 'italic'
+                        py: 3,
+                        fontStyle: 'italic',
+                        fontSize: '0.8rem'
                       }}
                     >
                       {t('settings.appearance.inputBox.draggableButtonConfig.dragHere')}
@@ -356,19 +372,19 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
 
       {/* 可用按钮区域 - 始终显示 */}
       <Box sx={{ 
-        mt: 2,
-        padding: isMobile ? 1 : 2
+        mt: 1.5,
+        padding: 0
       }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ mb: 0.5, fontWeight: 600, fontSize: '0.9rem' }}>
           {t('settings.appearance.inputBox.draggableButtonConfig.availableButtons')} ({unusedButtons.length}{t('settings.appearance.inputBox.draggableButtonConfig.count')})
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontSize: '0.75rem' }}>
           {t('settings.appearance.inputBox.draggableButtonConfig.dragToUse')}
         </Typography>
         <Paper 
           sx={{ 
-            p: 1, 
-            minHeight: 100, 
+            p: 0.75, 
+            minHeight: 80, 
             backgroundColor: 'rgba(158, 158, 158, 0.02)',
             border: '1px dashed #bdbdbd'
           }}
@@ -383,11 +399,11 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                   gridTemplateColumns: { 
                     xs: '1fr', 
                     sm: 'repeat(2, 1fr)', 
-                    md: 'repeat(3, 1fr)',
+                    md: 'repeat(3, 1fr)', 
                     lg: 'repeat(4, 1fr)'
                   },
-                  gap: 1,
-                  minHeight: 80,
+                  gap: 0.75,
+                  minHeight: 60,
                   backgroundColor: snapshot.isDraggingOver ? 'rgba(158, 158, 158, 0.1)' : 'transparent',
                   borderRadius: 1,
                   transition: 'background-color 0.2s ease',
@@ -404,9 +420,10 @@ const DraggableButtonConfig: React.FC<DraggableButtonConfigProps> = ({
                     color="text.secondary"
                     sx={{
                       textAlign: 'center',
-                      py: 4,
+                      py: 3,
                       gridColumn: '1 / -1',
-                      fontStyle: 'italic'
+                      fontStyle: 'italic',
+                      fontSize: '0.8rem'
                     }}
                   >
                     {snapshot.isDraggingOver 

@@ -108,11 +108,11 @@ const InputBoxPreview: React.FC<{
         p: 0,
         bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
         borderRadius: 2,
-        minHeight: '120px',
+        minHeight: '100px',
         overflow: 'hidden',
       }}
     >
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 2, pt: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1, px: 1.5, pt: 1.5, fontSize: '0.8rem' }}>
         {t('settings.appearance.inputBox.preview.label')}
       </Typography>
       {/* 移除所有宽度限制，让输入框组件使用自己的响应式布局 */}
@@ -344,26 +344,26 @@ const InputBoxSettings: React.FC = () => {
         }}
       >
         {/* 实时预览区域 */}
-        <Paper elevation={0} sx={{ mb: 3, border: '1px solid #eee', p: 0, overflow: 'hidden' }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, p: 2, pb: 0 }}>
+        <Paper elevation={0} sx={{ mb: 1.5, border: '1px solid #eee', p: 0, overflow: 'hidden' }}>
+          <Typography variant="subtitle1" sx={{ mb: 1, p: 1.5, pb: 0, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.preview.title')}
           </Typography>
           <InputBoxPreview
             inputBoxStyle={inputBoxStyle}
             inputLayoutStyle={inputLayoutStyle}
           />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center', p: 2, pt: 0 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center', p: 1.5, pt: 0, fontSize: '0.8rem' }}>
             {t('settings.appearance.inputBox.preview.currentConfig')} {t(`settings.appearance.inputBox.preview.styles.${inputBoxStyle}`)} + {t(`settings.appearance.inputBox.preview.layouts.${inputLayoutStyle}`)}
           </Typography>
 
           {/* 集成样式自定义按钮配置 - 新的拖拽式配置 */}
           {inputLayoutStyle === 'integrated' && (
-            <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #eee' }}>
-              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, px: 1.5 }}>
                 {t('settings.appearance.inputBox.preview.buttonLayout.title')}
               </Typography>
 
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1.5 }}>
                 {t('settings.appearance.inputBox.preview.buttonLayout.description')}
               </Typography>
 
@@ -374,22 +374,22 @@ const InputBoxSettings: React.FC = () => {
                 onUpdateLayout={handleLayoutUpdate}
               />
 
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, px: 1.5, pb: 2 }}>
                 {t('settings.appearance.inputBox.preview.buttonLayout.summary', { left: leftButtons.length, right: rightButtons.length })}
               </Typography>
             </Box>
           )}
         </Paper>
 
-        <Divider sx={{ mb: 3 }} />
+        <Divider sx={{ mb: 1.5 }} />
 
         {/* 输入框风格设置 */}
-        <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
+        <Paper elevation={0} sx={{ p: 1.5, mb: 1.5, border: '1px solid #eee' }}>
+          <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.style.title')}
           </Typography>
 
-          <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
+          <FormControl fullWidth variant="outlined" sx={{ mb: 1.5 }} size="small">
             <InputLabel>{t('settings.appearance.inputBox.style.label')}</InputLabel>
             <Select
               value={inputBoxStyle}
@@ -406,7 +406,7 @@ const InputBoxSettings: React.FC = () => {
             </Select>
           </FormControl>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.8rem', lineHeight: 1.5 }}>
             {t('settings.appearance.inputBox.style.description')}
             <br />{t('settings.appearance.inputBox.style.defaultDesc')}
             <br />{t('settings.appearance.inputBox.style.modernDesc')}
@@ -415,12 +415,12 @@ const InputBoxSettings: React.FC = () => {
         </Paper>
 
         {/* 输入框布局样式设置 */}
-        <Paper elevation={0} sx={{ p: 2, mb: 3, border: '1px solid #eee' }}>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
+        <Paper elevation={0} sx={{ p: 1.5, mb: 1.5, border: '1px solid #eee' }}>
+          <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.layout.title')}
           </Typography>
 
-          <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
+          <FormControl fullWidth variant="outlined" sx={{ mb: 1.5 }} size="small">
             <InputLabel>{t('settings.appearance.inputBox.layout.label')}</InputLabel>
             <Select
               value={inputLayoutStyle}
@@ -437,7 +437,7 @@ const InputBoxSettings: React.FC = () => {
             </Select>
           </FormControl>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.8rem', lineHeight: 1.5 }}>
             {t('settings.appearance.inputBox.layout.description')}
             <br />{t('settings.appearance.inputBox.layout.defaultDesc')}
             <br />{t('settings.appearance.inputBox.layout.compactDesc')}
