@@ -181,10 +181,10 @@ const WorkspaceDetail: React.FC = () => {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadWorkspace();
     loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   // 处理返回

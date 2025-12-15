@@ -85,7 +85,6 @@ function serializeValue(value: any): any {
  * 包装回调函数，自动序列化参数
  * 防止 SolidJS 代理对象传递到 React/Redux
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function wrapCallback(callback: (...args: any[]) => any): (...args: any[]) => any {
   return (...args: any[]) => {
     // 序列化所有参数，移除 SolidJS 代理

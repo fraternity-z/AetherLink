@@ -108,7 +108,7 @@ export default function DynamicContextSettings({
     try {
       const parsed = JSON.parse(value);
       if (typeof parsed === 'object' && parsed !== null) return 'json';
-    } catch {}
+    } catch { /* ignore parse errors */ }
     return 'string';
   }, []);
   

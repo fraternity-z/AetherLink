@@ -93,7 +93,7 @@ export function cleanMarkdown(markdown: string): string {
  * 计算纯文本字符数
  */
 export function countCharacters(content: string): number {
-  const plainText = content.replace(/<[^>]*>/g, '').replace(/[#*_~`\[\]()]/g, '');
+  const plainText = content.replace(/<[^>]*>/g, '').replace(/[#*_~`[\]()]/g, '');
   return plainText.length;
 }
 

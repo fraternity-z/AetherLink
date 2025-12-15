@@ -45,13 +45,9 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
   
-  // 🚀 检查是否是网络搜索工具，使用专门的 UI 组件
-  if (isWebSearchTool(block)) {
-    return <MessageWebSearchTool block={block} />;
-  }
-  
   // 检查是否是完成工具
   const isCompletion = isCompletionTool(block);
+  const isWebSearch = isWebSearchTool(block);
 
   const toolResponse = block.metadata?.rawMcpToolResponse;
   const isProcessing = block.status === MessageBlockStatus.STREAMING ||
@@ -108,6 +104,11 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
       EventEmitter.emit('ui:copy_success', { content: '已复制结果' });
     }
   }, [getResult]);
+
+  // 🚀 检查是否是网络搜索工具，使用专门的 UI 组件（所有 hooks 必须在此之前调用）
+  if (isWebSearch) {
+    return <MessageWebSearchTool block={block} />;
+  }
 
   const toolName = block.toolName || toolResponse?.tool?.name || '工具';
   const params = formatParams();

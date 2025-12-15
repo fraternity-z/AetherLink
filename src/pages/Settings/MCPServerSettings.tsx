@@ -75,10 +75,10 @@ const MCPServerSettings: React.FC = () => {
     isActive: false
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadServers();
     loadBuiltinServers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadServers = () => {

@@ -121,7 +121,7 @@ export const UnifiedExportMenu: React.FC<UnifiedExportMenuProps> = ({
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-      }).replace(/[\/\s:]/g, '-');
+      }).replace(/[/\s:]/g, '-');
       const noteTitle = contentPreview || `消息-${timestamp}`;
 
       // 添加来源标记
