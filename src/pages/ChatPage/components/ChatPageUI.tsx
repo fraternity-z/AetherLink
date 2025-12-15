@@ -84,20 +84,28 @@ const selectChatPageSettings = createSelector(
   (state: RootState) => state.settings.topToolbar,
   (state: RootState) => state.settings.modelSelectorStyle,
   (state: RootState) => state.settings.chatBackground,
-  (themeStyle, inputLayoutStyle, topToolbar, modelSelectorStyle, chatBackground) => ({
-    themeStyle,
-    inputLayoutStyle: inputLayoutStyle || 'default',
-    topToolbar,
-    modelSelectorStyle,
-    chatBackground: chatBackground || {
-      enabled: false,
-      imageUrl: '',
-      opacity: 0.3,
-      size: 'cover',
-      position: 'center',
-      repeat: 'no-repeat'
-    }
-  })
+  (state: RootState) => state.assistants.currentAssistant?.chatBackground,
+  (themeStyle, inputLayoutStyle, topToolbar, modelSelectorStyle, globalChatBackground, assistantChatBackground) => {
+    // 助手壁纸优先级高于全局设置
+    const effectiveChatBackground = (assistantChatBackground?.enabled && assistantChatBackground?.imageUrl)
+      ? assistantChatBackground
+      : globalChatBackground;
+    
+    return {
+      themeStyle,
+      inputLayoutStyle: inputLayoutStyle || 'default',
+      topToolbar,
+      modelSelectorStyle,
+      chatBackground: effectiveChatBackground || {
+        enabled: false,
+        imageUrl: '',
+        opacity: 0.3,
+        size: 'cover',
+        position: 'center',
+        repeat: 'no-repeat'
+      }
+    };
+  }
 );
 
 // 所有从父组件传入的props类型

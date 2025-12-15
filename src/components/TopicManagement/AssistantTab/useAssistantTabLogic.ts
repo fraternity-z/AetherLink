@@ -92,6 +92,7 @@ export function useAssistantTabLogic(
   const [editAssistantAvatar, setEditAssistantAvatar] = useState('');
   const [editingAssistant, setEditingAssistant] = useState<Assistant | null>(null); //  新增：保存正在编辑的助手
   const [editRegexRules, setEditRegexRules] = useState<AssistantRegex[]>([]); // 正则替换规则
+  const [editChatBackground, setEditChatBackground] = useState<Assistant['chatBackground']>(undefined); // 聊天壁纸
 
   // 提示词选择器状态
   const [promptSelectorOpen, setPromptSelectorOpen] = useState(false);
@@ -212,11 +213,15 @@ export function useAssistantTabLogic(
   const handleOpenEditDialog = () => {
     if (!selectedMenuAssistant) return;
 
-    setEditingAssistant(selectedMenuAssistant);
-    setEditAssistantName(selectedMenuAssistant.name);
-    setEditAssistantPrompt(selectedMenuAssistant.systemPrompt || '');
-    setEditAssistantAvatar(selectedMenuAssistant.avatar || '');
-    setEditRegexRules(selectedMenuAssistant.regexRules || []);
+    // 从 userAssistants 中获取最新的助手数据，避免使用可能过时的 selectedMenuAssistant
+    const latestAssistant = userAssistants.find(a => a.id === selectedMenuAssistant.id) || selectedMenuAssistant;
+
+    setEditingAssistant(latestAssistant);
+    setEditAssistantName(latestAssistant.name);
+    setEditAssistantPrompt(latestAssistant.systemPrompt || '');
+    setEditAssistantAvatar(latestAssistant.avatar || '');
+    setEditRegexRules(latestAssistant.regexRules || []);
+    setEditChatBackground(latestAssistant.chatBackground);
     setEditDialogOpen(true);
     handleCloseAssistantMenu();
   };
@@ -227,6 +232,7 @@ export function useAssistantTabLogic(
     setEditingAssistant(null); // 清理编辑状态
     setEditAssistantAvatar(''); // 清理头像状态
     setEditRegexRules([]); // 清理正则规则状态
+    setEditChatBackground(undefined); // 清理壁纸状态
   };
 
   // 保存编辑后的助手
@@ -242,7 +248,9 @@ export function useAssistantTabLogic(
         // 如果设置了头像，清空emoji字段，避免冲突
         emoji: editAssistantAvatar ? undefined : editingAssistant.emoji,
         // 正则替换规则
-        regexRules: editRegexRules
+        regexRules: editRegexRules,
+        // 聊天壁纸
+        chatBackground: editChatBackground
       };
 
       // 直接保存到数据库，确保数据持久化
@@ -548,6 +556,7 @@ export function useAssistantTabLogic(
     editAssistantAvatar,
     editingAssistant,
     editRegexRules,
+    editChatBackground,
     promptSelectorOpen,
     iconPickerOpen,
     avatarUploaderOpen,
@@ -594,6 +603,8 @@ export function useAssistantTabLogic(
     handleRemoveAvatar,
     // 正则替换规则处理函数
     handleRegexRulesChange: setEditRegexRules,
+    // 聊天壁纸处理函数
+    handleChatBackgroundChange: setEditChatBackground,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,

@@ -4,11 +4,8 @@ import {
   DialogActions,
   Box,
   Typography,
-  TextField,
   Button,
-  Avatar,
   IconButton,
-  Paper,
   Tabs,
   Tab,
   useTheme,
@@ -16,11 +13,14 @@ import {
   type Theme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { ChevronLeft, User, Sparkles, Settings2, Wand2 } from 'lucide-react';
+import { ChevronLeft, Settings, FileText, Settings2, Wand2 } from 'lucide-react';
 import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 import { ParameterEditor } from '../../ParameterEditor';
 import { detectProviderFromModel } from '../../../shared/config/parameterMetadata';
 import { RegexTab } from './RegexTab';
+import { BasicSettingsTab } from './BasicSettingsTab';
+import type { AssistantChatBackground } from './BasicSettingsTab';
+import { PromptTab } from './PromptTab';
 import type { AssistantRegex } from '../../../shared/types/Assistant';
 
 // 样式常量
@@ -141,6 +141,10 @@ export interface EditAssistantDialogProps {
   regexRules?: AssistantRegex[];
   /** 正则替换规则变化回调 */
   onRegexRulesChange?: (rules: AssistantRegex[]) => void;
+  /** 聊天壁纸 */
+  chatBackground?: AssistantChatBackground;
+  /** 聊天壁纸变化回调 */
+  onChatBackgroundChange?: (background: AssistantChatBackground) => void;
 }
 
 /**
@@ -163,7 +167,9 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   onParameterChange,
   onParameterToggle,
   regexRules = [],
-  onRegexRulesChange
+  onRegexRulesChange,
+  chatBackground,
+  onChatBackgroundChange
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -260,74 +266,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         </Typography>
       </Box>
 
-      {/* 助手头像区域 - 优化空间占用 */}
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        py: isMobile ? 2 : 2, // 减少移动端间距
-        backgroundColor: 'transparent'
-      }}>
-        <Box sx={{
-          ...styles.avatarContainer(theme),
-          width: isMobile ? 80 : 80, // 减小移动端容器尺寸
-          height: isMobile ? 80 : 80
-        }}>
-          <Avatar
-            src={assistantAvatar}
-            sx={{
-              width: isMobile ? 60 : 70, // 减小移动端头像尺寸
-              height: isMobile ? 60 : 70,
-              bgcolor: assistantAvatar ? 'transparent' : 'primary.main',
-              fontSize: isMobile ? '1.5rem' : '1.5rem', // 调整字体大小
-              color: (theme) => theme.palette.primary.contrastText,
-              boxShadow: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? '0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)'
-                  : '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.7)',
-              border: (theme) =>
-                `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.8)'}`,
-              background: assistantAvatar ? 'transparent' : (theme) =>
-                theme.palette.mode === 'dark'
-                  ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-                  : `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`
-            }}
-          >
-            {!assistantAvatar && (assistantName.charAt(0) || '助')}
-          </Avatar>
-          <IconButton
-            onClick={onAvatarClick}
-            sx={{
-              position: 'absolute',
-              bottom: 2,
-              right: 2,
-              width: isMobile ? 44 : 24, // 移动端使用 44px 触摸目标
-              height: isMobile ? 44 : 24,
-              borderRadius: '50%',
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              border: (theme) =>
-                `2px solid ${theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.85)' : 'rgba(255, 255, 255, 0.9)'}`,
-              boxShadow: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? '0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)'
-                  : '0 2px 8px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1)',
-              '&:hover': {
-                transform: 'scale(1.1)',
-                boxShadow: (theme) =>
-                  theme.palette.mode === 'dark'
-                    ? '0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3)'
-                    : '0 4px 12px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.15)',
-              },
-              transition: 'all 0.2s ease-in-out'
-            }}
-          >
-            <User size={isMobile ? 20 : 14} color="white" />
-          </IconButton>
-        </Box>
-      </Box>
-
-      {/* 标签页导航 - 优化空间占用 */}
+      {/* 标签页导航 */}
       <Box sx={{
         display: 'flex',
         justifyContent: 'center',
@@ -360,7 +299,18 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             }
           }}
         >
-          <Tab label="提示词" />
+          <Tab 
+            label="基础" 
+            icon={<Settings size={16} />} 
+            iconPosition="start"
+            sx={{ minHeight: isMobile ? 40 : 36 }}
+          />
+          <Tab 
+            label="提示词" 
+            icon={<FileText size={16} />} 
+            iconPosition="start"
+            sx={{ minHeight: isMobile ? 40 : 36 }}
+          />
           <Tab 
             label="参数" 
             icon={<Settings2 size={16} />} 
@@ -368,7 +318,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             sx={{ minHeight: isMobile ? 40 : 36 }}
           />
           <Tab 
-            label="正则替换" 
+            label="正则" 
             icon={<Wand2 size={16} />} 
             iconPosition="start"
             sx={{ minHeight: isMobile ? 40 : 36 }}
@@ -391,110 +341,33 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
           overflow: 'auto'
         })
       }}>
+        {/* 基础设置 Tab */}
         {tabValue === 0 && (
-          <Box>
-            {/* Name 字段 */}
-            <Typography variant="subtitle2" sx={{
-              mb: 0.5,
-              color: (theme) => theme.palette.text.secondary,
-              fontSize: isMobile ? '1rem' : '0.875rem'
-            }}>
-              名称
-            </Typography>
-            <TextField
-              fullWidth
-              variant="outlined"
-              value={assistantName}
-              onChange={onNameChange}
-              placeholder="请输入助手名称，例如：法律咨询助手"
-              size={isMobile ? "medium" : "small"}
-              sx={{
-                mb: 2,
-                ...styles.inputField(theme),
-                '& .MuiInputBase-input': {
-                  color: (theme) => theme.palette.text.primary,
-                  fontSize: isMobile ? '16px' : '0.875rem' // 移动端使用16px防止缩放
-                }
-              }}
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <BasicSettingsTab
+              assistantName={assistantName}
+              assistantAvatar={assistantAvatar}
+              onNameChange={onNameChange}
+              onAvatarClick={onAvatarClick}
+              chatBackground={chatBackground}
+              onChatBackgroundChange={onChatBackgroundChange}
             />
+          </Box>
+        )}
 
-            {/* Prompt 字段 */}
-            <Typography variant="subtitle2" sx={{
-              mb: 0.5,
-              color: (theme) => theme.palette.text.secondary,
-              fontSize: isMobile ? '1rem' : '0.875rem'
-            }}>
-              提示词
-            </Typography>
-            <Paper sx={{
-              ...styles.glassomorphism(theme),
-              borderRadius: '8px',
-              p: isMobile ? 1.5 : 1.5 // 减少移动端padding
-            }}>
-              <TextField
-                multiline
-                rows={isMobile ? 8 : 10} // 移动端进一步减少到8行
-                fullWidth
-                variant="standard"
-                value={assistantPrompt}
-                onChange={onPromptChange}
-                placeholder="请输入系统提示词，定义助手的角色和行为特征...
-
-示例：
-你是一个友好、专业、乐于助人的AI助手。你会以客观、准确的态度回答用户的问题，并在不确定的情况下坦诚表明。你可以协助用户完成各种任务，提供信息，或进行有意义的对话。"
-                sx={{
-                  '& .MuiInput-root': {
-                    color: (theme) => theme.palette.text.primary,
-                    fontSize: isMobile ? '16px' : '0.875rem', // 移动端使用16px防止缩放
-                    '&:before': {
-                      display: 'none'
-                    },
-                    '&:after': {
-                      display: 'none'
-                    }
-                  },
-                  '& .MuiInputBase-input': {
-                    color: (theme) => theme.palette.text.primary,
-                    fontSize: isMobile ? '16px' : '0.875rem', // 移动端使用16px防止缩放
-                    '&::placeholder': {
-                      color: (theme) => theme.palette.text.secondary,
-                      opacity: 1
-                    }
-                  }
-                }}
-              />
-
-              {/* 功能按钮 */}
-              <Box sx={{
-                display: 'flex',
-                gap: 1,
-                mt: 1.5,
-                pt: 1.5,
-                borderTop: (theme) =>
-                  `1px solid ${theme.palette.mode === 'dark'
-                    ? 'rgba(255, 255, 255, 0.1)'
-                    : 'rgba(0, 0, 0, 0.1)'}`
-              }}>
-                <Button
-                  variant="outlined"
-                  size={isMobile ? "medium" : "small"}
-                  startIcon={<Sparkles size={isMobile ? 20 : 16} />}
-                  onClick={onPromptSelectorClick}
-                  sx={{
-                    ...styles.primaryButton(theme),
-                    fontSize: isMobile ? '14px' : '12px',
-                    py: isMobile ? 1 : 0.5
-                  }}
-                >
-                  选择预设提示词
-                </Button>
-              </Box>
-            </Paper>
+        {/* 提示词 Tab */}
+        {tabValue === 1 && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <PromptTab
+              assistantPrompt={assistantPrompt}
+              onPromptChange={onPromptChange}
+              onPromptSelectorClick={onPromptSelectorClick}
+            />
           </Box>
         )}
 
         {/* 参数 Tab 内容 */}
-        {tabValue === 1 && (
+        {tabValue === 2 && (
           <Box sx={{ height: '100%', overflow: 'auto' }}>
             <ParameterEditor
               providerType={providerType}
@@ -507,7 +380,7 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         )}
 
         {/* 正则替换 Tab 内容 */}
-        {tabValue === 2 && (
+        {tabValue === 3 && (
           <Box sx={{ height: '100%', overflow: 'auto' }}>
             <RegexTab
               rules={regexRules}

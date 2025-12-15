@@ -87,6 +87,7 @@ const AssistantTab = React.memo(function AssistantTab({
     editAssistantPrompt,
     editAssistantAvatar,
     editRegexRules,
+    editChatBackground,
     promptSelectorOpen,
     iconPickerOpen,
     avatarUploaderOpen,
@@ -131,6 +132,8 @@ const AssistantTab = React.memo(function AssistantTab({
     handleRemoveAvatar: _handleRemoveAvatar,
     // 正则替换规则处理函数
     handleRegexRulesChange,
+    // 聊天壁纸处理函数
+    handleChatBackgroundChange,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,
@@ -368,6 +371,8 @@ const AssistantTab = React.memo(function AssistantTab({
         onPromptSelectorClick={handleOpenPromptSelector}
         regexRules={editRegexRules}
         onRegexRulesChange={handleRegexRulesChange}
+        chatBackground={editChatBackground}
+        onChatBackgroundChange={handleChatBackgroundChange}
       />
 
       {/* 智能体提示词选择器 */}

@@ -71,11 +71,22 @@ export interface Assistant {
   webSearchProviderId?: string; // 选择的网络搜索提供商ID，如 'bing-free', 'tavily' 等
   enableWebSearch?: boolean; // 是否启用模型内置的网络搜索（如 Gemini/OpenAI 内置搜索）
   
-  // 🆕 自定义参数
+  // 自定义参数
   customParameters?: CustomParameter[];
   
-  // 🔄 正则替换规则
+  // 正则替换规则
   regexRules?: AssistantRegex[];
+  
+  // 助手专属聊天壁纸（优先级高于全局设置）
+  chatBackground?: {
+    enabled: boolean;
+    imageUrl: string;
+    opacity?: number;
+    size?: string;
+    position?: string;
+    repeat?: string;
+    showOverlay?: boolean;
+  };
 }
 
 export interface ChatTopic {
