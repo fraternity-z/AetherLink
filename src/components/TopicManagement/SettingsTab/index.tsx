@@ -12,7 +12,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
-import { User, Sliders, Cog } from 'lucide-react';
+import { User, Cog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SettingGroups from './SettingGroups';
 import AvatarUploader from '../../settings/AvatarUploader';
@@ -151,29 +151,7 @@ export default function SettingsTab({
             </Typography>
           }
         />
-        <Box sx={{ ml: 'auto' }}>
-          <Tooltip title="模型设置">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate('/settings/assistant-settings');
-              }}
-              sx={{
-                bgcolor: 'rgba(255, 193, 7, 0.1)',
-                border: '2px solid #ffc107',
-                borderRadius: '50%',
-                '&:hover': {
-                  bgcolor: 'rgba(255, 193, 7, 0.2)',
-                }
-              }}
-            >
-              <Sliders size={16} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </ListItemButton>
+              </ListItemButton>
 
       <Divider sx={{ my: 0.5 }} />
 

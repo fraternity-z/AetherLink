@@ -57,8 +57,7 @@ import MessageBubbleSettings from "../pages/Settings/MessageBubbleSettings";
 const ToolbarCustomization = lazy(() => import('../pages/Settings/ToolbarCustomization'));
 // 导入快捷短语设置页面
 const QuickPhraseSettings = lazy(() => import('../components/QuickPhraseSettings'));
-// 导入助手设置页面
-const AssistantSettings = lazy(() => import('../components/TopicManagement/SettingsTab/AssistantSettings'));
+// 导入助手模型设置页面
 const AssistantModelSettings = lazy(() => import('../components/TopicManagement/SettingsTab/AssistantModelSettings'));
 // 导入工作区页面
 const WorkspaceSettings = lazy(() => import('../pages/Settings/WorkspaceSettings'));
@@ -193,7 +192,6 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/notes" element={<NoteSettings />} />
         <Route path="/settings/notes/edit" element={<NoteEditor />} />
         <Route path="/settings/file-permission" element={<FilePermissionPage />} />
-        <Route path="/settings/assistant-settings" element={<AssistantSettings />} />
         <Route path="/settings/assistant-model-settings" element={<AssistantModelSettings />} />
         <Route path="/devtools" element={<DevToolsPage />} />
         {/* 知识库详情页 - 从设置页跳转 */}

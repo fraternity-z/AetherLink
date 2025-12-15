@@ -47,7 +47,6 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/notion': '/settings',
     '/settings/voice': '/settings',
     '/settings/about': '/settings',
-    '/settings/assistant-settings': '/settings',
     '/settings/notes': '/settings',
     
     // 开发者工具(三级页面) - 从关于我们进入
@@ -62,7 +61,7 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/appearance/top-toolbar': '/settings/appearance',
     '/settings/appearance/theme-style': '/settings/appearance',
     '/settings/data/advanced-backup': '/settings/data',
-    '/settings/assistant-model-settings': '/settings/assistant-settings',
+    '/settings/assistant-model-settings': '/settings',
     '/settings/voice/tts/capacitor': '/settings/voice',
     '/settings/voice/tts/siliconflow': '/settings/voice',
     '/settings/voice/tts/openai': '/settings/voice',

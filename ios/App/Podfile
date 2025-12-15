@@ -32,7 +32,6 @@ def capacitor_pods
   pod 'CapacitorAdvancedFileManager', :path => '../../node_modules/capacitor-advanced-file-manager'
   pod 'CapacitorCorsBypassEnhanced', :path => '../../node_modules/capacitor-cors-bypass-enhanced'
   pod 'CapacitorEdgeToEdge', :path => '../../node_modules/capacitor-edge-to-edge'
-  pod 'CordovaPlugins', :path => '../capacitor-cordova-ios-plugins'
 end
 
 target 'App' do
