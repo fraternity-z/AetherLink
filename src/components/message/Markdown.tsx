@@ -205,7 +205,7 @@ const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageR
         </div>
       )
     } as Partial<Components>;
-  }, [onSaveCodeBlock, messageRole]);
+  }, [onSaveCodeBlock, messageRole, isStreaming]);
 
   return (
     <div className="markdown">

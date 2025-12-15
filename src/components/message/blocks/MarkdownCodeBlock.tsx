@@ -4,6 +4,7 @@ import MermaidBlock from './MermaidBlock';
 import Markdown from '../Markdown';
 import { CodeBlockView } from '../../CodeBlockView';
 import HtmlArtifactsCard from '../../CodeBlockView/HtmlArtifactsCard';
+import { isOpenFenceBlock } from '../../../utils/markdown';
 
 // 需要接收并传递 messageRole 和 isStreaming
 interface MarkdownCodeBlockProps {
@@ -25,7 +26,8 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   className,
   id,
   messageRole,
-  isStreaming = false
+  isStreaming = false,
+  node  // react-markdown 传递的 AST 节点，包含 position 信息
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -91,10 +93,15 @@ const MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
 
   // HTML Artifacts 卡片
   if (language === 'html' || language === 'htm') {
+    // 使用双重判断：消息在流式中 AND 代码块未闭合
+    // 这样当代码块已经完整生成（有闭合的 ```）但消息还在继续时，不会显示为流式状态
+    const isOpenFence = isOpenFenceBlock(safeChildren?.length, match?.[1]?.length, node?.position);
+    const isActuallyStreaming = isStreaming && isOpenFence;
+    
     return (
       <HtmlArtifactsCard
         html={safeChildren}
-        isStreaming={isStreaming}
+        isStreaming={isActuallyStreaming}
         onSave={(newContent) => {
           console.log('保存 HTML:', id, newContent);
         }}

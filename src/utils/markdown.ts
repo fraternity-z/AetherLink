@@ -39,6 +39,33 @@ export function getCodeBlockId(start: any): string | null {
 }
 
 /**
+ * 检查代码块是否为未闭合的 fence 块（流式生成中）
+ * 
+ * 原理：remark/micromark 解析代码块时，node.position 包含 fences（```），
+ * 而 children（代码内容）不包含 fences。通过它们之间的差值可以判断有没有 closed fence。
+ * 
+ * 一个完整的代码块结构：
+ * ```language\n
+ * content
+ * ```
+ * 
+ * 如果没有闭合的 ```，则 end.offset - start.offset 会接近于 content + language 的长度
+ * 
+ * @param codeLength 代码长度（不包含语言信息）
+ * @param metaLength 元数据长度（```之后的语言信息）
+ * @param position 位置（unist 节点位置）
+ * @returns 是否为未闭合的代码块（true 表示还在流式生成中）
+ */
+export function isOpenFenceBlock(codeLength?: number, metaLength?: number, position?: { start?: { offset?: number }; end?: { offset?: number } }): boolean {
+  const contentLength = (codeLength ?? 0) + (metaLength ?? 0);
+  const start = position?.start?.offset ?? 0;
+  const end = position?.end?.offset ?? 0;
+  // 余量至少是 fence (3) + newlines (2)
+  // 如果 end - start <= contentLength + 5，说明没有闭合的 fence
+  return end - start <= contentLength + 5;
+}
+
+/**
  * HTML实体编码辅助函数
  * @param str 输入字符串
  * @returns string 编码后的字符串
