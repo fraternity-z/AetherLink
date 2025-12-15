@@ -266,8 +266,39 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
     // 动态导入 Tauri HTTP 插件
     const { fetch: tauriHttpFetch } = await import('@tauri-apps/plugin-http');
     
-    // 获取代理配置
-    const proxyConfig = await getTauriProxyConfig();
+    // 检查是否是本地地址（localhost/127.0.0.1/局域网地址）
+    const isLocalAddress = (targetUrl: string): boolean => {
+      try {
+        const urlObj = new URL(targetUrl);
+        const hostname = urlObj.hostname;
+        return hostname === 'localhost' || 
+               hostname === '127.0.0.1' || 
+               hostname.startsWith('192.168.') ||
+               hostname.startsWith('10.') ||
+               hostname.startsWith('172.16.') ||
+               hostname.startsWith('172.17.') ||
+               hostname.startsWith('172.18.') ||
+               hostname.startsWith('172.19.') ||
+               hostname.startsWith('172.20.') ||
+               hostname.startsWith('172.21.') ||
+               hostname.startsWith('172.22.') ||
+               hostname.startsWith('172.23.') ||
+               hostname.startsWith('172.24.') ||
+               hostname.startsWith('172.25.') ||
+               hostname.startsWith('172.26.') ||
+               hostname.startsWith('172.27.') ||
+               hostname.startsWith('172.28.') ||
+               hostname.startsWith('172.29.') ||
+               hostname.startsWith('172.30.') ||
+               hostname.startsWith('172.31.');
+      } catch {
+        return false;
+      }
+    };
+    
+    // 获取代理配置（本地地址不使用代理）
+    const shouldUseProxy = !isLocalAddress(url);
+    const proxyConfig = shouldUseProxy ? await getTauriProxyConfig() : undefined;
     
     // 构建请求选项
     const fetchOptions: any = {
@@ -277,7 +308,7 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
       connectTimeout: options.timeout || 30000,
     };
     
-    // 如果有代理配置，添加到请求选项
+    // 如果有代理配置且不是本地地址，添加到请求选项
     if (proxyConfig) {
       fetchOptions.proxy = {
         all: proxyConfig,
@@ -287,8 +318,10 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
         hasAuth: !!proxyConfig.basicAuth,
         targetUrl: url
       });
+    } else if (!shouldUseProxy) {
+      console.log('[Universal Fetch] Tauri HTTP 直连（本地地址，跳过代理）:', url);
     } else {
-      console.log('[Universal Fetch] Tauri HTTP 直连（无代理）:', url);
+      console.log('[Universal Fetch] Tauri HTTP 直连（无代理配置）:', url);
     }
     
     // Tauri 的 fetch 函数与标准 fetch 兼容
