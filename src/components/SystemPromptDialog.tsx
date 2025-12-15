@@ -441,7 +441,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
         value={prompt}
         onChange={handlePromptChange}
         disabled={editMode === 'combined'}
-        rows={isMobile ? 20 : 16}
+        rows={isMobile ? 10 : 12}
         sx={{
           mb: 0,
           flex: 1,
