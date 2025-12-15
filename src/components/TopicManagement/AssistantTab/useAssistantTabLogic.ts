@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import * as tinyPinyin from 'tiny-pinyin';
 import { debounce } from 'lodash';
-import type { Assistant } from '../../../shared/types/Assistant';
+import type { Assistant, AssistantRegex } from '../../../shared/types/Assistant';
 
 import { AssistantService } from '../../../shared/services';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
@@ -91,6 +91,7 @@ export function useAssistantTabLogic(
   const [editAssistantPrompt, setEditAssistantPrompt] = useState('');
   const [editAssistantAvatar, setEditAssistantAvatar] = useState('');
   const [editingAssistant, setEditingAssistant] = useState<Assistant | null>(null); //  新增：保存正在编辑的助手
+  const [editRegexRules, setEditRegexRules] = useState<AssistantRegex[]>([]); // 正则替换规则
 
   // 提示词选择器状态
   const [promptSelectorOpen, setPromptSelectorOpen] = useState(false);
@@ -215,6 +216,7 @@ export function useAssistantTabLogic(
     setEditAssistantName(selectedMenuAssistant.name);
     setEditAssistantPrompt(selectedMenuAssistant.systemPrompt || '');
     setEditAssistantAvatar(selectedMenuAssistant.avatar || '');
+    setEditRegexRules(selectedMenuAssistant.regexRules || []);
     setEditDialogOpen(true);
     handleCloseAssistantMenu();
   };
@@ -224,6 +226,7 @@ export function useAssistantTabLogic(
     setEditDialogOpen(false);
     setEditingAssistant(null); // 清理编辑状态
     setEditAssistantAvatar(''); // 清理头像状态
+    setEditRegexRules([]); // 清理正则规则状态
   };
 
   // 保存编辑后的助手
@@ -237,7 +240,9 @@ export function useAssistantTabLogic(
         systemPrompt: editAssistantPrompt,
         avatar: editAssistantAvatar,
         // 如果设置了头像，清空emoji字段，避免冲突
-        emoji: editAssistantAvatar ? undefined : editingAssistant.emoji
+        emoji: editAssistantAvatar ? undefined : editingAssistant.emoji,
+        // 正则替换规则
+        regexRules: editRegexRules
       };
 
       // 直接保存到数据库，确保数据持久化
@@ -542,6 +547,7 @@ export function useAssistantTabLogic(
     editAssistantPrompt,
     editAssistantAvatar,
     editingAssistant,
+    editRegexRules,
     promptSelectorOpen,
     iconPickerOpen,
     avatarUploaderOpen,
@@ -586,6 +592,8 @@ export function useAssistantTabLogic(
     handleCloseAvatarUploader,
     handleSaveAvatar,
     handleRemoveAvatar,
+    // 正则替换规则处理函数
+    handleRegexRulesChange: setEditRegexRules,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,

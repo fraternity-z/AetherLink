@@ -16,10 +16,12 @@ import {
   type Theme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { ChevronLeft, User, Sparkles, Settings2 } from 'lucide-react';
+import { ChevronLeft, User, Sparkles, Settings2, Wand2 } from 'lucide-react';
 import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 import { ParameterEditor } from '../../ParameterEditor';
 import { detectProviderFromModel } from '../../../shared/config/parameterMetadata';
+import { RegexTab } from './RegexTab';
+import type { AssistantRegex } from '../../../shared/types/Assistant';
 
 // 样式常量
 const styles = {
@@ -135,6 +137,10 @@ export interface EditAssistantDialogProps {
   onParameterChange?: (key: string, value: any) => void;
   /** 参数启用状态变化 */
   onParameterToggle?: (key: string, enabled: boolean) => void;
+  /** 正则替换规则 */
+  regexRules?: AssistantRegex[];
+  /** 正则替换规则变化回调 */
+  onRegexRulesChange?: (rules: AssistantRegex[]) => void;
 }
 
 /**
@@ -155,7 +161,9 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   onAvatarClick,
   onPromptSelectorClick,
   onParameterChange,
-  onParameterToggle
+  onParameterToggle,
+  regexRules = [],
+  onRegexRulesChange
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -359,6 +367,12 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             iconPosition="start"
             sx={{ minHeight: isMobile ? 40 : 36 }}
           />
+          <Tab 
+            label="正则替换" 
+            icon={<Wand2 size={16} />} 
+            iconPosition="start"
+            sx={{ minHeight: isMobile ? 40 : 36 }}
+          />
         </Tabs>
       </Box>
 
@@ -488,6 +502,16 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               enabledParams={localEnabledParams}
               onChange={handleParamChange}
               onToggle={handleParamToggle}
+            />
+          </Box>
+        )}
+
+        {/* 正则替换 Tab 内容 */}
+        {tabValue === 2 && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <RegexTab
+              rules={regexRules}
+              onChange={(rules) => onRegexRulesChange?.(rules)}
             />
           </Box>
         )}

@@ -11,6 +11,20 @@ export interface CustomParameter {
   type: CustomParameterType;
 }
 
+// 正则替换规则作用范围
+export type AssistantRegexScope = 'user' | 'assistant';
+
+// 正则替换规则
+export interface AssistantRegex {
+  id: string;
+  name: string;
+  pattern: string;
+  replacement: string;
+  scopes: AssistantRegexScope[];
+  visualOnly: boolean; // 仅视觉显示，不影响实际发送内容
+  enabled: boolean;
+}
+
 export interface Assistant {
   id: string;
   name: string;
@@ -59,6 +73,9 @@ export interface Assistant {
   
   // 🆕 自定义参数
   customParameters?: CustomParameter[];
+  
+  // 🔄 正则替换规则
+  regexRules?: AssistantRegex[];
 }
 
 export interface ChatTopic {
