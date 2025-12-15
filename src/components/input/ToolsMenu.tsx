@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
+import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
 import { Box, Typography, useTheme, Menu, MenuItem, alpha } from '@mui/material';
 import { Plus, Trash2, AlertTriangle, BookOpen, Video, Wrench } from 'lucide-react';
 import { CustomIcon } from '../icons';
@@ -39,6 +40,10 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
   toolsEnabled = true,
   onToolsEnabledChange
 }) => {
+  // 返回键关闭支持
+  const menuId = useId();
+  useDialogBackHandler(`tools-menu-${menuId}`, open, onClose);
+
   const [showProviderSelector, setShowProviderSelector] = useState(false);
   const [clearConfirmMode, setClearConfirmMode] = useState(false);
   const [showKnowledgeSelector, setShowKnowledgeSelector] = useState(false);

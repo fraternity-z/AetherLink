@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useId } from 'react';
+import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import { Image, Camera, FileText, ArrowLeftRight, BookOpen } from 'lucide-react';
 import { CustomIcon } from '../icons';
@@ -42,6 +43,10 @@ const UploadMenu: React.FC<UploadMenuProps> = ({
   onNoteSelect,
   showNote = false,
 }) => {
+  // 返回键关闭支持
+  const menuId = useId();
+  useDialogBackHandler(`upload-menu-${menuId}`, open, onClose);
+
   return (
     <Menu
       anchorEl={anchorEl}
