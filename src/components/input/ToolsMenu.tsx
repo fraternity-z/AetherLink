@@ -261,7 +261,7 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
           : alpha(theme.palette.primary.main, 0.6)
         }
       />,
-      label: webSearchSettings?.providers?.find(p => p.id === currentProvider)?.name || '网络搜索',
+      label: webSearchSettings?.providers?.find((p: { id: string; name: string }) => p.id === currentProvider)?.name || '网络搜索',
       onClick: handleWebSearchClick,
       isActive: webSearchActive
     } : null
@@ -269,7 +269,7 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
 
   // 根据设置生成按钮数组
   const buttons = toolbarButtons.order
-    .filter(buttonId => {
+    .filter((buttonId: string) => {
       // 过滤掉不可见的按钮，以及配置不合法的按钮
       const config = allButtonConfigs[buttonId as keyof typeof allButtonConfigs];
       return (
@@ -279,8 +279,8 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
         'id' in config
       );
     })
-    .map(buttonId => allButtonConfigs[buttonId as keyof typeof allButtonConfigs])
-    .filter((button): button is NonNullable<typeof button> => button !== null);
+    .map((buttonId: string) => allButtonConfigs[buttonId as keyof typeof allButtonConfigs])
+    .filter((button: typeof allButtonConfigs[keyof typeof allButtonConfigs]): button is NonNullable<typeof button> => button !== null);
 
   return (
     <>
@@ -331,7 +331,7 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
           }
         }}
       >
-        {buttons.map((button) => {
+        {buttons.map((button: NonNullable<typeof allButtonConfigs[keyof typeof allButtonConfigs]>) => {
           // 普通按钮渲染（包括MCP工具按钮）
           if (!('onClick' in button) || !('icon' in button) || !('label' in button)) {
             return null;
