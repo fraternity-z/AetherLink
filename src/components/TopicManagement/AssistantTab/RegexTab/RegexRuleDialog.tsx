@@ -8,8 +8,6 @@ import {
   Box,
   Typography,
   Chip,
-  Switch,
-  FormControlLabel,
   Alert,
   useTheme,
   useMediaQuery,
@@ -52,6 +50,8 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
   const [visualOnly, setVisualOnly] = useState(false);
   const [patternError, setPatternError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [scopeError, setScopeError] = useState<string | null>(null);
+  const [testInput, setTestInput] = useState('');
 
   // 初始化或重置表单
   useEffect(() => {
@@ -71,6 +71,8 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
       }
       setPatternError(null);
       setNameError(null);
+      setScopeError(null);
+      setTestInput('');
     }
   }, [open, rule]);
 
@@ -92,13 +94,10 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
 
   // 切换作用范围
   const toggleScope = (scope: AssistantRegexScope) => {
+    if (scopeError) setScopeError(null);
     setScopes(prev => {
       if (prev.includes(scope)) {
-        // 至少保留一个作用范围
-        if (prev.length > 1) {
-          return prev.filter(s => s !== scope);
-        }
-        return prev;
+        return prev.filter(s => s !== scope);
       }
       return [...prev, scope];
     });
@@ -114,6 +113,7 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
       return;
     }
     if (scopes.length === 0) {
+      setScopeError('请至少选择一个作用范围');
       return;
     }
 
@@ -304,32 +304,126 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
               />
             ))}
           </Box>
+          {scopeError && (
+            <Typography variant="caption" sx={{ color: theme.palette.error.main, mt: 0.5, display: 'block' }}>
+              {scopeError}
+            </Typography>
+          )}
         </Box>
 
         {/* 仅视觉显示选项 */}
         <Box sx={{ mb: 2 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={visualOnly}
-                onChange={(e) => setVisualOnly(e.target.checked)}
-                size="small"
-              />
-            }
-            label={
-              <Box>
-                <Typography variant="body2">仅视觉显示</Typography>
-                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                  启用后，替换仅在界面显示，不影响实际发送给AI的内容
-                </Typography>
-              </Box>
-            }
-            sx={{ alignItems: 'flex-start', ml: 0 }}
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mb: 1, display: 'block' }}>
+            显示模式
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              label="仅视觉显示"
+              onClick={() => setVisualOnly(!visualOnly)}
+              variant={visualOnly ? 'filled' : 'outlined'}
+              sx={{
+                cursor: 'pointer',
+                backgroundColor: visualOnly
+                  ? theme.palette.primary.main
+                  : 'transparent',
+                color: visualOnly
+                  ? theme.palette.primary.contrastText
+                  : theme.palette.text.primary,
+                borderColor: visualOnly
+                  ? theme.palette.primary.main
+                  : isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+                '&:hover': {
+                  backgroundColor: visualOnly
+                    ? theme.palette.primary.dark
+                    : isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
+                }
+              }}
+            />
+          </Box>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mt: 0.5, display: 'block' }}>
+            启用后，替换仅在界面显示，不影响实际发送给AI的内容
+          </Typography>
+        </Box>
+
+        {/* 实时预览 */}
+        <Box sx={{ 
+          mb: 2, 
+          p: 2, 
+          borderRadius: 2,
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`
+        }}>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, mb: 1, display: 'block', fontWeight: 500 }}>
+            🔍 实时预览
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            value={testInput}
+            onChange={(e) => setTestInput(e.target.value)}
+            onFocus={(e) => {
+              // 保存元素引用，延迟滚动等待键盘弹出
+              const target = e.target;
+              setTimeout(() => {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
+            placeholder="输入测试文本..."
+            sx={{ ...inputStyles, mb: 1.5 }}
           />
+          {testInput && pattern && !patternError && (
+            <Box>
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mb: 0.5 }}>
+                替换结果:
+              </Typography>
+              <Box sx={{ 
+                p: 1.5, 
+                borderRadius: 1, 
+                backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.8)',
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+                wordBreak: 'break-all'
+              }}>
+                {(() => {
+                  try {
+                    const regex = new RegExp(pattern, 'g');
+                    const result = testInput.replace(regex, replacement);
+                    const hasMatch = regex.test(testInput);
+                    return (
+                      <>
+                        <Typography 
+                          component="span" 
+                          sx={{ 
+                            color: hasMatch ? theme.palette.success.main : theme.palette.text.secondary,
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit'
+                          }}
+                        >
+                          {result || '(空)'}
+                        </Typography>
+                        {!hasMatch && (
+                          <Typography variant="caption" sx={{ color: theme.palette.warning.main, display: 'block', mt: 0.5 }}>
+                            ⚠️ 未匹配到任何内容
+                          </Typography>
+                        )}
+                      </>
+                    );
+                  } catch {
+                    return <Typography sx={{ color: theme.palette.error.main }}>正则表达式错误</Typography>;
+                  }
+                })()}
+              </Box>
+            </Box>
+          )}
+          {!testInput && (
+            <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}>
+              输入测试文本查看替换效果
+            </Typography>
+          )}
         </Box>
 
         {/* 提示信息 */}
-        <Alert severity="info" sx={{ mt: 2 }}>
+        <Alert severity="info" sx={{ mt: 1 }}>
           <Typography variant="caption">
             正则替换会按顺序应用到消息内容上。您可以使用 $1, $2 等引用捕获组。
           </Typography>

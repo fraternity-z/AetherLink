@@ -406,22 +406,22 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
                 width: isMobile ? 4 : 6, // 桌面端稍宽
                 height: keyboardHeight > 0 ? 60 : (isMobile ? 100 : 120), // 桌面端稍高
                 bgcolor: 'primary.main',
-                opacity: isMobile ? 0.3 : 0.4,
+                opacity: isMobile ? 0.5 : 0.55,
                 borderRadius: '4px 0 0 4px',
                 zIndex: 999,
                 pointerEvents: 'none',
                 transition: 'all 0.2s ease-out',
                 '@keyframes pulse': {
                   '0%': {
-                    opacity: isMobile ? 0.3 : 0.35,
+                    opacity: isMobile ? 0.45 : 0.5,
                     scaleY: 1
                   },
                   '50%': {
-                    opacity: isMobile ? 0.6 : 0.7,
+                    opacity: isMobile ? 0.75 : 0.85,
                     scaleY: 1.1
                   },
                   '100%': {
-                    opacity: isMobile ? 0.3 : 0.35,
+                    opacity: isMobile ? 0.45 : 0.5,
                     scaleY: 1
                   }
                 },

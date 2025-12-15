@@ -4,7 +4,7 @@ import { Settings, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
-import MessageList from '../../../components/message/MessageList';
+import SolidMessageList from '../../../components/message/SolidMessageList';
 import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
 import { ModelSelector } from './ModelSelector';
@@ -975,7 +975,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
                 ...baseStyles.messageContainer
               }}>
                 <ErrorBoundary>
-                  <MessageList
+                  <SolidMessageList
                     messages={currentMessages}
                     onRegenerate={handleRegenerateMessage}
                     onDelete={handleDeleteMessage}
