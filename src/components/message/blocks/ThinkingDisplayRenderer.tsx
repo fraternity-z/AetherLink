@@ -116,24 +116,29 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
     return null;
   }
 
-  // 紧凑模式
+  // 紧凑模式 - 圆滑紧凑优化版
   const renderCompactStyle = () => (
     <StyledPaper
       onClick={onToggleExpanded}
       elevation={0}
       sx={{
         cursor: 'pointer',
-        mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: '8px',
+        mb: 1.5,
+        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+        borderRadius: '16px',
         overflow: 'hidden',
-        transition: 'background-color 0.2s ease',
-        width: '100%', // 固定占满屏幕宽度
-        maxWidth: '100%', // 确保不超出屏幕
-        minWidth: 0, // 允许收缩
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
         ...getGlassBackground(theme.palette.mode === 'dark'),
-        '&:hover, &:focus, &:active': {
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(40, 40, 40, 0.9)' : 'rgba(245, 245, 245, 0.9)',
+        '&:hover': {
+          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(45, 45, 45, 0.92)' : 'rgba(250, 250, 250, 0.95)',
+          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
+          transform: 'translateY(-1px)',
+          boxShadow: theme.palette.mode === 'dark' 
+            ? '0 4px 12px rgba(0,0,0,0.3)' 
+            : '0 4px 12px rgba(0,0,0,0.08)',
         }
       }}
     >
@@ -142,16 +147,17 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          p: 1.5,
-          borderBottom: expanded ? `1px solid ${theme.palette.divider}` : 'none'
+          px: 1.5,
+          py: 1,
+          borderBottom: expanded ? `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}` : 'none'
         }}
       >
-        <motion.div {...getThinkingAnimation(isThinking)} style={{ marginRight: theme.spacing(1) }}>
-          <Lightbulb size={20} color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary} />
+        <motion.div {...getThinkingAnimation(isThinking)} style={{ marginRight: theme.spacing(0.75) }}>
+          <Lightbulb size={16} color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary} />
         </motion.div>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1 }}>
-          <Typography variant="subtitle2" component="span">
+        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 0.75 }}>
+          <Typography variant="body2" component="span" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
             {t('settings.appearance.thinkingProcess.preview.texts.thinkingProcess')}
           </Typography>
           <Chip
@@ -159,34 +165,57 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             size="small"
             color={isThinking ? "warning" : "default"}
             variant="outlined"
-            sx={{ height: 20 }}
+            sx={{ 
+              height: 18, 
+              fontSize: '0.65rem',
+              borderRadius: '9px',
+              '& .MuiChip-label': { px: 1 }
+            }}
           />
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
           <IconButton
             size="small"
             onClick={handleCopyClick}
-            sx={{ mr: 1 }}
             color={copied ? "success" : "default"}
+            sx={{ 
+              p: 0.5,
+              borderRadius: '8px',
+              '&:hover': { backgroundColor: theme.palette.action.hover }
+            }}
           >
-            <Copy size={16} />
+            <Copy size={14} />
           </IconButton>
 
-          <ChevronDown
-            size={20}
-            style={{
-              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s'
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 24,
+              height: 24,
+              borderRadius: '8px',
+              transition: 'background-color 0.2s',
+              '&:hover': { backgroundColor: theme.palette.action.hover }
             }}
-          />
+          >
+            <ChevronDown
+              size={16}
+              style={{
+                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+            />
+          </Box>
         </Box>
       </Box>
 
       {/* 内容区域 */}
-      <Collapse in={expanded} timeout={0}>
+      <Collapse in={expanded} timeout={200} easing="cubic-bezier(0.4, 0, 0.2, 1)">
         <Box sx={{
-          p: 2,
+          px: 1.5,
+          py: 1.25,
           width: '100%',
           maxWidth: '100%',
           minWidth: 0,
