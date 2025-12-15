@@ -51,10 +51,6 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   desktopOpen = true,
   onDesktopToggle
 }: SolidMotionSidebarProps) {
-  const renderCount = useRef(0);
-  renderCount.current += 1;
-  console.log(`🎬 SolidMotionSidebar渲染 #${renderCount.current}`, { mobileOpen, desktopOpen });
-
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
   const [showSidebar, setShowSidebar] = useState(!isSmallScreen);

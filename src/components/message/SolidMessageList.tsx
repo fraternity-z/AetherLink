@@ -3,7 +3,8 @@
  * 外壳用 SolidJS 实现（滚动优化），内容由 React 渲染
  * 使用 SolidBridge 桥接 React 和 SolidJS
  */
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import { throttle } from 'lodash';
 import { createPortal } from 'react-dom';
 import { Box, useTheme } from '@mui/material';
 import { SolidBridge } from '../../shared/bridges/SolidBridge';
@@ -19,6 +20,8 @@ import type { ChatTopic, Assistant } from '../../shared/types/Assistant';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
+import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
 
 interface SolidMessageListProps {
   messages: Message[];
@@ -48,6 +51,9 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
   const theme = useTheme();
   const renderCount = useRef(0);
   renderCount.current += 1;
+
+  // 键盘状态监听 - 用于在键盘弹出时自动滚动到底部
+  const { keyboardHeight } = useKeyboard();
 
   // Portal 容器
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
@@ -145,23 +151,40 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
     return () => observer.disconnect();
   }, [portalContainer]);
 
-  // 话题切换时重置显示数量
-  const prevTopicIdRef = useRef(currentTopicId);
+  // ⭐ 监听助手更新事件
+  const currentAssistantRef = useRef(currentAssistant);
+  currentAssistantRef.current = currentAssistant;
+
   useEffect(() => {
-    if (prevTopicIdRef.current !== currentTopicId) {
-      setDisplayCount(INITIAL_DISPLAY_COUNT);
-      prevTopicIdRef.current = currentTopicId;
-    }
-  }, [currentTopicId]);
+    const handleAssistantUpdated = (event: CustomEvent) => {
+      const updatedAssistant = event.detail.assistant;
+      if (currentAssistantRef.current && updatedAssistant.id === currentAssistantRef.current.id) {
+        setCurrentAssistant(updatedAssistant);
+      }
+    };
+
+    window.addEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
+    return () => {
+      window.removeEventListener('assistantUpdated', handleAssistantUpdated as EventListener);
+    };
+  }, []);
 
   // 处理滚动事件
   const handleScroll = useCallback((scrollTop: number, _scrollHeight: number, _clientHeight: number) => {
     setIsNearTop(scrollTop < 100);
   }, []);
 
+  // 记录加载前的滚动高度，用于保持位置
+  const prevScrollHeightRef = useRef<number | null>(null);
+  const prevDisplayCountRef = useRef(displayCount);
+
   // 加载更多消息
   const loadMoreMessages = useCallback(() => {
     if (!hasMore || isLoadingMore) return;
+
+    // 记录当前滚动高度
+    const container = document.getElementById('messageList');
+    prevScrollHeightRef.current = container?.scrollHeight || null;
 
     setIsLoadingMore(true);
     setTimeout(() => {
@@ -169,6 +192,19 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
       setIsLoadingMore(false);
     }, 300);
   }, [hasMore, isLoadingMore]);
+
+  // ⭐ 加载更多后保持滚动位置
+  useLayoutEffect(() => {
+    if (prevScrollHeightRef.current !== null && displayCount > prevDisplayCountRef.current) {
+      const container = document.getElementById('messageList');
+      if (container) {
+        const heightDiff = container.scrollHeight - prevScrollHeightRef.current;
+        container.scrollTop += heightDiff;
+      }
+      prevScrollHeightRef.current = null;
+    }
+    prevDisplayCountRef.current = displayCount;
+  }, [displayCount, displayMessages]);
 
   // 处理提示词气泡点击
   const handlePromptBubbleClick = useCallback(() => {
@@ -182,6 +218,145 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
   const handlePromptSave = useCallback((updatedTopic: any) => {
     setCurrentTopic(updatedTopic);
   }, []);
+
+  // 滚动到底部的方法
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+    const scrollFn = (window as any).__solidMessageListScrollToBottom;
+    if (scrollFn) {
+      scrollFn(behavior);
+    } else {
+      // 备用方案：直接操作容器
+      const container = document.getElementById('messageList');
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior });
+      }
+    }
+  }, []);
+
+  // 统一滚动管理器
+  const scrollManagerRef = useRef({
+    isScrolling: false,
+    lastScrollTime: 0
+  });
+
+  const unifiedScrollToBottom = useCallback((source: string = 'unknown', options: { force?: boolean; behavior?: ScrollBehavior } = {}) => {
+    const { force = false, behavior = 'auto' } = options;
+    const manager = scrollManagerRef.current;
+
+    if (!autoScrollToBottom && !force) {
+      return;
+    }
+
+    const now = Date.now();
+    if (manager.isScrolling && now - manager.lastScrollTime < 50) return;
+
+    manager.isScrolling = true;
+    manager.lastScrollTime = now;
+
+    requestAnimationFrame(() => {
+      try {
+        scrollToBottom(behavior);
+      } catch (error) {
+        console.error(`[SolidMessageList] 滚动失败 (来源: ${source}):`, error);
+      } finally {
+        setTimeout(() => {
+          manager.isScrolling = false;
+        }, 100);
+      }
+    });
+  }, [autoScrollToBottom, scrollToBottom]);
+
+  // 保存滚动方法的引用
+  const unifiedScrollToBottomRef = useRef(unifiedScrollToBottom);
+  useEffect(() => {
+    unifiedScrollToBottomRef.current = unifiedScrollToBottom;
+  }, [unifiedScrollToBottom]);
+
+  // ⭐ 监听流式消息时自动滚动
+  useEffect(() => {
+    if (!autoScrollToBottom) return;
+    if (hasStreamingMessage) {
+      unifiedScrollToBottomRef.current('streamingCheck');
+    }
+  }, [hasStreamingMessage, autoScrollToBottom]);
+
+  // ⭐ 监听流式事件，实现实时滚动
+  useEffect(() => {
+    const throttledTextDeltaHandler = throttle(() => {
+      if (!autoScrollToBottom) return;
+      
+      const container = document.getElementById('messageList');
+      if (container) {
+        const gap = container.scrollHeight - container.scrollTop - container.clientHeight;
+        const isNearBottom = gap < 120;
+        if (!isNearBottom) return;
+      }
+      unifiedScrollToBottomRef.current('textDelta');
+    }, 150);
+
+    const scrollToBottomHandler = () => {
+      if (!autoScrollToBottom) return;
+      unifiedScrollToBottomRef.current('eventHandler', { force: true });
+    };
+
+    const unsubscribeTextDelta = EventEmitter.on(EVENT_NAMES.STREAM_TEXT_DELTA, throttledTextDeltaHandler);
+    const unsubscribeTextComplete = EventEmitter.on(EVENT_NAMES.STREAM_TEXT_COMPLETE, throttledTextDeltaHandler);
+    const unsubscribeThinkingDelta = EventEmitter.on(EVENT_NAMES.STREAM_THINKING_DELTA, throttledTextDeltaHandler);
+    const unsubscribeScrollToBottom = EventEmitter.on(EVENT_NAMES.UI_SCROLL_TO_BOTTOM, scrollToBottomHandler);
+
+    return () => {
+      unsubscribeTextDelta();
+      unsubscribeTextComplete();
+      unsubscribeThinkingDelta();
+      unsubscribeScrollToBottom();
+      throttledTextDeltaHandler.cancel();
+    };
+  }, [autoScrollToBottom]);
+
+  // ⭐ 消息数量变化时滚动到底部
+  const prevMessagesLengthRef = useRef(messages.length);
+  useEffect(() => {
+    if (messages.length > prevMessagesLengthRef.current) {
+      unifiedScrollToBottomRef.current('messageLengthChange');
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages.length]);
+
+  // ⭐ 键盘弹出时自动滚动到底部
+  const prevKeyboardHeightRef = useRef(keyboardHeight);
+  useEffect(() => {
+    if (keyboardHeight > 0 && prevKeyboardHeightRef.current === 0) {
+      setTimeout(() => {
+        unifiedScrollToBottomRef.current('keyboardShow', { force: true });
+      }, 100);
+    }
+    prevKeyboardHeightRef.current = keyboardHeight;
+  }, [keyboardHeight]);
+
+  // ⭐ 初始加载和话题切换时滚动到底部
+  const prevTopicIdRef = useRef(currentTopicId);
+  const isInitialLoadRef = useRef(true);
+  
+  useEffect(() => {
+    const isTopicChange = prevTopicIdRef.current !== currentTopicId;
+    
+    if (isTopicChange || isInitialLoadRef.current) {
+      if (isTopicChange) {
+        setDisplayCount(INITIAL_DISPLAY_COUNT);
+        prevTopicIdRef.current = currentTopicId;
+      }
+      
+      if (displayMessages.length > 0 && currentTopicId) {
+        setTimeout(() => {
+          unifiedScrollToBottomRef.current(
+            isInitialLoadRef.current ? 'initialLoad' : 'topicSwitch', 
+            { force: true }
+          );
+          isInitialLoadRef.current = false;
+        }, 150);
+      }
+    }
+  }, [currentTopicId, displayMessages.length]);
 
   // SolidJS 组件的 props
   const solidProps = useMemo(() => ({

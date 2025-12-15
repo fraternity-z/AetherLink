@@ -105,22 +105,26 @@ export function MessageListContainer(props: MessageListContainerProps) {
     };
   };
   
-  // 获取滚动条样式
+  // 获取滚动条样式 - 与原始 MessageList 保持一致（3px 细滚动条）
   const getScrollbarStyle = () => {
     const isDark = props.themeMode === 'dark';
     return `
+      .solid-message-list-container {
+        scrollbar-width: thin;
+        scrollbar-color: ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'} transparent;
+      }
       .solid-message-list-container::-webkit-scrollbar {
-        width: 6px;
+        width: 3px;
       }
       .solid-message-list-container::-webkit-scrollbar-track {
         background: transparent;
       }
       .solid-message-list-container::-webkit-scrollbar-thumb {
-        background: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};
-        border-radius: 3px;
+        background: ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'};
+        border-radius: 2px;
       }
       .solid-message-list-container::-webkit-scrollbar-thumb:hover {
-        background: ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'};
+        background: ${isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)'};
       }
     `;
   };

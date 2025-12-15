@@ -88,7 +88,10 @@ export function AppSidebar(props: AppSidebarProps) {
         // 关闭状态：只允许右滑打开
         setDragOffset(Math.max(0, deltaX));
       }
-      e.preventDefault();
+      // 只有在事件可取消时才阻止默认行为，避免滚动中的警告
+      if (e.cancelable) {
+        e.preventDefault();
+      }
     }
   };
   
