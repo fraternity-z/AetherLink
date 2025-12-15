@@ -162,6 +162,7 @@ export function useBackButton(
   const idRef = useRef(`back-button-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
   // 更新回调引用
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     callbackRef.current = callback;
   }, [callback, ...deps]);

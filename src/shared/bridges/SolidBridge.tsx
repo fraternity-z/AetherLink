@@ -85,7 +85,8 @@ function serializeValue(value: any): any {
  * 包装回调函数，自动序列化参数
  * 防止 SolidJS 代理对象传递到 React/Redux
  */
-function wrapCallback(callback: Function): Function {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function wrapCallback(callback: (...args: any[]) => any): (...args: any[]) => any {
   return (...args: any[]) => {
     // 序列化所有参数，移除 SolidJS 代理
     const serializedArgs = args.map(serializeValue);
@@ -96,6 +97,7 @@ function wrapCallback(callback: Function): Function {
 /**
  * 创建事件总线实例
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function createEventBus(): EventBus {
   const listeners = new Map<string, Set<(data: any) => void>>();
 
@@ -255,6 +257,7 @@ export function SolidBridge<T extends Record<string, any>>({
       onUnmount?.();
       setIsReady(false);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [SolidComponentToRender]); // 只在组件类型变化时重新初始化
 
   // 响应式更新 props（不销毁组件）

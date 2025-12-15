@@ -42,6 +42,7 @@ const NoteEditor: React.FC = () => {
     }
 
     loadFile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filePath, getBackPath]);
 
   const loadFile = async () => {

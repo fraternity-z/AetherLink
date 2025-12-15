@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -98,7 +98,7 @@ const ToolbarCustomization: React.FC = () => {
   const toolbarDisplayStyle = settings.toolbarDisplayStyle || 'both';
 
   // 获取工具栏按钮配置
-  const toolbarButtons = settings.toolbarButtons || {
+  const toolbarButtons = useMemo(() => settings.toolbarButtons || {
     order: ['mcp-tools', 'new-topic', 'clear-topic', 'generate-image', 'generate-video', 'knowledge', 'web-search'],
     visibility: {
       'mcp-tools': true,
@@ -109,7 +109,7 @@ const ToolbarCustomization: React.FC = () => {
       'knowledge': true,
       'web-search': true
     }
-  };
+  }, [settings.toolbarButtons]);
 
   // 本地状态管理
   const [localButtonOrder, setLocalButtonOrder] = useState<string[]>(toolbarButtons.order);

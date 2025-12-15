@@ -171,7 +171,7 @@ const SiliconFlowTTSSettings: React.FC = () => {
       }));
       return false;
     }
-  }, [settings, enableTTS, isEnabled, ttsManager, navigate, t]);
+  }, [settings, enableTTS, isEnabled, ttsManager, t]);
 
   // 手动保存
   const handleSave = useCallback(async () => {
@@ -251,15 +251,18 @@ const SiliconFlowTTSSettings: React.FC = () => {
 
   // 清理定时器
   useEffect(() => {
+    const saveTimeout = saveTimeoutRef.current;
+    const playCheckInterval = playCheckIntervalRef.current;
+    const autoSaveTimeout = autoSaveTimeoutRef.current;
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
       }
-      if (playCheckIntervalRef.current) {
-        clearInterval(playCheckIntervalRef.current);
+      if (playCheckInterval) {
+        clearInterval(playCheckInterval);
       }
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
       }
       if (uiState.isTestPlaying) {
         ttsManager.stop();

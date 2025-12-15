@@ -123,6 +123,7 @@ const KnowledgeSettings: React.FC = () => {
   };
 
   // 初始化加载
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (knowledgeBases.length > 0) {
       loadStats();

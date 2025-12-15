@@ -244,10 +244,13 @@ const GeminiTTSSettings: React.FC = () => {
 
   // 清理定时器
   useEffect(() => {
+    const saveTimeout = saveTimeoutRef.current;
+    const playCheckInterval = playCheckIntervalRef.current;
+    const autoSaveTimeout = autoSaveTimeoutRef.current;
     return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      if (playCheckIntervalRef.current) clearInterval(playCheckIntervalRef.current);
-      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+      if (saveTimeout) clearTimeout(saveTimeout);
+      if (playCheckInterval) clearInterval(playCheckInterval);
+      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
       if (uiState.isTestPlaying) {
         ttsManager.stop();
       }

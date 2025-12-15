@@ -27,10 +27,8 @@ export {
 } from './UnifiedParameterManager';
 
 // OpenAI 适配器
-export {
-  OpenAIParameterAdapter,
-  createOpenAIAdapter
-} from './adapters/openai';
+import { OpenAIParameterAdapter, createOpenAIAdapter } from './adapters/openai';
+export { OpenAIParameterAdapter, createOpenAIAdapter };
 
 // OpenAI 适配器类型
 export type {
@@ -41,16 +39,12 @@ export type {
 } from './adapters/openai';
 
 // Anthropic 适配器
-export {
-  AnthropicParameterAdapter,
-  createAnthropicAdapter
-} from './adapters/anthropic';
+import { AnthropicParameterAdapter, createAnthropicAdapter } from './adapters/anthropic';
+export { AnthropicParameterAdapter, createAnthropicAdapter };
 
 // Gemini 适配器
-export {
-  GeminiParameterAdapter,
-  createGeminiAdapter
-} from './adapters/gemini';
+import { GeminiParameterAdapter, createGeminiAdapter } from './adapters/gemini';
+export { GeminiParameterAdapter, createGeminiAdapter };
 
 // 格式转换器
 export {
@@ -67,13 +61,13 @@ export function createParameterAdapter(config: import('./types').ParameterManage
   
   switch (providerType) {
     case 'anthropic':
-      return new (require('./adapters/anthropic').AnthropicParameterAdapter)(config);
+      return new AnthropicParameterAdapter(config);
     case 'gemini':
-      return new (require('./adapters/gemini').GeminiParameterAdapter)(config);
+      return new GeminiParameterAdapter(config);
     case 'openai':
     case 'openai-compatible':
     default:
-      return new (require('./adapters/openai').OpenAIParameterAdapter)(config);
+      return new OpenAIParameterAdapter(config);
   }
 }
 

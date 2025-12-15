@@ -548,7 +548,7 @@ export class WebDavManagerService {
    */
   private normalizeURL(url: string): string {
     if (!url.match(/^https?:\/\//)) {
-      const baseUrl = this.config.webdavHost.replace(/^(https?:\/\/[^\/]+\/).*$/, '$1');
+      const baseUrl = this.config.webdavHost.replace(/^(https?:\/\/[^/]+\/).*$/, '$1');
       url = baseUrl + url.replace(/^\/+/, '');
     }
     return url;

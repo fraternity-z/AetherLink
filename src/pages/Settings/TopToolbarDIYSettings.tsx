@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
@@ -68,7 +68,7 @@ const TopToolbarDIYSettings: React.FC = () => {
   });
 
   // 获取当前工具栏设置
-  const topToolbar = settings.topToolbar || {
+  const topToolbar = useMemo(() => settings.topToolbar || {
     showSettingsButton: true,
     showModelSelector: true,
     modelSelectorStyle: 'dialog',
@@ -78,7 +78,7 @@ const TopToolbarDIYSettings: React.FC = () => {
     showSearchButton: false,
     showMenuButton: true,
     componentPositions: []
-  };
+  }, [settings.topToolbar]);
 
   // 获取当前DIY布局中的组件列表
   const currentDIYComponents = topToolbar.componentPositions || [];
@@ -224,6 +224,7 @@ const TopToolbarDIYSettings: React.FC = () => {
       document.removeEventListener('touchcancel', handleGlobalUp);
       document.removeEventListener('mouseup', handleGlobalUp);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragState.isDragging, dragState.isLongPressing, handleDragStop]);
 
   // 处理放置到预览区域

@@ -177,7 +177,6 @@ export function getProviderApi(model: Model): any {
     case 'google':   
     case 'grok':     
     case 'siliconflow': 
-    case 'volcengine':  
     case 'volcengine':  // 火山引擎使用OpenAI兼容API
     default:
       // 默认使用OpenAI兼容API，与最佳实例保持一致

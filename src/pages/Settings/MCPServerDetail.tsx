@@ -80,6 +80,7 @@ const MCPServerDetail: React.FC = () => {
       }));
       setHeaderPairs(pairs);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server?.id]); // 只在服务器 ID 变化时重新初始化
 
   // 从 server.env 初始化 envPairs
@@ -92,8 +93,10 @@ const MCPServerDetail: React.FC = () => {
       }));
       setEnvPairs(pairs);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [server?.id]); // 只在服务器 ID 变化时重新初始化
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (location.state?.server) {
       setServer(location.state.server);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -33,13 +33,14 @@ const NotionSettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { t } = useTranslation();
-  const notionSettings = useSelector((state: RootState) => state.settings.notion) || {
+  const notionSettingsFromStore = useSelector((state: RootState) => state.settings.notion);
+  const notionSettings = useMemo(() => notionSettingsFromStore || {
     enabled: false,
     apiKey: '',
     databaseId: '',
     pageTitleField: 'Name',
     dateField: ''
-  };
+  }, [notionSettingsFromStore]);
 
   // 使用滚动位置保存功能
   const {

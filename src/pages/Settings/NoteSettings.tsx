@@ -110,6 +110,7 @@ const NoteSettings: React.FC = () => {
       setFolderCache({});
       setSelectedItem(null);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasStorage]);
 
   const loadSettings = async () => {
@@ -288,7 +289,7 @@ const NoteSettings: React.FC = () => {
     }
   };
 
-  const handleFileClick = (item: NoteFile) => {
+  const handleFileClick = useCallback((item: NoteFile) => {
     setSelectedItem(item);
     if (item.isDirectory) {
       // 进入文件夹
@@ -297,7 +298,7 @@ const NoteSettings: React.FC = () => {
       // 跳转到编辑器页面
       navigate(`/settings/notes/edit?path=${encodeURIComponent(item.path)}&name=${encodeURIComponent(item.name)}`);
     }
-  };
+  }, [handleEnterFolder, navigate]);
 
   // 当前显示的列表项（搜索模式下使用搜索结果，否则使用当前目录）
   const displayItems = useMemo(() => {

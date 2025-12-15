@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -95,10 +95,6 @@ const WebSearchSettings: React.FC = () => {
   const [editingProvider, setEditingProvider] = useState<WebSearchCustomProvider | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-
-  useEffect(() => {
-    // 初始化设置 - 这里不需要设置本地状态，因为我们直接使用Redux的状态
-  }, [webSearchSettings]);
 
   // 获取提供商状态配置
   const getProviderStatusConfig = (providerId: string) => {

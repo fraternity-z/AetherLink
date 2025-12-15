@@ -291,12 +291,14 @@ const ElevenLabsTTSSettings: React.FC = () => {
 
   // 清理定时器
   useEffect(() => {
+    const saveTimeout = saveTimeoutRef.current;
+    const playCheckInterval = playCheckIntervalRef.current;
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
       }
-      if (playCheckIntervalRef.current) {
-        clearInterval(playCheckIntervalRef.current);
+      if (playCheckInterval) {
+        clearInterval(playCheckInterval);
       }
       if (uiState.isTestPlaying) {
         ttsManager.stop();
