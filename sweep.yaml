@@ -1,0 +1,37 @@
+# Sweep AI Configuration
+# 文档: https://docs.sweep.dev
+
+# 仓库描述
+description: "AetherLink - 跨平台 AI 聊天应用"
+
+# 分支设置
+branch: main
+
+# 忽略的目录和文件
+blocked_dirs:
+  - node_modules
+  - dist
+  - build
+  - .git
+  - android/app/build
+  - ios/build
+
+# 文档目录 (帮助 Sweep 理解项目)
+docs:
+  - README.md
+  - docs/
+
+# 沙箱设置 (用于测试生成的代码)
+sandbox:
+  install: "pnpm install"
+  check: "pnpm type-check"
+
+# Issue 标签触发 (带这些标签的 Issue 会被 Sweep 处理)
+gha_enabled: true
+
+# 自定义规则
+rules:
+  - "使用 TypeScript 编写代码"
+  - "遵循现有代码风格"
+  - "添加必要的类型注解"
+  - "保持代码简洁"
