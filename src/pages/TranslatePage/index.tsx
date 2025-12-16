@@ -549,6 +549,7 @@ const TranslatePage: React.FC = () => {
               alignItems: 'center',
               px: 2,
               py: 1,
+              minHeight: 52,  // 统一底部栏高度
               borderTop: '1px solid',
               borderColor: 'divider',
             }}
@@ -620,21 +621,22 @@ const TranslatePage: React.FC = () => {
               alignItems: 'center',
               px: 2,
               py: 1,
-              pb: `calc(var(--safe-area-bottom-computed, 0px) + 8px)`,
+              minHeight: 52,  // 统一底部栏高度
               borderTop: '1px solid',
               borderColor: 'divider',
             }}
           >
             <Tooltip title={copied ? '已复制' : '复制'}>
               <span>
-                <IconButton
+                <Fab
                   size="small"
                   onClick={handleCopy}
                   disabled={!translatedText}
                   color={copied ? 'success' : 'default'}
+                  sx={{ boxShadow: 'none' }}
                 >
                   {copied ? <Check size={18} /> : <Copy size={18} />}
-                </IconButton>
+                </Fab>
               </span>
             </Tooltip>
           </Box>
