@@ -16,7 +16,7 @@ export interface AppSidebarProps {
 }
 
 export function AppSidebar(props: AppSidebarProps) {
-  const width = () => props.width ?? 360;
+  const width = () => props.width ?? 340;
   // 响应式访问 open 状态
   const isOpen = () => props.open;
   

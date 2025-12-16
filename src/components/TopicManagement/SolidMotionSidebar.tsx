@@ -61,7 +61,7 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   // 用于追踪上一次的打开状态
   const prevOpenRef = useRef<boolean | null>(null);
 
-  const drawerWidth = 360;
+  const drawerWidth = 340;
 
   useEffect(() => {
     if (isSmallScreen) {
