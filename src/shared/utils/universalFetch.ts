@@ -301,9 +301,15 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
     const proxyConfig = shouldUseProxy ? await getTauriProxyConfig() : undefined;
     
     // 构建请求选项
+    const headers = options.headers as Record<string, string> || {};
+    // 某些本地 LLM 服务器需要 User-Agent
+    if (!headers['User-Agent'] && !headers['user-agent']) {
+      headers['User-Agent'] = 'AetherLink/1.0';
+    }
+    
     const fetchOptions: any = {
       method: options.method as any,
-      headers: options.headers as any,
+      headers: headers,
       body: options.body as any,
       connectTimeout: options.timeout || 30000,
     };

@@ -36,10 +36,10 @@ export async function fetchModels(provider: any): Promise<any[]> {
     
     console.log(`[fetchOpenAIModels] 请求端点: ${endpoint}`);
     
-    // 构建请求头
+    // 构建请求头 (GET 请求不应包含 Content-Type)
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'Accept': 'application/json'
     };
     
     // 添加自定义中转站可能需要的额外头部
