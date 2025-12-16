@@ -2,39 +2,67 @@
  * 设置工具函数
  * 提供读取和保存应用设置的工具函数
  */
+import { getStorageItem, setStorageItem } from './storage';
+
+// 默认设置配置
+const DEFAULT_SETTINGS = {
+  streamOutput: true,
+  showMessageDivider: true,
+  copyableCodeBlocks: true,
+  contextLength: 16000,
+  contextCount: 20,
+  mathRenderer: 'KaTeX',
+  defaultThinkingEffort: 'medium',
+  thinkingBudget: 1024,
+  enableMaxOutputTokens: true
+};
+
+// 内存缓存，避免频繁异步读取
+let settingsCache: Record<string, any> | null = null;
+let cacheLoaded = false;
 
 /**
- * 从localStorage读取流式输出设置
- * @returns 流式输出是否启用，默认为true
+ * 初始化设置缓存（应用启动时调用）
  */
-export function getStreamOutputSetting(): boolean {
+export async function initSettingsCache(): Promise<void> {
   try {
-    const appSettingsJSON = localStorage.getItem('appSettings');
-    if (appSettingsJSON) {
-      const appSettings = JSON.parse(appSettingsJSON);
-      // 如果设置中有streamOutput，使用它；否则默认为true
-      return appSettings.streamOutput !== undefined ? appSettings.streamOutput : true;
-    }
+    const stored = await getStorageItem<Record<string, any>>('appSettings');
+    settingsCache = stored || { ...DEFAULT_SETTINGS };
+    cacheLoaded = true;
   } catch (error) {
-    console.error('读取流式输出设置失败:', error);
+    console.error('初始化设置缓存失败:', error);
+    settingsCache = { ...DEFAULT_SETTINGS };
+    cacheLoaded = true;
   }
-
-  // 默认启用流式输出
-  return true;
 }
 
 /**
- * 保存流式输出设置到localStorage
+ * 获取设置值（同步，使用缓存）
+ */
+function getSettingValue<T>(key: string, defaultValue: T): T {
+  if (!cacheLoaded || !settingsCache) {
+    return defaultValue;
+  }
+  return settingsCache[key] !== undefined ? settingsCache[key] : defaultValue;
+}
+
+/**
+ * 从Dexie读取流式输出设置
+ * @returns 流式输出是否启用，默认为true
+ */
+export function getStreamOutputSetting(): boolean {
+  return getSettingValue('streamOutput', true);
+}
+
+/**
+ * 保存流式输出设置到Dexie
  * @param enabled 是否启用流式输出
  */
-export function setStreamOutputSetting(enabled: boolean): void {
+export async function setStreamOutputSetting(enabled: boolean): Promise<void> {
   try {
-    const appSettingsJSON = localStorage.getItem('appSettings');
-    const appSettings = appSettingsJSON ? JSON.parse(appSettingsJSON) : {};
-
+    const appSettings = await getAppSettingsAsync();
     appSettings.streamOutput = enabled;
-    localStorage.setItem('appSettings', JSON.stringify(appSettings));
-
+    await saveAppSettings(appSettings);
     console.log(`[settingsUtils] 流式输出设置已保存: ${enabled}`);
   } catch (error) {
     console.error('保存流式输出设置失败:', error);
@@ -42,37 +70,22 @@ export function setStreamOutputSetting(enabled: boolean): void {
 }
 
 /**
- * 从localStorage读取对话分割线设置
+ * 从Dexie读取对话分割线设置
  * @returns 对话分割线是否启用，默认为true
  */
 export function getMessageDividerSetting(): boolean {
-  try {
-    const appSettingsJSON = localStorage.getItem('appSettings');
-    if (appSettingsJSON) {
-      const appSettings = JSON.parse(appSettingsJSON);
-      // 如果设置中有showMessageDivider，使用它；否则默认为true
-      return appSettings.showMessageDivider !== undefined ? appSettings.showMessageDivider : true;
-    }
-  } catch (error) {
-    console.error('读取对话分割线设置失败:', error);
-  }
-
-  // 默认启用对话分割线
-  return true;
+  return getSettingValue('showMessageDivider', true);
 }
 
 /**
- * 保存消息分割线设置到localStorage
+ * 保存消息分割线设置到Dexie
  * @param enabled 是否启用消息分割线
  */
-export function setMessageDividerSetting(enabled: boolean): void {
+export async function setMessageDividerSetting(enabled: boolean): Promise<void> {
   try {
-    const appSettingsJSON = localStorage.getItem('appSettings');
-    const appSettings = appSettingsJSON ? JSON.parse(appSettingsJSON) : {};
-
+    const appSettings = await getAppSettingsAsync();
     appSettings.showMessageDivider = enabled;
-    localStorage.setItem('appSettings', JSON.stringify(appSettings));
-
+    await saveAppSettings(appSettings);
     console.log(`[settingsUtils] 消息分割线设置已保存: ${enabled}`);
   } catch (error) {
     console.error('保存消息分割线设置失败:', error);
@@ -80,40 +93,41 @@ export function setMessageDividerSetting(enabled: boolean): void {
 }
 
 /**
- * 从localStorage读取所有应用设置
+ * 从Dexie读取所有应用设置（同步版本，使用缓存）
  * @returns 应用设置对象
  */
 export function getAppSettings(): Record<string, any> {
+  if (cacheLoaded && settingsCache) {
+    return { ...settingsCache };
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+/**
+ * 从Dexie读取所有应用设置（异步版本）
+ * @returns 应用设置对象
+ */
+export async function getAppSettingsAsync(): Promise<Record<string, any>> {
   try {
-    const appSettingsJSON = localStorage.getItem('appSettings');
-    if (appSettingsJSON) {
-      return JSON.parse(appSettingsJSON);
+    const stored = await getStorageItem<Record<string, any>>('appSettings');
+    if (stored) {
+      settingsCache = stored;
+      return stored;
     }
   } catch (error) {
     console.error('读取应用设置失败:', error);
   }
-
-  // 返回默认设置
-  return {
-    streamOutput: true,
-    showMessageDivider: true,
-    copyableCodeBlocks: true,
-    contextLength: 16000,
-    contextCount: 20,
-    mathRenderer: 'KaTeX',
-    defaultThinkingEffort: 'medium',
-    thinkingBudget: 1024,  // 默认思考预算为1024 tokens
-    enableMaxOutputTokens: true  // 默认启用最大输出Token参数
-  };
+  return { ...DEFAULT_SETTINGS };
 }
 
 /**
- * 保存应用设置到localStorage
+ * 保存应用设置到Dexie
  * @param settings 要保存的设置
  */
-export function saveAppSettings(settings: Record<string, any>): void {
+export async function saveAppSettings(settings: Record<string, any>): Promise<void> {
   try {
-    localStorage.setItem('appSettings', JSON.stringify(settings));
+    await setStorageItem('appSettings', settings);
+    settingsCache = settings; // 更新缓存
     console.log('[settingsUtils] 应用设置已保存:', settings);
   } catch (error) {
     console.error('保存应用设置失败:', error);

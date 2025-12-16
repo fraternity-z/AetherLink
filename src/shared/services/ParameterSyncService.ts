@@ -5,6 +5,34 @@
 
 import type { CustomParameter } from '../types/Assistant';
 import { dexieStorage } from './storage/DexieStorageService';
+import { getStorageItem, setStorageItem } from '../utils/storage';
+
+// 内存缓存
+let settingsCache: Record<string, any> | null = null;
+let cacheInitialized = false;
+
+// 初始化缓存
+async function initCache(): Promise<void> {
+  if (cacheInitialized) return;
+  try {
+    settingsCache = await getStorageItem<Record<string, any>>('appSettings') || {};
+    cacheInitialized = true;
+  } catch {
+    settingsCache = {};
+    cacheInitialized = true;
+  }
+}
+
+// 异步保存（防抖）
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+function debouncedSaveSettings(): void {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    if (settingsCache) {
+      await setStorageItem('appSettings', settingsCache);
+    }
+  }, 300);
+}
 
 // 参数同步服务 - 用于在侧边栏和助手设置之间同步参数
 
@@ -117,21 +145,39 @@ class ParameterSyncService {
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
 
   /**
-   * 获取 appSettings
+   * 获取 appSettings（同步，使用缓存）
    */
   getSettings(): Record<string, any> {
-    try {
-      return JSON.parse(localStorage.getItem('appSettings') || '{}');
-    } catch {
-      return {};
+    if (!cacheInitialized) {
+      initCache();
     }
+    return settingsCache || {};
   }
 
   /**
    * 保存 appSettings
    */
   saveSettings(settings: Record<string, any>): void {
-    localStorage.setItem('appSettings', JSON.stringify(settings));
+    settingsCache = settings;
+    debouncedSaveSettings();
+  }
+
+  /**
+   * 异步获取 appSettings
+   */
+  async getSettingsAsync(): Promise<Record<string, any>> {
+    const stored = await getStorageItem<Record<string, any>>('appSettings');
+    settingsCache = stored || {};
+    cacheInitialized = true;
+    return settingsCache;
+  }
+
+  /**
+   * 异步保存 appSettings
+   */
+  async saveSettingsAsync(settings: Record<string, any>): Promise<void> {
+    settingsCache = settings;
+    await setStorageItem('appSettings', settings);
   }
 
   /**

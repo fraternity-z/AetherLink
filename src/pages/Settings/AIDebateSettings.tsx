@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getStorageItem, setStorageItem } from '../../shared/utils/storage';
 import {
   Box,
   Paper,
@@ -464,20 +465,18 @@ const AIDebateSettings: React.FC = () => {
 
   // 加载保存的配置和分组
   useEffect(() => {
-    const loadConfig = () => {
+    const loadConfig = async () => {
       try {
         // 加载当前配置
-        const saved = localStorage.getItem('aiDebateConfig');
+        const saved = await getStorageItem<DebateConfig>('aiDebateConfig');
         if (saved) {
-          const parsedConfig = JSON.parse(saved);
-          setConfig(parsedConfig);
+          setConfig(saved);
         }
 
         // 加载分组配置
-        const savedGroups = localStorage.getItem('aiDebateConfigGroups');
+        const savedGroups = await getStorageItem<DebateConfigGroup[]>('aiDebateConfigGroups');
         if (savedGroups) {
-          const parsedGroups = JSON.parse(savedGroups);
-          setConfigGroups(parsedGroups);
+          setConfigGroups(savedGroups);
         }
       } catch (error) {
         console.error(t('errors.aiDebate.loadConfigFailed'), error);
@@ -487,19 +486,19 @@ const AIDebateSettings: React.FC = () => {
   }, [t]);
 
   // 简化的保存配置
-  const saveConfig = (newConfig: DebateConfig) => {
+  const saveConfig = async (newConfig: DebateConfig) => {
     try {
-      localStorage.setItem('aiDebateConfig', JSON.stringify(newConfig));
+      await setStorageItem('aiDebateConfig', newConfig);
       setConfig(newConfig);
     } catch (error) {
       console.error(t('errors.aiDebate.saveConfigFailed'), error);
     }
   };
 
-  // 保存分组配置到localStorage
-  const saveConfigGroups = (groups: DebateConfigGroup[]) => {
+  // 保存分组配置到Dexie
+  const saveConfigGroups = async (groups: DebateConfigGroup[]) => {
     try {
-      localStorage.setItem('aiDebateConfigGroups', JSON.stringify(groups));
+      await setStorageItem('aiDebateConfigGroups', groups);
       setConfigGroups(groups);
     } catch (error) {
       console.error(t('errors.aiDebate.saveGroupsFailed'), error);

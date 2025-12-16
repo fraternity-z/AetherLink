@@ -7,6 +7,7 @@ import { ApiProviderRegistry } from '../messages/ApiProvider';
 import type { Model } from '../../types';
 import { ChunkType, type Chunk } from '../../types/chunk';
 import store from '../../store';
+import { getStorageItem, setStorageItem, removeStorageItem } from '../../utils/storage';
 
 export interface TranslateHistory {
   id: string;
@@ -131,12 +132,12 @@ export async function translateText(
 /**
  * 保存翻译历史
  */
-export function saveTranslateHistory(
+export async function saveTranslateHistory(
   sourceText: string,
   targetText: string,
   sourceLanguage: string,
   targetLanguage: string
-): TranslateHistory {
+): Promise<TranslateHistory> {
   const history: TranslateHistory = {
     id: uuidv4(),
     sourceText,
@@ -146,7 +147,7 @@ export function saveTranslateHistory(
     createdAt: new Date().toISOString()
   };
 
-  const histories = getTranslateHistories();
+  const histories = await getTranslateHistories();
   histories.unshift(history);
   
   // 限制历史记录数量
@@ -154,17 +155,17 @@ export function saveTranslateHistory(
     histories.splice(MAX_HISTORY_COUNT);
   }
   
-  localStorage.setItem(TRANSLATE_HISTORY_KEY, JSON.stringify(histories));
+  await setStorageItem(TRANSLATE_HISTORY_KEY, histories);
   return history;
 }
 
 /**
  * 获取所有翻译历史
  */
-export function getTranslateHistories(): TranslateHistory[] {
+export async function getTranslateHistories(): Promise<TranslateHistory[]> {
   try {
-    const data = localStorage.getItem(TRANSLATE_HISTORY_KEY);
-    return data ? JSON.parse(data) : [];
+    const data = await getStorageItem<TranslateHistory[]>(TRANSLATE_HISTORY_KEY);
+    return data || [];
   } catch {
     return [];
   }
@@ -173,27 +174,27 @@ export function getTranslateHistories(): TranslateHistory[] {
 /**
  * 删除翻译历史
  */
-export function deleteTranslateHistory(id: string): void {
-  const histories = getTranslateHistories();
+export async function deleteTranslateHistory(id: string): Promise<void> {
+  const histories = await getTranslateHistories();
   const filtered = histories.filter(h => h.id !== id);
-  localStorage.setItem(TRANSLATE_HISTORY_KEY, JSON.stringify(filtered));
+  await setStorageItem(TRANSLATE_HISTORY_KEY, filtered);
 }
 
 /**
  * 切换收藏状态
  */
-export function toggleHistoryStar(id: string): void {
-  const histories = getTranslateHistories();
+export async function toggleHistoryStar(id: string): Promise<void> {
+  const histories = await getTranslateHistories();
   const index = histories.findIndex(h => h.id === id);
   if (index !== -1) {
     histories[index].star = !histories[index].star;
-    localStorage.setItem(TRANSLATE_HISTORY_KEY, JSON.stringify(histories));
+    await setStorageItem(TRANSLATE_HISTORY_KEY, histories);
   }
 }
 
 /**
  * 清空所有历史
  */
-export function clearTranslateHistory(): void {
-  localStorage.removeItem(TRANSLATE_HISTORY_KEY);
+export async function clearTranslateHistory(): Promise<void> {
+  await removeStorageItem(TRANSLATE_HISTORY_KEY);
 }

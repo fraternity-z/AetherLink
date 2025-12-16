@@ -2,9 +2,43 @@
  * 日志记录服务
  * 提供统一的日志记录功能
  */
+import { getStorageItem, setStorageItem, removeStorageItem } from '../utils/storage';
 
 // 日志级别
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+
+const LOGS_KEY = 'app_logs';
+const MAX_LOGS = 100;
+
+// 内存缓存，避免频繁异步操作
+let logsCache: any[] = [];
+let cacheInitialized = false;
+
+// 异步初始化日志缓存
+async function initLogsCache(): Promise<void> {
+  if (cacheInitialized) return;
+  try {
+    const stored = await getStorageItem<any[]>(LOGS_KEY);
+    logsCache = stored || [];
+    cacheInitialized = true;
+  } catch {
+    logsCache = [];
+    cacheInitialized = true;
+  }
+}
+
+// 异步保存日志（防抖）
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+function debouncedSaveLogs(): void {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      await setStorageItem(LOGS_KEY, logsCache);
+    } catch (error) {
+      console.error('无法写入日志到存储:', error);
+    }
+  }, 1000);
+}
 
 // 日志记录函数
 export function log(level: LogLevel, message: string, data?: any): void {
@@ -35,25 +69,20 @@ export function log(level: LogLevel, message: string, data?: any): void {
       break;
   }
 
-  // 将日志存储到本地存储（仅保留最近的日志）
-  try {
-    const LOGS_KEY = 'app_logs';
-    const MAX_LOGS = 100;
-
-    const logsJson = localStorage.getItem(LOGS_KEY) || '[]';
-    const logs = JSON.parse(logsJson);
-
-    logs.push(logEntry);
-
-    // 保留最近的日志
-    if (logs.length > MAX_LOGS) {
-      logs.splice(0, logs.length - MAX_LOGS);
-    }
-
-    localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
-  } catch (error) {
-    console.error('无法写入日志到本地存储:', error);
+  // 将日志存储到内存缓存，并异步持久化
+  if (!cacheInitialized) {
+    initLogsCache();
   }
+  
+  logsCache.push(logEntry);
+  
+  // 保留最近的日志
+  if (logsCache.length > MAX_LOGS) {
+    logsCache.splice(0, logsCache.length - MAX_LOGS);
+  }
+  
+  // 防抖保存到Dexie
+  debouncedSaveLogs();
 }
 
 // 记录API请求
@@ -71,24 +100,31 @@ export function logApiResponse(endpoint: string, statusCode: number, data: any):
   log(level, `API响应 [${endpoint}] 状态码: ${statusCode}`, data);
 }
 
-// 获取最近的日志
+// 获取最近的日志（同步，使用缓存）
 export function getRecentLogs(count: number = 50): any[] {
-  try {
-    const LOGS_KEY = 'app_logs';
-    const logsJson = localStorage.getItem(LOGS_KEY) || '[]';
-    const logs = JSON.parse(logsJson);
+  return logsCache.slice(-count);
+}
 
-    return logs.slice(-count);
+// 获取最近的日志（异步，从存储读取）
+export async function getRecentLogsAsync(count: number = 50): Promise<any[]> {
+  try {
+    const logs = await getStorageItem<any[]>(LOGS_KEY);
+    if (logs) {
+      logsCache = logs;
+      return logs.slice(-count);
+    }
+    return logsCache.slice(-count);
   } catch (error) {
-    console.error('无法从本地存储获取日志:', error);
-    return [];
+    console.error('无法从存储获取日志:', error);
+    return logsCache.slice(-count);
   }
 }
 
 // 清除所有日志
-export function clearLogs(): void {
+export async function clearLogs(): Promise<void> {
   try {
-    localStorage.removeItem('app_logs');
+    logsCache = [];
+    await removeStorageItem(LOGS_KEY);
   } catch (error) {
     console.error('无法清除日志:', error);
   }

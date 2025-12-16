@@ -1,12 +1,35 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import type { WebStorage } from 'redux-persist';
+import { dexieStorage } from '../services/storage/DexieStorageService';
 
-// 兼容 rolldown-vite 7.1.20+ 的 storage 适配器
+// 🚀 使用 Dexie (IndexedDB) 作为 Redux Persist 的存储后端
+// 相比 localStorage: 容量更大、不阻塞主线程、支持大型状态
 const storage: WebStorage = {
-  getItem: (key) => Promise.resolve(localStorage.getItem(key)),
-  setItem: (key, value) => Promise.resolve(localStorage.setItem(key, value)),
-  removeItem: (key) => Promise.resolve(localStorage.removeItem(key)),
+  getItem: async (key) => {
+    try {
+      const value = await dexieStorage.getSetting(`redux_${key}`);
+      return value !== null && value !== undefined ? JSON.stringify(value) : null;
+    } catch (error) {
+      console.error('[Redux Storage] getItem error:', error);
+      return null;
+    }
+  },
+  setItem: async (key, value) => {
+    try {
+      const parsed = JSON.parse(value);
+      await dexieStorage.saveSetting(`redux_${key}`, parsed);
+    } catch (error) {
+      console.error('[Redux Storage] setItem error:', error);
+    }
+  },
+  removeItem: async (key) => {
+    try {
+      await dexieStorage.deleteSetting(`redux_${key}`);
+    } catch (error) {
+      console.error('[Redux Storage] removeItem error:', error);
+    }
+  },
 };
 // 移除旧的 messagesReducer 导入
 import messagesReducer from './slices/newMessagesSlice'; // 使用 normalizedMessagesReducer 作为唯一的消息状态管理

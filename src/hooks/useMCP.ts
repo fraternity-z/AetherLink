@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { MCPServer, MCPTool, MCPPrompt, MCPResource } from '../shared/types';
 import { mcpService } from '../shared/services/mcp';
+import { getStorageItem, setStorageItem } from '../shared/utils/storage';
 
 export type MCPMode = 'prompt' | 'function';
 
@@ -40,17 +41,17 @@ export const useMCP = (): MCPState & MCPActions => {
     loading: false
   });
 
-  // 从 localStorage 加载设置
+  // 从 Dexie 加载设置
   useEffect(() => {
-    const loadSettings = () => {
+    const loadSettings = async () => {
       try {
-        const savedMode = localStorage.getItem('mcp_mode') as MCPMode;
-        const savedEnabled = localStorage.getItem('mcp-tools-enabled'); // 统一使用 mcp-tools-enabled 键
+        const savedMode = await getStorageItem<MCPMode>('mcp_mode');
+        const savedEnabled = await getStorageItem<boolean>('mcp-tools-enabled');
 
         setState(prev => ({
           ...prev,
           mode: savedMode || 'function',
-          enabled: savedEnabled !== null ? JSON.parse(savedEnabled) : false
+          enabled: savedEnabled ?? false
         }));
       } catch (error) {
         console.error('[MCP Hook] 加载设置失败:', error);
@@ -95,13 +96,13 @@ export const useMCP = (): MCPState & MCPActions => {
   // 设置 MCP 模式
   const setMode = useCallback((mode: MCPMode) => {
     setState(prev => ({ ...prev, mode }));
-    localStorage.setItem('mcp_mode', mode);
+    setStorageItem('mcp_mode', mode);
   }, []);
 
   // 设置 MCP 启用状态
   const setEnabled = useCallback((enabled: boolean) => {
     setState(prev => ({ ...prev, enabled }));
-    localStorage.setItem('mcp-tools-enabled', JSON.stringify(enabled)); // 统一使用 mcp-tools-enabled 键
+    setStorageItem('mcp-tools-enabled', enabled);
   }, []);
 
   // 加载服务器数据（工具、提示词、资源）

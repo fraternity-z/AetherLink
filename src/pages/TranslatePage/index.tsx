@@ -160,7 +160,7 @@ const TranslatePage: React.FC = () => {
 
   // 加载历史记录
   useEffect(() => {
-    setHistories(getTranslateHistories());
+    getTranslateHistories().then(setHistories);
   }, []);
 
   // 翻译处理
@@ -193,8 +193,8 @@ const TranslatePage: React.FC = () => {
 
       // 保存历史
       const sourceLang = sourceLanguage === 'auto' ? 'auto' : sourceLanguage;
-      saveTranslateHistory(sourceText, result, sourceLang, targetLanguage);
-      setHistories(getTranslateHistories());
+      await saveTranslateHistory(sourceText, result, sourceLang, targetLanguage);
+      setHistories(await getTranslateHistories());
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {
         console.error('Translation failed:', error);
@@ -246,23 +246,23 @@ const TranslatePage: React.FC = () => {
   }, []);
 
   // 删除历史
-  const handleDeleteHistory = useCallback((id: string, e: React.MouseEvent) => {
+  const handleDeleteHistory = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteTranslateHistory(id);
-    setHistories(getTranslateHistories());
+    await deleteTranslateHistory(id);
+    setHistories(await getTranslateHistories());
   }, []);
 
   // 切换收藏
-  const handleToggleStar = useCallback((id: string, e: React.MouseEvent) => {
+  const handleToggleStar = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleHistoryStar(id);
-    setHistories(getTranslateHistories());
+    await toggleHistoryStar(id);
+    setHistories(await getTranslateHistories());
   }, []);
 
   // 清空历史
-  const handleClearHistory = useCallback(() => {
+  const handleClearHistory = useCallback(async () => {
     if (confirm('确定要清空所有翻译历史吗？')) {
-      clearTranslateHistory();
+      await clearTranslateHistory();
       setHistories([]);
     }
   }, []);

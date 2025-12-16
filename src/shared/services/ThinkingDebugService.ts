@@ -2,6 +2,7 @@
  * 思考内容调试服务
  * 专门用于追踪和调试思考内容的处理过程，帮助发现内容丢失问题
  */
+import { getStorageItem, setStorageItem, removeStorageItem } from '../utils/storage';
 
 export interface ThinkingDebugEntry {
   id: string;
@@ -21,9 +22,20 @@ class ThinkingDebugService {
   private isEnabled = true; // 可以通过环境变量控制
 
   private constructor() {
-    // 检查是否启用调试
-    this.isEnabled = process.env.NODE_ENV === 'development' || 
-                     localStorage.getItem('thinking-debug') === 'true';
+    // 检查是否启用调试（同步初始化，异步加载实际值）
+    this.isEnabled = process.env.NODE_ENV === 'development';
+    this.initFromStorage();
+  }
+
+  private async initFromStorage(): Promise<void> {
+    try {
+      const stored = await getStorageItem<boolean>('thinking-debug');
+      if (stored === true) {
+        this.isEnabled = true;
+      }
+    } catch {
+      // 忽略错误
+    }
   }
 
   public static getInstance(): ThinkingDebugService {
@@ -161,13 +173,13 @@ class ThinkingDebugService {
 
   public enable(): void {
     this.isEnabled = true;
-    localStorage.setItem('thinking-debug', 'true');
+    setStorageItem('thinking-debug', true);
     console.log('%c[ThinkingDebug] 调试已启用', 'color: green; font-weight: bold;');
   }
 
   public disable(): void {
     this.isEnabled = false;
-    localStorage.removeItem('thinking-debug');
+    removeStorageItem('thinking-debug');
     console.log('%c[ThinkingDebug] 调试已禁用', 'color: gray; font-weight: bold;');
   }
 

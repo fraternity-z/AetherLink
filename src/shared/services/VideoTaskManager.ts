@@ -7,6 +7,7 @@ import { updateOneBlock, upsertOneBlock } from '../store/slices/messageBlocksSli
 import { dexieStorage } from './storage/DexieStorageService';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';
 import { AssistantMessageStatus } from '../types/newMessage';
+import { getStorageItem, setStorageItem } from '../utils/storage';
 
 /**
  * 视频生成任务接口
@@ -32,11 +33,11 @@ export class VideoTaskManager {
   /**
    * 保存视频生成任务
    */
-  static saveTask(task: VideoTask): void {
+  static async saveTask(task: VideoTask): Promise<void> {
     try {
-      const tasks = this.getTasks();
+      const tasks = await this.getTasks();
       tasks[task.id] = task;
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks));
+      await setStorageItem(this.STORAGE_KEY, tasks);
       log('INFO', `保存视频生成任务: ${task.id}`, { requestId: task.requestId });
     } catch (error) {
       log('ERROR', '保存视频任务失败', { error, taskId: task.id });
@@ -46,11 +47,11 @@ export class VideoTaskManager {
   /**
    * 删除视频生成任务
    */
-  static removeTask(taskId: string): void {
+  static async removeTask(taskId: string): Promise<void> {
     try {
-      const tasks = this.getTasks();
+      const tasks = await this.getTasks();
       delete tasks[taskId];
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tasks));
+      await setStorageItem(this.STORAGE_KEY, tasks);
       log('INFO', `删除视频生成任务: ${taskId}`);
     } catch (error) {
       log('ERROR', '删除视频任务失败', { error, taskId });
@@ -60,21 +61,19 @@ export class VideoTaskManager {
   /**
    * 获取所有任务
    */
-  static getTasks(): Record<string, VideoTask> {
+  static async getTasks(): Promise<Record<string, VideoTask>> {
     try {
-      const tasksJson = localStorage.getItem(this.STORAGE_KEY);
-      if (!tasksJson) return {};
-      
-      const tasks = JSON.parse(tasksJson);
+      const tasks = await getStorageItem<Record<string, VideoTask>>(this.STORAGE_KEY);
+      if (!tasks) return {};
       
       // 清理过期任务
       const now = Date.now();
       const validTasks: Record<string, VideoTask> = {};
       
       for (const [id, task] of Object.entries(tasks)) {
-        const taskAge = now - new Date((task as VideoTask).startTime).getTime();
+        const taskAge = now - new Date(task.startTime).getTime();
         if (taskAge < this.MAX_TASK_AGE) {
-          validTasks[id] = task as VideoTask;
+          validTasks[id] = task;
         } else {
           log('INFO', `清理过期视频任务: ${id}`, { age: taskAge });
         }
@@ -82,7 +81,7 @@ export class VideoTaskManager {
       
       // 如果清理了任务，更新存储
       if (Object.keys(validTasks).length !== Object.keys(tasks).length) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(validTasks));
+        await setStorageItem(this.STORAGE_KEY, validTasks);
       }
       
       return validTasks;
@@ -96,7 +95,7 @@ export class VideoTaskManager {
    * 恢复未完成的视频生成任务
    */
   static async resumeTasks(): Promise<void> {
-    const tasks = this.getTasks();
+    const tasks = await this.getTasks();
     const taskList = Object.values(tasks);
     
     if (taskList.length === 0) {
@@ -327,7 +326,7 @@ export class VideoTaskManager {
       }));
 
       // 删除任务
-      this.removeTask(task.id);
+      await this.removeTask(task.id);
       
       log('INFO', `视频生成任务完成: ${task.id}`, { videoUrl: videoUrl.substring(0, 50) });
       
@@ -356,7 +355,7 @@ export class VideoTaskManager {
       }));
 
       // 删除任务
-      this.removeTask(task.id);
+      await this.removeTask(task.id);
       
       log('ERROR', `视频生成任务失败: ${task.id}`, { error: errorMessage });
       
