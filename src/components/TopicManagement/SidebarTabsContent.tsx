@@ -1,5 +1,5 @@
 import React, { startTransition, useDeferredValue } from 'react';
-import { Box, Tabs, Tab, CircularProgress } from '@mui/material';
+import { Box, Tabs, Tab, CircularProgress, IconButton, Tooltip } from '@mui/material';
 import { useSidebarContext } from './SidebarContext';
 import TabPanel, { a11yProps } from './TabPanel';
 import AssistantTab from './AssistantTab/index';
@@ -7,16 +7,18 @@ import TopicTab from './TopicTab/index';
 import SettingsTab from './SettingsTab/index';
 import NoteTab from './NoteTab/index';
 import WorkspaceTab from './WorkspaceTab/index';
-import { Bot, MessageSquare, Settings, FileText, FolderOpen } from 'lucide-react';
+import { Bot, MessageSquare, Settings, FileText, FolderOpen, Languages } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
 import { ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/WorkspaceService';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * 侧边栏标签页内容组件 - 使用memo优化性能
  */
 const SidebarTabsContent = React.memo(function SidebarTabsContent() {
+  const navigate = useNavigate();
   const showNoteTab = useSelector((state: RootState) => (state.settings as any)[ENABLE_NOTE_SIDEBAR_KEY]);
   const showWorkspaceTab = useSelector((state: RootState) => (state.settings as any)[ENABLE_WORKSPACE_SIDEBAR_KEY]);
 
@@ -364,6 +366,42 @@ const SidebarTabsContent = React.memo(function SidebarTabsContent() {
               onToolsToggle={handleToolsToggle}
             />
           </TabPanel>
+
+          {/* 翻译按钮 - 仅在助手tab和话题tab时显示 */}
+          {(deferredValue === 0 || deferredValue === 1) && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                pt: 1,
+                pb: 'calc(var(--safe-area-bottom-computed, 0px) + 8px)',
+                mt: 'auto',
+              }}
+            >
+              <Tooltip title="翻译" placement="top">
+                <IconButton
+                  onClick={() => {
+                    navigate('/translate');
+                  }}
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--theme-hover-color)',
+                    color: 'var(--theme-text-primary)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      backgroundColor: 'var(--theme-selected-color)',
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  <Languages size={22} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
         </>
       )}
     </Box>

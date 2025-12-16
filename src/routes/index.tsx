@@ -76,6 +76,8 @@ const ThemeStyleSettings = lazy(() => import('../pages/Settings/ThemeStyleSettin
 // 导入Notion设置页面
 const NotionSettings = lazy(() => import('../pages/Settings/NotionSettings'));
 const NetworkProxySettings = lazy(() => import('../pages/Settings/NetworkProxySettings'));
+// 导入翻译页面
+const TranslatePage = lazy(() => import('../pages/TranslatePage'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -194,6 +196,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/file-permission" element={<FilePermissionPage />} />
         <Route path="/settings/assistant-model-settings" element={<AssistantModelSettings />} />
         <Route path="/devtools" element={<DevToolsPage />} />
+        {/* 翻译页面 */}
+        <Route path="/translate" element={<TranslatePage />} />
         {/* 知识库详情页 - 从设置页跳转 */}
         <Route path="/knowledge/:id" element={<KnowledgeBaseDetail />} />
       </Routes>
