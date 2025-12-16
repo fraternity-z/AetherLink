@@ -7,6 +7,7 @@ import { CalendarServer } from '../servers/CalendarServer';
 import { AlarmServer } from '../servers/AlarmServer';
 import { MetasoSearchServer } from '../servers/MetasoSearchServer';
 import { FileEditorServer } from '../servers/FileEditorServer';
+import { DexEditorServer } from '../servers/DexEditorServer';
 
 /**
  * 创建内存 MCP 服务器
@@ -44,6 +45,10 @@ export function createInMemoryMCPServer(name: string, args: string[] = [], envs:
 
     case '@aether/file-editor': {
       return new FileEditorServer().server;
+    }
+
+    case '@aether/dex-editor': {
+      return new DexEditorServer().server;
     }
 
     default:

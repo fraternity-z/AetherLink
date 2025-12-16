@@ -62,5 +62,8 @@ project(':capacitor-advanced-file-manager').projectDir = new File('../node_modul
 include ':capacitor-cors-bypass-enhanced'
 project(':capacitor-cors-bypass-enhanced').projectDir = new File('../node_modules/capacitor-cors-bypass-enhanced/android')
 
+include ':capacitor-dex-editor'
+project(':capacitor-dex-editor').projectDir = new File('../node_modules/capacitor-dex-editor/android')
+
 include ':capacitor-edge-to-edge'
 project(':capacitor-edge-to-edge').projectDir = new File('../node_modules/capacitor-edge-to-edge/android')

@@ -62,6 +62,10 @@ const AssistantModelSettings = lazy(() => import('../components/TopicManagement/
 // 导入工作区页面
 const WorkspaceSettings = lazy(() => import('../pages/Settings/WorkspaceSettings'));
 const WorkspaceDetail = lazy(() => import('../pages/Settings/WorkspaceDetail'));
+// APK 内容浏览器
+const ApkBrowser = lazy(() => import('../pages/ApkBrowser'));
+// DEX 编辑器
+const DexEditor = lazy(() => import('../pages/DexEditor'));
 // 导入笔记设置页面
 const NoteSettings = lazy(() => import('../pages/Settings/NoteSettings'));
 const NoteEditor = lazy(() => import('../pages/Settings/NoteEditor'));
@@ -191,6 +195,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/knowledge" element={<KnowledgeSettings />} />
         <Route path="/settings/workspace" element={<WorkspaceSettings />} />
         <Route path="/settings/workspace/:workspaceId" element={<WorkspaceDetail />} />
+        <Route path="/apk-browser" element={<ApkBrowser />} />
+        <Route path="/dex-editor" element={<DexEditor />} />
         <Route path="/settings/notes" element={<NoteSettings />} />
         <Route path="/settings/notes/edit" element={<NoteEditor />} />
         <Route path="/settings/file-permission" element={<FilePermissionPage />} />

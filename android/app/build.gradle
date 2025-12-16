@@ -91,6 +91,11 @@ dependencies {
     // 网络和工具库
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // dexlib2 & smali - DEX文件编辑核心库 (capacitor-dex-editor 插件依赖)
+    implementation 'com.android.tools.smali:smali-dexlib2:3.0.3'
+    implementation 'com.android.tools.smali:smali:3.0.3'
+    implementation 'com.android.tools.smali:smali-baksmali:3.0.3'
 }
 
 // 解决重复类定义问题 - capacitor-android 同时作为项目依赖和 Maven 依赖被引入

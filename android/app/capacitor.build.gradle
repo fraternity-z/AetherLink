@@ -29,6 +29,7 @@ dependencies {
     implementation project(':capawesome-capacitor-file-picker')
     implementation project(':capacitor-advanced-file-manager')
     implementation project(':capacitor-cors-bypass-enhanced')
+    implementation project(':capacitor-dex-editor')
     implementation project(':capacitor-edge-to-edge')
 
 }

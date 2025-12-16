@@ -59,6 +59,9 @@
     
     <!-- System Alarm Permissions -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    
+    <!-- APK Install Permission -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- ========================================
          HarmonyOS Specific Permissions

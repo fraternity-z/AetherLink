@@ -55,6 +55,7 @@ import {
 import { workspaceService } from '../../shared/services/WorkspaceService';
 import { MobileFileViewer } from '../../components/MobileFileViewer';
 import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import ApkInfoDialog from '../../components/ApkInfoDialog';
 import type { Workspace, WorkspaceFile } from '../../shared/types/workspace';
 import dayjs from 'dayjs';
 
@@ -88,6 +89,10 @@ const WorkspaceDetail: React.FC = () => {
   // 文件查看器状态
   const [fileViewerOpen, setFileViewerOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<WorkspaceFile | null>(null);
+
+  // APK信息对话框状态
+  const [apkInfoOpen, setApkInfoOpen] = useState(false);
+  const [selectedApkFile, setSelectedApkFile] = useState<WorkspaceFile | null>(null);
 
   // 获取文件图标
   const getFileIcon = (file: WorkspaceFile) => {
@@ -366,6 +371,21 @@ const WorkspaceDetail: React.FC = () => {
     setSearchResults([]);
   };
 
+  // 处理文件点击
+  const handleFileClick = (file: WorkspaceFile) => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    // APK 文件显示 APK 信息对话框
+    if (extension === 'apk') {
+      setSelectedApkFile(file);
+      setApkInfoOpen(true);
+      return;
+    }
+    
+    // 其他文件打开文件查看器
+    openFileViewer(file);
+  };
+
   // 打开文件查看器
   const openFileViewer = (file: WorkspaceFile) => {
     setSelectedFile(file);
@@ -593,7 +613,7 @@ const WorkspaceDetail: React.FC = () => {
                 }
               >
                 <ListItemButton
-                  onClick={() => file.isDirectory ? enterFolder(file) : openFileViewer(file)}
+                  onClick={() => file.isDirectory ? enterFolder(file) : handleFileClick(file)}
                   onContextMenu={(e) => handleContextMenu(e, file)}
                 >
                   <ListItemIcon>
@@ -741,6 +761,21 @@ const WorkspaceDetail: React.FC = () => {
         file={selectedFile}
         onClose={closeFileViewer}
         onSave={saveFileContent}
+      />
+
+      {/* APK信息对话框 */}
+      <ApkInfoDialog
+        open={apkInfoOpen}
+        onClose={() => {
+          setApkInfoOpen(false);
+          setSelectedApkFile(null);
+        }}
+        apkPath={selectedApkFile?.path || ''}
+        fileName={selectedApkFile?.name || ''}
+        onBrowse={() => {
+          setApkInfoOpen(false);
+          navigate(`/apk-browser?path=${encodeURIComponent(selectedApkFile?.path || '')}&name=${encodeURIComponent(selectedApkFile?.name || '')}`);
+        }}
       />
     </Box>
   );

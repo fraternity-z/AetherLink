@@ -21,6 +21,17 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+    
+    // 为所有子项目添加 dexlib2 依赖仓库
+    afterEvaluate { project ->
+        if (project.hasProperty('dependencies')) {
+            project.repositories {
+                google()
+                mavenCentral()
+            }
+        }
     }
 }
 
