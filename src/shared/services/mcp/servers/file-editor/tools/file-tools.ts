@@ -92,7 +92,13 @@ export const WRITE_TO_FILE_TOOL: Tool = {
 
 export const LIST_FILES_TOOL: Tool = {
   name: 'list_files',
-  description: '列出目录中的文件和子目录。',
+  description: `列出目录内容，显示文件和文件夹。
+
+功能特性:
+- 支持分页，避免返回过多数据
+- 支持递归列出子目录
+- 可选返回文件大小信息
+- 返回总数和分页信息`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -103,6 +109,18 @@ export const LIST_FILES_TOOL: Tool = {
       recursive: {
         type: 'boolean',
         description: '是否递归列出子目录内容，默认 false'
+      },
+      include_size: {
+        type: 'boolean',
+        description: '是否包含文件大小信息，默认 false'
+      },
+      limit: {
+        type: 'number',
+        description: '每页数量，默认 100，-1 表示全部'
+      },
+      offset: {
+        type: 'number',
+        description: '偏移量（用于分页），默认 0'
       }
     },
     required: ['path']

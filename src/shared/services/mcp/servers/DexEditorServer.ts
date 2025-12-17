@@ -612,6 +612,52 @@ const APK_LIST_FILES_TOOL: Tool = {
   }
 };
 
+const APK_SEARCH_TEXT_TOOL: Tool = {
+  name: 'apk_search_text',
+  description: `在 APK 内的文件中搜索文本内容（不需要解压）。
+支持搜索 XML、JSON、TXT、SMALI 等文本文件。
+自动跳过二进制文件（.dex, .so, .png 等）。`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apkPath: {
+        type: 'string',
+        description: 'APK 文件路径'
+      },
+      pattern: {
+        type: 'string',
+        description: '搜索模式（文本或正则表达式）'
+      },
+      fileExtensions: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '文件扩展名过滤（如 [".xml", ".json"]），不指定则搜索所有文本文件'
+      },
+      caseSensitive: {
+        type: 'boolean',
+        description: '是否区分大小写',
+        default: false
+      },
+      isRegex: {
+        type: 'boolean',
+        description: '是否使用正则表达式',
+        default: false
+      },
+      maxResults: {
+        type: 'integer',
+        description: '最大结果数',
+        default: 50
+      },
+      contextLines: {
+        type: 'integer',
+        description: '上下文行数',
+        default: 2
+      }
+    },
+    required: ['apkPath', 'pattern']
+  }
+};
+
 const APK_DELETE_FILE_TOOL: Tool = {
   name: 'apk_delete_file',
   description: '从 APK 中删除指定的文件（如广告资源、无用 so 库等）',
@@ -749,6 +795,7 @@ export class DexEditorServer {
           APK_GET_RESOURCE_TOOL,
           APK_MODIFY_RESOURCE_TOOL,
           APK_LIST_FILES_TOOL,
+          APK_SEARCH_TEXT_TOOL,
           APK_READ_FILE_TOOL,
           APK_DELETE_FILE_TOOL,
           APK_ADD_FILE_TOOL,
@@ -889,6 +936,17 @@ export class DexEditorServer {
 
         case 'apk_list_files':
           return this.listApkFiles(args as { apkPath: string; filter?: string; limit?: number; offset?: number });
+
+        case 'apk_search_text':
+          return this.searchTextInApk(args as { 
+            apkPath: string; 
+            pattern: string; 
+            fileExtensions?: string[];
+            caseSensitive?: boolean;
+            isRegex?: boolean;
+            maxResults?: number;
+            contextLines?: number;
+          });
 
         case 'apk_read_file':
           return this.readApkFile(args as { apkPath: string; filePath: string; asBase64?: boolean; maxBytes?: number; offset?: number });
@@ -1911,6 +1969,60 @@ export class DexEditorServer {
         content: [{
           type: 'text',
           text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 在 APK 中搜索文本内容
+   */
+  private async searchTextInApk(params: { 
+    apkPath: string; 
+    pattern: string; 
+    fileExtensions?: string[];
+    caseSensitive?: boolean;
+    isRegex?: boolean;
+    maxResults?: number;
+    contextLines?: number;
+  }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'searchTextInApk',
+        params: {
+          apkPath: params.apkPath,
+          pattern: params.pattern,
+          fileExtensions: params.fileExtensions || [],
+          caseSensitive: params.caseSensitive || false,
+          isRegex: params.isRegex || false,
+          maxResults: params.maxResults || 50,
+          contextLines: params.contextLines || 2
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            pattern: params.pattern,
+            totalFound: result.data?.totalFound || 0,
+            filesSearched: result.data?.filesSearched || 0,
+            truncated: result.data?.truncated || false,
+            results: result.data?.results || []
+          }, null, 2)
         }]
       };
     } catch (error) {

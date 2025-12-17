@@ -137,7 +137,7 @@ export interface AgenticEvents {
 const DEFAULT_CONFIG: AgenticLoopConfig = {
   maxIterations: 25,
   consecutiveMistakeLimit: 3,
-  enabledMCPServers: ['@aether/file-editor']
+  enabledMCPServers: ['@aether/file-editor', '@aether/dex-editor']
 };
 
 // ==================== AgenticLoopService 类 ====================

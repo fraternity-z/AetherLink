@@ -199,10 +199,22 @@ async function readMultipleFiles(
 }
 
 /**
- * 列出目录文件
+ * 列出目录文件 - 支持分页
  */
-export async function listFiles(params: { path: string; recursive?: boolean }) {
-  const { path, recursive = false } = params;
+export async function listFiles(params: { 
+  path: string; 
+  recursive?: boolean;
+  include_size?: boolean;
+  limit?: number;
+  offset?: number;
+}) {
+  const { 
+    path, 
+    recursive = false, 
+    include_size = false,
+    limit = 100,
+    offset = 0
+  } = params;
 
   if (!path) {
     throw new Error('缺少必需参数: path');
@@ -216,31 +228,123 @@ export async function listFiles(params: { path: string; recursive?: boolean }) {
       sortOrder: 'asc'
     });
 
-    // 分离目录和文件
-    const directories = result.files.filter(f => f.type === 'directory').map(f => ({
-      name: f.name + '/',
-      path: f.path,
-      type: 'directory'
-    }));
+    // 收集所有条目
+    let allEntries: Array<{
+      name: string;
+      path: string;
+      type: 'directory' | 'file';
+      size?: number;
+    }> = [];
 
-    const files = result.files.filter(f => f.type !== 'directory').map(f => ({
-      name: f.name,
-      path: f.path,
-      size: f.size,
-      type: f.type || 'file'
-    }));
+    // 先添加目录
+    for (const f of result.files.filter(f => f.type === 'directory')) {
+      allEntries.push({
+        name: f.name + '/',
+        path: f.path,
+        type: 'directory'
+      });
+    }
+
+    // 再添加文件
+    for (const f of result.files.filter(f => f.type !== 'directory')) {
+      const entry: typeof allEntries[0] = {
+        name: f.name,
+        path: f.path,
+        type: 'file'
+      };
+      if (include_size) {
+        entry.size = f.size;
+      }
+      allEntries.push(entry);
+    }
+
+    // 递归获取子目录（如果启用）
+    if (recursive) {
+      const dirs = result.files.filter(f => f.type === 'directory');
+      for (const dir of dirs) {
+        try {
+          const subResult = await listFilesRecursive(dir.path, include_size);
+          allEntries = allEntries.concat(subResult);
+        } catch {
+          // 忽略无法访问的子目录
+        }
+      }
+    }
+
+    const total = allEntries.length;
+    
+    // 分页处理
+    let paginatedEntries = allEntries;
+    if (limit !== -1) {
+      paginatedEntries = allEntries.slice(offset, offset + limit);
+    }
+
+    // 分离目录和文件用于统计
+    const directories = paginatedEntries.filter(e => e.type === 'directory');
+    const files = paginatedEntries.filter(e => e.type === 'file');
 
     return createSuccessResponse({
       path,
-      directories,
-      files,
+      entries: paginatedEntries,
       totalDirectories: directories.length,
       totalFiles: files.length,
+      pagination: {
+        total,
+        offset,
+        limit: limit === -1 ? total : limit,
+        hasMore: limit !== -1 && offset + limit < total
+      },
       recursive
     });
   } catch (error) {
     throw new Error(`列出目录失败: ${error instanceof Error ? error.message : '未知错误'}`);
   }
+}
+
+/**
+ * 递归列出子目录文件
+ */
+async function listFilesRecursive(
+  dirPath: string, 
+  includeSize: boolean
+): Promise<Array<{ name: string; path: string; type: 'directory' | 'file'; size?: number }>> {
+  const entries: Array<{ name: string; path: string; type: 'directory' | 'file'; size?: number }> = [];
+  
+  try {
+    const result = await unifiedFileManager.listDirectory({
+      path: dirPath,
+      showHidden: false,
+      sortBy: 'name',
+      sortOrder: 'asc'
+    });
+
+    for (const f of result.files) {
+      if (f.type === 'directory') {
+        entries.push({
+          name: f.name + '/',
+          path: f.path,
+          type: 'directory'
+        });
+        // 递归子目录
+        const subEntries = await listFilesRecursive(f.path, includeSize);
+        entries.push(...subEntries);
+      } else {
+        const entry: typeof entries[0] = {
+          name: f.name,
+          path: f.path,
+          type: 'file'
+        };
+        if (includeSize) {
+          entry.size = f.size;
+        }
+        entries.push(entry);
+      }
+    }
+  } catch {
+    // 忽略无法访问的目录
+  }
+
+  return entries;
 }
 
 /**
