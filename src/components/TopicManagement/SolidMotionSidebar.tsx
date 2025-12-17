@@ -54,6 +54,10 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
   const [showSidebar, setShowSidebar] = useState(!isSmallScreen);
+  
+  // 🚀 性能优化：预热标志 - 首次渲染时预热侧边栏内容
+  const [isPrewarmed, setIsPrewarmed] = useState(false);
+  const prewarmTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 获取触觉反馈设置
   const hapticSettings = useAppSelector((state) => state.settings.hapticFeedback);
@@ -61,13 +65,31 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   // 用于追踪上一次的打开状态
   const prevOpenRef = useRef<boolean | null>(null);
 
-  const drawerWidth = 340;
+  const drawerWidth = 350;
 
   useEffect(() => {
     if (isSmallScreen) {
       setShowSidebar(false);
     }
   }, [isSmallScreen]);
+
+  // 🚀 性能优化：预热侧边栏内容
+  // 在组件挂载后延迟执行，让主要内容先渲染
+  useEffect(() => {
+    if (!isPrewarmed) {
+      // 延迟 500ms 后标记为已预热，让 React Portal 内容开始渲染
+      prewarmTimeoutRef.current = setTimeout(() => {
+        setIsPrewarmed(true);
+        console.log('[SolidMotionSidebar] 侧边栏预热完成');
+      }, 500);
+    }
+    
+    return () => {
+      if (prewarmTimeoutRef.current) {
+        clearTimeout(prewarmTimeoutRef.current);
+      }
+    };
+  }, [isPrewarmed]);
 
   // 使用 useRef 来稳定回调函数引用
   const onMobileToggleRef = useRef(onMobileToggle);
@@ -269,8 +291,8 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         debug={false}
         style={{ display: 'contents' }}
       />
-      {/* 通过 Portal 将 React 内容渲染到 Solid 组件内部 */}
-      {portalContainer && createPortal(drawerContent, portalContainer)}
+      {/* 🚀 性能优化：始终渲染 Portal 内容（预热后），避免首次打开时的初始化开销 */}
+      {portalContainer && isPrewarmed && createPortal(drawerContent, portalContainer)}
     </>
   );
 }, areSolidMotionSidebarPropsEqual);

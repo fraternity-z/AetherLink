@@ -42,7 +42,7 @@ const DEFAULT_TOP_TOOLBAR_SETTINGS = {
 } as const;
 
 // 样式常量 - 避免每次渲染时重新计算
-const DRAWER_WIDTH = 340;
+const DRAWER_WIDTH = 350;
 const ANIMATION_CONFIG = {
   duration: 0.2,
   ease: [0.25, 0.46, 0.45, 0.94] as const
