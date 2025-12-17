@@ -218,7 +218,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   protected async processToolCalls(
     toolCalls: any[],
     mcpTools: MCPTool[],
-    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
+    onChunk?: (chunk: import('../../types/chunk').Chunk) => void | Promise<void>
   ): Promise<{ messages: any[]; hasCompletion: boolean }> {
     if (!toolCalls?.length) return { messages: [], hasCompletion: false };
 
@@ -242,7 +242,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   protected async processToolUses(
     content: string,
     mcpTools: MCPTool[],
-    onChunk?: (chunk: import('../../types/chunk').Chunk) => void
+    onChunk?: (chunk: import('../../types/chunk').Chunk) => void | Promise<void>
   ): Promise<{ messages: any[]; hasCompletion: boolean }> {
     if (!content || !mcpTools?.length) return { messages: [], hasCompletion: false };
 
@@ -271,7 +271,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
   public abstract sendChatMessage(
     messages: Message[],
     options?: {
-      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void | Promise<void>;
       enableWebSearch?: boolean;
       systemPrompt?: string;
       enableTools?: boolean;
@@ -301,7 +301,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
   public async sendChatMessage(
     messages: Message[],
     options?: {
-      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void | Promise<void>;
       enableWebSearch?: boolean;
       systemPrompt?: string;
       enableTools?: boolean;
@@ -413,7 +413,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
   private async handleStreamResponse(
     params: any,
     options: {
-      onChunk?: (chunk: import('../../types/chunk').Chunk) => void;
+      onChunk?: (chunk: import('../../types/chunk').Chunk) => void | Promise<void>;
       enableTools?: boolean;
       mcpTools?: import('../../types').MCPTool[];
       abortSignal?: AbortSignal;
@@ -569,7 +569,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
    */
   private async handleNonStreamResponse(
     params: any,
-    onChunk?: (chunk: import('../../types/chunk').Chunk) => void,
+    onChunk?: (chunk: import('../../types/chunk').Chunk) => void | Promise<void>,
     enableTools: boolean = true,
     mcpTools: import('../../types').MCPTool[] = [],
     abortSignal?: AbortSignal

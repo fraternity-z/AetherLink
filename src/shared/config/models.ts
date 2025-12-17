@@ -174,6 +174,10 @@ const FUNCTION_CALLING_MODELS = [
   'mistral-medium',
   'command-r',
   'command-r-plus',
+
+  // 小米 MiMo 系列模型
+  'mimo-v2-flash',
+  'mimo-v2',
 ];
 
 /**
@@ -189,6 +193,7 @@ const FUNCTION_CALLING_PATTERNS = [
   /^llama.*function/i,
   /^qwen.*chat/i,
   /^yi.*chat/i,
+  /^mimo/i,  // 小米 MiMo 系列
 ];
 
 /**

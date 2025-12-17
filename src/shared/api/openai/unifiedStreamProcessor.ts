@@ -24,7 +24,7 @@ import type { Chunk } from '../../types/chunk';
 export interface UnifiedStreamOptions {
   // 基础选项
   model: Model;
-  onChunk?: (chunk: Chunk) => void;
+  onChunk?: (chunk: Chunk) => void | Promise<void>;
   abortSignal?: AbortSignal;
 
   // 推理相关选项
@@ -180,7 +180,7 @@ export class UnifiedStreamProcessor {
       if (isFirstContent && this.options.onChunk && this.state.reasoning && !this.state.thinkingCompleteSent) {
         console.log('[UnifiedStreamProcessor] 推理阶段结束，发送 THINKING_COMPLETE');
         this.state.thinkingCompleteSent = true;
-        this.options.onChunk({
+        await this.options.onChunk({
           type: ChunkType.THINKING_COMPLETE,
           text: this.state.reasoning,
           thinking_millsec: this.state.reasoningStartTime ? (Date.now() - this.state.reasoningStartTime) : 0,
@@ -190,7 +190,7 @@ export class UnifiedStreamProcessor {
 
       // ⭐ 累积模式：发送完整累积内容（参考 Cherry Studio）
       if (this.options.onChunk) {
-        this.options.onChunk({
+        await this.options.onChunk({
           type: ChunkType.TEXT_DELTA,
           text: this.state.content,  // 发送累积内容
           messageId: this.options.messageId,
@@ -207,7 +207,7 @@ export class UnifiedStreamProcessor {
 
       // ⭐ 累积模式：发送完整累积内容
       if (this.options.onChunk) {
-        this.options.onChunk({
+        await this.options.onChunk({
           type: ChunkType.THINKING_DELTA,
           text: this.state.reasoning,  // 发送累积内容
           blockId: this.options.thinkingBlockId
@@ -221,7 +221,7 @@ export class UnifiedStreamProcessor {
       if (this.state.reasoning && this.options.onChunk && !this.state.thinkingCompleteSent) {
         console.log('[UnifiedStreamProcessor] finish: 发送 THINKING_COMPLETE');
         this.state.thinkingCompleteSent = true;
-        this.options.onChunk({
+        await this.options.onChunk({
           type: ChunkType.THINKING_COMPLETE,
           text: this.state.reasoning,
           thinking_millsec: this.state.reasoningStartTime ? (Date.now() - this.state.reasoningStartTime) : 0,
@@ -237,7 +237,7 @@ export class UnifiedStreamProcessor {
 
         // 通过 onChunk 发送最终内容
         if (this.options.onChunk) {
-          this.options.onChunk({
+          await this.options.onChunk({
             type: ChunkType.TEXT_COMPLETE,
             text: this.state.content,
             messageId: this.options.messageId,
@@ -249,7 +249,7 @@ export class UnifiedStreamProcessor {
 
       // 通过onChunk发送完成事件
       if (this.options.onChunk && this.state.content) {
-        this.options.onChunk({
+        await this.options.onChunk({
           type: ChunkType.TEXT_COMPLETE,
           text: this.state.content,
           messageId: this.options.messageId,
@@ -320,23 +320,13 @@ export class UnifiedStreamProcessor {
         }
       }
 
-      // 首次看到该工具时发送 MCP_TOOL_IN_PROGRESS 事件（用于 UI 显示）
+      // 注意：不在流式阶段发送 MCP_TOOL_IN_PROGRESS 事件
+      // 因为此时工具参数尚未完整，且 ToolResponseHandler 期望完整的 tool 对象
+      // 改为在流式积累完成后（buildResult 阶段）由 OpenAIProvider 统一处理
       if (!this.state.emittedToolIndices.has(index) && this.state.toolCalls[index].function.name) {
         this.state.emittedToolIndices.add(index);
-
-        if (this.options.onChunk) {
-          const toolCall = this.state.toolCalls[index];
-          console.log(`[UnifiedStreamProcessor] 检测到原生工具调用: ${toolCall.function.name}`);
-          this.options.onChunk({
-            type: ChunkType.MCP_TOOL_IN_PROGRESS,
-            responses: [{
-              id: toolCall.id,
-              name: toolCall.function.name,
-              status: 'invoking',
-              arguments: {} // 参数尚未完整
-            }]
-          } as Chunk);
-        }
+        const toolCall = this.state.toolCalls[index];
+        console.log(`[UnifiedStreamProcessor] 检测到原生工具调用: ${toolCall.function.name} (等待参数完整后处理)`);
       }
     }
   }
@@ -404,7 +394,7 @@ export async function unifiedStreamCompletion(
   temperature?: number,
   maxTokens?: number,
   additionalParams?: any,
-  onChunk?: (chunk: Chunk) => void
+  onChunk?: (chunk: Chunk) => void | Promise<void>
 ): Promise<string | StreamProcessingResult> {
   const model: Model = {
     id: modelId,

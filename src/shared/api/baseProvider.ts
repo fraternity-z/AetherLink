@@ -4,7 +4,6 @@
  */
 import type { Message, MCPTool, Model } from '../types';
 import { buildSystemPrompt, type WorkspaceInfo } from '../utils/mcpPrompt';
-import { isFunctionCallingModel } from '../config/models';
 import { workspaceService } from '../services/WorkspaceService';
 
 /**
@@ -90,7 +89,7 @@ export abstract class AbstractBaseProvider implements BaseProvider {
     enableToolUse?: boolean;
     mcpMode?: 'prompt' | 'function'
   }): { tools: T[] } {
-    const { mcpTools, model, enableToolUse, mcpMode = 'function' } = params;
+    const { mcpTools, model: _model, enableToolUse, mcpMode = 'function' } = params;
     let tools: T[] = [];
 
     // 如果没有工具，返回空数组
@@ -115,13 +114,13 @@ export abstract class AbstractBaseProvider implements BaseProvider {
       return { tools };
     }
 
-    // 如果用户选择函数调用模式且模型支持函数调用且启用了工具使用，使用函数调用模式
-    if (mcpMode === 'function' && isFunctionCallingModel(model) && enableToolUse) {
-      console.log(`[MCP] 模型 ${model.id} 支持函数调用，使用函数调用模式`);
+    // 用户选择函数调用模式，直接使用函数调用模式（不再检测模型能力）
+    if (mcpMode === 'function' && enableToolUse) {
+      console.log(`[MCP] 用户选择函数调用模式，使用函数调用模式`);
       tools = this.convertMcpTools<T>(mcpTools);
       this.useSystemPromptForTools = false;
     } else {
-      console.log(`[MCP] 模型 ${model.id} 不支持函数调用或工具使用被禁用，回退到系统提示词模式`);
+      console.log(`[MCP] 使用系统提示词模式`);
       this.useSystemPromptForTools = true;
     }
 

@@ -155,6 +155,7 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
      * 2. 增量部分给工具提取器处理
      * 3. 累积过滤后的文本（工具标签已移除）
      * 4. 发送累积内容给 chunkProcessor
+     * 5. 检测到工具后，停止处理后续文本（防止覆盖）
      * 
      * 重要：此处只负责块切换逻辑，不执行工具！
      */
@@ -172,9 +173,13 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
         incrementalText = text.slice(lastProcessedTextLength);
         lastProcessedTextLength = text.length;
       } else if (text.length < lastProcessedTextLength) {
-        // 新一轮开始（内容变短了），重置跟踪和累积
+        // ⭐ 新一轮 API 调用开始（内容变短了），重置所有状态并创建新块
+        console.log(`[ResponseHandler] 检测到新一轮响应，重置状态并准备新文本块`);
         lastProcessedTextLength = text.length;
         accumulatedCleanText = '';
+        // 重置文本块状态，让下次文本更新时创建新块
+        chunkProcessor.resetTextBlock();
+        incrementalText = text;  // 新一轮从头开始处理
       }
       // 如果没有新增内容，跳过处理
       if (!incrementalText) return;
@@ -201,22 +206,16 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
 
           case 'tool_created':
             // 检测到工具时的块切换逻辑
+            // ⭐ 重要修复：不再调用 resetTextBlock()
+            // 原因：当模型一次性输出多个工具调用时，每次检测到工具都会创建新文本块
+            // 导致文本块都在流式响应过程中创建，工具块在完成后创建，顺序错乱
+            // 正确做法：只完成当前文本块，不创建新块，让后续文本继续追加
             if (result.responses && result.responses.length > 0) {
-              // 1. 完成当前文本块
+              // 只完成当前文本块，不重置状态
               const completedBlockId = chunkProcessor.completeCurrentTextBlock();
-              console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}`);
-              
-              // 2. 检查是否是完成工具
-              const isCompletionTool = result.responses.some((r: any) => {
-                const toolName = r.name || r.toolName || '';
-                return toolName === 'attempt_completion' || toolName.endsWith('-attempt_completion');
-              });
-              
-              if (!isCompletionTool) {
-                // 非完成工具：重置状态，让下一轮自动创建新块
-                chunkProcessor.resetTextBlock();
-                accumulatedCleanText = '';  // 重置累积内容
-              }
+              console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}，不创建新块`);
+              // 注意：不调用 resetTextBlock() 和不清空 accumulatedCleanText
+              // 后续文本会继续更新同一个文本块
             }
             break;
         }

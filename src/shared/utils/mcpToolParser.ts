@@ -205,7 +205,7 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
 export async function parseAndCallTools(
   content: string | MCPToolResponse[],
   mcpTools: MCPTool[] = [],
-  onChunk?: (chunk: import('../types/chunk').Chunk) => void
+  onChunk?: (chunk: import('../types/chunk').Chunk) => void | Promise<void>
 ): Promise<MCPCallToolResponse[]> {
   const toolResults: MCPCallToolResponse[] = [];
   let currentToolResponses: MCPToolResponse[] = [];
@@ -224,26 +224,26 @@ export async function parseAndCallTools(
 
   console.log(`[MCP] 开始调用 ${currentToolResponses.length} 个工具`);
 
-  // 发送工具调用开始事件
-  if (onChunk && currentToolResponses.length > 0) {
-    await onChunk({
-      type: ChunkType.MCP_TOOL_IN_PROGRESS,
-      responses: currentToolResponses.map(tr => ({ ...tr, status: 'invoking' as const }))
-    });
-  }
-
-  // 并行调用所有工具
-  const toolPromises = currentToolResponses.map(async (toolResponse) => {
+  // ⭐ 串行调用工具（参考 Cherry Studio）
+  // 确保每个工具的 UI 块创建完成后再处理下一个，避免快速模型导致块顺序混乱
+  for (const toolResponse of currentToolResponses) {
     try {
-      // 更新状态为调用中（创建新对象避免只读属性问题）
+      // 1. 发送单个工具的 IN_PROGRESS 事件，等待 UI 块创建
       const mutableToolResponse = { ...toolResponse, status: 'invoking' as const };
+      
+      if (onChunk) {
+        await onChunk({
+          type: ChunkType.MCP_TOOL_IN_PROGRESS,
+          responses: [mutableToolResponse]
+        });
+      }
 
       console.log(`[MCP] 调用工具: ${toolResponse.tool.name}`);
 
-      // 调用工具
+      // 2. 调用工具
       const result = await callMCPTool(mutableToolResponse);
 
-      // 更新状态（创建新对象）
+      // 3. 发送 COMPLETE 事件
       const finalToolResponse = {
         ...mutableToolResponse,
         status: result.isError ? 'error' as const : 'done' as const,
@@ -257,7 +257,7 @@ export async function parseAndCallTools(
         });
       }
 
-      return result;
+      toolResults.push(result);
     } catch (error) {
       console.error(`[MCP] 工具调用异常:`, error);
 
@@ -284,15 +284,11 @@ export async function parseAndCallTools(
         });
       }
 
-      return errorResult;
+      toolResults.push(errorResult);
     }
-  });
+  }
 
-  // 等待所有工具调用完成
-  const results = await Promise.all(toolPromises);
-  toolResults.push(...results);
-
-  console.log(`[MCP] 所有工具调用完成，结果数量: ${results.length}`);
+  console.log(`[MCP] 所有工具调用完成，结果数量: ${toolResults.length}`);
 
   // 注意：不再发送汇总的 MCP_TOOL_COMPLETE 事件
   // 参考项目设计：每个工具完成时已经发送了单独的完成事件（第 210-215 行）
