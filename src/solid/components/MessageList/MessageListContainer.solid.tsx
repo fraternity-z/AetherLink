@@ -106,12 +106,14 @@ export function MessageListContainer(props: MessageListContainerProps) {
   };
   
   // 获取滚动条样式 - 与原始 MessageList 保持一致（3px 细滚动条）
+  // 🚀 使用 scrollbar-gutter: stable 防止滚动条出现/消失时布局跳动
   const getScrollbarStyle = () => {
     const isDark = props.themeMode === 'dark';
     return `
       .solid-message-list-container {
         scrollbar-width: thin;
         scrollbar-color: ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'} transparent;
+        scrollbar-gutter: stable;
       }
       .solid-message-list-container::-webkit-scrollbar {
         width: 3px;
@@ -153,6 +155,7 @@ export function MessageListContainer(props: MessageListContainerProps) {
           'scroll-behavior': 'auto',
           '-webkit-overflow-scrolling': 'touch',
           'overscroll-behavior': 'contain',
+          'touch-action': 'pan-y', // 🚀 性能优化：明确告知浏览器只处理纵向滑动，防止横向滑动与侧边栏冲突导致掉帧
           // 背景
           ...getBackgroundStyle()
         }}

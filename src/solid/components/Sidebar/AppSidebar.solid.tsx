@@ -1,6 +1,6 @@
 /**
  * AppSidebar - 使用 Solid UI 的侧边栏组件
- * 基于 @kobalte/core 的 Dialog 组件实现
+ * 🚀 性能优化版：使用 requestAnimationFrame 节流 + 直接 DOM 操作
  */
 import { createSignal, createEffect, onCleanup } from 'solid-js';
 import { Portal } from 'solid-js/web';
@@ -20,22 +20,47 @@ export function AppSidebar(props: AppSidebarProps) {
   // 响应式访问 open 状态
   const isOpen = () => props.open;
   
-  // 边缘滑动打开功能
-  const [touchStartX, setTouchStartX] = createSignal(0);
-  const [touchStartY, setTouchStartY] = createSignal(0);
+  // DOM 引用 - 用于直接操作样式（绕过响应式系统，提升性能）
+  let sidebarRef: HTMLDivElement | undefined;
+  let maskRef: HTMLDivElement | undefined;
+  
+  // 🚀 性能优化：使用普通变量存储拖拽状态，避免频繁触发响应式更新
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let currentDragOffset = 0;
+  let rafId: number | null = null;
+  
+  // 只用 signal 存储需要触发 UI 更新的状态
   const [isDragging, setIsDragging] = createSignal(false);
-  const [dragOffset, setDragOffset] = createSignal(0);
   const [isValidSwipe, setIsValidSwipe] = createSignal(false);
   
   const edgeThreshold = 30; // 边缘触发区域
   const swipeThreshold = 0.3; // 滑动触发阈值
+  
+  // 🚀 直接更新 DOM 样式（绕过 SolidJS 响应式，60fps 流畅）
+  const updateDragStyles = (offset: number) => {
+    if (!sidebarRef || !maskRef) return;
+    
+    const w = width();
+    const baseOffset = isOpen() ? 0 : -w;
+    const finalOffset = Math.min(0, Math.max(-w, baseOffset + offset));
+    
+    // 直接设置 transform（GPU 加速）
+    sidebarRef.style.transform = `translateX(${finalOffset}px) translateZ(0)`;
+    
+    // 计算遮罩透明度
+    const progress = isOpen()
+      ? 1 - Math.abs(offset) / w
+      : offset / w;
+    const opacity = Math.max(0, Math.min(0.5, progress * 0.5));
+    maskRef.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
+  };
   
   const handleTouchStart = (e: TouchEvent) => {
     const touch = e.touches[0];
     const target = e.target as HTMLElement;
     
     // 检查触摸目标是否是需要排除手势捕获的元素
-    // 包括：Slider、Dialog/Modal 遮罩层和内容、data-gesture-exclude 标记的元素
     const shouldExclude = target.closest(
       '[data-gesture-exclude], ' +
       '.MuiSlider-root, .MuiSlider-thumb, .MuiSlider-track, .MuiSlider-rail, ' +
@@ -48,11 +73,11 @@ export function AppSidebar(props: AppSidebarProps) {
       return;
     }
     
-    setTouchStartX(touch.clientX);
-    setTouchStartY(touch.clientY);
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    currentDragOffset = 0;
     setIsValidSwipe(false);
     setIsDragging(false);
-    setDragOffset(0);
     
     // 检查是否从边缘开始
     if (!isOpen() && touch.clientX <= edgeThreshold) {
@@ -66,8 +91,8 @@ export function AppSidebar(props: AppSidebarProps) {
     if (!isValidSwipe()) return;
     
     const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartX();
-    const deltaY = touch.clientY - touchStartY();
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
     
     // 如果垂直滑动大于水平滑动，取消手势
     if (!isDragging() && Math.abs(deltaY) > Math.abs(deltaX)) {
@@ -78,17 +103,28 @@ export function AppSidebar(props: AppSidebarProps) {
     // 开始拖拽
     if (!isDragging() && Math.abs(deltaX) > 10) {
       setIsDragging(true);
+      // 🚀 拖动开始时，禁用侧边栏的 CSS transition
+      if (sidebarRef) {
+        sidebarRef.style.transition = 'none';
+      }
     }
     
     if (isDragging()) {
+      // 计算偏移量
       if (isOpen()) {
-        // 打开状态：只允许左滑关闭
-        setDragOffset(Math.min(0, deltaX));
+        currentDragOffset = Math.min(0, deltaX);
       } else {
-        // 关闭状态：只允许右滑打开
-        setDragOffset(Math.max(0, deltaX));
+        currentDragOffset = Math.max(0, deltaX);
       }
-      // 只有在事件可取消时才阻止默认行为，避免滚动中的警告
+      
+      // 🚀 使用 requestAnimationFrame 节流，确保每帧只更新一次
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          updateDragStyles(currentDragOffset);
+          rafId = null;
+        });
+      }
+      
       if (e.cancelable) {
         e.preventDefault();
       }
@@ -96,29 +132,54 @@ export function AppSidebar(props: AppSidebarProps) {
   };
   
   const handleTouchEnd = () => {
+    // 取消未执行的 RAF
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    
     if (!isDragging()) {
       setIsValidSwipe(false);
       return;
     }
     
-    const offset = dragOffset();
+    const offset = currentDragOffset;
     const threshold = width() * swipeThreshold;
+    const wasOpen = isOpen();
     
-    if (isOpen()) {
-      // 打开状态：左滑超过阈值则关闭
-      if (Math.abs(offset) > threshold) {
-        props.onOpenChange(false);
-      }
-    } else {
-      // 关闭状态：右滑超过阈值则打开
-      if (offset > threshold) {
-        props.onOpenChange(true);
-      }
+    // 🚀 先重置状态，防止 createEffect 中的条件判断出错
+    setIsDragging(false);
+    currentDragOffset = 0;
+    setIsValidSwipe(false);
+    
+    // 🚀 恢复 CSS transition
+    if (sidebarRef) {
+      sidebarRef.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
     }
     
-    setIsDragging(false);
-    setDragOffset(0);
-    setIsValidSwipe(false);
+    if (wasOpen) {
+      if (Math.abs(offset) > threshold) {
+        // 关闭侧边栏 - 先手动设置动画目标位置，再通知 React
+        if (sidebarRef) sidebarRef.style.transform = `translateX(-${width()}px) translateZ(0)`;
+        if (maskRef) maskRef.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+        props.onOpenChange(false);
+      } else {
+        // 弹回打开位置
+        if (sidebarRef) sidebarRef.style.transform = 'translateX(0) translateZ(0)';
+        if (maskRef) maskRef.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      }
+    } else {
+      if (offset > threshold) {
+        // 打开侧边栏 - 先手动设置动画目标位置，再通知 React
+        if (sidebarRef) sidebarRef.style.transform = 'translateX(0) translateZ(0)';
+        if (maskRef) maskRef.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        props.onOpenChange(true);
+      } else {
+        // 弹回关闭位置
+        if (sidebarRef) sidebarRef.style.transform = `translateX(-${width()}px) translateZ(0)`;
+        if (maskRef) maskRef.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+      }
+    }
   };
   
   // 绑定全局触摸事件（仅在启用手势时）
@@ -135,39 +196,70 @@ export function AppSidebar(props: AppSidebarProps) {
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('touchcancel', handleTouchEnd);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
     });
   });
   
-  // 计算侧边栏位置
-  const getTransform = () => {
-    if (isDragging()) {
-      const baseOffset = isOpen() ? 0 : -width();
-      const finalOffset = Math.min(0, Math.max(-width(), baseOffset + dragOffset()));
-      return `translateX(${finalOffset}px)`;
-    }
-    return isOpen() ? 'translateX(0)' : `translateX(-${width()}px)`;
-  };
+  // 🚀 标记是否是首次渲染（用于跳过初始动画）
+  let isFirstRender = true;
   
-  // 计算遮罩透明度
-  const getMaskOpacity = () => {
-    if (isDragging()) {
-      const progress = isOpen()
-        ? 1 - Math.abs(dragOffset()) / width()
-        : dragOffset() / width();
-      return Math.max(0, Math.min(0.5, progress * 0.5));
+  // 🚀 当 open 状态变化时（通过按钮点击），更新 DOM 样式
+  createEffect(() => {
+    const open = isOpen();
+    const dragging = isDragging();
+    
+    // 只在非拖动状态下响应 props.open 变化
+    if (!dragging) {
+      if (sidebarRef) {
+        // 首次渲染不要动画，直接设置位置
+        if (isFirstRender) {
+          sidebarRef.style.transition = 'none';
+          sidebarRef.style.transform = open ? 'translateX(0) translateZ(0)' : `translateX(-${width()}px) translateZ(0)`;
+          // 强制重绘后恢复 transition
+          requestAnimationFrame(() => {
+            if (sidebarRef) {
+              sidebarRef.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            }
+          });
+          isFirstRender = false;
+        } else {
+          sidebarRef.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+          sidebarRef.style.transform = open ? 'translateX(0) translateZ(0)' : `translateX(-${width()}px) translateZ(0)`;
+        }
+      }
+      if (maskRef) {
+        maskRef.style.backgroundColor = open ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0)';
+      }
     }
-    return isOpen() ? 0.5 : 0;
-  };
+  });
   
   const shouldShow = () => isOpen() || isDragging();
   
   const isDesktop = () => props.isDesktop ?? false;
+  
+  // 🚀 标记侧边栏状态，供其他组件（如呼吸灯）检查是否应该捕获手势
+  createEffect(() => {
+    const show = shouldShow();
+    if (show) {
+      document.body.setAttribute('data-sidebar-open', 'true');
+    } else {
+      document.body.removeAttribute('data-sidebar-open');
+    }
+  });
+  
+  // 清理 data attribute
+  onCleanup(() => {
+    document.body.removeAttribute('data-sidebar-open');
+  });
 
   return (
     <Portal>
       {/* 遮罩层 - 仅移动端显示 */}
       {!isDesktop() && (
         <div
+          ref={maskRef}
           style={{
             position: 'fixed',
             top: 0,
@@ -175,10 +267,13 @@ export function AppSidebar(props: AppSidebarProps) {
             right: 0,
             bottom: 0,
             "z-index": 1200,
-            "background-color": `rgba(0, 0, 0, ${getMaskOpacity()})`,
+            // 🚀 使用静态初始值，由 createEffect 在挂载后设置正确的值
+            "background-color": 'rgba(0, 0, 0, 0)',
             opacity: shouldShow() ? 1 : 0,
             "pointer-events": shouldShow() ? 'auto' : 'none',
-            transition: 'opacity 0.3s, background-color 0.3s',
+            // 🚀 只对 opacity 使用 transition，background-color 由 JS 直接控制
+            transition: 'opacity 0.3s',
+            "will-change": 'opacity',
           }}
           onClick={() => props.onOpenChange(false)}
         />
@@ -186,28 +281,30 @@ export function AppSidebar(props: AppSidebarProps) {
       
       {/* 侧边栏 */}
       <div
+        ref={sidebarRef}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           bottom: 0,
           width: `${width()}px`,
-          // 桌面端 z-index 需要高于壁纸层(0-1)，但低于移动端遮罩
           "z-index": isDesktop() ? 10 : 1201,
-          // 使用完全不透明的背景色，不受壁纸透明度影响
           "background-color": props.themeMode === 'dark' ? '#1a1a1a' : '#ffffff',
-          "background-image": 'none', // 确保没有背景图
-          opacity: 1, // 确保不透明
+          "background-image": 'none',
+          opacity: 1,
           "border-right": '1px solid rgba(0,0,0,0.1)',
           "border-radius": isDesktop() ? '0' : '0 16px 16px 0',
           "box-shadow": isDesktop() ? 'none' : '4px 0 20px rgba(0,0,0,0.15)',
-          transform: getTransform(),
-          transition: isDragging() ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          // 🚀 使用静态初始值（关闭状态），由 createEffect 在挂载后设置正确的值
+          transform: `translateX(-${width()}px) translateZ(0)`,
+          // 🚀 初始无 transition，由 createEffect 设置
+          transition: 'none',
           display: 'flex',
           "flex-direction": 'column',
           overflow: 'hidden',
-          // 隔离混合模式，防止被父元素透明度影响
           isolation: 'isolate',
+          "will-change": 'transform',
+          "backface-visibility": 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -238,6 +238,9 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
     const handleTouchStart = (e: TouchEvent) => {
       // 移动端左滑显示导航：在呼吸灯区域左滑触发
       if (!isMobile) return;
+      
+      // 🚀 侧边栏打开时不捕获手势，避免与侧边栏左滑关闭冲突
+      if (document.body.hasAttribute('data-sidebar-open')) return;
 
       const touch = e.touches[0];
       if (!touch) return;

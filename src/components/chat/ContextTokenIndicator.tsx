@@ -78,6 +78,9 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
     if (!isMobile || !showContextTokenIndicator) return;
     
     const handleTouchStart = (e: TouchEvent) => {
+      // 🚀 侧边栏打开时不捕获手势，避免与侧边栏左滑关闭冲突
+      if (document.body.hasAttribute('data-sidebar-open')) return;
+      
       const touch = e.touches[0];
       if (!touch) return;
       
