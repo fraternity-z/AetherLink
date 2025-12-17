@@ -376,7 +376,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
         menuManager.mentionedModels,
         formattedImages.length > 0 ? formattedImages : undefined,
         toolsEnabled,
-        nonImageFiles
+        nonImageFiles.length > 0 ? nonImageFiles : undefined
       );
       
       // 清空状态

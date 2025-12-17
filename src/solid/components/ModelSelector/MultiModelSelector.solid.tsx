@@ -15,9 +15,7 @@ export interface MultiModelSelectorProps {
   open: boolean;
   onClose: () => void;
   availableModels: Model[];
-  /** @deprecated 使用 onSelectionChange 替代 */
-  onConfirm?: (selectedModels: Model[]) => void;
-  /** 选择变更回调 - 新模式：选择后立即回调，不需要确认 */
+  /** 选择变更回调 - 选择后立即回调 */
   onSelectionChange?: (selectedModels: Model[]) => void;
   /** 已选中的模型列表 - 用于外部控制 */
   selectedModels?: Model[];
@@ -210,20 +208,13 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
     }
   };
 
-  // 确认选择（兼容旧模式）
+  // 确认选择
   const handleConfirm = () => {
     const ids = selectedModelIds();
     if (ids.length > 0) {
-      const selectedModels = ids.map(uniqueId => {
-        return props.availableModels.find(model => getUniqueModelId(model) === uniqueId);
-      }).filter(Boolean) as Model[];
-
       // 保存选择到 localStorage
       saveSelection(ids);
-
-      // 调用确认回调（如果存在）
-      props.onConfirm?.(selectedModels);
-      setSelectedModelIds([]);
+      // 选择已通过 onSelectionChange 同步，直接关闭
       props.onClose();
     }
   };
@@ -309,11 +300,14 @@ export function MultiModelSelector(props: MultiModelSelectorProps) {
     setTimeout(updateScrollButtons, 0);
   });
 
-  // 对话框打开时重置状态
+  // 对话框关闭时重置标签页（仅内部控制模式清空选择）
   createEffect(() => {
     if (!props.open) {
       setActiveTab('all');
-      setSelectedModelIds([]);
+      // 外部控制模式下不清空选择（由父组件管理）
+      if (!isControlled()) {
+        setInternalSelectedIds([]);
+      }
     }
   });
 

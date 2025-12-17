@@ -427,7 +427,7 @@ export const useChatFeatures = (
    * 多模型发送消息
    * 支持同时向多个模型发送相同的消息
    */
-  const handleMultiModelSend = async (content: string, models: any[], images?: any[], files?: any[]) => {
+  const handleMultiModelSend = async (content: string, models: any[], images?: any[], _toolsEnabled?: boolean, files?: any[]) => {
     if (!currentTopic || !selectedModel) return;
 
     try {
@@ -486,7 +486,7 @@ export const useChatFeatures = (
       // 4. 并行调用所有模型
       await Promise.all(assistantMessages.map(async ({ message: assistantMessage, blocks: assistantBlocks, model }) => {
         try {
-          await callSingleModelForMultiModel(model, assistantMessage, assistantBlocks);
+          await callSingleModelForMultiModel(model, assistantMessage, assistantBlocks, _toolsEnabled);
         } catch (error) {
           console.error(`[useChatFeatures] 模型 ${model.id} 调用失败:`, error);
           // 更新消息状态为错误
@@ -512,7 +512,8 @@ export const useChatFeatures = (
   const callSingleModelForMultiModel = async (
     model: any,
     assistantMessage: any,
-    assistantBlocks: any[]
+    assistantBlocks: any[],
+    enableTools?: boolean
   ) => {
     try {
       // 添加块到 Redux 状态
@@ -528,7 +529,7 @@ export const useChatFeatures = (
         assistantMessage,
         currentTopic.id,
         model,
-        false // 多模型模式下禁用工具
+        enableTools ?? false // 支持工具调用
       );
 
     } catch (error) {
