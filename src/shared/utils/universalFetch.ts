@@ -314,8 +314,16 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
       connectTimeout: options.timeout || 30000,
     };
     
-    // 如果有代理配置且不是本地地址，添加到请求选项
-    if (proxyConfig) {
+    // 处理代理配置
+    if (!shouldUseProxy) {
+      // 本地地址：显式禁用代理，避免被 Clash 等系统代理拦截
+      // 设置空代理可以覆盖系统代理设置
+      fetchOptions.proxy = {
+        all: { url: '' }  // 空 URL 表示不使用代理
+      };
+      console.log('[Universal Fetch] Tauri HTTP 直连（本地地址，显式禁用代理）:', url);
+    } else if (proxyConfig) {
+      // 非本地地址 + 有代理配置：使用配置的代理
       fetchOptions.proxy = {
         all: proxyConfig,
       };
@@ -324,10 +332,9 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
         hasAuth: !!proxyConfig.basicAuth,
         targetUrl: url
       });
-    } else if (!shouldUseProxy) {
-      console.log('[Universal Fetch] Tauri HTTP 直连（本地地址，跳过代理）:', url);
     } else {
-      console.log('[Universal Fetch] Tauri HTTP 直连（无代理配置）:', url);
+      // 非本地地址 + 无代理配置：不设置 proxy，让 reqwest 使用系统代理
+      console.log('[Universal Fetch] Tauri HTTP 直连（无代理配置，可能使用系统代理）:', url);
     }
     
     // Tauri 的 fetch 函数与标准 fetch 兼容

@@ -4,6 +4,7 @@
  */
 import type { Model } from '../types';
 import * as openaiApi from '../api/openai';
+import { parseModelsResponse, normalizeModel } from '../api/openai/models';
 import * as anthropicApi from '../api/anthropic-aisdk';
 import { modelComboService } from './ModelComboService';
 import { OpenAIAISDKProvider } from '../api/openai-aisdk';
@@ -527,9 +528,12 @@ async function fetchModelsFromCustomEndpoint(customEndpoint: string, provider: a
     try {
       console.log(`[fetchModelsFromCustomEndpoint] 尝试使用key ${i + 1}/${availableKeys.length}: ${keyConfig?.name || apiKey.substring(0, 8)}...`);
       
-      // 构建请求头
+      // 构建请求头 - 参考 Cherry Studio 的请求头配置
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'AetherLink/1.0 (compatible; OpenAI-Client)',
+        'HTTP-Referer': 'https://aetherlink.app',
+        'X-Title': 'AetherLink'
       };
 
       // 添加API密钥
@@ -552,8 +556,16 @@ async function fetchModelsFromCustomEndpoint(customEndpoint: string, provider: a
       }
 
       const data = await response.json();
-      const modelsCount = (data.data || data || []).length;
-      console.log(`[fetchModelsFromCustomEndpoint] ✅ 使用key ${i + 1} 成功获取模型列表, 找到 ${modelsCount} 个模型`);
+      
+      // 使用增强的响应解析器处理多种格式
+      const models = parseModelsResponse(data);
+      
+      // 标准化每个模型对象
+      const normalizedModels = models
+        .map(normalizeModel)
+        .filter((m: any) => m && m.id);
+      
+      console.log(`[fetchModelsFromCustomEndpoint] ✅ 使用key ${i + 1} 成功获取模型列表, 找到 ${normalizedModels.length} 个模型`);
 
       // 如果成功，记录key使用
       if (keyConfig) {
@@ -561,17 +573,7 @@ async function fetchModelsFromCustomEndpoint(customEndpoint: string, provider: a
         keyManager.updateKeyStatus(keyConfig, true);
       }
 
-      // 处理不同的响应格式
-      if (data.data && Array.isArray(data.data)) {
-        // 标准OpenAI格式: {data: [...]}
-        return data.data;
-      } else if (Array.isArray(data)) {
-        // 直接返回数组格式
-        return data;
-      } else {
-        console.warn(`[fetchModelsFromCustomEndpoint] 未知的响应格式:`, data);
-        return [];
-      }
+      return normalizedModels;
       
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));

@@ -24,7 +24,9 @@ import { sendChatMessage } from './chat';
 // 导出模型管理模块
 export {
   fetchModels,
-  fetchModelsWithSDK
+  fetchModelsWithSDK,
+  parseModelsResponse,
+  normalizeModel
 } from './models';
 
 // 导出多模态处理模块
