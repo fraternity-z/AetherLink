@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -65,6 +65,9 @@ const ModelProviderSettings: React.FC = () => {
   useSignals();
   
   const { t } = useTranslation();
+  
+  // 🚀 分组删除二次确认状态
+  const [pendingDeleteGroup, setPendingDeleteGroup] = useState<string | null>(null);
   const { providerId } = useParams<{ providerId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -920,32 +923,62 @@ const ModelProviderSettings: React.FC = () => {
                     onTest={handleTestModelConnection}
                   />
                 )}
-                renderGroupButton={(groupName, models) => (
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`确定要删除 ${groupName} 分组中的所有 ${models.length} 个模型吗？`)) {
-                        handleDeleteGroup(groupName);
-                      }
-                    }}
-                    sx={{
-                      width: { xs: 40, sm: 36 },
-                      height: { xs: 40, sm: 36 },
-                      minWidth: { xs: 40, sm: 36 },
-                      borderRadius: 1.5,
-                      p: 0,
-                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.12),
-                      color: 'error.main',
-                      '&:hover': {
-                        bgcolor: (theme) => alpha(theme.palette.error.main, 0.2),
-                      },
-                      transition: 'all 0.2s ease',
-                    }}
-                    title={`删除 ${groupName} 组`}
-                  >
-                    <Trash2 size={18} />
-                  </IconButton>
-                )}
+                renderGroupButton={(groupName, models) => {
+                  const isPending = pendingDeleteGroup === groupName;
+                  return (
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isPending) {
+                          // 🚀 二次点击：执行删除
+                          handleDeleteGroup(groupName);
+                          setPendingDeleteGroup(null);
+                        } else {
+                          // 🚀 首次点击：进入待确认状态
+                          setPendingDeleteGroup(groupName);
+                          // 3秒后自动取消待确认状态
+                          setTimeout(() => {
+                            setPendingDeleteGroup((prev) => prev === groupName ? null : prev);
+                          }, 3000);
+                        }
+                      }}
+                      onBlur={() => {
+                        // 失去焦点时取消待确认状态
+                        if (isPending) {
+                          setTimeout(() => setPendingDeleteGroup(null), 150);
+                        }
+                      }}
+                      sx={{
+                        width: { xs: 40, sm: 36 },
+                        height: { xs: 40, sm: 36 },
+                        minWidth: { xs: 40, sm: 36 },
+                        borderRadius: 1.5,
+                        p: 0,
+                        bgcolor: (theme) => isPending 
+                          ? theme.palette.error.main 
+                          : alpha(theme.palette.error.main, 0.12),
+                        color: isPending ? 'white' : 'error.main',
+                        '&:hover': {
+                          bgcolor: (theme) => isPending
+                            ? theme.palette.error.dark
+                            : alpha(theme.palette.error.main, 0.2),
+                        },
+                        transition: 'all 0.2s ease',
+                        // 待确认状态时添加动画效果
+                        ...(isPending && {
+                          animation: 'pulse 1s ease-in-out infinite',
+                          '@keyframes pulse': {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(1.05)' },
+                          },
+                        }),
+                      }}
+                      title={isPending ? `再次点击确认删除 ${models.length} 个模型` : `删除 ${groupName} 组`}
+                    >
+                      <Trash2 size={18} />
+                    </IconButton>
+                  );
+                }}
               />
             </Box>
           )}

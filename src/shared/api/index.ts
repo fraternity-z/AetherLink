@@ -1,9 +1,9 @@
 import type { Model } from '../types';
-import { getSettingFromDB } from '../services/storage/storageService';
 import { getProviderApi } from '../services/ProviderFactory';
 import { modelMatchesIdentity, parseModelIdentityKey } from '../utils/modelUtils';
 import store from '../store';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
+import type { ModelProvider } from '../config/defaultModels';
 
 /**
  * API模块索引文件
@@ -88,13 +88,13 @@ export const testApiConnection = async (model: Model): Promise<boolean> => {
 // 发送聊天请求（新版本接口，使用请求对象）
 export const sendChatRequest = async (options: ChatRequest): Promise<{ success: boolean; content?: string; reasoning?: string; reasoningTime?: number; error?: string }> => {
   try {
-    // 根据modelId查找对应模型
-    const model = await findModelById(options.modelId);
+    // 🚀 根据modelId查找对应模型（现在是同步函数，直接从 Redux Store 读取）
+    const model = findModelById(options.modelId);
     if (!model) {
       throw new Error(`未找到ID为${options.modelId}的模型`);
     }
 
-    return await processModelRequest(model, options);
+    return processModelRequest(model, options);
   } catch (error) {
     console.error('[sendChatRequest] 请求失败:', error instanceof Error ? error.message : String(error));
     throw error;
@@ -181,10 +181,49 @@ async function processModelRequest(model: Model, options: ChatRequest): Promise<
   }
 }
 
-// 优化模型查找逻辑
-async function findModelById(modelId: string): Promise<Model | null> {
+/**
+ * 🚀 参考 Cherry Studio 的实现：直接从 Redux Store 获取 providers
+ * 这样可以确保始终使用最新的配置，避免从数据库读取导致的延迟问题
+ */
+export function getStoreProviders(): ModelProvider[] {
+  return store.getState().settings.providers || [];
+}
+
+/**
+ * 🚀 参考 Cherry Studio 的实现：根据模型获取对应的 Provider
+ * 直接从 Redux Store 读取，确保获取最新配置
+ */
+export function getProviderByModel(model?: Model): ModelProvider | null {
+  if (!model) return null;
+  
+  const providers = getStoreProviders();
+  const provider = providers.find((p) => p.id === model.provider);
+  
+  if (!provider) {
+    // 如果没找到，尝试返回第一个启用的 provider
+    return providers.find((p) => p.isEnabled) || providers[0] || null;
+  }
+  
+  return provider;
+}
+
+/**
+ * 🚀 根据 Provider ID 获取 Provider
+ */
+export function getProviderById(providerId: string): ModelProvider | null {
+  const providers = getStoreProviders();
+  return providers.find((p) => p.id === providerId) || null;
+}
+
+/**
+ * 🚀 优化模型查找逻辑 - 参考 Cherry Studio 实现
+ * 直接从 Redux Store 读取，确保始终使用最新的配置
+ * 不再从数据库异步读取，避免数据同步延迟问题
+ */
+function findModelById(modelId: string): Model | null {
   try {
-    const settings = await getSettingFromDB('settings');
+    // 🚀 关键修改：直接从 Redux Store 获取最新数据
+    const settings = store.getState().settings;
     if (!settings) return null;
 
     const identity = parseModelIdentityKey(modelId);
@@ -192,58 +231,34 @@ async function findModelById(modelId: string): Promise<Model | null> {
 
     const providers = settings.providers || [];
 
-    // 先在models中查找
-    const models = settings.models as Model[];
-    if (models && Array.isArray(models)) {
-      // 使用 {id, provider} 组合精确匹配
-      const model = models.find(m => modelMatchesIdentity(m, identity, m.provider));
+    // 在 providers 中查找模型
+    for (const provider of providers) {
+      // 如果指定了 provider，只在该 provider 中查找
+      if (identity.provider && provider.id !== identity.provider) {
+        continue;
+      }
       
-      if (model) {
-        const providerId = model.provider || identity.provider;
-        if (providerId) {
-          const provider = providers.find((p: any) => p.id === providerId);
-          if (provider) {
-            return {
-              ...model,
-              provider: providerId,
-              apiKey: model.apiKey || provider.apiKey,
-              baseUrl: model.baseUrl || provider.baseUrl,
-              providerType: model.providerType || provider.providerType || providerId
-            };
-          }
-        }
-        return {
-          ...model,
-          provider: providerId || model.provider
-        };
-      }
-    }
-
-    // 在providers中查找
-    if (providers && Array.isArray(providers)) {
-      for (const provider of providers) {
-        if (identity.provider && provider.id !== identity.provider) {
-          continue;
-        }
+      if (provider.models && Array.isArray(provider.models)) {
+        const providerModel = provider.models.find((m: Model) => 
+          modelMatchesIdentity(m, identity, provider.id)
+        );
         
-        if (provider.models && Array.isArray(provider.models)) {
-          const providerModel = provider.models.find((m: any) => 
-            modelMatchesIdentity(m, identity, provider.id)
-          );
-          
-          if (providerModel) {
-            return {
-              ...providerModel,
-              provider: provider.id,
-              apiKey: provider.apiKey,
-              baseUrl: provider.baseUrl,
-              providerType: providerModel.providerType || provider.providerType || provider.id
-            };
-          }
+        if (providerModel) {
+          // 🚀 合并 provider 的配置到模型中，确保使用最新的 apiKey 和 baseUrl
+          return {
+            ...providerModel,
+            provider: provider.id,
+            apiKey: providerModel.apiKey || provider.apiKey,
+            baseUrl: providerModel.baseUrl || provider.baseUrl,
+            providerType: providerModel.providerType || provider.providerType || provider.id,
+            // 🚀 继承 provider 的其他配置
+            useCorsPlugin: providerModel.useCorsPlugin ?? provider.useCorsPlugin,
+          };
         }
       }
     }
 
+    console.warn(`[findModelById] 未找到模型: ${modelId}`);
     return null;
   } catch (error) {
     console.error('[findModelById] 查找失败:', error);
