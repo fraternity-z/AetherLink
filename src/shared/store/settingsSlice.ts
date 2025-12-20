@@ -277,7 +277,7 @@ const getInitialState = (): SettingsState => {
     codeEditor: false, // 默认关闭编辑器
     codeShowLineNumbers: true, // 默认显示行号
     codeCollapsible: true, // 默认可折叠
-    codeWrappable: true, // 默认可换行
+    codeWrappable: true, // 默认开启换行
     // 在默认设置中添加 mermaid 默认值
     codeDefaultCollapsed: false, // 默认展开代码块
     mermaidEnabled: true, // 默认启用 Mermaid 图表渲染
