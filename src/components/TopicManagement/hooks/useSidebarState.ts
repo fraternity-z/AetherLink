@@ -4,6 +4,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { useAssistant } from '../../../shared/hooks';
 import { AssistantService } from '../../../shared/services';
 import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
+import { setSidebarTabIndex } from '../../../shared/store/settingsSlice';
 import type { Assistant } from '../../../shared/types/Assistant';
 import type { RootState } from '../../../shared/store';
 import { setAssistants, setCurrentAssistant as setReduxCurrentAssistant } from '../../../shared/store/slices/assistantsSlice';
@@ -12,11 +13,18 @@ import { setAssistants, setCurrentAssistant as setReduxCurrentAssistant } from '
  * 侧边栏状态管理钩子
  */
 export function useSidebarState() {
-  const [value, setValue] = useState(0);
+  // 从 Redux 获取侧边栏 tab 索引，页面切换时状态会保持
+  const sidebarTabIndex = useSelector((state: RootState) => state.settings.sidebarTabIndex ?? 0);
+  
+  const dispatch = useDispatch();
+
+  // 包装 setValue，同时保存到 Redux（会自动持久化到存储）
+  const setValue = useCallback((newValue: number) => {
+    dispatch(setSidebarTabIndex(newValue));
+  }, [dispatch]);
+  
   const [loading, setLoading] = useState(true);
   const initialized = useRef(false);
-
-  const dispatch = useDispatch();
 
   // 创建记忆化的 selector 来避免不必要的重新渲染
   const selectSidebarState = useMemo(
@@ -101,7 +109,7 @@ export function useSidebarState() {
   // 监听SHOW_TOPIC_SIDEBAR事件，切换到话题标签页
   useEffect(() => {
     const unsubscribe = EventEmitter.on(EVENT_NAMES.SHOW_TOPIC_SIDEBAR, () => {
-      setValue(1); // 切换到话题标签页（索引为1）
+      setValue(1); // 切换到话题标签页（索引为1），会自动保存到 localStorage
     });
 
     return () => {
@@ -112,7 +120,7 @@ export function useSidebarState() {
   // 移除冗余的状态同步逻辑，直接使用Redux状态
 
   return {
-    value,
+    value: sidebarTabIndex,
     setValue,
     loading,
     userAssistants,

@@ -198,6 +198,9 @@ interface SettingsState {
     customPrompt?: string; // 自定义压缩提示词
     useCurrentTopicModel?: boolean; // 是否使用当前话题的模型（优先于 modelId）
   };
+
+  // 侧边栏当前选中的 tab 索引（0=助手, 1=话题, 2=设置）
+  sidebarTabIndex?: number;
 }
 
 const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {
@@ -412,7 +415,10 @@ const getInitialState = (): SettingsState => {
       modelId: undefined, // 默认使用当前模型
       customPrompt: undefined, // 默认使用内置提示词
       useCurrentTopicModel: true // 默认使用当前话题的模型
-    }
+    },
+
+    // 侧边栏 tab 默认设置
+    sidebarTabIndex: 0 // 默认为助手 tab
   };
 
   // 设置默认模型
@@ -1076,6 +1082,11 @@ const settingsSlice = createSlice({
       }
     },
 
+    // 侧边栏 tab 索引设置
+    setSidebarTabIndex: (state, action: PayloadAction<number>) => {
+      state.sidebarTabIndex = action.payload;
+    },
+
     // 上下文压缩设置 actions
     setContextCondenseEnabled: (state, action: PayloadAction<boolean>) => {
       if (!state.contextCondense) {
@@ -1237,6 +1248,8 @@ export const {
   setHapticFeedbackOnSwitch,
   setHapticFeedbackOnListItem,
   setHapticFeedbackOnNavigation,
+  // 侧边栏 tab 控制
+  setSidebarTabIndex,
   // 上下文压缩控制
   setContextCondenseEnabled,
   setContextCondenseThreshold,
