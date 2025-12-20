@@ -201,6 +201,9 @@ interface SettingsState {
 
   // 侧边栏当前选中的 tab 索引（0=助手, 1=话题, 2=设置）
   sidebarTabIndex?: number;
+
+  // 消息分组方式
+  messageGrouping?: 'byDate' | 'disabled' | 'none';
 }
 
 const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {
@@ -418,7 +421,10 @@ const getInitialState = (): SettingsState => {
     },
 
     // 侧边栏 tab 默认设置
-    sidebarTabIndex: 0 // 默认为助手 tab
+    sidebarTabIndex: 0, // 默认为助手 tab
+
+    // 消息分组默认设置
+    messageGrouping: 'byDate' // 默认按日期分组
   };
 
   // 设置默认模型

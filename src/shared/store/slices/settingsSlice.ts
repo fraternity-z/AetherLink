@@ -48,6 +48,9 @@ export interface SettingsState {
   // 上下文Token指示器
   showContextTokenIndicator?: boolean;
 
+  // 消息分组方式
+  messageGrouping?: 'byDate' | 'disabled' | 'none';
+
   // 其他设置...
   [key: string]: any;
 }
@@ -125,6 +128,7 @@ const initialState: SettingsState = {
   integratedInputButtons: ['tools', 'search'],
   messageNavigation: 'none',
   showContextTokenIndicator: true,
+  messageGrouping: 'byDate',
   isLoading: false
 };
 

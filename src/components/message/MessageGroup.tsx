@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ChevronDown as ExpandMoreIcon } from 'lucide-react';
@@ -26,9 +26,30 @@ interface MultiModelGroup {
 
 type MessageOrGroup = Message | MultiModelGroup;
 
-const groupMessagesByAskId = (messages: Message[]): MessageOrGroup[] => {
+interface GroupingResult {
+  groupedMessages: MessageOrGroup[];
+  messageIndexMap: Map<string, number>;
+}
+
+const groupMessagesByAskId = (messages: Message[]): GroupingResult => {
   const result: MessageOrGroup[] = [];
   const processedIds = new Set<string>();
+  const messageIndexMap = new Map<string, number>();
+
+  // 预构建 askId 到助手消息的映射，提升性能
+  const assistantsByAskId = new Map<string, Message[]>();
+  const messagesById = new Map<string, Message>();
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    messagesById.set(msg.id, msg);
+    messageIndexMap.set(msg.id, i);
+    if (msg.role === 'assistant' && msg.askId) {
+      const existing = assistantsByAskId.get(msg.askId) || [];
+      existing.push(msg);
+      assistantsByAskId.set(msg.askId, existing);
+    }
+  }
 
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
@@ -38,10 +59,8 @@ const groupMessagesByAskId = (messages: Message[]): MessageOrGroup[] => {
 
     // 检查是否是用户消息且有 mentions（多模型发送）
     if (message.role === 'user' && message.mentions && message.mentions.length > 0) {
-      // 查找所有共享同一个 askId 的助手消息
-      const assistantMessages = messages.filter(
-        m => m.role === 'assistant' && m.askId === message.id
-      );
+      // 使用预构建的映射 O(1) 查找
+      const assistantMessages = assistantsByAskId.get(message.id) || [];
 
       if (assistantMessages.length > 1) {
         // 多模型分组
@@ -60,7 +79,7 @@ const groupMessagesByAskId = (messages: Message[]): MessageOrGroup[] => {
 
     // 检查是否是助手消息且属于多模型分组（已被上面处理）
     if (message.role === 'assistant' && message.askId) {
-      const userMessage = messages.find(m => m.id === message.askId);
+      const userMessage = messagesById.get(message.askId);
       if (userMessage?.mentions && userMessage.mentions.length > 0) {
         // 这条消息属于多模型分组，跳过（会在用户消息处理时一起处理）
         continue;
@@ -72,7 +91,7 @@ const groupMessagesByAskId = (messages: Message[]): MessageOrGroup[] => {
     processedIds.add(message.id);
   }
 
-  return result;
+  return { groupedMessages: result, messageIndexMap };
 };
 
 const isMultiModelGroup = (item: MessageOrGroup): item is MultiModelGroup => {
@@ -111,7 +130,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
 
   // 从Redux获取设置
   const messageGrouping = useSelector((state: RootState) =>
-    (state.settings as any).messageGrouping || 'byDate'
+    state.settings.messageGrouping ?? 'byDate'
   );
 
   // 获取消息分割线设置
@@ -123,7 +142,10 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
         const dividerSetting = getMessageDividerSetting();
         setShowMessageDivider(dividerSetting);
       } catch (error) {
-        console.error('获取消息分割线设置失败:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('获取消息分割线设置失败:', error);
+        }
+        // 保持默认值 true
       }
     };
 
@@ -160,44 +182,52 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     }
   }, [date]);
 
-  // 将消息按 askId 分组，识别多模型响应
-  const groupedMessages = useMemo(() => groupMessagesByAskId(messages), [messages]);
+  // 将消息按 askId 分组，识别多模型响应，并获取索引映射
+  const { groupedMessages, messageIndexMap } = useMemo(
+    () => groupMessagesByAskId(messages),
+    [messages]
+  );
 
   // 渲染单条消息或多模型分组
-  const renderMessageOrGroup = (item: MessageOrGroup, index: number) => {
-    if (isMultiModelGroup(item)) {
-      // 渲染多模型分组
-      return (
-        <MultiModelMessageGroup
-          key={`multi-${item.userMessage.id}`}
-          userMessage={item.userMessage}
-          assistantMessages={item.assistantMessages}
-          onRegenerate={onRegenerate}
-          onDelete={onDelete}
-          onSwitchVersion={onSwitchVersion}
-          onResend={onResend}
-        />
-      );
-    } else {
-      // 渲染普通消息
-      return (
-        <React.Fragment key={item.id}>
-          <MessageItem
-            message={item}
-            messageIndex={startIndex + index}
+  const renderMessageOrGroup = useCallback(
+    (item: MessageOrGroup, _groupIndex: number) => {
+      if (isMultiModelGroup(item)) {
+        // 渲染多模型分组
+        return (
+          <MultiModelMessageGroup
+            key={`multi-${item.userMessage.id}`}
+            userMessage={item.userMessage}
+            assistantMessages={item.assistantMessages}
             onRegenerate={onRegenerate}
             onDelete={onDelete}
             onSwitchVersion={onSwitchVersion}
             onResend={onResend}
           />
-          {/* 在对话轮次结束后显示分割线 */}
-          {shouldShowConversationDivider(messages, index) && (
-            <ConversationDivider show={showMessageDivider} style="subtle" />
-          )}
-        </React.Fragment>
-      );
-    }
-  };
+        );
+      } else {
+        // 使用消息 ID 获取正确的原始索引
+        const originalIndex = messageIndexMap.get(item.id) ?? 0;
+        // 渲染普通消息
+        return (
+          <React.Fragment key={item.id}>
+            <MessageItem
+              message={item}
+              messageIndex={startIndex + originalIndex}
+              onRegenerate={onRegenerate}
+              onDelete={onDelete}
+              onSwitchVersion={onSwitchVersion}
+              onResend={onResend}
+            />
+            {/* 在对话轮次结束后显示分割线 - 使用正确的原始索引 */}
+            {shouldShowConversationDivider(messages, originalIndex) && (
+              <ConversationDivider show={showMessageDivider} style="subtle" />
+            )}
+          </React.Fragment>
+        );
+      }
+    },
+    [startIndex, onRegenerate, onDelete, onSwitchVersion, onResend, showMessageDivider, messages, messageIndexMap]
+  );
 
   // 如果禁用了消息分组，直接渲染消息列表
   if (messageGrouping === 'disabled') {
@@ -255,4 +285,6 @@ const DateHeader = styled(Paper)(({ theme }) => ({
   boxShadow: 'none',
 }));
 
+// 使用默认 memo()，依赖 Redux 状态更新时产生的新对象引用
+// 参考 cherry-studio 的实现方式
 export default React.memo(MessageGroup);
