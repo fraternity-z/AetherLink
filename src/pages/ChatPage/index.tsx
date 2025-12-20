@@ -24,8 +24,8 @@ import ChatSearchInterface from '../../components/search/ChatSearchInterface';
 import BackButtonDrawer from '../../components/common/BackButtonDrawer';
 import { CircularProgress, Box } from '@mui/material';
 
-// 懒加载设置页面
-const SettingsPage = lazy(() => import('../Settings'));
+// 懒加载设置路由组件（包含所有设置子页面）
+const SettingsRouter = lazy(() => import('../../routes/SettingsRouter'));
 
 
 const EMPTY_MESSAGES_ARRAY: any[] = [];
@@ -48,7 +48,7 @@ const ChatPage: React.FC = () => {
   // 搜索状态
   const [showSearch, setShowSearch] = useState(false);
 
-  // 🚀 性能优化：设置抽屉状态（避免路由切换导致的重新渲染）
+  // 性能优化：设置抽屉状态（避免路由切换导致的重新渲染）
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
 
   // 设置抽屉处理函数
@@ -129,7 +129,7 @@ const ChatPage: React.FC = () => {
   // 话题管理钩子 - 移除未使用的 handleCreateTopic
   // const { handleCreateTopic } = useTopicManagement();
 
-  // 🚀 优化：使用useCallback稳定函数引用
+  // 性能优化：使用useCallback稳定函数引用
   const handleClearTopic = useCallback(() => {
     if (currentTopic) {
       TopicService.clearTopicContent(currentTopic.id);
@@ -331,7 +331,7 @@ const ChatPage: React.FC = () => {
         onSettingsClick={handleSettingsClick}
       />
 
-      {/* 🚀 性能优化：全屏设置抽屉（避免路由切换导致聊天页面重新渲染） */}
+      {/* 性能优化：全屏设置抽屉（避免路由切换导致聊天页面重新渲染） */}
       <BackButtonDrawer
         anchor="right"
         open={settingsDrawerOpen}
@@ -349,7 +349,8 @@ const ChatPage: React.FC = () => {
             <CircularProgress />
           </Box>
         }>
-          <SettingsPage onClose={handleSettingsClose} />
+          {/* 使用独立的 SettingsRouter，所有设置子页面都在抽屉内导航 */}
+          <SettingsRouter onClose={handleSettingsClose} />
         </Suspense>
       </BackButtonDrawer>
 
