@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, shallowEqual } from 'react-redux';
 import { Box, Fade } from '@mui/material';
 import type { RootState } from '../../shared/store';
 import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
-import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock } from '../../shared/types/newMessage';
+import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock, MainTextMessageBlock, CodeMessageBlock, ToolMessageBlock, KnowledgeReferenceMessageBlock, ContextSummaryMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
 
 
@@ -83,6 +83,60 @@ const ImageBlockGroup: React.FC<ImageBlockGroupProps> = ({ children, count }) =>
  * - 相同路径的视频块会被去重（只保留第一个）
  * - 其他块保持原样
  */
+/**
+ * 类型守卫：检查是否为空内容的主文本块
+ */
+const isEmptyMainTextBlock = (block: MessageBlock, message: Message): boolean => {
+  if (block.type !== MessageBlockType.MAIN_TEXT) return false;
+  if (block.status !== MessageBlockStatus.SUCCESS) return false;
+  
+  // 流式输出、处理中或成功状态时不视为空
+  if (['streaming', 'processing', 'success'].includes(message.status)) return false;
+  
+  // 有版本历史时不视为空
+  if (message.versions && message.versions.length > 0) return false;
+  
+  // 检查内容是否为空
+  if ('content' in block) {
+    const content = (block as MainTextMessageBlock).content;
+    return !content || content.trim() === '';
+  }
+  return true;
+};
+
+/**
+ * 类型守卫：判断是否为代码块
+ */
+const isCodeBlock = (block: MessageBlock): block is CodeMessageBlock => {
+  return block.type === MessageBlockType.CODE;
+};
+
+/**
+ * 类型守卫：判断是否为工具块
+ */
+const isToolBlock = (block: MessageBlock): block is ToolMessageBlock => {
+  return block.type === MessageBlockType.TOOL;
+};
+
+/**
+ * 类型守卫：判断是否为知识引用块
+ */
+const isKnowledgeReferenceBlock = (block: MessageBlock): block is KnowledgeReferenceMessageBlock => {
+  return block.type === MessageBlockType.KNOWLEDGE_REFERENCE;
+};
+
+/**
+ * 类型守卫：判断是否为上下文摘要块
+ */
+const isContextSummaryBlock = (block: MessageBlock): block is ContextSummaryMessageBlock => {
+  return block.type === MessageBlockType.CONTEXT_SUMMARY;
+};
+
+/**
+ * 动画状态列表
+ */
+const ANIMATING_STATUSES = ['streaming', 'processing'];
+
 const groupSimilarBlocks = (blocks: MessageBlock[]): GroupedBlock[] => {
   const seenVideoPaths = new Set<string>();
   
@@ -144,8 +198,10 @@ const MessageBlockRenderer: React.FC<Props> = ({
   extraPaddingRight = 0
 }) => {
   // 仅依赖自身块ID映射，避免全局实体导致重渲染
-  const renderedBlocks = useSelector((state: RootState) =>
-    selectBlocksByIds(state, blocks)
+  // 使用 shallowEqual 优化 selector 性能
+  const renderedBlocks = useSelector(
+    (state: RootState) => selectBlocksByIds(state, blocks),
+    shallowEqual
   );
 
   // 对块进行分组（图片分组、视频去重）
@@ -190,29 +246,14 @@ const MessageBlockRenderer: React.FC<Props> = ({
     );
   };
 
-  // 检查是否有空内容的成功状态块
+  // 检查是否有空内容的成功状态块 - 使用提取的工具函数
   const hasEmptySuccessBlock = useMemo(() => {
     if (renderedBlocks.length === 0) return false;
+    return renderedBlocks.some(block => isEmptyMainTextBlock(block, message));
+  }, [renderedBlocks, message.status, message.versions?.length]);
 
-    // 如果消息状态是 streaming、processing 或 success，不显示错误
-    if (message.status === 'streaming' || message.status === 'processing' || message.status === 'success') {
-      return false;
-    }
-
-    // 如果消息有版本历史，不显示错误
-    if (message.versions && message.versions.length > 0) {
-      return false;
-    }
-
-    return renderedBlocks.some(block =>
-      block.type === MessageBlockType.MAIN_TEXT &&
-      block.status === MessageBlockStatus.SUCCESS &&
-      (!('content' in block) || !(block as any).content || (block as any).content.trim() === '')
-    );
-  }, [renderedBlocks, message.status, message.versions]);
-
-  // 是否启用动画
-  const enableAnimation = message.status.includes('ing');
+  // 是否启用动画 - 使用显式状态比较
+  const enableAnimation = ANIMATING_STATUSES.includes(message.status);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -259,14 +300,8 @@ const MessageBlockRenderer: React.FC<Props> = ({
             const block = blockOrGroup;
             let blockComponent: React.ReactNode = null;
 
-            // 处理空内容的成功状态块
-            if (block.type === MessageBlockType.MAIN_TEXT &&
-                block.status === MessageBlockStatus.SUCCESS &&
-                (!('content' in block) || !(block as any).content || (block as any).content.trim() === '') &&
-                message.status !== 'streaming' &&
-                message.status !== 'processing' &&
-                message.status !== 'success' &&
-                (!message.versions || message.versions.length === 0)) {
+            // 处理空内容的成功状态块 - 使用提取的工具函数
+            if (isEmptyMainTextBlock(block, message)) {
               return renderEmptyContentMessage();
             }
 
@@ -274,69 +309,81 @@ const MessageBlockRenderer: React.FC<Props> = ({
               case MessageBlockType.UNKNOWN:
                 // 参考最佳实例逻辑：PROCESSING状态下渲染占位符块，SUCCESS状态下当作主文本块处理
                 if (block.status === MessageBlockStatus.PROCESSING) {
-                  blockComponent = <PlaceholderBlock key={block.id} block={block} />;
+                  blockComponent = <PlaceholderBlock block={block} />;
                 } else if (block.status === MessageBlockStatus.SUCCESS) {
                   // 兼容性处理：将 UNKNOWN 类型的成功状态块当作主文本块处理
-                  blockComponent = <MainTextBlock key={block.id} block={block as any} role={message.role} messageId={message.id} />;
+                  blockComponent = <MainTextBlock block={block as unknown as MainTextMessageBlock} role={message.role} messageId={message.id} />;
                 }
                 break;
               case MessageBlockType.MAIN_TEXT:
-                blockComponent = <MainTextBlock key={block.id} block={block} role={message.role} messageId={message.id} />;
+                blockComponent = <MainTextBlock block={block} role={message.role} messageId={message.id} />;
                 break;
               case MessageBlockType.THINKING:
-                blockComponent = <ThinkingBlock key={block.id} block={block} />;
+                blockComponent = <ThinkingBlock block={block} />;
                 break;
               case MessageBlockType.IMAGE:
                 // 单独的图片块（非连续分组的情况）
-                blockComponent = <ImageBlock key={block.id} block={block} isSingle={true} />;
+                blockComponent = <ImageBlock block={block} isSingle={true} />;
                 break;
               case MessageBlockType.VIDEO:
-                blockComponent = <VideoBlock key={block.id} block={block} />;
+                blockComponent = <VideoBlock block={block} />;
                 break;
               case MessageBlockType.CODE:
-                // 使用新版 CodeBlockView
-                blockComponent = (
-                  <CodeBlockView 
-                    key={block.id} 
-                    language={(block as any).language || 'text'}
-                  >
-                    {(block as any).content || ''}
-                  </CodeBlockView>
-                );
+                // 使用新版 CodeBlockView - 使用类型守卫
+                if (isCodeBlock(block)) {
+                  blockComponent = (
+                    <CodeBlockView language={block.language || 'text'}>
+                      {block.content || ''}
+                    </CodeBlockView>
+                  );
+                }
                 break;
               case MessageBlockType.CITATION:
-                blockComponent = <CitationBlock key={block.id} block={block} />;
+                blockComponent = <CitationBlock block={block} />;
                 break;
               case MessageBlockType.ERROR:
-                blockComponent = <ErrorBlock key={block.id} block={block} />;
+                blockComponent = <ErrorBlock block={block} />;
                 break;
               case MessageBlockType.TRANSLATION:
-                blockComponent = <TranslationBlock key={block.id} block={block} />;
+                blockComponent = <TranslationBlock block={block} />;
                 break;
               case MessageBlockType.MATH:
-                blockComponent = <MathBlock key={block.id} block={block} />;
+                blockComponent = <MathBlock block={block} />;
                 break;
               // 注意：MULTI_MODEL case 已移除
               // 多模型功能现在通过 askId 分组多个独立的助手消息实现
               case MessageBlockType.CHART:
-                blockComponent = <ChartBlock key={block.id} block={block} />;
+                blockComponent = <ChartBlock block={block} />;
                 break;
               case MessageBlockType.FILE:
-                blockComponent = <FileBlock key={block.id} block={block} />;
+                blockComponent = <FileBlock block={block} />;
                 break;
               case MessageBlockType.TOOL:
-                // 工具块按 message.blocks 顺序独立渲染
-                blockComponent = <ToolBlock key={block.id} block={block as any} />;
+                // 工具块按 message.blocks 顺序独立渲染 - 使用类型守卫
+                if (isToolBlock(block)) {
+                  blockComponent = <ToolBlock block={block} />;
+                }
                 break;
               case MessageBlockType.KNOWLEDGE_REFERENCE:
-                blockComponent = <KnowledgeReferenceBlock key={block.id} block={block as any} />;
+                // 使用类型守卫
+                if (isKnowledgeReferenceBlock(block)) {
+                  blockComponent = <KnowledgeReferenceBlock block={block} />;
+                }
                 break;
               case MessageBlockType.CONTEXT_SUMMARY:
-                blockComponent = <ContextSummaryBlock key={block.id} block={block as any} />;
+                // 使用类型守卫
+                if (isContextSummaryBlock(block)) {
+                  blockComponent = <ContextSummaryBlock block={block} />;
+                }
                 break;
-              default:
-                console.warn('不支持的块类型:', (block as any).type, block);
+              default: {
+                // exhaustive check - 如果到达这里说明有未处理的类型
+                const _exhaustiveCheck: never = block;
+                if (process.env.NODE_ENV === 'development') {
+                  console.warn('不支持的块类型:', (_exhaustiveCheck as MessageBlock).type, _exhaustiveCheck);
+                }
                 break;
+              }
             }
 
             // 如果没有组件，跳过渲染
@@ -365,4 +412,27 @@ const MessageBlockRenderer: React.FC<Props> = ({
   );
 };
 
-export default React.memo(MessageBlockRenderer);
+// 辅助函数：比较数组
+const areArraysEqual = <T,>(a?: T[], b?: T[]): boolean => {
+  if (a === b) return true;
+  const arrayA = a ?? [];
+  const arrayB = b ?? [];
+  if (arrayA.length !== arrayB.length) return false;
+  for (let i = 0; i < arrayA.length; i += 1) {
+    if (arrayA[i] !== arrayB[i]) return false;
+  }
+  return true;
+};
+
+// 使用自定义比较函数优化 React.memo
+export default React.memo(MessageBlockRenderer, (prevProps, nextProps) => {
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.status === nextProps.message.status &&
+    prevProps.message.role === nextProps.message.role &&
+    prevProps.message.versions?.length === nextProps.message.versions?.length &&
+    areArraysEqual(prevProps.blocks, nextProps.blocks) &&
+    prevProps.extraPaddingLeft === nextProps.extraPaddingLeft &&
+    prevProps.extraPaddingRight === nextProps.extraPaddingRight
+  );
+});
