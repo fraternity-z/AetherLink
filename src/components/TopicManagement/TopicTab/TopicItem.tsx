@@ -252,7 +252,7 @@ const TopicItem = React.memo(function TopicItem({
           variant="caption"
           sx={{
             fontSize: '11px',
-            color: 'text.secondary',
+            color: 'text.primary',
             lineHeight: 1,
             whiteSpace: 'nowrap',
             opacity: 0.9

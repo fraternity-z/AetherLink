@@ -140,7 +140,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                     variant="caption"
                     sx={{
                       fontSize: '0.7rem',
-                      color: theme.palette.text.secondary,
+                      color: theme.palette.text.primary,
                       lineHeight: 1,
                       marginTop: showUserName ? '2px' : '0'
                     }}
@@ -209,7 +209,7 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                     variant="caption"
                     sx={{
                       fontSize: '0.7rem',
-                      color: theme.palette.text.secondary,
+                      color: theme.palette.text.primary,
                       lineHeight: 1,
                       marginTop: showModelName ? '2px' : '0'
                     }}

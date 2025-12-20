@@ -93,7 +93,7 @@ const MinimalStyleMessage: React.FC<BaseMessageStyleProps> = ({
                 {isUserMessage ? '用户' : (message.model?.name || 'AI')}
               </Typography>
             )}
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.primary', fontSize: '0.7rem' }}>
               {new Date(message.createdAt).toLocaleString('zh-CN', {
                 month: 'numeric',
                 day: 'numeric',

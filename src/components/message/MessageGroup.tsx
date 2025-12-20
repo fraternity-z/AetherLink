@@ -218,7 +218,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
           backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
         }}
       >
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.primary">
           {formattedDate}
         </Typography>
 

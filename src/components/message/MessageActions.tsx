@@ -827,14 +827,8 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
                 size="small"
                 onClick={handleTextToSpeech}
                 sx={{
-                  padding: 0.5,
+                  ...toolbarIconButtonStyle,
                   opacity: isPlaying ? 1 : 0.8,
-                  color: isPlaying ? theme.palette.primary.main : 'text.primary',
-                  '&:hover': {
-                    opacity: 1,
-                    transform: 'scale(1.1)'
-                  },
-                  transition: 'all 0.2s ease-in-out'
                 }}
               >
                 {isPlaying ? <VolumeX size={16} /> : <Volume2 size={16} />}
