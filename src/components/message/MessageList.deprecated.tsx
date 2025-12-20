@@ -23,7 +23,7 @@ import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSele
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
-import { scrollContainerStyles, scrollbarStyles, getOptimizedConfig, debugScrollPerformance } from '../../shared/config/scrollOptimization';
+import { scrollContainerStyles, scrollbarStyles, debugScrollPerformance } from '../../shared/config/scrollOptimization';
 
 // 每次加载的消息数量
 const LOAD_MORE_COUNT = 10;
@@ -80,8 +80,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     setError(null);
     setIsRecovering(false);
   }, []);
-
-  const optimizedConfig = useMemo(() => getOptimizedConfig(), []);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -191,7 +189,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, onRegenerate, onDel
     handleScroll,
     scrollToBottom,
   } = useScrollPosition('messageList', {
-    throttleTime: optimizedConfig.scrollThrottle,
+    throttleTime: 16, // 废弃文件，使用固定值
     autoRestore: false,
     onScroll: (_scrollPos) => {
       if (containerRef.current) {

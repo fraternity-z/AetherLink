@@ -26,20 +26,27 @@ export function MessageListContainer(props: MessageListContainerProps) {
   const BOTTOM_THRESHOLD = 150;
   const TOP_THRESHOLD = 100;
   
-  // 节流控制
-  let scrollThrottleTimer: number | null = null;
-  const SCROLL_THROTTLE_MS = 16; // ~60fps
+  // ✅ 使用 rAF 自适应设备刷新率，不再使用固定 throttle
+  let rafId: number | null = null;
+  let lastScrollTop = 0;
   
-  // 处理滚动事件
+  // 处理滚动事件 - 使用 requestAnimationFrame 自动适配 60/120/144Hz
   const handleScroll = () => {
-    if (scrollThrottleTimer) return;
+    // 取消之前的帧，确保每帧只执行一次
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+    }
     
-    scrollThrottleTimer = window.setTimeout(() => {
-      scrollThrottleTimer = null;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
       
       if (!containerRef) return;
       
       const { scrollTop: st, scrollHeight, clientHeight } = containerRef;
+      
+      // 检查是否真的滚动了（避免无意义的更新）
+      if (st === lastScrollTop) return;
+      lastScrollTop = st;
       
       // 检查是否接近底部
       const distanceFromBottom = scrollHeight - st - clientHeight;
@@ -52,7 +59,7 @@ export function MessageListContainer(props: MessageListContainerProps) {
       if (st < TOP_THRESHOLD) {
         props.onScrollToTop?.();
       }
-    }, SCROLL_THROTTLE_MS);
+    });
   };
   
   // 滚动到底部
@@ -88,8 +95,8 @@ export function MessageListContainer(props: MessageListContainerProps) {
   
   // 清理
   onCleanup(() => {
-    if (scrollThrottleTimer) {
-      clearTimeout(scrollThrottleTimer);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
     }
     delete (window as any).__solidMessageListScrollToBottom;
     delete (window as any).__solidMessageListGetContainer;

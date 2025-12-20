@@ -2,12 +2,11 @@ import React from 'react';
 import {
   Box,
   Avatar,
-  Typography,
-  Skeleton
+  Typography
 } from '@mui/material';
 
 import MessageActions from '../MessageActions';
-import MessageBlockRenderer from '../MessageBlockRenderer';
+import MessageContent from '../MessageContent';
 import type { BaseMessageStyleProps } from '../types/MessageComponent';
 import { messageItemStyles } from '../../../shared/config/scrollOptimization';
 
@@ -105,29 +104,14 @@ const MinimalStyleMessage: React.FC<BaseMessageStyleProps> = ({
           </Box>
         )}
 
-        {/* 消息内容 */}
+        {/* 消息内容 - 使用独立的 memo MessageContent 组件优化渲染 */}
         <Box sx={{ position: 'relative' }}>
-          {loading ? (
-            <>
-              <Skeleton variant="text" width="80%" />
-              <Skeleton variant="text" width="60%" />
-            </>
-          ) : (
-            <Box sx={{ width: '100%' }}>
-              {message.blocks && message.blocks.length > 0 ? (
-                <MessageBlockRenderer
-                  blocks={message.blocks}
-                  message={message}
-                  extraPaddingLeft={0}
-                  extraPaddingRight={0}
-                />
-              ) : (
-                <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-                  {(message as any).content || ''}
-                </Typography>
-              )}
-            </Box>
-          )}
+          <MessageContent
+            message={message}
+            loading={loading}
+            extraPaddingLeft={0}
+            extraPaddingRight={0}
+          />
 
           {/* 底部工具栏 - 简洁样式，显示操作按钮 */}
           <Box sx={{

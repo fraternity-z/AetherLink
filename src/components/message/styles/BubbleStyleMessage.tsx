@@ -3,12 +3,11 @@ import {
   Box,
   Avatar,
   Paper,
-  Typography,
-  Skeleton
+  Typography
 } from '@mui/material';
 import { User } from 'lucide-react';
 import MessageActions from '../MessageActions';
-import MessageBlockRenderer from '../MessageBlockRenderer';
+import MessageContent from '../MessageContent';
 import type { BaseMessageStyleProps } from '../types/MessageComponent';
 import { Z_INDEX } from '../../../shared/constants/zIndex';
 import { messageItemStyles, bubbleStyles } from '../../../shared/config/scrollOptimization';
@@ -264,29 +263,14 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
             transform: 'translateZ(0)', // 启用硬件加速
           }}
         >
-          {loading ? (
-            <>
-              <Skeleton variant="text" width="80%" />
-              <Skeleton variant="text" width="60%" />
-            </>
-          ) : (
-            <Box sx={{ width: '100%' }}>
-              {message.blocks && message.blocks.length > 0 ? (
-                <MessageBlockRenderer
-                  blocks={message.blocks}
-                  message={message}
-                  extraPaddingLeft={0}
-                  extraPaddingRight={0}
-                />
-              ) : (
-                <Box sx={{
-                  // 移除额外的 padding，因为已在父级设置
-                  lineHeight: 1.6,
-                  wordBreak: 'break-word'
-                }}>
-                  {(message as any).content || ''}
-                </Box>
-              )}
+          <Box sx={{ width: '100%' }}>
+            {/* 🚀 使用独立的 memo MessageContent 组件优化渲染 */}
+            <MessageContent
+              message={message}
+              loading={loading}
+              extraPaddingLeft={0}
+              extraPaddingRight={0}
+            />
 
               {/* 工具栏模式 - 在气泡内部底部显示工具栏 */}
               {messageActionMode === 'toolbar' && (
@@ -317,41 +301,40 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
                 </Box>
               )}
             </Box>
-          )}
-        </Paper>
+          </Paper>
 
-        {/* 根据设置显示不同的操作模式 */}
-        {messageActionMode === 'bubbles' && (
-          <>
-            {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置（对所有消息显示） */}
-            {settings?.showMicroBubbles !== false && (
-              <Box sx={{
-                position: 'absolute',
-                top: -22,
-                right: isUserMessage ? 0 : 0,
-                left: isUserMessage ? 0 : 'auto',
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: isUserMessage ? 'flex-start' : 'flex-end',
-                gap: '5px',
-                zIndex: Z_INDEX.MESSAGE.BUBBLE_INDICATORS, // 降低z-index，确保不会覆盖三点菜单
-                pointerEvents: 'auto',
-              }}>
-                <MessageActions
-                  message={message as any}
-                  topicId={message.topicId}
-                  messageIndex={messageIndex}
-                  onRegenerate={onRegenerate}
-                  onDelete={onDelete}
-                  onSwitchVersion={onSwitchVersion}
-                  onResend={onResend}
-                  renderMode="full"
-                  customTextColor={actualTextColor}
-                />
-              </Box>
-            )}
+          {/* 根据设置显示不同的操作模式 */}
+          {messageActionMode === 'bubbles' && (
+            <>
+              {/* 版本指示器和播放按钮 - 放在气泡上方贴合位置（对所有消息显示） */}
+              {settings?.showMicroBubbles !== false && (
+                <Box sx={{
+                  position: 'absolute',
+                  top: -22,
+                  right: isUserMessage ? 0 : 0,
+                  left: isUserMessage ? 0 : 'auto',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  justifyContent: isUserMessage ? 'flex-start' : 'flex-end',
+                  gap: '5px',
+                  zIndex: Z_INDEX.MESSAGE.BUBBLE_INDICATORS, // 降低z-index，确保不会覆盖三点菜单
+                  pointerEvents: 'auto',
+                }}>
+                  <MessageActions
+                    message={message as any}
+                    topicId={message.topicId}
+                    messageIndex={messageIndex}
+                    onRegenerate={onRegenerate}
+                    onDelete={onDelete}
+                    onSwitchVersion={onSwitchVersion}
+                    onResend={onResend}
+                    renderMode="full"
+                    customTextColor={actualTextColor}
+                  />
+                </Box>
+              )}
 
-            {/* 三点菜单按钮 - 对所有消息显示，放置在气泡内的右上角 */}
+              {/* 三点菜单按钮 - 对所有消息显示，放置在气泡内的右上角 */}
             <Box sx={{
               position: 'absolute',
               top: 5,

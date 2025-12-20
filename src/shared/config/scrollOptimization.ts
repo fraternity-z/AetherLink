@@ -80,13 +80,21 @@ export const scrollbarStyles = (isDark: boolean) => ({
 
 // 🚀 性能监控配置
 export const performanceConfig = {
-  // 节流时间配置
-  scrollThrottle: 16, // ~60fps
-  resizeThrottle: 100,
+  // ✅ 使用 rAF 自适应，不再使用固定 throttle
+  useRAF: true,
+  
+  // resize 事件可以用较长的 debounce（用户不会一直 resize）
+  resizeDebounce: 150,
   
   // 虚拟滚动配置
   virtualScrollThreshold: 50, // 超过50个项目启用虚拟滚动
-  overscanCount: 5, // 预渲染项目数量
+  
+  // overscan 根据帧率动态调整
+  getOverscanCount: (fps: number) => {
+    if (fps >= 120) return 8;  // 高刷需要更多预渲染
+    if (fps >= 90) return 5;
+    return 3;
+  },
   
   // 渲染优化
   batchUpdateDelay: 16, // 批量更新延迟
@@ -116,6 +124,42 @@ export const getDevicePerformanceLevel = (): 'low' | 'medium' | 'high' => {
   }
 };
 
+// 🚀 检测设备实际刷新率
+export const getRefreshRate = (): number => {
+  // 方法1: 使用实验性 API（部分浏览器支持）
+  if ('screen' in window && 'refreshRate' in (screen as any)) {
+    return (screen as any).refreshRate;
+  }
+  
+  // 方法2: 回退默认值
+  return 60;
+};
+
+// 🚀 动态计算帧时间
+export const getFrameTime = (): number => {
+  const refreshRate = getRefreshRate();
+  return Math.floor(1000 / refreshRate);
+};
+
+// 🚀 运行时测量实际帧率
+export const measureActualFrameRate = (): Promise<number> => {
+  return new Promise((resolve) => {
+    let frameCount = 0;
+    const startTime = performance.now();
+    
+    const countFrame = () => {
+      frameCount++;
+      if (performance.now() - startTime < 1000) {
+        requestAnimationFrame(countFrame);
+      } else {
+        resolve(frameCount);
+      }
+    };
+    
+    requestAnimationFrame(countFrame);
+  });
+};
+
 // 🚀 根据设备性能调整配置
 export const getOptimizedConfig = () => {
   const performanceLevel = getDevicePerformanceLevel();
@@ -124,25 +168,19 @@ export const getOptimizedConfig = () => {
     case 'high':
       return {
         ...performanceConfig,
-        scrollThrottle: 8, // ~120fps
         virtualScrollThreshold: 100,
-        overscanCount: 10,
       };
     
     case 'medium':
       return {
         ...performanceConfig,
-        scrollThrottle: 16, // ~60fps
         virtualScrollThreshold: 50,
-        overscanCount: 5,
       };
     
     case 'low':
       return {
         ...performanceConfig,
-        scrollThrottle: 33, // ~30fps
         virtualScrollThreshold: 20,
-        overscanCount: 3,
       };
     
     default:
