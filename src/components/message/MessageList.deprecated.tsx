@@ -1,3 +1,9 @@
+/**
+ * @deprecated 此组件已废弃，请使用 SolidMessageList 代替
+ * 
+ * 此文件保留仅作为参考，新功能已迁移到 SolidMessageList.tsx
+ * SolidMessageList 使用 SolidJS 实现滚动优化，性能更好
+ */
 import React, { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { Box, useTheme } from '@mui/material';
 import type { Message } from '../../shared/types/newMessage.ts';
@@ -20,7 +26,7 @@ import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
 import { scrollContainerStyles, scrollbarStyles, getOptimizedConfig, debugScrollPerformance } from '../../shared/config/scrollOptimization';
 
 // 每次加载的消息数量
-const LOAD_MORE_COUNT = 15;
+const LOAD_MORE_COUNT = 10;
 
 const computeDisplayMessages = (messages: Message[], startIndex: number, displayCount: number) => {
   if (messages.length === 0) return [];

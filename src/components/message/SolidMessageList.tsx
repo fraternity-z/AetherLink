@@ -10,8 +10,10 @@ import { Box, useTheme } from '@mui/material';
 import { SolidBridge } from '../../shared/bridges/SolidBridge';
 import { MessageListContainer } from '../../solid/components/MessageList';
 import type { Message } from '../../shared/types/newMessage';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
+import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
+import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
 
 import MessageGroup from './MessageGroup';
 import SystemPromptBubble from '../SystemPromptBubble';
@@ -32,7 +34,7 @@ interface SolidMessageListProps {
 }
 
 const INITIAL_DISPLAY_COUNT = 15;
-const LOAD_MORE_COUNT = 15;
+const LOAD_MORE_COUNT = 10;
 
 const computeDisplayMessages = (messages: Message[], startIndex: number, displayCount: number) => {
   if (messages.length === 0) return [];
@@ -49,8 +51,14 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
   onResend
 }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
   const renderCount = useRef(0);
   renderCount.current += 1;
+
+  // 错误处理状态
+  const [error, setError] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const loadedBlockIdsRef = useRef<Set<string>>(new Set());
 
   // 键盘状态监听 - 用于在键盘弹出时自动滚动到底部
   const { keyboardHeight } = useKeyboard();
@@ -70,6 +78,25 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
 
   // Redux 状态
   const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
+
+  // 汇总当前消息涉及的块ID列表，用于按需查询
+  const allBlockIds = useMemo(() => {
+    const ids: string[] = [];
+    messages.forEach(m => {
+      if (m.blocks && m.blocks.length > 0) {
+        ids.push(...m.blocks);
+      }
+    });
+    return ids;
+  }, [messages]);
+
+  // 仅选择当前消息涉及的块实体
+  const relatedBlocks = useSelector((state: RootState) => selectBlocksByIds(state, allBlockIds));
+  const relatedBlockSet = useMemo(() => {
+    const set = new Set<string>();
+    relatedBlocks.forEach(b => set.add(b.id));
+    return set;
+  }, [relatedBlocks]);
   const showSystemPromptBubble = useSelector((state: RootState) =>
     state.settings.showSystemPromptBubble !== false
   );
@@ -112,6 +139,30 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
     return indices;
   }, [groupedMessages]);
 
+  // 错误处理函数
+  const handleError = useCallback((error: any, context: string, options: { showToUser?: boolean; canRecover?: boolean } = {}) => {
+    const { showToUser = false, canRecover = false } = options;
+    console.error(`[SolidMessageList] ${context} 错误:`, error);
+
+    if (showToUser) {
+      const errorMessage = error?.message || '发生未知错误';
+      setError(`${context}: ${errorMessage}`);
+
+      if (canRecover) {
+        setIsRecovering(true);
+        setTimeout(() => {
+          setError(null);
+          setIsRecovering(false);
+        }, 3000);
+      }
+    }
+  }, []);
+
+  const recoverFromError = useCallback(() => {
+    setError(null);
+    setIsRecovering(false);
+  }, []);
+
   // 加载话题和助手
   useEffect(() => {
     const loadTopicAndAssistant = async () => {
@@ -128,11 +179,67 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
           }
         }
       } catch (error) {
-        console.error('[SolidMessageList] 加载话题和助手信息失败:', error);
+        handleError(error, '加载话题和助手信息', { showToUser: true, canRecover: true });
       }
     };
     loadTopicAndAssistant();
-  }, [currentTopicId]);
+  }, [currentTopicId, handleError]);
+
+  // 简化的块加载逻辑
+  useEffect(() => {
+    let isActive = true;
+
+    const loadMissingBlocks = async () => {
+      const pendingBlockIds: string[] = [];
+
+      for (const message of messages) {
+        if (!message.blocks || message.blocks.length === 0) continue;
+
+        for (const blockId of message.blocks) {
+          if (relatedBlockSet.has(blockId)) continue;
+          if (loadedBlockIdsRef.current.has(blockId)) continue;
+
+          pendingBlockIds.push(blockId);
+          loadedBlockIdsRef.current.add(blockId);
+        }
+      }
+
+      if (pendingBlockIds.length === 0) {
+        return;
+      }
+
+      const blocks = await Promise.all(
+        pendingBlockIds.map(async blockId => {
+          try {
+            const block = await dexieStorage.getMessageBlock(blockId);
+            if (!block) {
+              loadedBlockIdsRef.current.delete(blockId);
+            }
+            return block;
+          } catch (error) {
+            loadedBlockIdsRef.current.delete(blockId);
+            handleError(error, `加载块 ${blockId} 失败`, { showToUser: false });
+            return null;
+          }
+        })
+      );
+
+      if (!isActive) {
+        return;
+      }
+
+      const validBlocks = blocks.filter(Boolean) as any[];
+      if (validBlocks.length > 0) {
+        dispatch(upsertManyBlocks(validBlocks as any));
+      }
+    };
+
+    loadMissingBlocks();
+
+    return () => {
+      isActive = false;
+    };
+  }, [messages, relatedBlockSet, dispatch, handleError]);
 
   // 监听 Portal 容器
   useEffect(() => {
@@ -371,6 +478,48 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
   // React 内容
   const messageContent = useMemo(() => (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* 错误提示 */}
+      {error && (
+        <Box
+          sx={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 1000,
+            bgcolor: theme.palette.error.main,
+            color: theme.palette.error.contrastText,
+            p: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderRadius: 1,
+            mb: 1,
+            mx: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ fontSize: '16px' }}>⚠️</Box>
+            <Box>{error}</Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {isRecovering && (
+              <Box sx={{ fontSize: '12px', opacity: 0.8 }}>
+                自动恢复中...
+              </Box>
+            )}
+            <Box
+              sx={{
+                cursor: 'pointer',
+                fontSize: '18px',
+                '&:hover': { opacity: 0.7 }
+              }}
+              onClick={recoverFromError}
+            >
+              ✕
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       {/* 系统提示词气泡 */}
       {showSystemPromptBubble && (
         <SystemPromptBubble
@@ -490,6 +639,7 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
       <div style={{ height: '35px', minHeight: '35px', width: '100%' }} />
     </Box>
   ), [
+    error, isRecovering, recoverFromError,
     showSystemPromptBubble, currentTopic, currentAssistant, handlePromptBubbleClick,
     promptDialogOpen, handlePromptDialogClose, handlePromptSave,
     displayMessages.length, theme, hasMore, isNearTop, chatBackground,
