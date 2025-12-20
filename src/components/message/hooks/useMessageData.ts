@@ -18,21 +18,54 @@ export const useMessageData = (message: Message) => {
   // 创建一个稳定的空数组引用
   const EMPTY_BLOCKS_ARRAY = useMemo(() => [], []);
 
-  // 获取设置
-  const settings = useSelector((state: RootState) => state.settings);
+  // 获取设置 - 使用 useMemo 缓存 settings 对象，只在相关字段变化时更新
+  const messageActionMode = useSelector((state: RootState) => state.settings.messageActionMode);
+  const customBubbleColors = useSelector((state: RootState) => state.settings.customBubbleColors);
+  const userMessageMaxWidth = useSelector((state: RootState) => state.settings.userMessageMaxWidth);
+  const messageBubbleMaxWidth = useSelector((state: RootState) => state.settings.messageBubbleMaxWidth);
+  const messageBubbleMinWidth = useSelector((state: RootState) => state.settings.messageBubbleMinWidth);
+  const showMicroBubbles = useSelector((state: RootState) => state.settings.showMicroBubbles);
+  const hideUserBubble = useSelector((state: RootState) => state.settings.hideUserBubble);
+  const hideAIBubble = useSelector((state: RootState) => state.settings.hideAIBubble);
+  const showUserAvatarSetting = useSelector((state: RootState) => state.settings.showUserAvatar);
+  const showUserNameSetting = useSelector((state: RootState) => state.settings.showUserName);
+  const showModelAvatarSetting = useSelector((state: RootState) => state.settings.showModelAvatar);
+  const showModelNameSetting = useSelector((state: RootState) => state.settings.showModelName);
+  const messageStyleSetting = useSelector((state: RootState) => state.settings.messageStyle);
   const providers = useSelector(selectProviders);
 
   // 获取主题样式（仅用于传递，不再需要 getThemeColors）
   const themeStyle = useSelector((state: RootState) => state.settings.themeStyle);
 
+  // ✅ 使用 useMemo 创建稳定的 settings 对象
+  const settings = useMemo(() => ({
+    messageActionMode,
+    customBubbleColors,
+    userMessageMaxWidth,
+    messageBubbleMaxWidth,
+    messageBubbleMinWidth,
+    showMicroBubbles,
+    hideUserBubble,
+    hideAIBubble,
+  }), [
+    messageActionMode,
+    customBubbleColors,
+    userMessageMaxWidth,
+    messageBubbleMaxWidth,
+    messageBubbleMinWidth,
+    showMicroBubbles,
+    hideUserBubble,
+    hideAIBubble,
+  ]);
+
   // 获取头像和名称显示设置
-  const showUserAvatar = settings.showUserAvatar !== false;
-  const showUserName = settings.showUserName !== false;
-  const showModelAvatar = settings.showModelAvatar !== false;
-  const showModelName = settings.showModelName !== false;
+  const showUserAvatar = showUserAvatarSetting !== false;
+  const showUserName = showUserNameSetting !== false;
+  const showModelAvatar = showModelAvatarSetting !== false;
+  const showModelName = showModelNameSetting !== false;
 
   // 获取消息样式设置
-  const messageStyle = settings.messageStyle || 'bubble';
+  const messageStyle = messageStyleSetting || 'bubble';
   const isBubbleStyle = messageStyle === 'bubble';
 
   // 获取供应商友好名称的函数 - 使用useMemo进一步优化
