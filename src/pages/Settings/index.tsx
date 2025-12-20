@@ -33,11 +33,7 @@ import useScrollPosition from '../../hooks/useScrollPosition';
 import { useSwipeGesture } from '../../hooks/useSwipeGesture';
 import { useTranslation } from '../../i18n';
 
-interface SettingsPageProps {
-  onClose?: () => void;
-}
-
-const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
+const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -64,12 +60,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
       console.error(t('settings.scrollCacheError'), error);
     }
 
-    // 性能优化：如果有 onClose 回调（抽屉模式），使用它；否则导航
-    if (onClose) {
-      onClose();
-    } else {
-      navigate('/chat');
-    }
+    navigate('/chat');
   };
 
   // 右滑返回手势

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { useChatPageLayout } from './hooks/useChatPageLayout.ts';
@@ -21,12 +21,6 @@ import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { addTopic } from '../../shared/store/slices/assistantsSlice';
 import { useActiveTopic } from '../../hooks/useActiveTopic';
 import ChatSearchInterface from '../../components/search/ChatSearchInterface';
-import BackButtonDrawer from '../../components/common/BackButtonDrawer';
-import { CircularProgress, Box } from '@mui/material';
-
-// 懒加载设置路由组件（包含所有设置子页面）
-const SettingsRouter = lazy(() => import('../../routes/SettingsRouter'));
-
 
 const EMPTY_MESSAGES_ARRAY: any[] = [];
 
@@ -47,18 +41,6 @@ const ChatPage: React.FC = () => {
 
   // 搜索状态
   const [showSearch, setShowSearch] = useState(false);
-
-  // 性能优化：设置抽屉状态（避免路由切换导致的重新渲染）
-  const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
-
-  // 设置抽屉处理函数
-  const handleSettingsClick = useCallback(() => {
-    setSettingsDrawerOpen(true);
-  }, []);
-
-  const handleSettingsClose = useCallback(() => {
-    setSettingsDrawerOpen(false);
-  }, []);
 
   // 应用启动时恢复未完成的视频生成任务
   useEffect(() => {
@@ -129,7 +111,7 @@ const ChatPage: React.FC = () => {
   // 话题管理钩子 - 移除未使用的 handleCreateTopic
   // const { handleCreateTopic } = useTopicManagement();
 
-  // 性能优化：使用useCallback稳定函数引用
+  // 🚀 优化：使用useCallback稳定函数引用
   const handleClearTopic = useCallback(() => {
     if (currentTopic) {
       TopicService.clearTopicContent(currentTopic.id);
@@ -328,31 +310,7 @@ const ChatPage: React.FC = () => {
         handleStopDebate={handleStopDebate}
         showSearch={showSearch}
         onSearchToggle={handleSearchToggle}
-        onSettingsClick={handleSettingsClick}
       />
-
-      {/* 性能优化：全屏设置抽屉（避免路由切换导致聊天页面重新渲染） */}
-      <BackButtonDrawer
-        anchor="right"
-        open={settingsDrawerOpen}
-        onClose={handleSettingsClose}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: '100%',
-            height: '100%',
-            boxShadow: 'none',
-          }
-        }}
-      >
-        <Suspense fallback={
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <CircularProgress />
-          </Box>
-        }>
-          {/* 使用独立的 SettingsRouter，所有设置子页面都在抽屉内导航 */}
-          <SettingsRouter onClose={handleSettingsClose} />
-        </Suspense>
-      </BackButtonDrawer>
 
       {/* 搜索界面 */}
       <ChatSearchInterface

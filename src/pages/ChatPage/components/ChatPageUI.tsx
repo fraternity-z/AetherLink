@@ -145,14 +145,9 @@ interface ChatPageUIProps {
   isDebating?: boolean;
   handleStartDebate?: (question: string, config: DebateConfig) => void;
   handleStopDebate?: () => void;
-  // 搜索相关
   showSearch?: boolean;
   onSearchToggle?: () => void;
-  // 设置抽屉相关
-  onSettingsClick?: () => void;
 }
-
-
 
 // 使用React.memo优化性能，避免不必要的重新渲染
 const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
@@ -192,8 +187,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   handleStartDebate,
   handleStopDebate,
   showSearch,
-  onSearchToggle,
-  onSettingsClick
+  onSearchToggle
 }) => {
   // ==================== Hooks 和基础状态 ====================
   // 使用统一的话题管理Hook
@@ -565,7 +559,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           >
             <IconButton
               color="inherit"
-              onClick={onSettingsClick || (() => navigate('/settings'))}
+              onClick={() => navigate('/settings')}
             >
               <Settings size={20} />
             </IconButton>
