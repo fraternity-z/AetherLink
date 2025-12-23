@@ -74,7 +74,11 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   minWidth: 0,
   boxSizing: 'border-box',
   // 启用硬件加速
-  transform: 'translateZ(0)'
+  transform: 'translateZ(0)',
+  // 禁用点击蓝色高亮
+  WebkitTapHighlightColor: 'transparent',
+  outline: 'none',
+  userSelect: 'none'
   // 移除 willChange - 只在真正需要时才动态添加
 }));
 
@@ -212,7 +216,7 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
       </Box>
 
       {/* 内容区域 */}
-      <Collapse in={expanded} timeout={200} easing="cubic-bezier(0.4, 0, 0.2, 1)">
+      <Collapse in={expanded} timeout={0}>
         <Box sx={{
           px: 1.5,
           py: 1.25,
@@ -382,6 +386,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           cursor: 'pointer',
           maxWidth: '80%',
           transition: 'all 0.2s ease',
+          // 禁用点击蓝色高亮
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none',
+          userSelect: 'none',
           '&:hover': {
             backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }
@@ -468,6 +476,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
             borderRadius: 2,
             backgroundColor: theme.palette.background.paper,
             transition: 'all 0.2s ease',
+            // 禁用点击蓝色高亮
+            WebkitTapHighlightColor: 'transparent',
+            outline: 'none',
+            userSelect: 'none',
             '&:hover': {
               borderColor: theme.palette.primary.main,
               boxShadow: `0 0 0 1px ${theme.palette.primary.main}20`
@@ -537,6 +549,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           cursor: 'pointer',
           p: 2,
           background: `linear-gradient(90deg, ${theme.palette.primary.main}05, transparent)`,
+          // 禁用点击蓝色高亮
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none',
+          userSelect: 'none',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', mb: expanded ? 1.5 : 0 }}>
@@ -628,6 +644,10 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
           border: `1px dashed ${theme.palette.divider}`,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          // 禁用点击蓝色高亮
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none',
+          userSelect: 'none',
           '&:hover': {
             backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }

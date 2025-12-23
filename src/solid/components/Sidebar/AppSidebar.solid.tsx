@@ -295,9 +295,9 @@ export function AppSidebar(props: AppSidebarProps) {
           "border-right": '1px solid rgba(0,0,0,0.1)',
           "border-radius": isDesktop() ? '0' : '0 16px 16px 0',
           "box-shadow": isDesktop() ? 'none' : '4px 0 20px rgba(0,0,0,0.15)',
-          // 🚀 使用静态初始值（关闭状态），由 createEffect 在挂载后设置正确的值
-          transform: `translateX(-${width()}px) translateZ(0)`,
-          // 🚀 初始无 transition，由 createEffect 设置
+          // 根据 props.open 设置初始位置，避免路由切换时的白屏闪烁
+          transform: isOpen() ? 'translateX(0) translateZ(0)' : `translateX(-${width()}px) translateZ(0)`,
+          // 初始无 transition，由 createEffect 设置
           transition: 'none',
           display: 'flex',
           "flex-direction": 'column',

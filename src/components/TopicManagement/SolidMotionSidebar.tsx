@@ -55,8 +55,9 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
   const [showSidebar, setShowSidebar] = useState(!isSmallScreen);
   
-  // 🚀 性能优化：预热标志 - 首次渲染时预热侧边栏内容
-  const [isPrewarmed, setIsPrewarmed] = useState(false);
+  // 🚀 性能优化：预热标志 - 桌面端直接渲染，移动端延迟预热
+  // 桌面端需要立即显示侧边栏内容，否则路由切换会有白屏闪烁
+  const [isPrewarmed, setIsPrewarmed] = useState(!isSmallScreen);
   const prewarmTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 获取触觉反馈设置
@@ -74,13 +75,12 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   }, [isSmallScreen]);
 
   // 🚀 性能优化：预热侧边栏内容
-  // 在组件挂载后延迟执行，让主要内容先渲染
+  // 桌面端已在初始化时预热，移动端延迟预热
   useEffect(() => {
-    if (!isPrewarmed) {
-      // 延迟 500ms 后标记为已预热，让 React Portal 内容开始渲染
+    if (!isPrewarmed && isSmallScreen) {
+      // 移动端延迟 500ms 后标记为已预热
       prewarmTimeoutRef.current = setTimeout(() => {
         setIsPrewarmed(true);
-        console.log('[SolidMotionSidebar] 侧边栏预热完成');
       }, 500);
     }
     
@@ -89,7 +89,7 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         clearTimeout(prewarmTimeoutRef.current);
       }
     };
-  }, [isPrewarmed]);
+  }, [isPrewarmed, isSmallScreen]);
 
   // 使用 useRef 来稳定回调函数引用
   const onMobileToggleRef = useRef(onMobileToggle);
@@ -172,26 +172,11 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'auto',
+        overflow: 'hidden', // 改为 hidden，让内部组件自己管理滚动
         // 使用不透明背景色，不受壁纸透明度影响
         backgroundColor: theme.palette.background.paper,
         backgroundImage: 'none',
         opacity: 1,
-        '&::-webkit-scrollbar': {
-          width: '1px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: 'transparent',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: 'rgba(0, 0, 0, 0.2)',
-          borderRadius: '3px',
-          '&:hover': {
-            background: 'rgba(0, 0, 0, 0.3)',
-          },
-        },
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
       }}
     >
       {/* 关闭按钮 - 只在移动端或桌面端可收起时显示 */}

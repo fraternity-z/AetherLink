@@ -12,7 +12,17 @@ const WorkspaceTab: React.FC = () => {
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box sx={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      // 负边距抵消 TabPanel 的 padding，让 WorkspaceList 铺满可用空间
+      margin: '-10px',
+      // 使用 flex: 1 确保组件填满剩余空间
+      flex: 1,
+      minHeight: 0,
+    }}>
       <WorkspaceList onSelectWorkspace={handleSelectWorkspace} />
     </Box>
   );

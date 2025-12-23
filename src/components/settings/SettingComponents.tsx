@@ -30,7 +30,7 @@ export const SafeAreaContainer = styled(Box)(() => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  height: '100vh',
+  height: 'calc(100vh - var(--titlebar-height, 0px))',
   // 背景透明，让底部安全区域也透明（模仿 kelivo/rikkahub）
   backgroundColor: 'transparent',
   overflow: 'hidden',
@@ -46,7 +46,7 @@ export const Container = styled(Box, {
   padding: theme.spacing(2),
   // 底部添加安全区域的 padding，让内容可以滚动到安全区域下方
   // 使用全局统一变量，方便统一修改
-  paddingBottom: 'var(--content-bottom-padding)',
+  paddingBottom: 'calc(var(--content-bottom-padding) + 24px)',
   gap: theme.spacing(3), // gap-6 (24px)
   display: 'flex',
   flexDirection: 'column',

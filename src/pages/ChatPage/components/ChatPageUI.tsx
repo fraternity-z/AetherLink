@@ -879,13 +879,13 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          height: '100vh',
+          height: 'calc(100vh - var(--titlebar-height, 0px))',
           overflow: 'hidden',
           // 模仿 rikkahub Scaffold(containerColor = Color.Transparent)：有背景图时透明
           backgroundColor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
           // 🔧 固定定位，避免被Drawer推开
           position: 'fixed',
-          top: 0,
+          top: 'var(--titlebar-height, 0px)',
           right: 0,
           zIndex: 2, // 确保在背景和遮罩之上（背景 z-index: 0, 遮罩 z-index: 1）
         }}

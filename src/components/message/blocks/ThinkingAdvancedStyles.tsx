@@ -137,6 +137,10 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
           border: `1px solid ${theme.palette.divider}`,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          // 禁用点击蓝色高亮
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none',
+          userSelect: 'none',
           '&:hover': {
             backgroundColor: 'var(--theme-msg-block-bg-hover)',
           }
@@ -165,7 +169,7 @@ const StreamRenderer: React.FC<StreamRendererProps> = React.memo(({
           </IconButton>
         </Box>
       </Box>
-      <Collapse in={expanded}>
+      <Collapse in={expanded} timeout={0}>
         <Box sx={{
           fontFamily: 'monospace',
           fontSize: '0.9rem',
@@ -232,6 +236,10 @@ const SidebarRenderer: React.FC<SidebarRendererProps> = React.memo(({
           borderRadius: 2,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          // 禁用点击蓝色高亮
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none',
+          userSelect: 'none',
           '&:hover': {
             backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
           }
@@ -610,6 +618,10 @@ const TerminalRenderer: React.FC<TerminalRendererProps> = React.memo(({
             alignItems: 'center',
             gap: 1,
             cursor: 'pointer',
+            // 禁用点击蓝色高亮
+            WebkitTapHighlightColor: 'transparent',
+            outline: 'none',
+            userSelect: 'none',
             '&:hover': {
               backgroundColor: '#444',
             }
@@ -1005,7 +1017,7 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
           </Box>
         </Box>
       </Box>
-      <Collapse in={expanded}>
+      <Collapse in={expanded} timeout={0}>
         <Box sx={{
           mt: 1,
           p: 2,
@@ -1036,6 +1048,10 @@ const ThinkingAdvancedStyles: React.FC<AdvancedStylesProps> = ({
           borderRadius: 2,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          // 禁用点击蓝色高亮
+          WebkitTapHighlightColor: 'transparent',
+          outline: 'none',
+          userSelect: 'none',
           '&:hover': {
             backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
           }

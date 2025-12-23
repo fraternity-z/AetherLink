@@ -40,6 +40,18 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
       
       /* 内容区域顶部间距（工具栏高度 + 额外间距） */
       --content-top-spacing: calc(var(--toolbar-height) + 16px);
+      
+      /* ============================================
+         Tauri 桌面端标题栏高度
+         ============================================ */
+      --titlebar-height: 0px;
+    }
+    
+    /* Tauri 环境下设置标题栏高度，并给 body 添加顶部 padding */
+    body[data-tauri="true"] {
+      --titlebar-height: 44px;
+      padding-top: var(--titlebar-height);
+      box-sizing: border-box;
     }
 
     body {
