@@ -120,6 +120,17 @@ export default function SettingsTab({
   return (
     <List sx={{ 
       p: 0,
+      // 启用滚动 - 使用隐藏滚动条
+      height: '100%',
+      maxHeight: 'calc(100vh - 160px)', // 预留顶部Tab栏和底部安全区域
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      // 隐藏滚动条样式
+      scrollbarWidth: 'none', // Firefox
+      msOverflowStyle: 'none', // IE/Edge
+      '&::-webkit-scrollbar': {
+        display: 'none', // Chrome/Safari/Opera
+      },
       // 全局禁用所有可点击元素的蓝色高亮
       '& .MuiListItem-root': {
         WebkitTapHighlightColor: 'transparent',
