@@ -12,9 +12,16 @@ pub fn run() {
   #[cfg(target_os = "android")]
   let builder = builder.plugin(tauri_plugin_edge_to_edge::init());
 
-  // 仅桌面端：添加窗口状态记忆插件
+  // 仅桌面端：添加窗口状态记忆插件（排除 decorations 状态恢复）
   #[cfg(not(any(target_os = "android", target_os = "ios")))]
-  let builder = builder.plugin(tauri_plugin_window_state::Builder::new().build());
+  let builder = builder.plugin(
+    tauri_plugin_window_state::Builder::new()
+      .with_state_flags(
+        tauri_plugin_window_state::StateFlags::all()
+          .difference(tauri_plugin_window_state::StateFlags::DECORATIONS)
+      )
+      .build()
+  );
 
   // Windows 桌面端：添加窗口关闭事件处理（最小化到托盘）
   #[cfg(target_os = "windows")]

@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "AetherLink - AI Chat Assistant",
         "width": 1200,
         "height": 800,
