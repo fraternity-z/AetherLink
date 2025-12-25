@@ -40,6 +40,33 @@
     "fs:allow-write-text-file",
     "shell:default",
     "shell:allow-open",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "run-node",
+          "cmd": "node",
+          "args": true
+        },
+        {
+          "name": "run-npx",
+          "cmd": "npx",
+          "args": true
+        },
+        {
+          "name": "run-python",
+          "cmd": "python",
+          "args": true
+        },
+        {
+          "name": "run-uvx",
+          "cmd": "uvx",
+          "args": true
+        }
+      ]
+    },
+    "shell:allow-stdin-write",
+    "shell:allow-kill",
     "core:window:default",
     "core:window:allow-start-dragging",
     "core:window:allow-close",

@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import CustomSwitch from '../../CustomSwitch'; // 导入 CustomSwitch 组件
 import {
-  ChevronDown, ChevronUp, Settings, Database, Globe, Brain, Code
+  ChevronDown, ChevronUp, Settings, Database, Globe, Brain, Code, Terminal
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { MCPServer, MCPServerType } from '../../../shared/types';
@@ -94,8 +94,12 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
 
   const getServerTypeIcon = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+      case 'streamableHttp':
       case 'httpStream':
         return <Globe size={16} />;
+      case 'stdio':
+        return <Terminal size={16} />;
       case 'inMemory':
         return <Database size={16} />;
       default:
@@ -105,10 +109,16 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
 
   const getServerTypeColor = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+        return '#2196f3';
+      case 'streamableHttp':
+        return '#00bcd4';
       case 'httpStream':
         return '#9c27b0';
-      case 'inMemory':
+      case 'stdio':
         return '#ff9800';
+      case 'inMemory':
+        return '#4CAF50';
       default:
         return '#9e9e9e';
     }

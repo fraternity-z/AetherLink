@@ -44,6 +44,8 @@ import type { MCPServer, MCPServerType } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import { isTauri, isDesktop } from '../../shared/utils/platformDetection';
+import { Terminal as TerminalIcon } from 'lucide-react';
 
 const MCPServerSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -72,8 +74,12 @@ const MCPServerSettings: React.FC = () => {
     type: 'sse',
     description: '',
     baseUrl: '',
+    command: '',
     isActive: false
   });
+
+  // 检测是否为 Tauri 桌面端（仅在此环境下显示 stdio 选项）
+  const isTauriDesktop = isTauri() && isDesktop();
 
   useEffect(() => {
     loadServers();
@@ -136,6 +142,16 @@ const MCPServerSettings: React.FC = () => {
       return;
     }
 
+    // stdio 类型需要 command
+    if (newServer.type === 'stdio' && !newServer.command) {
+      setSnackbar({
+        open: true,
+        message: t('settings.mcpServer.messages.commandRequired') || '请输入要执行的命令',
+        severity: 'error'
+      });
+      return;
+    }
+
     try {
       const server: MCPServer = {
         id: Date.now().toString(),
@@ -143,6 +159,7 @@ const MCPServerSettings: React.FC = () => {
         type: newServer.type!,
         description: newServer.description,
         baseUrl: newServer.baseUrl,
+        command: newServer.command,
         isActive: false,
         headers: {},
         env: {},
@@ -158,6 +175,7 @@ const MCPServerSettings: React.FC = () => {
         type: 'sse',
         description: '',
         baseUrl: '',
+        command: '',
         isActive: false
       });
       setSnackbar({
@@ -272,6 +290,9 @@ const MCPServerSettings: React.FC = () => {
         if (lowerType === 'sse' || lowerType === 'serversent' || lowerType === 'serversentevents') {
           return 'sse';
         }
+        if (lowerType === 'stdio' || lowerType === 'standardio') {
+          return 'stdio';
+        }
         
         // 默认返回 sse
         return 'sse';
@@ -288,6 +309,7 @@ const MCPServerSettings: React.FC = () => {
             name: serverName,
             type: normalizeType(configAny.type),
             baseUrl: configAny.url || configAny.baseUrl,
+            command: configAny.command,
             description: t('settings.mcpServer.messages.importFromJson', { name: serverName }),
             isActive: false,
             headers: configAny.headers || {},
@@ -336,6 +358,8 @@ const MCPServerSettings: React.FC = () => {
       case 'streamableHttp':
       case 'httpStream':
         return <HttpIcon />;
+      case 'stdio':
+        return <TerminalIcon size={20} />;
       case 'inMemory':
         return <StorageIcon />;
       default:
@@ -351,6 +375,8 @@ const MCPServerSettings: React.FC = () => {
         return t('settings.mcpServer.serverTypes.streamableHttp');
       case 'httpStream':
         return t('settings.mcpServer.serverTypes.httpStream');
+      case 'stdio':
+        return t('settings.mcpServer.serverTypes.stdio');
       case 'inMemory':
         return t('settings.mcpServer.serverTypes.inMemory');
       default:
@@ -363,11 +389,13 @@ const MCPServerSettings: React.FC = () => {
       case 'sse':
         return '#2196f3'; // 蓝色
       case 'streamableHttp':
-        return '#9c27b0'; // 紫色
+        return '#00bcd4'; // 青色
       case 'httpStream':
         return '#ff5722'; // 橙红色 (废弃标记)
-      case 'inMemory':
+      case 'stdio':
         return '#ff9800'; // 橙色
+      case 'inMemory':
+        return '#4CAF50'; // 绿色
       default:
         return '#9e9e9e';
     }
@@ -887,6 +915,15 @@ const MCPServerSettings: React.FC = () => {
               <MenuItem value="sse">{t('settings.mcpServer.addDialog.types.sse')}</MenuItem>
               <MenuItem value="streamableHttp">{t('settings.mcpServer.addDialog.types.streamableHttp')}</MenuItem>
               <MenuItem value="inMemory">{t('settings.mcpServer.addDialog.types.inMemory')}</MenuItem>
+              {/* stdio 类型仅在 Tauri 桌面端显示 */}
+              {isTauriDesktop && (
+                <MenuItem value="stdio">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TerminalIcon size={16} />
+                    {t('settings.mcpServer.addDialog.types.stdio') || '标准输入/输出 (stdio)'}
+                  </Box>
+                </MenuItem>
+              )}
             </Select>
           </FormControl>
           {(newServer.type === 'sse' || newServer.type === 'streamableHttp' || newServer.type === 'httpStream') && (
@@ -900,6 +937,33 @@ const MCPServerSettings: React.FC = () => {
               placeholder={t('settings.mcpServer.addDialog.placeholders.url')}
               sx={{ mb: 2 }}
             />
+          )}
+          {/* stdio 类型的命令输入 */}
+          {newServer.type === 'stdio' && (
+            <>
+              <TextField
+                margin="dense"
+                label={t('settings.mcpServer.addDialog.command') || '命令'}
+                fullWidth
+                variant="outlined"
+                value={newServer.command}
+                onChange={(e) => setNewServer({ ...newServer, command: e.target.value })}
+                placeholder="npx, node, python, uvx..."
+                helperText={t('settings.mcpServer.addDialog.commandHelp') || '要执行的命令程序，如 npx、node、python 等'}
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                margin="dense"
+                label={t('settings.mcpServer.addDialog.args') || '命令参数'}
+                fullWidth
+                variant="outlined"
+                value={(newServer.args || []).join(' ')}
+                onChange={(e) => setNewServer({ ...newServer, args: e.target.value.split(' ').filter(Boolean) })}
+                placeholder="-y @anthropic/mcp-server-fetch"
+                helperText={t('settings.mcpServer.addDialog.argsHelp') || '命令参数，用空格分隔'}
+                sx={{ mb: 2 }}
+              />
+            </>
           )}
           <TextField
             margin="dense"

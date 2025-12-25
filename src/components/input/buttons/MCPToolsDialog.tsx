@@ -19,7 +19,7 @@ import {
   Skeleton
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { Wrench, Database, Globe, Plus, Settings } from 'lucide-react';
+import { Wrench, Database, Globe, Plus, Settings, Terminal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { MCPServer, MCPServerType } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
@@ -42,6 +42,11 @@ const SERVER_TYPE_CONFIG = {
     icon: Globe,
     color: '#00bcd4',
     label: 'Streamable HTTP'
+  },
+  stdio: {
+    icon: Terminal,
+    color: '#ff9800',
+    label: 'stdio'
   },
   inMemory: {
     icon: Database,

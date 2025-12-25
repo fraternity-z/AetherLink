@@ -6,6 +6,7 @@ import { createInMemoryMCPServer } from './MCPServerFactory';
 import { getBuiltinMCPServers, isBuiltinServer } from '../../../config/builtinMCPServers';
 import { MCPClientAdapter } from '../clients/MCPClientAdapter';
 import { AiSdkMCPClient } from '../clients/AiSdkMCPClient';
+import { StdioMCPClient } from '../clients/StdioMCPClient';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -280,6 +281,47 @@ export class MCPService {
 
         transport = clientTransport;
 
+      } else if (server.type === 'stdio') {
+        // stdio 传输（仅 Tauri 桌面端可用）
+        if (!StdioMCPClient.isAvailable()) {
+          throw new Error('stdio 传输仅在 Tauri 桌面端可用');
+        }
+
+        if (!server.command) {
+          throw new Error('stdio 服务器需要提供 command（要执行的命令）');
+        }
+
+        console.log(`[MCP] 创建 stdio 传输: ${server.command} ${(server.args || []).join(' ')}`);
+
+        const stdioClient = await this.initStdioClient(server);
+
+        // 创建一个兼容的 Client 对象
+        const compatClient = {
+          connect: async () => {},
+          close: async () => { await stdioClient.close(); },
+          ping: async () => { /* stdio 不支持 ping */ },
+          listTools: async () => {
+            const tools = await stdioClient.listTools();
+            return { tools };
+          },
+          callTool: async (params: any) => {
+            return await stdioClient.callTool(params.name, params.arguments);
+          },
+          listPrompts: async () => {
+            const prompts = await stdioClient.listPrompts();
+            return { prompts };
+          },
+          listResources: async () => {
+            const resources = await stdioClient.listResources();
+            return { resources };
+          }
+        } as any;
+
+        // 缓存客户端
+        this.clients.set(serverKey, compatClient);
+        console.log(`[MCP] 成功连接到 stdio 服务器: ${server.name}`);
+        return compatClient;
+
       } else if (server.type === 'sse' || server.type === 'streamableHttp' || server.type === 'httpStream') {
         // 规范化类型（处理向后兼容）
         const normalizedType = normalizeServerType(server);
@@ -435,6 +477,64 @@ export class MCPService {
     return initPromise;
   }
 
+  // Stdio 客户端缓存
+  private stdioClients: Map<string, StdioMCPClient> = new Map();
+  private pendingStdioClients: Map<string, Promise<StdioMCPClient>> = new Map();
+
+  /**
+   * 初始化 Stdio MCP 客户端（Tauri 桌面端专用）
+   */
+  private async initStdioClient(server: MCPServer): Promise<StdioMCPClient> {
+    const serverKey = this.getServerKey(server);
+
+    // 检查是否已有客户端连接
+    const existingClient = this.stdioClients.get(serverKey);
+    if (existingClient) {
+      console.log(`[MCP] 复用现有 Stdio 客户端: ${server.name}`);
+      return existingClient;
+    }
+
+    // 检查是否有正在初始化的客户端
+    const pendingClient = this.pendingStdioClients.get(serverKey);
+    if (pendingClient) {
+      console.log(`[MCP] 等待正在初始化的 Stdio 客户端: ${server.name}`);
+      return pendingClient;
+    }
+
+    // 创建初始化 Promise
+    const initPromise = (async (): Promise<StdioMCPClient> => {
+      try {
+        console.log(`[MCP] 创建 Stdio 客户端: ${server.command} ${(server.args || []).join(' ')}`);
+
+        const client = new StdioMCPClient({
+          command: server.command!,
+          args: server.args || [],
+          env: server.env || {},
+          timeout: (server.timeout || 60) * 1000
+        });
+
+        await client.initialize();
+
+        // 缓存客户端
+        this.stdioClients.set(serverKey, client);
+        console.log(`[MCP] Stdio 客户端初始化成功: ${server.name}`);
+
+        return client;
+      } catch (error) {
+        console.error(`[MCP] Stdio 客户端初始化失败: ${server.name}`, error);
+        throw error;
+      } finally {
+        // 清理 pending 状态
+        this.pendingStdioClients.delete(serverKey);
+      }
+    })();
+
+    // 缓存初始化 Promise
+    this.pendingStdioClients.set(serverKey, initPromise);
+
+    return initPromise;
+  }
+
   /**
    * 关闭客户端连接
    */
@@ -462,9 +562,22 @@ export class MCPService {
       this.mcpClientAdapters.delete(serverKey);
     }
 
+    // 关闭 Stdio 客户端
+    const stdioClient = this.stdioClients.get(serverKey);
+    if (stdioClient) {
+      try {
+        await stdioClient.close();
+        console.log(`[MCP] 已关闭 Stdio 客户端: ${serverKey}`);
+      } catch (error) {
+        console.error(`[MCP] 关闭 Stdio 客户端连接失败:`, error);
+      }
+      this.stdioClients.delete(serverKey);
+    }
+
     // 同时清理 pending 状态
     this.pendingClients.delete(serverKey);
     this.pendingMcpClientAdapters.delete(serverKey);
+    this.pendingStdioClients.delete(serverKey);
   }
 
   /**

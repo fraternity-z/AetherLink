@@ -380,9 +380,10 @@ export interface QuickPhrase {
  * - inMemory: 内存传输（用于内置服务器）
  * - sse: Server-Sent Events 传输（HTTP 服务器）
  * - streamableHttp: 可流式传输的 HTTP（支持双向流）
+ * - stdio: 标准输入/输出传输（仅 Tauri 桌面端可用，通过 spawn 子进程）
  * - httpStream: 已废弃，向后兼容（将自动转换为 sse）
  */
-export type MCPServerType = 'inMemory' | 'sse' | 'streamableHttp' | 'httpStream';
+export type MCPServerType = 'inMemory' | 'sse' | 'streamableHttp' | 'stdio' | 'httpStream';
 
 export interface MCPServer {
   id: string;
@@ -400,6 +401,8 @@ export interface MCPServer {
   logoUrl?: string;
   tags?: string[];
   timeout?: number;
+  // stdio 传输专用字段
+  command?: string; // 要执行的命令（如 'npx', 'node', 'python' 等）
 }
 
 export interface MCPTool {

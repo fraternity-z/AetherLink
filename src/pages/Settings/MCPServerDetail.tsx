@@ -41,8 +41,10 @@ import {
   FileText as DescriptionIcon,
   Folder as FolderIcon,
   Plus as PlusIcon,
-  Trash2 as DeleteIcon
+  Trash2 as DeleteIcon,
+  Terminal as TerminalIcon
 } from 'lucide-react';
+import { isTauri, isDesktop } from '../../shared/utils/platformDetection';
 import type { MCPServer, MCPServerType, MCPTool, MCPPrompt, MCPResource } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
@@ -209,10 +211,17 @@ const MCPServerDetail: React.FC = () => {
     }
   };
 
+  // 检测是否为 Tauri 桌面端
+  const isTauriDesktop = isTauri() && isDesktop();
+
   const getServerTypeIcon = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+      case 'streamableHttp':
       case 'httpStream':
         return <HttpIcon />;
+      case 'stdio':
+        return <TerminalIcon />;
       case 'inMemory':
         return <StorageIcon />;
       default:
@@ -222,10 +231,16 @@ const MCPServerDetail: React.FC = () => {
 
   const getServerTypeColor = (type: MCPServerType) => {
     switch (type) {
+      case 'sse':
+        return '#2196f3';
+      case 'streamableHttp':
+        return '#00bcd4';
       case 'httpStream':
         return '#9c27b0';
-      case 'inMemory':
+      case 'stdio':
         return '#ff9800';
+      case 'inMemory':
+        return '#4CAF50';
       default:
         return '#9e9e9e';
     }
@@ -356,6 +371,10 @@ const MCPServerDetail: React.FC = () => {
               <MenuItem value="sse">{t('settings.mcpServer.detail.basicInfo.types.sse')}</MenuItem>
               <MenuItem value="streamableHttp">{t('settings.mcpServer.detail.basicInfo.types.streamableHttp')}</MenuItem>
               <MenuItem value="inMemory">{t('settings.mcpServer.detail.basicInfo.types.inMemory')}</MenuItem>
+              {/* stdio 类型仅在 Tauri 桌面端显示 */}
+              {isTauriDesktop && (
+                <MenuItem value="stdio">{t('settings.mcpServer.detail.basicInfo.types.stdio') || '标准输入/输出 (stdio)'}</MenuItem>
+              )}
             </Select>
           </FormControl>
 
@@ -368,6 +387,30 @@ const MCPServerDetail: React.FC = () => {
               placeholder={t('settings.mcpServer.detail.basicInfo.placeholders.url')}
               sx={{ mb: 2 }}
             />
+          )}
+
+          {/* stdio 类型的命令和参数输入 */}
+          {server.type === 'stdio' && (
+            <>
+              <TextField
+                fullWidth
+                label={t('settings.mcpServer.detail.basicInfo.command') || '命令'}
+                value={server.command || ''}
+                onChange={(e) => setServer({ ...server, command: e.target.value })}
+                placeholder="npx, node, python, uvx..."
+                helperText={t('settings.mcpServer.detail.basicInfo.commandHelp') || '要执行的命令程序'}
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label={t('settings.mcpServer.detail.basicInfo.args') || '命令参数'}
+                value={(server.args || []).join(' ')}
+                onChange={(e) => setServer({ ...server, args: e.target.value.split(' ').filter(Boolean) })}
+                placeholder="C:\path\to\script.js 或 -y @anthropic/mcp-server-fetch"
+                helperText={t('settings.mcpServer.detail.basicInfo.argsHelp') || '命令参数，用空格分隔'}
+                sx={{ mb: 2 }}
+              />
+            </>
           )}
 
           <TextField
