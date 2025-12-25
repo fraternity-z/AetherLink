@@ -2,6 +2,9 @@
  * 知识库相关数据类型定义
  */
 
+// 文档处理状态
+export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
 // 知识库模型
 export interface KnowledgeBase {
   id: string;
@@ -17,10 +20,27 @@ export interface KnowledgeBase {
   updated_at: string;
 }
 
-// 知识库文档
+// 知识库文档项（用于UI展示和状态追踪）
+export interface KnowledgeDocumentItem {
+  id: string;
+  knowledgeBaseId: string;
+  fileName: string;
+  fileSize?: number;
+  fileType?: string;
+  processingStatus: ProcessingStatus;
+  processingProgress?: number; // 0-100
+  processingError?: string;
+  retryCount?: number;
+  chunkCount?: number; // 分块数量
+  created_at: number;
+  updated_at: number;
+}
+
+// 知识库文档（向量化后的块）
 export interface KnowledgeDocument {
   id: string;
   knowledgeBaseId: string;
+  documentItemId?: string; // 关联到文档项
   content: string;
   vector: number[];
   metadata: {
