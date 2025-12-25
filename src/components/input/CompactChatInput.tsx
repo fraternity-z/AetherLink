@@ -3,7 +3,7 @@ import { Box, IconButton, Typography, Collapse } from '@mui/material';
 import KnowledgeChip from '../chat/KnowledgeChip';
 import { MCPToolsButton, WebSearchButton, KnowledgeButton } from './buttons';
 import AIDebateButton from '../AIDebateButton';
-import QuickPhraseButton from '../QuickPhraseButton';
+import QuickPhraseButton from '../quick-phrase/QuickPhraseButton';
 import MultiModelSelector from './MultiModelSelector';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
@@ -1254,7 +1254,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
         open={multiModelSelectorOpen}
         onClose={() => setMultiModelSelectorOpen(false)}
         availableModels={availableModels}
-        onConfirm={handleMultiModelSend}
+        onSelectionChange={handleMultiModelSend}
         maxSelection={5}
       />
 

@@ -10,7 +10,7 @@ import {
 import {
   ArrowLeft as ArrowBackIcon
 } from 'lucide-react';
-import { FilePermissionManager } from '../../components/FilePermissionManager';
+import { FilePermissionManager } from '../../components/preview/FilePermissionManager';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 
 const FilePermissionPage: React.FC = () => {

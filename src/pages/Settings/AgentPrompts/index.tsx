@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAgentPromptCategories, searchAgentPrompts } from '../../../shared/config/agentPrompts';
 import type { AgentPrompt, AgentPromptCategory } from '../../../shared/types/AgentPrompt';
-import SystemPromptVariablesPanel from '../../../components/SystemPromptVariablesPanel';
+import SystemPromptVariablesPanel from '../../../components/prompts/SystemPromptVariablesPanel';
 // 🚀 性能优化：虚拟滚动
 import VirtualScroller from '../../../components/common/VirtualScroller';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';

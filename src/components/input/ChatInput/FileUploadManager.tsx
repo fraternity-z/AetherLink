@@ -4,8 +4,8 @@ import type { RootState } from '../../../shared/store';
 import { useFileUpload } from '../../../shared/hooks/useFileUpload';
 import { useLongTextPaste } from '../../../shared/hooks/useLongTextPaste';
 import type { ImageContent, FileContent } from '../../../shared/types';
-import type { FileStatus } from '../../FilePreview';
-import IntegratedFilePreview from '../../IntegratedFilePreview';
+import type { FileStatus } from '../../preview/FilePreview';
+import IntegratedFilePreview from '../../preview/IntegratedFilePreview';
 import { toastManager } from '../../EnhancedToast';
 import { topicCacheManager } from '../../../shared/services/TopicCacheManager';
 

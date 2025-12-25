@@ -12,9 +12,9 @@ import {
   AlertCircle,
   GripVertical
 } from 'lucide-react';
-import type { FileContent } from '../shared/types';
-import { FileUploadService } from '../shared/services/FileUploadService';
-import { getFileTypeByExtension } from '../shared/utils/fileUtils';
+import type { FileContent } from '../../shared/types';
+import { FileUploadService } from '../../shared/services/FileUploadService';
+import { getFileTypeByExtension } from '../../shared/utils/fileUtils';
 
 export type FileStatus = 'uploading' | 'success' | 'error' | 'validating';
 

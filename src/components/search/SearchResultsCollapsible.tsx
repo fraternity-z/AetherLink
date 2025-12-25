@@ -16,7 +16,7 @@ import {
   useTheme
 } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ExternalLink as LaunchIcon, Search as SearchIcon } from 'lucide-react';
-import type { WebSearchResult } from '../shared/types';
+import type { WebSearchResult } from '../../shared/types';
 
 interface SearchResultsCollapsibleProps {
   results: WebSearchResult[];

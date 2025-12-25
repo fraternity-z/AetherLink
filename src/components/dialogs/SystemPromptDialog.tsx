@@ -15,15 +15,15 @@ import {
   Divider,
   useMediaQuery
 } from '@mui/material';
-import BackButtonDialog from './common/BackButtonDialog';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { X as CloseIcon, User, MessageSquare } from 'lucide-react';
-import type { ChatTopic, Assistant } from '../shared/types/Assistant';
-import { TopicService } from '../shared/services/topics/TopicService';
-import { updateTopic } from '../shared/store/slices/assistantsSlice';
-import { useAppDispatch } from '../shared/store';
-import { dexieStorage } from '../shared/services/storage/DexieStorageService';
-import { useDialogBackHandler } from '../hooks/useDialogBackHandler';
-import { useKeyboard } from '../shared/hooks/useKeyboard';
+import type { ChatTopic, Assistant } from '../../shared/types/Assistant';
+import { TopicService } from '../../shared/services/topics/TopicService';
+import { updateTopic } from '../../shared/store/slices/assistantsSlice';
+import { useAppDispatch } from '../../shared/store';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
+import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
+import { useKeyboard } from '../../shared/hooks/useKeyboard';
 
 interface SystemPromptDialogProps {
   open: boolean;

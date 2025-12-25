@@ -8,7 +8,7 @@ import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
 
-import type { FileStatus } from '../FilePreview';
+import type { FileStatus } from '../preview/FilePreview';
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
 import EnhancedToast, { toastManager } from '../EnhancedToast';

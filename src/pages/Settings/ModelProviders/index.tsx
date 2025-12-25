@@ -35,7 +35,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../../shared/store';
 import { updateSettings, updateProvider } from '../../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
-import ModelManagementDialogSolid from '../../../components/ModelManagementDialogSolid';
+import ModelManagementDialogSolid from '../../../components/dialogs/ModelManagementDialogSolid';
 import { SafeAreaContainer } from "../../../components/settings/SettingComponents";
 import SimpleModelDialog from '../../../components/settings/SimpleModelDialog';
 import ModelGroup from '../../../components/settings/ModelGroup';

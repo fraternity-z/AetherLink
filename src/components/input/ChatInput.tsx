@@ -11,7 +11,7 @@ import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import MultiModelSelector from './MultiModelSelector';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
 
-import type { FileStatus } from '../FilePreview';
+import type { FileStatus } from '../preview/FilePreview';
 import UploadMenu from './UploadMenu';
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
@@ -22,7 +22,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import AIDebateButton from '../AIDebateButton';
 import type { DebateConfig } from '../../shared/services/AIDebateService';
-import QuickPhraseButton from '../QuickPhraseButton';
+import QuickPhraseButton from '../quick-phrase/QuickPhraseButton';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { EnhancedVoiceInput } from '../VoiceRecognition';
@@ -833,7 +833,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         open={multiModelSelectorOpen}
         onClose={() => setMultiModelSelectorOpen(false)}
         availableModels={availableModels}
-        onConfirm={handleMultiModelSend}
+        onSelectionChange={handleMultiModelSend}
         maxSelection={5}
       />
 

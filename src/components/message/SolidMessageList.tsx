@@ -16,8 +16,8 @@ import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
 import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
 
 import MessageGroup from './MessageGroup';
-import SystemPromptBubble from '../SystemPromptBubble';
-import SystemPromptDialog from '../SystemPromptDialog';
+import SystemPromptBubble from '../prompts/SystemPromptBubble';
+import SystemPromptDialog from '../dialogs/SystemPromptDialog';
 import type { ChatTopic, Assistant } from '../../shared/types/Assistant';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { topicCacheManager } from '../../shared/services/TopicCacheManager';

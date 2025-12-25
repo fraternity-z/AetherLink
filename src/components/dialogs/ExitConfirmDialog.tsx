@@ -6,10 +6,10 @@ import {
   DialogActions,
   Button
 } from '@mui/material';
-import BackButtonDialog from './common/BackButtonDialog';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { useLocation } from 'react-router-dom';
-import { useAppState } from '../shared/hooks/useAppState';
-import { getPlatformInfo } from '../shared/utils/platformDetection';
+import { useAppState } from '../../shared/hooks/useAppState';
+import { getPlatformInfo } from '../../shared/utils/platformDetection';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 

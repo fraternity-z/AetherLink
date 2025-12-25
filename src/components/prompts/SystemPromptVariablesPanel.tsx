@@ -12,14 +12,14 @@ import {
 } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Clock as AccessTimeIcon, MapPin as LocationOnIcon, Info as InfoIcon, Monitor as ComputerIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector, useAppDispatch } from '../shared/store';
-import { updateSettings } from '../shared/store/slices/settingsSlice';
+import { useAppSelector, useAppDispatch } from '../../shared/store';
+import { updateSettings } from '../../shared/store/slices/settingsSlice';
 import {
   getCurrentTimeString,
   getLocationString,
   getOperatingSystemString
-} from '../shared/utils/systemPromptVariables';
-import CustomSwitch from './CustomSwitch';
+} from '../../shared/utils/systemPromptVariables';
+import CustomSwitch from '../CustomSwitch';
 
 /**
  * 系统提示词变量注入配置面板

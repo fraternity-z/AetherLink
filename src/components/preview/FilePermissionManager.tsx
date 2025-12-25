@@ -24,8 +24,8 @@ import {
   FileText,
   Settings
 } from 'lucide-react';
-import { unifiedFileManager } from '../shared/services/UnifiedFileManagerService';
-import { toastManager } from './EnhancedToast';
+import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { toastManager } from '../EnhancedToast';
 import { Capacitor } from '@capacitor/core';
 
 interface PermissionStatus {

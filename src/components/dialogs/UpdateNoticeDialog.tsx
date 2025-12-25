@@ -8,7 +8,7 @@ import {
   Box,
   Paper
 } from '@mui/material';
-import BackButtonDialog from './common/BackButtonDialog';
+import BackButtonDialog from '../common/BackButtonDialog';
 import { MessageCircle, X } from 'lucide-react';
 
 // QQ群链接

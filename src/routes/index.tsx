@@ -56,7 +56,7 @@ import MessageBubbleSettings from "../pages/Settings/MessageBubbleSettings";
 // 导入工具栏定制页面
 const ToolbarCustomization = lazy(() => import('../pages/Settings/ToolbarCustomization'));
 // 导入快捷短语设置页面
-const QuickPhraseSettings = lazy(() => import('../components/QuickPhraseSettings'));
+const QuickPhraseSettings = lazy(() => import('../components/quick-phrase/QuickPhraseSettings'));
 // 导入助手模型设置页面
 const AssistantModelSettings = lazy(() => import('../components/TopicManagement/SettingsTab/AssistantModelSettings'));
 // 导入工作区页面

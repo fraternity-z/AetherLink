@@ -15,14 +15,14 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material';
-import BackButtonDialog from './common/BackButtonDialog';
-import BackButtonDrawer from './common/BackButtonDrawer';
+import BackButtonDialog from '../common/BackButtonDialog';
+import BackButtonDrawer from '../common/BackButtonDrawer';
 import { Plus, BotMessageSquare } from 'lucide-react';
-import { CustomIcon } from './icons';
+import { CustomIcon } from '../icons';
 import { useTheme } from '@mui/material/styles';
-import QuickPhraseService from '../shared/services/QuickPhraseService';
-import type { QuickPhrase } from '../shared/types';
-import { dexieStorage } from '../shared/services/storage/DexieStorageService';
+import QuickPhraseService from '../../shared/services/QuickPhraseService';
+import type { QuickPhrase } from '../../shared/types';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import styled from '@emotion/styled';
 import { alpha } from '@mui/material/styles';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, Paper, useTheme, alpha } from '@mui/material';
 import { Edit, Brain } from 'lucide-react';
-import type { ChatTopic, Assistant } from '../shared/types/Assistant';
+import type { ChatTopic, Assistant } from '../../shared/types/Assistant';
 // 移除不再使用的useAppSelector导入
 // import { useAppSelector } from '../shared/store';
 // 移除旧的系统提示词选择器，使用默认提示词

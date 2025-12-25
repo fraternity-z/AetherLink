@@ -3,8 +3,8 @@ import { Box, Collapse, IconButton, Typography, useTheme } from '@mui/material';
 import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon } from 'lucide-react';
 import FilePreview from './FilePreview';
 import type { FileStatus } from './FilePreview';
-import type { FileContent, ImageContent } from '../shared/types';
-import { dexieStorage } from '../shared/services/storage/DexieStorageService';
+import type { FileContent, ImageContent } from '../../shared/types';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 
 interface IntegratedFilePreviewProps {
   files: FileContent[];

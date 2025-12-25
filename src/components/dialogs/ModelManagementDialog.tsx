@@ -9,19 +9,19 @@ import {
   InputAdornment,
   Avatar
 } from '@mui/material';
-import BackButtonDrawer from './common/BackButtonDrawer';
+import BackButtonDrawer from '../common/BackButtonDrawer';
 import {
   Plus as AddIcon,
   Minus as RemoveIcon,
   Search as SearchIcon
 } from 'lucide-react';
 import { alpha } from '@mui/material/styles';
-import { fetchModels } from '../shared/services/network/APIService';
-import type { Model } from '../shared/types';
+import { fetchModels } from '../../shared/services/network/APIService';
+import type { Model } from '../../shared/types';
 import { debounce } from 'lodash';
 import { useTranslation } from 'react-i18next';
-import ModelGroup from './settings/ModelGroup';
-import { getDefaultGroupName, modelMatchesIdentity } from '../shared/utils/modelUtils';
+import ModelGroup from '../settings/ModelGroup';
+import { getDefaultGroupName, modelMatchesIdentity } from '../../shared/utils/modelUtils';
 
 // 定义分组模型的类型
 type GroupedModels = Record<string, Model[]>;

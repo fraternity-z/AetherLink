@@ -16,7 +16,7 @@ import {
   Avatar,
   alpha
 } from '@mui/material';
-import BackButtonDialog from './common/BackButtonDialog';
+import BackButtonDialog from '../common/BackButtonDialog';
 import {
   ExternalLink as LaunchIcon,
   Copy as CopyIcon,
@@ -24,7 +24,7 @@ import {
   Globe as LanguageIcon,
   FileText as ArticleIcon
 } from 'lucide-react';
-import type { Citation } from '../shared/types';
+import type { Citation } from '../../shared/types';
 
 interface CitationsListProps {
   citations: Citation[];

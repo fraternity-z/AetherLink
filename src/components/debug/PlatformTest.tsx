@@ -11,7 +11,7 @@ import {
   useClipboard, 
   useWindowControls,
   useFileSystem 
-} from '../hooks/usePlatform';
+} from '../../hooks/usePlatform';
 
 const PlatformTest: React.FC = () => {
   const {

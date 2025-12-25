@@ -18,14 +18,14 @@ import {
   CardContent,
   CardActionArea
 } from '@mui/material';
-import BackButtonDialog from './common/BackButtonDialog';
+import BackButtonDialog from '../common/BackButtonDialog';
 import {
   FolderOpen as FolderOpenIcon,
   Folder as FolderIcon
 } from 'lucide-react';
-import { workspaceService } from '../shared/services/WorkspaceService';
-import { unifiedFileManager } from '../shared/services/UnifiedFileManagerService';
-import type { WorkspaceCreateRequest } from '../shared/types/workspace';
+import { workspaceService } from '../../shared/services/WorkspaceService';
+import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import type { WorkspaceCreateRequest } from '../../shared/types/workspace';
 
 interface WorkspaceCreateDialogProps {
   open: boolean;

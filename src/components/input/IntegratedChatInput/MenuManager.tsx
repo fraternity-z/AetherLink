@@ -4,7 +4,7 @@ import MentionedModelsDisplay from '../MentionedModelsDisplay';
 import UploadMenu from '../UploadMenu';
 import ToolsMenu from '../ToolsMenu';
 import AIDebateButton from '../../AIDebateButton';
-import QuickPhraseButton from '../../QuickPhraseButton';
+import QuickPhraseButton from '../../quick-phrase/QuickPhraseButton';
 import NoteSelector from '../../NoteSelector';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import type { SiliconFlowImageFormat, ImageContent, FileContent, Model } from '../../../shared/types';
