@@ -16,7 +16,7 @@ import {
 
 import {
   isReasoningModel
-} from '../../utils/modelDetection';
+} from '../../../config/models';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';

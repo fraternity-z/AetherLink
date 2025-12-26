@@ -4,7 +4,7 @@
  */
 
 import type { Message, Model } from '../types';
-import { isReasoningModel } from '../utils/modelDetection';
+import { isReasoningModel } from '../../config/models';
 import type { ThinkingOption } from '../config/reasoningConfig';
 import { getThinkingBudget } from '../config/reasoningConfig';
 

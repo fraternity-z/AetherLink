@@ -11,7 +11,7 @@ import {
   isGrokReasoningModel,
   isDeepSeekReasoningModel,
   isZhipuReasoningModel
-} from '../utils/modelDetection';
+} from '../../config/models';
 
 /**
  * 思考标签接口

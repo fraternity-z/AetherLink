@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import BackButtonDialog from '../common/BackButtonDialog';
 import type { Model, PresetModel } from '../../shared/types';
+import { getDefaultModelProviders } from '../../shared/config/defaultModels';
 import { ModelType } from '../../shared/types';
 import { presetModels } from '../../shared/data/presetModels';
 import { generateId } from '../../shared/utils';
@@ -244,11 +245,13 @@ const ModelDialog: React.FC<ModelDialogProps> = ({
               onChange={(e) => handleChange('provider', e.target.value)}
               label="提供商"
             >
-              <MenuItem value="openai">OpenAI</MenuItem>
-              <MenuItem value="anthropic">Anthropic</MenuItem>
-              <MenuItem value="google">Google</MenuItem>
-              <MenuItem value="siliconflow">SiliconFlow</MenuItem>
-              <MenuItem value="volcengine">火山引擎</MenuItem>
+              {getDefaultModelProviders()
+                .filter(p => !p.isSystem)
+                .map(provider => (
+                  <MenuItem key={provider.id} value={provider.id}>
+                    {provider.name}
+                  </MenuItem>
+                ))}
               <MenuItem value="custom">自定义</MenuItem>
             </Select>
             <FormHelperText>

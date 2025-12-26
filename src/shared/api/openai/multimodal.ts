@@ -12,7 +12,7 @@ import {
   isClaudeModel,
   isGeminiModel,
   isGemmaModel
-} from '../../utils/modelUtils';
+} from '../../../config/models';
 import { mobileFileStorage } from '../../services/MobileFileStorageService';
 
 // 定义消息参数类型，避免使用OpenAI类型

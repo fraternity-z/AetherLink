@@ -9,7 +9,7 @@ import { createClient, supportsMultimodal, supportsWebSearch, getWebSearchParams
 import { streamCompletion, nonStreamCompletion, type StreamResult } from './stream';
 import { UnifiedParameterManager } from '../parameters/UnifiedParameterManager';
 import { OpenAIParameterFormatter } from '../parameters/formatters';
-import { isReasoningModel } from '../../utils/modelDetection';
+import { isReasoningModel } from '../../../config/models';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
 import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';

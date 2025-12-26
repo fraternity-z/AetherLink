@@ -20,7 +20,7 @@ import {
   isQwenReasoningModel,
   isGrokReasoningModel,
   isDeepSeekReasoningModel
-} from '../../../utils/modelDetection';
+} from '../../../../config/models';
 import { EFFORT_RATIO, DEFAULT_MAX_TOKENS, findTokenLimit } from '../../../config/constants';
 import { getDefaultThinkingEffort, getAppSettings } from '../../../utils/settingsUtils';
 

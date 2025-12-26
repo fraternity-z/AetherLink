@@ -12,7 +12,7 @@ import type {
   GeminiSpecificParameters
 } from '../types';
 import { UnifiedParameterManager } from '../UnifiedParameterManager';
-import { isGeminiReasoningModel } from '../../../utils/modelDetection';
+import { isGeminiReasoningModel } from '../../../../config/models';
 import { getThinkingBudget } from '../../../utils/settingsUtils';
 
 /**

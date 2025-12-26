@@ -10,7 +10,7 @@ import type { Model } from '../../types';
 import { universalFetch } from '../../utils/universalFetch';
 import { isTauri } from '../../utils/platformDetection';
 import { Capacitor } from '@capacitor/core';
-import { isReasoningModel } from '../../utils/modelDetection';
+import { isReasoningModel } from '../../../config/models';
 
 /**
  * 检查是否需要使用 CORS 代理

@@ -10,7 +10,7 @@ import {
   WEB_SEARCH_TOOL,
   CODE_TOOL
 } from '../../types/tools';
-import { isReasoningModel } from '../../utils/modelDetection';
+import { isReasoningModel } from '../../../config/models';
 import type { MCPTool, MCPToolResponse, MCPCallToolResponse, Model } from '../../types';
 
 // 重新导出工具类型和工具定义，保持向后兼容

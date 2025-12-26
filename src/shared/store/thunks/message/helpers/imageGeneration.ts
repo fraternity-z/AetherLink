@@ -8,7 +8,7 @@ import { dexieStorage } from '../../../../services/storage/DexieStorageService';
 import { newMessagesActions } from '../../../slices/newMessagesSlice';
 import { addOneBlock } from '../../../slices/messageBlocksSlice';
 import { updateMessageAndTopic } from './dbHelpers';
-import { isGeminiProvider } from './modelDetection';
+import { isGeminiModel as isGeminiProvider } from '../../../../../config/models';
 import type { Model } from '../../../../types';
 import type { Message } from '../../../../types/newMessage';
 import type { AppDispatch } from '../../../index';

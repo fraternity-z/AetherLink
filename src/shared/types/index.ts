@@ -306,11 +306,18 @@ export interface Model {
   group?: string; // 模型分组
   capabilities?: {
     multimodal?: boolean; // 是否支持多模态（图像）
+    vision?: boolean; // 是否支持视觉输入
     imageGeneration?: boolean; // 是否支持图像生成
     videoGeneration?: boolean; // 是否支持视频生成
     webSearch?: boolean; // 是否支持网页搜索
     reasoning?: boolean; // 是否支持推理优化
     functionCalling?: boolean; // 是否支持函数调用
+    toolUse?: boolean; // 是否支持工具使用
+    embedding?: boolean; // 是否为嵌入模型
+    rerank?: boolean; // 是否为重排序模型
+    codeGen?: boolean; // 是否支持代码生成
+    translation?: boolean; // 是否支持翻译
+    transcription?: boolean; // 是否支持转录
   }; // 模型能力
   multimodal?: boolean; // 直接的多模态支持标志，用于兼容预设模型配置
   imageGeneration?: boolean; // 直接的图像生成支持标志

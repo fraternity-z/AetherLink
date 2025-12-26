@@ -6,7 +6,7 @@ import OpenAI from 'openai';
 import type { ClientOptions } from 'openai';
 import type { Model } from '../../types';
 import { logApiRequest } from '../../services/LoggerService';
-import { isReasoningModel } from '../../utils/modelDetection';
+import { isReasoningModel } from '../../../config/models';
 import { universalFetch } from '../../utils/universalFetch';
 import { isTauri } from '../../utils/platformDetection';
 import { Capacitor } from '@capacitor/core';

@@ -12,7 +12,7 @@ import type {
   AnthropicSpecificParameters
 } from '../types';
 import { UnifiedParameterManager } from '../UnifiedParameterManager';
-import { isClaudeReasoningModel } from '../../../utils/modelDetection';
+import { isClaudeReasoningModel } from '../../../../config/models';
 import { findTokenLimit } from '../../../config/constants';
 import { getDefaultThinkingEffort } from '../../../utils/settingsUtils';
 

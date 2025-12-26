@@ -18,10 +18,8 @@ export {
 } from './dbHelpers';
 
 // 模型检测
-export {
-  isImageGenerationModel,
-  isGeminiProvider
-} from './modelDetection';
+export { isGenerateImageModel as isImageGenerationModel } from '../../../../../config/models';
+export { isGeminiModel as isGeminiProvider } from '../../../../../config/models';
 
 // 图像生成
 export { handleImageGeneration } from './imageGeneration';
