@@ -218,7 +218,27 @@ export function isZhipuReasoningModel(model?: Model): boolean {
 export function isDoubaoReasoningModel(model?: Model): boolean {
   if (!model) return false;
   const modelId = getLowerBaseModelName(model.id);
-  return modelId.includes('doubao') && (modelId.includes('thinking') || modelId.includes('reasoner'));
+  return modelId.includes('doubao') && (modelId.includes('thinking') || modelId.includes('reasoner') || modelId.includes('seed-1-8'));
+}
+
+/**
+ * 检查是否为豆包 1.6+ 版本的思考模型 (支持更多 reasoning effort 选项)
+ */
+export function isDoubao16ThinkingModel(model?: Model): boolean {
+  if (!model) return false;
+  const modelId = getLowerBaseModelName(model.id);
+  return modelId.includes('doubao-seed-1-6-thinking') || modelId.includes('doubao-seed-1-8');
+}
+
+/**
+ * 检查是否为豆包不支持 auto 选项的思考模型
+ */
+export function isDoubaoNoAutoModel(model?: Model): boolean {
+  if (!model) return false;
+  const modelId = getLowerBaseModelName(model.id);
+  // 旧版豆包思考模型不支持 auto
+  return modelId.includes('doubao') && modelId.includes('thinking') && 
+    !modelId.includes('seed-1-6') && !modelId.includes('seed-1-8');
 }
 
 /**
@@ -353,7 +373,13 @@ export function getThinkModelType(model?: Model): ThinkingModelType {
   } else if (isZhipuReasoningModel(model)) {
     thinkingModelType = 'zhipu';
   } else if (isDoubaoReasoningModel(model)) {
-    thinkingModelType = 'doubao';
+    if (isDoubao16ThinkingModel(model)) {
+      thinkingModelType = 'doubao_after_251015';
+    } else if (isDoubaoNoAutoModel(model)) {
+      thinkingModelType = 'doubao_no_auto';
+    } else {
+      thinkingModelType = 'doubao';
+    }
   }
 
   return thinkingModelType;

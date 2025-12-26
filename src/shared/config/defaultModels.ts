@@ -289,14 +289,36 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
     providerType: 'volcengine',
     models: [
-      { id: 'doubao-1.6', name: '豆包 1.6', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包大模型最新版本，思考模式升级' },
-      { id: 'doubao-1.6-thinking', name: '豆包 1.6 Thinking', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包1.6思考模式，强推理能力' },
-      { id: 'doubao-1.6-flash', name: '豆包 1.6 Flash', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包1.6快速版本' },
-      { id: 'doubao-1.6-vision', name: '豆包 1.6 Vision', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包1.6多模态版本' },
-      { id: 'doubao-1.5-pro-256k', name: '豆包 1.5 Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包大模型专业版，综合能力强，支持256k上下文' },
-      { id: 'doubao-1.5-lite-32k', name: '豆包 1.5 Lite', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包大模型轻量版，快速响应，支持32k上下文' },
-      { id: 'doubao-1.5-vision-pro', name: '豆包 1.5 Vision Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '豆包1.5视觉专业版，支持图像理解' },
-      { id: 'doubao-seedance-1.0-pro', name: 'Doubao-Seedance 1.0 Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '视频生成模型，可生成1080p 5s视频' },
+      // ========== Doubao-Seed 1.8 系列 (即将全量开放) ==========
+      { id: 'doubao-seed-1-8', name: 'Doubao-Seed-1.8', provider: 'volcengine', enabled: true, isDefault: false, description: '最新版本，即将全量开放，能力全面升级' },
+
+      // ========== Doubao-Seed 1.6 系列 (2025年6月发布) ==========
+      { id: 'doubao-seed-1-6', name: 'Doubao-Seed-1.6', provider: 'volcengine', enabled: true, isDefault: true, description: '2025年6月发布旗舰模型，首个支持256K上下文，推理/多模态/GUI操作能力领先' },
+      { id: 'doubao-seed-1-6-thinking', name: 'Doubao-Seed-1.6-Thinking', provider: 'volcengine', enabled: true, isDefault: false, description: '强制思考模型，深度推理能力强，coding/数学/逻辑推理提升，256K上下文' },
+      { id: 'doubao-seed-1-6-flash', name: 'Doubao-Seed-1.6-Flash', provider: 'volcengine', enabled: true, isDefault: false, description: '极速版，超低延迟，适用于低延迟敏感场景' },
+      { id: 'doubao-seed-1-6-lite', name: 'Doubao-Seed-1.6-Lite', provider: 'volcengine', enabled: true, isDefault: false, description: '轻量版，推理速度快，较1.5 pro提升14%，成本降低53%' },
+      { id: 'doubao-seed-1-6-vision', name: 'Doubao-Seed-1.6-Vision', provider: 'volcengine', enabled: true, isDefault: false, description: '视觉理解模型，更强的通用多模态理解和推理能力' },
+
+      // ========== Doubao-Seed 1.5 系列 ==========
+      { id: 'doubao-seed-1-5-pro-256k', name: 'Doubao-Seed-1.5-Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '专业版，综合能力强，支持256k上下文' },
+      { id: 'doubao-seed-1-5-lite-32k', name: 'Doubao-Seed-1.5-Lite', provider: 'volcengine', enabled: true, isDefault: false, description: '轻量版，快速响应，支持32k上下文' },
+      { id: 'doubao-seed-1-5-vision-pro', name: 'Doubao-Seed-1.5-Vision-Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '视觉专业版，支持图像理解' },
+
+      // ========== 视频生成模型 ==========
+      { id: 'doubao-seedance-1-5-pro', name: 'Doubao-Seedance-1.5-Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '视频生成升级版，画质和动态效果提升' },
+      { id: 'doubao-seedance-1-0-pro', name: 'Doubao-Seedance-1.0-Pro', provider: 'volcengine', enabled: true, isDefault: false, description: '视频生成模型，可生成1080p 5s视频' },
+      { id: 'doubao-seedance-1-0-pro-fast', name: 'Doubao-Seedance-1.0-Pro-Fast', provider: 'volcengine', enabled: true, isDefault: false, description: '视频生成快速版，高性价比' },
+
+      // ========== 语音模型 ==========
+      { id: 'doubao-seed-tts-2-0', name: 'Doubao-Seed-TTS-2.0', provider: 'volcengine', enabled: true, isDefault: false, description: '语音合成2.0，更强情感表现力' },
+      { id: 'doubao-seed-asr-2-0', name: 'Doubao-Seed-ASR-2.0', provider: 'volcengine', enabled: true, isDefault: false, description: '语音识别2.0，高精度转写' },
+      { id: 'doubao-seed-icl-2-0', name: 'Doubao-Seed-ICL-2.0', provider: 'volcengine', enabled: true, isDefault: false, description: '声音复刻2.0，精准复刻音色' },
+      { id: 'doubao-realtime', name: 'Doubao-Seed-RealtimeVoice', provider: 'volcengine', enabled: true, isDefault: false, description: '实时语音对话模型' },
+
+      // ========== 嵌入模型 ==========
+      { id: 'doubao-embedding-vision', name: 'Doubao-Seed-Embedding', provider: 'volcengine', enabled: true, isDefault: false, description: '多模态嵌入模型，支持文本和图像' },
+
+      // ========== 第三方模型 ==========
       { id: 'deepseek-r1', name: 'DeepSeek R1', provider: 'volcengine', enabled: true, isDefault: false, description: 'DeepSeek R1推理模型，通过火山引擎提供' }
     ]
   },
