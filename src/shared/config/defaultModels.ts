@@ -310,8 +310,11 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
     providerType: 'zhipu',
     models: [
-      // GLM-4.6 系列 (最新旗舰)
-      { id: 'glm-4.6', name: 'GLM-4.6', provider: 'zhipu', enabled: true, isDefault: false, description: '最新旗舰模型，擅长编程、代理、推理等任务，2025年发布' },
+      // GLM-4.7 系列 (2025年12月最新开源旗舰)
+      { id: 'glm-4.7', name: 'GLM-4.7', provider: 'zhipu', enabled: true, isDefault: true, description: '2025年12月开源旗舰模型，Code Arena开源第一，128K上下文，强编程/推理/智能体能力' },
+
+      // GLM-4.6 系列
+      { id: 'glm-4.6', name: 'GLM-4.6', provider: 'zhipu', enabled: true, isDefault: false, description: '旗舰模型，擅长编程、代理、推理等任务，2025年发布' },
 
       // GLM-4.5 系列
       { id: 'glm-4.5-plus', name: 'GLM-4.5-Plus', provider: 'zhipu', enabled: true, isDefault: false, description: 'GLM-4.5增强版，高智能旗舰模型，综合性能优异' },
@@ -348,7 +351,12 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://api.minimaxi.com/v1',
     providerType: 'openai',
     models: [
-      { id: 'MiniMax-M2', name: 'MiniMax M2', provider: 'minimax', enabled: true, isDefault: false, description: 'MiniMax最新一代大模型，支持200k上下文，128k输出，具备代理能力和函数调用' },
+      // MiniMax M2.1 系列 (2025年12月最新)
+      { id: 'MiniMax-M2.1', name: 'MiniMax M2.1', provider: 'minimax', enabled: true, isDefault: true, description: '2025年12月发布，多语言编程大幅提升(Rust/Java/Go/C++等)，支持Interleaved Thinking，WebDev/AppDev能力强' },
+      { id: 'MiniMax-M2.1-lightning', name: 'MiniMax M2.1 Lightning', provider: 'minimax', enabled: true, isDefault: false, description: 'M2.1快速版，结果相同但推理速度更快，适合高TPS需求' },
+
+      // MiniMax M2 系列
+      { id: 'MiniMax-M2', name: 'MiniMax M2', provider: 'minimax', enabled: true, isDefault: false, description: 'MiniMax大模型，支持200k上下文，128k输出，具备代理能力和函数调用' },
       { id: 'MiniMax-M2-Stable', name: 'MiniMax M2 Stable', provider: 'minimax', enabled: true, isDefault: false, description: 'MiniMax M2稳定版，适合高并发场景' },
       { id: 'speech-2.6-hd', name: 'Speech 2.6 HD', provider: 'minimax', enabled: true, isDefault: false, description: '语音合成高清版，支持40种语言，7种情绪' },
       { id: 'speech-2.6-turbo', name: 'Speech 2.6 Turbo', provider: 'minimax', enabled: true, isDefault: false, description: '语音合成快速版，低延迟，支持40种语言' },
