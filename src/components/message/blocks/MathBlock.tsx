@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Paper, useTheme } from '@mui/material';
 import type { MathMessageBlock } from '../../../shared/types/newMessage';
-import 'katex/dist/katex.min.css';
+import 'katex/dist/katex-swap.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
 interface Props {
