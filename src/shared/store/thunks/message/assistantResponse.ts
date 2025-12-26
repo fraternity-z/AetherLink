@@ -9,6 +9,7 @@ import { createAbortController } from '../../../utils/abortController';
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { upsertOneBlock } from '../../slices/messageBlocksSlice';
 import { prepareMessagesForApi, performKnowledgeSearchIfNeeded } from './apiPreparation';
+import { extractAndSaveMemories, isAutoAnalyzeEnabled } from './memoryIntegration';
 import { dexieStorage } from '../../../services/storage/DexieStorageService';
 
 import type { Message } from '../../../types/newMessage';
@@ -333,6 +334,29 @@ export const processAssistantResponse = async (
 
       if (isInterrupted) {
         return await responseHandler.completeWithInterruption();
+      }
+
+      // 自动记忆提取：在响应完成后提取并保存事实（仅当开启自动分析时）
+      if (isAutoAnalyzeEnabled() && finalContent) {
+        try {
+          // 获取用户最后一条消息内容
+          const userMessages = filteredOriginalMessages.filter(m => m.role === 'user');
+          const lastUserMessage = userMessages[userMessages.length - 1];
+          if (lastUserMessage) {
+            const userContent = lastUserMessage.blocks
+              ?.map((b: any) => typeof b === 'string' ? b : b.content)
+              .filter(Boolean)
+              .join('\n') || '';
+            if (userContent) {
+              // 异步提取记忆，不阻塞响应
+              extractAndSaveMemories(userContent, finalContent).catch(err => {
+                console.error('[Memory] 自动记忆提取失败:', err);
+              });
+            }
+          }
+        } catch (memError) {
+          console.error('[Memory] 记忆提取过程出错:', memError);
+        }
       }
 
       return await responseHandler.complete(finalContent, finalReasoning);

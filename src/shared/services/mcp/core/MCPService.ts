@@ -7,6 +7,8 @@ import { getBuiltinMCPServers, isBuiltinServer } from '../../../config/builtinMC
 import { MCPClientAdapter } from '../clients/MCPClientAdapter';
 import { AiSdkMCPClient } from '../clients/AiSdkMCPClient';
 import { StdioMCPClient } from '../clients/StdioMCPClient';
+import { isMemoryTool } from '../../memory/memoryTools';
+import { handleMemoryToolCall } from '../../memory/memoryToolHandler';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -643,6 +645,16 @@ export class MCPService {
     toolName: string,
     args: Record<string, any>
   ): Promise<MCPCallToolResponse> {
+    // 检查是否为记忆工具，使用内置处理器
+    if (isMemoryTool(toolName)) {
+      console.log(`[Memory] 调用记忆工具: ${toolName}`, args);
+      const result = await handleMemoryToolCall(toolName, args);
+      return {
+        content: [{ type: 'text', text: result.message }],
+        isError: !result.success
+      };
+    }
+
     const maxRetries = 3;
     let lastError: any;
 

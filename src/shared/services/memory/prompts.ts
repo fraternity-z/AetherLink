@@ -303,10 +303,11 @@ export const updateMemoryUserPromptTemplate = `以下是我目前收集的记忆
 /**
  * 获取事实提取消息
  * @param parsedMessages 解析后的对话消息
+ * @param customPrompt 可选的自定义提示词
  * @returns [系统提示词, 用户提示词]
  */
-export function getFactRetrievalMessages(parsedMessages: string): [string, string] {
-  const systemPrompt = factExtractionPrompt;
+export function getFactRetrievalMessages(parsedMessages: string, customPrompt?: string): [string, string] {
+  const systemPrompt = customPrompt || factExtractionPrompt;
   const userPrompt = `以下是用户和助手之间的对话。从这段对话中提取与用户相关的事实和偏好。
 对话：
 ${parsedMessages}`;

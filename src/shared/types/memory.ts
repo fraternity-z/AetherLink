@@ -120,6 +120,20 @@ export interface MemoryConfig {
   similarityThreshold?: number;
   /** 默认检索数量 */
   defaultSearchLimit?: number;
+  
+  // ========== 记忆方式控制 ==========
+  /** 
+   * 启用自动分析记忆（每次对话后 LLM 分析提取事实）
+   * 优点：自动提取，无需 AI 主动调用
+   * 缺点：每次对话都会额外调用 LLM，增加成本
+   */
+  autoAnalyzeEnabled?: boolean;
+  /**
+   * 启用记忆工具（AI 通过工具调用自己决定何时记忆）
+   * 优点：AI 自主判断，只在需要时记忆，节省成本
+   * 缺点：需要模型支持工具调用
+   */
+  memoryToolEnabled?: boolean;
 }
 
 /**

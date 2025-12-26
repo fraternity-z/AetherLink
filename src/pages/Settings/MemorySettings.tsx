@@ -15,7 +15,6 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Tooltip,
   FormControl,
   Select,
   MenuItem,
@@ -30,7 +29,6 @@ import {
   Users,
   Settings,
   AlertTriangle,
-  HelpCircle,
 } from 'lucide-react';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -47,13 +45,11 @@ import {
 import { selectProviders } from '../../shared/store/selectors/settingsSelectors';
 import type { Model, MemoryConfig } from '../../shared/types';
 import { useSelector } from 'react-redux';
-import { SolidBridge } from '../../shared/bridges/SolidBridge';
-import { DialogModelSelector as SolidDialogModelSelector } from '../../solid/components/ModelSelector/DialogModelSelector.solid';
 import { memoryService } from '../../shared/services/memory/MemoryService';
 import { getEmbeddingDimensions, EMBEDDING_MODELS } from '../../shared/config/embeddingModels';
 import type { MemoryItem } from '../../shared/types/memory';
 import { SafeAreaContainer, HeaderBar, Container } from '../../components/settings/SettingComponents';
-import BackButtonDialog from '../../components/common/BackButtonDialog';
+import { AddMemoryDialog, EditMemoryDialog, ModelConfigDialog, PromptEditDialog } from './MemorySettings/';
 import { toastManager } from '../../components/EnhancedToast';
 
 // ========================================================================
@@ -117,6 +113,7 @@ const MemorySettings: React.FC = () => {
   const [loadingMemories, setLoadingMemories] = useState(false);
   const [stats, setStats] = useState({ total: 0, assistants: 0 });
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
   const [selectedLLMModel, setSelectedLLMModel] = useState<Model | null>(memoryConfig.llmModel || null);
   const [selectedEmbeddingModel, setSelectedEmbeddingModel] = useState<Model | null>(memoryConfig.embeddingModel || null);
   const [embeddingDimensions, setEmbeddingDimensions] = useState<number>(memoryConfig.embeddingDimensions || 1536);
@@ -453,6 +450,78 @@ const MemorySettings: React.FC = () => {
           </Box>
         </Section>
 
+        {/* 记忆方式控制 */}
+        {globalMemoryEnabled && (
+          <Section elevation={0}>
+            <SectionTitle variant="subtitle1">
+              <Brain size={20} />
+              记忆方式
+            </SectionTitle>
+            
+            {/* 记忆工具方式 */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              p: 1.5,
+              mb: 1,
+              borderRadius: 1,
+              backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(255,255,255,0.05)' 
+                : 'rgba(0,0,0,0.02)'
+            }}>
+              <Box>
+                <Typography variant="body2" fontWeight="medium">记忆工具（推荐）</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  AI 自主判断何时记忆，通过工具调用保存，节省成本
+                </Typography>
+              </Box>
+              <Switch
+                checked={memoryConfig.memoryToolEnabled || false}
+                onChange={(e) => dispatch(patchMemoryConfig({ memoryToolEnabled: e.target.checked }))}
+                color="primary"
+              />
+            </Box>
+            
+            {/* 自动分析方式 */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              p: 1.5,
+              borderRadius: 1,
+              backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                ? 'rgba(255,255,255,0.05)' 
+                : 'rgba(0,0,0,0.02)'
+            }}>
+              <Box>
+                <Typography variant="body2" fontWeight="medium">自动分析</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  每次对话后 LLM 自动分析提取事实，会增加 API 成本
+                </Typography>
+              </Box>
+              <Switch
+                checked={memoryConfig.autoAnalyzeEnabled || false}
+                onChange={(e) => dispatch(patchMemoryConfig({ autoAnalyzeEnabled: e.target.checked }))}
+                color="primary"
+              />
+            </Box>
+            
+            {/* 自定义提示词按钮 */}
+            {memoryConfig.autoAnalyzeEnabled && (
+              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => setShowPromptDialog(true)}
+                >
+                  自定义提示词
+                </Button>
+              </Box>
+            )}
+          </Section>
+        )}
+
         {/* 统计信息 */}
         <Section elevation={0}>
           <SectionTitle variant="subtitle1">
@@ -653,189 +722,63 @@ const MemorySettings: React.FC = () => {
       </Container>
 
       {/* 添加记忆对话框 */}
-      <BackButtonDialog
+      <AddMemoryDialog
         open={showAddDialog}
         onClose={() => setShowAddDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>添加记忆</Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            placeholder="输入要记住的内容..."
-            value={newMemoryText}
-            onChange={(e) => setNewMemoryText(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => setShowAddDialog(false)}>取消</Button>
-            <Button variant="contained" onClick={handleAddMemory}>添加</Button>
-          </Box>
-        </Box>
-      </BackButtonDialog>
+        memoryText={newMemoryText}
+        onMemoryTextChange={setNewMemoryText}
+        onAdd={handleAddMemory}
+      />
 
       {/* 编辑记忆对话框 */}
-      <BackButtonDialog
+      <EditMemoryDialog
         open={showEditDialog}
         onClose={() => setShowEditDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>编辑记忆</Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={newMemoryText}
-            onChange={(e) => setNewMemoryText(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => setShowEditDialog(false)}>取消</Button>
-            <Button variant="contained" onClick={handleUpdateMemory}>保存</Button>
-          </Box>
-        </Box>
-      </BackButtonDialog>
+        memoryText={newMemoryText}
+        onMemoryTextChange={setNewMemoryText}
+        onSave={handleUpdateMemory}
+      />
 
       {/* 模型配置对话框 */}
-      <BackButtonDialog
+      <ModelConfigDialog
         open={showConfigDialog}
         onClose={() => setShowConfigDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <Box sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6">记忆设置</Typography>
-            <IconButton onClick={() => setShowConfigDialog(false)} size="small">
-              ×
-            </IconButton>
-          </Box>
+        selectedLLMModel={selectedLLMModel}
+        llmMenuOpen={llmMenuOpen}
+        onLlmMenuOpen={() => setLlmMenuOpen(true)}
+        onLlmMenuClose={() => setLlmMenuOpen(false)}
+        onLlmModelSelect={(model) => {
+          setSelectedLLMModel(model);
+          setLlmMenuOpen(false);
+        }}
+        selectedEmbeddingModel={selectedEmbeddingModel}
+        embeddingMenuOpen={embeddingMenuOpen}
+        onEmbeddingMenuOpen={() => setEmbeddingMenuOpen(true)}
+        onEmbeddingMenuClose={() => setEmbeddingMenuOpen(false)}
+        onEmbeddingModelSelect={(model) => {
+          setSelectedEmbeddingModel(model);
+          setEmbeddingMenuOpen(false);
+        }}
+        embeddingDimensions={embeddingDimensions}
+        onEmbeddingDimensionsChange={setEmbeddingDimensions}
+        onDetectDimensions={handleDetectDimensions}
+        models={models}
+        providers={providers}
+        themeMode={themeMode as 'light' | 'dark'}
+        fullScreen={fullScreen}
+        onSave={handleSaveConfig}
+      />
 
-          {/* LLM 模型 */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="error" sx={{ mb: 0.5 }}>
-              * LLM 模型
-            </Typography>
-            <Box 
-              onClick={() => setLlmMenuOpen(true)}
-              sx={{ 
-                p: 1.5, 
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                '&:hover': { borderColor: 'primary.main' }
-              }}
-            >
-              <Typography variant="body2" color={selectedLLMModel ? 'text.primary' : 'text.secondary'}>
-                {selectedLLMModel ? (selectedLLMModel.name || selectedLLMModel.id) : '未选择模型'}
-              </Typography>
-            </Box>
-            <SolidBridge
-              component={SolidDialogModelSelector as any}
-              props={{
-                selectedModel: selectedLLMModel,
-                availableModels: models,
-                handleModelSelect: (model: Model) => {
-                  setSelectedLLMModel(model);
-                  setLlmMenuOpen(false);
-                },
-                handleMenuClose: () => setLlmMenuOpen(false),
-                menuOpen: llmMenuOpen,
-                providers: providers,
-                themeMode: themeMode as 'light' | 'dark',
-                fullScreen: fullScreen,
-              }}
-              debugName="LLMModelSelector"
-            />
-          </Box>
-
-          {/* 嵌入模型 */}
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="error" sx={{ mb: 0.5 }}>
-              * 嵌入模型
-            </Typography>
-            <Box 
-              onClick={() => setEmbeddingMenuOpen(true)}
-              sx={{ 
-                p: 1.5, 
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                '&:hover': { borderColor: 'primary.main' }
-              }}
-            >
-              <Typography variant="body2" color={selectedEmbeddingModel ? 'text.primary' : 'text.secondary'}>
-                {selectedEmbeddingModel ? (selectedEmbeddingModel.name || selectedEmbeddingModel.id) : '未选择模型'}
-              </Typography>
-            </Box>
-            <SolidBridge
-              component={SolidDialogModelSelector as any}
-              props={{
-                selectedModel: selectedEmbeddingModel,
-                availableModels: models,  // 显示所有模型供用户选择嵌入模型
-                handleModelSelect: (model: Model) => {
-                  setSelectedEmbeddingModel(model);
-                  setEmbeddingMenuOpen(false);
-                },
-                handleMenuClose: () => setEmbeddingMenuOpen(false),
-                menuOpen: embeddingMenuOpen,
-                providers: providers,
-                themeMode: themeMode as 'light' | 'dark',
-                fullScreen: fullScreen,
-              }}
-              debugName="EmbeddingModelSelector"
-            />
-          </Box>
-
-          {/* 嵌入维度 */}
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-              <Typography variant="body2">嵌入维度</Typography>
-              <Tooltip title="向量嵌入的维度数，常见值：768, 1536, 3072">
-                <HelpCircle size={14} style={{ opacity: 0.5 }} />
-              </Tooltip>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                type="number"
-                value={embeddingDimensions}
-                onChange={(e) => setEmbeddingDimensions(parseInt(e.target.value) || 1536)}
-                size="small"
-                fullWidth
-                inputProps={{ min: 64, max: 8192 }}
-              />
-              <IconButton onClick={handleDetectDimensions} size="small">
-                <RefreshCw size={18} />
-              </IconButton>
-            </Box>
-          </Box>
-
-          {/* 按钮 */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={() => setShowConfigDialog(false)}>取消</Button>
-            <Button 
-              variant="contained" 
-              onClick={handleSaveConfig}
-              disabled={!selectedLLMModel || !selectedEmbeddingModel}
-            >
-              确定
-            </Button>
-          </Box>
-        </Box>
-      </BackButtonDialog>
+      {/* 自定义提示词编辑对话框 */}
+      <PromptEditDialog
+        open={showPromptDialog}
+        onClose={() => setShowPromptDialog(false)}
+        currentPrompt={memoryConfig.customFactExtractionPrompt}
+        onSave={(prompt) => {
+          dispatch(patchMemoryConfig({ customFactExtractionPrompt: prompt }));
+          toastManager.success('提示词已保存');
+        }}
+      />
     </SafeAreaContainer>
   );
 };

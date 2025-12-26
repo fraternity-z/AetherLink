@@ -20,6 +20,9 @@ const initialState: MemoryState = {
     isAutoDimensions: true,
     similarityThreshold: 0.85,
     defaultSearchLimit: 10,
+    // 记忆方式控制：默认都关闭，用户可自由选择
+    autoAnalyzeEnabled: false,
+    memoryToolEnabled: true,
   },
   currentAssistantId: 'default',
   globalMemoryEnabled: false,

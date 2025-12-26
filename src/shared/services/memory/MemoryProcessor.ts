@@ -105,9 +105,10 @@ export class MemoryProcessor {
     }
 
     try {
-      // 构建提示词
+      // 构建提示词（支持自定义提示词）
       const parsedMessages = messages.join('\n');
-      const [systemPrompt, userPrompt] = getFactRetrievalMessages(parsedMessages);
+      const customPrompt = this.config.memoryConfig.customFactExtractionPrompt;
+      const [systemPrompt, userPrompt] = getFactRetrievalMessages(parsedMessages, customPrompt);
 
       // 调用 LLM
       const response = await this.callLLM(llmModel, systemPrompt, userPrompt);

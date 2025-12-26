@@ -49,6 +49,28 @@ export function isMemoryEnabled(): boolean {
 }
 
 /**
+ * 检查自动分析记忆是否启用
+ */
+export function isAutoAnalyzeEnabled(): boolean {
+  if (!isMemoryEnabled()) {
+    return false;
+  }
+  const state = store.getState();
+  return state.memory?.memoryConfig?.autoAnalyzeEnabled === true;
+}
+
+/**
+ * 检查记忆工具是否启用
+ */
+export function isMemoryToolEnabled(): boolean {
+  if (!isMemoryEnabled()) {
+    return false;
+  }
+  const state = store.getState();
+  return state.memory?.memoryConfig?.memoryToolEnabled === true;
+}
+
+/**
  * 获取当前助手 ID
  */
 export function getCurrentAssistantId(): string {
