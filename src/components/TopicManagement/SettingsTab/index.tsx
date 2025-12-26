@@ -10,9 +10,9 @@ import {
   Typography,
   Avatar,
   IconButton,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
-import { User, Cog } from 'lucide-react';
+import { User, Cog, PanelLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SettingGroups from './SettingGroups';
 import AvatarUploader from '../../settings/AvatarUploader';
@@ -23,6 +23,7 @@ import CodeBlockSettings from './CodeBlockSettings';
 import InputSettings from './InputSettings';
 import MathSettings from './MathSettings';
 import { useSettingsStorage, syncAssistantMaxTokens } from './hooks/useSettingsStorage';
+import SidebarWidthDialog from './SidebarWidthDialog';
 
 
 interface Setting {
@@ -92,6 +93,10 @@ export default function SettingsTab({
   // 头像对话框状态
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
 
+  // 侧边栏宽度控制
+  const [widthDialogOpen, setWidthDialogOpen] = useState(false);
+  const currentWidth = getSetting('sidebarWidth', 350);
+
   // 使用统一的设置配置（由 useSettingsManagement Hook 提供）
 
   // 处理头像上传
@@ -137,32 +142,69 @@ export default function SettingsTab({
         outline: 'none',
       },
     }}>
-      <ListItemButton
-        onClick={() => navigate('/settings')}
+      <ListItem
         sx={{
           px: 2,
           py: 0.75,
-          '&:hover': {
-            backgroundColor: 'rgba(25, 118, 210, 0.04)',
-          },
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
         }}
+        disablePadding
       >
-        <ListItemIcon sx={{ minWidth: '40px' }}>
-          <Cog size={20} color="#1976d2" />
-        </ListItemIcon>
-        <ListItemText
-          primary={
-            <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.95rem', lineHeight: 1.2 }}>
-              设置
-            </Typography>
-          }
-          secondary={
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
-              进入完整设置页面
-            </Typography>
-          }
-        />
-              </ListItemButton>
+        <ListItemButton
+          onClick={() => navigate('/settings')}
+          sx={{
+            flex: 1,
+            px: 0,
+            py: 0.5,
+            '&:hover': {
+              backgroundColor: 'rgba(25, 118, 210, 0.04)',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: '40px' }}>
+            <Cog size={20} color="#1976d2" />
+          </ListItemIcon>
+          <ListItemText
+            primary={
+              <Typography variant="body2" fontWeight="medium" sx={{ fontSize: '0.95rem', lineHeight: 1.2 }}>
+                设置
+              </Typography>
+            }
+            secondary={
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+                进入完整设置页面
+              </Typography>
+            }
+          />
+        </ListItemButton>
+        
+        {/* 分割线 */}
+        <Divider orientation="vertical" flexItem sx={{ mx: 0.5, height: 24, alignSelf: 'center' }} />
+        
+        {/* 侧边栏宽度控制按钮 */}
+        <Tooltip title={`侧边栏宽度: ${currentWidth}px`}>
+          <IconButton
+            size="small"
+            onClick={() => setWidthDialogOpen(true)}
+            sx={{
+              bgcolor: 'rgba(0, 0, 0, 0.04)',
+              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)' },
+            }}
+          >
+            <PanelLeft size={18} />
+          </IconButton>
+        </Tooltip>
+      </ListItem>
+
+      {/* 侧边栏宽度调整对话框 */}
+      <SidebarWidthDialog
+        open={widthDialogOpen}
+        onClose={() => setWidthDialogOpen(false)}
+        currentWidth={currentWidth}
+        onWidthChange={(width) => updateSetting('sidebarWidth', width)}
+      />
 
       <Divider sx={{ my: 0.5 }} />
 

@@ -66,7 +66,34 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   // 用于追踪上一次的打开状态
   const prevOpenRef = useRef<boolean | null>(null);
 
-  const drawerWidth = 350;
+  // 侧边栏宽度 - 从 localStorage 读取
+  const getStoredWidth = useCallback(() => {
+    try {
+      const appSettings = localStorage.getItem('appSettings');
+      if (appSettings) {
+        const settings = JSON.parse(appSettings);
+        return settings.sidebarWidth || 350;
+      }
+    } catch (e) {
+      console.error('读取侧边栏宽度失败:', e);
+    }
+    return 350;
+  }, []);
+
+  const [drawerWidth, setDrawerWidth] = useState(getStoredWidth);
+
+  // 监听宽度设置变化
+  useEffect(() => {
+    const handleSettingsChange = (e: CustomEvent) => {
+      if (e.detail?.settingId === 'sidebarWidth') {
+        setDrawerWidth(e.detail.value);
+      }
+    };
+    window.addEventListener('appSettingsChanged', handleSettingsChange as EventListener);
+    return () => {
+      window.removeEventListener('appSettingsChanged', handleSettingsChange as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     if (isSmallScreen) {
