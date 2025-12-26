@@ -87,6 +87,9 @@ export interface Assistant {
     repeat?: string;
     showOverlay?: boolean;
   };
+  
+  // 助手级别记忆功能
+  memoryEnabled?: boolean;
 }
 
 export interface ChatTopic {

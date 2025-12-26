@@ -13,7 +13,7 @@ import {
   type Theme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { ChevronLeft, Settings, FileText, Settings2, Wand2 } from 'lucide-react';
+import { ChevronLeft, Settings, FileText, Settings2, Wand2, Brain } from 'lucide-react';
 import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 import { ParameterEditor } from '../../ParameterEditor';
 import { detectProviderFromModel } from '../../../shared/config/parameterMetadata';
@@ -21,6 +21,7 @@ import { RegexTab } from './RegexTab';
 import { BasicSettingsTab } from './BasicSettingsTab';
 import type { AssistantChatBackground } from './BasicSettingsTab';
 import { PromptTab } from './PromptTab';
+import { MemoryTab } from './MemoryTab';
 import type { AssistantRegex } from '../../../shared/types/Assistant';
 
 // 样式常量
@@ -145,6 +146,12 @@ export interface EditAssistantDialogProps {
   chatBackground?: AssistantChatBackground;
   /** 聊天壁纸变化回调 */
   onChatBackgroundChange?: (background: AssistantChatBackground) => void;
+  /** 助手 ID */
+  assistantId?: string;
+  /** 助手是否启用记忆 */
+  memoryEnabled?: boolean;
+  /** 记忆开关变化回调 */
+  onMemoryEnabledChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -169,7 +176,10 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   regexRules = [],
   onRegexRulesChange,
   chatBackground,
-  onChatBackgroundChange
+  onChatBackgroundChange,
+  assistantId = '',
+  memoryEnabled = false,
+  onMemoryEnabledChange,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -323,6 +333,12 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             iconPosition="start"
             sx={{ minHeight: isMobile ? 40 : 36 }}
           />
+          <Tab 
+            label="记忆" 
+            icon={<Brain size={16} />} 
+            iconPosition="start"
+            sx={{ minHeight: isMobile ? 40 : 36 }}
+          />
         </Tabs>
       </Box>
 
@@ -385,6 +401,17 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             <RegexTab
               rules={regexRules}
               onChange={(rules) => onRegexRulesChange?.(rules)}
+            />
+          </Box>
+        )}
+
+        {/* 记忆 Tab 内容 */}
+        {tabValue === 4 && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <MemoryTab
+              assistantId={assistantId}
+              memoryEnabled={memoryEnabled}
+              onMemoryEnabledChange={onMemoryEnabledChange}
             />
           </Box>
         )}

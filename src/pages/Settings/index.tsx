@@ -202,6 +202,14 @@ const SettingsPage: React.FC = () => {
           onClick: () => navigateTo('/settings/knowledge'),
         },
         {
+          id: 'memory-settings',
+          title: '记忆功能',
+          description: '管理AI长期记忆，自动记住用户偏好',
+          icon: <DatabaseIcon size={24} />,
+          path: '/settings/memory',
+          onClick: () => navigateTo('/settings/memory'),
+        },
+        {
           id: 'note-settings',
           title: '笔记设置',
           description: '配置本地笔记存储路径和显示选项',

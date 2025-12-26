@@ -8,11 +8,30 @@ import type { Assistant } from '../types/Assistant';
 import type { ChatTopic } from '../types';
 import type { Message, MessageBlock } from '../types/newMessage';
 
-// Memory 类型定义 - 用于存储知识图谱数据
+// Memory 类型定义 - 支持知识图谱和长期记忆两种模式
 export interface Memory {
   id: string;
-  type: 'entity' | 'relation';
-  data: {
+  
+  // ========== 长期记忆系统字段（基于 Cherry Studio） ==========
+  /** 记忆内容 */
+  memory?: string;
+  /** 内容哈希（用于去重） */
+  hash?: string;
+  /** 向量嵌入（用于语义检索） */
+  embedding?: number[];
+  /** 用户ID（多用户隔离） */
+  userId?: string;
+  /** 助手ID（可选） */
+  assistantId?: string;
+  /** 是否已删除（软删除） */
+  isDeleted?: boolean;
+  /** 相似度分数（仅在搜索结果中） */
+  score?: number;
+  
+  // ========== 知识图谱字段（保持向后兼容） ==========
+  /** 类型：entity=实体, relation=关系, memory=长期记忆 */
+  type?: 'entity' | 'relation' | 'memory';
+  data?: {
     // 实体数据
     name?: string;
     entityType?: string;
@@ -22,6 +41,8 @@ export interface Memory {
     to?: string;
     relationType?: string;
   };
+  
+  // ========== 通用字段 ==========
   createdAt: string;
   updatedAt?: string;
   metadata?: Record<string, any>;
@@ -30,7 +51,7 @@ export interface Memory {
 // 统一的数据库配置
 export const DB_CONFIG = {
   NAME: 'aetherlink-db-new',
-  VERSION: 7, // 当前数据库版本
+  VERSION: 8, // 当前数据库版本
   STORES: {
     TOPICS: 'topics' as const,
     ASSISTANTS: 'assistants' as const,
@@ -110,6 +131,24 @@ export const VERSION_CONFIGS = {
       [DB_CONFIG.STORES.MEMORIES]: 'id, type, createdAt, updatedAt',
     },
     description: '添加memories表用于存储知识图谱数据'
+  },
+  8: {
+    stores: {
+      [DB_CONFIG.STORES.ASSISTANTS]: 'id',
+      [DB_CONFIG.STORES.TOPICS]: 'id, _lastMessageTimeNum, messages',
+      [DB_CONFIG.STORES.SETTINGS]: 'id',
+      [DB_CONFIG.STORES.IMAGES]: 'id',
+      [DB_CONFIG.STORES.IMAGE_METADATA]: 'id, topicId, created',
+      [DB_CONFIG.STORES.METADATA]: 'id',
+      [DB_CONFIG.STORES.MESSAGE_BLOCKS]: 'id, messageId',
+      [DB_CONFIG.STORES.MESSAGES]: 'id, topicId, assistantId',
+      [DB_CONFIG.STORES.FILES]: 'id, name, origin_name, size, ext, type, created_at, count, hash',
+      [DB_CONFIG.STORES.KNOWLEDGE_BASES]: 'id, name, model, dimensions, created_at, updated_at',
+      [DB_CONFIG.STORES.KNOWLEDGE_DOCUMENTS]: 'id, knowledgeBaseId, content, metadata.source, metadata.timestamp',
+      [DB_CONFIG.STORES.QUICK_PHRASES]: 'id, title, content, createdAt, updatedAt, order',
+      [DB_CONFIG.STORES.MEMORIES]: 'id, type, userId, hash, createdAt, updatedAt, isDeleted',
+    },
+    description: '扩展memories表支持长期记忆系统（Cherry Studio风格）'
   }
 };
 
@@ -224,6 +263,8 @@ export interface AetherLinkDB extends DBSchema {
     indexes: {
       'by-type': string;
       'by-created': string;
+      'by-user': string;
+      'by-hash': string;
     };
   };
 }

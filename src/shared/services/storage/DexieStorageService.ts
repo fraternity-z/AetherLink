@@ -68,6 +68,14 @@ export class DexieStorageService extends Dexie {
           throw new Error(`版本7迁移失败: ${result.error}`);
         }
       });
+
+    this.version(8).stores(VERSION_CONFIGS[8].stores)
+      .upgrade(async () => {
+        const result = await databaseMigrationManager.executeSingleMigration(this, 8);
+        if (!result.success) {
+          throw new Error(`版本8迁移失败: ${result.error}`);
+        }
+      });
   }
 
 

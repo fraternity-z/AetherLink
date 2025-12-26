@@ -43,6 +43,7 @@ import uiReducer from './slices/uiSlice';
 import runtimeReducer from './slices/runtimeSlice';
 import networkProxyReducer, { loadNetworkProxySettings } from './slices/networkProxySlice';
 import agenticFilesReducer from './slices/agenticFilesSlice';
+import memoryReducer, { initializeMemoryService } from './slices/memorySlice';
 import { eventMiddleware } from './middleware/eventMiddleware';
 import { useDispatch, useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
@@ -60,6 +61,7 @@ const rootReducer = combineReducers({
   runtime: runtimeReducer,
   networkProxy: networkProxyReducer,
   agenticFiles: agenticFilesReducer,
+  memory: memoryReducer,
 });
 
 // 配置Redux持久化
@@ -126,6 +128,9 @@ initializeWebSearchSettings().then(settings => {
 
 // 初始化网络代理设置
 store.dispatch(loadNetworkProxySettings() as any);
+
+// 初始化记忆服务
+store.dispatch(initializeMemoryService() as any);
 
 // 导出类型
 export type RootState = ReturnType<typeof rootReducer>;

@@ -13,6 +13,7 @@ import { EventEmitter, EVENT_NAMES } from '../../../services/EventService';
 import { getContextSettings, estimateMessagesTokenCount, truncateConversation } from '../../../services/messages/messageService';
 import { applyRegexRulesForSending } from '../../../utils/regexUtils';
 import type { AssistantRegex } from '../../../types/Assistant';
+import { searchRelevantMemories, buildMemoryPrompt, isMemoryEnabled } from './memoryIntegration';
 
 /**
  * 在API调用前检查是否需要进行知识库搜索（风格：新模式）
@@ -524,7 +525,27 @@ export const prepareMessagesForApi = async (
   // 获取当前设置并注入系统提示词变量
   const currentState: RootState = store.getState();
   const variableConfig = currentState.settings.systemPromptVariables;
-  const processedSystemPrompt = injectSystemPromptVariables(systemPrompt, variableConfig || {});
+  let processedSystemPrompt = injectSystemPromptVariables(systemPrompt, variableConfig || {});
+
+  // 🧠 记忆系统集成：搜索相关记忆并注入到系统提示词
+  if (isMemoryEnabled()) {
+    try {
+      const lastUserMessage = limitedMessages.filter(m => m.role === 'user').pop();
+      if (lastUserMessage) {
+        const userContent = getMainTextContent(lastUserMessage);
+        if (userContent) {
+          const memories = await searchRelevantMemories(userContent, 5);
+          if (memories.length > 0) {
+            const memoryPrompt = buildMemoryPrompt(memories);
+            processedSystemPrompt = processedSystemPrompt + '\n' + memoryPrompt;
+            console.log(`[prepareMessagesForApi] 已注入 ${memories.length} 条相关记忆到系统提示词`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[prepareMessagesForApi] 记忆搜索失败:', error);
+    }
+  }
 
   apiMessages.unshift({
     role: 'system',

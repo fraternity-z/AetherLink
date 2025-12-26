@@ -93,6 +93,7 @@ export function useAssistantTabLogic(
   const [editingAssistant, setEditingAssistant] = useState<Assistant | null>(null); //  新增：保存正在编辑的助手
   const [editRegexRules, setEditRegexRules] = useState<AssistantRegex[]>([]); // 正则替换规则
   const [editChatBackground, setEditChatBackground] = useState<Assistant['chatBackground']>(undefined); // 聊天壁纸
+  const [editMemoryEnabled, setEditMemoryEnabled] = useState(false); // 助手记忆开关
 
   // 提示词选择器状态
   const [promptSelectorOpen, setPromptSelectorOpen] = useState(false);
@@ -102,8 +103,6 @@ export function useAssistantTabLogic(
 
   // 头像上传器状态
   const [avatarUploaderOpen, setAvatarUploaderOpen] = useState(false);
-
-
 
   // 显示通知
   const showNotification = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'success') => {
@@ -222,6 +221,7 @@ export function useAssistantTabLogic(
     setEditAssistantAvatar(latestAssistant.avatar || '');
     setEditRegexRules(latestAssistant.regexRules || []);
     setEditChatBackground(latestAssistant.chatBackground);
+    setEditMemoryEnabled(latestAssistant.memoryEnabled || false);
     setEditDialogOpen(true);
     handleCloseAssistantMenu();
   };
@@ -233,6 +233,7 @@ export function useAssistantTabLogic(
     setEditAssistantAvatar(''); // 清理头像状态
     setEditRegexRules([]); // 清理正则规则状态
     setEditChatBackground(undefined); // 清理壁纸状态
+    setEditMemoryEnabled(false); // 清理记忆状态
   };
 
   // 保存编辑后的助手
@@ -250,7 +251,9 @@ export function useAssistantTabLogic(
         // 正则替换规则
         regexRules: editRegexRules,
         // 聊天壁纸
-        chatBackground: editChatBackground
+        chatBackground: editChatBackground,
+        // 助手记忆开关
+        memoryEnabled: editMemoryEnabled
       };
 
       // 直接保存到数据库，确保数据持久化
@@ -605,6 +608,9 @@ export function useAssistantTabLogic(
     handleRegexRulesChange: setEditRegexRules,
     // 聊天壁纸处理函数
     handleChatBackgroundChange: setEditChatBackground,
+    // 记忆开关状态和处理函数
+    editMemoryEnabled,
+    handleMemoryEnabledChange: setEditMemoryEnabled,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,

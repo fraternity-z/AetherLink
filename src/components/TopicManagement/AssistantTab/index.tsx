@@ -88,6 +88,8 @@ const AssistantTab = React.memo(function AssistantTab({
     editAssistantAvatar,
     editRegexRules,
     editChatBackground,
+    editMemoryEnabled,
+    editingAssistant,
     promptSelectorOpen,
     iconPickerOpen,
     avatarUploaderOpen,
@@ -134,6 +136,8 @@ const AssistantTab = React.memo(function AssistantTab({
     handleRegexRulesChange,
     // 聊天壁纸处理函数
     handleChatBackgroundChange,
+    // 记忆开关处理函数
+    handleMemoryEnabledChange,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,
@@ -373,6 +377,9 @@ const AssistantTab = React.memo(function AssistantTab({
         onRegexRulesChange={handleRegexRulesChange}
         chatBackground={editChatBackground}
         onChatBackgroundChange={handleChatBackgroundChange}
+        assistantId={editingAssistant?.id || ''}
+        memoryEnabled={editMemoryEnabled}
+        onMemoryEnabledChange={handleMemoryEnabledChange}
       />
 
       {/* 智能体提示词选择器 */}

@@ -80,6 +80,8 @@ const ThemeStyleSettings = lazy(() => import('../pages/Settings/ThemeStyleSettin
 // 导入Notion设置页面
 const NotionSettings = lazy(() => import('../pages/Settings/NotionSettings'));
 const NetworkProxySettings = lazy(() => import('../pages/Settings/NetworkProxySettings'));
+// 导入记忆设置页面
+const MemorySettings = lazy(() => import('../pages/Settings/MemorySettings'));
 // 导入翻译页面
 const TranslatePage = lazy(() => import('../pages/TranslatePage'));
 
@@ -186,6 +188,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/data/advanced-backup" element={<AdvancedBackupPage />} />
         <Route path="/settings/notion" element={<NotionSettings />} />
         <Route path="/settings/network-proxy" element={<NetworkProxySettings />} />
+        <Route path="/settings/memory" element={<MemorySettings />} />
         <Route path="/settings/web-search" element={<WebSearchSettings />} />
         <Route path="/settings/mcp-server" element={<MCPServerSettings />} />
         <Route path="/settings/mcp-server/:serverId" element={<MCPServerDetail />} />

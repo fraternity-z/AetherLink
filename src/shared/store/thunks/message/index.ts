@@ -4,3 +4,4 @@ export * from './assistantResponse';
 export * from './apiPreparation';
 export * from './knowledgeIntegration';
 export * from './messageOperations';
+export * from './memoryIntegration';
