@@ -105,6 +105,8 @@ export default defineConfig(({ mode }) => ({
   },
   // 优化依赖预构建 - Rolldown-Vite 会自动优化
   optimizeDeps: {
+    // 明确指定入口，排除 docs 目录（使用 ! 前缀）
+    entries: ['index.html', '!docs/**'],
     include: [
       'react',
       'react-dom',

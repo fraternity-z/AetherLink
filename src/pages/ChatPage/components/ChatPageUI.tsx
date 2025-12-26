@@ -42,7 +42,7 @@ const DEFAULT_TOP_TOOLBAR_SETTINGS = {
 } as const;
 
 // 样式常量 - 避免每次渲染时重新计算
-const DRAWER_WIDTH = 350;
+const DEFAULT_DRAWER_WIDTH = 350;
 const ANIMATION_CONFIG = {
   duration: 0.2,
   ease: [0.25, 0.46, 0.45, 0.94] as const
@@ -51,8 +51,22 @@ const BUTTON_ANIMATION_CONFIG = {
   duration: 0.1
 } as const;
 
-// 预计算的布局配置 - 避免运行时计算
-const LAYOUT_CONFIGS = {
+// 从 localStorage 读取侧边栏宽度
+const getStoredSidebarWidth = (): number => {
+  try {
+    const appSettings = localStorage.getItem('appSettings');
+    if (appSettings) {
+      const settings = JSON.parse(appSettings);
+      return settings.sidebarWidth || DEFAULT_DRAWER_WIDTH;
+    }
+  } catch (e) {
+    console.error('读取侧边栏宽度失败:', e);
+  }
+  return DEFAULT_DRAWER_WIDTH;
+};
+
+// 动态计算布局配置
+const getLayoutConfigs = (drawerWidth: number) => ({
   // 侧边栏关闭时的布局
   SIDEBAR_CLOSED: {
     mainContent: {
@@ -67,15 +81,15 @@ const LAYOUT_CONFIGS = {
   // 侧边栏打开时的布局
   SIDEBAR_OPEN: {
     mainContent: {
-      marginLeft: DRAWER_WIDTH,
-      width: `calc(100% - ${DRAWER_WIDTH}px)`
+      marginLeft: drawerWidth,
+      width: `calc(100% - ${drawerWidth}px)`
     },
     inputContainer: {
-      left: DRAWER_WIDTH,
-      width: `calc(100% - ${DRAWER_WIDTH}px)`
+      left: drawerWidth,
+      width: `calc(100% - ${drawerWidth}px)`
     }
   }
-} as const;
+});
 
 // 记忆化的选择器 - 避免不必要的重渲染
 const selectChatPageSettings = createSelector(
@@ -222,6 +236,25 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   }, [setDrawerOpen]);
 
   // 本地状态
+  // 侧边栏宽度状态 - 动态读取并监听变化
+  const [sidebarWidth, setSidebarWidth] = useState(getStoredSidebarWidth);
+  
+  // 监听侧边栏宽度变化
+  useEffect(() => {
+    const handleSettingsChange = (e: CustomEvent) => {
+      if (e.detail?.settingId === 'sidebarWidth') {
+        setSidebarWidth(e.detail.value);
+      }
+    };
+    window.addEventListener('appSettingsChanged', handleSettingsChange as EventListener);
+    return () => {
+      window.removeEventListener('appSettingsChanged', handleSettingsChange as EventListener);
+    };
+  }, []);
+
+  // 动态计算布局配置
+  const LAYOUT_CONFIGS = useMemo(() => getLayoutConfigs(sidebarWidth), [sidebarWidth]);
+
   // 清空按钮的二次确认状态
   const [clearConfirmMode, setClearConfirmMode] = useState(false);
   
