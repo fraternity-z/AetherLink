@@ -10,6 +10,7 @@ import { X as CloseIcon } from 'lucide-react';
 import { SolidBridge } from '../../shared/bridges/SolidBridge';
 import { AppSidebar } from '../../solid/components/Sidebar/AppSidebar.solid';
 import SidebarTabs from './SidebarTabs';
+import SidebarResizeHandle from './SidebarResizeHandle';
 import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
 import { useAppSelector } from '../../shared/store';
 import { Haptics } from '../../shared/utils/hapticFeedback';
@@ -93,6 +94,27 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
     return () => {
       window.removeEventListener('appSettingsChanged', handleSettingsChange as EventListener);
     };
+  }, []);
+
+  // 拖动调整宽度 - 实时更新
+  const handleResizeWidth = useCallback((newWidth: number) => {
+    setDrawerWidth(newWidth);
+  }, []);
+
+  // 拖动结束 - 保存到 localStorage
+  const handleResizeEnd = useCallback((newWidth: number) => {
+    try {
+      const appSettings = localStorage.getItem('appSettings');
+      const settings = appSettings ? JSON.parse(appSettings) : {};
+      settings.sidebarWidth = newWidth;
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+      // 触发事件通知其他组件
+      window.dispatchEvent(new CustomEvent('appSettingsChanged', {
+        detail: { settingId: 'sidebarWidth', value: newWidth }
+      }));
+    } catch (e) {
+      console.error('保存侧边栏宽度失败:', e);
+    }
   }, []);
 
   useEffect(() => {
@@ -305,6 +327,25 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
       />
       {/* 🚀 性能优化：始终渲染 Portal 内容（预热后），避免首次打开时的初始化开销 */}
       {portalContainer && isPrewarmed && createPortal(drawerContent, portalContainer)}
+      
+      {/* 桌面端拖动调整宽度手柄 */}
+      {!isSmallScreen && finalOpen && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: drawerWidth,
+            height: '100%',
+            zIndex: 1200,
+          }}
+        >
+          <SidebarResizeHandle
+            currentWidth={drawerWidth}
+            onWidthChange={handleResizeWidth}
+            onWidthChangeEnd={handleResizeEnd}
+          />
+        </Box>
+      )}
     </>
   );
 }, areSolidMotionSidebarPropsEqual);
