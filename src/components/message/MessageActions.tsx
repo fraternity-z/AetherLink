@@ -27,7 +27,7 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  FileText
+  FileText,
 } from 'lucide-react';
 import TokenDisplay from '../chat/TokenDisplay';
 import type { Message, MessageVersion } from '../../shared/types/newMessage.ts';
@@ -44,6 +44,7 @@ import { useAppSelector } from '../../shared/store';
 import { Clipboard } from '@capacitor/clipboard';
 import { Z_INDEX } from '../../shared/constants/zIndex';
 import { debugLog } from '../../shared/utils/debugLogger';
+import MessageTranslateButton from './MessageTranslateButton';
 
 interface MessageActionsProps {
   message: Message;
@@ -175,7 +176,6 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
       }
     };
   }, []);
-
   // 删除按钮状态（两次点击确认）
   const [deleteButtonClicked, setDeleteButtonClicked] = useState(false);
   // 删除按钮定时器引用，防止多个定时器
@@ -836,6 +836,15 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </Tooltip>
           )}
 
+          {/* 翻译按钮 - AI消息显示 */}
+          {!isUser && (
+            <MessageTranslateButton
+              message={message}
+              buttonStyle={toolbarIconButtonStyle}
+              size={16}
+            />
+          )}
+
           {/* AI消息：版本历史 */}
           {!isUser && hasMultipleVersions && (
             <Tooltip title="版本历史">
@@ -1171,8 +1180,6 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
       />
-
-
 
       {/* 统一导出/保存菜单 */}
       <UnifiedExportMenu

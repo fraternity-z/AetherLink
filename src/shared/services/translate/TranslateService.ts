@@ -198,3 +198,65 @@ export async function toggleHistoryStar(id: string): Promise<void> {
 export async function clearTranslateHistory(): Promise<void> {
   await removeStorageItem(TRANSLATE_HISTORY_KEY);
 }
+
+/**
+ * OCR 识别图片中的文字
+ * @param imageBase64 图片的 base64 数据（包含 data:image/xxx;base64, 前缀）
+ * @param onResponse 响应回调
+ * @param abortSignal 中断信号
+ * @param customModel 可选的自定义模型
+ */
+export async function recognizeImageText(
+  imageBase64: string,
+  onResponse?: (text: string, isComplete: boolean) => void,
+  abortSignal?: AbortSignal,
+  customModel?: Model | null
+): Promise<string> {
+  const ocrPrompt = `请识别这张图片中的所有文字内容，直接输出识别到的文字，不要添加任何解释或格式化。如果图片中没有文字，请回复"未识别到文字"。`;
+
+  // 使用自定义模型或默认模型
+  const model = customModel || getTranslateModel();
+  if (!model) {
+    throw new Error('没有可用的模型，请先配置模型');
+  }
+
+  const apiProvider = ApiProviderRegistry.get(model);
+  if (!apiProvider) {
+    throw new Error(`无法获取API提供商: ${model.provider}`);
+  }
+
+  let recognizedText = '';
+  
+  try {
+    // 直接使用 OpenAI API 的多模态消息格式
+    const messages = [{
+      role: 'user' as const,
+      content: [
+        { type: 'text', text: ocrPrompt },
+        { type: 'image_url', image_url: { url: imageBase64, detail: 'auto' } }
+      ]
+    }];
+
+    await apiProvider.sendChatMessage(messages as any, {
+      onChunk: (chunk: Chunk) => {
+        if (chunk.type === ChunkType.TEXT_DELTA) {
+          recognizedText = chunk.text;
+          onResponse?.(recognizedText, false);
+        } else if (chunk.type === ChunkType.TEXT_COMPLETE) {
+          recognizedText = chunk.text;
+          onResponse?.(recognizedText, true);
+        }
+      },
+      abortSignal: abortSignal
+    });
+
+    onResponse?.(recognizedText, true);
+    return recognizedText.trim();
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
+      throw error;
+    }
+    console.error('[TranslateService] OCR failed:', error);
+    throw error;
+  }
+}

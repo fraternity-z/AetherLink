@@ -37,6 +37,8 @@ import {
   Send,
   X,
   ArrowRightLeft,
+  Camera,
+  Image,
 } from 'lucide-react';
 import {
   translateText,
@@ -46,6 +48,7 @@ import {
   toggleHistoryStar,
   clearTranslateHistory,
   getTranslateModel,
+  recognizeImageText,
   type TranslateHistory,
 } from '../../shared/services/translate';
 import {
@@ -60,6 +63,7 @@ import { SolidBridge } from '../../shared/bridges/SolidBridge';
 import { DialogModelSelector as SolidDialogModelSelector } from '../../solid/components/ModelSelector/DialogModelSelector.solid';
 import type { Model } from '../../shared/types';
 import { getModelOrProviderIcon } from '../../shared/utils/providerIcons';
+import { ImageUploadService } from '../../shared/services/ImageUploadService';
 
 // 提取到组件外部，避免每次渲染都重新创建
 const LanguageSelector = React.memo(({ value, onChange, showAuto = false }: {
@@ -130,6 +134,7 @@ const TranslatePage: React.FC = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [histories, setHistories] = useState<TranslateHistory[]>([]);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<Model | null>(() => {
     // 从 localStorage 读取保存的翻译模型
     try {
@@ -212,6 +217,81 @@ const TranslatePage: React.FC = () => {
       abortControllerRef.current.abort();
     }
   }, []);
+
+  // 拍照翻译 - OCR 识别图片中的文字
+  const handlePhotoTranslate = useCallback(async (source: 'camera' | 'photos') => {
+    if (isOcrProcessing) return;
+    
+    try {
+      setIsOcrProcessing(true);
+      
+      // 获取图片
+      const images = await ImageUploadService.selectImages(source);
+      if (!images || images.length === 0) {
+        setIsOcrProcessing(false);
+        return;
+      }
+      
+      const image = images[0];
+      if (!image.base64Data) {
+        setIsOcrProcessing(false);
+        return;
+      }
+      
+      // 使用 TranslateService 的 OCR 函数，流式显示识别结果
+      const model = selectedModel || getTranslateModel();
+      const recognizedText = await recognizeImageText(
+        image.base64Data,
+        (ocrText, _isComplete) => {
+          // 流式更新识别的文字到输入框
+          setSourceText(ocrText);
+        },
+        undefined,
+        model
+      );
+      
+      // OCR 完成后自动翻译
+      if (recognizedText && recognizedText !== '未识别到文字') {
+        const text = recognizedText.trim();
+        setSourceText(text);
+        
+        // 自动翻译成用户选择的目标语言
+        setIsOcrProcessing(false);
+        setIsTranslating(true);
+        setTranslatedText('');
+        
+        const targetLang = getLanguageByLangcode(targetLanguage);
+        try {
+          const result = await translateText(
+            text,
+            targetLang,
+            (translatedChunk, _isComplete) => {
+              setTranslatedText(translatedChunk);
+            },
+            undefined,
+            model
+          );
+          
+          // 保存历史
+          const sourceLang = sourceLanguage === 'auto' ? 'auto' : sourceLanguage;
+          await saveTranslateHistory(text, result, sourceLang, targetLanguage);
+          setHistories(await getTranslateHistories());
+        } catch (translateError) {
+          console.error('Translation failed:', translateError);
+          setTranslatedText(`翻译失败: ${(translateError as Error).message}`);
+        } finally {
+          setIsTranslating(false);
+        }
+      } else {
+        alert('未能识别到图片中的文字');
+        setIsOcrProcessing(false);
+      }
+    } catch (error) {
+      console.error('OCR failed:', error);
+      alert(`图片识别失败: ${(error as Error).message}`);
+      setIsOcrProcessing(false);
+    }
+  }, [isOcrProcessing, selectedModel, targetLanguage, sourceLanguage]);
 
   // 复制结果
   const handleCopy = useCallback(async () => {
@@ -554,9 +634,32 @@ const TranslatePage: React.FC = () => {
               borderColor: 'divider',
             }}
           >
-            <Typography variant="caption" color="text.secondary">
-              {sourceText.length} 字符
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {sourceText.length} 字符
+              </Typography>
+              {/* 拍照翻译按钮组 */}
+              <Tooltip title="拍照识别文字">
+                <IconButton
+                  size="small"
+                  onClick={() => handlePhotoTranslate('camera')}
+                  disabled={isOcrProcessing}
+                  sx={{ color: 'primary.main' }}
+                >
+                  {isOcrProcessing ? <CircularProgress size={16} /> : <Camera size={18} />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="从相册选择图片识别">
+                <IconButton
+                  size="small"
+                  onClick={() => handlePhotoTranslate('photos')}
+                  disabled={isOcrProcessing}
+                  sx={{ color: 'secondary.main' }}
+                >
+                  <Image size={18} />
+                </IconButton>
+              </Tooltip>
+            </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
               {sourceText && (
                 <IconButton size="small" onClick={() => {
@@ -621,6 +724,7 @@ const TranslatePage: React.FC = () => {
               alignItems: 'center',
               px: 2,
               py: 1,
+              pb: `calc(var(--safe-area-bottom, 0px) + 8px)`,
               minHeight: 52,  // 统一底部栏高度
               borderTop: '1px solid',
               borderColor: 'divider',
