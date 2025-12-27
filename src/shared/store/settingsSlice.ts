@@ -116,6 +116,9 @@ interface SettingsState {
   // 控制信息气泡上小功能气泡的显示
   showMicroBubbles?: boolean; // 是否显示消息气泡上的小功能气泡（播放和版本切换）
 
+  // 控制AI气泡播放按钮的显示
+  showTTSButton?: boolean; // 是否显示AI气泡的TTS播放按钮
+
   // 消息操作显示模式
   messageActionMode?: 'bubbles' | 'toolbar'; // 消息操作显示模式：气泡模式或工具栏模式
 
@@ -338,6 +341,9 @@ const getInitialState = (): SettingsState => {
     // 小功能气泡默认设置
     showMicroBubbles: true, // 默认显示消息气泡上的小功能气泡
 
+    // TTS播放按钮默认设置
+    showTTSButton: true, // 默认显示TTS播放按钮
+
     // 消息操作显示模式默认设置
     messageActionMode: 'bubbles', // 默认使用气泡模式
 
@@ -550,6 +556,11 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
       // 如果没有小功能气泡显示设置，使用默认值
       if (savedSettings.showMicroBubbles === undefined) {
         savedSettings.showMicroBubbles = true;
+      }
+
+      // 如果没有TTS播放按钮显示设置，使用默认值
+      if (savedSettings.showTTSButton === undefined) {
+        savedSettings.showTTSButton = true;
       }
 
       // 如果没有隐藏气泡设置，使用默认值
