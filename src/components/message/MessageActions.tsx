@@ -149,6 +149,9 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   // 检查是否显示小功能气泡
   const showMicroBubbles = settings.showMicroBubbles !== false;
 
+  // 检查是否显示TTS播放按钮
+  const showTTSButton = (settings as any).showTTSButton !== false;
+
   // 菜单状态 - 内存泄漏防护：避免存储DOM引用
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
@@ -684,7 +687,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
             </>
           )}
 
-          {enableTTS && (
+          {enableTTS && showTTSButton && (
             <Chip
               size="small"
               label={isPlaying ? "播放中" : "播放"}
@@ -821,7 +824,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
           )}
 
           {/* 语音播放 - 对所有消息显示 */}
-          {enableTTS && (
+          {enableTTS && showTTSButton && (
             <Tooltip title={isPlaying ? "停止播放" : "语音播放"}>
               <IconButton
                 size="small"

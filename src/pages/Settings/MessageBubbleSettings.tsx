@@ -18,7 +18,7 @@ import {
   Stack,
   useTheme
 } from '@mui/material';
-import { ArrowLeft, Info, Palette, Sliders, User, Bot, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Info, Palette, Sliders, User, Bot, EyeOff, Maximize2, Minimize2, Volume2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import CustomSwitch from '../../components/CustomSwitch';
@@ -43,6 +43,9 @@ const MessageBubbleSettings: React.FC = () => {
 
   // 获取消息操作显示模式设置，默认为'bubbles'
   const messageActionMode = (settings as any).messageActionMode || 'bubbles';
+
+  // 获取TTS播放按钮显示设置，默认为true
+  const showTTSButton = (settings as any).showTTSButton !== false;
 
   // 获取自定义气泡颜色设置
   const customBubbleColors = (settings as any).customBubbleColors || {
@@ -89,6 +92,13 @@ const MessageBubbleSettings: React.FC = () => {
   const handleMessageActionModeChange = (event: { target: { value: any } }) => {
     dispatch(updateSettings({
       messageActionMode: event.target.value
+    }));
+  };
+
+  // TTS播放按钮显示设置变更处理函数
+  const handleShowTTSButtonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(updateSettings({
+      showTTSButton: event.target.checked
     }));
   };
 
@@ -304,12 +314,12 @@ const MessageBubbleSettings: React.FC = () => {
               <Divider sx={{ my: 2 }} />
               <Box sx={settingRowStyle}>
                 <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
-                  <Box sx={{ 
-                    p: 1, 
+                  <Box sx={{
+                    p: 1,
                     height: 'fit-content',
-                    borderRadius: 2, 
+                    borderRadius: 2,
                     bgcolor: alpha('#6366f1', 0.1),
-                    color: '#6366f1' 
+                    color: '#6366f1'
                   }}>
                     <Sliders size={getIconSize(20)} />
                   </Box>
@@ -327,6 +337,38 @@ const MessageBubbleSettings: React.FC = () => {
                   onChange={handleMicroBubblesChange}
                 />
               </Box>
+
+              {/* TTS播放按钮显示设置 - 仅在气泡模式且显示功能气泡时显示 */}
+              {showMicroBubbles && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={settingRowStyle}>
+                    <Box sx={{ display: 'flex', gap: 2, flex: 1 }}>
+                      <Box sx={{
+                        p: 1,
+                        height: 'fit-content',
+                        borderRadius: 2,
+                        bgcolor: alpha('#10b981', 0.1),
+                        color: '#10b981'
+                      }}>
+                        <Volume2 size={getIconSize(20)} />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {t('settings.appearance.messageBubble.function.showTTSButton.label')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          {t('settings.appearance.messageBubble.function.showTTSButton.description')}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <CustomSwitch
+                      checked={showTTSButton}
+                      onChange={handleShowTTSButtonChange}
+                    />
+                  </Box>
+                </>
+              )}
 
               {/* 版本切换样式设置 - 仅在气泡模式且显示功能气泡时显示 */}
               {showMicroBubbles && (

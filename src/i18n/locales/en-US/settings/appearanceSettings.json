@@ -292,6 +292,10 @@
           "label": "Show Function Bubbles",
           "description": "Show play and version switch bubbles above message"
         },
+        "showTTSButton": {
+          "label": "Show Play Button",
+          "description": "Show TTS play button on AI message bubbles to convert replies to speech"
+        },
         "versionSwitch": {
           "label": "Version Switch Style",
           "popup": "Popup List (default)",

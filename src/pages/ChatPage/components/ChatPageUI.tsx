@@ -21,6 +21,7 @@ import AgenticFilesList from '../../../components/AgenticFilesList';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import { createSelector } from 'reselect';
 import { contextCondenseService } from '../../../shared/services/ContextCondenseService';
+import { Z_INDEX } from '../../../shared/constants/zIndex';
 
 
 
@@ -762,7 +763,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         bottom: shouldUseVisualViewport && fixedTop !== null ? 'auto' : keyboardHeight,
         transform: shouldUseVisualViewport && fixedTop !== null ? 'translateY(-100%)' : 'none',
         right: 0,
-        zIndex: 2,
+        zIndex: Z_INDEX.INPUT.CONTAINER,
         backgroundColor: 'transparent',
         boxShadow: 'none',
         overflow: 'hidden',

@@ -296,6 +296,10 @@
           "label": "显示功能气泡",
           "description": "在消息气泡上方显示播放和版本切换的小功能气泡"
         },
+        "showTTSButton": {
+          "label": "显示播放按钮",
+          "description": "在AI消息气泡上显示语音播放按钮，可将回复内容转为语音"
+        },
         "versionSwitch": {
           "label": "版本切换样式",
           "popup": "弹出列表（默认）",
