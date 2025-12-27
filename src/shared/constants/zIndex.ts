@@ -6,14 +6,19 @@
 export const Z_INDEX = {
   // 基础层级
   BASE: 1,
-  
+
   // 消息相关组件
   MESSAGE: {
     BUBBLE_INDICATORS: 3,    // 气泡指示器（版本指示器等）
     BUBBLE_MENU_BUTTON: 10,  // 气泡模式三点菜单按钮
     TOOLBAR_BUTTON: 100,     // 工具栏按钮
   },
-  
+
+  // 输入框相关
+  INPUT: {
+    CONTAINER: 110,          // 输入框容器，需高于消息工具栏按钮
+  },
+
   // 菜单和弹窗
   MENU: {
     DROPDOWN: 1300,          // 下拉菜单

@@ -21,6 +21,7 @@ import AgenticFilesList from '../../../components/AgenticFilesList';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import { createSelector } from 'reselect';
 import { contextCondenseService } from '../../../shared/services/ContextCondenseService';
+import { Z_INDEX } from '../../../shared/constants/zIndex';
 
 
 
@@ -762,7 +763,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         bottom: shouldUseVisualViewport && fixedTop !== null ? 'auto' : keyboardHeight,
         transform: shouldUseVisualViewport && fixedTop !== null ? 'translateY(-100%)' : 'none',
         right: 0,
-        zIndex: 100, // 提高 z-index，确保输入框在消息气泡按钮之上（消息按钮 z-index 为 3-10）
+        zIndex: Z_INDEX.INPUT.CONTAINER,
         backgroundColor: 'transparent',
         boxShadow: 'none',
         overflow: 'hidden',
