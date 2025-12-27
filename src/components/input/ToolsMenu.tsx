@@ -9,7 +9,7 @@ import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import WebSearchProviderSelector from '../WebSearchProviderSelector';
 import KnowledgeSelector from '../chat/KnowledgeSelector';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
-import MCPToolsDialog from './buttons/MCPToolsDialog';
+import MCPServerQuickPanel from './buttons/MCPServerQuickPanel';
 
 interface ToolsMenuProps {
   anchorEl: null | HTMLElement;
@@ -416,7 +416,7 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
       />
 
       {/* MCP工具对话框 - 使用共享组件 */}
-      <MCPToolsDialog
+      <MCPServerQuickPanel
         open={showMCPDialog}
         onClose={handleCloseMCPDialog}
         toolsEnabled={toolsEnabled}

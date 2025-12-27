@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Globe as LanguageIcon,
@@ -19,7 +19,11 @@ import {
   Database as DatabaseIcon,
   FileText as NoteIcon,
   Shield as ShieldIcon,
+  LayoutGrid as CompactIcon,
+  List as DetailedIcon,
 } from 'lucide-react';
+import { IconButton, Tooltip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   SafeAreaContainer,
   HeaderBar,
@@ -33,9 +37,35 @@ import useScrollPosition from '../../hooks/useScrollPosition';
 import { useSwipeGesture } from '../../hooks/useSwipeGesture';
 import { useTranslation } from '../../i18n';
 
+// 精简模式存储键
+const COMPACT_MODE_KEY = 'settings-compact-mode';
+
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
+  
+  // 精简模式状态
+  const [isCompactMode, setIsCompactMode] = useState(() => {
+    try {
+      return localStorage.getItem(COMPACT_MODE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  
+  // 切换精简模式
+  const toggleCompactMode = useCallback(() => {
+    setIsCompactMode(prev => {
+      const newValue = !prev;
+      try {
+        localStorage.setItem(COMPACT_MODE_KEY, String(newValue));
+      } catch (error) {
+        console.error('Failed to save compact mode preference:', error);
+      }
+      return newValue;
+    });
+  }, []);
 
   // 使用滚动位置保存功能
   const {
@@ -260,10 +290,31 @@ const SettingsPage: React.FC = () => {
       ],
     },
   ];
+  
+  // 精简模式切换按钮
+  const compactModeToggle = (
+    <Tooltip title={isCompactMode ? t('settings.detailedMode', '详细模式') : t('settings.compactMode', '精简模式')}>
+      <IconButton
+        onClick={toggleCompactMode}
+        sx={{
+          color: theme.palette.text.secondary,
+          '&:hover': {
+            color: theme.palette.primary.main,
+          },
+        }}
+      >
+        {isCompactMode ? <DetailedIcon size={22} /> : <CompactIcon size={22} />}
+      </IconButton>
+    </Tooltip>
+  );
 
   return (
     <SafeAreaContainer {...swipeHandlers}>
-      <HeaderBar title={t('settings.title')} onBackPress={handleBack} />
+      <HeaderBar
+        title={t('settings.title')}
+        onBackPress={handleBack}
+        rightButton={compactModeToggle}
+      />
       <Container
         ref={containerRef}
         onScroll={handleScroll}
@@ -285,22 +336,42 @@ const SettingsPage: React.FC = () => {
           },
         }}
       >
-        <YStack sx={{ gap: 3 }}>
-          {settingsGroups.map((group, index) => (
-            <SettingGroup key={index} title={group.title}>
-              {group.items.map((item) => (
-                <SettingItem
-                  key={item.id}
-                  title={item.title}
-                  description={item.description}
-                  icon={item.icon}
-                  onClick={item.onClick}
-                  showArrow={true}
-                />
-              ))}
-            </SettingGroup>
-          ))}
-        </YStack>
+        {isCompactMode ? (
+          // 精简清爽风格 - iOS风格列表，不显示描述
+          <YStack sx={{ gap: 3 }}>
+            {settingsGroups.map((group, index) => (
+              <SettingGroup key={index} title={group.title}>
+                {group.items.map((item) => (
+                  <SettingItem
+                    key={item.id}
+                    title={item.title}
+                    icon={item.icon}
+                    onClick={item.onClick}
+                    showArrow={true}
+                  />
+                ))}
+              </SettingGroup>
+            ))}
+          </YStack>
+        ) : (
+          // 详细模式 - 列表布局
+          <YStack sx={{ gap: 3 }}>
+            {settingsGroups.map((group, index) => (
+              <SettingGroup key={index} title={group.title}>
+                {group.items.map((item) => (
+                  <SettingItem
+                    key={item.id}
+                    title={item.title}
+                    description={item.description}
+                    icon={item.icon}
+                    onClick={item.onClick}
+                    showArrow={true}
+                  />
+                ))}
+              </SettingGroup>
+            ))}
+          </YStack>
+        )}
       </Container>
     </SafeAreaContainer>
   );

@@ -34,10 +34,12 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft as ArrowBackIcon,
   Plus as AddIcon,
-  Settings as SettingsIcon,
-  Database as StorageIcon,
-  Globe as HttpIcon,
-  Trash2 as DeleteIcon
+  Cog as SettingsIcon,
+  Cpu as StorageIcon,
+  Server as ServerIcon,
+  Wifi as WifiIcon,
+  Trash2 as DeleteIcon,
+  Terminal as TerminalIcon
 } from 'lucide-react';
 
 import type { MCPServer, MCPServerType } from '../../shared/types';
@@ -45,7 +47,6 @@ import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 import { isTauri, isDesktop } from '../../shared/utils/platformDetection';
-import { Terminal as TerminalIcon } from 'lucide-react';
 
 const MCPServerSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -355,15 +356,16 @@ const MCPServerSettings: React.FC = () => {
   const getServerTypeIcon = (type: MCPServerType) => {
     switch (type) {
       case 'sse':
+        return <ServerIcon size={20} />;
       case 'streamableHttp':
       case 'httpStream':
-        return <HttpIcon />;
+        return <WifiIcon size={20} />;
       case 'stdio':
         return <TerminalIcon size={20} />;
       case 'inMemory':
-        return <StorageIcon />;
+        return <StorageIcon size={20} />;
       default:
-        return <SettingsIcon />;
+        return <SettingsIcon size={20} />;
     }
   };
 
