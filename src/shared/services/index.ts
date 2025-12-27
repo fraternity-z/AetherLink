@@ -250,6 +250,31 @@ export async function initializeServices(): Promise<void> {
             tts.setActiveEngine('gemini');
             break;
           }
+          case 'elevenlabs': {
+            const apiKey = await getStorageItem<string>('elevenlabs_tts_api_key') || '';
+            const model = await getStorageItem<string>('elevenlabs_tts_model') || 'eleven_multilingual_v2';
+            const voice = await getStorageItem<string>('elevenlabs_tts_voice') || 'Rachel';
+            tts.configureEngine('elevenlabs', { enabled: true, apiKey, model, voice });
+            tts.setActiveEngine('elevenlabs');
+            break;
+          }
+          case 'minimax': {
+            const apiKey = await getStorageItem<string>('minimax_tts_api_key') || '';
+            const groupId = await getStorageItem<string>('minimax_tts_group_id') || '';
+            const model = await getStorageItem<string>('minimax_tts_model') || 'speech-01';
+            const voice = await getStorageItem<string>('minimax_tts_voice') || 'male-qn-qingse';
+            tts.configureEngine('minimax', { enabled: true, apiKey, groupId, model, voice });
+            tts.setActiveEngine('minimax');
+            break;
+          }
+          case 'volcano': {
+            const appId = await getStorageItem<string>('volcano_app_id') || '';
+            const accessToken = await getStorageItem<string>('volcano_access_token') || '';
+            const voiceType = await getStorageItem<string>('volcano_voice_type') || 'zh_female_cancan_mars_bigtts';
+            tts.configureEngine('volcano', { enabled: true, appId, accessToken, voiceType });
+            tts.setActiveEngine('volcano');
+            break;
+          }
           case 'siliconflow':
           default: {
             const apiKey = await getStorageItem<string>('siliconflow_api_key') || '';
