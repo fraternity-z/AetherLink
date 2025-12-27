@@ -233,6 +233,8 @@ const BubbleStyleMessage: React.FC<BaseMessageStyleProps> = ({
         alignSelf: isUserMessage ? 'flex-end' : 'flex-start',
         flex: 'none',
         overflow: messageActionMode === 'toolbar' ? 'visible' : undefined, // 工具栏模式下允许溢出
+        // 创建独立的 stacking context，防止内部按钮穿透到其他消息的文件块
+        isolation: 'isolate',
       }}>
         {/* 消息内容容器 */}
         <Paper

@@ -762,7 +762,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         bottom: shouldUseVisualViewport && fixedTop !== null ? 'auto' : keyboardHeight,
         transform: shouldUseVisualViewport && fixedTop !== null ? 'translateY(-100%)' : 'none',
         right: 0,
-        zIndex: 2,
+        zIndex: 100, // 提高 z-index，确保输入框在消息气泡按钮之上（消息按钮 z-index 为 3-10）
         backgroundColor: 'transparent',
         boxShadow: 'none',
         overflow: 'hidden',
