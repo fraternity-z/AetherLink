@@ -48,22 +48,22 @@ function AssistantItem({
   const [pendingDelete, setPendingDelete] = useState(false);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 清理删除确认定时器
+  // 长按相关状态
+  const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const isLongPressRef = useRef(false);
+
+  // 清理定时器
   useEffect(() => {
     return () => {
       if (deleteTimeoutRef.current) {
         clearTimeout(deleteTimeoutRef.current);
       }
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+      }
     };
   }, []);
-
-  // 简化助手点击处理函数，移除复杂的事件链
-  const handleAssistantClick = useCallback(() => {
-    // 直接使用状态更新，无需事件驱动
-    startTransition(() => {
-      onSelectAssistant(assistant);
-    });
-  }, [assistant, onSelectAssistant]);
 
   const handleOpenMenu = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
@@ -91,6 +91,72 @@ function AssistantItem({
       }, 3000);
     }
   }, [assistant.id, onDeleteAssistant, pendingDelete]);
+
+  // 桌面端右键菜单
+  const handleContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenMenu(event, assistant);
+  }, [onOpenMenu, assistant]);
+
+  // 启动长按定时器
+  const startPressTimer = useCallback((target: HTMLElement) => {
+    isLongPressRef.current = false;
+    longPressTimeoutRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      const syntheticEvent = {
+        stopPropagation: () => {},
+        preventDefault: () => {},
+        currentTarget: target,
+        target: target,
+      } as unknown as React.MouseEvent;
+      onOpenMenu(syntheticEvent, assistant);
+    }, 400);
+  }, [onOpenMenu, assistant]);
+
+  // 触摸开始
+  const handleTouchStart = useCallback((event: React.TouchEvent) => {
+    const touch = event.touches[0];
+    const target = event.currentTarget as HTMLElement;
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    startPressTimer(target);
+  }, [startPressTimer]);
+
+  // 触摸移动（取消长按）
+  const handleTouchMove = useCallback((event: React.TouchEvent) => {
+    if (!touchStartPosRef.current || !longPressTimeoutRef.current) return;
+    
+    const touch = event.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPosRef.current.y);
+    
+    if (deltaX > 10 || deltaY > 10) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  }, []);
+
+  // 触摸结束
+  const handleTouchEnd = useCallback(() => {
+    // 如果已经触发长按，不清除
+    if (isLongPressRef.current) return;
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+    touchStartPosRef.current = null;
+  }, []);
+
+  // 点击处理（避免长按后触发点击）
+  const handleClick = useCallback(() => {
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      return;
+    }
+    startTransition(() => {
+      onSelectAssistant(assistant);
+    });
+  }, [assistant, onSelectAssistant]);
 
   // 直接从Redux读取最新话题数，实时更新
   const topicCount = useMemo(() => {
@@ -169,7 +235,11 @@ function AssistantItem({
 
   return (
     <ListItemButton
-      onClick={handleAssistantClick}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       selected={isSelected}
       sx={{
         borderRadius: '8px',
