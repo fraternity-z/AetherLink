@@ -21,7 +21,7 @@ import { updateSettings } from '../../shared/store/settingsSlice';
 import DraggableButtonConfig from '../../components/DraggableButtonConfig';
 import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../components/input';
 import { useTranslation } from '../../i18n';
-import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
 
 // 输入框预览组件 - 模仿真实聊天页面布局
 const InputBoxPreview: React.FC<{
@@ -344,7 +344,7 @@ const InputBoxSettings: React.FC = () => {
         }}
       >
         {/* 实时预览区域 */}
-        <Paper elevation={0} sx={{ mb: 1.5, border: '1px solid #eee', p: 0, overflow: 'hidden' }}>
+        <Paper elevation={0} sx={{ ...CARD_STYLES.base, p: 0, overflow: 'hidden' }}>
           <Typography variant="subtitle1" sx={{ mb: 1, p: 1.5, pb: 0, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.preview.title')}
           </Typography>
@@ -384,7 +384,7 @@ const InputBoxSettings: React.FC = () => {
         <Divider sx={{ mb: 1.5 }} />
 
         {/* 输入框风格设置 */}
-        <Paper elevation={0} sx={{ p: 1.5, mb: 1.5, border: '1px solid #eee' }}>
+        <Paper elevation={0} sx={{ ...CARD_STYLES.base, p: 1.5 }}>
           <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.style.title')}
           </Typography>
@@ -415,7 +415,7 @@ const InputBoxSettings: React.FC = () => {
         </Paper>
 
         {/* 输入框布局样式设置 */}
-        <Paper elevation={0} sx={{ p: 1.5, mb: 1.5, border: '1px solid #eee' }}>
+        <Paper elevation={0} sx={{ ...CARD_STYLES.base, p: 1.5 }}>
           <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.layout.title')}
           </Typography>

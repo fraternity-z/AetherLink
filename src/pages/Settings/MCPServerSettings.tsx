@@ -45,7 +45,7 @@ import {
 import type { MCPServer, MCPServerType } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
-import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
 import { isTauri, isDesktop } from '../../shared/utils/platformDetection';
 
 const MCPServerSettings: React.FC = () => {
@@ -502,18 +502,7 @@ const MCPServerSettings: React.FC = () => {
         }}
       >
         {servers.length === 0 ? (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-            }}
-          >
+          <Paper elevation={0} sx={CARD_STYLES.elevated}>
             <Box sx={{ p: { xs: 3, sm: 4 }, textAlign: 'center' }}>
               <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
                 <SettingsIcon size={48} style={{ color: '#9333EA' }} />
@@ -592,19 +581,8 @@ const MCPServerSettings: React.FC = () => {
             </Box>
           </Paper>
         ) : (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-            }}
-          >
-            <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+          <Paper elevation={0} sx={CARD_STYLES.elevated}>
+            <Box sx={CARD_STYLES.header}>
               <Typography
                 variant="subtitle1"
                 sx={{
@@ -771,19 +749,8 @@ const MCPServerSettings: React.FC = () => {
         )}
 
         {/* 快捷操作 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+        <Paper elevation={0} sx={CARD_STYLES.elevated}>
+          <Box sx={CARD_STYLES.header}>
             <Typography
               variant="subtitle1"
               sx={{

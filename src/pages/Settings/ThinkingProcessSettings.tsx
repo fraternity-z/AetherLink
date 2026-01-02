@@ -23,7 +23,7 @@ import type { ThinkingMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
 import { useTranslation } from '../../i18n';
 import CustomSwitch from '../../components/CustomSwitch';
-import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
 
 const ThinkingProcessSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -142,19 +142,8 @@ const ThinkingProcessSettings: React.FC = () => {
         }}
       >
         {/* 思考过程显示设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
-        >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+        <Paper elevation={0} sx={CARD_STYLES.elevated}>
+          <Box sx={CARD_STYLES.header}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Brain size={20} style={{ marginRight: 8, color: '#9333EA' }} />
               <Typography
@@ -183,7 +172,7 @@ const ThinkingProcessSettings: React.FC = () => {
 
           <Divider />
 
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+          <Box sx={CARD_STYLES.content}>
             <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
               <InputLabel>{t('settings.appearance.thinkingProcess.display.styleLabel')}</InputLabel>
               <Select
@@ -259,19 +248,8 @@ const ThinkingProcessSettings: React.FC = () => {
 
         {/* 实时预览组件 */}
         {thinkingDisplayStyle !== ThinkingDisplayStyle.HIDDEN && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-              bgcolor: 'background.paper',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-            }}
-          >
-            <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
+          <Paper elevation={0} sx={CARD_STYLES.elevated}>
+            <Box sx={CARD_STYLES.header}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Eye size={20} style={{ marginRight: 8, color: '#9333EA' }} />
                 <Typography
@@ -300,7 +278,7 @@ const ThinkingProcessSettings: React.FC = () => {
 
             <Divider />
 
-            <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
+            <Box sx={CARD_STYLES.content}>
               <Typography
                 variant="body2"
                 color="text.secondary"
