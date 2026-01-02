@@ -36,9 +36,13 @@ import UnifiedExportMenu from './UnifiedExportMenu';
 import { TTSManager } from '../../shared/services/tts-v2';
 import { getMainTextContent } from '../../shared/utils/messageUtils';
 import { toastManager } from '../EnhancedToast';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/zh-cn';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
+
+// 初始化 dayjs 插件
+dayjs.extend(relativeTime);
 import { getStorageItem } from '../../shared/utils/storage';
 import { useAppSelector } from '../../shared/store';
 import { Clipboard } from '@capacitor/clipboard';
@@ -550,10 +554,7 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
   // 格式化时间 - 优化：使用useCallback
   const formatTime = useCallback((dateString: string) => {
     try {
-      return formatDistanceToNow(new Date(dateString), {
-        addSuffix: true,
-        locale: zhCN
-      });
+      return dayjs(dateString).locale('zh-cn').fromNow();
     } catch (error) {
       console.error('日期格式化错误:', error);
       return '未知时间';

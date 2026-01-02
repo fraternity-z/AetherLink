@@ -2,8 +2,8 @@ import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ChevronDown as ExpandMoreIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import MessageItem from './MessageItem';
@@ -175,8 +175,7 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
   // 格式化日期
   const formattedDate = useMemo(() => {
     try {
-      const dateObj = new Date(date);
-      return format(dateObj, 'yyyy年MM月dd日 EEEE', { locale: zhCN });
+      return dayjs(date).locale('zh-cn').format('YYYY年MM月DD日 dddd');
     } catch (error) {
       return date;
     }

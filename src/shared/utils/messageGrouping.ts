@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import dayjs from 'dayjs';
 import type { Message } from '../types/newMessage';
 
 /**
@@ -23,7 +23,7 @@ export function groupMessagesByDate(messages: Message[]): Record<string, Message
 
   messages.forEach((message) => {
     const date = message.createdAt ? new Date(message.createdAt) : new Date();
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = dayjs(date).format('YYYY-MM-DD');
 
     if (!groups[dateKey]) {
       groups[dateKey] = [];
@@ -45,7 +45,7 @@ export function groupMessagesByHour(messages: Message[]): Record<string, Message
 
   messages.forEach((message) => {
     const date = message.createdAt ? new Date(message.createdAt) : new Date();
-    const dateKey = format(date, 'yyyy-MM-dd HH:00');
+    const dateKey = dayjs(date).format('YYYY-MM-DD HH:00');
 
     if (!groups[dateKey]) {
       groups[dateKey] = [];
