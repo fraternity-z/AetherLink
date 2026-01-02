@@ -497,15 +497,15 @@ function serializeRequestBody(body?: BodyInit | null): string | undefined {
 /**
  * 验证响应类型（根据CorsBypass插件实际支持的类型）
  */
-function validateResponseType(responseType: string): 'json' | 'text' {
-  // CorsBypass 插件目前实际只支持 json 和 text
-  // 如果请求了不支持的类型，记录警告并回退到合适的类型
-  if (responseType !== 'json' && responseType !== 'text') {
+function validateResponseType(responseType: string): 'json' | 'text' | 'arraybuffer' | 'blob' {
+  // CorsBypass 插件 v2.1.2+ 支持 json, text, arraybuffer, blob
+  const supportedTypes = ['json', 'text', 'arraybuffer', 'blob'];
+  if (!supportedTypes.includes(responseType)) {
     console.warn(`[Universal Fetch] 响应类型 '${responseType}' 暂不支持，回退到 'text'`);
     return 'text';
   }
   
-  return responseType === 'json' ? 'json' : 'text';
+  return responseType as 'json' | 'text' | 'arraybuffer' | 'blob';
 }
 
 /**

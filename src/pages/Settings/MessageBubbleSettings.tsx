@@ -398,40 +398,34 @@ const MessageBubbleSettings: React.FC = () => {
 
         {/* 气泡宽度设置 */}
         <Paper sx={cardStyle}>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ 
-              p: 1, 
-              borderRadius: 2, 
+          <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{
+              p: 0.75,
+              borderRadius: 1.5,
               bgcolor: alpha('#10b981', 0.1),
-              color: '#10b981' 
+              color: '#10b981'
             }}>
-              <Maximize2 size={getIconSize(20)} />
+              <Maximize2 size={getIconSize(18)} />
             </Box>
-            <Box>
+            <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography variant="subtitle2" fontWeight={600}>
                   {t('settings.appearance.messageBubble.width.title')}
                 </Typography>
                 <Tooltip title={t('settings.appearance.messageBubble.width.tooltip')}>
-                  <Info size={getIconSize(16)} className="text-gray-400 hover:text-gray-600 cursor-help" />
+                  <Info size={getIconSize(14)} className="text-gray-400 hover:text-gray-600 cursor-help" />
                 </Tooltip>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                {t('settings.appearance.messageBubble.width.description')}
-              </Typography>
             </Box>
           </Box>
 
-          <Stack spacing={3}>
+          <Stack spacing={1.5}>
             {/* AI消息最大宽度 */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Bot size={getIconSize(16)} style={{ color: theme.palette.text.secondary }} />
-                <Typography variant="subtitle2" fontWeight={600}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 120 }}>
+                <Bot size={getIconSize(14)} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="caption" fontWeight={500}>
                   {t('settings.appearance.messageBubble.width.aiMaxWidth')}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ({messageBubbleMaxWidth}%)
                 </Typography>
               </Box>
               <Slider
@@ -440,25 +434,22 @@ const MessageBubbleSettings: React.FC = () => {
                 min={50}
                 max={100}
                 step={5}
-                marks={[
-                  { value: 50, label: '50%' },
-                  { value: 75, label: '75%' },
-                  { value: 100, label: '100%' }
-                ]}
+                size="small"
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
+                sx={{ flex: 1 }}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 36, textAlign: 'right' }}>
+                {messageBubbleMaxWidth}%
+              </Typography>
             </Box>
 
             {/* 用户消息最大宽度 */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <User size={getIconSize(16)} style={{ color: theme.palette.text.secondary }} />
-                <Typography variant="subtitle2" fontWeight={600}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 120 }}>
+                <User size={getIconSize(14)} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="caption" fontWeight={500}>
                   {t('settings.appearance.messageBubble.width.userMaxWidth')}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ({userMessageMaxWidth}%)
                 </Typography>
               </Box>
               <Slider
@@ -467,25 +458,22 @@ const MessageBubbleSettings: React.FC = () => {
                 min={50}
                 max={100}
                 step={5}
-                marks={[
-                  { value: 50, label: '50%' },
-                  { value: 75, label: '75%' },
-                  { value: 100, label: '100%' }
-                ]}
+                size="small"
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
+                sx={{ flex: 1 }}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 36, textAlign: 'right' }}>
+                {userMessageMaxWidth}%
+              </Typography>
             </Box>
 
             {/* 消息最小宽度 */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Minimize2 size={getIconSize(16)} style={{ color: theme.palette.text.secondary }} />
-                <Typography variant="subtitle2" fontWeight={600}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 120 }}>
+                <Minimize2 size={getIconSize(14)} style={{ color: theme.palette.text.secondary }} />
+                <Typography variant="caption" fontWeight={500}>
                   {t('settings.appearance.messageBubble.width.minWidth')}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ({messageBubbleMinWidth}%)
                 </Typography>
               </Box>
               <Slider
@@ -494,32 +482,28 @@ const MessageBubbleSettings: React.FC = () => {
                 min={10}
                 max={90}
                 step={5}
-                marks={[
-                  { value: 10, label: '10%' },
-                  { value: 30, label: '30%' },
-                  { value: 50, label: '50%' },
-                  { value: 70, label: '70%' },
-                  { value: 90, label: '90%' }
-                ]}
+                size="small"
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value}%`}
+                sx={{ flex: 1 }}
               />
+              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 36, textAlign: 'right' }}>
+                {messageBubbleMinWidth}%
+              </Typography>
             </Box>
           </Stack>
 
-          <Typography variant="body2" color="text.secondary" sx={{ 
-            mt: 3, 
-            p: 2, 
+          <Typography variant="caption" color="text.secondary" sx={{
+            mt: 1.5,
+            p: 1,
+            display: 'block',
             bgcolor: alpha(theme.palette.background.default, 0.5),
-            borderRadius: 2,
+            borderRadius: 1.5,
             border: '1px solid',
-            borderColor: 'divider'
+            borderColor: 'divider',
+            lineHeight: 1.5
           }}>
-            <strong>{t('settings.appearance.messageBubble.width.instructions.title')}</strong>
-            <br />{t('settings.appearance.messageBubble.width.instructions.aiMaxWidth')}
-            <br />{t('settings.appearance.messageBubble.width.instructions.userMaxWidth')}
-            <br />{t('settings.appearance.messageBubble.width.instructions.minWidth')}
-            <br />{t('settings.appearance.messageBubble.width.instructions.note')}
+            {t('settings.appearance.messageBubble.width.instructions.note')}
           </Typography>
         </Paper>
 

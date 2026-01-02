@@ -160,6 +160,12 @@ public class MainActivity extends BridgeActivity {
              settings.setJavaScriptEnabled(true);
              settings.setDomStorageEnabled(true);
              settings.setDatabaseEnabled(true);
+             
+             // 🔊 允许音频/视频自动播放，无需用户手势
+             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                 settings.setMediaPlaybackRequiresUserGesture(false);
+                 Log.d(TAG, "✅ 已禁用媒体播放用户手势限制 (TTS可自动播放)");
+             }
 
              // 确保网络请求正常
              settings.setBlockNetworkLoads(false);

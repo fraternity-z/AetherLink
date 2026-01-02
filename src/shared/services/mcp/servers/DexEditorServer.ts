@@ -396,6 +396,209 @@ const DEX_RENAME_CLASS_TOOL: Tool = {
   }
 };
 
+// ==================== 新增 C++ 功能工具 ====================
+
+const DEX_LIST_STRINGS_TOOL: Tool = {
+  name: 'dex_list_strings',
+  description: '列出 DEX 中的字符串池，支持过滤和限制数量',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      sessionId: {
+        type: 'string',
+        description: '会话 ID'
+      },
+      filter: {
+        type: 'string',
+        description: '过滤字符串（包含匹配）'
+      },
+      limit: {
+        type: 'integer',
+        description: '最大返回数量',
+        default: 100
+      }
+    },
+    required: ['sessionId']
+  }
+};
+
+const DEX_FIND_METHOD_XREFS_TOOL: Tool = {
+  name: 'dex_find_method_xrefs',
+  description: '查找方法的交叉引用（哪些地方调用了这个方法）',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      sessionId: {
+        type: 'string',
+        description: '会话 ID'
+      },
+      className: {
+        type: 'string',
+        description: '类名'
+      },
+      methodName: {
+        type: 'string',
+        description: '方法名'
+      }
+    },
+    required: ['sessionId', 'className', 'methodName']
+  }
+};
+
+const DEX_FIND_FIELD_XREFS_TOOL: Tool = {
+  name: 'dex_find_field_xrefs',
+  description: '查找字段的交叉引用（哪些地方访问了这个字段）',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      sessionId: {
+        type: 'string',
+        description: '会话 ID'
+      },
+      className: {
+        type: 'string',
+        description: '类名'
+      },
+      fieldName: {
+        type: 'string',
+        description: '字段名'
+      }
+    },
+    required: ['sessionId', 'className', 'fieldName']
+  }
+};
+
+const DEX_SMALI_TO_JAVA_TOOL: Tool = {
+  name: 'dex_smali_to_java',
+  description: '将类的 Smali 代码转换为 Java 伪代码（便于理解）',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      sessionId: {
+        type: 'string',
+        description: '会话 ID'
+      },
+      className: {
+        type: 'string',
+        description: '类名'
+      }
+    },
+    required: ['sessionId', 'className']
+  }
+};
+
+const APK_SEARCH_ARSC_STRINGS_TOOL: Tool = {
+  name: 'apk_search_arsc_strings',
+  description: '搜索 APK 资源文件 (resources.arsc) 中的字符串',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apkPath: {
+        type: 'string',
+        description: 'APK 文件路径'
+      },
+      pattern: {
+        type: 'string',
+        description: '搜索模式'
+      },
+      limit: {
+        type: 'integer',
+        description: '最大返回数量',
+        default: 50
+      }
+    },
+    required: ['apkPath', 'pattern']
+  }
+};
+
+const APK_SEARCH_ARSC_RESOURCES_TOOL: Tool = {
+  name: 'apk_search_arsc_resources',
+  description: '搜索 APK 资源文件 (resources.arsc) 中的资源',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apkPath: {
+        type: 'string',
+        description: 'APK 文件路径'
+      },
+      pattern: {
+        type: 'string',
+        description: '搜索模式'
+      },
+      type: {
+        type: 'string',
+        description: '资源类型（如 string, drawable, layout）'
+      },
+      limit: {
+        type: 'integer',
+        description: '最大返回数量',
+        default: 50
+      }
+    },
+    required: ['apkPath', 'pattern']
+  }
+};
+
+// ==================== C++ 高性能工具 ====================
+
+const APK_PARSE_MANIFEST_CPP_TOOL: Tool = {
+  name: 'apk_parse_manifest_cpp',
+  description: '使用 C++ 高性能解析 AndroidManifest.xml，返回结构化信息',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apkPath: {
+        type: 'string',
+        description: 'APK 文件路径'
+      }
+    },
+    required: ['apkPath']
+  }
+};
+
+const APK_SEARCH_MANIFEST_CPP_TOOL: Tool = {
+  name: 'apk_search_manifest_cpp',
+  description: '使用 C++ 高性能搜索 AndroidManifest.xml 中的属性和值',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apkPath: {
+        type: 'string',
+        description: 'APK 文件路径'
+      },
+      attrName: {
+        type: 'string',
+        description: '属性名（可选）'
+      },
+      value: {
+        type: 'string',
+        description: '值（可选）'
+      },
+      limit: {
+        type: 'integer',
+        description: '最大返回数量',
+        default: 50
+      }
+    },
+    required: ['apkPath']
+  }
+};
+
+const APK_PARSE_ARSC_CPP_TOOL: Tool = {
+  name: 'apk_parse_arsc_cpp',
+  description: '使用 C++ 高性能解析 resources.arsc，返回资源概要信息',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      apkPath: {
+        type: 'string',
+        description: 'APK 文件路径'
+      }
+    },
+    required: ['apkPath']
+  }
+};
+
 // ==================== XML 编辑工具 ====================
 
 const APK_GET_MANIFEST_TOOL: Tool = {
@@ -783,6 +986,11 @@ export class DexEditorServer {
           DEX_LIST_METHODS_TOOL,
           DEX_LIST_FIELDS_TOOL,
           DEX_RENAME_CLASS_TOOL,
+          // 新增 C++ 功能工具
+          DEX_LIST_STRINGS_TOOL,
+          DEX_FIND_METHOD_XREFS_TOOL,
+          DEX_FIND_FIELD_XREFS_TOOL,
+          DEX_SMALI_TO_JAVA_TOOL,
           DEX_SAVE_TOOL,
           DEX_CLOSE_TOOL,
           DEX_LIST_SESSIONS_TOOL,
@@ -799,6 +1007,13 @@ export class DexEditorServer {
           APK_READ_FILE_TOOL,
           APK_DELETE_FILE_TOOL,
           APK_ADD_FILE_TOOL,
+          // 新增 ARSC 搜索工具
+          APK_SEARCH_ARSC_STRINGS_TOOL,
+          APK_SEARCH_ARSC_RESOURCES_TOOL,
+          // C++ 高性能工具
+          APK_PARSE_MANIFEST_CPP_TOOL,
+          APK_SEARCH_MANIFEST_CPP_TOOL,
+          APK_PARSE_ARSC_CPP_TOOL,
           // Agentic 完成工具
           ATTEMPT_COMPLETION_TOOL
         ]
@@ -906,6 +1121,34 @@ export class DexEditorServer {
             newClassName: string;
           });
 
+        // 新增 C++ 功能工具
+        case 'dex_list_strings':
+          return this.listStrings(args as {
+            sessionId: string;
+            filter?: string;
+            limit?: number;
+          });
+
+        case 'dex_find_method_xrefs':
+          return this.findMethodXrefs(args as {
+            sessionId: string;
+            className: string;
+            methodName: string;
+          });
+
+        case 'dex_find_field_xrefs':
+          return this.findFieldXrefs(args as {
+            sessionId: string;
+            className: string;
+            fieldName: string;
+          });
+
+        case 'dex_smali_to_java':
+          return this.smaliToJava(args as {
+            sessionId: string;
+            className: string;
+          });
+
         // XML/资源工具
         case 'apk_get_manifest':
           return this.getManifest(args as { apkPath: string; maxChars?: number; offset?: number });
@@ -956,6 +1199,23 @@ export class DexEditorServer {
 
         case 'apk_add_file':
           return this.addApkFile(args as { apkPath: string; filePath: string; content: string; isBase64?: boolean });
+
+        // 新增 ARSC 搜索工具
+        case 'apk_search_arsc_strings':
+          return this.searchArscStrings(args as { apkPath: string; pattern: string; limit?: number });
+
+        case 'apk_search_arsc_resources':
+          return this.searchArscResources(args as { apkPath: string; pattern: string; type?: string; limit?: number });
+
+        // C++ 高性能工具
+        case 'apk_parse_manifest_cpp':
+          return this.parseManifestCpp(args as { apkPath: string });
+
+        case 'apk_search_manifest_cpp':
+          return this.searchManifestCpp(args as { apkPath: string; attrName?: string; value?: string; limit?: number });
+
+        case 'apk_parse_arsc_cpp':
+          return this.parseArscCpp(args as { apkPath: string });
 
         case 'attempt_completion':
           return this.attemptCompletion(args as { result: string; command?: string });
@@ -2212,6 +2472,226 @@ export class DexEditorServer {
     }
   }
 
+  // ==================== 新增 C++ 功能方法 ====================
+
+  /**
+   * 列出 DEX 字符串池
+   */
+  private async listStrings(params: { sessionId: string; filter?: string; limit?: number }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'listStrings',
+        params: {
+          sessionId: params.sessionId,
+          filter: params.filter || '',
+          limit: params.limit || 100
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 查找方法交叉引用
+   */
+  private async findMethodXrefs(params: { sessionId: string; className: string; methodName: string }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'findMethodXrefs',
+        params: {
+          sessionId: params.sessionId,
+          className: params.className,
+          methodName: params.methodName
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      const xrefs = result.data?.xrefs || [];
+      return {
+        content: [{
+          type: 'text',
+          text: `找到 ${xrefs.length} 个交叉引用:\n${JSON.stringify(result.data, null, 2)}`
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 查找字段交叉引用
+   */
+  private async findFieldXrefs(params: { sessionId: string; className: string; fieldName: string }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'findFieldXrefs',
+        params: {
+          sessionId: params.sessionId,
+          className: params.className,
+          fieldName: params.fieldName
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      const xrefs = result.data?.xrefs || [];
+      return {
+        content: [{
+          type: 'text',
+          text: `找到 ${xrefs.length} 个交叉引用:\n${JSON.stringify(result.data, null, 2)}`
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * Smali 转 Java 伪代码
+   */
+  private async smaliToJava(params: { sessionId: string; className: string }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'smaliToJava',
+        params: {
+          sessionId: params.sessionId,
+          className: params.className
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: `// Java 伪代码 - ${params.className}\n\n${result.data?.java || '转换失败'}`
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 搜索 ARSC 字符串
+   */
+  private async searchArscStrings(params: { apkPath: string; pattern: string; limit?: number }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'searchArscStrings',
+        params: {
+          apkPath: params.apkPath,
+          pattern: params.pattern,
+          limit: params.limit || 50
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 搜索 ARSC 资源
+   */
+  private async searchArscResources(params: { apkPath: string; pattern: string; type?: string; limit?: number }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'searchArscResources',
+        params: {
+          apkPath: params.apkPath,
+          pattern: params.pattern,
+          type: params.type || '',
+          limit: params.limit || 50
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
   /**
    * 完成任务 - Agentic 模式的终止信号
    * 当 AI 认为任务已完成时调用此工具
@@ -2245,5 +2725,108 @@ export class DexEditorServer {
         isCompletion: true
       }
     } as ToolResult;
+  }
+
+  // ==================== C++ 高性能方法 ====================
+
+  /**
+   * 使用 C++ 解析 AndroidManifest.xml
+   */
+  private async parseManifestCpp(params: { apkPath: string }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'parseManifestCpp',
+        params: { apkPath: params.apkPath }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 使用 C++ 搜索 AndroidManifest.xml
+   */
+  private async searchManifestCpp(params: { apkPath: string; attrName?: string; value?: string; limit?: number }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'searchManifestCpp',
+        params: {
+          apkPath: params.apkPath,
+          attrName: params.attrName || '',
+          value: params.value || '',
+          limit: params.limit || 50
+        }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * 使用 C++ 解析 resources.arsc
+   */
+  private async parseArscCpp(params: { apkPath: string }): Promise<ToolResult> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (DexEditorPlugin as any).execute({
+        action: 'parseArscCpp',
+        params: { apkPath: params.apkPath }
+      });
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `错误: ${result.error}` }],
+          isError: true
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result.data, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `错误: ${error instanceof Error ? error.message : '未知错误'}` }],
+        isError: true
+      };
+    }
   }
 }

@@ -19,7 +19,7 @@ import {
   Skeleton
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { Wrench, Database, Globe, Plus, Settings, Terminal } from 'lucide-react';
+import { Plug, Server, Wifi, Cpu, Terminal, Cog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { MCPServer, MCPServerType } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
@@ -29,17 +29,17 @@ import { useMCPServerStateManager } from '../../../hooks/useMCPServerStateManage
 // 服务器类型配置常量
 const SERVER_TYPE_CONFIG = {
   httpStream: {
-    icon: Globe,
+    icon: Wifi,
     color: '#9c27b0',
     label: 'HTTP Stream'
   },
   sse: {
-    icon: Globe,
+    icon: Server,
     color: '#2196f3',
     label: 'SSE'
   },
   streamableHttp: {
-    icon: Globe,
+    icon: Wifi,
     color: '#00bcd4',
     label: 'Streamable HTTP'
   },
@@ -49,18 +49,18 @@ const SERVER_TYPE_CONFIG = {
     label: 'stdio'
   },
   inMemory: {
-    icon: Database,
+    icon: Cpu,
     color: '#4CAF50',
     label: 'In Memory'
   },
   default: {
-    icon: Settings,
+    icon: Cog,
     color: '#9e9e9e',
     label: 'Default'
   }
 } as const;
 
-interface MCPToolsDialogProps {
+interface MCPServerQuickPanelProps {
   open: boolean;
   onClose: () => void;
   toolsEnabled?: boolean;
@@ -71,7 +71,7 @@ interface MCPToolsDialogProps {
  * MCP 工具服务器对话框组件
  * 可被 MCPToolsButton 和 ToolsMenu 共用
  */
-const MCPToolsDialogInner: React.FC<MCPToolsDialogProps> = ({
+const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
   open,
   onClose,
   toolsEnabled = false,
@@ -179,22 +179,24 @@ const MCPToolsDialogInner: React.FC<MCPToolsDialogProps> = ({
     <BackButtonDialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth
+      fullScreen
       transitionDuration={0}
       slotProps={{
         paper: {
           sx: {
-            borderRadius: 2,
-            maxHeight: '80vh'
+            borderRadius: 0
           }
         }
       }}
     >
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle sx={{ 
+        pb: 1, 
+        flexShrink: 0,
+        pt: 'calc(var(--safe-area-top, 0px) + 16px)'
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Wrench size={20} color="#10b981" />
+            <Plug size={20} color="#10b981" />
             <Typography variant="h6" fontWeight={600}>
               MCP 工具服务器
             </Typography>
@@ -216,60 +218,59 @@ const MCPToolsDialogInner: React.FC<MCPToolsDialogProps> = ({
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
         {/* 错误提示 */}
         {error && (
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2, flexShrink: 0 }}>
             <Alert severity="error" onClose={() => setError(null)}>
               {error}
             </Alert>
           </Box>
         )}
 
-        {isInitialLoading ? (
-          // 骨架屏加载状态
-          <List sx={{ py: 0 }}>
-            {[1, 2, 3].map((index) => (
-              <ListItem key={index} sx={{ py: 2 }}>
-                <ListItemIcon>
-                  <Skeleton variant="circular" width={32} height={32} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={<Skeleton variant="text" width="60%" height={24} />}
-                  secondary={
-                    <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                      <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: '10px' }} />
-                      <Skeleton variant="rectangular" width={50} height={20} sx={{ borderRadius: '10px' }} />
-                    </Box>
-                  }
-                  secondaryTypographyProps={{ component: 'div' }}
-                />
-                <Box sx={{ ml: 'auto' }}>
-                  <Skeleton variant="rectangular" width={40} height={24} sx={{ borderRadius: '12px' }} />
-                </Box>
-              </ListItem>
-            ))}
-          </List>
-        ) : servers.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Wrench size={48} color="rgba(0,0,0,0.4)" style={{ marginBottom: 16 }} />
-            <Typography variant="h6" gutterBottom>
-              还没有配置 MCP 服务器
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              MCP 服务器可以为 AI 提供额外的工具和功能
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Plus size={16} />}
-              onClick={handleNavigateToSettings}
-              sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
-            >
-              添加服务器
-            </Button>
-          </Box>
-        ) : (
-          <>
+        {/* 可滚动的服务器列表区域 */}
+        <Box sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          '&::-webkit-scrollbar': { display: 'none' },
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none'
+        }}>
+          {isInitialLoading ? (
+            // 骨架屏加载状态
+            <List sx={{ py: 0 }}>
+              {[1, 2, 3, 4, 5].map((index) => (
+                <ListItem key={index} sx={{ py: 2 }}>
+                  <ListItemIcon>
+                    <Skeleton variant="circular" width={32} height={32} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={<Skeleton variant="text" width="60%" height={24} />}
+                    secondary={
+                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                        <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: '10px' }} />
+                        <Skeleton variant="rectangular" width={50} height={20} sx={{ borderRadius: '10px' }} />
+                      </Box>
+                    }
+                    secondaryTypographyProps={{ component: 'div' }}
+                  />
+                  <Box sx={{ ml: 'auto' }}>
+                    <Skeleton variant="rectangular" width={40} height={24} sx={{ borderRadius: '12px' }} />
+                  </Box>
+                </ListItem>
+              ))}
+            </List>
+          ) : servers.length === 0 ? (
+            <Box sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <Plug size={64} color="rgba(0,0,0,0.3)" style={{ marginBottom: 24 }} />
+              <Typography variant="h6" gutterBottom>
+                还没有配置 MCP 服务器
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                MCP 服务器可以为 AI 提供额外的工具和功能
+              </Typography>
+            </Box>
+          ) : (
             <List sx={{ py: 0 }}>
               {servers.map((server, index) => (
                 <React.Fragment key={server.id}>
@@ -316,52 +317,42 @@ const MCPToolsDialogInner: React.FC<MCPToolsDialogProps> = ({
                           )}
                         </Box>
                       }
-                      secondary={
-                        <Box component="div">
-                          {server.description && (
-                            <Typography variant="body2" color="text.secondary" component="span" sx={{ display: 'block' }}>
-                              {server.description}
-                            </Typography>
-                          )}
-                          {server.baseUrl && (
-                            <Typography variant="caption" color="text.secondary" component="span" sx={{ display: 'block' }}>
-                              {server.baseUrl}
-                            </Typography>
-                          )}
-                        </Box>
-                      }
-                      slotProps={{
-                        secondary: { component: 'div' }
-                      }}
                     />
                   </ListItem>
                   {index < servers.length - 1 && <Divider />}
                 </React.Fragment>
               ))}
             </List>
-
-            <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Settings size={16} />}
-                onClick={handleNavigateToSettings}
-                size="small"
-              >
-                管理 MCP 服务器
-              </Button>
-            </Box>
-          </>
-        )}
+          )}
+        </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>关闭</Button>
+
+      {/* 固定底部按钮区域 */}
+      <DialogActions sx={{ 
+        flexDirection: 'column', 
+        gap: 1, 
+        p: 2,
+        pb: 'calc(var(--safe-area-bottom-computed, 0px) + 16px)',
+        borderTop: '1px solid', 
+        borderColor: 'divider',
+        flexShrink: 0
+      }}>
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<Cog size={16} />}
+          onClick={handleNavigateToSettings}
+          sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+        >
+          管理 MCP 服务器
+        </Button>
+        <Button fullWidth variant="outlined" onClick={onClose}>关闭</Button>
       </DialogActions>
     </BackButtonDialog>
   );
 };
 
 // 使用 React.memo 包装，避免父组件重渲染时的不必要更新
-const MCPToolsDialog = React.memo(MCPToolsDialogInner);
+const MCPServerQuickPanel = React.memo(MCPServerQuickPanelInner);
 
-export default MCPToolsDialog;
+export default MCPServerQuickPanel;

@@ -287,17 +287,24 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
-          variant="standard"
+          variant="scrollable"
+          scrollButtons={false}
           sx={{
-            minHeight: isMobile ? 40 : 36, // 减小移动端高度
+            width: '100%',
+            minHeight: isMobile ? 40 : 36,
+            '& .MuiTabs-flexContainer': {
+              gap: isMobile ? 0.5 : 1,
+            },
             '& .MuiTab-root': {
               color: (theme) => theme.palette.text.secondary,
-              fontSize: isMobile ? '0.9rem' : '0.875rem', // 稍微减小字体
+              fontSize: isMobile ? '0.8rem' : '0.875rem',
               fontWeight: 500,
               textTransform: 'none',
-              minWidth: isMobile ? 80 : 80,
-              minHeight: isMobile ? 40 : 36, // 减小移动端高度
-              py: isMobile ? 1 : 1,
+              minWidth: isMobile ? 64 : 80,
+              minHeight: isMobile ? 40 : 36,
+              py: 1,
+              px: isMobile ? 1.5 : 2,
+              whiteSpace: 'nowrap',
               '&.Mui-selected': {
                 color: (theme) => theme.palette.primary.main
               }

@@ -8,6 +8,7 @@
 
 import { BaseTTSEngine } from './BaseTTSEngine';
 import type { TTSEngineType, TTSSynthesisResult, SiliconFlowTTSConfig } from '../types';
+import { universalFetch } from '../../../utils/universalFetch';
 
 export class SiliconFlowEngine extends BaseTTSEngine {
   readonly name: TTSEngineType = 'siliconflow';
@@ -45,13 +46,14 @@ export class SiliconFlowEngine extends BaseTTSEngine {
       // 根据模型类型构建请求体
       const requestBody = this.buildRequestBody(text);
       
-      const response = await fetch(url, {
+      const response = await universalFetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        responseType: 'arraybuffer', // 使用 arraybuffer 获取二进制数据
       });
       
       if (!response.ok) {
@@ -66,7 +68,18 @@ export class SiliconFlowEngine extends BaseTTSEngine {
       if (this.config.useStream && response.body) {
         return await this.handleStreamResponse(response);
       } else {
-        const audioData = await response.arrayBuffer();
+        // 移动端 CorsBypass 返回的是 Base64 编码的 data 属性
+        const universalResponse = response as any;
+        let audioData: ArrayBuffer;
+        
+        if (universalResponse.data && typeof universalResponse.data === 'string') {
+          // 解码 Base64 数据
+          audioData = this.base64ToArrayBuffer(universalResponse.data);
+        } else {
+          // 标准 fetch 返回
+          audioData = await response.arrayBuffer();
+        }
+        
         return {
           success: true,
           audioData,
@@ -193,5 +206,17 @@ export class SiliconFlowEngine extends BaseTTSEngine {
         stream: this.config.useStream,
       };
     }
+  }
+
+  /**
+   * Base64 解码为 ArrayBuffer
+   */
+  private base64ToArrayBuffer(base64: string): ArrayBuffer {
+    const binaryString = atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
   }
 }

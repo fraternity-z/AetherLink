@@ -173,11 +173,20 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
         incrementalText = text.slice(lastProcessedTextLength);
         lastProcessedTextLength = text.length;
       } else if (text.length < lastProcessedTextLength) {
-        // ⭐ 新一轮 API 调用开始（内容变短了），重置所有状态并创建新块
-        console.log(`[ResponseHandler] 检测到新一轮响应，重置状态并准备新文本块`);
+        // ⭐ 新一轮 API 调用开始（内容变短了）
+        // 🔧 修复：先完成当前文本块（保存内容到数据库），再创建新块
+        // 这样中断时，之前迭代的内容不会丢失
+        console.log(`[ResponseHandler] 检测到新一轮响应，先保存当前内容再准备新文本块`);
+        
+        // 先完成当前文本块，确保内容已保存
+        const savedBlockId = chunkProcessor.completeCurrentTextBlock();
+        if (savedBlockId) {
+          console.log(`[ResponseHandler] 已保存上一轮文本块: ${savedBlockId}`);
+        }
+        
+        // 重置状态准备新块
         lastProcessedTextLength = text.length;
         accumulatedCleanText = '';
-        // 重置文本块状态，让下次文本更新时创建新块
         chunkProcessor.resetTextBlock();
         incrementalText = text;  // 新一轮从头开始处理
       }

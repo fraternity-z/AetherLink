@@ -12,7 +12,7 @@ import type { RootState } from '../../../shared/store';
 import type { MCPServer } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
 import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../InputToolbar';
-import MCPToolsDialog from './MCPToolsDialog';
+import MCPServerQuickPanel from './MCPServerQuickPanel';
 
 // 稳定的选择器函数，避免每次渲染创建新引用
 const selectToolbarDisplayStyle = (state: RootState) => 
@@ -238,7 +238,7 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
     <>
       {renderButton()}
 
-      <MCPToolsDialog
+      <MCPServerQuickPanel
         open={open}
         onClose={handleClose}
         toolsEnabled={toolsEnabled}

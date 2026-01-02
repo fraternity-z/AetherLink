@@ -26,6 +26,7 @@ import { formatThinkingTimeSeconds } from '../../../shared/utils/thinkingUtils';
 import { getThinkingScrollbarStyles, getCompactScrollbarStyles } from '../../../shared/utils/scrollbarStyles';
 import type { ThinkingDisplayStyle } from './ThinkingBlock';
 import ThinkingAdvancedStyles from './ThinkingAdvancedStyles';
+import ThinkingCompactStyle from './ThinkingCompactStyle';
 import { useTranslation } from '../../../i18n';
 // 公共动画配置
 const getThinkingAnimation = (isThinking: boolean) => ({
@@ -120,116 +121,17 @@ const ThinkingDisplayRenderer: React.FC<ThinkingDisplayRendererProps> = ({
     return null;
   }
 
-  // 紧凑模式 - 圆滑紧凑优化版
+  // 紧凑模式 - 使用独立组件
   const renderCompactStyle = () => (
-    <StyledPaper
-      onClick={onToggleExpanded}
-      elevation={0}
-      sx={{
-        cursor: 'pointer',
-        mb: 1.5,
-        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-        borderRadius: '16px',
-        overflow: 'hidden',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        width: '100%',
-        maxWidth: '100%',
-        minWidth: 0,
-        ...getGlassBackground(theme.palette.mode === 'dark'),
-        '&:hover': {
-          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(45, 45, 45, 0.92)' : 'rgba(250, 250, 250, 0.95)',
-          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
-          transform: 'translateY(-1px)',
-          boxShadow: theme.palette.mode === 'dark' 
-            ? '0 4px 12px rgba(0,0,0,0.3)' 
-            : '0 4px 12px rgba(0,0,0,0.08)',
-        }
-      }}
-    >
-      {/* 标题栏 */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          px: 1.5,
-          py: 1,
-          borderBottom: expanded ? `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}` : 'none'
-        }}
-      >
-        <motion.div {...getThinkingAnimation(isThinking)} style={{ marginRight: theme.spacing(0.75) }}>
-          <Lightbulb size={16} color={isThinking ? theme.palette.warning.main : theme.palette.text.secondary} />
-        </motion.div>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 0.75 }}>
-          <Typography variant="body2" component="span" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
-            {t('settings.appearance.thinkingProcess.preview.texts.thinkingProcess')}
-          </Typography>
-          <Chip
-            label={isThinking ? t('settings.appearance.thinkingProcess.preview.texts.thinkingInProgress', { time: formattedThinkingTime }) : t('settings.appearance.thinkingProcess.preview.texts.thinkingCompleteTime', { time: formattedThinkingTime })}
-            size="small"
-            color={isThinking ? "warning" : "default"}
-            variant="outlined"
-            sx={{ 
-              height: 18, 
-              fontSize: '0.65rem',
-              borderRadius: '9px',
-              '& .MuiChip-label': { px: 1 }
-            }}
-          />
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-          <IconButton
-            size="small"
-            onClick={handleCopyClick}
-            color={copied ? "success" : "default"}
-            sx={{ 
-              p: 0.5,
-              borderRadius: '8px',
-              '&:hover': { backgroundColor: theme.palette.action.hover }
-            }}
-          >
-            <Copy size={14} />
-          </IconButton>
-
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 24,
-              height: 24,
-              borderRadius: '8px',
-              transition: 'background-color 0.2s',
-              '&:hover': { backgroundColor: theme.palette.action.hover }
-            }}
-          >
-            <ChevronDown
-              size={16}
-              style={{
-                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            />
-          </Box>
-        </Box>
-      </Box>
-
-      {/* 内容区域 */}
-      <Collapse in={expanded} timeout={0}>
-        <Box sx={{
-          px: 1.5,
-          py: 1.25,
-          width: '100%',
-          maxWidth: '100%',
-          minWidth: 0,
-          boxSizing: 'border-box',
-          ...getThinkingScrollbarStyles(theme)
-        }}>
-          <Markdown content={content} allowHtml={false} />
-        </Box>
-      </Collapse>
-    </StyledPaper>
+    <ThinkingCompactStyle
+      expanded={expanded}
+      isThinking={isThinking}
+      thinkingTime={thinkingTime}
+      content={content}
+      copied={copied}
+      onToggleExpanded={onToggleExpanded}
+      onCopy={onCopy}
+    />
   );
 
   // 完整显示样式
