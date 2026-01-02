@@ -1071,7 +1071,9 @@ const AIDebateSettings: React.FC = () => {
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
-                    <FolderOpen size={16} color="text.secondary" />
+                    <Box sx={{ color: 'text.secondary', display: 'flex', mr: 1 }}>
+                      <FolderOpen size={16} />
+                    </Box>
                     <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                         {group.name}
