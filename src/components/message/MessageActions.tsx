@@ -40,15 +40,16 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
-
-// 初始化 dayjs 插件
-dayjs.extend(relativeTime);
 import { getStorageItem } from '../../shared/utils/storage';
 import { useAppSelector } from '../../shared/store';
 import { Clipboard } from '@capacitor/clipboard';
 import { Z_INDEX } from '../../shared/constants/zIndex';
 import { debugLog } from '../../shared/utils/debugLogger';
 import MessageTranslateButton from './MessageTranslateButton';
+
+// 初始化 dayjs 插件和全局语言设置
+dayjs.extend(relativeTime);
+dayjs.locale('zh-cn');
 
 interface MessageActionsProps {
   message: Message;
@@ -551,10 +552,10 @@ const MessageActions: React.FC<MessageActionsProps> = React.memo(({
     }
   }, [onSwitchVersion]);
 
-  // 格式化时间 - 优化：使用useCallback
+  // 格式化时间 - 优化：使用useCallback，locale已全局设置
   const formatTime = useCallback((dateString: string) => {
     try {
-      return dayjs(dateString).locale('zh-cn').fromNow();
+      return dayjs(dateString).fromNow();
     } catch (error) {
       console.error('日期格式化错误:', error);
       return '未知时间';

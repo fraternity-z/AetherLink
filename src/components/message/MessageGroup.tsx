@@ -12,6 +12,9 @@ import ConversationDivider from './ConversationDivider';
 import type { Message } from '../../shared/types/newMessage';
 import { getMessageDividerSetting, shouldShowConversationDivider } from '../../shared/utils/settingsUtils';
 
+// 全局设置 dayjs 语言
+dayjs.locale('zh-cn');
+
 /**
  * 将消息按 askId 分组，识别多模型响应
  * 返回一个数组，每个元素是：
@@ -172,10 +175,10 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     };
   }, []);
 
-  // 格式化日期
+  // 格式化日期 - locale已全局设置
   const formattedDate = useMemo(() => {
     try {
-      return dayjs(date).locale('zh-cn').format('YYYY年MM月DD日 dddd');
+      return dayjs(date).format('YYYY年MM月DD日 dddd');
     } catch (error) {
       return date;
     }
