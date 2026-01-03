@@ -194,6 +194,7 @@ const AgentPromptSelector: React.FC<AgentPromptSelectorProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      keepMounted={false}
       slotProps={{
         paper: {
           sx: { height: '80vh' }

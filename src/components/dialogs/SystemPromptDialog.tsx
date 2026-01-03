@@ -20,6 +20,7 @@ import { X as CloseIcon, User, MessageSquare } from 'lucide-react';
 import type { ChatTopic, Assistant } from '../../shared/types/Assistant';
 import { TopicService } from '../../shared/services/topics/TopicService';
 import { updateTopic } from '../../shared/store/slices/assistantsSlice';
+import AgentPromptSelector from '../AgentPromptSelector';
 import { useAppDispatch } from '../../shared/store';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
@@ -58,6 +59,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
   const [tokensCount, setTokensCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<EditMode>('combined');
+  const [showPresetSelector, setShowPresetSelector] = useState(false);
 
   const DIALOG_ID = 'system-prompt-dialog';
 
@@ -305,6 +307,13 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
     setTokensCount(estimateTokens(newPrompt));
   };
 
+  // 处理预设提示词选择
+  const handlePresetSelect = (selectedPrompt: string) => {
+    setPrompt(selectedPrompt);
+    setTokensCount(estimateTokens(selectedPrompt));
+    setShowPresetSelector(false);
+  };
+
   return (
   <BackButtonDialog
     open={open}
@@ -429,6 +438,17 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
         </Typography>
       </Box>
 
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setShowPresetSelector(true)}
+          disabled={editMode === 'combined'}
+        >
+          选择预设提示词
+        </Button>
+      </Box>
+
       <Divider sx={{ mb: 2 }} />
 
       <TextField
@@ -510,6 +530,16 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
           {saving ? '保存中...' : `保存到${getSaveTarget()}`}
         </Button>
       </DialogActions>
+
+      {/* 预设提示词选择器 */}
+      {showPresetSelector && (
+        <AgentPromptSelector
+          open={showPresetSelector}
+          onClose={() => setShowPresetSelector(false)}
+          onSelect={handlePresetSelect}
+          currentPrompt={prompt}
+        />
+      )}
     </BackButtonDialog>
   );
 };

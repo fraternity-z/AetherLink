@@ -383,12 +383,14 @@ const AssistantTab = React.memo(function AssistantTab({
       />
 
       {/* 智能体提示词选择器 */}
-      <AgentPromptSelector
-        open={promptSelectorOpen}
-        onClose={handleClosePromptSelector}
-        onSelect={handleSelectPrompt}
-        currentPrompt={editAssistantPrompt}
-      />
+      {promptSelectorOpen && (
+        <AgentPromptSelector
+          open={promptSelectorOpen}
+          onClose={handleClosePromptSelector}
+          onSelect={handleSelectPrompt}
+          currentPrompt={editAssistantPrompt}
+        />
+      )}
 
       {/* 助手图标选择器 */}
       <AssistantIconPicker
