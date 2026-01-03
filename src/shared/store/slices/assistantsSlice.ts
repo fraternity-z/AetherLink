@@ -51,18 +51,20 @@ const assistantsSlice = createSlice({
           assistant.topics = [];
         }
 
+        // 🔥 修复：将新话题插入到数组开头，与 Cherry Studio 保持一致
+        // 这样切换助手时选择 topics[0] 就是最新的话题
         if (!assistant.topicIds.includes(topic.id)) {
-          assistant.topicIds.push(topic.id);
+          assistant.topicIds.unshift(topic.id);
         }
 
         if (!assistant.topics.some(t => t.id === topic.id)) {
-          assistant.topics.push(topic);
+          assistant.topics.unshift(topic);
         }
 
         // 使用辅助函数同步更新 currentAssistant
         syncCurrentAssistant(state, assistantId, assistant);
 
-        console.log(`[assistantsSlice] 添加话题 ${topic.id} 到助手 ${assistantId}，当前话题数量: ${assistant.topics.length}`);
+        console.log(`[assistantsSlice] 添加话题 ${topic.id} 到助手 ${assistantId}（插入到开头），当前话题数量: ${assistant.topics.length}`);
       }
     },
     removeTopic: (state, action: PayloadAction<{ assistantId: string; topicId: string }>) => {
