@@ -8,6 +8,7 @@ import {
   AppBar,
   ListItemButton,
   Paper,
+  Divider,
 } from '@mui/material';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
@@ -335,4 +336,264 @@ export const SettingItem: React.FC<SettingItemProps> = React.memo(({
     </PressableRow>
   );
 });
+
+// ==================== 新增：统一样式常量 ====================
+
+/**
+ * 卡片样式常量 - 统一所有 Settings 页面的 Paper 卡片样式
+ */
+export const CARD_STYLES = {
+  /** 基础卡片样式 */
+  base: {
+    mb: 2,
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    overflow: 'hidden',
+    bgcolor: 'background.paper',
+  },
+  /** 带阴影的卡片样式 */
+  elevated: {
+    mb: 2,
+    borderRadius: 2,
+    border: '1px solid',
+    borderColor: 'divider',
+    overflow: 'hidden',
+    bgcolor: 'background.paper',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+  },
+  /** 卡片头部样式 */
+  header: {
+    p: { xs: 1.5, sm: 2 },
+    bgcolor: 'rgba(0,0,0,0.01)',
+  },
+  /** 卡片内容区域样式 */
+  content: {
+    p: { xs: 1.5, sm: 2 },
+  },
+} as const;
+
+// ==================== 新增：SettingsCard 组件 ====================
+
+/**
+ * SettingsCard - 带头部的设置卡片
+ *
+ * 用于替代重复的 Paper + Box(header) + Divider + Box(content) 模式
+ * 统一 boxShadow、borderRadius、padding 等样式
+ *
+ * @example
+ * <SettingsCard
+ *   title="基本设置"
+ *   description="配置应用的基本选项"
+ *   icon={<Settings />}
+ * >
+ *   <SettingRow label="启用功能">
+ *     <Switch checked={enabled} onChange={handleChange} />
+ *   </SettingRow>
+ * </SettingsCard>
+ */
+interface SettingsCardProps {
+  /** 卡片标题 */
+  title: string;
+  /** 卡片描述（可选） */
+  description?: string;
+  /** 标题图标（可选，传入 Lucide 图标组件） */
+  icon?: React.ReactNode;
+  /** 图标颜色（默认 #06b6d4） */
+  iconColor?: string;
+  /** 卡片内容 */
+  children: React.ReactNode;
+  /** 不显示头部区域 */
+  noHeader?: boolean;
+  /** 使用基础样式（无阴影） */
+  flat?: boolean;
+  /** 额外的卡片样式 */
+  sx?: SxProps<Theme>;
+  /** 头部右侧的操作按钮 */
+  action?: React.ReactNode;
+}
+
+export const SettingsCard: React.FC<SettingsCardProps> = React.memo(({
+  title,
+  description,
+  icon,
+  iconColor = '#06b6d4',
+  children,
+  noHeader = false,
+  flat = false,
+  sx,
+  action,
+}) => {
+  const theme = useTheme();
+
+  // 克隆图标并设置样式
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (React.isValidElement(icon)) {
+      return React.cloneElement(icon as React.ReactElement<{ size?: number; color?: string }>, {
+        size: 20,
+        color: iconColor,
+      });
+    }
+    return icon;
+  };
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        ...(flat ? CARD_STYLES.base : CARD_STYLES.elevated),
+        ...sx,
+      }}
+    >
+      {!noHeader && (
+        <>
+          <Box sx={CARD_STYLES.header}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: '1rem', sm: '1.1rem' },
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  color: theme.palette.text.primary,
+                }}
+              >
+                {renderIcon()}
+                {title}
+              </Typography>
+              {action}
+            </Box>
+            {description && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' }, mt: 0.5 }}
+              >
+                {description}
+              </Typography>
+            )}
+          </Box>
+          <Divider />
+        </>
+      )}
+      <Box sx={CARD_STYLES.content}>
+        {children}
+      </Box>
+    </Paper>
+  );
+});
+
+SettingsCard.displayName = 'SettingsCard';
+
+// ==================== 新增：SettingRow 组件 ====================
+
+/**
+ * SettingRow - 设置行组件
+ *
+ * 用于在 SettingsCard 内部展示单个设置项
+ * 支持水平布局（开关、选择器）和垂直布局（滑块）
+ *
+ * @example
+ * // 水平布局（默认）
+ * <SettingRow label="启用通知">
+ *   <Switch checked={enabled} onChange={handleChange} />
+ * </SettingRow>
+ *
+ * // 垂直布局
+ * <SettingRow label="音量" description="调整系统音量" vertical>
+ *   <Slider value={volume} onChange={handleChange} />
+ * </SettingRow>
+ */
+interface SettingRowProps {
+  /** 设置项标签 */
+  label: string;
+  /** 设置项描述（可选） */
+  description?: string;
+  /** 右侧控件 */
+  children: React.ReactNode;
+  /** 使用垂直布局（适用于 Slider 等需要更多空间的控件） */
+  vertical?: boolean;
+  /** 是否为最后一项（不显示底部边距） */
+  last?: boolean;
+  /** 额外样式 */
+  sx?: SxProps<Theme>;
+}
+
+export const SettingRow: React.FC<SettingRowProps> = React.memo(({
+  label,
+  description,
+  children,
+  vertical = false,
+  last = false,
+  sx,
+}) => {
+  const theme = useTheme();
+
+  if (vertical) {
+    return (
+      <Box sx={{ mb: last ? 0 : 2, ...sx }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography
+            variant="body1"
+            sx={{
+              fontWeight: 500,
+              color: theme.palette.text.primary,
+            }}
+          >
+            {label}
+          </Typography>
+        </Box>
+        {description && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 2, fontSize: '0.875rem' }}
+          >
+            {description}
+          </Typography>
+        )}
+        {children}
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        mb: last ? 0 : 2,
+        ...sx,
+      }}
+    >
+      <Box sx={{ flex: 1, mr: 2 }}>
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+          }}
+        >
+          {label}
+        </Typography>
+        {description && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: '0.875rem', mt: 0.25 }}
+          >
+            {description}
+          </Typography>
+        )}
+      </Box>
+      {children}
+    </Box>
+  );
+});
+
+SettingRow.displayName = 'SettingRow';
 

@@ -2,8 +2,8 @@ import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ChevronDown as ExpandMoreIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import MessageItem from './MessageItem';
@@ -11,6 +11,9 @@ import MultiModelMessageGroup from './MultiModelMessageGroup';
 import ConversationDivider from './ConversationDivider';
 import type { Message } from '../../shared/types/newMessage';
 import { getMessageDividerSetting, shouldShowConversationDivider } from '../../shared/utils/settingsUtils';
+
+// 全局设置 dayjs 语言
+dayjs.locale('zh-cn');
 
 /**
  * 将消息按 askId 分组，识别多模型响应
@@ -172,11 +175,10 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     };
   }, []);
 
-  // 格式化日期
+  // 格式化日期 - locale已全局设置
   const formattedDate = useMemo(() => {
     try {
-      const dateObj = new Date(date);
-      return format(dateObj, 'yyyy年MM月dd日 EEEE', { locale: zhCN });
+      return dayjs(date).format('YYYY年MM月DD日 dddd');
     } catch (error) {
       return date;
     }

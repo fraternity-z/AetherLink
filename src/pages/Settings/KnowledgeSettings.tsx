@@ -36,7 +36,7 @@ import { useNavigate } from 'react-router-dom';
 import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProvider';
 import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import { toastManager } from '../../components/EnhancedToast';
-import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import { SafeAreaContainer, SettingsCard } from '../../components/settings/SettingComponents';
 
 const Container = styled(SafeAreaContainer)(() => ({
   position: 'relative',
@@ -326,133 +326,122 @@ const KnowledgeSettings: React.FC = () => {
         },
       }}>
         {/* 统计信息卡片 */}
-        <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>知识库统计</Typography>
-            {loading ? (
-              <Box display="flex" justifyContent="center" py={3}>
-                <CircularProgress />
+        <SettingsCard title="知识库统计" flat>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
+              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                    <Typography variant="h4" color="primary" fontWeight="bold">{stats.totalKnowledgeBases}</Typography>
+                    <Typography variant="body2" color="textSecondary">知识库数量</Typography>
+                  </CardContent>
+                </Card>
               </Box>
-            ) : (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
-                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                      <Typography variant="h4" color="primary" fontWeight="bold">{stats.totalKnowledgeBases}</Typography>
-                      <Typography variant="body2" color="textSecondary">知识库数量</Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                      <Typography variant="h4" color="success.main" fontWeight="bold">{stats.totalDocuments}</Typography>
-                      <Typography variant="body2" color="textSecondary">文档数量</Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                      <Typography variant="h4" color="warning.main" fontWeight="bold">{stats.totalVectors}</Typography>
-                      <Typography variant="body2" color="textSecondary">向量数量</Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
-                <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center', py: 2 }}>
-                      <Typography variant="h4" color="info.main" fontWeight="bold">{stats.storageSize}</Typography>
-                      <Typography variant="body2" color="textSecondary">存储大小</Typography>
-                    </CardContent>
-                  </Card>
-                </Box>
+              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                    <Typography variant="h4" color="success.main" fontWeight="bold">{stats.totalDocuments}</Typography>
+                    <Typography variant="body2" color="textSecondary">文档数量</Typography>
+                  </CardContent>
+                </Card>
               </Box>
-            )}
-          </Box>
-        </Paper>
+              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                    <Typography variant="h4" color="warning.main" fontWeight="bold">{stats.totalVectors}</Typography>
+                    <Typography variant="body2" color="textSecondary">向量数量</Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+              <Box sx={{ width: { xs: '50%', sm: '25%' }, p: 1 }}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                    <Typography variant="h4" color="info.main" fontWeight="bold">{stats.storageSize}</Typography>
+                    <Typography variant="body2" color="textSecondary">存储大小</Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Box>
+          )}
+        </SettingsCard>
 
         {/* 知识库列表 */}
-        <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>已添加的知识库 ({knowledgeBases.length})</Typography>
-            {isLoading ? (
-              <Box display="flex" justifyContent="center" py={3}>
-                <CircularProgress />
-              </Box>
-            ) : knowledgeBases.length === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center', my: 5, borderRadius: 2 }}>
-            <Typography variant="body1" color="textSecondary" gutterBottom>
-              暂无知识库
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              点击右上角"创建知识库"按钮开始使用
-            </Typography>
-          </Paper>
-        ) : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
-            {knowledgeBases.map((kb) => (
-              <Box key={kb.id} sx={{ width: { xs: '100%', sm: '50%', md: '33.33%' }, p: 1 }}>
-                <StyledCard onClick={() => handleViewDetails(kb.id)}>
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <Avatar sx={{ mr: 1, bgcolor: 'primary.main' }}>
-                        <Folder size={20} />
-                      </Avatar>
-                      <Typography variant="h6" noWrap>{kb.name}</Typography>
-                    </Box>
+        <SettingsCard title={`已添加的知识库 (${knowledgeBases.length})`} flat>
+          {isLoading ? (
+            <Box display="flex" justifyContent="center" py={3}>
+              <CircularProgress />
+            </Box>
+          ) : knowledgeBases.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center', my: 5, borderRadius: 2 }}>
+              <Typography variant="body1" color="textSecondary" gutterBottom>
+                暂无知识库
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                点击右上角"创建知识库"按钮开始使用
+              </Typography>
+            </Paper>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -1 }}>
+              {knowledgeBases.map((kb) => (
+                <Box key={kb.id} sx={{ width: { xs: '100%', sm: '50%', md: '33.33%' }, p: 1 }}>
+                  <StyledCard onClick={() => handleViewDetails(kb.id)}>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <Avatar sx={{ mr: 1, bgcolor: 'primary.main' }}>
+                          <Folder size={20} />
+                        </Avatar>
+                        <Typography variant="h6" noWrap>{kb.name}</Typography>
+                      </Box>
 
-                    <Typography variant="body2" color="text.secondary" sx={{
-                      mb: 2,
-                      height: 40,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                    }}>
-                      {kb.description || '无描述'}
-                    </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{
+                        mb: 2,
+                        height: 40,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}>
+                        {kb.description || '无描述'}
+                      </Typography>
 
-                    <Box display="flex" flexWrap="wrap" gap={0.5}>
-                      <Typography variant="caption" color="text.secondary">
-                        模型: {kb.model}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        • 创建: {formatDate(kb.created_at)}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                  <Divider />
-                  <CardActions>
-                    <IconButton size="small" onClick={(e) => handleDelete(kb.id, e)}>
-                      <Trash2 size={16} />
-                    </IconButton>
-                    <Box flexGrow={1} />
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<Eye size={16} />}
-                      onClick={() => handleViewDetails(kb.id)}
-                    >
-                      查看
-                    </Button>
-                  </CardActions>
-                </StyledCard>
-              </Box>
-            ))}
-          </Box>
-        )}
-          </Box>
-        </Paper>
+                      <Box display="flex" flexWrap="wrap" gap={0.5}>
+                        <Typography variant="caption" color="text.secondary">
+                          模型: {kb.model}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          • 创建: {formatDate(kb.created_at)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                    <Divider />
+                    <CardActions>
+                      <IconButton size="small" onClick={(e) => handleDelete(kb.id, e)}>
+                        <Trash2 size={16} />
+                      </IconButton>
+                      <Box flexGrow={1} />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Eye size={16} />}
+                        onClick={() => handleViewDetails(kb.id)}
+                      >
+                        查看
+                      </Button>
+                    </CardActions>
+                  </StyledCard>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </SettingsCard>
 
         {/* 数据管理 */}
-        <Paper elevation={0} sx={{ mb: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>数据管理</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              导入、导出备份和清理知识库数据
-            </Typography>
+        <SettingsCard title="数据管理" description="导入、导出备份和清理知识库数据" flat>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
@@ -480,8 +469,7 @@ const KnowledgeSettings: React.FC = () => {
                 清理所有数据
               </Button>
             </Box>
-          </Box>
-        </Paper>
+        </SettingsCard>
       </Box>
 
       {/* 创建知识库对话框 */}

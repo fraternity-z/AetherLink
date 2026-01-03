@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getStorageItem, setStorageItem } from '../../shared/utils/storage';
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
@@ -42,7 +41,7 @@ import { setShowAIDebateButton } from '../../shared/store/settingsSlice';
 import { toastManager } from '../../components/EnhancedToast';
 import { useTranslation } from 'react-i18next';
 import CustomSwitch from '../../components/CustomSwitch';
-import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import { SafeAreaContainer, SettingsCard, SettingRow } from '../../components/settings/SettingComponents';
 
 // AI辩论配置默认值常量
 const DEFAULT_CONFIG = {
@@ -795,66 +794,32 @@ const AIDebateSettings: React.FC = () => {
 
 
         {/* 基本设置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
+        <SettingsCard
+          title={t('aiDebate.basicSettings.title')}
+          description={t('aiDebate.basicSettings.description')}
+          icon={<Bot />}
+          iconColor="#06b6d4"
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' },
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <Bot size={20} color="#06b6d4" />
-              {t('aiDebate.basicSettings.title')}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('aiDebate.basicSettings.description')}
-            </Typography>
-          </Box>
+          <SettingRow label={t('aiDebate.basicSettings.enable')}>
+            <CustomSwitch
+              checked={config.enabled}
+              onChange={(e) => saveConfig({ ...config, enabled: e.target.checked })}
+            />
+          </SettingRow>
 
-          <Divider />
+          <SettingRow label={t('aiDebate.basicSettings.showButton')}>
+            <CustomSwitch
+              checked={showAIDebateButton}
+              onChange={(e) => dispatch(setShowAIDebateButton(e.target.checked))}
+            />
+          </SettingRow>
 
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="body1">{t('aiDebate.basicSettings.enable')}</Typography>
-              <CustomSwitch
-                checked={config.enabled}
-                onChange={(e) => saveConfig({ ...config, enabled: e.target.checked })}
-              />
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="body1">{t('aiDebate.basicSettings.showButton')}</Typography>
-              <CustomSwitch
-                checked={showAIDebateButton}
-                onChange={(e) => dispatch(setShowAIDebateButton(e.target.checked))}
-              />
-            </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>
             <TextField
               label={t('aiDebate.basicSettings.maxRounds')}
               value={config.maxRounds}
               onChange={(e) => {
                 const value = e.target.value;
-                // 直接更新，允许任何输入包括空值
                 if (value === '') {
                   saveConfig({ ...config, maxRounds: 0 });
                 } else {
@@ -871,7 +836,6 @@ const AIDebateSettings: React.FC = () => {
               value={config.autoEndConditions.maxTokensPerRound}
               onChange={(e) => {
                 const value = e.target.value;
-                // 直接更新，允许任何输入包括空值
                 if (value === '') {
                   saveConfig({
                     ...config,
@@ -897,64 +861,29 @@ const AIDebateSettings: React.FC = () => {
             />
           </Box>
 
-          <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Typography variant="body1">{t('aiDebate.basicSettings.enableModerator')}</Typography>
-              <CustomSwitch
-                checked={config.moderatorEnabled}
-                onChange={(e) => saveConfig({ ...config, moderatorEnabled: e.target.checked })}
-              />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="body1">{t('aiDebate.basicSettings.enableSummary')}</Typography>
-              <CustomSwitch
-                checked={config.summaryEnabled}
-                onChange={(e) => saveConfig({ ...config, summaryEnabled: e.target.checked })}
-              />
-            </Box>
-          </Box>
-          </Box>
-        </Paper>
+          <SettingRow label={t('aiDebate.basicSettings.enableModerator')}>
+            <CustomSwitch
+              checked={config.moderatorEnabled}
+              onChange={(e) => saveConfig({ ...config, moderatorEnabled: e.target.checked })}
+            />
+          </SettingRow>
+
+          <SettingRow label={t('aiDebate.basicSettings.enableSummary')} last>
+            <CustomSwitch
+              checked={config.summaryEnabled}
+              onChange={(e) => saveConfig({ ...config, summaryEnabled: e.target.checked })}
+            />
+          </SettingRow>
+        </SettingsCard>
 
         {/* 快速配置 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
+        <SettingsCard
+          title={t('aiDebate.quickSetup.title')}
+          description={t('aiDebate.quickSetup.description')}
+          icon={<Bot />}
+          iconColor="#8b5cf6"
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' },
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <Bot size={20} color="#8b5cf6" />
-              {t('aiDebate.quickSetup.title')}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              {t('aiDebate.quickSetup.description')}
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
             <Button
               variant="outlined"
               onClick={() => handleQuickSetup('basic')}
@@ -1006,64 +935,30 @@ const AIDebateSettings: React.FC = () => {
                 {t('aiDebate.quickSetup.comprehensive.description')}
               </Typography>
             </Button>
-            </Box>
           </Box>
-        </Paper>
+        </SettingsCard>
 
         {/* 角色管理 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
+        <SettingsCard
+          title={t('aiDebate.roles.title')}
+          description={t('aiDebate.roles.description')}
+          action={
+            <Button
+              variant="contained"
+              startIcon={<Plus size={16} />}
+              onClick={handleAddRole}
+              sx={{
+                background: 'linear-gradient(90deg, #9333EA, #754AB4)',
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #8324DB, #6D3CAF)',
+                },
+              }}
+            >
+              {t('aiDebate.roles.addRole')}
+            </Button>
+          }
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: '1rem', sm: '1.1rem' }
-                  }}
-                >
-                  {t('aiDebate.roles.title')}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-                >
-                  {t('aiDebate.roles.description')}
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                startIcon={<Plus size={16} />}
-                onClick={handleAddRole}
-                sx={{
-                  background: 'linear-gradient(90deg, #9333EA, #754AB4)',
-                  fontWeight: 600,
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #8324DB, #6D3CAF)',
-                  },
-                }}
-              >
-                {t('aiDebate.roles.addRole')}
-              </Button>
-            </Box>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-
           {config.roles.length === 0 ? (
             <Alert severity="info" sx={{ mb: 2 }}>
               {t('aiDebate.roles.noRoles')}
@@ -1127,142 +1022,110 @@ const AIDebateSettings: React.FC = () => {
               ))}
             </Box>
           )}
-          </Box>
-        </Paper>
+        </SettingsCard>
 
         {/* 配置分组管理 */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            overflow: 'hidden',
-            bgcolor: 'background.paper',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          }}
+        <SettingsCard
+          title={t('aiDebate.groups.title')}
+          description={t('aiDebate.groups.description')}
+          action={
+            <Button
+              variant="contained"
+              startIcon={<Plus size={16} />}
+              onClick={handleCreateGroup}
+              sx={{
+                background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                fontWeight: 600,
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #d97706, #b45309)',
+                },
+              }}
+            >
+              {t('aiDebate.groups.createGroup')}
+            </Button>
+          }
         >
-          <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'rgba(0,0,0,0.01)' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography
-                  variant="subtitle1"
+          {configGroups.length === 0 ? (
+            <Alert severity="info">
+              {t('aiDebate.groups.noGroups')}
+            </Alert>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {configGroups.map((group) => (
+                <Box
+                  key={group.id}
                   sx={{
-                    fontWeight: 600,
-                    fontSize: { xs: '1rem', sm: '1.1rem' }
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 1.5,
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                      borderColor: 'primary.main'
+                    }
                   }}
                 >
-                  {t('aiDebate.groups.title')}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-                >
-                  {t('aiDebate.groups.description')}
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                startIcon={<Plus size={16} />}
-                onClick={handleCreateGroup}
-                sx={{
-                  background: 'linear-gradient(90deg, #f59e0b, #d97706)',
-                  fontWeight: 600,
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #d97706, #b45309)',
-                  },
-                }}
-              >
-                {t('aiDebate.groups.createGroup')}
-              </Button>
-            </Box>
-          </Box>
-
-          <Divider />
-
-          <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
-            {configGroups.length === 0 ? (
-              <Alert severity="info">
-                {t('aiDebate.groups.noGroups')}
-              </Alert>
-            ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {configGroups.map((group) => (
-                  <Box
-                    key={group.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      p: 1.5,
-                      border: 1,
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      bgcolor: 'background.paper',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                        borderColor: 'primary.main'
-                      }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
-                      <FolderOpen size={16} color="text.secondary" />
-                      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                          {group.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                          {t('aiDebate.roles.roleCount', { count: group.config.roles.length })} • {new Date(group.updatedAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
+                    <Box sx={{ color: 'text.secondary', display: 'flex', mr: 1 }}>
+                      <FolderOpen size={16} />
                     </Box>
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 2 }}>
-                      <Button
-                        size="small"
-                        onClick={() => handleLoadGroup(group)}
-                        variant="outlined"
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        {t('aiDebate.groups.loadGroup')}
-                      </Button>
-                      <IconButton size="small" onClick={() => handleEditGroup(group)} title={t('common.edit')}>
-                        <Edit size={16} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleUpdateGroup(group.id)}
-                        title={t('aiDebate.groups.saveGroup')}
-                        color="primary"
-                      >
-                        <Save size={16} />
-                      </IconButton>
-                      <IconButton size="small" onClick={() => {
-                        setEditingGroup(null);
-                        setNewGroupName(`${group.name}${t('aiDebate.groupDialog.copySuffix')}`);
-                        setNewGroupDescription(t('aiDebate.groupDialog.copyDescription', { name: group.name }));
-                        setGroupDialogOpen(true);
-                      }} title={t('aiDebate.groups.copyGroup')}>
-                        <Copy size={16} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteGroup(group.id)}
-                        color="error"
-                        title={t('aiDebate.groups.deleteGroup')}
-                      >
-                        <Trash2 size={16} />
-                      </IconButton>
+                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {group.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {t('aiDebate.roles.roleCount', { count: group.config.roles.length })} • {new Date(group.updatedAt).toLocaleDateString()}
+                      </Typography>
                     </Box>
                   </Box>
-                ))}
-              </Box>
-            )}
-          </Box>
-        </Paper>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 2 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleLoadGroup(group)}
+                      variant="outlined"
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      {t('aiDebate.groups.loadGroup')}
+                    </Button>
+                    <IconButton size="small" onClick={() => handleEditGroup(group)} title={t('common.edit')}>
+                      <Edit size={16} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleUpdateGroup(group.id)}
+                      title={t('aiDebate.groups.saveGroup')}
+                      color="primary"
+                    >
+                      <Save size={16} />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => {
+                      setEditingGroup(null);
+                      setNewGroupName(`${group.name}${t('aiDebate.groupDialog.copySuffix')}`);
+                      setNewGroupDescription(t('aiDebate.groupDialog.copyDescription', { name: group.name }));
+                      setGroupDialogOpen(true);
+                    }} title={t('aiDebate.groups.copyGroup')}>
+                      <Copy size={16} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteGroup(group.id)}
+                      color="error"
+                      title={t('aiDebate.groups.deleteGroup')}
+                    >
+                      <Trash2 size={16} />
+                    </IconButton>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </SettingsCard>
       </Box>
 
       {/* 角色编辑对话框 */}
