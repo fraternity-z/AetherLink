@@ -47,7 +47,8 @@ export {
   findCitationBlocks,
   findTranslationBlocks,
   findChartBlocks,
-  findMathBlocks
+  findMathBlocks,
+  findToolBlocks
 } from './blockFinders';
 
 // 内容提取函数

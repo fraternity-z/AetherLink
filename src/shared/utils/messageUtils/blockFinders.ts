@@ -9,7 +9,8 @@ import type {
   CitationMessageBlock,
   TranslationMessageBlock,
   ChartMessageBlock,
-  MathMessageBlock
+  MathMessageBlock,
+  ToolMessageBlock
 } from '../../types/newMessage';
 // 注意：MultiModelMessageBlock 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 import { MessageBlockType, MessageBlockStatus } from '../../types/newMessage';
@@ -188,4 +189,11 @@ export function findChartBlocks(message: Message): ChartMessageBlock[] {
  */
 export function findMathBlocks(message: Message): MathMessageBlock[] {
   return findBlocksByType<MathMessageBlock>(message, MessageBlockType.MATH);
+}
+
+/**
+ * 查找消息的所有工具块
+ */
+export function findToolBlocks(message: Message): ToolMessageBlock[] {
+  return findBlocksByType<ToolMessageBlock>(message, MessageBlockType.TOOL);
 }

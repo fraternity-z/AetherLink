@@ -1,5 +1,6 @@
 import type { Message } from '../shared/types/newMessage';
-import { getMainTextContent, findThinkingBlocks, findCitationBlocks } from '../shared/utils/messageUtils';
+import { getMainTextContent, findThinkingBlocks, findCitationBlocks, findToolBlocks } from '../shared/utils/messageUtils';
+import type { ToolMessageBlock } from '../shared/types/newMessage';
 import { convertMathFormula, removeSpecialCharactersForFileName } from './formats';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
@@ -30,12 +31,73 @@ export async function getMessageTitle(message: Message): Promise<string> {
 }
 
 /**
+ * 格式化工具块为Markdown
+ */
+function formatToolBlockToMarkdown(block: ToolMessageBlock): string {
+  const parts: string[] = [];
+  
+  // 工具名称
+  const toolName = block.toolName || block.metadata?.rawMcpToolResponse?.tool?.name || '未知工具';
+  parts.push(`#### 🔧 工具调用: ${toolName}`);
+  
+  // 工具参数
+  const args = block.arguments || block.metadata?.rawMcpToolResponse?.arguments;
+  if (args && Object.keys(args).length > 0) {
+    parts.push('\n**参数:**');
+    try {
+      parts.push('```json\n' + JSON.stringify(args, null, 2) + '\n```');
+    } catch {
+      parts.push('```\n' + String(args) + '\n```');
+    }
+  }
+  
+  // 工具结果
+  const response = block.content || block.metadata?.rawMcpToolResponse?.response;
+  if (response) {
+    parts.push('\n**结果:**');
+    let resultContent = '';
+    
+    if (typeof response === 'string') {
+      resultContent = response;
+    } else if (typeof response === 'object') {
+      // 处理 MCP 响应格式
+      if ((response as any).content && Array.isArray((response as any).content)) {
+        resultContent = (response as any).content.map((item: any) => {
+          if (item.type === 'text') {
+            return item.text || '';
+          }
+          return `[${item.type}: ${item.mimeType || 'unknown'}]`;
+        }).join('\n');
+      } else {
+        try {
+          resultContent = JSON.stringify(response, null, 2);
+        } catch {
+          resultContent = String(response);
+        }
+      }
+    }
+    
+    if (resultContent.trim()) {
+      // 检查内容是否已经是代码块格式
+      if (resultContent.includes('```') || resultContent.length > 500) {
+        parts.push(resultContent);
+      } else {
+        parts.push('```\n' + resultContent + '\n```');
+      }
+    }
+  }
+  
+  return parts.join('\n');
+}
+
+/**
  * 创建基础Markdown内容
  */
 function createBaseMarkdown(message: Message, includeReasoning = false, forceDollarMathInMarkdown = true) {
   const content = getMainTextContent(message);
   const thinkingBlocks = findThinkingBlocks(message);
   const citationBlocks = findCitationBlocks(message);
+  const toolBlocks = findToolBlocks(message);
 
   // 标题部分
   const titleSection = message.role === 'user' ? '## 用户' : '## 助手';
@@ -52,6 +114,15 @@ function createBaseMarkdown(message: Message, includeReasoning = false, forceDol
   // 内容部分
   const contentSection = forceDollarMathInMarkdown ? convertMathFormula(content) : content;
 
+  // 工具调用部分
+  let toolSection = '';
+  if (toolBlocks.length > 0) {
+    const toolContent = toolBlocks.map(block => formatToolBlockToMarkdown(block)).join('\n\n');
+    if (toolContent.trim()) {
+      toolSection = `### 工具调用\n\n${toolContent}`;
+    }
+  }
+
   // 引用部分
   let citation = '';
   if (citationBlocks.length > 0) {
@@ -61,23 +132,23 @@ function createBaseMarkdown(message: Message, includeReasoning = false, forceDol
     }
   }
 
-  return { titleSection, reasoningSection, contentSection, citation };
+  return { titleSection, reasoningSection, contentSection, toolSection, citation };
 }
 
 /**
  * 将消息转换为Markdown格式
  */
 export function messageToMarkdown(message: Message): string {
-  const { titleSection, contentSection, citation } = createBaseMarkdown(message);
-  return [titleSection, '', contentSection, citation].filter(Boolean).join('\n\n');
+  const { titleSection, contentSection, toolSection, citation } = createBaseMarkdown(message);
+  return [titleSection, '', contentSection, toolSection, citation].filter(Boolean).join('\n\n');
 }
 
 /**
  * 将消息转换为包含推理的Markdown格式
  */
 export function messageToMarkdownWithReasoning(message: Message): string {
-  const { titleSection, reasoningSection, contentSection, citation } = createBaseMarkdown(message, true);
-  return [titleSection, '', reasoningSection + contentSection, citation].filter(Boolean).join('\n\n');
+  const { titleSection, reasoningSection, contentSection, toolSection, citation } = createBaseMarkdown(message, true);
+  return [titleSection, '', reasoningSection + contentSection, toolSection, citation].filter(Boolean).join('\n\n');
 }
 
 /**

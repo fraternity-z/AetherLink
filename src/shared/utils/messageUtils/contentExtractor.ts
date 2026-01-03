@@ -1,8 +1,6 @@
 import type {
   Message,
-  MessageBlock,
   MainTextMessageBlock,
-  MultiModelMessageBlock,
   ChartMessageBlock,
   MathMessageBlock
 } from '../../types/newMessage';
@@ -87,11 +85,8 @@ function extractContentFromComparisonBlock(message: Message): string {
   for (const blockId of message.blocks) {
     try {
       const block = messageBlocksSelectors.selectById(state, blockId);
-      if (block && block.type === MessageBlockType.MULTI_MODEL) {
-        const comparisonBlock = block as any;
-        if (comparisonBlock.subType === 'comparison' && comparisonBlock.selectedContent) {
-          return comparisonBlock.selectedContent.trim();
-        }
+      if (block && (block as any).subType === 'comparison' && (block as any).selectedContent) {
+        return (block as any).selectedContent.trim();
       }
     } catch (error) {
       const warningKey = `comparison-block-error-${blockId}`;
@@ -321,11 +316,7 @@ export function getAllTextContent(message: Message): string {
         textParts.push(`[File: ${(block as any).name}]`);
         break;
       case MessageBlockType.TOOL:
-        textParts.push(`[Tool: ${(block as any).name}]`);
-        break;
-      case MessageBlockType.MULTI_MODEL:
-        const multiModel = block as MultiModelMessageBlock;
-        textParts.push(`[多模型响应: ${multiModel.responses.length}个模型]`);
+        textParts.push(`[Tool: ${(block as any).toolName || (block as any).name}]`);
         break;
       case MessageBlockType.CHART:
         const chart = block as ChartMessageBlock;
