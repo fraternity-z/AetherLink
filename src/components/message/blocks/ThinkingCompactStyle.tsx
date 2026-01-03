@@ -21,10 +21,9 @@ import { formatThinkingTimeSeconds } from '../../../shared/utils/thinkingUtils';
 import { getThinkingScrollbarStyles } from '../../../shared/utils/scrollbarStyles';
 import { useTranslation } from '../../../i18n';
 
-// 滚动预览区域的最大行数
-const PREVIEW_MAX_LINES = 4;
 // 滚动预览区域的固定高度
-const PREVIEW_HEIGHT = 80;
+const PREVIEW_MAX_HEIGHT = 160;
+const PREVIEW_MIN_HEIGHT = 40;
 
 // 公共动画配置
 const getThinkingAnimation = (isThinking: boolean) => ({
@@ -97,20 +96,46 @@ const ThinkingCompactStyle: React.FC<ThinkingCompactStyleProps> = ({
   // 格式化思考时间（毫秒转为秒，保留1位小数）
   const formattedThinkingTime = formatThinkingTimeSeconds(thinkingTime).toFixed(1);
 
-  // 获取最新几行内容用于预览
+  // 提取最新的思考步骤用于预览
   const previewContent = useMemo(() => {
     if (!content) return '';
+
+    // 匹配 Markdown 标题 (#, ##, ...) 或加粗行 (**Text**)
+    // 这种格式通常用于标记思考步骤
     const lines = content.split('\n');
-    if (lines.length <= PREVIEW_MAX_LINES) return content;
-    return lines.slice(-PREVIEW_MAX_LINES).join('\n');
+    let lastStepIndex = -1;
+
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      // 检查是否是标题 (以 # 开头) 或 加粗行 (以 ** 开头且以 ** 结尾)
+      if (line.match(/^#{1,6}\s/) || (line.match(/^\*\*.+\*\*$/))) {
+        lastStepIndex = i;
+        break;
+      }
+    }
+
+    if (lastStepIndex !== -1) {
+      // 找到了最新的步骤标题，截取从该标题开始的内容
+      // 如果内容过少（例如刚输出标题），可能需要多包含一些上下文，或者就只显示这个
+      // 这里策略是：始终显示最后一个被识别为"步骤标题"的行之后的所有内容
+      return lines.slice(lastStepIndex).join('\n');
+    }
+
+    // 如果没有找到明显的步骤标记，则显示全部内容（依赖自动滚动）
+    // 或者可以回退到显示最后 N 行，但使用 Markdown 组件渲染全部内容 + 自动滚动通常更稳健
+    return content;
   }, [content]);
 
   // 自动滚动到底部（思考中时）
+  // 注意：如果是截取了最新步骤，通常不需要强制滚动到底部，因为内容本身就是最新的
+  // 但为了保险（例如最新步骤内容也很长），我们还是保留滚动逻辑，但可以优化一下体验
   useEffect(() => {
     if (isThinking && scrollRef.current) {
+      // 如果是截取模式，且内容没有溢出容器太多，可能不需要强制滚动到底部
+      // 但简单起见，保持滚动到底部通常是正确的行为，因为正在生成新 token
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [content, isThinking]);
+  }, [previewContent, isThinking]); // 依赖项改为 previewContent
 
   // 思考完成后自动折叠（通过触发父组件的 onToggleExpanded）
   useEffect(() => {
@@ -230,68 +255,61 @@ const ThinkingCompactStyle: React.FC<ThinkingCompactStyleProps> = ({
           ref={scrollRef}
           onClick={(e) => e.stopPropagation()}
           sx={{
-            height: PREVIEW_HEIGHT,
+            minHeight: PREVIEW_MIN_HEIGHT,
+            maxHeight: PREVIEW_MAX_HEIGHT,
             overflow: 'hidden',
             position: 'relative',
             px: 1.5,
-            py: 1,
+            pt: 1.5,
+            pb: 1,
             fontSize: '0.75rem',
-            lineHeight: 1.5,
+            lineHeight: 1.4,
             color: theme.palette.text.secondary,
-            fontFamily: 'monospace',
-            backgroundColor: theme.palette.mode === 'dark' 
-              ? 'rgba(0,0,0,0.2)' 
+            backgroundColor: theme.palette.mode === 'dark'
+              ? 'rgba(0,0,0,0.2)'
               : 'rgba(0,0,0,0.02)',
-            // 顶部渐变遮罩效果
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '20px',
-              background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(to bottom, rgba(30,30,30,0.95), transparent)'
-                : 'linear-gradient(to bottom, rgba(255,255,255,0.95), transparent)',
-              pointerEvents: 'none',
-              zIndex: 1
-            }
+            // 移除 flex 沉底布局，改为默认顶部对齐，因为我们只显示最新片段
+            // 移除顶部遮罩，因为我们从标题开始显示
           }}
         >
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              minHeight: '100%',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word'
-            }}
-          >
-            {previewContent.split('\n').map((line, index) => (
-              <Box 
-                key={index} 
-                sx={{ 
-                  opacity: 0.6 + (index / PREVIEW_MAX_LINES) * 0.4,
-                  py: 0.25
-                }}
-              >
-                {line || '\u00A0'}
-              </Box>
-            ))}
-            {/* 闪烁光标 */}
-            <Box
-              component="span"
-              sx={{
+              // 针对 Markdown 预览的样式调整
+              '& p': { my: 0.25 }, // 进一步减小段落间距
+              '& ul, & ol': { my: 0.25, pl: 2 },
+              '& li': { my: 0.1 },
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                mt: 1.5, // 增加标题上间距，区分段落
+                mb: 0.5,
+                fontSize: '0.8rem', // 稍微减小标题字号
+                fontWeight: 600,
+                color: theme.palette.text.primary,
+                lineHeight: 1.3
+              },
+              '& pre': {
+                my: 0.5,
+                p: 0.75,
+                borderRadius: 1,
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)',
+                overflowX: 'auto',
+                fontSize: '0.7rem'
+              },
+              // 第一个元素的上边距设为0
+              '& > *:first-of-type': { mt: 0 },
+              // 最后一个元素添加光标
+              '& > *:last-child::after': {
+                content: '""',
                 display: 'inline-block',
                 width: '2px',
-                height: '14px',
+                height: '12px',
                 backgroundColor: theme.palette.warning.main,
                 animation: `${cursorBlink} 1s infinite`,
                 verticalAlign: 'middle',
                 ml: 0.5
-              }}
-            />
+              }
+            }}
+          >
+            <Markdown content={previewContent} allowHtml={false} />
           </Box>
         </Box>
       )}
