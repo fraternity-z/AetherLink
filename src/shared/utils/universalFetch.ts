@@ -316,12 +316,9 @@ async function tauriFetch(url: string, options: RequestInit & { timeout?: number
     
     // 处理代理配置
     if (!shouldUseProxy) {
-      // 本地地址：显式禁用代理，避免被 Clash 等系统代理拦截
-      // 设置空代理可以覆盖系统代理设置
-      fetchOptions.proxy = {
-        all: { url: '' }  // 空 URL 表示不使用代理
-      };
-      console.log('[Universal Fetch] Tauri HTTP 直连（本地地址，显式禁用代理）:', url);
+      // 本地地址：不设置 proxy 字段，直接连接
+      // 注意：不能设置空 URL，会导致 builder error
+      console.log('[Universal Fetch] Tauri HTTP 直连（本地地址）:', url);
     } else if (proxyConfig) {
       // 非本地地址 + 有代理配置：使用配置的代理
       fetchOptions.proxy = {
