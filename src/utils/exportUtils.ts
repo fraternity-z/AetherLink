@@ -31,63 +31,11 @@ export async function getMessageTitle(message: Message): Promise<string> {
 }
 
 /**
- * 格式化工具块为Markdown
+ * 格式化工具块为Markdown（简化版，仅显示工具名称）
  */
 function formatToolBlockToMarkdown(block: ToolMessageBlock): string {
-  const parts: string[] = [];
-  
-  // 工具名称
   const toolName = block.toolName || block.metadata?.rawMcpToolResponse?.tool?.name || '未知工具';
-  parts.push(`#### 🔧 工具调用: ${toolName}`);
-  
-  // 工具参数
-  const args = block.arguments || block.metadata?.rawMcpToolResponse?.arguments;
-  if (args && Object.keys(args).length > 0) {
-    parts.push('\n**参数:**');
-    try {
-      parts.push('```json\n' + JSON.stringify(args, null, 2) + '\n```');
-    } catch {
-      parts.push('```\n' + String(args) + '\n```');
-    }
-  }
-  
-  // 工具结果
-  const response = block.content || block.metadata?.rawMcpToolResponse?.response;
-  if (response) {
-    parts.push('\n**结果:**');
-    let resultContent = '';
-    
-    if (typeof response === 'string') {
-      resultContent = response;
-    } else if (typeof response === 'object') {
-      // 处理 MCP 响应格式
-      if ((response as any).content && Array.isArray((response as any).content)) {
-        resultContent = (response as any).content.map((item: any) => {
-          if (item.type === 'text') {
-            return item.text || '';
-          }
-          return `[${item.type}: ${item.mimeType || 'unknown'}]`;
-        }).join('\n');
-      } else {
-        try {
-          resultContent = JSON.stringify(response, null, 2);
-        } catch {
-          resultContent = String(response);
-        }
-      }
-    }
-    
-    if (resultContent.trim()) {
-      // 检查内容是否已经是代码块格式
-      if (resultContent.includes('```') || resultContent.length > 500) {
-        parts.push(resultContent);
-      } else {
-        parts.push('```\n' + resultContent + '\n```');
-      }
-    }
-  }
-  
-  return parts.join('\n');
+  return `🔧 \`${toolName}\``;
 }
 
 /**
