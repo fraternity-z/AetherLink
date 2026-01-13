@@ -755,12 +755,15 @@ export class DexieStorageService extends Dexie {
   }
 
   async deleteAllMessages(): Promise<void> {
+    // 清空消息块表
     await this.message_blocks.clear();
+    // 清空消息表
+    await this.messages.clear();
 
+    // 清空所有话题的 messageIds 引用
     const topics = await this.getAllTopics();
-
     for (const topic of topics) {
-      topic.messages = [];
+      topic.messageIds = [];
       await this.saveTopic(topic);
     }
   }
@@ -833,7 +836,7 @@ export class DexieStorageService extends Dexie {
 
   /**
    * 保存消息
-   * 最佳实例原版方式：将消息直接存储在topics表中
+   * 统一架构：只使用 messages 表存储消息，topic 只维护 messageIds 引用
    */
   async saveMessage(message: Message): Promise<void> {
     if (!message.id) {
@@ -843,29 +846,15 @@ export class DexieStorageService extends Dexie {
     try {
       // 使用事务保证原子性
       await this.transaction('rw', [this.topics, this.messages, this.message_blocks], async () => {
-        // 1. 保存消息到messages表（保持兼容性）
+        // 1. 保存消息到 messages 表
         await this.messages.put(message);
 
-        // 2. 更新topics表中的messages数组
+        // 2. 只更新 topic 的 messageIds 引用（不再维护冗余的 topic.messages）
         const topic = await this.topics.get(message.topicId);
         if (topic) {
-          // 确保messages数组存在
-          if (!topic.messages) {
-            topic.messages = [];
-          }
-          // 确保messageIds数组存在
+          // 确保 messageIds 数组存在
           if (!topic.messageIds) {
             topic.messageIds = [];
-          }
-
-          // 查找消息在数组中的位置
-          const messageIndex = topic.messages.findIndex(m => m.id === message.id);
-
-          // 更新或添加消息
-          if (messageIndex >= 0) {
-            topic.messages[messageIndex] = message;
-          } else {
-            topic.messages.push(message);
           }
 
           // 同步更新 messageIds 数组
@@ -873,8 +862,15 @@ export class DexieStorageService extends Dexie {
             topic.messageIds.push(message.id);
           }
 
-          // 保存更新后的话题
-          await this.topics.put(topic);
+          // 更新时间戳
+          const topicToStore = {
+            ...topic,
+            _lastMessageTimeNum: new Date(message.createdAt || new Date().toISOString()).getTime()
+          };
+          // 确保不存储 messages 字段
+          delete (topicToStore as any).messages;
+
+          await this.topics.put(topicToStore);
         }
       });
     } catch (error) {

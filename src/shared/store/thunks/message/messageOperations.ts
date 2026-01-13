@@ -156,29 +156,17 @@ export const resendUserMessage = (userMessageId: string, topicId: string, model:
       if (allBlockIdsToDelete.length > 0) {
         dispatch(removeManyBlocks(allBlockIdsToDelete));
 
-        // 从数据库删除块
+        // 从数据库删除块并更新消息
+        // 统一架构：只更新 messages 表，不再维护冗余的 topic.messages
         await dexieStorage.transaction('rw', [
           dexieStorage.message_blocks,
-          dexieStorage.messages,
-          dexieStorage.topics
+          dexieStorage.messages
         ], async () => {
           await dexieStorage.deleteMessageBlocksByIds(allBlockIdsToDelete);
 
           // 更新消息到数据库
           for (const resetMsg of resetDataList) {
             await dexieStorage.updateMessage(resetMsg.id, resetMsg);
-          }
-
-          // 更新topics表中的messages数组
-          const topic = await dexieStorage.topics.get(topicId);
-          if (topic && topic.messages) {
-            for (const resetMsg of resetDataList) {
-              const messageIndex = topic.messages.findIndex((m: Message) => m.id === resetMsg.id);
-              if (messageIndex >= 0) {
-                topic.messages[messageIndex] = resetMsg;
-              }
-            }
-            await dexieStorage.topics.put(topic);
           }
         });
       }

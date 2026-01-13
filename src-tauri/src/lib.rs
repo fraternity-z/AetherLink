@@ -1,6 +1,17 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  use tauri::{Manager, Emitter};
+  
   let builder = tauri::Builder::default()
+    // 单例运行插件 - 防止多实例运行，第二个实例启动时聚焦到已有窗口
+    .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+      // 当尝试打开第二个实例时，聚焦到已有窗口
+      if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+      }
+    }))
     .plugin(tauri_plugin_http::init())
     // 官方 dialog 插件 - 文件选择器
     .plugin(tauri_plugin_dialog::init())
@@ -49,7 +60,6 @@ pub fn run() {
       // Windows 桌面端：设置系统托盘
       #[cfg(target_os = "windows")]
       {
-        use tauri::Manager;
         use tauri::menu::{Menu, MenuItem};
         use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
         

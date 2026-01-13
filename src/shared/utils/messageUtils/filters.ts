@@ -204,11 +204,11 @@ export function deduplicateTopics<T extends { id: string; title?: string; messag
   const uniqueTopicsMap = new Map<string, T>();
 
   validTopics.forEach(topic => {
-    // 如果已存在相同ID的话题，选择消息更多的或更新的
+    // 统一架构：基于 messageIds 判断消息数量
     if (uniqueTopicsMap.has(topic.id)) {
       const existing = uniqueTopicsMap.get(topic.id)!;
-      const existingMessageCount = Array.isArray(existing.messages) ? existing.messages.length : 0;
-      const currentMessageCount = Array.isArray(topic.messages) ? topic.messages.length : 0;
+      const existingMessageCount = Array.isArray((existing as any).messageIds) ? (existing as any).messageIds.length : 0;
+      const currentMessageCount = Array.isArray((topic as any).messageIds) ? (topic as any).messageIds.length : 0;
 
       // 选择消息更多的话题
       if (currentMessageCount > existingMessageCount) {

@@ -6,6 +6,7 @@
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 export class MobileSSETransport implements Transport {
   private url: URL;
@@ -13,6 +14,9 @@ export class MobileSSETransport implements Transport {
   private fetch: typeof globalThis.fetch;
   private connectionId: string | null = null;
   private messageEndpoint: string | null = null;  // 消息发送端点
+  
+  // 事件监听器句柄（用于清理，防止内存泄漏）
+  private listenerHandles: PluginListenerHandle[] = [];
   
   // Transport 接口要求的回调属性
   onmessage?: (message: JSONRPCMessage) => void;
@@ -41,14 +45,15 @@ export class MobileSSETransport implements Transport {
       this.connectionId = result.connectionId;
       console.log('[Mobile SSE Transport] SSE 连接建立，ID:', this.connectionId);
 
-      // 监听 SSE 事件
-      CorsBypass.addListener('sseOpen', (data: any) => {
+      // 监听 SSE 事件（保存句柄用于清理）
+      const openHandle = await CorsBypass.addListener('sseOpen', (data: any) => {
         if (data.connectionId === this.connectionId) {
           console.log('[Mobile SSE Transport] SSE 连接打开');
         }
       });
+      this.listenerHandles.push(openHandle);
 
-      CorsBypass.addListener('sseMessage', (data: any) => {
+      const messageHandle = await CorsBypass.addListener('sseMessage', (data: any) => {
         if (data.connectionId === this.connectionId) {
           console.log('[Mobile SSE Transport] 收到 SSE 消息:', data.data);
           
@@ -76,8 +81,9 @@ export class MobileSSETransport implements Transport {
           }
         }
       });
+      this.listenerHandles.push(messageHandle);
 
-      CorsBypass.addListener('sseError', (data: any) => {
+      const errorHandle = await CorsBypass.addListener('sseError', (data: any) => {
         if (data.connectionId === this.connectionId) {
           console.error('[Mobile SSE Transport] SSE 错误:', data.error);
           if (this.onerror) {
@@ -85,8 +91,9 @@ export class MobileSSETransport implements Transport {
           }
         }
       });
+      this.listenerHandles.push(errorHandle);
 
-      CorsBypass.addListener('sseClose', (data: any) => {
+      const closeHandle = await CorsBypass.addListener('sseClose', (data: any) => {
         if (data.connectionId === this.connectionId) {
           console.log('[Mobile SSE Transport] SSE 连接关闭');
           if (this.onclose) {
@@ -94,6 +101,7 @@ export class MobileSSETransport implements Transport {
           }
         }
       });
+      this.listenerHandles.push(closeHandle);
 
     } catch (error) {
       console.error('[Mobile SSE Transport] 连接失败:', error);
@@ -102,11 +110,26 @@ export class MobileSSETransport implements Transport {
   }
 
   async close(): Promise<void> {
+    // 清理所有事件监听器（防止内存泄漏）
+    console.log(`[Mobile SSE Transport] 清理 ${this.listenerHandles.length} 个事件监听器`);
+    for (const handle of this.listenerHandles) {
+      try {
+        await handle.remove();
+      } catch (e) {
+        console.warn('[Mobile SSE Transport] 移除监听器失败:', e);
+      }
+    }
+    this.listenerHandles = [];
+    
+    // 关闭 SSE 连接
     if (this.connectionId) {
       console.log('[Mobile SSE Transport] 关闭 SSE 连接:', this.connectionId);
       await CorsBypass.stopSSE({ connectionId: this.connectionId });
       this.connectionId = null;
     }
+    
+    // 重置状态
+    this.messageEndpoint = null;
   }
 
   async send(message: JSONRPCMessage): Promise<void> {

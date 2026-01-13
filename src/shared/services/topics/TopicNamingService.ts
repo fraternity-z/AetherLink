@@ -25,26 +25,12 @@ export class TopicNamingService {
     );
     if (!isDefaultName) return false;
 
-    const allMessages = topic.messages || [];
-    let userMessageCount = 0;
-    let assistantMessageCount = 0;
-
-    if (allMessages.length > 0) {
-      userMessageCount = allMessages.filter(m => m.role === 'user').length;
-      assistantMessageCount = allMessages.filter(m => m.role === 'assistant' && (!m.status || m.status === 'success')).length;
-      
-      if (userMessageCount === 0 && topic.messageIds?.length >= 6) {
-        userMessageCount = 3;
-        assistantMessageCount = 3;
-      }
-    } else if (topic.messageIds?.length >= 6) {
-      userMessageCount = 3;
-      assistantMessageCount = 3;
-    } else {
+    // 统一架构：基于 messageIds 判断消息数量
+    if (!topic.messageIds?.length || topic.messageIds.length < 6) {
       return false;
     }
-
-    return userMessageCount >= 3 && assistantMessageCount >= 3;
+    // 假设有足够的消息（具体内容在 generateTopicName 中加载）
+    return true;
   }
 
   static async generateTopicName(topic: ChatTopic, modelId?: string, forceGenerate: boolean = false): Promise<string | null> {
@@ -54,12 +40,10 @@ export class TopicNamingService {
         if (alreadyNamed) return null;
       }
 
-      let messages = topic.messages || [];
-      if (messages.length === 0 || !messages.some(m => m.role === 'user')) {
-        if (!topic.messageIds?.length) return null;
-        messages = await TopicService.loadTopicMessages(topic.id);
-        if (messages.length === 0) return null;
-      }
+      // 统一架构：从 messages 表加载消息
+      if (!topic.messageIds?.length) return null;
+      const messages = await TopicService.loadTopicMessages(topic.id);
+      if (messages.length === 0) return null;
 
       const userMessages = messages.filter(m => m.role === 'user');
       const assistantMessages = messages.filter(m => m.role === 'assistant' && (!m.status || m.status === 'success'));

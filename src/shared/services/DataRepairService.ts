@@ -1,7 +1,8 @@
 import { DataRepository } from './storage/DataRepository';
-import type { ChatTopic, Message } from '../types';
+import type { ChatTopic } from '../types';
 import { generateMessageId } from '../utils';
 import { handleError } from '../utils/error';
+import { dexieStorage } from './storage/DexieStorageService';
 
 /**
  * 统一数据修复服务 - 整合所有数据修复功能
@@ -164,44 +165,44 @@ export class DataRepairService {
 
       console.log(`[DataRepairService] 开始处理 ${topics.length} 个话题`);
 
-      // 遍历话题修复重复消息
+      // 统一架构：遍历话题，从 messages 表修复重复消息
       for (const topic of topics) {
-        if (!topic.messages || !Array.isArray(topic.messages)) {
-          topic.messages = [];
-          await DataRepository.topics.save(topic);
+        // 从 messages 表加载消息
+        const messages = await DataRepository.messages.getByTopicId(topic.id);
+        if (!messages || messages.length === 0) {
           continue;
         }
 
-        total += topic.messages.length;
+        total += messages.length;
 
         // 查找并修复重复消息ID
-        const messageIds = new Set<string>();
-        const uniqueMessages: Message[] = [];
+        const seenIds = new Set<string>();
         let hasChanges = false;
 
-        for (const message of topic.messages) {
+        for (const message of messages) {
           // 如果消息没有ID，生成一个
           if (!message.id) {
             message.id = generateMessageId();
+            await DataRepository.messages.save(message);
             hasChanges = true;
             fixed++;
           }
           // 如果ID已存在，生成一个新ID
-          else if (messageIds.has(message.id)) {
+          else if (seenIds.has(message.id)) {
             const originalId = message.id;
             message.id = generateMessageId();
+            await DataRepository.messages.save(message);
             console.log(`[DataRepairService] 修复重复消息ID: ${originalId} -> ${message.id}`);
             hasChanges = true;
             fixed++;
           }
 
-          messageIds.add(message.id);
-          uniqueMessages.push(message);
+          seenIds.add(message.id);
         }
 
-        // 如果有修改，保存话题
+        // 如果有修改，同步更新 topic 的 messageIds
         if (hasChanges) {
-          topic.messages = uniqueMessages;
+          topic.messageIds = messages.map(m => m.id);
           await DataRepository.topics.save(topic);
           console.log(`[DataRepairService] 话题 ${topic.id} 修复了消息`);
         }
@@ -230,43 +231,34 @@ export class DataRepairService {
     let totalRepaired = 0;
 
     try {
-      // 获取所有话题
+      // 统一架构：确保所有话题的 messageIds 与 messages 表同步
       const topics = await DataRepository.topics.getAll();
 
       for (const topic of topics) {
-        if (!topic.messages || !Array.isArray(topic.messages)) {
-          continue;
-        }
-
         // 确保messageIds数组存在
         if (!topic.messageIds || !Array.isArray(topic.messageIds)) {
           topic.messageIds = [];
         }
 
-        // 逐个处理消息
-        for (const message of topic.messages) {
-          if (!message.id) {
-            console.log('[DataRepairService] 跳过无效消息（没有ID）');
-            continue;
-          }
+        // 从 messages 表获取该话题的所有消息
+        const messagesInTable = await DataRepository.messages.getByTopicId(topic.id);
+        const messageIdsInTable = new Set(messagesInTable.map(m => m.id));
 
-          // 检查消息是否已存在于messages表
-          const existingMessage = await DataRepository.messages.getById(message.id);
-          if (!existingMessage) {
-            // 将消息保存到messages表
-            await DataRepository.messages.save(message);
-            console.log(`[DataRepairService] 修复：保存消息 ${message.id} 到messages表`);
-            totalRepaired++;
+        // 检查 messageIds 中是否有不存在于 messages 表的 ID
+        const validMessageIds = topic.messageIds.filter(id => messageIdsInTable.has(id));
+        
+        // 检查 messages 表中是否有不在 messageIds 中的消息
+        const missingIds = messagesInTable
+          .filter(m => !topic.messageIds.includes(m.id))
+          .map(m => m.id);
 
-            // 将消息ID添加到messageIds数组（如果不存在）
-            if (!topic.messageIds.includes(message.id)) {
-              topic.messageIds.push(message.id);
-            }
-          }
+        if (missingIds.length > 0 || validMessageIds.length !== topic.messageIds.length) {
+          // 合并有效的 messageIds 和缺失的 IDs
+          topic.messageIds = [...validMessageIds, ...missingIds];
+          await DataRepository.topics.save(topic);
+          totalRepaired += missingIds.length;
+          console.log(`[DataRepairService] 话题 ${topic.id} 同步了 ${missingIds.length} 条消息ID`);
         }
-
-        // 保存更新后的话题
-        await DataRepository.topics.save(topic);
       }
 
       console.log(`[DataRepairService] 消息数据修复完成，共修复 ${totalRepaired} 条消息`);
@@ -406,8 +398,6 @@ export class DataRepairService {
     };
 
     try {
-      const { dexieStorage } = await import('./storage/DexieStorageService');
-      
       // 1. 获取所有话题和消息
       const topics = await dexieStorage.getAllTopics();
       const allMessages = await dexieStorage.messages.toArray();

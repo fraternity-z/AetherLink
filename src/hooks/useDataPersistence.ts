@@ -12,9 +12,11 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
+import store from '../shared/store';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import { detectDetailedPlatform, RuntimeType } from '../shared/utils/platformDetection';
 import { flushThrottledUpdates } from '../shared/store/thunks/message/utils';
+import { DataRepairService } from '../shared/services/DataRepairService';
 
 // 标记是否正在保存数据
 let isSaving = false;
@@ -41,8 +43,7 @@ export async function flushAllPendingWrites(): Promise<void> {
   }
   
   try {
-    // 动态导入 store 避免循环依赖
-    const { default: store } = await import('../shared/store');
+    // 使用静态导入的 store
     const state = store.getState();
     const currentTopicId = state.messages.currentTopicId;
     
@@ -218,12 +219,10 @@ export function useDataPersistence() {
       console.log(`[DataPersistence] 检测到上次脏退出 (${new Date(parseInt(dirtyExit)).toISOString()})，执行数据完整性检查...`);
       localStorage.removeItem('aether-link-dirty-exit');
       // 执行数据完整性检查
-      import('../shared/services/DataRepairService').then(({ DataRepairService }) => {
-        DataRepairService.checkAndRepairMessageIntegrity().then(result => {
-          if (result.repaired > 0 || result.missingMessages > 0) {
-            console.log(`[DataPersistence] 数据修复完成: 修复了 ${result.repaired} 个话题，发现 ${result.missingMessages} 条缺失消息`);
-          }
-        });
+      DataRepairService.checkAndRepairMessageIntegrity().then(result => {
+        if (result.repaired > 0 || result.missingMessages > 0) {
+          console.log(`[DataPersistence] 数据修复完成: 修复了 ${result.repaired} 个话题，发现 ${result.missingMessages} 条缺失消息`);
+        }
       });
     }
     

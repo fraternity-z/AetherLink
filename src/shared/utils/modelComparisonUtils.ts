@@ -232,41 +232,18 @@ export async function handleUserSelection(
         console.log(`[modelComparisonUtils] 已更新活跃版本的metadata，内容长度: ${selectedContent.length}`);
       }
 
-      // 更新 messages 表
+      // 统一架构：只更新 messages 表，不再维护冗余的 topic.messages
+      const latestMessage = store.getState().messages.entities[messageId];
+      const latestBlocks = latestMessage?.blocks || [];
+
       await dexieStorage.updateMessage(messageId, {
         status: AssistantMessageStatus.SUCCESS,
         updatedAt: new Date().toISOString(),
-        versions: updatedVersions // 更新版本信息
+        versions: updatedVersions,
+        blocks: latestBlocks
       });
 
-      //  关键修复：更新 topics 表中的 messages 数组，包含选中的内容
-      const topic = await dexieStorage.topics.get(message.topicId);
-      if (topic && topic.messages) {
-        const messageIndex = topic.messages.findIndex(m => m.id === messageId);
-        if (messageIndex >= 0) {
-          //  关键：将选中的内容保存到对话历史中
-          // 使用类型断言来处理兼容性问题，因为topics.messages可能包含旧格式的消息
-          const currentMessage = topic.messages[messageIndex] as any;
-
-          // 🔧 关键修复：获取最新的blocks数组
-          const latestMessage = store.getState().messages.entities[messageId];
-          const latestBlocks = latestMessage?.blocks || [];
-
-          // 创建更新后的消息对象
-          const updatedMessage = {
-            ...currentMessage,
-            status: AssistantMessageStatus.SUCCESS,
-            updatedAt: new Date().toISOString(),
-            content: selectedContent, // 添加content字段（用于对话历史）
-            versions: updatedVersions, // 同步更新版本信息
-            blocks: latestBlocks // 🔧 关键：同步最新的blocks数组
-          };
-
-          topic.messages[messageIndex] = updatedMessage;
-          await dexieStorage.topics.put(topic);
-          console.log(`[modelComparisonUtils] 已更新话题中的消息状态和内容，内容长度: ${selectedContent.length}，blocks: [${latestBlocks.join(', ')}]`);
-        }
-      }
+      console.log(`[modelComparisonUtils] 已更新消息状态和内容，内容长度: ${selectedContent.length}，blocks: [${latestBlocks.join(', ')}]`);
     });
 
     console.log(`[modelComparisonUtils] 用户选择了模型 ${selectedModelId} 的回答，已完整保存到数据库和消息历史`);

@@ -48,6 +48,7 @@ import { useSelector } from 'react-redux';
 import { memoryService } from '../../shared/services/memory/MemoryService';
 import { getEmbeddingDimensions, EMBEDDING_MODELS } from '../../shared/config/embeddingModels';
 import type { MemoryItem } from '../../shared/types/memory';
+import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { SafeAreaContainer, HeaderBar, Container } from '../../components/settings/SettingComponents';
 import { AddMemoryDialog, EditMemoryDialog, ModelConfigDialog, PromptEditDialog } from './MemorySettings/';
 import { toastManager } from '../../components/EnhancedToast';
@@ -169,7 +170,6 @@ const MemorySettings: React.FC = () => {
   // 加载助手列表
   const loadAssistants = useCallback(async () => {
     try {
-      const { dexieStorage } = await import('../../shared/services/storage/DexieStorageService');
       const allAssistants = await dexieStorage.getAllAssistants();
       const assistantList = allAssistants.map(a => ({ id: a.id, name: a.name, memoryEnabled: a.memoryEnabled }));
       const finalList = assistantList.length > 0 ? assistantList : [{ id: 'default', name: '默认助手', memoryEnabled: false }];
@@ -306,7 +306,6 @@ const MemorySettings: React.FC = () => {
     if (!currentAssistantId || currentAssistantId === 'default') return;
     
     try {
-      const { dexieStorage } = await import('../../shared/services/storage/DexieStorageService');
       const assistant = await dexieStorage.getAssistant(currentAssistantId);
       if (assistant) {
         const updatedAssistant = { ...assistant, memoryEnabled: enabled };

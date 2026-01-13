@@ -16,8 +16,8 @@ export class TopicStatsService {
     // 检查话题是否有基本必要字段
     const hasBasicFields = topic && topic.id && topic.title;
 
-    // 检查是否包含消息或最后消息时间（表示曾经使用过）
-    const hasMessages = Array.isArray(topic.messages) && topic.messages.length > 0;
+    // 统一架构：基于 messageIds 判断是否有消息
+    const hasMessages = Array.isArray(topic.messageIds) && topic.messageIds.length > 0;
     const hasActivity = Boolean(topic.lastMessageTime);
 
     // 检查是否有系统提示词
@@ -35,7 +35,7 @@ export class TopicStatsService {
         hasActivity,
         hasPrompt,
         title: topic?.title || '无标题',
-        messagesCount: Array.isArray(topic?.messages) ? topic.messages.length : '非数组',
+        messageIdsCount: Array.isArray(topic?.messageIds) ? topic.messageIds.length : '非数组',
         lastMessageTime: topic?.lastMessageTime || '无时间戳',
         prompt: topic?.prompt ? '有提示词' : '无提示词'
       });

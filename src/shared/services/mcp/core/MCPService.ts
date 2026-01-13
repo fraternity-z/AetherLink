@@ -9,8 +9,13 @@ import { AiSdkMCPClient } from '../clients/AiSdkMCPClient';
 import { StdioMCPClient } from '../clients/StdioMCPClient';
 import { isMemoryTool } from '../../memory/memoryTools';
 import { handleMemoryToolCall } from '../../memory/memoryToolHandler';
-
 import { Capacitor } from '@capacitor/core';
+import { 
+  MCPCorsError, 
+  createMCPError,
+  isCorsError 
+} from '../types/MCPError';
+import { AGENTIC_MODE_SERVER } from '../types/constants';
 
 /**
  * 根据 URL 推断 MCP 服务器类型
@@ -298,6 +303,8 @@ export class MCPService {
         const stdioClient = await this.initStdioClient(server);
 
         // 创建一个兼容的 Client 对象
+        // 注意：使用类型断言是因为 SDK 的 Client 类型有 60+ 个私有属性，
+        // 但我们只需要实现其公共方法接口
         const compatClient = {
           connect: async () => {},
           close: async () => { await stdioClient.close(); },
@@ -306,7 +313,7 @@ export class MCPService {
             const tools = await stdioClient.listTools();
             return { tools };
           },
-          callTool: async (params: any) => {
+          callTool: async (params: { name: string; arguments: Record<string, unknown> }) => {
             return await stdioClient.callTool(params.name, params.arguments);
           },
           listPrompts: async () => {
@@ -317,7 +324,7 @@ export class MCPService {
             const resources = await stdioClient.listResources();
             return { resources };
           }
-        } as any;
+        } as unknown as Client;
 
         // 缓存客户端
         this.clients.set(serverKey, compatClient);
@@ -340,6 +347,8 @@ export class MCPService {
         const httpStreamClient = await this.initMcpClientAdapter({ ...server, type: normalizedType });
 
         // 创建一个兼容的 Client 对象
+        // 注意：使用类型断言是因为 SDK 的 Client 类型有 60+ 个私有属性，
+        // 但我们只需要实现其公共方法接口
         const compatClient = {
           connect: async () => {},
           close: async () => { await httpStreamClient.close(); },
@@ -348,12 +357,12 @@ export class MCPService {
             const tools = await httpStreamClient.listTools();
             return { tools };
           },
-          callTool: async (params: any) => {
+          callTool: async (params: { name: string; arguments: Record<string, unknown> }) => {
             return await httpStreamClient.callTool(params.name, params.arguments);
           },
           listPrompts: async () => ({ prompts: [] }),
           listResources: async () => ({ resources: [] })
-        } as any;
+        } as unknown as Client;
 
         // 缓存客户端
         this.clients.set(serverKey, compatClient);
@@ -380,12 +389,18 @@ export class MCPService {
       } catch (error) {
         console.error(`[MCP] 连接服务器失败: ${server.name}`, error);
 
-        // 在移动端，为CORS错误提供更友好的错误信息
-        if (Capacitor.isNativePlatform() && error instanceof Error) {
-          if (error.message.includes('CORS') || error.message.includes('Access to fetch')) {
+        // 使用统一的错误处理
+        if (error instanceof Error) {
+          // 在移动端，为CORS错误提供更友好的错误信息
+          if (Capacitor.isNativePlatform() && isCorsError(error)) {
             console.log(`[MCP] 移动端CORS错误，这通常表示服务器配置问题或网络问题`);
-            throw new Error(`连接MCP服务器失败: ${server.name} - 网络连接问题或服务器不可用`);
+            throw new MCPCorsError(
+              `连接MCP服务器失败: ${server.name} - 网络连接问题或服务器不可用`,
+              { serverName: server.name, cause: error }
+            );
           }
+          // 其他错误转换为 MCP 错误
+          throw createMCPError(error, server.name);
         }
 
         throw error;
@@ -887,8 +902,8 @@ export class MCPService {
    * 基于已启用的 MCP 服务器判断
    */
   public shouldEnableAgenticMode(): boolean {
-    // 检查是否启用了 @aether/file-editor
-    return this.hasActiveServer('@aether/file-editor');
+    // 检查是否启用了 Agentic 模式触发服务器
+    return this.hasActiveServer(AGENTIC_MODE_SERVER);
   }
 
   /**

@@ -174,7 +174,7 @@ export interface AetherLinkDB extends DBSchema {
 
   topics: {
     key: string;
-    value: ChatTopic & { messages: Message[] }; // 添加messages数组到topics表
+    value: ChatTopic; // 统一架构：topics 只存储 messageIds 引用，消息存储在 messages 表
     indexes: {
       'by-assistant': string;
       'by-last-time': number;

@@ -44,15 +44,18 @@ export const processKnowledgeSearch = async (
       }
     }));
 
-    // 获取用户消息内容
+    // 统一架构：从 messages 表加载消息
     const topic = await DataRepository.topics.getById(topicId);
-    if (!topic || !topic.messages) {
+    if (!topic || !topic.messageIds?.length) {
       console.warn('[processKnowledgeSearch] 无法获取话题消息');
       return;
     }
 
+    // 从 messages 表加载消息
+    const messages = await DataRepository.messages.getByTopicId(topicId);
+    
     // 找到最后一条用户消息
-    const userMessage = topic.messages
+    const userMessage = messages
       .filter((m: Message) => m.role === 'user')
       .pop();
 
