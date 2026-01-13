@@ -13,6 +13,8 @@ import {
   DEFAULT_CHUNK_SIZE,
   DEFAULT_CHUNK_OVERLAP
 } from '../../constants/knowledge';
+import { cosineSimilarity } from '../../utils/vectorUtils';
+import { chunkText } from '../../utils/textChunker';
 import type { KnowledgeBase, KnowledgeDocument, KnowledgeSearchResult } from '../../types/KnowledgeBase';
 
 /**
@@ -183,12 +185,12 @@ export class MobileKnowledgeService {
         throw new Error(`知识库不存在: ${params.knowledgeBaseId}`);
       }
 
-      // 分块
-      const chunks = this.chunkText(
-        params.content,
-        knowledgeBase.chunkSize || DEFAULT_CHUNK_SIZE,
-        knowledgeBase.chunkOverlap || DEFAULT_CHUNK_OVERLAP
-      );
+      // 使用智能分块（基于句子边界）
+      const chunks = chunkText(params.content, {
+        chunkSize: knowledgeBase.chunkSize || DEFAULT_CHUNK_SIZE,
+        chunkOverlap: knowledgeBase.chunkOverlap || DEFAULT_CHUNK_OVERLAP,
+        preserveSentences: true
+      });
 
       console.log(`[MobileKnowledgeService] 文档分块: ${chunks.length} 个块`);
 
@@ -206,9 +208,9 @@ export class MobileKnowledgeService {
             const embeddingService = MobileEmbeddingService.getInstance();
             vector = await embeddingService.getEmbedding(chunk, knowledgeBase.model);
           } catch (embeddingError) {
-            console.warn(`[MobileKnowledgeService] 云端嵌入API失败，使用本地模拟向量:`, embeddingError);
-            // 回退到本地模拟向量
-            vector = this.createFallbackVector(knowledgeBase.dimensions);
+            // 不使用随机向量，直接抛出错误让用户知道
+            console.error(`[MobileKnowledgeService] 云端嵌入API失败:`, embeddingError);
+            throw new Error(`无法获取文本向量嵌入，请检查嵌入模型配置和网络连接。错误: ${embeddingError instanceof Error ? embeddingError.message : String(embeddingError)}`);
           }
 
           // 创建文档记录
@@ -402,10 +404,9 @@ export class MobileKnowledgeService {
         queryVector = await embeddingService.getEmbedding(params.query, knowledgeBase.model);
         console.log(`[MobileKnowledgeService] 查询向量获取成功，维度: ${queryVector.length}`);
       } catch (embeddingError) {
-        console.warn(`[MobileKnowledgeService] 查询向量获取失败，使用本地模拟向量:`, embeddingError);
-        // 回退到本地模拟向量，使用知识库的维度
-        queryVector = this.createFallbackVector(knowledgeBase.dimensions);
-        console.log(`[MobileKnowledgeService] 使用回退向量，维度: ${queryVector.length}`);
+        // 不使用随机向量，直接抛出错误
+        console.error(`[MobileKnowledgeService] 查询向量获取失败:`, embeddingError);
+        throw new Error(`无法获取查询向量，请检查嵌入模型配置和网络连接。`);
       }
 
       // 获取所有文档向量
@@ -444,8 +445,8 @@ export class MobileKnowledgeService {
   }
 
   /**
-   * 本地向量搜索（临时实现）
-   * 在实际场景中应使用嵌入服务
+   * 本地向量搜索
+   * 使用统一的cosineSimilarity工具函数
    */
   private localVectorSearch(
     queryVector: number[],
@@ -455,8 +456,8 @@ export class MobileKnowledgeService {
   ): KnowledgeSearchResult[] {
     return documents
       .map(doc => {
-        // 简单的余弦相似度计算
-        const similarity = this.cosineSimilarity(queryVector, doc.vector);
+        // 使用统一的余弦相似度计算
+        const similarity = cosineSimilarity(queryVector, doc.vector);
         return {
           documentId: doc.id,
           content: doc.content,
@@ -467,62 +468,5 @@ export class MobileKnowledgeService {
       .filter(result => result.similarity >= threshold)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit);
-  }
-
-  /**
-   * 计算余弦相似度
-   */
-  private cosineSimilarity(vecA: number[], vecB: number[]): number {
-    // 维度必须匹配
-    if (vecA.length !== vecB.length) {
-      throw new Error(`向量维度不匹配: ${vecA.length} vs ${vecB.length}`);
-    }
-
-    let dotProduct = 0;
-    let magnitudeA = 0;
-    let magnitudeB = 0;
-
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      magnitudeA += vecA[i] * vecA[i];
-      magnitudeB += vecB[i] * vecB[i];
-    }
-
-    magnitudeA = Math.sqrt(magnitudeA);
-    magnitudeB = Math.sqrt(magnitudeB);
-
-    if (magnitudeA === 0 || magnitudeB === 0) {
-      return 0;
-    }
-
-    return dotProduct / (magnitudeA * magnitudeB);
-  }
-
-
-
-  /**
-   * 创建回退向量（当云端API失败时使用）
-   */
-  private createFallbackVector(dimensions: number): number[] {
-    const vector = [];
-    for (let i = 0; i < dimensions; i++) {
-      vector.push(Math.random() * 2 - 1); // -1到1之间的随机值
-    }
-    return vector;
-  }
-
-  /**
-   * 文本分块
-   */
-  private chunkText(text: string, chunkSize: number, overlap: number): string[] {
-    const chunks: string[] = [];
-
-    // 简单的基于字符的分块策略
-    for (let i = 0; i < text.length; i += chunkSize - overlap) {
-      const chunk = text.slice(i, i + chunkSize);
-      chunks.push(chunk);
-    }
-
-    return chunks;
   }
 }

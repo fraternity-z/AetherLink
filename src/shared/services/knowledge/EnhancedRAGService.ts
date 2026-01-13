@@ -4,6 +4,8 @@
  */
 import { dexieStorage } from '../storage/DexieStorageService';
 import { MobileEmbeddingService } from './MobileEmbeddingService';
+import { cosineSimilarity, textSimilarity } from '../../utils/vectorUtils';
+import { generateQuerySynonyms } from '../../config/synonyms';
 import type { KnowledgeBase, KnowledgeDocument, KnowledgeSearchResult } from '../../types/KnowledgeBase';
 
 // RAG搜索配置
@@ -273,7 +275,7 @@ export class EnhancedRAGService {
         // 计算相似度
         const queryResults = documents.map(doc => ({
           doc,
-          score: this.cosineSimilarity(queryVector, doc.vector)
+          score: cosineSimilarity(queryVector, doc.vector)
         }));
 
         // 输出最高分数
@@ -647,7 +649,7 @@ export class EnhancedRAGService {
         .map(doc => ({
           documentId: doc.id,
           content: doc.content,
-          similarity: this.cosineSimilarity(queryVector, doc.vector),
+          similarity: cosineSimilarity(queryVector, doc.vector),
           metadata: doc.metadata
         }))
         .filter(result => result.similarity >= threshold)
@@ -689,23 +691,8 @@ export class EnhancedRAGService {
   }
 
   private async generateSynonyms(query: string): Promise<string[]> {
-    // 简化的同义词生成（实际应用中可以使用词典或AI服务）
-    const synonymMap: { [key: string]: string[] } = {
-      '问题': ['疑问', '困惑', '难题'],
-      '方法': ['方式', '途径', '手段'],
-      '解决': ['处理', '解答', '应对'],
-      '如何': ['怎样', '怎么', '如何才能'],
-      '什么': ['啥', '什么是', '何为']
-    };
-
-    const synonyms: string[] = [];
-    for (const [word, syns] of Object.entries(synonymMap)) {
-      if (query.includes(word)) {
-        synonyms.push(...syns);
-      }
-    }
-
-    return synonyms;
+    // 使用配置化的同义词库
+    return generateQuerySynonyms(query, 3);
   }
 
   private async extractRelatedTerms(query: string, knowledgeBase: KnowledgeBase): Promise<string[]> {
@@ -782,7 +769,7 @@ export class EnhancedRAGService {
     // 计算与已有结果的相似度
     let maxSimilarity = 0;
     for (const existing of existingResults) {
-      const similarity = this.textSimilarity(document.content, existing.content);
+      const similarity = textSimilarity(document.content, existing.content);
       maxSimilarity = Math.max(maxSimilarity, similarity);
     }
 
@@ -810,35 +797,6 @@ export class EnhancedRAGService {
     }
   }
 
-  private cosineSimilarity(vecA: number[], vecB: number[]): number {
-    if (vecA.length !== vecB.length) return 0;
-
-    let dotProduct = 0;
-    let magnitudeA = 0;
-    let magnitudeB = 0;
-
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      magnitudeA += vecA[i] * vecA[i];
-      magnitudeB += vecB[i] * vecB[i];
-    }
-
-    magnitudeA = Math.sqrt(magnitudeA);
-    magnitudeB = Math.sqrt(magnitudeB);
-
-    if (magnitudeA === 0 || magnitudeB === 0) return 0;
-
-    return dotProduct / (magnitudeA * magnitudeB);
-  }
-
-  private textSimilarity(text1: string, text2: string): number {
-    // 简化的文本相似度计算（基于词汇重叠）
-    const words1 = new Set(text1.toLowerCase().split(/\s+/));
-    const words2 = new Set(text2.toLowerCase().split(/\s+/));
-    
-    const intersection = new Set([...words1].filter(x => words2.has(x)));
-    const union = new Set([...words1, ...words2]);
-    
-    return intersection.size / union.size;
-  }
+  // 使用统一的向量工具函数 cosineSimilarity 和 textSimilarity
+  // 已从 ../../utils/vectorUtils 导入
 }

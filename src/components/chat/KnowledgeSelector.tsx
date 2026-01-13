@@ -12,26 +12,26 @@ import { useTheme } from '@mui/material/styles';
 import { BookOpen as MenuBookIcon, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
+import type { KnowledgeBase as FullKnowledgeBase, KnowledgeSearchResult } from '../../shared/types/KnowledgeBase';
 
-interface KnowledgeBase {
+/** UI展示用的知识库简化类型 */
+interface KnowledgeBaseDisplay {
   id: string;
   name: string;
   description?: string;
   documentCount: number;
-  createdAt: Date;
+  createdAt: string | Date;
 }
 
-interface SearchResult {
+/** 搜索结果类型（兼容旧接口） */
+type SearchResult = Pick<KnowledgeSearchResult, 'content' | 'similarity' | 'documentId'> & {
   title?: string;
-  content: string;
-  similarity: number;
-  documentId: string;
-}
+};
 
 interface KnowledgeSelectorProps {
   open: boolean;
   onClose: () => void;
-  onSelect: (knowledgeBase: KnowledgeBase, searchResults: SearchResult[]) => void;
+  onSelect: (knowledgeBase: KnowledgeBaseDisplay | FullKnowledgeBase, searchResults: SearchResult[]) => void;
   searchQuery?: string;
 }
 
@@ -152,7 +152,7 @@ const KnowledgePanelDivider = styled.div<{ theme?: any }>`
 const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, onSelect }) => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseDisplay[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedKB, setSelectedKB] = useState<string>('');
   const [error, setError] = useState<string>('');
@@ -224,7 +224,7 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
     navigate('/knowledge');
   }, [handleClose, navigate]);
 
-  const handleSelectKB = useCallback((kb: KnowledgeBase) => {
+  const handleSelectKB = useCallback((kb: KnowledgeBaseDisplay) => {
     if (selectedKB === kb.id) {
       onSelect(kb, []);
       handleClose();

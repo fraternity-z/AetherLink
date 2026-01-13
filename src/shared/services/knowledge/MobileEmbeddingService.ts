@@ -63,9 +63,16 @@ export function getAvailableEmbeddingModels(): Model[] {
 /**
  * 移动端嵌入服务类
  */
+interface CacheEntry {
+  vector: number[];
+  timestamp: number;
+}
+
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
 export class MobileEmbeddingService {
   private static instance: MobileEmbeddingService;
-  private embeddingCache: Map<string, number[]> = new Map();
+  private embeddingCache: Map<string, CacheEntry> = new Map();
 
   private constructor() {}
 
@@ -120,10 +127,11 @@ export class MobileEmbeddingService {
    */
   public async getEmbedding(text: string, modelId: string): Promise<number[]> {
     try {
-      // 检查缓存
+      // 检查缓存（带过期时间）
       const cacheKey = `${modelId}:${text}`;
-      if (this.embeddingCache.has(cacheKey)) {
-        return this.embeddingCache.get(cacheKey)!;
+      const cached = this.embeddingCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+        return cached.vector;
       }
 
       // 获取模型配置
@@ -137,17 +145,9 @@ export class MobileEmbeddingService {
         const geminiService = createGeminiEmbeddingService(model);
         const embedding = await geminiService.getEmbedding(text, model);
 
-        // 缓存结果
-        this.embeddingCache.set(cacheKey, embedding);
-
-        // 限制缓存大小
-        if (this.embeddingCache.size > 100) {
-          const oldestKey = this.embeddingCache.keys().next().value;
-          if (oldestKey) {
-            this.embeddingCache.delete(oldestKey);
-          }
-        }
-
+        // 缓存结果（带时间戳）
+        this.embeddingCache.set(cacheKey, { vector: embedding, timestamp: Date.now() });
+        this.cleanExpiredCache();
         return embedding;
       }
 
@@ -210,18 +210,9 @@ export class MobileEmbeddingService {
         throw new Error('无法解析嵌入向量响应格式');
       }
 
-      // 缓存结果
-      this.embeddingCache.set(cacheKey, embedding);
-
-      // 限制缓存大小
-      if (this.embeddingCache.size > 100) {
-        // 删除最旧的缓存项
-        const oldestKey = this.embeddingCache.keys().next().value;
-        if (oldestKey) {
-          this.embeddingCache.delete(oldestKey);
-        }
-      }
-
+      // 缓存结果（带时间戳）
+      this.embeddingCache.set(cacheKey, { vector: embedding, timestamp: Date.now() });
+      this.cleanExpiredCache();
       return embedding;
     } catch (error) {
       console.error('[MobileEmbeddingService] 获取向量嵌入失败:', error);
@@ -303,5 +294,28 @@ export class MobileEmbeddingService {
     }
 
     return dotProduct / (magnitudeA * magnitudeB);
+  }
+
+  /**
+   * 清理过期的缓存项
+   */
+  private cleanExpiredCache(): void {
+    const now = Date.now();
+    const maxSize = 100;
+
+    // 清理过期项
+    for (const [key, entry] of this.embeddingCache.entries()) {
+      if (now - entry.timestamp > CACHE_TTL_MS) {
+        this.embeddingCache.delete(key);
+      }
+    }
+
+    // 如果仍然超过大小限制，删除最旧的
+    if (this.embeddingCache.size > maxSize) {
+      const entries = Array.from(this.embeddingCache.entries())
+        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+      const toDelete = entries.slice(0, this.embeddingCache.size - maxSize);
+      toDelete.forEach(([key]) => this.embeddingCache.delete(key));
+    }
   }
 }
