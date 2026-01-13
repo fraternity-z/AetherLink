@@ -11,11 +11,23 @@ interface UnifiedModelDisplayProps {
   displayStyle?: 'icon' | 'text';
 }
 
+// 🔥 验证并修复显示样式值
+const validateDisplayStyle = (style: unknown): 'icon' | 'text' => {
+  if (style === 'text' || style === 'icon') {
+    return style;
+  }
+  // 修复损坏的数据：返回默认值
+  console.warn(`[UnifiedModelDisplay] 无效的 displayStyle 值: "${style}", 使用默认值 "icon"`);
+  return 'icon';
+};
+
 export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
   selectedModel,
   onClick,
-  displayStyle = 'icon'
+  displayStyle
 }) => {
+  // 验证并确保 displayStyle 是有效值
+  const validatedDisplayStyle = validateDisplayStyle(displayStyle);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const providers = useSelector(selectProviders);
@@ -43,7 +55,7 @@ export const UnifiedModelDisplay: React.FC<UnifiedModelDisplayProps> = ({
     return `${Math.max(scaledSize, minSize)}rem`;
   };
 
-  if (displayStyle === 'icon') {
+  if (validatedDisplayStyle === 'icon') {
     return (
       <IconButton
         color="inherit"

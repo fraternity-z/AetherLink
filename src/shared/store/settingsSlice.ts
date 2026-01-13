@@ -502,6 +502,29 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
         savedSettings.modelSelectorStyle = 'dialog';
       }
 
+      // 🔥 修复损坏的 modelSelectorStyle 值
+      const validModelSelectorStyles = ['dialog', 'dropdown'] as const;
+      if (!validModelSelectorStyles.includes(savedSettings.modelSelectorStyle as any)) {
+        console.warn(`[loadSettings] 修复无效的 modelSelectorStyle: "${savedSettings.modelSelectorStyle}", 重置为 "dialog"`);
+        savedSettings.modelSelectorStyle = 'dialog';
+      }
+
+      // 🔥 修复损坏的 topToolbar 设置
+      if (savedSettings.topToolbar) {
+        const validDisplayStyles = ['icon', 'text'] as const;
+        const displayStyle = savedSettings.topToolbar.modelSelectorDisplayStyle;
+        if (displayStyle !== undefined && !validDisplayStyles.includes(displayStyle as any)) {
+          console.warn(`[loadSettings] 修复无效的 modelSelectorDisplayStyle: "${displayStyle}", 重置为 "icon"`);
+          savedSettings.topToolbar.modelSelectorDisplayStyle = 'icon';
+        }
+        
+        const selectorStyle = savedSettings.topToolbar.modelSelectorStyle;
+        if (selectorStyle !== undefined && !validModelSelectorStyles.includes(selectorStyle as any)) {
+          console.warn(`[loadSettings] 修复无效的 topToolbar.modelSelectorStyle: "${selectorStyle}", 重置为 "dialog"`);
+          savedSettings.topToolbar.modelSelectorStyle = 'dialog';
+        }
+      }
+
       // 如果没有消息气泡宽度设置，使用默认值
       if (savedSettings.messageBubbleMinWidth === undefined) {
         savedSettings.messageBubbleMinWidth = 50;
@@ -907,6 +930,38 @@ const settingsSlice = createSlice({
 
       if (updates.topicNamingModelId !== undefined) {
         updates.topicNamingModelId = ensureModelIdentityKey(updates.topicNamingModelId, state.providers);
+      }
+
+      // 🔥 修复损坏的 topToolbar 设置
+      if (updates.topToolbar) {
+        const validModelSelectorDisplayStyles = ['icon', 'text'] as const;
+        const displayStyle = updates.topToolbar.modelSelectorDisplayStyle;
+        if (displayStyle !== undefined && !validModelSelectorDisplayStyles.includes(displayStyle as any)) {
+          console.warn(`[settingsSlice] 修复无效的 modelSelectorDisplayStyle: "${displayStyle}", 重置为 "icon"`);
+          updates.topToolbar = {
+            ...updates.topToolbar,
+            modelSelectorDisplayStyle: 'icon'
+          };
+        }
+        
+        const validModelSelectorStyles = ['dialog', 'dropdown'] as const;
+        const selectorStyle = updates.topToolbar.modelSelectorStyle;
+        if (selectorStyle !== undefined && !validModelSelectorStyles.includes(selectorStyle as any)) {
+          console.warn(`[settingsSlice] 修复无效的 modelSelectorStyle: "${selectorStyle}", 重置为 "dialog"`);
+          updates.topToolbar = {
+            ...updates.topToolbar,
+            modelSelectorStyle: 'dialog'
+          };
+        }
+      }
+
+      // 🔥 修复损坏的全局 modelSelectorStyle 设置
+      if (updates.modelSelectorStyle !== undefined) {
+        const validStyles = ['dialog', 'dropdown'] as const;
+        if (!validStyles.includes(updates.modelSelectorStyle as any)) {
+          console.warn(`[settingsSlice] 修复无效的全局 modelSelectorStyle: "${updates.modelSelectorStyle}", 重置为 "dialog"`);
+          updates.modelSelectorStyle = 'dialog';
+        }
       }
 
       Object.assign(state, updates);

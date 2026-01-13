@@ -301,19 +301,51 @@ export default function TopicTab({
   };
 
   // 简化的话题更新逻辑 - 添加加载状态
+  // 🔥 修复：确保 Redux 状态和数据库同步更新，避免锁死问题
   const updateTopic = async (updatedTopic: ChatTopic) => {
     setLoading(true);
     try {
-      await dexieStorage.saveTopic(updatedTopic);
-
-      if (onUpdateTopic) {
-        onUpdateTopic(updatedTopic);
+      // 确保话题有正确的 assistantId
+      const assistantId = updatedTopic.assistantId || currentAssistant?.id;
+      
+      if (!assistantId) {
+        console.error('[TopicTab] 更新话题失败：缺少 assistantId');
+        return false;
       }
 
-      EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, updatedTopic);
+      const topicToSave: ChatTopic = {
+        ...updatedTopic,
+        assistantId
+      };
+
+      // 1. 保存到数据库
+      await dexieStorage.saveTopic(topicToSave);
+      console.log(`[TopicTab] 话题 ${topicToSave.id} 已保存到数据库`);
+
+      // 2. 直接更新 Redux 状态（避免通过回调导致的竞态条件）
+      dispatch({
+        type: 'assistants/updateTopic',
+        payload: { assistantId: topicToSave.assistantId, topic: topicToSave }
+      });
+      console.log(`[TopicTab] 话题 ${topicToSave.id} 的 Redux 状态已更新`);
+
+      // 3. 发送事件通知（用于其他组件监听）
+      EventEmitter.emit(EVENT_NAMES.TOPIC_UPDATED, topicToSave);
+      
       return true;
     } catch (error) {
-      console.error('更新话题失败:', error);
+      console.error('[TopicTab] 更新话题失败:', error);
+      // 刷新话题列表以恢复一致状态
+      if (onUpdateTopic && currentAssistant) {
+        try {
+          const freshTopic = await dexieStorage.getTopic(updatedTopic.id);
+          if (freshTopic) {
+            onUpdateTopic(freshTopic);
+          }
+        } catch (refreshError) {
+          console.error('[TopicTab] 刷新话题失败:', refreshError);
+        }
+      }
       return false;
     } finally {
       setLoading(false);
