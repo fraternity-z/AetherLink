@@ -8,6 +8,7 @@ import type { Assistant, AssistantRegex } from '../../../shared/types/Assistant'
 import { AssistantService } from '../../../shared/services';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import { addItemToGroup } from '../../../shared/store/slices/groupsSlice';
+import { setAssistants } from '../../../shared/store/slices/assistantsSlice';
 import { useAssistantGroups } from './hooks/useAssistantGroups';
 import { getAllAgentSources } from '../../../shared/services/assistant/PredefinedAssistants';
 
@@ -401,13 +402,8 @@ export function useAssistantTabLogic(
       return pinyinA.localeCompare(pinyinB);
     });
 
-    // 更新Redux中的助手列表顺序
-    sorted.forEach((assistant, index) => {
-      dispatch({
-        type: 'assistants/updateAssistantOrder',
-        payload: { assistantId: assistant.id, order: index }
-      });
-    });
+    // 使用 setAssistants 更新整个助手列表顺序
+    dispatch(setAssistants(sorted));
 
     // 显示通知
     showNotification('助手已按拼音升序排列');
@@ -423,13 +419,8 @@ export function useAssistantTabLogic(
       return pinyinB.localeCompare(pinyinA);
     });
 
-    // 更新Redux中的助手列表顺序
-    sorted.forEach((assistant, index) => {
-      dispatch({
-        type: 'assistants/updateAssistantOrder',
-        payload: { assistantId: assistant.id, order: index }
-      });
-    });
+    // 使用 setAssistants 更新整个助手列表顺序
+    dispatch(setAssistants(sorted));
 
     // 显示通知
     showNotification('助手已按拼音降序排列');
