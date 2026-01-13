@@ -63,9 +63,10 @@ export const useMCP = (): MCPState & MCPActions => {
   }, []);
 
   // 刷新服务器列表
-  const refreshServers = useCallback(() => {
-    const allServers = mcpService.getServers();
-    const active = mcpService.getActiveServers();
+  const refreshServers = useCallback(async () => {
+    // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
+    const allServers = await mcpService.getServersAsync();
+    const active = allServers.filter(server => server.isActive);
 
     setState(prev => ({
       ...prev,
@@ -78,11 +79,12 @@ export const useMCP = (): MCPState & MCPActions => {
   const toggleServer = useCallback(async (serverId: string, isActive: boolean) => {
     try {
       await mcpService.toggleServer(serverId, isActive);
-      refreshServers();
+      await refreshServers();
 
       // 如果服务器被激活，加载其数据
       if (isActive) {
-        const server = mcpService.getServerById(serverId);
+        // 🔧 修复：使用异步方法确保数据完整加载
+        const server = await mcpService.getServerByIdAsync(serverId);
         if (server) {
           await loadServerData(server);
         }

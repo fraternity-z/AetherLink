@@ -169,7 +169,8 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
     }
 
     // 获取工具对应的服务器（MCP 工具）
-    const server = mcpService.getServerById(toolResponse.tool.serverId);
+    // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
+    const server = await mcpService.getServerByIdAsync(toolResponse.tool.serverId);
 
     if (!server) {
       throw new Error(`服务器未找到: ${toolResponse.tool.serverName}`);

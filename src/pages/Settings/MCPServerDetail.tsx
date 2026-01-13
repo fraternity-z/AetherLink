@@ -99,16 +99,20 @@ const MCPServerDetail: React.FC = () => {
   }, [server?.id]); // 只在服务器 ID 变化时重新初始化
 
   useEffect(() => {
-    if (location.state?.server) {
-      setServer(location.state.server);
-      loadServerData(location.state.server);
-    } else if (serverId) {
-      const foundServer = mcpService.getServerById(serverId);
-      if (foundServer) {
-        setServer(foundServer);
-        loadServerData(foundServer);
+    const initServer = async () => {
+      if (location.state?.server) {
+        setServer(location.state.server);
+        loadServerData(location.state.server);
+      } else if (serverId) {
+        // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
+        const foundServer = await mcpService.getServerByIdAsync(serverId);
+        if (foundServer) {
+          setServer(foundServer);
+          loadServerData(foundServer);
+        }
       }
-    }
+    };
+    initServer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverId, location.state]);
 

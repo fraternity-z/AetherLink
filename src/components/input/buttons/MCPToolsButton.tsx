@@ -55,9 +55,10 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
   );
 
   // 加载服务器列表
-  const loadServers = useCallback(() => {
+  const loadServers = useCallback(async () => {
     try {
-      const allServers = mcpService.getServers();
+      // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
+      const allServers = await mcpService.getServersAsync();
       setServers(allServers);
     } catch (error) {
       console.error('加载服务器列表失败:', error);

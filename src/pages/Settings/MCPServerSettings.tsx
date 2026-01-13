@@ -88,8 +88,9 @@ const MCPServerSettings: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadServers = () => {
-    const serverList = mcpService.getServers();
+  const loadServers = async () => {
+    // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
+    const serverList = await mcpService.getServersAsync();
     setServers(serverList);
   };
 

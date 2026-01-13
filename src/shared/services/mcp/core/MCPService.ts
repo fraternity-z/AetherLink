@@ -105,8 +105,12 @@ export class MCPService {
   // 添加服务器状态保存字段
   private savedActiveServerIds: Set<string> = new Set();
 
+  // 🔧 修复：跟踪加载状态，避免竞态条件
+  private loadingPromise: Promise<void> | null = null;
+  private isLoaded: boolean = false;
+
   private constructor() {
-    this.loadServers();
+    this.loadingPromise = this.loadServers();
   }
 
   public static getInstance(): MCPService {
@@ -117,6 +121,17 @@ export class MCPService {
   }
 
   /**
+   * 确保服务器配置已加载完成
+   * 在执行任何操作前调用此方法
+   */
+  private async ensureLoaded(): Promise<void> {
+    if (this.isLoaded) return;
+    if (this.loadingPromise) {
+      await this.loadingPromise;
+    }
+  }
+
+  /**
    * 从存储加载 MCP 服务器配置
    */
   private async loadServers(): Promise<void> {
@@ -124,9 +139,13 @@ export class MCPService {
       const savedServers = await getStorageItem<MCPServer[]>('mcp_servers');
       if (savedServers) {
         this.servers = savedServers;
+        console.log(`[MCP] 成功加载 ${savedServers.length} 个服务器配置`);
       }
     } catch (error) {
       console.error('[MCP] 加载服务器配置失败:', error);
+    } finally {
+      this.isLoaded = true;
+      this.loadingPromise = null;
     }
   }
 
@@ -143,8 +162,18 @@ export class MCPService {
 
   /**
    * 获取所有 MCP 服务器
+   * 注意：由于同步返回，如果在初始化完成前调用可能返回空数组
+   * 如需确保数据完整，请先调用 ensureLoaded() 或使用 getServersAsync()
    */
   public getServers(): MCPServer[] {
+    return [...this.servers];
+  }
+
+  /**
+   * 异步获取所有 MCP 服务器（确保数据已加载）
+   */
+  public async getServersAsync(): Promise<MCPServer[]> {
+    await this.ensureLoaded();
     return [...this.servers];
   }
 
@@ -163,10 +192,21 @@ export class MCPService {
   }
 
   /**
+   * 异步根据 ID 获取服务器（确保数据已加载）
+   */
+  public async getServerByIdAsync(id: string): Promise<MCPServer | undefined> {
+    await this.ensureLoaded();
+    return this.servers.find(server => server.id === id);
+  }
+
+  /**
    * 添加新的 MCP 服务器
    */
   public async addServer(server: MCPServer): Promise<void> {
+    // 🔧 修复：确保先加载完成，避免覆盖已有数据
+    await this.ensureLoaded();
     this.servers.push(server);
+    console.log(`[MCP] 添加服务器: ${server.name}, type=${server.type}, command=${server.command || 'N/A'}`);
     await this.saveServers();
   }
 
@@ -174,10 +214,15 @@ export class MCPService {
    * 更新 MCP 服务器
    */
   public async updateServer(updatedServer: MCPServer): Promise<void> {
+    // 🔧 修复：确保先加载完成，避免覆盖已有数据
+    await this.ensureLoaded();
     const index = this.servers.findIndex(server => server.id === updatedServer.id);
     if (index !== -1) {
+      console.log(`[MCP] 更新服务器: ${updatedServer.name}, type=${updatedServer.type}, command=${updatedServer.command || 'N/A'}`);
       this.servers[index] = updatedServer;
       await this.saveServers();
+    } else {
+      console.warn(`[MCP] 未找到要更新的服务器: ${updatedServer.id}`);
     }
   }
 
@@ -185,6 +230,8 @@ export class MCPService {
    * 删除 MCP 服务器
    */
   public async removeServer(serverId: string): Promise<void> {
+    // 🔧 修复：确保先加载完成，避免覆盖已有数据
+    await this.ensureLoaded();
     this.servers = this.servers.filter(server => server.id !== serverId);
     // 清理客户端连接
     this.clients.delete(serverId);

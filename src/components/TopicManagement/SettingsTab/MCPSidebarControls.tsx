@@ -64,9 +64,10 @@ const MCPSidebarControls: React.FC<MCPSidebarControlsProps> = ({
     loadServers();
   }, []);
 
-  const loadServers = () => {
-    const allServers = mcpService.getServers();
-    const active = mcpService.getActiveServers();
+  const loadServers = async () => {
+    // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
+    const allServers = await mcpService.getServersAsync();
+    const active = allServers.filter(server => server.isActive);
     setServers(allServers);
     setActiveServers(active);
   };
