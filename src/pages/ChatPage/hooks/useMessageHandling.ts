@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import store from '../../../shared/store';
 import { selectMessagesForTopic } from '../../../shared/store/selectors/messageSelectors';
-import { sendMessage, deleteMessage, regenerateMessage, resendUserMessage } from '../../../shared/store/thunks/messageThunk';
+import { sendMessage, deleteMessage, regenerateResponse } from '../../../shared/store/thunks/messageThunk';
 import { loadTopicMessagesThunk } from '../../../shared/store/slices/newMessagesSlice';
 import { versionService } from '../../../shared/services/VersionService';
 import type { SiliconFlowImageFormat } from '../../../shared/types';
@@ -77,17 +77,6 @@ export const useMessageHandling = (
         return null;
       }
 
-      // 从Redux中的providers获取所有可用模型，确保provider字段正确设置
-      const availableModels = providers.flatMap((provider: any) =>
-        (provider.models?.filter((model: any) => model.enabled) || []).map((model: any) => ({
-          ...model,
-          provider: model.provider || provider.id,
-          providerType: model.providerType || provider.providerType || provider.id,
-          apiKey: model.apiKey || provider.apiKey,
-          baseUrl: model.baseUrl || provider.baseUrl
-        }))
-      );
-
       const latestMatch = findModelInProviders(providers, latestModelId);
       const latestModel = latestMatch
         ? {
@@ -117,8 +106,14 @@ export const useMessageHandling = (
         source: latestModel ? 'Redux-Direct' : 'Component-Fallback'
       });
 
-      // 使用Redux Thunk重新生成消息，传入最新选择的模型
-      dispatch(regenerateMessage(messageId, currentTopic.id, modelToUse));
+      // 使用统一的 regenerateResponse 重新生成消息
+      dispatch(regenerateResponse({
+        messageId,
+        topicId: currentTopic.id,
+        model: modelToUse,
+        source: 'assistant',
+        saveVersion: true
+      }));
       return true;
     } catch (error) {
       console.error('重新生成消息失败:', error);
@@ -184,14 +179,19 @@ export const useMessageHandling = (
     }
   }, [currentTopic]);
 
-  // 处理重新发送用户消息 - 基于新逻辑
+  // 处理重新发送用户消息 - 使用统一的 regenerateResponse
   const handleResendMessage = useCallback(async (messageId: string) => {
     if (!currentTopic || !selectedModel) return null;
 
     try {
-      // 使用基于新逻辑的重新发送 thunk
-      // 这个 thunk 不会创建新的用户消息，而是重置关联的助手消息
-      dispatch(resendUserMessage(messageId, currentTopic.id, selectedModel));
+      // 使用统一的 regenerateResponse，source='user' 表示从用户消息触发
+      dispatch(regenerateResponse({
+        messageId,
+        topicId: currentTopic.id,
+        model: selectedModel,
+        source: 'user',
+        saveVersion: true  // 用户重发也支持版本管理
+      }));
       return true;
     } catch (error) {
       console.error('重新发送消息失败:', error);

@@ -6,7 +6,7 @@
 import { EventEmitter } from '../services/EventEmitter';
 import { EVENT_NAMES } from '../services/EventEmitter';
 import store from '../store';
-import { regenerateMessage } from '../store/thunks/messageThunk';
+import { regenerateResponse } from '../store/thunks/messageThunk';
 import { findModelInProviders } from './modelUtils';
 
 /**
@@ -164,8 +164,14 @@ export async function retryApiKeyError(messageId: string, topicId: string): Prom
       provider: currentModel.provider
     });
 
-    // 使用当前选择的模型重新生成消息
-    await store.dispatch(regenerateMessage(messageId, topicId, currentModel) as any);
+    // 使用统一的 regenerateResponse 重新生成消息
+    await store.dispatch(regenerateResponse({
+      messageId,
+      topicId,
+      model: currentModel,
+      source: 'assistant',
+      saveVersion: false  // 重试不需要保存版本
+    }) as any);
 
     console.log(`[ApiKeyErrorHandler] 消息重试成功: ${messageId}`);
   } catch (error) {
