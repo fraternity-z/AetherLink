@@ -21,6 +21,8 @@ export interface UseLongTextPasteOptions {
 export interface UseLongTextPasteReturn {
   /** 处理粘贴事件 */
   handlePaste: (e: React.ClipboardEvent) => Promise<boolean>;
+  /** P0修复：直接处理文本数据（避免异步时序问题） */
+  handleTextDirectly: (text: string) => Promise<boolean>;
   /** 检查文本是否应该转换为文件 */
   shouldConvertToFile: (text: string) => boolean;
   /** 长文本粘贴功能是否启用 */
@@ -97,8 +99,48 @@ export function useLongTextPaste(options: UseLongTextPasteOptions = {}): UseLong
     }
   }, [pasteLongTextAsFile, pasteLongTextThreshold, shouldConvertToFile, onFileAdd, onError, onSuccess]);
 
+  /**
+   * P0修复：直接处理文本数据
+   * 避免异步时序问题 - 在异步操作前已同步获取了文本数据
+   * @param text 文本数据
+   * @returns 是否已处理
+   */
+  const handleTextDirectly = useCallback(async (text: string): Promise<boolean> => {
+    if (!text) return false;
+
+    // 检查是否需要转换为文件
+    if (!shouldConvertToFile(text)) {
+      return false;
+    }
+
+    // 处理长文本转文件
+    try {
+      const result: PasteResult = await longTextPasteService.handleTextPaste(text, {
+        enabled: pasteLongTextAsFile,
+        threshold: pasteLongTextThreshold
+      });
+
+      if (result.success && result.convertedToFile && result.file) {
+        onFileAdd?.(result.file);
+        const fileName = result.file.name;
+        onSuccess?.(`长文本已转换为文件: ${fileName}`);
+        return true;
+      } else if (!result.success && result.error) {
+        onError?.(result.error);
+        return false;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('[useLongTextPaste] 处理失败:', error);
+      onError?.(error instanceof Error ? error.message : '长文本转文件失败');
+      return false;
+    }
+  }, [pasteLongTextAsFile, pasteLongTextThreshold, shouldConvertToFile, onFileAdd, onError, onSuccess]);
+
   return {
     handlePaste,
+    handleTextDirectly,
     shouldConvertToFile,
     isEnabled: pasteLongTextAsFile,
     threshold: pasteLongTextThreshold

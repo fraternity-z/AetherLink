@@ -5,6 +5,7 @@ import BackButtonDialog from './common/BackButtonDialog';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import { useTheme } from '../hooks/useTheme';
 import { useCapacitorSetup } from '../hooks/useCapacitorSetup';
+import { useDataPersistence } from '../hooks/useDataPersistence';
 // 🚀 性能优化：性能指标追踪
 import { recordMetric } from '../utils/performanceMetrics';
 
@@ -48,6 +49,9 @@ const AppContent = memo(() => {
   
   // 设置Capacitor监听器
   useCapacitorSetup();
+  
+  // P0修复：数据持久化保护，确保退出前数据已保存
+  useDataPersistence();
 
   // 数据重置通知状态
   const [showResetNotice, setShowResetNotice] = React.useState(false);

@@ -500,14 +500,33 @@ class TauriAdapter implements UnifiedPlatformAPI {
 
   clipboard = {
     async writeText(text: string): Promise<void> {
-      // 使用 Web Clipboard API (Tauri v2 支持)
+      // P1修复：优先使用 Tauri 原生剪贴板插件
+      try {
+        const { writeText } = await import('@tauri-apps/plugin-clipboard-manager');
+        await writeText(text);
+        return;
+      } catch (error) {
+        console.warn('[TauriAdapter] Tauri 剪贴板写入失败，降级到 Web API:', error);
+      }
+      
+      // 降级到 Web Clipboard API
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(text);
+      } else {
+        throw new Error('剪贴板不可用');
       }
     },
     
     async readText(): Promise<string> {
-      // 使用 Web Clipboard API (Tauri v2 支持)
+      // P1修复：优先使用 Tauri 原生剪贴板插件
+      try {
+        const { readText } = await import('@tauri-apps/plugin-clipboard-manager');
+        return await readText();
+      } catch (error) {
+        console.warn('[TauriAdapter] Tauri 剪贴板读取失败，降级到 Web API:', error);
+      }
+      
+      // 降级到 Web Clipboard API
       if (navigator.clipboard) {
         return await navigator.clipboard.readText();
       }

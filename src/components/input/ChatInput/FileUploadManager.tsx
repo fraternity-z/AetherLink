@@ -225,7 +225,8 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
   };
 
   // 使用统一的长文本粘贴 Hook
-  const { handlePaste: handleLongTextPaste, shouldConvertToFile } = useLongTextPaste({
+  // P0修复：使用handleTextDirectly替代handlePaste，避免异步时序问题
+  const { handleTextDirectly, shouldConvertToFile } = useLongTextPaste({
     onFileAdd: (file) => {
       setFiles(prev => [...prev, file]);
     },
@@ -247,63 +248,74 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
   });
 
   // 剪贴板粘贴事件处理函数
+  // P0修复：在异步操作前同步保存剪贴板数据，避免ClipboardData失效
   const handlePaste = async (e: React.ClipboardEvent) => {
     const clipboardData = e.clipboardData;
-    if (!clipboardData) return;
+    if (!clipboardData) {
+      toastManager.show({
+        message: '无法访问剪贴板，请检查浏览器权限',
+        type: 'error',
+        duration: 3000
+      });
+      return;
+    }
 
-    // 获取粘贴的文本
+    // P0修复：立即同步获取所有剪贴板数据（在任何异步操作之前）
     const textData = clipboardData.getData('text');
     
-    // 检查是否需要转换为文件（同步检查，异步处理）
-    // 必须在异步操作前调用 preventDefault，否则文本会被粘贴到输入框
+    // P0修复：立即同步克隆图片文件（ClipboardData在异步后可能失效）
+    const items = Array.from(clipboardData.items);
+    const imageFiles: File[] = [];
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    
+    // 检查是否需要转换为文件（同步检查）
     if (textData && shouldConvertToFile(textData)) {
       e.preventDefault(); // 立即阻止默认粘贴行为
       
       setUploadingMedia(true);
       try {
-        await handleLongTextPaste(e);
+        // P0修复：使用handleTextDirectly直接处理文本，而不是传递事件对象
+        await handleTextDirectly(textData);
       } finally {
         setUploadingMedia(false);
       }
       return;
     }
 
-    // 处理图片粘贴
-    const items = Array.from(clipboardData.items);
-    const imageItems = items.filter(item => item.type.startsWith('image/'));
-
-    if (imageItems.length === 0) return;
+    // 处理图片粘贴（使用已同步克隆的文件）
+    if (imageFiles.length === 0) return;
 
     e.preventDefault(); // 阻止默认粘贴行为
 
     try {
       setUploadingMedia(true);
 
-      for (const item of imageItems) {
-        const file = item.getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const base64Data = event.target?.result as string;
-            // 生成更唯一的 ID，避免重复显示问题
-            const timestamp = Date.now();
-            const uniqueId = `paste-img-${timestamp}-${Math.random().toString(36).substring(2, 11)}`;
-            const newImage: ImageContent = {
-              id: uniqueId,
-              url: base64Data,
-              base64Data: base64Data,
-              mimeType: file.type,
-              name: `粘贴的图片_${timestamp}.${file.type && typeof file.type === 'string' && file.type.includes('/') ? (file.type.split('/')[1] || 'png') : 'png'}`,
-              size: file.size
-            };
-            setImages(prev => [...prev, newImage]);
+      for (const file of imageFiles) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64Data = event.target?.result as string;
+          const timestamp = Date.now();
+          const uniqueId = `paste-img-${timestamp}-${Math.random().toString(36).substring(2, 11)}`;
+          const newImage: ImageContent = {
+            id: uniqueId,
+            url: base64Data,
+            base64Data: base64Data,
+            mimeType: file.type,
+            name: `粘贴的图片_${timestamp}.${file.type && typeof file.type === 'string' && file.type.includes('/') ? (file.type.split('/')[1] || 'png') : 'png'}`,
+            size: file.size
           };
-          reader.readAsDataURL(file);
-        }
+          setImages(prev => [...prev, newImage]);
+        };
+        reader.readAsDataURL(file);
       }
 
       toastManager.show({
-        message: `成功粘贴 ${imageItems.length} 张图片`,
+        message: `成功粘贴 ${imageFiles.length} 张图片`,
         type: 'success',
         duration: 3000
       });

@@ -188,6 +188,7 @@ export class LongTextPasteService {
 
   /**
    * Tauri 端保存文件
+   * P1修复：确保目录存在后再写入文件
    */
   private async saveFileForTauri(fileRecord: FileType, textContent: string): Promise<void> {
     try {
@@ -196,15 +197,30 @@ export class LongTextPasteService {
       if (globalObj.__TAURI__?.fs || globalObj.__TAURI_INTERNALS__) {
         // Tauri v2 API
         try {
-          const { writeTextFile, BaseDirectory } = await import('@tauri-apps/plugin-fs');
-          const filePath = `AetherLink/files/${fileRecord.name}`;
+          const { writeTextFile, mkdir, BaseDirectory } = await import('@tauri-apps/plugin-fs');
+          const dirPath = 'AetherLink/files';
+          const filePath = `${dirPath}/${fileRecord.name}`;
+          
+          // P1修复：确保目录存在
+          try {
+            await mkdir(dirPath, {
+              baseDir: BaseDirectory.AppData,
+              recursive: true
+            });
+            console.log('[LongTextPasteService] 目录创建成功:', dirPath);
+          } catch (mkdirError) {
+            // 目录可能已存在，忽略错误
+            console.log('[LongTextPasteService] 目录已存在或创建跳过');
+          }
+          
+          // 写入文件
           await writeTextFile(filePath, textContent, {
             baseDir: BaseDirectory.AppData
           });
           fileRecord.path = filePath;
           console.log('[LongTextPasteService] Tauri 文件保存成功:', filePath);
         } catch (tauriError) {
-          console.warn('[LongTextPasteService] Tauri v2 API 不可用，使用 Dexie 存储');
+          console.warn('[LongTextPasteService] Tauri v2 API 不可用，使用 Dexie 存储:', tauriError);
           await this.saveFileForWeb(fileRecord);
         }
       } else {

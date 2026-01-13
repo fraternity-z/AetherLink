@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .claude/
+.history/
 
 # Keystore files (排除 release-keystore.jks 用于统一签名)
 *.keystore

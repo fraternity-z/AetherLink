@@ -32,6 +32,8 @@ tauri-plugin-dialog = "2"
 # 官方 fs 插件 - 文件系统操作
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
+# P0修复：剪贴板插件 - 支持原生剪贴板访问
+tauri-plugin-clipboard-manager = "2"
 
 # 仅桌面端：窗口状态记忆插件
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

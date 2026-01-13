@@ -6,7 +6,9 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     // 官方 fs 插件 - 文件系统操作
     .plugin(tauri_plugin_fs::init())
-    .plugin(tauri_plugin_shell::init());
+    .plugin(tauri_plugin_shell::init())
+    // P0修复：剪贴板插件 - 支持原生剪贴板访问
+    .plugin(tauri_plugin_clipboard_manager::init());
 
   // 仅 Android 端：边缘到边缘显示插件
   #[cfg(target_os = "android")]
@@ -71,6 +73,13 @@ pub fn run() {
               }
             }
             "quit" => {
+              // P0修复：退出前通知前端保存数据
+              if let Some(window) = app.get_webview_window("main") {
+                // 发送退出事件，让前端有机会保存数据
+                let _ = window.emit("app-before-quit", ());
+                // 等待前端完成数据保存（最多等待2秒）
+                std::thread::sleep(std::time::Duration::from_millis(2000));
+              }
               app.exit(0);
             }
             _ => {}

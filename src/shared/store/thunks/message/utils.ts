@@ -48,7 +48,18 @@ export const saveMessageAndBlocksToDB = async (message: Message, blocks: Message
   }
 };
 
-export const throttledBlockUpdate = throttle(async (id: string, blockUpdate: Partial<MessageBlock>) => {
+// P0修复：创建可刷新的节流器
+const _throttledBlockUpdate = throttle(async (id: string, blockUpdate: Partial<MessageBlock>) => {
   // 只更新数据库，Redux状态由ResponseHandler处理
   await dexieStorage.updateMessageBlock(id, blockUpdate);
 }, 150);
+
+export const throttledBlockUpdate = _throttledBlockUpdate;
+
+/**
+ * 刷新节流器中所有待处理的更新
+ * P0修复：在应用退出前调用，确保数据不丢失
+ */
+export const flushThrottledUpdates = () => {
+  _throttledBlockUpdate.flush();
+};
