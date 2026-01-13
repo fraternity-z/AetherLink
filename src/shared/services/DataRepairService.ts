@@ -386,4 +386,84 @@ export class DataRepairService {
       totalTopics: result.totalTopics
     };
   }
+
+  /**
+   * 检查并修复消息完整性
+   * 重构后的新方法：检查 messages 表和 topic.messageIds 的一致性
+   * @returns 修复结果
+   */
+  static async checkAndRepairMessageIntegrity(): Promise<{
+    orphanMessages: number;
+    missingMessages: number;
+    repaired: number;
+  }> {
+    console.log('[DataRepairService] 开始检查消息完整性...');
+    
+    const result = {
+      orphanMessages: 0,  // 孤立消息（在messages表但不在任何topic.messageIds中）
+      missingMessages: 0, // 缺失消息（在topic.messageIds中但不在messages表）
+      repaired: 0
+    };
+
+    try {
+      const { dexieStorage } = await import('./storage/DexieStorageService');
+      
+      // 1. 获取所有话题和消息
+      const topics = await dexieStorage.getAllTopics();
+      const allMessages = await dexieStorage.messages.toArray();
+      
+      console.log(`[DataRepairService] 找到 ${topics.length} 个话题, ${allMessages.length} 条消息`);
+      
+      // 2. 构建消息ID集合
+      const messageIdsInTopics = new Set<string>();
+      const messageIdsInTable = new Set(allMessages.map(m => m.id));
+      
+      for (const topic of topics) {
+        if (topic.messageIds && Array.isArray(topic.messageIds)) {
+          topic.messageIds.forEach(id => messageIdsInTopics.add(id));
+        }
+      }
+      
+      // 3. 检查孤立消息（在messages表但不在任何topic.messageIds中）
+      for (const msgId of messageIdsInTable) {
+        if (!messageIdsInTopics.has(msgId)) {
+          result.orphanMessages++;
+          console.log(`[DataRepairService] 发现孤立消息: ${msgId}`);
+        }
+      }
+      
+      // 4. 检查缺失消息（在topic.messageIds中但不在messages表）
+      for (const topic of topics) {
+        if (!topic.messageIds || !Array.isArray(topic.messageIds)) continue;
+        
+        const validMessageIds: string[] = [];
+        let hasInvalidIds = false;
+        
+        for (const msgId of topic.messageIds) {
+          if (messageIdsInTable.has(msgId)) {
+            validMessageIds.push(msgId);
+          } else {
+            result.missingMessages++;
+            hasInvalidIds = true;
+            console.log(`[DataRepairService] 话题 ${topic.id} 引用了不存在的消息: ${msgId}`);
+          }
+        }
+        
+        // 5. 修复：移除无效的消息引用
+        if (hasInvalidIds) {
+          topic.messageIds = validMessageIds;
+          await dexieStorage.saveTopic(topic);
+          result.repaired++;
+          console.log(`[DataRepairService] 已修复话题 ${topic.id} 的消息引用`);
+        }
+      }
+      
+      console.log('[DataRepairService] 消息完整性检查完成:', result);
+      return result;
+      
+    } catch (error) {
+      console.error('[DataRepairService] 消息完整性检查失败:', error);
+      return result;
+    }
+  }
 }

@@ -1,39 +1,21 @@
 /**
  * 数据库更新辅助函数
  * 用于消息和话题的数据库操作
+ * 重构：移除冗余的 topic.messages 写入，只使用 messages 表
  */
 import { dexieStorage } from '../../../../services/storage/DexieStorageService';
 import type { Message, MessageBlock } from '../../../../types/newMessage';
 
 /**
- * 更新消息和话题中的消息数据
- * 统一处理 messages 表和 topic.messages 数组的更新
+ * 更新消息数据
+ * 重构：只更新 messages 表，不再维护冗余的 topic.messages
  */
 export async function updateMessageAndTopic(
   messageId: string,
-  topicId: string,
+  _topicId: string,
   changes: Partial<Message>
 ): Promise<void> {
-  await dexieStorage.transaction('rw', [
-    dexieStorage.messages,
-    dexieStorage.topics
-  ], async () => {
-    // 更新 messages 表
-    await dexieStorage.updateMessage(messageId, changes);
-
-    // 更新 topic.messages 数组
-    const topic = await dexieStorage.topics.get(topicId);
-    if (topic && topic.messages) {
-      const messageIndex = topic.messages.findIndex((m: Message) => m.id === messageId);
-      if (messageIndex >= 0) {
-        topic.messages[messageIndex] = {
-          ...topic.messages[messageIndex],
-          ...changes
-        };
-        await dexieStorage.topics.put(topic);
-      }
-    }
-  });
+  await dexieStorage.updateMessage(messageId, changes);
 }
 
 /**

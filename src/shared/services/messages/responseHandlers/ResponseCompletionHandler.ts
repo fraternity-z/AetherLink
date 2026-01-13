@@ -511,41 +511,17 @@ export class ResponseCompletionHandler {
 
   /**
    * 更新消息和话题引用
+   * 重构：移除冗余的 topic.messages 写入，只使用 messages 表
    */
   private async updateMessageAndTopicReferences(finalBlockIds: string[], now: string): Promise<void> {
-    // 更新消息
+    // 更新 messages 表
     await dexieStorage.updateMessage(this.messageId, {
       status: AssistantMessageStatus.SUCCESS,
       updatedAt: now,
       blocks: finalBlockIds
     });
 
-    // 更新话题中的消息引用
-    const topic = await dexieStorage.topics.get(this.topicId);
-    if (topic) {
-      if (!topic.messages) topic.messages = [];
-
-      const currentMessageState = store.getState().messages.entities[this.messageId];
-      if (currentMessageState) {
-        const updatedMessage = {
-          ...currentMessageState,
-          blocks: finalBlockIds,
-          status: AssistantMessageStatus.SUCCESS,
-          updatedAt: now
-        };
-
-        const messageIndex = topic.messages.findIndex(m => m.id === this.messageId);
-        if (messageIndex >= 0) {
-          topic.messages[messageIndex] = updatedMessage;
-        } else {
-          topic.messages.push(updatedMessage);
-        }
-
-        await dexieStorage.topics.put(topic);
-      }
-    }
-
-    // 更新Redux中的消息blocks数组
+    // 更新 Redux 状态
     store.dispatch(newMessagesActions.updateMessage({
       id: this.messageId,
       changes: {

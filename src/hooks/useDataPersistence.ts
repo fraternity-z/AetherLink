@@ -215,9 +215,16 @@ export function useDataPersistence() {
     // 检查上次是否为脏退出
     const dirtyExit = localStorage.getItem('aether-link-dirty-exit');
     if (dirtyExit) {
-      console.log(`[DataPersistence] 检测到上次脏退出 (${new Date(parseInt(dirtyExit)).toISOString()})，将在启动时检查数据完整性`);
+      console.log(`[DataPersistence] 检测到上次脏退出 (${new Date(parseInt(dirtyExit)).toISOString()})，执行数据完整性检查...`);
       localStorage.removeItem('aether-link-dirty-exit');
-      // 数据完整性检查将由 DataRepairService 在 useAppInitialization 中执行
+      // 执行数据完整性检查
+      import('../shared/services/DataRepairService').then(({ DataRepairService }) => {
+        DataRepairService.checkAndRepairMessageIntegrity().then(result => {
+          if (result.repaired > 0 || result.missingMessages > 0) {
+            console.log(`[DataPersistence] 数据修复完成: 修复了 ${result.repaired} 个话题，发现 ${result.missingMessages} 条缺失消息`);
+          }
+        });
+      });
     }
     
     return () => {

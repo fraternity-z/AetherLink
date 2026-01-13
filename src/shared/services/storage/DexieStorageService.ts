@@ -344,24 +344,10 @@ export class DexieStorageService extends Dexie {
     return topicsFromDb.map(t => { const { _lastMessageTimeNum, ...topic } = t; return topic as ChatTopic; });
   }
 
-  async updateMessageInTopic(topicId: string, messageId: string, updatedMessage: Message): Promise<void> {
+  async updateMessageInTopic(_topicId: string, messageId: string, updatedMessage: Message): Promise<void> {
     try {
-      // 直接更新消息表中的消息
+      // 重构：只更新 messages 表，不再维护冗余的 topic.messages
       await this.updateMessage(messageId, updatedMessage);
-
-      // 获取话题并更新兼容字段
-      const topic = await this.getTopic(topicId);
-      if (!topic) return;
-
-      // 更新消息数组（如果存在）
-      if (topic.messages) {
-        const messageIndex = topic.messages.findIndex(m => m.id === messageId);
-        if (messageIndex !== -1) {
-          topic.messages[messageIndex] = updatedMessage;
-        }
-      }
-
-      await this.saveTopic(topic);
     } catch (error) {
       console.error(`[DexieStorageService] 更新话题消息失败: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
@@ -387,11 +373,6 @@ export class DexieStorageService extends Dexie {
           topic.messageIds = topic.messageIds.filter(id => id !== messageId);
         }
 
-        // 为了兼容性，同时更新messages数组
-        if (topic.messages) {
-          topic.messages = topic.messages.filter(m => m.id !== messageId);
-        }
-
         // 更新lastMessageTime
         if (topic.messageIds && topic.messageIds.length > 0) {
           const lastMessageId = topic.messageIds[topic.messageIds.length - 1];
@@ -404,10 +385,9 @@ export class DexieStorageService extends Dexie {
         }
 
         // 设置 _lastMessageTimeNum 用于排序
-        const lastMessageTime = topic.lastMessageTime || topic.updatedAt || new Date().toISOString();
         const topicToStore = {
           ...topic,
-          _lastMessageTimeNum: new Date(lastMessageTime).getTime()
+          _lastMessageTimeNum: new Date(topic.lastMessageTime || new Date().toISOString()).getTime()
         };
         delete (topicToStore as any).messages;
 
@@ -442,23 +422,13 @@ export class DexieStorageService extends Dexie {
           topic.messageIds.push(message.id);
         }
 
-        // 为了兼容性，同时更新messages数组
-        const messages = topic.messages || [];
-        const messageIndex = messages.findIndex(m => m.id === message.id);
-        if (messageIndex >= 0) {
-          messages[messageIndex] = message;
-        } else {
-          messages.push(message);
-        }
-        topic.messages = messages;
-
         // 更新时间
         topic.lastMessageTime = message.createdAt || message.updatedAt || new Date().toISOString();
 
         // 设置 _lastMessageTimeNum 用于排序
         const topicToStore = {
           ...topic,
-          _lastMessageTimeNum: new Date(topic.lastMessageTime).getTime()
+          _lastMessageTimeNum: new Date(topic.lastMessageTime || new Date().toISOString()).getTime()
         };
         delete (topicToStore as any).messages;
 
