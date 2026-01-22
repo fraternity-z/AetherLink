@@ -285,7 +285,7 @@ async function resetAssistantMessageForRegenerate(
   // 创建重置后的消息
   const resetMessage: Message = {
     ...message,
-    status: AssistantMessageStatus.PENDING,
+    status: AssistantMessageStatus.STREAMING,
     updatedAt: new Date().toISOString(),
     model: model,
     modelId: getModelIdentityKey({ id: model.id, provider: model.provider }),

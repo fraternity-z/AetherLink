@@ -188,6 +188,7 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
         lastProcessedTextLength = text.length;
         accumulatedCleanText = '';
         chunkProcessor.resetTextBlock();
+        toolExtractionProcessor.reset();  // 🔧 修复：重置工具提取器，避免内容重复
         incrementalText = text;  // 新一轮从头开始处理
       }
       // 如果没有新增内容，跳过处理
