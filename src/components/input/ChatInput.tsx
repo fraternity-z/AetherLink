@@ -4,14 +4,17 @@ import KnowledgeChip from '../chat/KnowledgeChip';
 import { Keyboard, Mic, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
+import { useInputState } from '../../shared/hooks/useInputState';
+import { useInputMenus } from '../../shared/hooks/useInputMenus';
+import { useInputExpand } from '../../shared/hooks/useInputExpand';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import MultiModelSelector from './MultiModelSelector';
-import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
+import type { ImageContent, SiliconFlowImageFormat } from '../../shared/types';
+import type { ChatInputProps } from '../../shared/types/inputProps';
 
-import type { FileStatus } from '../preview/FilePreview';
 import UploadMenu from './UploadMenu';
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
@@ -21,29 +24,9 @@ import { dexieStorage } from '../../shared/services/storage/DexieStorageService'
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import AIDebateButton from '../AIDebateButton';
-import type { DebateConfig } from '../../shared/services/AIDebateService';
 import QuickPhraseButton from '../quick-phrase/QuickPhraseButton';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition';
-import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { EnhancedVoiceInput } from '../VoiceRecognition';
-
-interface ChatInputProps {
-  onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
-  onSendMultiModelMessage?: (message: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void; // 多模型发送回调
-  onStartDebate?: (question: string, config: DebateConfig) => void; // 开始AI辩论回调
-  onStopDebate?: () => void; // 停止AI辩论回调
-  isLoading?: boolean;
-  allowConsecutiveMessages?: boolean; // 允许连续发送消息，即使AI尚未回复
-  imageGenerationMode?: boolean; // 是否处于图像生成模式
-  videoGenerationMode?: boolean; // 是否处于视频生成模式
-  onSendImagePrompt?: (prompt: string) => void; // 发送图像生成提示词的回调
-  webSearchActive?: boolean; // 是否处于网络搜索模式
-  onStopResponse?: () => void; // 停止AI回复的回调
-  isStreaming?: boolean; // 是否正在流式响应中
-  isDebating?: boolean; // 是否正在AI辩论中
-  toolsEnabled?: boolean; // 工具开关状态
-  availableModels?: any[]; // 可用模型列表
-}
 
 const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
@@ -62,40 +45,37 @@ const ChatInput: React.FC<ChatInputProps> = ({
   toolsEnabled = false, // 默认关闭工具
   availableModels = [] // 默认空数组
 }) => {
-  // 基础状态 - 内存泄漏防护：避免存储DOM引用
-  const [uploadMenuAnchorEl, setUploadMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [multiModelSelectorOpen, setMultiModelSelectorOpen] = useState(false);
-
-  // 内存泄漏防护：组件卸载时清理DOM引用
-  useEffect(() => {
-    return () => {
-      setUploadMenuAnchorEl(null);
-    };
-  }, []);
+  // 使用共享的菜单状态管理 hook - 统一管理上传菜单、多模型选择器等
+  const {
+    uploadMenuAnchorEl,
+    isUploadMenuOpen,
+    openUploadMenu,
+    closeUploadMenu,
+    multiModelSelectorOpen,
+    setMultiModelSelectorOpen
+  } = useInputMenus();
   // 使用统一的平台检测，用 useMemo 缓存结果避免重复计算
   const isIOS = useMemo(() => checkIsIOS(), []);
   // 语音识别三状态管理
   const [voiceState, setVoiceState] = useState<'normal' | 'voice-mode' | 'recording'>('normal');
-  const [shouldHideVoiceButton, setShouldHideVoiceButton] = useState(false); // 是否隐藏语音按钮
-  const [expanded, setExpanded] = useState(false); // 展开状态
-  const [showExpandButton, setShowExpandButton] = useState(false); // 是否显示展开按钮
 
-  // 文件和图片状态
-  const [images, setImages] = useState<ImageContent[]>([]);
-  const [files, setFiles] = useState<FileContent[]>([]);
-  const [uploadingMedia, setUploadingMedia] = useState(false);
-
-  // 文件状态管理
-  const [fileStatuses, setFileStatuses] = useState<Record<string, { status: FileStatus; progress?: number; error?: string }>>({});
-
-  // Toast消息管理
-  const [toastMessages, setToastMessages] = useState<any[]>([]);
+  // 使用共享的输入状态 hook - 统一管理图片、文件、上传状态、Toast消息和知识库刷新
+  const {
+    images,
+    setImages,
+    files,
+    setFiles,
+    uploadingMedia,
+    setUploadingMedia,
+    fileStatuses,
+    setFileStatuses,
+    toastMessages,
+    knowledgeRefreshKey,
+    refreshKnowledge
+  } = useInputState();
 
   // FileUploadManager 引用
   const fileUploadManagerRef = useRef<FileUploadManagerRef>(null);
-
-  // 知识库状态刷新标记
-  const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
 
 
 
@@ -154,8 +134,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
     stopRecognition,
   } = useVoiceRecognition();
 
-  // 极简键盘管理 - 模仿 rikkahub 的 WindowInsets.isImeVisible
-  const { isKeyboardVisible, hideKeyboard } = useKeyboard();
+  // 使用共享的展开/折叠逻辑 hook
+  const {
+    expanded,
+    setExpanded: _setExpanded, // 保留用于调试
+    showExpandButton,
+    shouldHideVoiceButton,
+    handleExpandToggle,
+    isKeyboardVisible: _isKeyboardVisible, // 用于调试和未来扩展
+    hideKeyboard
+  } = useInputExpand({
+    message,
+    isMobile,
+    isTablet
+  });
 
   // 包装 handleSubmit，在发送时隐藏键盘 - 模仿 rikkahub 的 sendMessage
   const wrappedHandleSubmit = useCallback(() => {
@@ -163,47 +155,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     handleSubmit();
   }, [hideKeyboard, handleSubmit]);
 
-  /**
-   * 键盘弹出时自动折叠输入框 - 模仿 rikkahub 的逻辑
-   * 
-   * 参考 rikkahub 的实现（ChatInput.kt 第 189-194 行）：
-   * ```kotlin
-   * val imeVisile = WindowInsets.isImeVisible
-   * LaunchedEffect(imeVisile) {
-   *     if (imeVisile) {
-   *         expand = ExpandState.Collapsed  // 键盘弹出时自动折叠
-   *     }
-   * }
-   * ```
-   * 
-   * 原因：
-   * 1. 展开的输入框通常很高（70vh），键盘弹出后屏幕空间不足
-   * 2. 自动折叠可以给用户更多的可视空间来查看输入内容
-   * 3. 避免展开的输入框遮挡大部分屏幕，影响用户体验
-   */
-  useEffect(() => {
-    if (isKeyboardVisible && expanded) {
-      setExpanded(false);
-    }
-  }, [isKeyboardVisible, expanded]);
-
-  // Toast消息订阅
-  useEffect(() => {
-    const unsubscribe = toastManager.subscribe(setToastMessages);
-    return unsubscribe;
-  }, []);
-
-  // 监听知识库选择事件，刷新显示
-  useEffect(() => {
-    const handleKnowledgeBaseSelected = () => {
-      setKnowledgeRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    return () => {
-      window.removeEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    };
-  }, []);
+  // Toast订阅和知识库事件监听已移至 useInputState hook 中统一管理
 
   // 从 useInputStyles hook 获取样式
   const { border, borderRadius, boxShadow } = styles;
@@ -298,63 +250,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // 输入处理逻辑现在由 useChatInputLogic 和 useUrlScraper hooks 提供
 
-  // 窗口大小监听已移除，将重新实现
-
-  // 性能优化：使用useMemo缓存按钮可见性计算结果，避免重复计算
-  const buttonVisibility = React.useMemo(() => {
-    const textLength = message.length;
-    
-    // 性能优化：使用字符串操作替代正则表达式（大文本时更快）
-    let newlineCount = 0;
-    if (textLength < 1000) {
-      // 小文本使用split（快速）
-      newlineCount = message.split('\n').length - 1;
-    } else {
-      // 大文本时使用循环（避免创建大量数组）
-      for (let i = 0; i < Math.min(textLength, 10000); i++) {
-        if (message[i] === '\n') newlineCount++;
-      }
-    }
-    
-    const containerWidth = isMobile ? 280 : isTablet ? 400 : 500;
-    const charsPerLine = Math.floor(containerWidth / (isTablet ? 17 : 16));
-    const estimatedLines = Math.ceil(textLength / charsPerLine) + newlineCount;
-    
-    return {
-      shouldHideVoiceButton: estimatedLines > 3,
-      showExpandButton: expanded ? true : estimatedLines > 4
-    };
-  }, [message, isMobile, isTablet, expanded]);
-
-  // 使用防抖更新按钮可见性状态，避免频繁setState
-  const buttonVisibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    // 清除之前的定时器
-    if (buttonVisibilityTimeoutRef.current) {
-      clearTimeout(buttonVisibilityTimeoutRef.current);
-    }
-    
-    // 使用requestAnimationFrame + 防抖优化
-    buttonVisibilityTimeoutRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
-        setShouldHideVoiceButton(buttonVisibility.shouldHideVoiceButton);
-        setShowExpandButton(buttonVisibility.showExpandButton);
-      });
-    }, 100); // 防抖延迟
-    
-    return () => {
-      if (buttonVisibilityTimeoutRef.current) {
-        clearTimeout(buttonVisibilityTimeoutRef.current);
-      }
-    };
-  }, [buttonVisibility]);
-
   // 优化的 handleChange - 移除重复调用，只保留核心逻辑
   const enhancedHandleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // 调用 hook 提供的 handleChange
     handleChange(e);
-    // 移除重复的checkButtonVisibility调用，由useEffect统一处理
+    // 移除重复的checkButtonVisibility调用，由useInputExpand统一处理
   }, [handleChange]);
 
   // 修复折叠时高度异常：只在expanded变化时执行，避免每次输入都触发
@@ -376,23 +276,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
     prevExpandedRef.current = expanded;
   }, [expanded, textareaRef, adjustTextareaHeight]); // 移除message依赖，避免每次输入都触发
 
-  // 展开切换函数 - 修复折叠时高度异常问题
-  const handleExpandToggle = useCallback(() => {
-    setExpanded(!expanded);
-  }, [expanded]);
 
 
 
 
-
-  // 处理上传菜单
-  const handleOpenUploadMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setUploadMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleCloseUploadMenu = () => {
-    setUploadMenuAnchorEl(null);
-  };
+  // 上传菜单处理函数现在由 useInputMenus hook 提供 (openUploadMenu, closeUploadMenu)
 
   // 文件上传处理函数 - 通过 ref 调用 FileUploadManager 的方法
   const handleImageUploadLocal = async (source: 'camera' | 'photos' = 'photos') => {
@@ -627,7 +515,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               knowledgeBaseName={knowledgeBaseName}
               onRemove={() => {
                 clearStoredKnowledgeContext();
-                setKnowledgeRefreshKey(prev => prev + 1);
+                refreshKnowledge();
               }}
             />
           </Box>
@@ -801,7 +689,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             isDarkMode={isDarkMode}
             isTablet={isTablet}
             disabledColor={disabledColor}
-            handleOpenUploadMenu={handleOpenUploadMenu}
+            handleOpenUploadMenu={openUploadMenu}
             handleSubmit={wrappedHandleSubmit}
             onStopResponse={onStopResponse}
             canSendMessage={canSendMessage}
@@ -813,8 +701,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       {/* 上传选择菜单 */}
       <UploadMenu
         anchorEl={uploadMenuAnchorEl}
-        open={Boolean(uploadMenuAnchorEl)}
-        onClose={handleCloseUploadMenu}
+        open={isUploadMenuOpen}
+        onClose={closeUploadMenu}
         onImageUpload={handleImageUploadLocal}
         onFileUpload={handleFileUploadLocal}
         onMultiModelSend={() => setMultiModelSelectorOpen(true)}

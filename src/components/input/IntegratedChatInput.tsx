@@ -5,10 +5,11 @@ import KnowledgeChip from '../chat/KnowledgeChip';
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
+import { useInputState } from '../../shared/hooks/useInputState';
 import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
+import type { IntegratedChatInputProps } from '../../shared/types/inputProps';
 
-import type { FileStatus } from '../preview/FilePreview';
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
@@ -16,36 +17,11 @@ import { dexieStorage } from '../../shared/services/storage/DexieStorageService'
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { toggleWebSearchEnabled, setWebSearchProvider } from '../../shared/store/slices/webSearchSlice';
-import type { DebateConfig } from '../../shared/services/AIDebateService';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import useVoiceInputManager from './IntegratedChatInput/VoiceInputManager';
 import useMenuManager from './IntegratedChatInput/MenuManager';
 import useButtonToolbar from './IntegratedChatInput/ButtonToolbar';
 import useExpandableContainer from './IntegratedChatInput/ExpandableContainer';
-
-interface IntegratedChatInputProps {
-  onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
-  onSendMultiModelMessage?: (message: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void; // 多模型发送回调
-  onStartDebate?: (question: string, config: DebateConfig) => void; // 开始AI辩论回调
-  onStopDebate?: () => void; // 停止AI辩论回调
-  isLoading?: boolean;
-  allowConsecutiveMessages?: boolean; // 允许连续发送消息，即使AI尚未回复
-  imageGenerationMode?: boolean; // 是否处于图像生成模式
-  videoGenerationMode?: boolean; // 是否处于视频生成模式
-  onSendImagePrompt?: (prompt: string) => void; // 发送图像生成提示词的回调
-  webSearchActive?: boolean; // 是否处于网络搜索模式
-  onStopResponse?: () => void; // 停止AI回复的回调
-  isStreaming?: boolean; // 是否正在流式响应中
-  isDebating?: boolean; // 是否正在AI辩论中
-  toolsEnabled?: boolean; // 工具开关状态
-  availableModels?: any[]; // 可用模型列表
-  // 工具栏相关props
-  onClearTopic?: () => void;
-  toggleImageGenerationMode?: () => void;
-  toggleVideoGenerationMode?: () => void;
-  toggleWebSearch?: () => void;
-  onToolsEnabledChange?: (enabled: boolean) => void;
-}
 
 const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   onSendMessage,
@@ -73,21 +49,20 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   // 使用统一的平台检测，用 useMemo 缓存结果避免重复计算
   const isIOS = useMemo(() => checkIsIOS(), []);
 
-  // 知识库状态刷新标记
-  const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
-
-
-
-  // 文件和图片状态
-  const [images, setImages] = useState<ImageContent[]>([]);
-  const [files, setFiles] = useState<FileContent[]>([]);
-  const [uploadingMedia, setUploadingMedia] = useState(false);
-
-  // 文件状态管理
-  const [fileStatuses, setFileStatuses] = useState<Record<string, { status: FileStatus; progress?: number; error?: string }>>({});
-
-  // Toast消息管理
-  const [toastMessages, setToastMessages] = useState<any[]>([]);
+  // 使用共享的输入状态 hook
+  const {
+    images,
+    setImages,
+    files,
+    setFiles,
+    uploadingMedia,
+    setUploadingMedia,
+    fileStatuses,
+    setFileStatuses,
+    toastMessages,
+    knowledgeRefreshKey,
+    refreshKnowledge
+  } = useInputState();
 
   // FileUploadManager 引用
   const fileUploadManagerRef = useRef<FileUploadManagerRef>(null);
@@ -160,24 +135,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   // 极简键盘管理 - 模仿 rikkahub
   const { hideKeyboard } = useKeyboard();
-
-  // Toast消息订阅
-  useEffect(() => {
-    const unsubscribe = toastManager.subscribe(setToastMessages);
-    return unsubscribe;
-  }, []);
-
-  // 监听知识库选择事件，刷新显示
-  useEffect(() => {
-    const handleKnowledgeBaseSelected = () => {
-      setKnowledgeRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    return () => {
-      window.removeEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    };
-  }, []);
 
   // 从 useInputStyles hook 获取样式
   const { border, borderRadius, boxShadow } = styles;
@@ -451,7 +408,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
               knowledgeBaseName={knowledgeBaseName}
               onRemove={() => {
                 clearStoredKnowledgeContext();
-                setKnowledgeRefreshKey(prev => prev + 1);
+                refreshKnowledge();
               }}
             />
           </Box>

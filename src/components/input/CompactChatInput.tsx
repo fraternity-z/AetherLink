@@ -7,46 +7,25 @@ import QuickPhraseButton from '../quick-phrase/QuickPhraseButton';
 import MultiModelSelector from './MultiModelSelector';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
+import { useInputState } from '../../shared/hooks/useInputState';
+import { useInputMenus } from '../../shared/hooks/useInputMenus';
+import { useInputExpand } from '../../shared/hooks/useInputExpand';
 import { useFileUpload } from '../../shared/hooks/useFileUpload';
 import { useLongTextPaste } from '../../shared/hooks/useLongTextPaste';
 
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useVoiceRecognition } from '../../shared/hooks/useVoiceRecognition'; // 导入 useVoiceRecognition
-import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { getBasicIcons, getExpandedIcons } from '../../shared/config/inputIcons';
 import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
 
 import { Plus, X, Send, Square, Paperclip, ChevronUp, ChevronDown } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
-import type { SiliconFlowImageFormat, ImageContent, FileContent } from '../../shared/types';
-import type { DebateConfig } from '../../shared/services/AIDebateService';
+import type { SiliconFlowImageFormat, ImageContent } from '../../shared/types';
+import type { CompactChatInputProps } from '../../shared/types/inputProps';
 import { topicCacheManager } from '../../shared/services/TopicCacheManager';
 import { VoiceButton, EnhancedVoiceInput } from '../VoiceRecognition';
-
-
-interface CompactChatInputProps {
-  onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[], voiceRecognitionText?: string) => void;
-  onSendMultiModelMessage?: (message: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
-  onStartDebate?: (question: string, config: DebateConfig) => void; // 开始AI辩论回调
-  onStopDebate?: () => void; // 停止AI辩论回调
-  isLoading?: boolean;
-  allowConsecutiveMessages?: boolean;
-  imageGenerationMode?: boolean;
-  onSendImagePrompt?: (prompt: string) => void;
-  webSearchActive?: boolean;
-  onStopResponse?: () => void;
-  isStreaming?: boolean;
-  isDebating?: boolean; // 是否在辩论中
-  toolsEnabled?: boolean;
-  availableModels?: any[];
-  onClearTopic?: () => void;
-  onNewTopic?: () => void;
-  toggleImageGenerationMode?: () => void;
-  toggleWebSearch?: () => void;
-  toggleToolsEnabled?: () => void;
-}
 
 const CompactChatInput: React.FC<CompactChatInputProps> = ({
   onSendMessage,
@@ -69,10 +48,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   toggleWebSearch,
   toggleToolsEnabled
 }) => {
-  const [expanded, setExpanded] = useState(false);
   // 注意：网络搜索和知识库选择器已集成到独立按钮组件中
-  const [showExpandButton, setShowExpandButton] = useState(false); // 是否显示展开按钮
-  const [textareaExpanded, setTextareaExpanded] = useState(false); // 文本区域展开状态
   const [inputHeight, setInputHeight] = useState(40); // 输入框容器高度
   const [isFullExpanded, setIsFullExpanded] = useState(false); // 是否全展开
   const [isActivated, setIsActivated] = useState(false); // 冷激活状态
@@ -81,18 +57,21 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   // 使用统一的平台检测，用 useMemo 缓存结果避免重复计算
   const isIOS = useMemo(() => checkIsIOS(), []);
 
-  // 新增功能状态
-  const [multiModelSelectorOpen, setMultiModelSelectorOpen] = useState(false); // 多模型选择器
-  const [toastMessages, setToastMessages] = useState<any[]>([]); // Toast消息
+  // 使用共享的菜单状态管理 hook - 统一管理多模型选择器等
+  const { multiModelSelectorOpen, setMultiModelSelectorOpen } = useInputMenus();
 
-
-  // 文件和图片上传相关状态
-  const [images, setImages] = useState<ImageContent[]>([]);
-  const [files, setFiles] = useState<FileContent[]>([]);
-  const [uploadingMedia, setUploadingMedia] = useState(false);
-
-  // 知识库状态刷新标记
-  const [knowledgeRefreshKey, setKnowledgeRefreshKey] = useState(0);
+  // 使用共享的输入状态 hook - 统一管理图片、文件、上传状态、Toast消息和知识库刷新
+  const {
+    images,
+    setImages,
+    files,
+    setFiles,
+    uploadingMedia,
+    setUploadingMedia,
+    toastMessages,
+    knowledgeRefreshKey,
+    refreshKnowledge
+  } = useInputState();
 
   // 获取当前话题状态
   const currentTopicId = useSelector((state: RootState) => state.messages.currentTopicId);
@@ -153,26 +132,29 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     stopRecognition,
   } = useVoiceRecognition();
 
-  // 极简键盘管理 - 模仿 rikkahub
-  const { isKeyboardVisible, hideKeyboard } = useKeyboard();
+  // 使用共享的展开/折叠逻辑 hook（启用 textareaExpanded 模式）
+  const {
+    expanded,
+    setExpanded,
+    showExpandButton,
+    textareaExpanded,
+    setTextareaExpanded,
+    handleTextareaExpandToggle: _handleTextareaExpandToggle, // 保留用于未来扩展
+    isKeyboardVisible: _isKeyboardVisible, // 用于调试和未来扩展
+    hideKeyboard
+  } = useInputExpand({
+    message,
+    isMobile: true, // CompactChatInput 主要用于移动端
+    enableTextareaExpand: true, // 启用文本区域展开状态
+    containerWidth: 280, // CompactChatInput 的估算容器宽度
+    charsPerLine: 20 // 根据字体大小估算每行字符数
+  });
 
   // 包装 handleSubmit，在发送时隐藏键盘
   const wrappedHandleSubmit = useCallback(() => {
     hideKeyboard();
     handleSubmit();
   }, [hideKeyboard, handleSubmit]);
-
-  /**
-   * 键盘弹出时自动折叠输入框 - 模仿 rikkahub 的逻辑
-   * 
-   * 参考：rikkahub ChatInput.kt - LaunchedEffect(imeVisible)
-   * 原因：展开的输入框（70vh）+ 键盘会占满整个屏幕，自动折叠提供更好的用户体验
-   */
-  useEffect(() => {
-    if (isKeyboardVisible && textareaExpanded) {
-      setTextareaExpanded(false);
-    }
-  }, [isKeyboardVisible, textareaExpanded]);
 
   // 使用重命名的变量来消除未使用警告
   useEffect(() => {
@@ -182,11 +164,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     }
   }, [voiceRecognitionError]);
 
-  // Toast管理器订阅
-  useEffect(() => {
-    const unsubscribe = toastManager.subscribe(setToastMessages);
-    return unsubscribe;
-  }, []);
+  // Toast订阅已移至 useInputState hook 中统一管理
 
   // 当话题ID变化时，从数据库获取话题信息
   useEffect(() => {
@@ -206,17 +184,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
     loadTopic();
   }, [currentTopicId]);
 
-  // 监听知识库选择事件，刷新显示
-  useEffect(() => {
-    const handleKnowledgeBaseSelected = () => {
-      setKnowledgeRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    return () => {
-      window.removeEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    };
-  }, []);
+  // 知识库事件监听已移至 useInputState hook 中统一管理
 
 
 
@@ -301,60 +269,6 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
   const handleInputClick = () => {
     setIsActivated(true);
   };
-
-  // 性能优化：使用useMemo缓存按钮可见性计算结果，避免重复计算
-  const buttonVisibility = useMemo(() => {
-    if (!textareaExpanded) {
-      const textLength = message.length;
-      const containerWidth = 280; // CompactChatInput 的估算容器宽度
-      const charsPerLine = Math.floor(containerWidth / 14); // 根据字体大小估算每行字符数
-      
-      // 性能优化：使用字符串操作替代正则表达式（大文本时更快）
-      let newlineCount = 0;
-      if (textLength < 1000) {
-        // 小文本使用split（快速）
-        newlineCount = message.split('\n').length - 1;
-      } else {
-        // 大文本时使用循环（避免创建大量数组）
-        for (let i = 0; i < Math.min(textLength, 10000); i++) {
-          if (message[i] === '\n') newlineCount++;
-        }
-      }
-      
-      const estimatedLines = Math.ceil(textLength / charsPerLine) + newlineCount;
-      return {
-        showExpandButton: estimatedLines > 4
-      };
-    } else {
-      // 展开状态下始终显示按钮（用于收起）
-      return {
-        showExpandButton: true
-      };
-    }
-  }, [textareaExpanded, message]);
-
-  // 使用防抖更新按钮可见性状态，避免频繁setState
-  const buttonVisibilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    // 清除之前的定时器
-    if (buttonVisibilityTimeoutRef.current) {
-      clearTimeout(buttonVisibilityTimeoutRef.current);
-    }
-    
-    // 使用requestAnimationFrame + 防抖优化
-    buttonVisibilityTimeoutRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
-        setShowExpandButton(buttonVisibility.showExpandButton);
-      });
-    }, 100); // 防抖延迟
-    
-    return () => {
-      if (buttonVisibilityTimeoutRef.current) {
-        clearTimeout(buttonVisibilityTimeoutRef.current);
-      }
-    };
-  }, [buttonVisibility]);
 
   // 优化的输入变化处理 - 移除重复调用，只保留核心逻辑
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -641,7 +555,7 @@ const CompactChatInput: React.FC<CompactChatInputProps> = ({
               knowledgeBaseName={knowledgeBaseName}
               onRemove={() => {
                 clearStoredKnowledgeContext();
-                setKnowledgeRefreshKey(prev => prev + 1);
+                refreshKnowledge();
               }}
             />
           </Box>
