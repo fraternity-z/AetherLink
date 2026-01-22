@@ -19,15 +19,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { updateSettings } from '../../shared/store/settingsSlice';
 import DraggableButtonConfig from '../../components/DraggableButtonConfig';
-import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../components/input';
+import { IntegratedChatInput } from '../../components/input';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
 
 // 输入框预览组件 - 模仿真实聊天页面布局
 const InputBoxPreview: React.FC<{
   inputBoxStyle: string;
-  inputLayoutStyle: string;
-}> = ({ inputLayoutStyle }) => {
+}> = () => {
   const { t } = useTranslation();
   const theme = useTheme();
 
@@ -59,41 +58,6 @@ const InputBoxPreview: React.FC<{
     onToolsEnabledChange: preventAction('工具启用状态变更'),
   };
 
-  // 根据布局样式选择对应的输入框组件
-  const renderInputComponent = () => {
-    switch (inputLayoutStyle) {
-      case 'compact':
-        return (
-          <CompactChatInput
-            {...previewProps}
-          />
-        );
-      case 'integrated':
-        return (
-          <IntegratedChatInput
-            {...previewProps}
-          />
-        );
-      default:
-        return (
-          <Box>
-            <ChatInput {...previewProps} />
-            <Box sx={{ mt: 1 }}>
-              <InputToolbar
-                onClearTopic={previewProps.onClearTopic}
-                toggleImageGenerationMode={previewProps.toggleImageGenerationMode}
-                toggleWebSearch={previewProps.toggleWebSearch}
-                onToolsEnabledChange={previewProps.onToolsEnabledChange}
-                imageGenerationMode={false}
-                webSearchActive={false}
-                toolsEnabled={true}
-              />
-            </Box>
-          </Box>
-        );
-    }
-  };
-
   return (
     <Box
       sx={{
@@ -123,7 +87,7 @@ const InputBoxPreview: React.FC<{
           position: 'relative',
         }}
       >
-        {renderInputComponent()}
+        <IntegratedChatInput {...previewProps} />
       </Box>
     </Box>
   );
@@ -255,7 +219,6 @@ const InputBoxSettings: React.FC = () => {
 
   // 获取输入框相关设置
   const inputBoxStyle = settings.inputBoxStyle || 'default';
-  const inputLayoutStyle = (settings as any).inputLayoutStyle || 'default';
 
   // 新的左右布局配置
   const leftButtons = (settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search'];
@@ -272,11 +235,6 @@ const InputBoxSettings: React.FC = () => {
     }));
   };
 
-  const handleInputLayoutStyleChange = (event: { target: { value: any } }) => {
-    dispatch(updateSettings({
-      inputLayoutStyle: event.target.value
-    }));
-  };
 
 
 
@@ -348,37 +306,32 @@ const InputBoxSettings: React.FC = () => {
           <Typography variant="subtitle1" sx={{ mb: 1, p: 1.5, pb: 0, fontWeight: 600, fontSize: '0.95rem' }}>
             {t('settings.appearance.inputBox.preview.title')}
           </Typography>
-          <InputBoxPreview
-            inputBoxStyle={inputBoxStyle}
-            inputLayoutStyle={inputLayoutStyle}
-          />
+          <InputBoxPreview inputBoxStyle={inputBoxStyle} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center', p: 1.5, pt: 0, fontSize: '0.8rem' }}>
-            {t('settings.appearance.inputBox.preview.currentConfig')} {t(`settings.appearance.inputBox.preview.styles.${inputBoxStyle}`)} + {t(`settings.appearance.inputBox.preview.layouts.${inputLayoutStyle}`)}
+            {t('settings.appearance.inputBox.preview.currentConfig')} {t(`settings.appearance.inputBox.preview.styles.${inputBoxStyle}`)}
           </Typography>
 
-          {/* 集成样式自定义按钮配置 - 新的拖拽式配置 */}
-          {inputLayoutStyle === 'integrated' && (
-            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
-              <Typography variant="subtitle1" sx={{ mb: 1, px: 1.5 }}>
-                {t('settings.appearance.inputBox.preview.buttonLayout.title')}
-              </Typography>
+          {/* 集成样式自定义按钮配置 - 拖拽式配置 */}
+          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+            <Typography variant="subtitle1" sx={{ mb: 1, px: 1.5 }}>
+              {t('settings.appearance.inputBox.preview.buttonLayout.title')}
+            </Typography>
 
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1.5 }}>
-                {t('settings.appearance.inputBox.preview.buttonLayout.description')}
-              </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1.5 }}>
+              {t('settings.appearance.inputBox.preview.buttonLayout.description')}
+            </Typography>
 
-              <DraggableButtonConfig
-                availableButtons={AVAILABLE_BUTTONS}
-                leftButtons={leftButtons}
-                rightButtons={rightButtons}
-                onUpdateLayout={handleLayoutUpdate}
-              />
+            <DraggableButtonConfig
+              availableButtons={AVAILABLE_BUTTONS}
+              leftButtons={leftButtons}
+              rightButtons={rightButtons}
+              onUpdateLayout={handleLayoutUpdate}
+            />
 
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, px: 1.5, pb: 2 }}>
-                {t('settings.appearance.inputBox.preview.buttonLayout.summary', { left: leftButtons.length, right: rightButtons.length })}
-              </Typography>
-            </Box>
-          )}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, px: 1.5, pb: 2 }}>
+              {t('settings.appearance.inputBox.preview.buttonLayout.summary', { left: leftButtons.length, right: rightButtons.length })}
+            </Typography>
+          </Box>
         </Paper>
 
         <Divider sx={{ mb: 1.5 }} />
@@ -397,7 +350,9 @@ const InputBoxSettings: React.FC = () => {
               label={t('settings.appearance.inputBox.style.label')}
               MenuProps={{
                 disableAutoFocus: true,
-                disableRestoreFocus: true
+                disableRestoreFocus: true,
+                autoFocus: false,
+                disablePortal: true
               }}
             >
               <MenuItem value="default">{t('settings.appearance.inputBox.style.default')}</MenuItem>
@@ -414,36 +369,6 @@ const InputBoxSettings: React.FC = () => {
           </Typography>
         </Paper>
 
-        {/* 输入框布局样式设置 */}
-        <Paper elevation={0} sx={{ ...CARD_STYLES.base, p: 1.5 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.95rem' }}>
-            {t('settings.appearance.inputBox.layout.title')}
-          </Typography>
-
-          <FormControl fullWidth variant="outlined" sx={{ mb: 1.5 }} size="small">
-            <InputLabel>{t('settings.appearance.inputBox.layout.label')}</InputLabel>
-            <Select
-              value={inputLayoutStyle}
-              onChange={handleInputLayoutStyleChange}
-              label={t('settings.appearance.inputBox.layout.label')}
-              MenuProps={{
-                disableAutoFocus: true,
-                disableRestoreFocus: true
-              }}
-            >
-              <MenuItem value="default">{t('settings.appearance.inputBox.layout.default')}</MenuItem>
-              <MenuItem value="compact">{t('settings.appearance.inputBox.layout.compact')}</MenuItem>
-              <MenuItem value="integrated">{t('settings.appearance.inputBox.layout.integrated')}</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.8rem', lineHeight: 1.5 }}>
-            {t('settings.appearance.inputBox.layout.description')}
-            <br />{t('settings.appearance.inputBox.layout.defaultDesc')}
-            <br />{t('settings.appearance.inputBox.layout.compactDesc')}
-            <br />{t('settings.appearance.inputBox.layout.integratedDesc')}
-          </Typography>
-        </Paper>
 
 
 

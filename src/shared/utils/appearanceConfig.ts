@@ -59,7 +59,7 @@ export interface AppearanceConfig {
   
   // 输入框设置
   inputBoxStyle: 'default' | 'modern' | 'minimal';
-  inputLayoutStyle: 'default' | 'compact' | 'integrated';
+  inputLayoutStyle: 'integrated';
   
   // 顶部工具栏设置
   topToolbar: {

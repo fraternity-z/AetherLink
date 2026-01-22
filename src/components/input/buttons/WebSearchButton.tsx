@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { CustomIcon } from '../../icons';
 import WebSearchProviderSelector from '../../WebSearchProviderSelector';
-import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../InputToolbar';
+import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../../../shared/styles/toolbarStyles';
 
 interface WebSearchButtonProps {
   webSearchActive?: boolean;

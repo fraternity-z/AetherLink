@@ -30,7 +30,7 @@ import {
   DialogActions
 } from '@mui/material';
 import BackButtonDialog from '../../components/common/BackButtonDialog';
-import { ArrowLeft, ChevronRight, ChevronRight as ChevronRightIcon, MessageSquare, MessageCircle, Palette, LayoutDashboard, Sliders, Edit3, Sparkles, Share2, Upload } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronRight as ChevronRightIcon, MessageSquare, MessageCircle, Palette, LayoutDashboard, Edit3, Sparkles, Share2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../../shared/store';
 import { setTheme, setFontSize, setFontFamily, setShowPerformanceMonitor, setShowDevToolsFloatingButton, updateSettings } from '../../shared/store/settingsSlice';
@@ -268,10 +268,6 @@ const AppearanceSettings: React.FC = () => {
 
   const handleNavigateToTopToolbar = () => {
     navigate('/settings/appearance/top-toolbar');
-  };
-
-  const handleNavigateToToolbarCustomization = () => {
-    navigate('/settings/appearance/toolbar-customization');
   };
 
   const handleNavigateToMessageBubble = () => {
@@ -777,38 +773,7 @@ const AppearanceSettings: React.FC = () => {
 
             <Divider variant="inset" component="li" sx={{ ml: 0 }} />
 
-            {/* 6. 输入框工具栏设置 */}
-            <ListItem disablePadding>
-              <ListItemButton
-                onClick={handleNavigateToToolbarCustomization}
-                sx={{
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                  }
-                }}
-              >
-                <ListItemAvatar>
-                  <Avatar sx={{
-                    bgcolor: alpha('#06b6d4', 0.12),
-                    color: '#06b6d4',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
-                  }}>
-                    <Sliders size={20} />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={<Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{t('settings.appearance.toolbarCustomization.title')}</Typography>}
-                  secondary={t('settings.appearance.toolbarCustomization.description')}
-                  primaryTypographyProps={{ component: 'div' }}
-                />
-                <ChevronRight size={20} style={{ color: 'var(--mui-palette-text-secondary)' }} />
-              </ListItemButton>
-            </ListItem>
-
-            <Divider variant="inset" component="li" sx={{ ml: 0 }} />
-
-            {/* 7. 输入框管理设置 */}
+            {/* 6. 输入框管理设置 */}
             <ListItem disablePadding>
               <ListItemButton
                 onClick={handleNavigateToInputBox}

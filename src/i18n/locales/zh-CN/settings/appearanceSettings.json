@@ -373,73 +373,6 @@
         "microBubblesHidden": "(功能气泡已隐藏)"
       }
     },
-    "toolbarCustomization": {
-      "title": "输入框工具栏定制",
-      "description": "自定义输入框工具栏的背景样式和外观效果",
-      "backgroundStyle": {
-        "title": "工具栏背景样式",
-        "description": "选择输入框工具栏的背景效果，影响新建话题、清空内容等按钮的外观",
-        "glassmorphism": {
-          "label": "毛玻璃效果 (推荐)",
-          "description": "现代玻璃UI设计，具有模糊背景和立体阴影效果"
-        },
-        "transparent": {
-          "label": "透明效果",
-          "description": "简约透明设计，悬停时显示淡色背景"
-        },
-        "current": "当前",
-        "preview": {
-          "newTopic": "新建话题",
-          "clearContent": "清空内容",
-          "tools": "工具"
-        }
-      },
-      "displayStyle": {
-        "title": "工具栏显示方式",
-        "description": "设置工具栏按钮的显示方式，可以选择同时显示图标和文字，或仅显示图标，或仅显示文字",
-        "label": "工具栏显示样式",
-        "both": "图标+文字（默认）",
-        "icon": "仅图标",
-        "text": "仅文字",
-        "hint": "设置聊天界面工具栏的显示方式。可以选择同时显示图标和文字，或仅显示图标，或仅显示文字。",
-        "preview": "预览效果："
-      },
-      "buttonCustomization": {
-        "title": "工具栏按钮自定义",
-        "description": "拖拽调整按钮顺序，点击眼睛图标控制按钮显示/隐藏",
-        "livePreview": "实时预览：",
-        "buttons": {
-          "mcpTools": {
-            "label": "MCP工具",
-            "description": "启用/禁用MCP工具调用功能"
-          },
-          "newTopic": {
-            "label": "新建话题",
-            "description": "创建新的对话话题"
-          },
-          "clearTopic": {
-            "label": "清空内容",
-            "description": "清空当前话题的所有消息"
-          },
-          "generateImage": {
-            "label": "生成图片",
-            "description": "切换到图像生成模式"
-          },
-          "generateVideo": {
-            "label": "生成视频",
-            "description": "切换到视频生成模式"
-          },
-          "knowledge": {
-            "label": "知识库",
-            "description": "选择知识库进行搜索"
-          },
-          "webSearch": {
-            "label": "网络搜索",
-            "description": "启用网络搜索功能"
-          }
-        }
-      }
-    },
     "inputBox": {
       "title": "输入框管理设置",
       "description": "自定义输入框的风格和布局样式",
@@ -451,11 +384,6 @@
           "default": "默认风格",
           "modern": "现代风格",
           "minimal": "简约风格"
-        },
-        "layouts": {
-          "default": "默认样式",
-          "compact": "聚合样式",
-          "integrated": "集成样式"
         },
         "buttonLayout": {
           "title": "自定义输入框按钮布局",
@@ -473,17 +401,6 @@
         "defaultDesc": "• 默认风格：标准圆角，适中阴影，经典外观",
         "modernDesc": "• 现代风格：更圆润的边角，立体阴影，毛玻璃背景效果",
         "minimalDesc": "• 简约风格：尖锐边角，无阴影，清爽简洁"
-      },
-      "layout": {
-        "title": "输入框布局样式",
-        "label": "布局样式",
-        "default": "默认样式（工具栏+输入框分离）",
-        "compact": "聚合样式（输入框+功能图标集成）",
-        "integrated": "集成样式（工具菜单+垂直布局）",
-        "description": "选择聊天输入区域的布局方式：",
-        "defaultDesc": "• 默认样式：工具栏和输入框分别显示，功能清晰分离",
-        "compactDesc": "• 聚合样式：输入框上方，下方为功能图标行，点击+号可展开更多功能",
-        "integratedDesc": "• 集成样式：工具菜单集成到输入框，采用垂直布局和现代化设计"
       },
       "buttons": {
         "tools": {

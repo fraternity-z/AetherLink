@@ -36,7 +36,7 @@ interface SettingsState {
   thinkingDisplayStyle: string;
   toolbarDisplayStyle: 'icon' | 'text' | 'both'; // 工具栏显示样式：仅图标、仅文字、图标+文字
   inputBoxStyle: 'default' | 'modern' | 'minimal'; // 输入框风格：默认、现代、简约
-  inputLayoutStyle: 'default' | 'compact' | 'integrated'; // 输入框布局样式：默认（分离）、聚合或集成
+  inputLayoutStyle: 'integrated'; // 输入框布局样式：仅保留集成模式
 
   // 代码块设置
   codeThemeLight: string; // 浅色模式代码主题
@@ -273,7 +273,7 @@ const getInitialState = (): SettingsState => {
     thinkingDisplayStyle: ThinkingDisplayStyle.COMPACT,
     toolbarDisplayStyle: 'both' as 'icon' | 'text' | 'both',
     inputBoxStyle: 'default' as 'default' | 'modern' | 'minimal', // 默认输入框风格
-    inputLayoutStyle: 'integrated' as 'default' | 'compact' | 'integrated', // 输入框布局样式：默认（分离）、聚合或集成
+    inputLayoutStyle: 'integrated' as const, // 输入框布局样式：仅保留集成模式
 
     // 代码块默认设置
     codeThemeLight: 'one-light', // 默认浅色主题
@@ -487,10 +487,8 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
         savedSettings.inputBoxStyle = 'default';
       }
 
-      // 如果没有输入框布局样式设置，使用默认值
-      if (!savedSettings.inputLayoutStyle) {
-        savedSettings.inputLayoutStyle = 'default';
-      }
+      // 强制使用 integrated 模式
+      savedSettings.inputLayoutStyle = 'integrated';
 
       // 如果没有系统提示词气泡显示设置，使用默认值
       if (savedSettings.showSystemPromptBubble === undefined) {

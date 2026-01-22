@@ -11,7 +11,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { MCPServer } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
-import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../InputToolbar';
+import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../../../shared/styles/toolbarStyles';
 import MCPServerQuickPanel from './MCPServerQuickPanel';
 
 // 稳定的选择器函数，避免每次渲染创建新引用

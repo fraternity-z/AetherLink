@@ -6,8 +6,6 @@ export { useAssistant } from './useAssistant';
 // 输入框相关 - 重构后的统一hooks
 export { useChatInputLogic } from './useChatInputLogic';
 export { useInputState } from './useInputState';
-export { useInputMenus } from './useInputMenus';
-export { useInputExpand, type UseInputExpandOptions, type UseInputExpandReturn } from './useInputExpand';
 export { useInputStyles } from './useInputStyles';
 export { useKnowledgeContext } from './useKnowledgeContext';
 

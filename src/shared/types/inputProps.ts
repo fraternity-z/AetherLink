@@ -1,7 +1,7 @@
 /**
  * 输入框组件统一Props接口定义
  * 
- * 本文件定义了三个输入框组件（ChatInput、CompactChatInput、IntegratedChatInput）的共享和特有Props类型。
+ * 本文件定义了 IntegratedChatInput 组件的Props类型。
  * 通过统一的类型定义，提高代码一致性和可维护性。
  */
 
@@ -82,36 +82,6 @@ export interface BaseChatInputProps {
   
   /** 可用模型列表 */
   availableModels?: Model[];
-}
-
-/**
- * ChatInput组件的Props接口
- * 扩展自BaseChatInputProps，添加ChatInput特有的属性
- */
-export interface ChatInputProps extends BaseChatInputProps {
-  /** 是否处于视频生成模式 */
-  videoGenerationMode?: boolean;
-}
-
-/**
- * CompactChatInput组件的Props接口
- * 扩展自BaseChatInputProps，添加CompactChatInput特有的属性
- */
-export interface CompactChatInputProps extends BaseChatInputProps {
-  /** 清除当前话题回调 */
-  onClearTopic?: () => void;
-  
-  /** 创建新话题回调 */
-  onNewTopic?: () => void;
-  
-  /** 切换图像生成模式 */
-  toggleImageGenerationMode?: () => void;
-  
-  /** 切换网络搜索模式 */
-  toggleWebSearch?: () => void;
-  
-  /** 切换工具开关 */
-  toggleToolsEnabled?: () => void;
 }
 
 /**

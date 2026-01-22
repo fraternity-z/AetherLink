@@ -369,73 +369,6 @@
         "microBubblesHidden": "(Function bubbles hidden)"
       }
     },
-    "toolbarCustomization": {
-      "title": "Input Toolbar",
-      "description": "Customize input toolbar background style and appearance",
-      "backgroundStyle": {
-        "title": "Background Style",
-        "description": "Choose toolbar background effect for buttons",
-        "glassmorphism": {
-          "label": "Glassmorphism (Recommended)",
-          "description": "Modern glass UI with blur and shadow effects"
-        },
-        "transparent": {
-          "label": "Transparent",
-          "description": "Minimal transparent design with hover background"
-        },
-        "current": "Current",
-        "preview": {
-          "newTopic": "New Topic",
-          "clearContent": "Clear",
-          "tools": "Tools"
-        }
-      },
-      "displayStyle": {
-        "title": "Display Style",
-        "description": "Set toolbar button display: icon+text, icon only, or text only",
-        "label": "Display Style",
-        "both": "Icon + Text (default)",
-        "icon": "Icon Only",
-        "text": "Text Only",
-        "hint": "Set toolbar display: icon+text, icon only, or text only.",
-        "preview": "Preview:"
-      },
-      "buttonCustomization": {
-        "title": "Button Customization",
-        "description": "Drag to reorder, click eye icon to show/hide",
-        "livePreview": "Live Preview:",
-        "buttons": {
-          "mcpTools": {
-            "label": "MCP Tools",
-            "description": "Enable/disable MCP tool calls"
-          },
-          "newTopic": {
-            "label": "New Topic",
-            "description": "Create new conversation topic"
-          },
-          "clearTopic": {
-            "label": "Clear",
-            "description": "Clear all messages in current topic"
-          },
-          "generateImage": {
-            "label": "Generate Image",
-            "description": "Switch to image generation mode"
-          },
-          "generateVideo": {
-            "label": "Generate Video",
-            "description": "Switch to video generation mode"
-          },
-          "knowledge": {
-            "label": "Knowledge",
-            "description": "Select knowledge base for search"
-          },
-          "webSearch": {
-            "label": "Web Search",
-            "description": "Enable web search function"
-          }
-        }
-      }
-    },
     "inputBox": {
       "title": "Input Box",
       "description": "Customize input box style and layout",
@@ -447,11 +380,6 @@
           "default": "Default",
           "modern": "Modern",
           "minimal": "Minimal"
-        },
-        "layouts": {
-          "default": "Default",
-          "compact": "Compact",
-          "integrated": "Integrated"
         },
         "buttonLayout": {
           "title": "Custom Button Layout",
@@ -469,17 +397,6 @@
         "defaultDesc": "• Default: Standard rounded corners, moderate shadow, classic look",
         "modernDesc": "• Modern: Rounded corners, 3D shadow, glassmorphism background",
         "minimalDesc": "• Minimal: Sharp corners, no shadow, clean and simple"
-      },
-      "layout": {
-        "title": "Layout Style",
-        "label": "Layout Style",
-        "default": "Default (Toolbar + Input separate)",
-        "compact": "Compact (Input + Icons integrated)",
-        "integrated": "Integrated (Menu + Vertical layout)",
-        "description": "Choose layout for input area:",
-        "defaultDesc": "• Default: Toolbar and input shown separately, clear separation",
-        "compactDesc": "• Compact: Input above, icon row below, click + to expand",
-        "integratedDesc": "• Integrated: Tool menu integrated into input, vertical layout"
       },
       "buttons": {
         "tools": {

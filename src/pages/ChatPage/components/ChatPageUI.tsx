@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { CustomIcon } from '../../../components/icons';
 
 import SolidMessageList from '../../../components/message/SolidMessageList';
-import { ChatInput, CompactChatInput, IntegratedChatInput, InputToolbar } from '../../../components/input';
+import { IntegratedChatInput } from '../../../components/input';
 import { Sidebar } from '../../../components/TopicManagement';
 import { ModelSelector } from './ModelSelector';
 import { UnifiedModelDisplay } from './UnifiedModelDisplay';
@@ -303,8 +303,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   };
 
   const isDIYLayout = Boolean(mergedTopToolbarSettings.componentPositions?.length);
-  const shouldShowToolbar = settings.inputLayoutStyle === 'default';
-
+  
   // 检查是否启用了背景图片 - 用于控制 UI 透明度
   const hasBackgroundImage = useMemo(() => 
     settings.chatBackground?.enabled && settings.chatBackground?.imageUrl,
@@ -344,7 +343,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       // 当键盘弹出时，需要额外增加 padding 以确保消息列表底部内容可见
       // 键盘关闭时，需要加上底部安全区域（导航条区域）的高度
       paddingBottom: keyboardHeight > 0
-        ? `${(shouldShowToolbar ? 24 : 16) + keyboardHeight}px`
+        ? `${16 + keyboardHeight}px`
         : `calc(16px + var(--safe-area-bottom-computed, 0px))`,
       // 平滑过渡动画
       transition: 'padding-bottom 0.2s ease-out',
@@ -364,7 +363,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       color: 'var(--theme-text-primary)',
       mb: 1,
     }
-  }), [hasBackgroundImage, shouldShowToolbar, keyboardHeight, isDesktopLayout]);
+  }), [hasBackgroundImage, keyboardHeight, isDesktopLayout]);
 
   // contentContainerStyle已移除，样式直接在motion.div中定义
 
@@ -707,40 +706,21 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   };
 
 
-  const inputComponent = useMemo(() => {
-    if (settings.inputLayoutStyle === 'compact') {
-      return (
-        <CompactChatInput
-          key="compact-input"
-          {...commonProps}
-          onClearTopic={handleClearTopic}
-          onNewTopic={handleCreateTopic}
-          toggleImageGenerationMode={toggleImageGenerationMode}
-          toggleWebSearch={toggleWebSearch}
-          toggleToolsEnabled={toggleToolsEnabled}
-        />
-      );
-    } else if (settings.inputLayoutStyle === 'integrated') {
-      return (
-        <IntegratedChatInput
-          key="integrated-input"
-          {...commonProps}
-          onClearTopic={handleClearTopic}
-          toggleImageGenerationMode={toggleImageGenerationMode}
-          toggleVideoGenerationMode={toggleVideoGenerationMode}
-          toggleWebSearch={toggleWebSearch}
-          onToolsEnabledChange={toggleToolsEnabled}
-        />
-      );
-    } else {
-      return <ChatInput key="default-input" {...commonProps} />;
-    }
-  }, [
-    settings.inputLayoutStyle,
+  const inputComponent = useMemo(() => (
+    <IntegratedChatInput
+      key="integrated-input"
+      {...commonProps}
+      onClearTopic={handleClearTopic}
+      toggleImageGenerationMode={toggleImageGenerationMode}
+      toggleVideoGenerationMode={toggleVideoGenerationMode}
+      toggleWebSearch={toggleWebSearch}
+      onToolsEnabledChange={toggleToolsEnabled}
+    />
+  ), [
     commonProps,
     handleClearTopic,
-    handleCreateTopic,
     toggleImageGenerationMode,
+    toggleVideoGenerationMode,
     toggleWebSearch,
     toggleToolsEnabled
   ]);
@@ -785,27 +765,6 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       {/* Agentic 模式文件修改列表 - 紧贴输入框上方 */}
       <AgenticFilesList />
 
-      {shouldShowToolbar && (
-        <Box sx={{
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          px: 2
-        }}>
-          <InputToolbar
-            onClearTopic={handleClearTopic}
-            imageGenerationMode={imageGenerationMode}
-            toggleImageGenerationMode={toggleImageGenerationMode}
-            videoGenerationMode={videoGenerationMode}
-            toggleVideoGenerationMode={toggleVideoGenerationMode}
-            webSearchActive={webSearchActive}
-            toggleWebSearch={toggleWebSearch}
-            toolsEnabled={toolsEnabled}
-            onToolsEnabledChange={toggleToolsEnabled}
-          />
-        </Box>
-      )}
-
       <Box sx={{
         width: '100%',
         display: 'flex',
@@ -818,23 +777,12 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   ), [
     // 只包含真正影响InputContainer的关键依赖
     isDrawerVisible,
-    shouldShowToolbar,
     inputComponent,
     isMobile,
     keyboardHeight, // 键盘高度变化时重新渲染
     // visualViewport 相关依赖 - 用于解决滚动时输入框移动的问题
     fixedTop,
-    shouldUseVisualViewport,
-    // 添加这些依赖确保工具栏状态变化时正确更新
-    handleClearTopic,
-    imageGenerationMode,
-    toggleImageGenerationMode,
-    videoGenerationMode,
-    toggleVideoGenerationMode,
-    webSearchActive,
-    toggleWebSearch,
-    toolsEnabled,
-    toggleToolsEnabled
+    shouldUseVisualViewport
   ]);
 
   // ==================== 组件渲染 ====================

@@ -53,8 +53,6 @@ const AIDebateSettings = lazy(() => import('../pages/Settings/AIDebateSettings')
 // 导入上下文压缩设置页面
 const ContextCondenseSettings = lazy(() => import('../pages/Settings/ContextCondenseSettings'));
 import MessageBubbleSettings from "../pages/Settings/MessageBubbleSettings";
-// 导入工具栏定制页面
-const ToolbarCustomization = lazy(() => import('../pages/Settings/ToolbarCustomization'));
 // 导入快捷短语设置页面
 const QuickPhraseSettings = lazy(() => import('../components/quick-phrase/QuickPhraseSettings'));
 // 导入助手模型设置页面
@@ -158,7 +156,6 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/appearance/theme-style" element={<ThemeStyleSettings />} />
         <Route path="/settings/appearance/chat-interface" element={<ChatInterfaceSettings />} />
         <Route path="/settings/appearance/message-bubble" element={<MessageBubbleSettings />} />
-        <Route path="/settings/appearance/toolbar-customization" element={<ToolbarCustomization />} />
         <Route path="/settings/appearance/thinking-process" element={<ThinkingProcessSettings />} />
         <Route path="/settings/appearance/input-box" element={<InputBoxSettings />} />
         <Route path="/settings/appearance/top-toolbar" element={<TopToolbarDIYSettings />} />
