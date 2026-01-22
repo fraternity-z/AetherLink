@@ -273,27 +273,39 @@ const MCPServerSettings: React.FC = () => {
       }
 
       // 类型规范化函数：支持多种格式
-      const normalizeType = (type: string | undefined): MCPServerType => {
-        if (!type) return 'sse';
+      // 需要传入配置对象来智能推断类型
+      const normalizeType = (type: string | undefined, serverConfig?: any): MCPServerType => {
+        // 如果有明确的 type 字段
+        if (type) {
+          // 转换为小写便于比较
+          const lowerType = type.toLowerCase().replace(/[-_]/g, '');
+          
+          // 映射各种格式到标准类型
+          if (lowerType === 'streamablehttp' || lowerType === 'streamable') {
+            return 'streamableHttp';
+          }
+          if (lowerType === 'httpstream') {
+            return 'httpStream';
+          }
+          if (lowerType === 'inmemory' || lowerType === 'memory') {
+            return 'inMemory';
+          }
+          if (lowerType === 'sse' || lowerType === 'serversent' || lowerType === 'serversentevents') {
+            return 'sse';
+          }
+          if (lowerType === 'stdio' || lowerType === 'standardio') {
+            return 'stdio';
+          }
+        }
         
-        // 转换为小写便于比较
-        const lowerType = type.toLowerCase().replace(/[-_]/g, '');
-        
-        // 映射各种格式到标准类型
-        if (lowerType === 'streamablehttp' || lowerType === 'streamable') {
-          return 'streamableHttp';
-        }
-        if (lowerType === 'httpstream') {
-          return 'httpStream';
-        }
-        if (lowerType === 'inmemory' || lowerType === 'memory') {
-          return 'inMemory';
-        }
-        if (lowerType === 'sse' || lowerType === 'serversent' || lowerType === 'serversentevents') {
-          return 'sse';
-        }
-        if (lowerType === 'stdio' || lowerType === 'standardio') {
+        // 🔧 智能推断：如果有 command 字段，说明是 stdio 类型（Claude Desktop 标准格式）
+        if (serverConfig?.command) {
           return 'stdio';
+        }
+        
+        // 如果有 url 或 baseUrl 字段，说明是 HTTP 类型
+        if (serverConfig?.url || serverConfig?.baseUrl) {
+          return 'sse';
         }
         
         // 默认返回 sse
@@ -309,7 +321,7 @@ const MCPServerSettings: React.FC = () => {
           const server: MCPServer = {
             id: Date.now().toString() + Math.random().toString(36).substring(2, 11),
             name: serverName,
-            type: normalizeType(configAny.type),
+            type: normalizeType(configAny.type, configAny),
             baseUrl: configAny.url || configAny.baseUrl,
             command: configAny.command,
             description: t('settings.mcpServer.messages.importFromJson', { name: serverName }),

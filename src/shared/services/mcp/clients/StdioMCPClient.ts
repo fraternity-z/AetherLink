@@ -39,6 +39,11 @@ function mapCommandToScopeName(command: string): { scopeName: string; executable
     return { scopeName: 'run-node', executable: 'node' };
   }
   if (baseName.includes('npx') || lowerCommand.includes('npx')) {
+    // Windows 上 npx 实际是 npx.cmd，优先使用 run-npx-cmd
+    const isWindows = typeof navigator !== 'undefined' && navigator.userAgent.includes('Windows');
+    if (isWindows) {
+      return { scopeName: 'run-npx-cmd', executable: 'npx.cmd' };
+    }
     return { scopeName: 'run-npx', executable: 'npx' };
   }
   if (baseName.includes('python') || lowerCommand.includes('python')) {
@@ -109,9 +114,10 @@ class StdioTransport implements Transport {
         this.handleStdoutData(line);
       });
 
-      // 监听 stderr（仅用于日志）
+      // 监听 stderr - 显示 npx 下载进度等信息
       cmd.stderr.on('data', (line: string) => {
-        console.warn('[Stdio Transport] stderr:', line);
+        console.log('[Stdio Transport] stderr:', line);
+        // npx 下载进度通常输出到 stderr，这是正常的
       });
 
       // Spawn 子进程 - Tauri 2.0 spawn() 返回 Child 对象

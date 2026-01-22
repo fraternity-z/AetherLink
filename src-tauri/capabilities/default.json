@@ -54,6 +54,11 @@
           "args": true
         },
         {
+          "name": "run-npx-cmd",
+          "cmd": "npx.cmd",
+          "args": true
+        },
+        {
           "name": "run-python",
           "cmd": "python",
           "args": true
