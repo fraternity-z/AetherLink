@@ -215,6 +215,7 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
   const themeMode = theme.palette.mode;
 
   // 侧边栏内容
+  const isDesktopLayout = typeof document !== 'undefined' && document.body.hasAttribute('data-desktop-layout');
   const drawerContent = useMemo(() => (
     <Box
       sx={{
@@ -226,6 +227,8 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         backgroundColor: theme.palette.background.paper,
         backgroundImage: 'none',
         opacity: 1,
+        // 桌面端布局：左侧圆角
+        borderRadius: isDesktopLayout && !isSmallScreen ? '12px 0 0 12px' : 0,
       }}
     >
       {/* 关闭按钮 - 只在移动端或桌面端可收起时显示 */}
@@ -273,7 +276,7 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         onToolsToggle={onToolsToggle}
       />
     </Box>
-  ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle, onDesktopToggle, theme.palette.background.paper]);
+  ), [isSmallScreen, handleClose, mcpMode, toolsEnabled, onMCPModeChange, onToolsToggle, onDesktopToggle, theme.palette.background.paper, isDesktopLayout]);
 
   // 处理侧边栏状态变化
   const handleOpenChange = useCallback((open: boolean) => {
@@ -333,9 +336,11 @@ const SolidMotionSidebar = React.memo(function SolidMotionSidebar({
         <Box
           sx={{
             position: 'fixed',
-            top: 0,
-            left: drawerWidth,
-            height: '100%',
+            // 桌面端布局：考虑应用侧边栏(60px)和标题栏(44px)的偏移
+            top: document.body.hasAttribute('data-desktop-layout') ? '44px' : 0,
+            left: document.body.hasAttribute('data-desktop-layout') ? `${60 + drawerWidth}px` : drawerWidth,
+            bottom: document.body.hasAttribute('data-desktop-layout') ? '8px' : 0,
+            height: document.body.hasAttribute('data-desktop-layout') ? 'auto' : '100%',
             zIndex: 1200,
           }}
         >

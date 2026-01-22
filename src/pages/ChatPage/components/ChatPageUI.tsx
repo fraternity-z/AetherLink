@@ -311,12 +311,16 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     [settings.chatBackground]
   );
 
+  // 检测是否在桌面端 DesktopLayout 中
+  const isDesktopLayout = typeof document !== 'undefined' && document.body.hasAttribute('data-desktop-layout');
+
   // 优化：将样式分离，减少重新计算，使用 CSS Variables
   const baseStyles = useMemo(() => ({
     mainContainer: {
       display: 'flex',
       flexDirection: { xs: 'column', sm: 'row' },
-      height: '100vh',
+      // 桌面端布局：使用 100% 适应父容器；其他：100vh
+      height: isDesktopLayout ? '100%' : '100vh',
       bgcolor: 'var(--theme-bg-default)'
     },
     appBar: {
@@ -360,7 +364,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
       color: 'var(--theme-text-primary)',
       mb: 1,
     }
-  }), [hasBackgroundImage, shouldShowToolbar, keyboardHeight]);
+  }), [hasBackgroundImage, shouldShowToolbar, keyboardHeight, isDesktopLayout]);
 
   // contentContainerStyle已移除，样式直接在motion.div中定义
 
@@ -839,8 +843,13 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
     <Box
       className="chat-page-container"
       sx={{
-        ...baseStyles.mainContainer,
-        position: 'relative', // 为背景层提供定位上下文
+        display: 'flex',
+        flexDirection: 'row',
+        height: '100%',
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        bgcolor: 'var(--theme-bg-default)',
       }}
     >
       {/* 背景层 - 模仿 rikkahub 的 AssistantBackground，让背景延伸到状态栏 */}
@@ -850,37 +859,36 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
           <Box
             className="chat-background-no-scroll"
             sx={{
-              position: 'fixed',
+              position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              zIndex: 0, // 在最底层
+              zIndex: 0,
               backgroundImage: `url(${settings.chatBackground.imageUrl})`,
               backgroundSize: settings.chatBackground.size || 'cover',
               backgroundPosition: settings.chatBackground.position || 'center',
               backgroundRepeat: settings.chatBackground.repeat || 'no-repeat',
-              backgroundAttachment: 'fixed', // 固定背景，不随滚动
-              opacity: settings.chatBackground.opacity || 0.7, // 透明度直接应用到背景图
+              backgroundAttachment: 'fixed',
+              opacity: settings.chatBackground.opacity || 0.7,
             }}
           />
-          {/* 渐变遮罩层 - 提高文字可读性，可通过设置开关控制 */}
+          {/* 渐变遮罩层 */}
           {settings.chatBackground.showOverlay !== false && (
             <Box
               className="chat-background-no-scroll"
               sx={{
-                position: 'fixed',
+                position: 'absolute',
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
-                zIndex: 1, // 在背景图上方，内容下方
-                // 固定渐变：顶部较浅，底部稍深
+                zIndex: 1,
                 background: `linear-gradient(to bottom, 
                   rgba(255, 255, 255, 0.3), 
                   rgba(255, 255, 255, 0.5)
                 )`,
-                pointerEvents: 'none', // 不阻止用户交互
+                pointerEvents: 'none',
               }}
             />
           )}
@@ -902,26 +910,24 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
         })}
       />
 
-      {/* 主内容区域 - 🚀 使用预计算布局，避免Drawer推开导致的重新布局 */}
+      {/* 主内容区域 - 侧边栏打开时添加 marginLeft */}
       <Box
         className="chat-main-content-no-scroll"
         component={motion.div}
-        key={`main-content-${isDrawerVisible ? 'open' : 'closed'}`}
         initial={false}
-        animate={isDrawerVisible ? LAYOUT_CONFIGS.SIDEBAR_OPEN.mainContent : LAYOUT_CONFIGS.SIDEBAR_CLOSED.mainContent}
+        animate={{
+          marginLeft: isDrawerVisible ? sidebarWidth : 0,
+        }}
         transition={ANIMATION_CONFIG}
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          height: 'calc(100vh - var(--titlebar-height, 0px))',
+          flex: 1,
+          height: '100%',
           overflow: 'hidden',
-          // 模仿 rikkahub Scaffold(containerColor = Color.Transparent)：有背景图时透明
           backgroundColor: hasBackgroundImage ? 'transparent' : 'var(--theme-bg-default)',
-          // 🔧 固定定位，避免被Drawer推开
-          position: 'fixed',
-          top: 'var(--titlebar-height, 0px)',
-          right: 0,
-          zIndex: 2, // 确保在背景和遮罩之上（背景 z-index: 0, 遮罩 z-index: 1）
+          position: 'relative',
+          zIndex: 2,
         }}
       >
         <AppBar

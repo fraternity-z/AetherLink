@@ -9,9 +9,10 @@ import { isTauri } from '../../shared/utils/platformDetection';
 
 interface TitleBarProps {
   title?: string;
+  shellBgColor?: string; // L 形包边背景色
 }
 
-const TitleBar: React.FC<TitleBarProps> = memo(({ title = 'AetherLink' }) => {
+const TitleBar: React.FC<TitleBarProps> = memo(({ title = 'AetherLink', shellBgColor }) => {
   const theme = useTheme();
   const [isMaximized, setIsMaximized] = useState(false);
   const [isTauriEnv, setIsTauriEnv] = useState(false);
@@ -114,19 +115,18 @@ const TitleBar: React.FC<TitleBarProps> = memo(({ title = 'AetherLink' }) => {
   return (
     <Box
       sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
+        position: 'relative',
         height: 44,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: theme.palette.background.default,
-        borderBottom: `1px solid ${theme.palette.divider}`,
+        backgroundColor: shellBgColor || theme.palette.background.default,
+        // 融合效果：不显示底部边框
+        borderBottom: 'none',
         zIndex: 9999,
         userSelect: 'none',
         WebkitAppRegion: 'drag',
+        flexShrink: 0,
       }}
       onMouseDown={handleStartDrag}
     >

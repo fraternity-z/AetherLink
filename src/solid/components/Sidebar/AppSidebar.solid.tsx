@@ -284,20 +284,22 @@ export function AppSidebar(props: AppSidebarProps) {
         ref={sidebarRef}
         style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          bottom: 0,
+          // 桌面端布局：考虑应用侧边栏(60px)和标题栏(44px)的偏移
+          top: isDesktop() && document.body.hasAttribute('data-desktop-layout') ? '44px' : '0',
+          left: isDesktop() && document.body.hasAttribute('data-desktop-layout') ? '60px' : '0',
+          bottom: isDesktop() && document.body.hasAttribute('data-desktop-layout') ? '8px' : '0',
           width: `${width()}px`,
           "z-index": isDesktop() ? 10 : 1201,
           "background-color": props.themeMode === 'dark' ? '#1a1a1a' : '#ffffff',
           "background-image": 'none',
           opacity: 1,
           "border-right": '1px solid rgba(0,0,0,0.1)',
-          "border-radius": isDesktop() ? '0' : '0 16px 16px 0',
+          // 桌面端布局：左侧圆角；移动端：右侧圆角
+          "border-radius": isDesktop() && document.body.hasAttribute('data-desktop-layout') 
+            ? '12px 0 0 12px'
+            : (isDesktop() ? '0' : '0 16px 16px 0'),
           "box-shadow": isDesktop() ? 'none' : '4px 0 20px rgba(0,0,0,0.15)',
-          // 根据 props.open 设置初始位置，避免路由切换时的白屏闪烁
           transform: isOpen() ? 'translateX(0) translateZ(0)' : `translateX(-${width()}px) translateZ(0)`,
-          // 初始无 transition，由 createEffect 设置
           transition: 'none',
           display: 'flex',
           "flex-direction": 'column',
