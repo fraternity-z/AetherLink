@@ -25,7 +25,7 @@ tauri = { version = "2", features = ["devtools", "tray-icon"] }
 
 tauri-plugin-log = "2"
 # HTTP 插件，启用 socks 特性以支持 SOCKS4/SOCKS5 代理
-tauri-plugin-http = { version = "2.5.6", features = ["socks"] }
+tauri-plugin-http = { version = "2.5", features = ["socks"] }
 
 # 官方 dialog 插件 - 文件选择器
 tauri-plugin-dialog = "2"

@@ -47,10 +47,10 @@ const GlobalStyles: React.FC<GlobalStylesProps> = ({ fontSize, theme }) => {
       --titlebar-height: 0px;
     }
     
-    /* Tauri 环境下设置标题栏高度（DesktopLayout 已处理布局，不需要 padding-top） */
+    /* Tauri 环境下设置标题栏高度，并给 body 添加顶部 padding */
     body[data-tauri="true"] {
       --titlebar-height: 44px;
-      --nav-sidebar-width: 60px;
+      padding-top: var(--titlebar-height);
       box-sizing: border-box;
     }
 

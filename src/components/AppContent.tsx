@@ -18,7 +18,7 @@ import GlobalStyles from './GlobalStyles';
 import ErrorBoundary from './ErrorBoundary';
 import EnhancedPerformanceMonitor from './debug/EnhancedPerformanceMonitor';
 import DevToolsFloatingButton from './debug/DevToolsFloatingButton';
-import DesktopLayout from './layout/DesktopLayout';
+import TitleBar from './common/TitleBar';
 
 const AppContent = memo(() => {
   const { theme, fontSize } = useTheme();
@@ -78,9 +78,12 @@ const AppContent = memo(() => {
       <CssBaseline />
       <GlobalStyles fontSize={fontSize} theme={theme} />
       
+      {/* Tauri 自定义标题栏 */}
+      <TitleBar />
+      
       <ErrorBoundary>
         {appInitialized && (
-          <DesktopLayout>
+          <>
             <AppInitializer />
             <AppRouter />
             <BackButtonHandler />
@@ -90,7 +93,7 @@ const AppContent = memo(() => {
             <EnhancedPerformanceMonitor />
             {/* 开发者工具悬浮按钮 */}
             <DevToolsFloatingButton />
-          </DesktopLayout>
+          </>
         )}
       </ErrorBoundary>
 
