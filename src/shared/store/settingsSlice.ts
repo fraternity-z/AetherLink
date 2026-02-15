@@ -207,6 +207,10 @@ interface SettingsState {
 
   // 消息分组方式
   messageGrouping?: 'byDate' | 'disabled' | 'none';
+
+  // 集成输入框左右侧按钮布局配置
+  integratedInputLeftButtons?: string[];
+  integratedInputRightButtons?: string[];
 }
 
 const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {

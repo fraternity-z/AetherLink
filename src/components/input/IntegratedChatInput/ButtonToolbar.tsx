@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { IconButton, Tooltip, CircularProgress, Badge, Box } from '@mui/material';
-import { Send, Plus, Square, Trash2, Camera, Video, BookOpen, Image, FileText, ArrowLeftRight, AlertTriangle } from 'lucide-react';
+import { Send, Plus, Square, Trash2, Camera, Video, Image, FileText, ArrowLeftRight, AlertTriangle } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { CustomIcon } from '../../icons';
