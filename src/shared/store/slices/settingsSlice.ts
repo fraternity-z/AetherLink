@@ -41,6 +41,16 @@ export interface SettingsState {
 
   // 集成样式输入框自定义按钮
   integratedInputButtons?: string[];
+  
+  // 集成输入框左右侧按钮布局配置
+  integratedInputLeftButtons?: string[];
+  integratedInputRightButtons?: string[];
+  
+  // 工具栏按钮配置
+  toolbarButtons?: {
+    order: string[];
+    visibility: Record<string, boolean>;
+  };
 
   // 对话导航功能
   messageNavigation?: 'none' | 'buttons';

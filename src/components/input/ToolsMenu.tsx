@@ -3,8 +3,9 @@ import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
 import { Box, Typography, useTheme, Menu, MenuItem, alpha } from '@mui/material';
 import { Plus, Trash2, AlertTriangle, BookOpen, Video, Wrench } from 'lucide-react';
 import { CustomIcon } from '../icons';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
+import { setSelectedKnowledgeBase } from '../../shared/store/slices/knowledgeSelectionSlice';
 import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import WebSearchProviderSelector from '../WebSearchProviderSelector';
 import KnowledgeSelector from '../chat/KnowledgeSelector';
@@ -120,25 +121,16 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
   };
 
   // 处理知识库选择
-  const handleKnowledgeSelect = (knowledgeBase: any, searchResults: any[]) => {
+  const dispatch = useDispatch();
+
+  const handleKnowledgeSelect = (knowledgeBase: { id: string; name: string }, searchResults: unknown[]) => {
     console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
 
-    // 存储选中的知识库信息到sessionStorage（风格：新模式）
-    const knowledgeData = {
-      knowledgeBase: {
-        id: knowledgeBase.id,
-        name: knowledgeBase.name
-      },
-      isSelected: true,
-      searchOnSend: true // 标记需要在发送时搜索
-    };
-
-    console.log('[ToolsMenu] 保存知识库选择到sessionStorage:', knowledgeData);
-    window.sessionStorage.setItem('selectedKnowledgeBase', JSON.stringify(knowledgeData));
-
-    // 验证保存是否成功
-    const saved = window.sessionStorage.getItem('selectedKnowledgeBase');
-    console.log('[ToolsMenu] sessionStorage保存验证:', saved);
+    // 通过 Redux 存储选中的知识库信息
+    dispatch(setSelectedKnowledgeBase({
+      id: knowledgeBase.id,
+      name: knowledgeBase.name
+    }));
 
     // 关闭选择器
     setShowKnowledgeSelector(false);

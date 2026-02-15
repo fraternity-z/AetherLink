@@ -44,6 +44,7 @@ import runtimeReducer from './slices/runtimeSlice';
 import networkProxyReducer, { loadNetworkProxySettings } from './slices/networkProxySlice';
 import agenticFilesReducer from './slices/agenticFilesSlice';
 import memoryReducer, { initializeMemoryService } from './slices/memorySlice';
+import knowledgeSelectionReducer from './slices/knowledgeSelectionSlice';
 import { eventMiddleware } from './middleware/eventMiddleware';
 import { useDispatch, useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
@@ -62,6 +63,7 @@ const rootReducer = combineReducers({
   networkProxy: networkProxyReducer,
   agenticFiles: agenticFilesReducer,
   memory: memoryReducer,
+  knowledgeSelection: knowledgeSelectionReducer,
 });
 
 // 配置Redux持久化
@@ -72,11 +74,12 @@ const persistConfig = {
   // 与电脑端保持一致，不持久化messages和messageBlocks
   // 同时排除assistants，因为它包含非序列化的React元素
   // 排除runtime，因为它包含运行时状态
-  blacklist: ['messages', 'messageBlocks', 'assistants', 'runtime', 'agenticFiles'],
+  blacklist: ['messages', 'messageBlocks', 'assistants', 'runtime', 'agenticFiles', 'knowledgeSelection'],
   // 🚀 性能优化：节流持久化写入，减少 localStorage 操作频率
   throttle: 1000, // 1秒内最多写入一次
-  // 🚀 性能优化：使用 timeout 避免长时间阻塞
-  timeout: 0, // 立即返回，不等待序列化完成
+  // 禁用 rehydrate 超时（timeout: 0 = falsy，不会触发 setTimeout）
+  // 注意：timeout 只影响状态恢复(rehydrate)，不影响写入
+  timeout: 0,
 };
 
 // 创建持久化reducer

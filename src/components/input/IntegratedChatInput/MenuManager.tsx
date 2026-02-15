@@ -8,6 +8,7 @@ import QuickPhraseButton from '../../quick-phrase/QuickPhraseButton';
 import NoteSelector from '../../NoteSelector';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import type { SiliconFlowImageFormat, ImageContent, FileContent, Model } from '../../../shared/types';
+import type { Assistant } from '../../../shared/types/Assistant';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import { getModelIdentityKey } from '../../../shared/utils/modelUtils';
 
@@ -25,8 +26,8 @@ interface MenuManagerProps {
   toolsEnabled: boolean;
   
   // 模型相关
-  availableModels: any[];
-  onSendMultiModelMessage?: (message: string, models: any[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
+  availableModels: Model[];
+  onSendMultiModelMessage?: (message: string, models: Model[], images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: FileContent[]) => void;
   
   // 文件上传相关
   handleImageUploadLocal: (source?: 'camera' | 'photos') => Promise<void>;
@@ -38,7 +39,7 @@ interface MenuManagerProps {
   
   // 快捷短语相关
   handleInsertPhrase: (content: string) => void;
-  currentAssistant: any;
+  currentAssistant: Assistant | null;
   
   // 工具栏相关
   onClearTopic?: () => void;
@@ -143,7 +144,7 @@ const useMenuManager = ({
   }, []);
 
   // 处理多模型发送
-  const handleMultiModelSend = useCallback(async (selectedModels: any[]) => {
+  const handleMultiModelSend = useCallback(async (selectedModels: Model[]) => {
     if (!message.trim() && files.length === 0) {
       console.log('没有内容可发送');
       return;

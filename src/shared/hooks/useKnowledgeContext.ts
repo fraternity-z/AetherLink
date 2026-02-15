@@ -1,15 +1,23 @@
 /**
  * 知识库上下文处理Hook
  * 用于在发送消息时应用知识库内容
+ * 
+ * 状态管理：通过 Redux knowledgeSelectionSlice 管理知识库选择状态
  */
 
 import { useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import type { RootState } from '../store';
+import { clearSelectedKnowledgeBase } from '../store/slices/knowledgeSelectionSlice';
+import type { KnowledgeSelectionState } from '../store/slices/knowledgeSelectionSlice';
 import { REFERENCE_PROMPT } from '../config/prompts';
 
 export interface KnowledgeContextData {
-  knowledgeBase: any;
-  references: any[];
-  messageId: string;
+  knowledgeBase: {
+    id: string;
+    name: string;
+    documentCount?: number;
+  };
   isSelected: boolean;
   searchOnSend: boolean;
 }
@@ -18,32 +26,22 @@ export interface KnowledgeContextData {
  * 知识库上下文Hook
  */
 export const useKnowledgeContext = () => {
+  const knowledgeSelection = useSelector((state: RootState) => state.knowledgeSelection);
+  const dispatch = useDispatch();
+
   /**
    * 获取存储的知识库上下文
    */
   const getStoredKnowledgeContext = useCallback((): KnowledgeContextData | null => {
-    try {
-      const stored = window.sessionStorage.getItem('selectedKnowledgeBase');
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      return null;
-    } catch (error) {
-      console.error('获取知识库上下文失败:', error);
-      return null;
-    }
-  }, []);
+    return knowledgeSelection.selectedKnowledgeBase || null;
+  }, [knowledgeSelection.selectedKnowledgeBase]);
 
   /**
    * 清除存储的知识库上下文
    */
   const clearStoredKnowledgeContext = useCallback(() => {
-    try {
-      window.sessionStorage.removeItem('selectedKnowledgeBase');
-    } catch (error) {
-      console.error('清除知识库上下文失败:', error);
-    }
-  }, []);
+    dispatch(clearSelectedKnowledgeBase());
+  }, [dispatch]);
 
   /**
    * 应用知识库上下文到消息（风格：发送时搜索）
@@ -74,7 +72,7 @@ export const useKnowledgeContext = () => {
         knowledgeBaseId: contextData.knowledgeBase.id,
         query: originalMessage.trim(),
         threshold: 0.6,
-        limit: contextData.knowledgeBase.documentCount || 5 // 使用知识库配置的文档数量
+        limit: contextData.knowledgeBase.documentCount || 5
       });
 
       console.log(`[useKnowledgeContext] 搜索到 ${searchResults.length} 个相关内容`);
@@ -154,5 +152,15 @@ export const useKnowledgeContext = () => {
     getKnowledgeContextSummary
   };
 };
+
+/**
+ * 非 Hook 版本：从 Redux store 中直接获取知识库选择状态
+ * 供 thunks 等非 React 上下文使用
+ */
+export function getKnowledgeSelectionFromStore(
+  state: { knowledgeSelection: KnowledgeSelectionState }
+): KnowledgeContextData | null {
+  return state.knowledgeSelection.selectedKnowledgeBase || null;
+}
 
 export default useKnowledgeContext;

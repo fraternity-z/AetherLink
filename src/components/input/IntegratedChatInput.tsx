@@ -7,13 +7,13 @@ import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
 import { useInputStyles } from '../../shared/hooks/useInputStyles';
 import { useInputState } from '../../shared/hooks/useInputState';
 import { isIOS as checkIsIOS } from '../../shared/utils/platformDetection';
-import type { ImageContent, SiliconFlowImageFormat, FileContent } from '../../shared/types';
+import type { FileContent } from '../../shared/types';
+import { processImages } from '../../shared/utils/imageProcessor';
 import type { IntegratedChatInputProps } from '../../shared/types/inputProps';
 
 import FileUploadManager, { type FileUploadManagerRef } from './ChatInput/FileUploadManager';
 import InputTextArea from './ChatInput/InputTextArea';
 import EnhancedToast, { toastManager } from '../EnhancedToast';
-import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { toggleWebSearchEnabled, setWebSearchProvider } from '../../shared/store/slices/webSearchSlice';
@@ -141,53 +141,8 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
   const iconColor = isDarkMode ? '#ffffff' : '#000000'; // 深色主题用白色，浅色主题用黑色
   const disabledColor = isDarkMode ? '#555' : '#ccc';
 
-  // 图片处理公共函数
-  const processImages = async () => {
-    const allImages = [
-      ...images,
-      ...files.filter(f => f.mimeType.startsWith('image/')).map(file => ({
-        base64Data: file.base64Data,
-        url: file.url || '',
-        width: file.width,
-        height: file.height
-      } as ImageContent))
-    ];
-
-    const formattedImages: SiliconFlowImageFormat[] = await Promise.all(
-      allImages.map(async (img) => {
-        let imageUrl = img.base64Data || img.url;
-
-        if (img.url && img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/)) {
-          const refMatch = img.url.match(/\[图片:([a-zA-Z0-9_-]+)\]/);
-          if (refMatch && refMatch[1]) {
-            try {
-              const imageId = refMatch[1];
-              const blob = await dexieStorage.getImageBlob(imageId);
-              if (blob) {
-                const base64 = await new Promise<string>((resolve) => {
-                  const reader = new FileReader();
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.readAsDataURL(blob);
-                });
-                imageUrl = base64;
-              }
-            } catch (error) {
-              console.error('加载图片引用失败:', error);
-            }
-          }
-        }
-
-        return {
-          type: 'image_url',
-          image_url: {
-            url: imageUrl
-          }
-        } as SiliconFlowImageFormat;
-      })
-    );
-
-    return formattedImages;
-  };
+  // 图片处理 - 使用共享工具函数
+  const processImagesLocal = async () => processImages(images, files);
 
   // 语音输入管理
   const voiceInputManager = useVoiceInputManager({
@@ -201,7 +156,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     setImages,
     setFiles,
     setUploadingMedia,
-    processImages,
+    processImages: processImagesLocal,
     onSendMessage,
     toolsEnabled,
     iconColor
@@ -239,7 +194,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
         toggleWebSearch?.();
       } else {
         // 如果没有配置或未启用，需要先启用网络搜索和设置默认提供商
-        const actions: any[] = [];
+        const actions: ReturnType<typeof toggleWebSearchEnabled | typeof setWebSearchProvider>[] = [];
         if (!enabled) {
           actions.push(toggleWebSearchEnabled());
         }
@@ -302,7 +257,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     onToolsEnabledChange,
     showAIDebateButton,
     showQuickPhraseButton,
-    processImages,
+    processImages: processImagesLocal,
     files,
     setImages,
     setFiles,
@@ -320,7 +275,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     // 检查是否有已选的多模型
     if (menuManager.mentionedModels.length > 0 && onSendMultiModelMessage) {
       // 使用多模型发送
-      const formattedImages = await processImages();
+      const formattedImages = await processImagesLocal();
       const nonImageFiles = files.filter((f: FileContent) => !f.mimeType.startsWith('image/'));
       
       console.log('智能发送：使用多模型模式', {
@@ -346,7 +301,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
       // 使用普通发送
       handleSubmit();
     }
-  }, [hideKeyboard, menuManager.mentionedModels, onSendMultiModelMessage, processImages, files, message, toolsEnabled, setMessage, setImages, setFiles, setUploadingMedia, handleSubmit]);
+  }, [hideKeyboard, menuManager.mentionedModels, onSendMultiModelMessage, processImagesLocal, files, message, toolsEnabled, setMessage, setImages, setFiles, setUploadingMedia, handleSubmit]);
 
   // 展开容器管理
   const expandableContainer = useExpandableContainer({

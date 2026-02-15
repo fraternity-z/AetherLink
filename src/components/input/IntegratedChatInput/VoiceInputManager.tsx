@@ -21,7 +21,7 @@ interface VoiceInputManagerProps {
   processImages: () => Promise<SiliconFlowImageFormat[]>;
 
   // 发送消息相关
-  onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
+  onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: FileContent[]) => void;
   toolsEnabled: boolean;
 
   // 按钮配置相关

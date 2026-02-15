@@ -75,17 +75,8 @@ export function useInputState(): UseInputStateReturn {
     return unsubscribe;
   }, []);
 
-  // 监听知识库选择事件，刷新显示
-  useEffect(() => {
-    const handleKnowledgeBaseSelected = () => {
-      setKnowledgeRefreshKey(prev => prev + 1);
-    };
-
-    window.addEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    return () => {
-      window.removeEventListener('knowledgeBaseSelected', handleKnowledgeBaseSelected);
-    };
-  }, []);
+  // 知识库选择状态现在通过 Redux knowledgeSelectionSlice 管理
+  // 状态变化会自动触发组件重渲染，无需手动监听事件
 
   // 清空所有媒体内容
   const clearAllMedia = useCallback(() => {

@@ -1,10 +1,17 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
 import { BookOpen } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../../shared/store';
+import { setSelectedKnowledgeBase } from '../../../shared/store/slices/knowledgeSelectionSlice';
 import KnowledgeSelector from '../../chat/KnowledgeSelector';
 import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../../../shared/styles/toolbarStyles';
+
+/** 知识库选择回调的最小接口，兼容 KnowledgeSelector 的输出类型 */
+interface KnowledgeBaseSelection {
+  id: string;
+  name: string;
+}
 
 interface KnowledgeButtonProps {
   variant?: 'toolbar' | 'icon-button-compact' | 'icon-button-integrated';
@@ -39,36 +46,22 @@ const KnowledgeButton: React.FC<KnowledgeButtonProps> = ({
   }, []);
 
   // 处理知识库选择
-  const handleKnowledgeSelect = useCallback((knowledgeBase: any, searchResults?: any[]) => {
+  const dispatch = useDispatch();
+
+  const handleKnowledgeSelect = useCallback((knowledgeBase: KnowledgeBaseSelection, searchResults?: unknown[]) => {
     console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
 
-    // 存储选中的知识库信息，等待用户输入问题后再搜索
-    const knowledgeData = {
-      knowledgeBase: {
-        id: knowledgeBase.id,
-        name: knowledgeBase.name
-      },
-      isSelected: true,
-      searchOnSend: true // 标记需要在发送时搜索
-    };
-
-    console.log('[知识库选择] 准备保存到sessionStorage:', knowledgeData);
-    window.sessionStorage.setItem('selectedKnowledgeBase', JSON.stringify(knowledgeData));
-
-    // 验证保存是否成功
-    const saved = window.sessionStorage.getItem('selectedKnowledgeBase');
-    console.log('[知识库选择] sessionStorage保存验证:', saved);
+    // 通过 Redux 存储选中的知识库信息
+    dispatch(setSelectedKnowledgeBase({
+      id: knowledgeBase.id,
+      name: knowledgeBase.name
+    }));
 
     console.log(`[知识库选择] 已选择知识库: ${knowledgeBase.name}，将在发送消息时自动搜索相关内容`);
 
-    // 触发自定义事件，通知输入框组件刷新显示
-    window.dispatchEvent(new CustomEvent('knowledgeBaseSelected', {
-      detail: { knowledgeBase }
-    }));
-
     // 关闭知识库选择器
     setShowKnowledgeSelector(false);
-  }, []);
+  }, [dispatch]);
 
   // 根据 variant 渲染不同的按钮样式
   const renderButton = () => {

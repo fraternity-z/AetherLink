@@ -4,27 +4,27 @@ import { MobileKnowledgeService } from '../../../services/knowledge/MobileKnowle
 import { getMainTextContent } from '../../../utils/blockUtils';
 import { AssistantMessageStatus } from '../../../types/newMessage';
 import type { Message } from '../../../types/newMessage';
-import type { AppDispatch } from '../../index';
+import type { AppDispatch, RootState } from '../../index';
+import { getKnowledgeSelectionFromStore } from '../../../hooks/useKnowledgeContext';
+import { clearSelectedKnowledgeBase } from '../../slices/knowledgeSelectionSlice';
 
 export const processKnowledgeSearch = async (
   assistantMessage: Message,
   topicId: string,
-  dispatch: AppDispatch
+  dispatch: AppDispatch,
+  getState: () => RootState
 ) => {
   try {
     console.log('[processKnowledgeSearch] 开始检查知识库选择状态...');
 
-    // 检查是否有选中的知识库
-    const knowledgeContextData = window.sessionStorage.getItem('selectedKnowledgeBase');
-    console.log('[processKnowledgeSearch] sessionStorage数据:', knowledgeContextData);
+    // 从 Redux store 获取知识库选择状态
+    const contextData = getKnowledgeSelectionFromStore(getState());
+    console.log('[processKnowledgeSearch] Redux状态数据:', contextData);
 
-    if (!knowledgeContextData) {
+    if (!contextData) {
       console.log('[processKnowledgeSearch] 没有选中知识库，直接返回');
       return; // 没有选中知识库，直接返回
     }
-
-    const contextData = JSON.parse(knowledgeContextData);
-    console.log('[processKnowledgeSearch] 解析后的上下文数据:', contextData);
 
     if (!contextData.isSelected || !contextData.searchOnSend) {
       console.log('[processKnowledgeSearch] 不需要搜索，直接返回', {
@@ -103,12 +103,12 @@ export const processKnowledgeSearch = async (
     }
 
     // 清除知识库选择状态
-    window.sessionStorage.removeItem('selectedKnowledgeBase');
+    dispatch(clearSelectedKnowledgeBase());
 
   } catch (error) {
     console.error('[processKnowledgeSearch] 知识库搜索失败:', error);
 
     // 清除知识库选择状态
-    window.sessionStorage.removeItem('selectedKnowledgeBase');
+    dispatch(clearSelectedKnowledgeBase());
   }
 };

@@ -96,10 +96,10 @@ const useButtonToolbar = ({
 
   // 获取左右布局配置
   const leftButtons = useSelector((state: RootState) =>
-    (state.settings as any).integratedInputLeftButtons || ['tools', 'clear', 'search']
+    state.settings.integratedInputLeftButtons || ['tools', 'clear', 'search']
   );
   const rightButtons = useSelector((state: RootState) =>
-    (state.settings as any).integratedInputRightButtons || ['upload', 'voice', 'send']
+    state.settings.integratedInputRightButtons || ['upload', 'voice', 'send']
   );
 
   // 处理清空主题
@@ -259,6 +259,66 @@ const useButtonToolbar = ({
     voice: voiceInputManager.getVoiceButtonConfig()
   };
 
+  // 组件映射表：将字符串标识映射到实际组件渲染
+  const componentRenderers: Record<string, (buttonId: string) => React.ReactNode> = {
+    KnowledgeButton: (buttonId) => (
+      <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+        <KnowledgeButton variant="icon-button-integrated" />
+      </Box>
+    ),
+    WebSearchButton: (buttonId) => (
+      <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+        <WebSearchButton
+          webSearchActive={webSearchActive}
+          toggleWebSearch={handleQuickWebSearchToggle}
+          variant="icon-button-integrated"
+        />
+      </Box>
+    ),
+    MCPToolsButton: (buttonId) => (
+      <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
+        <MCPToolsButton
+          toolsEnabled={toolsEnabled}
+          onToolsEnabledChange={onToolsEnabledChange}
+          variant="icon-button-integrated"
+        />
+      </Box>
+    )
+  };
+
+  // 统一的按钮渲染函数
+  const renderButton = useCallback((buttonId: string) => {
+    const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
+    if (!config) return null;
+
+    // 如果是特殊组件类型，使用组件映射表渲染
+    if ('component' in config && typeof config.component === 'string') {
+      const renderer = componentRenderers[config.component];
+      return renderer ? renderer(buttonId) : null;
+    }
+
+    // 普通按钮渲染
+    return (
+      <Tooltip key={buttonId} title={config.tooltip}>
+        <span>
+          <IconButton
+            size="medium"
+            onClick={config.onClick}
+            disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
+            style={{
+              color: config.color,
+              padding: '6px',
+              backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+              transition: 'all 0.2s ease-in-out'
+            }}
+          >
+            {config.icon}
+          </IconButton>
+        </span>
+      </Tooltip>
+    );
+  }, [buttonConfigs, isLoading, allowConsecutiveMessages, webSearchActive, handleQuickWebSearchToggle, toolsEnabled, onToolsEnabledChange]);
+
   // 渲染按钮工具栏
   const renderButtonToolbar = useCallback(() => {
     return (
@@ -277,65 +337,7 @@ const useButtonToolbar = ({
           alignItems: 'center',
           gap: '4px'
         }}>
-          {leftButtons.map((buttonId: string) => {
-            const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
-            if (!config) return null;
-
-            // 特殊处理知识库按钮，使用 KnowledgeButton 组件
-            if ('component' in config && config.component === 'KnowledgeButton') {
-              return (
-                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-                  <KnowledgeButton variant="icon-button-integrated" />
-                </Box>
-              );
-            }
-
-            // 特殊处理网络搜索按钮，使用 WebSearchButton 组件
-            if ('component' in config && config.component === 'WebSearchButton') {
-              return (
-                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-                  <WebSearchButton
-                    webSearchActive={webSearchActive}
-                    toggleWebSearch={handleQuickWebSearchToggle}
-                    variant="icon-button-integrated"
-                  />
-                </Box>
-              );
-            }
-
-            // 特殊处理MCP工具按钮，使用 MCPToolsButton 组件
-            if ('component' in config && config.component === 'MCPToolsButton') {
-              return (
-                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-                  <MCPToolsButton
-                    toolsEnabled={toolsEnabled}
-                    onToolsEnabledChange={onToolsEnabledChange}
-                    variant="icon-button-integrated"
-                  />
-                </Box>
-              );
-            }
-
-            return (
-              <Tooltip key={buttonId} title={config.tooltip}>
-                <span>
-                  <IconButton
-                    size="medium"
-                    onClick={config.onClick}
-                    disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
-                    style={{
-                      color: config.color,
-                      padding: '6px',
-                      backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                      transition: 'all 0.2s ease-in-out'
-                    }}
-                  >
-                    {config.icon}
-                  </IconButton>
-                </span>
-              </Tooltip>
-            );
-          })}
+          {leftButtons.map((buttonId: string) => renderButton(buttonId))}
         </div>
 
         {/* 右侧：自定义按钮 */}
@@ -344,69 +346,11 @@ const useButtonToolbar = ({
           alignItems: 'center',
           gap: '4px'
         }}>
-          {rightButtons.map((buttonId: string) => {
-            const config = buttonConfigs[buttonId as keyof typeof buttonConfigs];
-            if (!config) return null;
-
-            // 特殊处理知识库按钮，使用 KnowledgeButton 组件
-            if ('component' in config && config.component === 'KnowledgeButton') {
-              return (
-                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-                  <KnowledgeButton variant="icon-button-integrated" />
-                </Box>
-              );
-            }
-
-            // 特殊处理网络搜索按钮，使用 WebSearchButton 组件
-            if ('component' in config && config.component === 'WebSearchButton') {
-              return (
-                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-                  <WebSearchButton
-                    webSearchActive={webSearchActive}
-                    toggleWebSearch={handleQuickWebSearchToggle}
-                    variant="icon-button-integrated"
-                  />
-                </Box>
-              );
-            }
-
-            // 特殊处理MCP工具按钮，使用 MCPToolsButton 组件
-            if ('component' in config && config.component === 'MCPToolsButton') {
-              return (
-                <Box key={buttonId} sx={{ display: 'flex', alignItems: 'center', mr: 0.5 }}>
-                  <MCPToolsButton
-                    toolsEnabled={toolsEnabled}
-                    onToolsEnabledChange={onToolsEnabledChange}
-                    variant="icon-button-integrated"
-                  />
-                </Box>
-              );
-            }
-
-            return (
-              <Tooltip key={buttonId} title={config.tooltip}>
-                <span>
-                  <IconButton
-                    size="medium"
-                    onClick={config.onClick}
-                    disabled={config.disabled || (isLoading && !allowConsecutiveMessages)}
-                    style={{
-                      color: config.color,
-                      padding: '6px',
-                      backgroundColor: config.isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                      transition: 'all 0.2s ease-in-out'
-                    }}
-                  >
-                    {config.icon}
-                  </IconButton>
-                </span>
-              </Tooltip>
-            );
-          })}
+          {rightButtons.map((buttonId: string) => renderButton(buttonId))}
         </div>
       </div>
     );
-  }, [leftButtons, rightButtons, buttonConfigs, isLoading, allowConsecutiveMessages, toolsEnabled, onToolsEnabledChange]);
+  }, [leftButtons, rightButtons, renderButton]);
 
   return {
     renderButtonToolbar

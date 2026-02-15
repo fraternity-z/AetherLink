@@ -41,7 +41,7 @@ const MentionedModelsDisplay: React.FC<MentionedModelsDisplayProps> = ({
 
   // 获取提供商名称
   const getProviderName = (providerId: string): string => {
-    const provider = providers.find((p: any) => p.id === providerId);
+    const provider = providers.find((p: { id: string; name?: string }) => p.id === providerId);
     return provider?.name || providerId;
   };
 

@@ -8,6 +8,8 @@ import { MobileKnowledgeService } from '../../../services/knowledge/MobileKnowle
 import { newMessagesActions } from '../../slices/newMessagesSlice';
 import { AssistantMessageStatus } from '../../../types/newMessage';
 import store, { type RootState } from '../../index';
+import { getKnowledgeSelectionFromStore } from '../../../hooks/useKnowledgeContext';
+import { clearSelectedKnowledgeBase } from '../../slices/knowledgeSelectionSlice';
 import { injectSystemPromptVariables } from '../../../utils/systemPromptVariables';
 import { EventEmitter, EVENT_NAMES } from '../../../services/EventService';
 import { getContextSettings, estimateMessagesTokenCount, truncateConversation } from '../../../services/messages/messageService';
@@ -22,17 +24,14 @@ export const performKnowledgeSearchIfNeeded = async (topicId: string, assistantM
   try {
     console.log('[performKnowledgeSearchIfNeeded] 开始检查知识库选择状态...');
 
-    // 检查是否有选中的知识库
-    const knowledgeContextData = window.sessionStorage.getItem('selectedKnowledgeBase');
-    console.log('[performKnowledgeSearchIfNeeded] sessionStorage数据:', knowledgeContextData);
+    // 从 Redux store 获取知识库选择状态
+    const contextData = getKnowledgeSelectionFromStore(store.getState());
+    console.log('[performKnowledgeSearchIfNeeded] Redux状态数据:', contextData);
 
-    if (!knowledgeContextData) {
+    if (!contextData) {
       console.log('[performKnowledgeSearchIfNeeded] 没有选中知识库，直接返回');
       return;
     }
-
-    const contextData = JSON.parse(knowledgeContextData);
-    console.log('[performKnowledgeSearchIfNeeded] 解析后的上下文数据:', contextData);
 
     if (!contextData.isSelected || !contextData.searchOnSend) {
       console.log('[performKnowledgeSearchIfNeeded] 不需要搜索，直接返回', {
@@ -124,12 +123,12 @@ export const performKnowledgeSearchIfNeeded = async (topicId: string, assistantM
     }
 
     // 清除知识库选择状态
-    window.sessionStorage.removeItem('selectedKnowledgeBase');
+    store.dispatch(clearSelectedKnowledgeBase());
 
   } catch (error) {
     console.error('[performKnowledgeSearchIfNeeded] 知识库搜索失败:', error);
     // 清除知识库选择状态
-    window.sessionStorage.removeItem('selectedKnowledgeBase');
+    store.dispatch(clearSelectedKnowledgeBase());
   }
 };
 
@@ -322,6 +321,7 @@ export const prepareMessagesForApi = async (
 
     // 如果是用户消息，检查是否有知识库搜索结果或选中的知识库
     if (message.role === 'user') {
+      const fallbackContextData = getKnowledgeSelectionFromStore(store.getState());
       const cacheKey = `knowledge-search-${message.id}`;
       const cachedReferences = window.sessionStorage.getItem(cacheKey);
 
@@ -345,11 +345,9 @@ export const prepareMessagesForApi = async (
         }
       } else {
         // 检查是否有选中的知识库但没有缓存的搜索结果
-        const knowledgeContextData = window.sessionStorage.getItem('selectedKnowledgeBase');
-        if (knowledgeContextData && content) {
+        if (fallbackContextData && content) {
           try {
-            const contextData = JSON.parse(knowledgeContextData);
-            if (contextData.isSelected && contextData.searchOnSend) {
+            if (fallbackContextData.isSelected && fallbackContextData.searchOnSend) {
               console.log(`[prepareMessagesForApi] 检测到选中的知识库但没有缓存结果，进行实时搜索...`);
 
               // 使用已导入的知识库服务
@@ -357,10 +355,10 @@ export const prepareMessagesForApi = async (
 
               // 搜索知识库
               const searchResults = await knowledgeService.search({
-                knowledgeBaseId: contextData.knowledgeBase.id,
+                knowledgeBaseId: fallbackContextData.knowledgeBase.id,
                 query: content.trim(),
                 threshold: 0.6,
-                limit: contextData.knowledgeBase.documentCount || 5 // 使用知识库配置的文档数量
+                limit: fallbackContextData.knowledgeBase.documentCount || 5 // 使用知识库配置的文档数量
               });
 
               if (searchResults.length > 0) {
@@ -370,9 +368,9 @@ export const prepareMessagesForApi = async (
                   content: result.content,
                   type: 'file' as const,
                   similarity: result.similarity,
-                  knowledgeBaseId: contextData.knowledgeBase.id,
-                  knowledgeBaseName: contextData.knowledgeBase.name,
-                  sourceUrl: `knowledge://${contextData.knowledgeBase.id}/${result.documentId}`
+                  knowledgeBaseId: fallbackContextData.knowledgeBase.id,
+                  knowledgeBaseName: fallbackContextData.knowledgeBase.name,
+                  sourceUrl: `knowledge://${fallbackContextData.knowledgeBase.id}/${result.documentId}`
                 }));
 
                 // 应用REFERENCE_PROMPT格式

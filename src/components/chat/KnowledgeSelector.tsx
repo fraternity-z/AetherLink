@@ -11,6 +11,8 @@ import styled from '@emotion/styled';
 import { useTheme } from '@mui/material/styles';
 import { BookOpen as MenuBookIcon, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { clearSelectedKnowledgeBase } from '../../shared/store/slices/knowledgeSelectionSlice';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import type { KnowledgeBase as FullKnowledgeBase, KnowledgeSearchResult } from '../../shared/types/KnowledgeBase';
 
@@ -208,14 +210,13 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
     onClose();
   }, [onClose]);
 
+  const dispatch = useDispatch();
+
   // 清除已选中的知识库
   const handleClear = useCallback(() => {
-    window.sessionStorage.removeItem('selectedKnowledgeBase');
-    window.dispatchEvent(new CustomEvent('knowledgeBaseSelected', {
-      detail: { knowledgeBase: null }
-    }));
+    dispatch(clearSelectedKnowledgeBase());
     handleClose();
-  }, [handleClose]);
+  }, [dispatch, handleClose]);
 
   // 添加知识库
   const handleAddKnowledgeBase = useCallback(() => {

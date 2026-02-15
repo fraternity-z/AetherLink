@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import { useFileUpload } from '../../../shared/hooks/useFileUpload';
@@ -75,7 +75,7 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
   }, [currentTopicId]);
 
   // 文件上传处理函数 - 包装 hook 提供的函数以更新本地状态
-  const handleImageUploadLocal = async (source: 'camera' | 'photos' = 'photos') => {
+  const handleImageUploadLocal = useCallback(async (source: 'camera' | 'photos' = 'photos') => {
     try {
       const uploadedImages = await handleImageUpload(source);
       // 只有当实际上传了图片时才更新状态
@@ -87,9 +87,9 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
       // 确保在错误情况下重置上传状态
       setUploadingMedia(false);
     }
-  };
+  }, [handleImageUpload, setImages, setUploadingMedia]);
 
-  const handleFileUploadLocal = async () => {
+  const handleFileUploadLocal = useCallback(async () => {
     try {
       const uploadedFiles = await handleFileUpload();
       // 只有当实际上传了文件时才更新状态
@@ -101,14 +101,7 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
       // 确保在错误情况下重置上传状态
       setUploadingMedia(false);
     }
-  };
-
-  // 暴露上传函数给父组件
-  useImperativeHandle(ref, () => ({
-    handleImageUpload: handleImageUploadLocal,
-    handleFileUpload: handleFileUploadLocal,
-    handlePaste: handlePaste
-  }), []);
+  }, [handleFileUpload, setFiles, setUploadingMedia]);
 
   // 删除已选择的图片
   const handleRemoveImage = (index: number) => {
@@ -249,7 +242,7 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
 
   // 剪贴板粘贴事件处理函数
   // P0修复：在异步操作前同步保存剪贴板数据，避免ClipboardData失效
-  const handlePaste = async (e: React.ClipboardEvent) => {
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const clipboardData = e.clipboardData;
     if (!clipboardData) {
       toastManager.show({
@@ -329,7 +322,14 @@ const FileUploadManager = forwardRef<FileUploadManagerRef, FileUploadManagerProp
     } finally {
       setUploadingMedia(false);
     }
-  };
+  }, [shouldConvertToFile, handleTextDirectly, setUploadingMedia, setImages]);
+
+  // 暴露上传函数给父组件
+  useImperativeHandle(ref, () => ({
+    handleImageUpload: handleImageUploadLocal,
+    handleFileUpload: handleFileUploadLocal,
+    handlePaste: handlePaste
+  }), [handleImageUploadLocal, handleFileUploadLocal, handlePaste]);
 
   return (
     <div
