@@ -211,6 +211,13 @@ interface SettingsState {
   // 集成输入框左右侧按钮布局配置
   integratedInputLeftButtons?: string[];
   integratedInputRightButtons?: string[];
+
+  // 功能侧边栏开关
+  ENABLE_WORKSPACE_SIDEBAR?: boolean;
+  ENABLE_NOTE_SIDEBAR?: boolean;
+
+  // 滚动时显示导航按钮
+  showNavigationOnScroll?: boolean;
 }
 
 const ensureModelIdentityKey = (identifier: string | undefined, providers: ModelProvider[]): string | undefined => {

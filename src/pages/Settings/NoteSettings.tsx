@@ -50,7 +50,7 @@ import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerServ
 import { useNotesSearch } from '../../shared/hooks/useNotesSearch';
 import { toastManager } from '../../components/EnhancedToast';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
-import { updateSettings } from '../../shared/store/slices/settingsSlice';
+import { updateSettings } from '../../shared/store/settingsSlice';
 import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
 import type { NoteFile } from '../../shared/types/note';
 import type { SearchResult } from '../../shared/services/notes/NotesSearchService';

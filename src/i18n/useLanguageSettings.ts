@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector, useAppDispatch } from '../shared/store';
-import { updateSettings } from '../shared/store/slices/settingsSlice';
+import { updateSettings } from '../shared/store/settingsSlice';
 import i18n from './config';
 
 /**

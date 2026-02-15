@@ -32,7 +32,7 @@ import {
   FormControlLabel
 } from '@mui/material';
 import BackButtonDialog from '../../components/common/BackButtonDialog';
-import { updateSettings } from '../../shared/store/slices/settingsSlice';
+import { updateSettings } from '../../shared/store/settingsSlice';
 import {
   Plus as AddIcon,
   Folder as FolderIcon,

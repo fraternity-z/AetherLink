@@ -3,7 +3,7 @@ import { Box, IconButton, Tooltip, Paper, Fade, useMediaQuery, useTheme } from '
 import { ChevronUp, ChevronDown, ArrowUp, ArrowDown, Scroll } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../shared/store';
-import { updateSettings } from '../../shared/store/slices/settingsSlice';
+import { updateSettings } from '../../shared/store/settingsSlice';
 import { Haptics } from '../../shared/utils/hapticFeedback';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import ContextTokenIndicator from './ContextTokenIndicator';
