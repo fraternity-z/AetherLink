@@ -27,15 +27,6 @@ export const testingModelId = signal<string | null>(null);
 export const testModeEnabled = signal<boolean>(false);
 
 /**
- * 测试结果
- * 使用场景：显示 API 连接测试结果
- */
-export const testResult = signal<{
-  success: boolean;
-  message: string;
-} | null>(null);
-
-/**
  * 计算属性：是否显示测试按钮
  * 结合全局配置和测试模式
  */
@@ -76,15 +67,13 @@ export const dialogStates = {
  */
 export function startTestingModel(modelId: string) {
   testingModelId.value = modelId;
-  testResult.value = null;
 }
 
 /**
  * 结束模型测试
  */
-export function finishTestingModel(success: boolean, message: string) {
+export function finishTestingModel() {
   testingModelId.value = null;
-  testResult.value = { success, message };
 }
 
 /**
@@ -100,7 +89,6 @@ export function toggleTestMode() {
 export function resetProviderSignals() {
   testingModelId.value = null;
   testModeEnabled.value = false;
-  testResult.value = null;
   showApiKey.value = false;
   
   // 重置所有对话框状态
@@ -118,7 +106,6 @@ if (process.env.NODE_ENV === 'development') {
   (window as any).__providerSignals = {
     testingModelId,
     testModeEnabled,
-    testResult,
     showApiKey,
     dialogStates,
   };

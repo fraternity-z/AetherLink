@@ -1256,9 +1256,10 @@ export const TestResultSnackbar: React.FC<TestResultSnackbarProps> = ({
   return (
     <Snackbar
       open={testResult !== null && !testResultDialogOpen}
-      autoHideDuration={6000}
+      autoHideDuration={1000}
       onClose={onClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      sx={{ bottom: 'calc(var(--content-bottom-padding, 16px) + 8px) !important' }}
       action={
         <Button color="inherit" size="small" onClick={onOpenDialog}>
           {t('modelSettings.provider.viewDetails')}

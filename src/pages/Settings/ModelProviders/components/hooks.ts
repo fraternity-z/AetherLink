@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../../../shared/store';
 import { updateProvider, deleteProvider } from '../../../../shared/store/settingsSlice';
@@ -6,16 +6,14 @@ import type { Model } from '../../../../shared/types';
 import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../../shared/config/defaultModels';
 import { isValidUrl } from '../../../../shared/utils';
 import ApiKeyManager from '../../../../shared/services/ApiKeyManager';
-import { testApiConnection } from '../../../../shared/api';
 import { modelMatchesIdentity } from '../../../../shared/utils/modelUtils';
 import { CONSTANTS, STYLES, useDebounce } from './constants';
 import { 
   testingModelId, 
   showApiKey, 
-  startTestingModel, 
-  finishTestingModel,
   resetProviderSignals 
 } from './providerSignals';
+import { useModelTest } from './useModelTest';
 
 // ============================================================================
 // 调试工具函数
@@ -61,8 +59,6 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  // 异步操作取消引用
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // ========================================================================
   // 状态管理
@@ -79,10 +75,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   const [newModelValue, setNewModelValue] = useState('');
   const [baseUrlError, setBaseUrlError] = useState('');
   const [openModelManagementDialog, setOpenModelManagementDialog] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   // testingModelId 已改用 Signals 管理
-  const [testResultDialogOpen, setTestResultDialogOpen] = useState(false);
 
   // 编辑供应商相关状态
   const [openEditProviderDialog, setOpenEditProviderDialog] = useState(false);
@@ -141,12 +134,9 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     }
   }, [provider]);
 
-  // 组件卸载时取消正在进行的异步操作并重置 Signals
+  // 组件卸载时重置 Signals
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
       resetProviderSignals();
     };
   }, []);
@@ -160,17 +150,16 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     }
   }, [debouncedBaseUrl]);
 
-  // 测试结果显示逻辑 - 使用常量替换硬编码值
-  const shouldShowDetailDialog = useMemo(() => {
-    return testResult && testResult.message && testResult.message.length > CONSTANTS.MESSAGE_LENGTH_THRESHOLD;
-  }, [testResult]);
-
-  useEffect(() => {
-    // 当有测试结果时，如果内容较长则自动打开详细对话框
-    if (shouldShowDetailDialog) {
-      setTestResultDialogOpen(true);
-    }
-  }, [shouldShowDetailDialog]);
+  // 模型测试连接 - 使用独立模块
+  const {
+    testResult,
+    setTestResult,
+    isTesting,
+    testResultDialogOpen,
+    setTestResultDialogOpen,
+    handleTestConnection,
+    handleTestModelConnection,
+  } = useModelTest(provider, apiKey, baseUrl, multiKeyEnabled);
 
   // ========================================================================
   // 多 Key 管理函数
@@ -669,158 +658,6 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     }
     
     setOpenModelManagementDialog(true);
-  };
-
-  // ========================================================================
-  // API测试功能
-  // ========================================================================
-
-  const handleTestConnection = useCallback(async () => {
-    if (!provider) return;
-
-    // 验证URL有效性
-    if (baseUrl && !isValidUrl(baseUrl)) {
-      setBaseUrlError('请输入有效的URL');
-      setTestResult({ success: false, message: '请输入有效的基础URL' });
-      return;
-    }
-
-    // 取消之前的请求
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // 创建新的 AbortController
-    abortControllerRef.current = new AbortController();
-
-    // 开始测试
-    setIsTesting(true);
-    setTestResult(null);
-
-    try {
-      // 确定要使用的 API Key
-      let testApiKey = apiKey;
-      
-      // 如果启用了多 Key 模式，从可用的 Key 中选择一个
-      if (multiKeyEnabled && provider.apiKeys && provider.apiKeys.length > 0) {
-        const keySelection = keyManager.selectApiKey(
-          provider.apiKeys,
-          provider.keyManagement?.strategy || 'round_robin'
-        );
-        
-        if (keySelection.key) {
-          testApiKey = keySelection.key.key;
-          console.log(`[handleTestConnection] 多 Key 模式: 使用 ${keySelection.key.name || keySelection.key.id}`);
-        } else {
-          throw new Error('没有可用的 API Key。请检查多 Key 配置。');
-        }
-      }
-
-      // 创建一个模拟模型对象，包含当前输入的API配置
-      const testModel = {
-        id: provider.models.length > 0 ? provider.models[0].id : (provider.providerType || provider.id || 'gpt-3.5-turbo'),
-        name: provider.name,
-        provider: provider.id,
-        providerType: provider.providerType,
-        apiKey: testApiKey,
-        baseUrl: baseUrl,
-        enabled: true
-      };
-
-      // 调用测试连接API
-      const success = await testApiConnection(testModel);
-
-      // 检查是否被取消
-      if (abortControllerRef.current?.signal.aborted) {
-        return;
-      }
-
-      if (success) {
-        setTestResult({ success: true, message: '连接成功！API配置有效。' });
-      } else {
-        setTestResult({ success: false, message: '连接失败，请检查API密钥和基础URL是否正确。' });
-      }
-    } catch (error) {
-      // 检查是否是取消操作
-      if (error instanceof Error && error.name === 'AbortError') {
-        return;
-      }
-
-      console.error('测试API连接时出错:', error);
-      setTestResult({
-        success: false,
-        message: `连接错误: ${error instanceof Error ? error.message : String(error)}`
-      });
-    } finally {
-      setIsTesting(false);
-      abortControllerRef.current = null;
-    }
-  }, [provider, baseUrl, apiKey, multiKeyEnabled, keyManager]);
-
-  // 增强的测试单个模型的函数
-  const handleTestModelConnection = async (model: Model) => {
-    if (!provider) return;
-
-    // 使用 Signals 管理测试状态
-    startTestingModel(model.id);
-    setTestResult(null);
-
-    try {
-      // 确定要使用的 API Key
-      let testApiKey = apiKey;
-      
-      // 如果启用了多 Key 模式，从可用的 Key 中选择一个
-      if (multiKeyEnabled && provider.apiKeys && provider.apiKeys.length > 0) {
-        const keySelection = keyManager.selectApiKey(
-          provider.apiKeys,
-          provider.keyManagement?.strategy || 'round_robin'
-        );
-        
-        if (keySelection.key) {
-          testApiKey = keySelection.key.key;
-          console.log(`[handleTestModelConnection] 多 Key 模式: 使用 ${keySelection.key.name || keySelection.key.id}`);
-        } else {
-          throw new Error('没有可用的 API Key。请检查多 Key 配置。');
-        }
-      }
-
-      // 创建测试模型对象，使用当前保存的API配置
-      const testModel = {
-        ...model,
-        provider: provider.id, // 确保包含 provider 信息
-        providerType: provider.providerType, // 确保包含 providerType
-        apiKey: testApiKey,
-        baseUrl: baseUrl,
-        enabled: true
-      };
-
-      // 直接使用 testApiConnection，它会使用模型对象的配置进行测试
-      // 而不会去数据库中查找，这样即使模型还未添加到 provider 也可以测试
-      const success = await testApiConnection(testModel);
-
-      if (success) {
-        // 使用 Signals 更新测试结果
-        finishTestingModel(true, `模型 ${model.name} 连接成功！`);
-        setTestResult({
-          success: true,
-          message: `模型 ${model.name} 连接成功！`
-        });
-      } else {
-        finishTestingModel(false, `模型 ${model.name} 连接失败，请检查API密钥和基础URL是否正确。`);
-        setTestResult({
-          success: false,
-          message: `模型 ${model.name} 连接失败，请检查API密钥和基础URL是否正确。`
-        });
-      }
-    } catch (error) {
-      console.error('测试模型连接时出错:', error);
-      const errorMsg = `连接错误: ${error instanceof Error ? error.message : String(error)}`;
-      finishTestingModel(false, errorMsg);
-      setTestResult({
-        success: false,
-        message: errorMsg
-      });
-    }
   };
 
   // ========================================================================
