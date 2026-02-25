@@ -1,9 +1,8 @@
-name: Tauri Desktop Release Build
+name: Tauri Desktop Release Build (Manual)
 
+# 已由 release.yml 统一处理 v* tag 触发的发布构建
+# 此工作流仅保留手动触发，用于单独调试桌面端构建
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
