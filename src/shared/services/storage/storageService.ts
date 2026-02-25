@@ -341,15 +341,6 @@ class StorageService {
   }
 
   /**
-   * 添加消息到话题
-   * @param topicId 话题ID
-   * @param message 消息对象
-   */
-  async addMessageToTopic(topicId: string, message: Message): Promise<void> {
-    await dexieStorage.addMessageToTopic(topicId, message);
-  }
-
-  /**
    * 更新话题中的消息
    * @param topicId 话题ID
    * @param messageId 消息ID

@@ -459,27 +459,6 @@ export class TopicService {
   }
 
   /**
-   * 将新消息添加到话题
-   * @deprecated 建议使用 saveMessageAndBlocks 方法
-   */
-  static async addMessageToTopic(topicId: string, message: Message): Promise<void> {
-    try {
-      // 直接使用新的消息保存方法
-      await this.saveMessageAndBlocks(message, []);
-
-      // 通知消息添加
-      EventEmitter.emit(EVENT_NAMES.SEND_MESSAGE, {
-        message,
-        topicId
-      });
-    } catch (error) {
-      console.error('[TopicService] 添加消息失败:', error);
-      EventEmitter.emit(EVENT_NAMES.SERVICE_ERROR, { serviceName: 'TopicService', error, message: `Failed to add message to topic ${topicId}` });
-      throw error;
-    }
-  }
-
-  /**
    * 保存新消息和关联的块
    * 使用完全规范化的存储方式
    */

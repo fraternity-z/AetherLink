@@ -8,7 +8,6 @@ import { DB_CONFIG, VERSION_CONFIGS, type Memory } from '../../database/config';
 import { databaseMigrationManager } from '../../database/migrations';
 import { throttle } from 'lodash';
 import { makeSerializable, diagnoseSerializationIssues } from '../../utils/serialization';
-import { DataRepairService } from './DataRepairService';
 
 
 /**
@@ -1034,21 +1033,8 @@ export class DexieStorageService extends Dexie {
   }
 
   /**
-   * 修复消息数据，确保所有消息都正确保存到 messages 表
-   * @deprecated 请使用 DataRepairService.repairMessagesData() 方法
+   * 添加节流更新方法
    */
-  async repairMessagesData(): Promise<void> {
-    console.log('[DexieStorageService] repairMessagesData 已废弃，请使用 DataRepairService.repairMessagesData()');
-
-    try {
-      await DataRepairService.repairMessagesData();
-    } catch (error) {
-      console.error('[DexieStorageService] 委托修复消息数据失败:', error);
-      throw error;
-    }
-  }
-
-  // 添加节流更新方法
   throttledUpdateBlock = throttle(
     async (blockId: string, changes: any) => {
       return this.updateMessageBlock(blockId, changes);

@@ -365,21 +365,6 @@ export class DataRepairService {
   }
 
   /**
-   * 向后兼容方法 - 保持原有API
-   * @deprecated 请使用 repairAllData() 方法
-   */
-  static async repairAllAssistantsAndTopics(autoCleanOrphanTopics: boolean = true): Promise<{
-    orphanTopicsRemoved: number;
-    totalTopics: number;
-  }> {
-    const result = await this.repairAssistantTopicRelations(autoCleanOrphanTopics);
-    return {
-      orphanTopicsRemoved: result.orphanTopicsRemoved,
-      totalTopics: result.totalTopics
-    };
-  }
-
-  /**
    * 检查并修复消息完整性
    * 重构后的新方法：检查 messages 表和 topic.messageIds 的一致性
    * @returns 修复结果
