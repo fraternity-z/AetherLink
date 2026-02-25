@@ -3,6 +3,7 @@ import {
   Select,
   MenuItem,
   Typography,
+  alpha,
   useTheme,
   Box,
   ListSubheader,
@@ -264,9 +265,9 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
                 position: 'sticky', // 粘性定位
                 top: 0, // 固定在顶部
                 zIndex: 10, // 确保在其他元素之上
-                borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                borderBottom: `1px solid ${theme.palette.divider}`,
                 '&:not(:first-of-type)': {
-                  borderTop: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'}`
+                  borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`
                 }
               }}
             >
@@ -299,12 +300,12 @@ export const DropdownModelSelector: React.FC<DropdownModelSelectorProps> = ({
                     minHeight: 40, // 设置最小高度
                     bgcolor: 'transparent',
                     '&:hover': {
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                      bgcolor: 'action.hover'
                     },
                     '&.Mui-selected': {
-                      bgcolor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.2)' : 'rgba(33, 150, 243, 0.1)',
+                      bgcolor: alpha(theme.palette.primary.main, 0.12),
                       '&:hover': {
-                        bgcolor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.3)' : 'rgba(33, 150, 243, 0.15)'
+                        bgcolor: alpha(theme.palette.primary.main, 0.2)
                       }
                     }
                   }}

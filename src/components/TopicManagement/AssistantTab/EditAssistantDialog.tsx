@@ -243,8 +243,8 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         display: 'flex', 
         alignItems: 'center', 
         p: 2, 
-        borderBottom: (theme) => 
-          `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+        borderBottom: 1,
+        borderColor: 'divider',
         backgroundColor: 'transparent',
         // 移动端适配顶部安全区域
         ...(isMobile && {

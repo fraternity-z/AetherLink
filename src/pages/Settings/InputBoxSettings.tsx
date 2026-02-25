@@ -11,7 +11,6 @@ import {
   Toolbar,
   IconButton,
   Divider,
-  useTheme
 } from '@mui/material';
 import { ArrowLeft, Trash2, Camera, Video, BookOpen, Search, Plus, Wrench, Image, FileText, ArrowLeftRight, Send, Mic } from 'lucide-react';
 import { CustomIcon } from '../../components/icons';
@@ -28,7 +27,6 @@ const InputBoxPreview: React.FC<{
   inputBoxStyle: string;
 }> = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
 
   // 通用预览阻止函数
   const preventAction = (actionName: string) => () => {
@@ -70,7 +68,7 @@ const InputBoxPreview: React.FC<{
         // 移除居中对齐和padding限制
         alignItems: 'stretch',
         p: 0,
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.02)',
+        bgcolor: 'action.hover',
         borderRadius: 2,
         minHeight: '100px',
         overflow: 'hidden',

@@ -341,7 +341,7 @@ const ModelManagementDialog: React.FC<ModelManagementDialogProps> = ({
               ),
               sx: {
                 borderRadius: 3,
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#F2F3F5',
+                bgcolor: 'action.hover',
                 '& fieldset': { border: 'none' }
               }
             }}

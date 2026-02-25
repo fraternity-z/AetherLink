@@ -483,7 +483,8 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
             alignItems: 'center', 
             justifyContent: 'space-between',
             p: 2,
-            borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`
+            borderBottom: 1,
+            borderColor: 'divider'
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {(currentPath || isSearchMode) && (
@@ -495,7 +496,7 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
                         color: theme.palette.text.secondary,
                         padding: isSmallMobile ? 2 : 1,
                         '&:hover': {
-                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                          backgroundColor: 'action.hover'
                         }
                       }}
                     >
@@ -517,7 +518,7 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
                       color: theme.palette.text.secondary,
                       padding: isSmallMobile ? 2 : 1,
                       '&:hover': {
-                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                        backgroundColor: 'action.hover'
                       }
                     }}
                   >
@@ -532,7 +533,7 @@ const NoteSelector: React.FC<NoteSelectorProps> = ({
                   color: theme.palette.text.secondary,
                   padding: isSmallMobile ? 2 : 1,
                   '&:hover': {
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                    backgroundColor: 'action.hover'
                   }
                 }}
               >

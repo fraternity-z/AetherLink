@@ -324,9 +324,10 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
     PaperProps={{
       sx: {
         borderRadius: isMobile ? 0 : 2,
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(18, 18, 18, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        bgcolor: 'background.paper',
         backdropFilter: 'blur(10px)',
-        border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+        border: '1px solid',
+        borderColor: 'divider',
         // 移动端全屏适配
         ...(isMobile && {
           margin: 0,
