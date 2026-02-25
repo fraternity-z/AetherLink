@@ -41,7 +41,8 @@ import assistantsReducer from './slices/assistantsSlice';
 import messageBlocksReducer from './slices/messageBlocksSlice';
 import uiReducer from './slices/uiSlice';
 import runtimeReducer from './slices/runtimeSlice';
-import networkProxyReducer, { loadNetworkProxySettings } from './slices/networkProxySlice';
+import networkProxyReducer, { loadNetworkProxySettings, applyGlobalProxy } from './slices/networkProxySlice';
+import { Capacitor } from '@capacitor/core';
 import agenticFilesReducer from './slices/agenticFilesSlice';
 import memoryReducer, { initializeMemoryService } from './slices/memorySlice';
 import knowledgeSelectionReducer from './slices/knowledgeSelectionSlice';
@@ -129,8 +130,13 @@ initializeWebSearchSettings().then(settings => {
   console.error('初始化网络搜索设置失败:', error);
 });
 
-// 初始化网络代理设置
-store.dispatch(loadNetworkProxySettings() as any);
+// 初始化网络代理设置，Capacitor 平台加载后自动恢复代理到插件
+store.dispatch(loadNetworkProxySettings() as any).then((result: any) => {
+  if (result.payload?.globalProxy?.enabled && Capacitor.isNativePlatform()) {
+    console.log('[Store] Capacitor 平台：恢复代理配置到 CorsBypass 插件');
+    store.dispatch(applyGlobalProxy(result.payload.globalProxy) as any);
+  }
+});
 
 // 初始化记忆服务
 store.dispatch(initializeMemoryService() as any);
