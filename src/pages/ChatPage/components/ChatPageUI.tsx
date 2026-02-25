@@ -18,7 +18,7 @@ import { useVisualViewport } from '../../../shared/hooks/useVisualViewport';
 import ChatNavigation from '../../../components/chat/ChatNavigation';
 import ErrorBoundary from '../../../components/ErrorBoundary';
 import AgenticFilesList from '../../../components/AgenticFilesList';
-import type { DebateConfig } from '../../../shared/services/AIDebateService';
+import type { DebateConfig } from '../../../shared/services/ai/AIDebateService';
 import { createSelector } from 'reselect';
 import { contextCondenseService } from '../../../shared/services/ai/ContextCondenseService';
 import { Z_INDEX } from '../../../shared/constants/zIndex';

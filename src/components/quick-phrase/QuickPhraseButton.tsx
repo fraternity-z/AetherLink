@@ -20,7 +20,7 @@ import BackButtonDrawer from '../common/BackButtonDrawer';
 import { Plus, BotMessageSquare } from 'lucide-react';
 import { CustomIcon } from '../icons';
 import { useTheme } from '@mui/material/styles';
-import QuickPhraseService from '../../shared/services/QuickPhraseService';
+import QuickPhraseService from '../../shared/services/assistant/QuickPhraseService';
 import type { QuickPhrase } from '../../shared/types';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import styled from '@emotion/styled';

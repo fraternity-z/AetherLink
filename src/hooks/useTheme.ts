@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { createCustomTheme, getValidThemeStyle } from '../shared/config/themes';
 import { statusBarService } from '../shared/services/platform/StatusBarService';
 import { applyCSSVariables } from '../shared/utils/cssVariables';
-import { loadSavedCustomFonts } from '../shared/services/GoogleFontsService';
+import { loadSavedCustomFonts } from '../shared/services/ui/GoogleFontsService';
 
 export const useTheme = () => {
   const [mode, setMode] = useState<'light' | 'dark'>('light');

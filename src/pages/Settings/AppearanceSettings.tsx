@@ -46,7 +46,7 @@ import {
   removeCustomFont,
   getCustomFonts,
   loadSavedCustomFonts
-} from '../../shared/services/GoogleFontsService';
+} from '../../shared/services/ui/GoogleFontsService';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useLanguageSettings } from '../../i18n/useLanguageSettings';
 import { supportedLanguages } from '../../i18n';

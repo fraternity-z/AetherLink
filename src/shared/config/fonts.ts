@@ -9,7 +9,7 @@ import {
   isCustomFont,
   type GoogleFont,
   type CustomFont
-} from '../services/GoogleFontsService';
+} from '../services/ui/GoogleFontsService';
 
 // 字体分类类型
 export type FontCategory = 'system' | 'custom' | 'sans-serif' | 'serif' | 'monospace' | 'monospace-cn' | 'display' | 'handwriting';

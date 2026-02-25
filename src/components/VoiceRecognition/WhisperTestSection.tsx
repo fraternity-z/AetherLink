@@ -9,7 +9,7 @@ import {
   Chip,
 } from '@mui/material';
 import { Mic as MicIcon, Square as StopIcon, RotateCcw as ReplayIcon } from 'lucide-react';
-import { openAIWhisperService } from '../../shared/services/OpenAIWhisperService';
+import { openAIWhisperService } from '../../shared/services/tts-v2/OpenAIWhisperService';
 import type { OpenAIWhisperSettings, WhisperTranscriptionResponse } from '../../shared/types/voice';
 import { useTranslation } from '../../i18n';
 

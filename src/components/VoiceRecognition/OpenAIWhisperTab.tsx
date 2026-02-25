@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { Eye as Visibility, EyeOff as VisibilityOff } from 'lucide-react';
 import type { OpenAIWhisperSettings } from '../../shared/types/voice';
-import { openAIWhisperService } from '../../shared/services/OpenAIWhisperService';
+import { openAIWhisperService } from '../../shared/services/tts-v2/OpenAIWhisperService';
 import { useTranslation } from '../../i18n';
 
 interface OpenAIWhisperTabProps {

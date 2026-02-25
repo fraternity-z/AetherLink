@@ -6,7 +6,7 @@ import ToolsMenu from '../ToolsMenu';
 import AIDebateButton from '../../AIDebateButton';
 import QuickPhraseButton from '../../quick-phrase/QuickPhraseButton';
 import NoteSelector from '../../NoteSelector';
-import type { DebateConfig } from '../../../shared/services/AIDebateService';
+import type { DebateConfig } from '../../../shared/services/ai/AIDebateService';
 import type { SiliconFlowImageFormat, ImageContent, FileContent, Model } from '../../../shared/types';
 import type { Assistant } from '../../../shared/types/Assistant';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';

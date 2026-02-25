@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import type { DebateConfig, DebateRole } from '../../../shared/services/AIDebateService';
+import type { DebateConfig, DebateRole } from '../../../shared/services/ai/AIDebateService';
 import { createAssistantMessage } from '../../../shared/utils/messageUtils';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlice';

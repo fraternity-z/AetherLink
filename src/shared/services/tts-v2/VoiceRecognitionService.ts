@@ -1,9 +1,9 @@
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
-import { getStorageItem, setStorageItem } from '../utils/storage';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
 import type {
   SpeechRecognitionOptions,
   SpeechRecognitionPermissions,
-} from '../types/voice';
+} from '../../types/voice';
 import { openAIWhisperService } from './OpenAIWhisperService';
 
 /**

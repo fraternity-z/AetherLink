@@ -6,7 +6,7 @@
  */
 
 import type { SiliconFlowImageFormat, FileContent } from './index';
-import type { DebateConfig } from '../services/AIDebateService';
+import type { DebateConfig } from '../services/ai/AIDebateService';
 import type { Model } from './index';
 
 /**

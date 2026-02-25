@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { voiceRecognitionService } from '../services/VoiceRecognitionService';
+import { voiceRecognitionService } from '../services/tts-v2/VoiceRecognitionService';
 import type { SpeechRecognitionPermissions } from '../types/voice';
 
 export const useVoiceRecognition = () => {

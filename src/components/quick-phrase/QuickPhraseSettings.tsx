@@ -33,7 +33,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { CustomIcon } from '../icons';
 import { useTheme } from '@mui/material/styles';
-import QuickPhraseService from '../../shared/services/QuickPhraseService';
+import QuickPhraseService from '../../shared/services/assistant/QuickPhraseService';
 import type { QuickPhrase } from '../../shared/types';
 import type { RootState } from '../../shared/store';
 import { setShowQuickPhraseButton } from '../../shared/store/settingsSlice';

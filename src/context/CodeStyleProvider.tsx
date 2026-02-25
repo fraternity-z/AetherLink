@@ -5,8 +5,8 @@
 import React, { createContext, useContext, useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { useTheme } from '@mui/material';
 import { useAppSelector } from '../shared/store';
-import type { HighlightChunkResult, ShikiPreProperties } from '../shared/services/ShikiStreamService';
-import { shikiStreamService } from '../shared/services/ShikiStreamService';
+import type { HighlightChunkResult, ShikiPreProperties } from '../shared/services/ui/ShikiStreamService';
+import { shikiStreamService } from '../shared/services/ui/ShikiStreamService';
 import { getHighlighter, loadLanguageIfNeeded, loadThemeIfNeeded } from '../shared/utils/shiki';
 import type { BundledThemeInfo } from 'shiki/types';
 

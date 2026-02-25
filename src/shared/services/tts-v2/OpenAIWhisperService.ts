@@ -1,6 +1,6 @@
 import type {
   WhisperTranscriptionResponse
-} from '../types/voice';
+} from '../../types/voice';
 
 /**
  * OpenAI Whisper语音识别服务类

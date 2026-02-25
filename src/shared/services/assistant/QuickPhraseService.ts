@@ -1,5 +1,5 @@
-import { dexieStorage } from './storage/DexieStorageService';
-import type { QuickPhrase } from '../types';
+import { dexieStorage } from '../storage/DexieStorageService';
+import type { QuickPhrase } from '../../types';
 
 /**
  * 快捷短语服务

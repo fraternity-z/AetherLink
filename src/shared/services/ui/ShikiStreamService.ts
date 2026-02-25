@@ -13,7 +13,7 @@ import {
   getHighlighter,
   loadLanguageIfNeeded,
   loadThemeIfNeeded
-} from '../utils/shiki';
+} from '../../utils/shiki';
 import type { ShikiStreamTokenizerOptions } from './ShikiStreamTokenizer';
 import { ShikiStreamTokenizer } from './ShikiStreamTokenizer';
 
