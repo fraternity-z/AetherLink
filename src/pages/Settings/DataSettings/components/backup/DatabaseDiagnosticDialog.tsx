@@ -601,12 +601,7 @@ const DatabaseDiagnosticDialog: React.FC<DatabaseDiagnosticDialogProps> = ({
             onClick={repairDatabase}
             disabled={isLoading || isRepairing || isCleaningTopics || isFixingReferences || !!(diagnosticResult && diagnosticResult.databases.length <= 1)}
             startIcon={<ConstructionIcon size={16} />}
-            sx={{
-              bgcolor: '#10B981',
-              '&:hover': {
-                bgcolor: '#059669',
-              }
-            }}
+            color="success"
           >
             修复数据库
           </Button>
@@ -617,12 +612,7 @@ const DatabaseDiagnosticDialog: React.FC<DatabaseDiagnosticDialogProps> = ({
               onClick={rebuildDatabase}
               disabled={isLoading || isRepairing || isCleaningTopics || isFixingReferences}
               startIcon={<ReportProblemIcon size={16} />}
-              sx={{
-                bgcolor: '#EF4444',
-                '&:hover': {
-                  bgcolor: '#DC2626',
-                }
-              }}
+              color="error"
             >
               重建数据库
             </Button>

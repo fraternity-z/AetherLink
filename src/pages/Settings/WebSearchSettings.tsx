@@ -991,12 +991,7 @@ const WebSearchSettings: React.FC = () => {
             <Button
               variant="contained"
               onClick={handleSaveProvider}
-              sx={{
-                bgcolor: '#3b82f6',
-                '&:hover': {
-                  bgcolor: '#2563eb',
-                }
-              }}
+              color="primary"
             >
               {t('settings.webSearch.basic.editDialog.save')}
             </Button>

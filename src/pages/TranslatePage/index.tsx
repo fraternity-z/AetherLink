@@ -588,13 +588,16 @@ const TranslatePage: React.FC = () => {
       >
         {/* 输入区域 */}
         <Paper
-          elevation={isMobile ? 0 : 1}
+          elevation={0}
           sx={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             borderRadius: isMobile ? 0 : 2,
+            bgcolor: 'background.default',
+            border: isMobile ? 'none' : '1px solid',
+            borderColor: 'divider',
           }}
         >
           <TextField
@@ -609,6 +612,7 @@ const TranslatePage: React.FC = () => {
               '& .MuiOutlinedInput-root': {
                 height: '100%',
                 alignItems: 'flex-start',
+                bgcolor: 'transparent',
                 '& fieldset': { border: 'none' },
               },
               '& .MuiInputBase-input': {
@@ -690,14 +694,16 @@ const TranslatePage: React.FC = () => {
 
         {/* 输出区域 */}
         <Paper
-          elevation={isMobile ? 0 : 1}
+          elevation={0}
           sx={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             borderRadius: isMobile ? 0 : 2,
-            bgcolor: isMobile ? 'background.default' : 'background.paper',
+            bgcolor: 'action.hover',
+            border: isMobile ? 'none' : '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Box

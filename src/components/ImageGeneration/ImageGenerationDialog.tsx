@@ -317,7 +317,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
           </Button>
 
           <Collapse in={showAdvanced}>
-            <Box sx={{ mt: 1, p: 2, bgcolor: '#f9f9f9', borderRadius: 1 }}>
+            <Box sx={{ mt: 1, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
               {/* 推理步数 */}
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>

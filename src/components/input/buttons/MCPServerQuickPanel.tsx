@@ -343,7 +343,7 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
           variant="contained"
           startIcon={<Cog size={16} />}
           onClick={handleNavigateToSettings}
-          sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' } }}
+          color="success"
         >
           管理 MCP 服务器
         </Button>
