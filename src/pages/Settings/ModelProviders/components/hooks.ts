@@ -196,9 +196,9 @@ export const useProviderSettings = (provider: Provider | undefined) => {
         updates: {
           keyManagement: {
             strategy,
-            maxFailuresBeforeDisable: provider.keyManagement?.maxFailuresBeforeDisable || 3,
-            failureRecoveryTime: provider.keyManagement?.failureRecoveryTime || 5,
-            enableAutoRecovery: provider.keyManagement?.enableAutoRecovery || true
+            maxFailuresBeforeDisable: provider.keyManagement?.maxFailuresBeforeDisable ?? 3,
+            failureRecoveryTime: provider.keyManagement?.failureRecoveryTime ?? 5,
+            enableAutoRecovery: provider.keyManagement?.enableAutoRecovery ?? true
           }
         }
       }));
@@ -210,22 +210,22 @@ export const useProviderSettings = (provider: Provider | undefined) => {
     if (provider) {
       if (enabled) {
         // 启用多 Key 模式：将当前单个 Key 转换为多 Key 配置
-        const currentKey = provider.apiKey;
-        if (currentKey) {
-          const initialKeys = [keyManager.createApiKeyConfig(currentKey, '主要密钥', 1)];
-          dispatch(updateProvider({
-            id: provider.id,
-            updates: {
-              apiKeys: initialKeys,
-              keyManagement: {
-                strategy: 'round_robin' as LoadBalanceStrategy,
-                maxFailuresBeforeDisable: 3,
-                failureRecoveryTime: 5,
-                enableAutoRecovery: true
-              }
+        const currentKey = provider.apiKey || apiKey;
+        const initialKeys = currentKey
+          ? [keyManager.createApiKeyConfig(currentKey, '主要密钥', 1)]
+          : [];
+        dispatch(updateProvider({
+          id: provider.id,
+          updates: {
+            apiKeys: initialKeys,
+            keyManagement: {
+              strategy: 'round_robin' as LoadBalanceStrategy,
+              maxFailuresBeforeDisable: 3,
+              failureRecoveryTime: 5,
+              enableAutoRecovery: true
             }
-          }));
-        }
+          }
+        }));
       } else {
         // 禁用多 Key 模式：保留第一个 Key 作为单个 Key
         const firstKey = provider.apiKeys?.[0];
@@ -437,7 +437,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
   // ========================================================================
 
   const handleOpenCustomEndpointDialog = () => {
-    setCustomModelEndpoint('');
+    setCustomModelEndpoint((provider as any)?.customModelEndpoint || '');
     setCustomEndpointError('');
     setOpenCustomEndpointDialog(true);
   };
@@ -630,7 +630,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
       const deleteSet = new Set(modelIds);
       const beforeCount = provider.models.length;
       const updatedModels = provider.models.filter(model => 
-        !deleteSet.has(model.id) || model.provider !== provider.id
+        !deleteSet.has(model.id) || (model.provider || provider.id) !== provider.id
       );
       
       logModelOperation('批量删除结果', { 
@@ -718,7 +718,7 @@ export const useProviderSettings = (provider: Provider | undefined) => {
 
       // 创建一个模拟模型对象，包含当前输入的API配置
       const testModel = {
-        id: provider.models.length > 0 ? provider.models[0].id : 'gpt-3.5-turbo',
+        id: provider.models.length > 0 ? provider.models[0].id : (provider.providerType || provider.id || 'gpt-3.5-turbo'),
         name: provider.name,
         provider: provider.id,
         providerType: provider.providerType,

@@ -244,7 +244,16 @@ const ModelProviderSettings: React.FC = () => {
               control={
                 <CustomSwitch
                   checked={isEnabled}
-                  onChange={(e) => setIsEnabled(e.target.checked)}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    setIsEnabled(newValue);
+                    if (provider) {
+                      dispatch(updateProvider({
+                        id: provider.id,
+                        updates: { isEnabled: newValue }
+                      }));
+                    }
+                  }}
                 />
               }
               label={isEnabled ? t('modelSettings.provider.enabled') : t('modelSettings.provider.disabled')}

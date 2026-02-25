@@ -7,6 +7,7 @@ import { useTheme, alpha } from '@mui/material';
 import { SolidBridge } from '../../shared/bridges/SolidBridge';
 import { ModelManagementDrawer } from '../../solid/components/ModelSelector/ModelManagementDrawer.solid';
 import { fetchModels } from '../../shared/services/network/APIService';
+import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
 import type { Model } from '../../shared/types';
 
 interface ModelManagementDialogSolidProps {
@@ -43,6 +44,9 @@ const ModelManagementDialogSolid: React.FC<ModelManagementDialogSolidProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [models, setModels] = useState<Model[]>([]);
   const initialProviderRef = useRef<any>(null);
+
+  // 注册返回键处理，使手机系统返回键关闭此抽屉而非导航回上一页
+  useDialogBackHandler('model-management-drawer', open, onClose);
 
   // 加载模型列表
   const loadModels = async () => {
