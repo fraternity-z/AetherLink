@@ -16,7 +16,7 @@ import store from '../shared/store';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
 import { detectDetailedPlatform, RuntimeType } from '../shared/utils/platformDetection';
 import { flushThrottledUpdates } from '../shared/store/thunks/message/utils';
-import { DataRepairService } from '../shared/services/DataRepairService';
+import { DataRepairService } from '../shared/services/storage/DataRepairService';
 
 // 标记是否正在保存数据
 let isSaving = false;

@@ -5,7 +5,7 @@ import { updateProvider, deleteProvider } from '../../../../shared/store/setting
 import type { Model } from '../../../../shared/types';
 import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../../shared/config/defaultModels';
 import { isValidUrl } from '../../../../shared/utils';
-import ApiKeyManager from '../../../../shared/services/ApiKeyManager';
+import ApiKeyManager from '../../../../shared/services/ai/ApiKeyManager';
 import { modelMatchesIdentity } from '../../../../shared/utils/modelUtils';
 import { CONSTANTS, STYLES, useDebounce } from './constants';
 import { 

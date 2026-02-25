@@ -26,8 +26,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import { useTranslation } from '../../i18n';
-import EnhancedConsoleService from '../../shared/services/EnhancedConsoleService';
-import type { ConsoleEntry, ConsoleLevel, ConsoleFilter } from '../../shared/services/EnhancedConsoleService';
+import EnhancedConsoleService from '../../shared/services/infra/EnhancedConsoleService';
+import type { ConsoleEntry, ConsoleLevel, ConsoleFilter } from '../../shared/services/infra/EnhancedConsoleService';
 
 interface ConsolePanelProps {
   autoScroll?: boolean;

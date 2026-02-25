@@ -5,7 +5,7 @@ import { OpenAIResponseProvider } from '../../providers/OpenAIResponseProvider';
 import { OpenAIResponseHandler } from './OpenAIResponseHandler';
 import type { Model, MCPTool } from '../../types';
 import type { Message, AssistantMessageStatus } from '../../types/newMessage';
-import { EventEmitter } from '../EventService';
+import { EventEmitter } from '../infra/EventService';
 import { getMainTextContent } from '../../utils/messageUtils';
 
 /**

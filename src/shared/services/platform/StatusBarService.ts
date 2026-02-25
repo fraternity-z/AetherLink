@@ -1,7 +1,7 @@
 import { StatusBar } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { EdgeToEdge } from 'capacitor-edge-to-edge';
-import { themeConfigs, type ThemeStyle } from '../config/themes';
+import { themeConfigs, type ThemeStyle } from '../../config/themes';
 
 /**
  * 状态栏管理服务 (Rikkahub 风格)

@@ -5,7 +5,7 @@
  */
 import type { Message, Model, MCPTool } from '../../types';
 import type { Chunk } from '../../types/chunk';
-import { logApiRequest } from '../../services/LoggerService';
+import { logApiRequest } from '../../services/infra/LoggerService';
 import { OpenAIProvider } from './provider';
 
 /**

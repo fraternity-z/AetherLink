@@ -13,7 +13,7 @@
  * 自定义事件：
  * - safeAreaChanged: 当原生层更新安全区域时触发
  */
-import { getPlatformInfo } from '../utils/platformDetection';
+import { getPlatformInfo } from '../../utils/platformDetection';
 
 export interface SafeAreaInsets {
   /** 顶部安全区域（px） */

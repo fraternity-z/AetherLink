@@ -1,6 +1,6 @@
 import type { Model } from '../../types';
 import type { ModelProvider } from '../../config/defaultModels';
-import { getActualProviderType, testConnection } from '../ProviderFactory';
+import { getActualProviderType, testConnection } from '../ai/ProviderFactory';
 import { OpenAIProvider } from '../../api/openai';
 import { OpenAIAISDKProvider } from '../../api/openai-aisdk';
 import { AnthropicAISDKProvider } from '../../api/anthropic-aisdk';

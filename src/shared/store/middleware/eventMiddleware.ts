@@ -1,5 +1,5 @@
 import type { Middleware } from '@reduxjs/toolkit';
-import { EventEmitter, EVENT_NAMES } from '../../services/EventEmitter';
+import { EventEmitter, EVENT_NAMES } from '../../services/infra/EventEmitter';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
 
 /**

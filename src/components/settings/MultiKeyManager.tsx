@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 
 import type { ApiKeyConfig, LoadBalanceStrategy } from '../../shared/config/defaultModels';
-import ApiKeyManager from '../../shared/services/ApiKeyManager';
+import ApiKeyManager from '../../shared/services/ai/ApiKeyManager';
 import CustomSwitch from '../CustomSwitch';
 
 interface MultiKeyManagerProps {

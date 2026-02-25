@@ -39,7 +39,7 @@ import { toastManager } from '../EnhancedToast';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
-import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
+import { EventEmitter, EVENT_NAMES } from '../../shared/services/infra/EventService';
 import { getStorageItem } from '../../shared/utils/storage';
 import { useAppSelector } from '../../shared/store';
 import { Clipboard } from '@capacitor/clipboard';

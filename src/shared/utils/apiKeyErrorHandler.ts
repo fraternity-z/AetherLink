@@ -3,8 +3,8 @@
  * 参考 Cline 的错误处理机制，提供智能的 API Key 错误检测和重试功能
  */
 
-import { EventEmitter } from '../services/EventEmitter';
-import { EVENT_NAMES } from '../services/EventEmitter';
+import { EventEmitter } from '../services/infra/EventEmitter';
+import { EVENT_NAMES } from '../services/infra/EventEmitter';
 import store from '../store';
 import { regenerateResponse } from '../store/thunks/messageThunk';
 import { findModelInProviders } from './modelUtils';

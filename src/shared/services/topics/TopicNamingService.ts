@@ -5,7 +5,7 @@ import { getStorageItem, setStorageItem } from '../../utils/storage';
 import { saveTopicToDB } from '../storage/storageService';
 import { getMainTextContent } from '../../utils/messageUtils';
 import { TopicService } from './TopicService';
-import { EventEmitter, EVENT_NAMES } from '../EventService';
+import { EventEmitter, EVENT_NAMES } from '../infra/EventService';
 import { updateTopic } from '../../store/slices/assistantsSlice';
 import { dexieStorage } from '../storage/DexieStorageService';
 

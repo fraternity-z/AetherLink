@@ -1,8 +1,8 @@
-import { DataRepository } from './storage/DataRepository';
-import type { ChatTopic } from '../types';
-import { generateMessageId } from '../utils';
-import { handleError } from '../utils/error';
-import { dexieStorage } from './storage/DexieStorageService';
+import { DataRepository } from './DataRepository';
+import type { ChatTopic } from '../../types';
+import { generateMessageId } from '../../utils';
+import { handleError } from '../../utils/error';
+import { dexieStorage } from './DexieStorageService';
 
 /**
  * 统一数据修复服务 - 整合所有数据修复功能

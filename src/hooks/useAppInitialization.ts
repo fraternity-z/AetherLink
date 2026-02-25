@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 
-import { statusBarService } from '../shared/services/StatusBarService';
-import { safeAreaService } from '../shared/services/SafeAreaService';
+import { statusBarService } from '../shared/services/platform/StatusBarService';
+import { safeAreaService } from '../shared/services/platform/SafeAreaService';
 import { DataManager } from '../shared/services';
-import { DataRepairService } from '../shared/services/DataRepairService';
+import { DataRepairService } from '../shared/services/storage/DataRepairService';
 import { DatabaseCleanupService } from '../shared/services/storage/DatabaseCleanupService';
 import { initGroups } from '../shared/store/slices/groupsSlice';
 import { getStorageItem } from '../shared/utils/storage';

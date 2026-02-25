@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { createCustomTheme, getValidThemeStyle } from '../shared/config/themes';
-import { statusBarService } from '../shared/services/StatusBarService';
+import { statusBarService } from '../shared/services/platform/StatusBarService';
 import { applyCSSVariables } from '../shared/utils/cssVariables';
 import { loadSavedCustomFonts } from '../shared/services/GoogleFontsService';
 

@@ -1,19 +1,19 @@
-import { dexieStorage } from './storage/DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 import { v4 as uuid } from 'uuid';
-import store from '../store';
-import { newMessagesActions } from '../store/slices/newMessagesSlice';
+import store from '../../store';
+import { newMessagesActions } from '../../store/slices/newMessagesSlice';
 import {
   updateOneBlock,
   removeManyBlocks,
   upsertOneBlock,
   upsertManyBlocks
-} from '../store/slices/messageBlocksSlice';
+} from '../../store/slices/messageBlocksSlice';
 import type {
   Message,
   MessageVersion,
   MessageBlock,
   MessageBlockStatus
-} from '../types/newMessage';
+} from '../../types/newMessage';
 
 /**
  * 优化的版本管理服务

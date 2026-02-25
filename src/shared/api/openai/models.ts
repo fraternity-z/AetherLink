@@ -5,7 +5,7 @@
  */
 import type { Model } from '../../types';
 import { createClient } from './client';
-import { logApiRequest, logApiResponse } from '../../services/LoggerService';
+import { logApiRequest, logApiResponse } from '../../services/infra/LoggerService';
 import { universalFetch } from '../../utils/universalFetch';
 
 /**

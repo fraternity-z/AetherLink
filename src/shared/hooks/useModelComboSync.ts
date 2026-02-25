@@ -1,8 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { updateModelComboModels } from '../store/settingsSlice';
-import { modelComboService } from '../services/ModelComboService';
-import { EventEmitter, EVENT_NAMES } from '../services/EventEmitter';
+import { modelComboService } from '../services/ai/ModelComboService';
+import { EventEmitter, EVENT_NAMES } from '../services/infra/EventEmitter';
 
 /**
  * Hook用于同步模型组合到Redux store

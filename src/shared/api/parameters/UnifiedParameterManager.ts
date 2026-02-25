@@ -14,7 +14,7 @@ import type {
   UnifiedExtendedParameters,
   UnifiedReasoningParameters
 } from './types';
-import { parameterSyncService } from '../../services/ParameterSyncService';
+import { parameterSyncService } from '../../services/assistant/ParameterSyncService';
 
 /**
  * 统一参数管理器类

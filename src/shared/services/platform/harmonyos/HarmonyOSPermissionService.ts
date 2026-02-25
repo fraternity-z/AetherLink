@@ -10,10 +10,9 @@ import {
   HARMONYOS_PERMISSION_CONFIG,
   HarmonyOSErrorCode,
   HARMONYOS_ERROR_MESSAGES,
-  HARMONYOS_CLIPBOARD_CONFIG,
   type PermissionConfig,
-} from '../config/harmonyOSConfig';
-import { isHarmonyOS } from '../utils/platformDetection';
+} from '../../../config/harmonyOSConfig';
+import { isHarmonyOS } from '../../../utils/platformDetection';
 
 /**
  * 权限请求结果
@@ -217,13 +216,13 @@ export class HarmonyOSPermissionService {
       const cached = localStorage.getItem('harmonyos_permission_cache');
       if (cached) {
         const data = JSON.parse(cached);
-        this.permissionCache = new Map(Object.entries(data));
+        this.permissionCache = new Map(Object.entries(data) as [HarmonyOSPermission, PermissionStatus][]);
       }
 
       const deniedCache = localStorage.getItem('harmonyos_denied_count');
       if (deniedCache) {
         const data = JSON.parse(deniedCache);
-        this.deniedCount = new Map(Object.entries(data).map(([k, v]) => [k, Number(v)]));
+        this.deniedCount = new Map(Object.entries(data).map(([k, v]) => [k as HarmonyOSPermission, Number(v)] as const));
       }
     } catch (error) {
       console.error('[HarmonyOS] 加载权限缓存失败:', error);
@@ -310,9 +309,10 @@ export class HarmonyOSPermissionService {
     
     // 如果可以，尝试使用 Capacitor 打开设置
     if (Capacitor.isPluginAvailable('App')) {
-      const { App } = await import('@capacitor/app');
+      const { App: CapApp } = await import('@capacitor/app');
       // 注意：这可能不会直接打开权限设置页面
       // 需要原生插件支持
+      void CapApp;
     }
   }
 }

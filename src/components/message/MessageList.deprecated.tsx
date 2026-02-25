@@ -17,12 +17,12 @@ import { throttle } from 'lodash';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
-import { topicCacheManager } from '../../shared/services/TopicCacheManager';
+import { topicCacheManager } from '../../shared/services/topics/TopicCacheManager';
 import { upsertManyBlocks } from '../../shared/store/slices/messageBlocksSlice';
 import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
-import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
+import { EventEmitter, EVENT_NAMES } from '../../shared/services/infra/EventEmitter';
 import { scrollContainerStyles, scrollbarStyles, debugScrollPerformance } from '../../shared/config/scrollOptimization';
 
 // 每次加载的消息数量

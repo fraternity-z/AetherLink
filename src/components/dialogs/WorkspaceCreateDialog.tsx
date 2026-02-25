@@ -23,8 +23,8 @@ import {
   FolderOpen as FolderOpenIcon,
   Folder as FolderIcon
 } from 'lucide-react';
-import { workspaceService } from '../../shared/services/WorkspaceService';
-import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { workspaceService } from '../../shared/services/files/WorkspaceService';
+import { unifiedFileManager } from '../../shared/services/files/UnifiedFileManagerService';
 import type { WorkspaceCreateRequest } from '../../shared/types/workspace';
 
 interface WorkspaceCreateDialogProps {

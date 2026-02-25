@@ -1,4 +1,4 @@
-import type { FileContent } from '../types';
+import type { FileContent } from '../../types';
 import { Capacitor } from '@capacitor/core';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { Toast } from '@capacitor/toast';

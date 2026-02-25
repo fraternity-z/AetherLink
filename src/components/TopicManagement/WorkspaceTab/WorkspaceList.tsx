@@ -32,7 +32,7 @@ import {
   RefreshCw,
   Home
 } from 'lucide-react';
-import { workspaceService } from '../../../shared/services/WorkspaceService';
+import { workspaceService } from '../../../shared/services/files/WorkspaceService';
 import type { Workspace, WorkspaceFile } from '../../../shared/types/workspace';
 import { toastManager } from '../../EnhancedToast';
 

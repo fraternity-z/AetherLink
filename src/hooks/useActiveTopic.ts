@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../shared/store';
 import { loadTopicMessagesThunk, newMessagesActions } from '../shared/store/slices/newMessagesSlice';
 import { dexieStorage } from '../shared/services/storage/DexieStorageService';
-import { topicCacheManager } from '../shared/services/TopicCacheManager';
+import { topicCacheManager } from '../shared/services/topics/TopicCacheManager';
 import type { ChatTopic, Assistant } from '../shared/types/Assistant';
 
 // 模块级变量，支持外部访问（类似 Cherry Studio）

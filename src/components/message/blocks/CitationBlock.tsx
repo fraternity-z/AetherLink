@@ -15,7 +15,7 @@ import { useDeepMemo } from '../../../hooks/useMemoization';
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { CitationMessageBlock } from '../../../shared/types/newMessage';
 import Markdown from '../Markdown';
-import { EventEmitter } from '../../../shared/services/EventEmitter';
+import { EventEmitter } from '../../../shared/services/infra/EventEmitter';
 
 interface Props {
   block: CitationMessageBlock;

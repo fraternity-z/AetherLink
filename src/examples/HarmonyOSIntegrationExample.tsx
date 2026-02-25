@@ -11,9 +11,9 @@ import { Copy, Camera, FileUp, Bell } from 'lucide-react';
 import { isHarmonyOS, getPlatformInfo } from '../shared/utils/platformDetection';
 import { platformAdapter } from '../shared/adapters/PlatformAdapter';
 import { HarmonyOSClipboardButton } from '../components/HarmonyOS';
-import { harmonyOSCameraService } from '../shared/services/HarmonyOSCameraService';
-import { harmonyOSFileService } from '../shared/services/HarmonyOSFileService';
-import { harmonyOSNotificationService } from '../shared/services/HarmonyOSNotificationService';
+import { harmonyOSCameraService } from '../shared/services/platform/harmonyos/HarmonyOSCameraService';
+import { harmonyOSFileService } from '../shared/services/platform/harmonyos/HarmonyOSFileService';
+import { harmonyOSNotificationService } from '../shared/services/platform/harmonyos/HarmonyOSNotificationService';
 import { 
   initHarmonyOSCompatibilityCheck,
   detectHarmonyOSCompatibility 

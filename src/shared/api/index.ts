@@ -1,5 +1,5 @@
 import type { Model } from '../types';
-import { getProviderApi } from '../services/ProviderFactory';
+import { getProviderApi } from '../services/ai/ProviderFactory';
 import { modelMatchesIdentity, parseModelIdentityKey } from '../utils/modelUtils';
 import store from '../store';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';

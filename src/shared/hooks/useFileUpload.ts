@@ -1,5 +1,5 @@
-import { ImageUploadService } from '../services/ImageUploadService';
-import { FileUploadService } from '../services/FileUploadService';
+import { ImageUploadService } from '../services/files/ImageUploadService';
+import { FileUploadService } from '../services/files/FileUploadService';
 import { dexieStorage } from '../services/storage/DexieStorageService';
 import type { ImageContent, FileContent } from '../types';
 
@@ -108,7 +108,7 @@ export const useFileUpload = ({ currentTopicState, setUploadingMedia }: UseFileU
       );
 
       // 过滤掉错误的图片（null值）
-      const validImages = processedImages.filter(img => img !== null) as ImageContent[];
+      const validImages = processedImages.filter((img): img is ImageContent => img !== null);
       setUploadingMedia(false);
       return validImages;
     } catch (error: any) {

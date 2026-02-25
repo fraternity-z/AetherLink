@@ -5,8 +5,8 @@
  */
 import { streamText, generateText } from 'ai';
 import type { AnthropicProvider as AISDKAnthropicProvider } from '@ai-sdk/anthropic';
-import { logApiRequest } from '../../services/LoggerService';
-import { EventEmitter, EVENT_NAMES } from '../../services/EventEmitter';
+import { logApiRequest } from '../../services/infra/LoggerService';
+import { EventEmitter, EVENT_NAMES } from '../../services/infra/EventEmitter';
 import { hasToolUseTags } from '../../utils/mcpToolParser';
 import { ChunkType, type Chunk } from '../../types/chunk';
 import type { Model, MCPTool } from '../../types';

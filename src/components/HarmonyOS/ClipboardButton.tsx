@@ -8,7 +8,7 @@ import { IconButton, Tooltip } from '@mui/material';
 import { Copy, Check } from 'lucide-react';
 import { isHarmonyOS } from '../../shared/utils/platformDetection';
 import { HarmonyOSPermission } from '../../shared/config/harmonyOSConfig';
-import { harmonyOSPermissionService } from '../../shared/services/HarmonyOSPermissionService';
+import { harmonyOSPermissionService } from '../../shared/services/platform/harmonyos/HarmonyOSPermissionService';
 import HarmonyOSPermissionDialog from './PermissionDialog';
 import { platformAdapter } from '../../shared/adapters/PlatformAdapter';
 

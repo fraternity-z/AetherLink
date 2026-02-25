@@ -11,7 +11,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Model } from '../../../../shared/types';
 import { testApiConnection } from '../../../../shared/api';
-import ApiKeyManager from '../../../../shared/services/ApiKeyManager';
+import ApiKeyManager from '../../../../shared/services/ai/ApiKeyManager';
 import type { LoadBalanceStrategy } from '../../../../shared/config/defaultModels';
 import { testingModelId } from './providerSignals';
 import { CONSTANTS } from './constants';

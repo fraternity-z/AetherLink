@@ -2,18 +2,18 @@
  * 供应商工厂模块 - 参考最佳实例架构
  * 负责根据供应商类型返回适当的API处理模块
  */
-import type { Model } from '../types';
-import * as openaiApi from '../api/openai';
-import { parseModelsResponse, normalizeModel } from '../api/openai/models';
-import * as anthropicApi from '../api/anthropic-aisdk';
+import type { Model } from '../../types';
+import * as openaiApi from '../../api/openai';
+import { parseModelsResponse, normalizeModel } from '../../api/openai/models';
+import * as anthropicApi from '../../api/anthropic-aisdk';
 import { modelComboService } from './ModelComboService';
-import { OpenAIAISDKProvider } from '../api/openai-aisdk';
-import { GeminiAISDKProvider } from '../api/gemini-aisdk';
-import { AnthropicAISDKProvider } from '../api/anthropic-aisdk';
-import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
-import { getDefaultGroupName } from '../utils/modelUtils';
+import { OpenAIAISDKProvider } from '../../api/openai-aisdk';
+import { GeminiAISDKProvider } from '../../api/gemini-aisdk';
+import { AnthropicAISDKProvider } from '../../api/anthropic-aisdk';
+import { OpenAIResponseProvider } from '../../providers/OpenAIResponseProvider';
+import { getDefaultGroupName } from '../../utils/modelUtils';
 import ApiKeyManager from './ApiKeyManager';
-import { universalFetch } from '../utils/universalFetch';
+import { universalFetch } from '../../utils/universalFetch';
 
 /**
  * 获取实际的提供商类型 - 支持智能路由

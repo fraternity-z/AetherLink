@@ -1,4 +1,4 @@
-import type { ImageContent } from '../types';
+import type { ImageContent } from '../../types';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 

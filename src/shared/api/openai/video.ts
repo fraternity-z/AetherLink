@@ -1,5 +1,5 @@
 import type { Model } from '../../types';
-import { log } from '../../services/LoggerService';
+import { log } from '../../services/infra/LoggerService';
 
 /**
  * 视频生成参数接口 - 符合硅基流动官方API

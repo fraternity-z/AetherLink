@@ -3,7 +3,7 @@ import type { EntityState, PayloadAction } from '@reduxjs/toolkit';
 import type { Message, AssistantMessageStatus } from '../../types/newMessage.ts';
 import type { RootState } from '../index';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
-import { topicCacheManager } from '../../services/TopicCacheManager';
+import { topicCacheManager } from '../../services/topics/TopicCacheManager';
 import { upsertManyBlocks } from './messageBlocksSlice';
 
 // 1. 创建实体适配器

@@ -1,13 +1,13 @@
-import type { Model } from '../types';
-import { log } from './LoggerService';
-import { TopicService } from './topics/TopicService';
-import { MessageBlockStatus } from '../types/newMessage';
-import store from '../store';
-import { updateOneBlock, upsertOneBlock } from '../store/slices/messageBlocksSlice';
-import { dexieStorage } from './storage/DexieStorageService';
-import { newMessagesActions } from '../store/slices/newMessagesSlice';
-import { AssistantMessageStatus } from '../types/newMessage';
-import { getStorageItem, setStorageItem } from '../utils/storage';
+import type { Model } from '../../types';
+import { log } from '../infra/LoggerService';
+import { TopicService } from '../topics/TopicService';
+import { MessageBlockStatus } from '../../types/newMessage';
+import store from '../../store';
+import { updateOneBlock, upsertOneBlock } from '../../store/slices/messageBlocksSlice';
+import { dexieStorage } from '../storage/DexieStorageService';
+import { newMessagesActions } from '../../store/slices/newMessagesSlice';
+import { AssistantMessageStatus } from '../../types/newMessage';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
 
 /**
  * 视频生成任务接口
@@ -152,7 +152,7 @@ export class VideoTaskManager {
 
     if (isGoogleVeoTask) {
       // 使用Google Veo轮询
-      const { pollVeoOperation } = await import('../api/gemini-aisdk/veo');
+      const { pollVeoOperation } = await import('../../api/gemini-aisdk/veo');
       return await pollVeoOperation(apiKey, task.requestId);
     }
 

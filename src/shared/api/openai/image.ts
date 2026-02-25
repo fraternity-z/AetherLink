@@ -3,7 +3,7 @@
  */
 import type { Model, ImageGenerationParams } from '../../types';
 import { createClient } from './client';
-import { logApiRequest, logApiResponse, log } from '../../services/LoggerService';
+import { logApiRequest, logApiResponse, log } from '../../services/infra/LoggerService';
 
 /**
  * 使用OpenAI兼容格式生成图像 - 完整支持版本

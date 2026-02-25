@@ -5,7 +5,7 @@
 
 import type { Model } from '../../types';
 import type { ApiKeyConfig, ModelProvider } from '../../config/defaultModels';
-import ApiKeyManager from '../ApiKeyManager';
+import ApiKeyManager from '../ai/ApiKeyManager';
 // import { ApiProviderRegistry } from './messages/ApiProvider'; // 暂时注释掉未使用的导入
 
 export interface EnhancedApiCallOptions {

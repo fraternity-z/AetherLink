@@ -2,7 +2,7 @@
  * 日志记录服务
  * 提供统一的日志记录功能
  */
-import { getStorageItem, setStorageItem, removeStorageItem } from '../utils/storage';
+import { getStorageItem, setStorageItem, removeStorageItem } from '../../utils/storage';
 
 // 日志级别
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';

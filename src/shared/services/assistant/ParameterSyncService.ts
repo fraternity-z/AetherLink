@@ -3,9 +3,9 @@
  * 负责在侧边栏设置和助手设置之间同步所有参数
  */
 
-import type { CustomParameter } from '../types/Assistant';
-import { dexieStorage } from './storage/DexieStorageService';
-import { getStorageItem, setStorageItem } from '../utils/storage';
+import type { CustomParameter } from '../../types/Assistant';
+import { dexieStorage } from '../storage/DexieStorageService';
+import { getStorageItem, setStorageItem } from '../../utils/storage';
 
 // 内存缓存
 let settingsCache: Record<string, any> | null = null;

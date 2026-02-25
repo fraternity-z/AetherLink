@@ -33,7 +33,7 @@ import {
 } from '../../shared/config/harmonyOSConfig';
 import {
   harmonyOSPermissionService,
-} from '../../shared/services/HarmonyOSPermissionService';
+} from '../../shared/services/platform/harmonyos/HarmonyOSPermissionService';
 
 interface PermissionDialogProps {
   open: boolean;

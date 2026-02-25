@@ -4,9 +4,9 @@
  */
 
 import { Capacitor } from '@capacitor/core';
-import { isHarmonyOS } from '../utils/platformDetection';
+import { isHarmonyOS } from '../../../utils/platformDetection';
 import { harmonyOSPermissionService } from './HarmonyOSPermissionService';
-import { HarmonyOSPermission } from '../config/harmonyOSConfig';
+import { HarmonyOSPermission } from '../../../config/harmonyOSConfig';
 
 /**
  * 通知配置

@@ -4,7 +4,7 @@
  */
 import type { Message, MCPTool, Model } from '../types';
 import { buildSystemPrompt, type WorkspaceInfo } from '../utils/mcpPrompt';
-import { workspaceService } from '../services/WorkspaceService';
+import { workspaceService } from '../services/files/WorkspaceService';
 
 /**
  * 基础提供者接口
@@ -143,7 +143,7 @@ export abstract class AbstractBaseProvider implements BaseProvider {
 
     try {
       const result = await workspaceService.getWorkspaces();
-      this.cachedWorkspaces = result.workspaces.map(ws => ({
+      this.cachedWorkspaces = result.workspaces.map((ws: { id: string; name: string; path: string }) => ({
         id: ws.id,
         name: ws.name,
         path: ws.path

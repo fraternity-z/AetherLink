@@ -3,12 +3,12 @@
  * 在 store 加载后订阅事件，将文件修改同步到 Redux store
  */
 
-import store from '../store';
+import store from '../../store';
 import { 
   addFileChange, 
   setAgenticMode, 
   setCurrentTopicId 
-} from '../store/slices/agenticFilesSlice';
+} from '../../store/slices/agenticFilesSlice';
 import { agenticFileTracker } from './AgenticFileTracker';
 
 /**

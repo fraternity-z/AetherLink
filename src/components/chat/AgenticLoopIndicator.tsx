@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { agenticLoopService, type AgenticLoopState } from '../../shared/services/AgenticLoopService';
+import { agenticLoopService, type AgenticLoopState } from '../../shared/services/ai/AgenticLoopService';
 import './AgenticLoopIndicator.css';
 
 /**

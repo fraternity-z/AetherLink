@@ -31,7 +31,7 @@ import {
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { FileOpener } from '@capacitor-community/file-opener';
 import { performFullRestore } from '../../utils/restoreUtils';
-import { unifiedFileManager } from '../../../../../shared/services/UnifiedFileManagerService';
+import { unifiedFileManager } from '../../../../../shared/services/files/UnifiedFileManagerService';
 import { isCapacitor } from '../../../../../shared/utils/platformDetection';
 
 // 备份文件接口

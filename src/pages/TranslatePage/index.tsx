@@ -63,7 +63,7 @@ import { SolidBridge } from '../../shared/bridges/SolidBridge';
 import { DialogModelSelector as SolidDialogModelSelector } from '../../solid/components/ModelSelector/DialogModelSelector.solid';
 import type { Model } from '../../shared/types';
 import { getModelOrProviderIcon } from '../../shared/utils/providerIcons';
-import { ImageUploadService } from '../../shared/services/ImageUploadService';
+import { ImageUploadService } from '../../shared/services/files/ImageUploadService';
 
 // 提取到组件外部，避免每次渲染都重新创建
 const LanguageSelector = React.memo(({ value, onChange, showAuto = false }: {

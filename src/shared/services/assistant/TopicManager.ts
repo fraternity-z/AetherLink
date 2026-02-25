@@ -9,7 +9,7 @@ import { DEFAULT_TOPIC_PROMPT } from '../../config/prompts';
 import { dexieStorage } from '../storage/DexieStorageService';
 // 当需要生成UUID时再导入
 // import { uuid } from '../../utils';
-import { EventEmitter, EVENT_NAMES } from '../EventService';
+import { EventEmitter, EVENT_NAMES } from '../infra/EventService';
 
 /**
  * 话题关联管理服务 - 负责助手与话题之间的关联关系管理

@@ -4,8 +4,8 @@
  * 自动根据运行平台选择对应的后端实现
  */
 
-import { isTauri, isCapacitor } from '../utils/platformDetection';
-import { agenticFileTracker } from './AgenticFileTracker';
+import { isTauri, isCapacitor } from '../../utils/platformDetection';
+import { agenticFileTracker } from '../ai/AgenticFileTracker';
 import type {
   PermissionResult,
   FileInfo,
@@ -36,7 +36,7 @@ import type {
   GetFileHashOptions,
   GetFileHashResult,
   GetLineCountResult
-} from '../types/fileManager';
+} from '../../types/fileManager';
 
 // ============================================
 // Tauri 实现

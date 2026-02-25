@@ -275,7 +275,7 @@ export function exportAppearanceConfigToFile(config: AppearanceConfig, filename:
  */
 export async function exportAppearanceConfigToFolder(config: AppearanceConfig, filename: string = 'appearance-config.json'): Promise<string> {
   try {
-    const { unifiedFileManager } = await import('../services/UnifiedFileManagerService');
+    const { unifiedFileManager } = await import('../services/files/UnifiedFileManagerService');
     
     // 选择保存位置
     const result = await unifiedFileManager.openSystemFilePicker({

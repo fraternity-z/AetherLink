@@ -14,7 +14,7 @@ import store, { persistor } from './shared/store';
 import KnowledgeProvider from './components/KnowledgeManagement/KnowledgeProvider';
 import { CodeStyleProvider } from './context/CodeStyleProvider';
 import AppContent from './components/AppContent';
-import LoggerService from './shared/services/LoggerService';
+import LoggerService from './shared/services/infra/LoggerService';
 import { loadSettings } from './shared/store/settingsSlice';
 
 // 初始化日志拦截器

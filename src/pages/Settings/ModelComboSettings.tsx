@@ -33,7 +33,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-import { modelComboService } from '../../shared/services/ModelComboService';
+import { modelComboService } from '../../shared/services/ai/ModelComboService';
 import type { ModelComboConfig, ModelComboTemplate, ModelComboStrategy } from '../../shared/types/ModelCombo';
 import { useModelComboSync } from '../../shared/hooks/useModelComboSync';
 import { useTranslation } from 'react-i18next';

@@ -5,8 +5,8 @@
  */
 import { streamText, generateText } from 'ai';
 import type { OpenAIProvider as AISDKOpenAIProvider } from '@ai-sdk/openai';
-import { logApiRequest } from '../../services/LoggerService';
-import { EventEmitter, EVENT_NAMES } from '../../services/EventEmitter';
+import { logApiRequest } from '../../services/infra/LoggerService';
+import { EventEmitter, EVENT_NAMES } from '../../services/infra/EventEmitter';
 import { hasToolUseTags } from '../../utils/mcpToolParser';
 import { ChunkType, type Chunk } from '../../types/chunk';
 import { getAppropriateTag, type ReasoningTag, DEFAULT_REASONING_TAGS } from '../../config/reasoningTags';

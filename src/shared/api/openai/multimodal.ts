@@ -13,7 +13,7 @@ import {
   isGeminiModel,
   isGemmaModel
 } from '../../../config/models';
-import { mobileFileStorage } from '../../services/MobileFileStorageService';
+import { mobileFileStorage } from '../../services/files/MobileFileStorageService';
 
 // 定义消息参数类型，避免使用OpenAI类型
 export interface ChatCompletionMessageParam {

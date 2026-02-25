@@ -1,4 +1,4 @@
-import { log } from '../../services/LoggerService';
+import { log } from '../../services/infra/LoggerService';
 
 /**
  * Google Veo 2 视频生成参数

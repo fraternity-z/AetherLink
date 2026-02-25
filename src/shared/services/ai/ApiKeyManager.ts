@@ -3,7 +3,7 @@
  * 负责多 Key 的负载均衡、故障转移和状态管理
  */
 
-import type { ApiKeyConfig } from '../config/defaultModels';
+import type { ApiKeyConfig } from '../../config/defaultModels';
 
 export type LoadBalanceStrategy = 'round_robin' | 'priority' | 'least_used' | 'random';
 

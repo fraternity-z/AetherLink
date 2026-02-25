@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux';
 import { useRef } from 'react';
-import { EventEmitter, EVENT_NAMES } from '../services/EventService';
+import { EventEmitter, EVENT_NAMES } from '../services/infra/EventService';
 import { TopicService } from '../services/topics/TopicService';
 import { AssistantService } from '../services';
 import { newMessagesActions } from '../store/slices/newMessagesSlice';

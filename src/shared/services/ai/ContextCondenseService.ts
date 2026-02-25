@@ -4,16 +4,16 @@
  */
 
 import { v4 as uuid } from 'uuid';
-import { dexieStorage } from './storage/DexieStorageService';
-import type { Message, ContextSummaryMessageBlock } from '../types/newMessage';
-import { MessageBlockType, MessageBlockStatus } from '../types/newMessage';
-import { getMainTextContent } from '../utils/blockUtils';
-import store from '../store';
-import type { Model } from '../types';
-import { findModelInProviders } from '../utils/modelUtils';
-import { ApiProviderRegistry } from './messages/ApiProvider';
-import { newMessagesActions } from '../store/slices/newMessagesSlice';
-import { upsertOneBlock } from '../store/slices/messageBlocksSlice';
+import { dexieStorage } from '../storage/DexieStorageService';
+import type { Message, ContextSummaryMessageBlock } from '../../types/newMessage';
+import { MessageBlockType, MessageBlockStatus } from '../../types/newMessage';
+import { getMainTextContent } from '../../utils/blockUtils';
+import store from '../../store';
+import type { Model } from '../../types';
+import { findModelInProviders } from '../../utils/modelUtils';
+import { ApiProviderRegistry } from '../messages/ApiProvider';
+import { newMessagesActions } from '../../store/slices/newMessagesSlice';
+import { upsertOneBlock } from '../../store/slices/messageBlocksSlice';
 
 // 常量配置
 export const N_MESSAGES_TO_KEEP = 3; // 保留最后3条消息

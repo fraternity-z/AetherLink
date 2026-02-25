@@ -2,7 +2,7 @@ import { storageService } from './storage/storageService';
 import { AssistantService } from './assistant';
 import { DB_CONFIG } from '../types/DatabaseSchema';
 import { dexieStorage } from './storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from './EventService';
+import { EventEmitter, EVENT_NAMES } from './infra/EventService';
 import Dexie from 'dexie';
 import { getStorageItem } from '../utils/storage';
 
@@ -16,7 +16,7 @@ export {
 };
 
 // 导出状态栏服务
-export { statusBarService, StatusBarService } from './StatusBarService';
+export { statusBarService, StatusBarService } from './platform/StatusBarService';
 
 // 版本检查状态缓存
 let versionCheckPromise: Promise<any> | null = null;
@@ -191,7 +191,7 @@ export async function initializeServices(): Promise<void> {
     // 初始化开发者工具服务
     try {
       // 使用静态导入以避免动态导入警告
-      const { default: EnhancedConsoleService } = await import('./EnhancedConsoleService');
+      const { default: EnhancedConsoleService } = await import('./infra/EnhancedConsoleService');
 
       // 初始化控制台拦截
       EnhancedConsoleService.getInstance();

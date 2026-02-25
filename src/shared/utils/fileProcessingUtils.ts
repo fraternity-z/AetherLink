@@ -3,8 +3,8 @@
  * 消除重复的文件处理逻辑，提供统一的文件操作接口
  */
 import type { FileType } from '../types';
-import { MobileFileStorageService } from '../services/MobileFileStorageService';
-import { log } from '../services/LoggerService';
+import { MobileFileStorageService } from '../services/files/MobileFileStorageService';
+import { log } from '../services/infra/LoggerService';
 
 /**
  * Base64 数据结果

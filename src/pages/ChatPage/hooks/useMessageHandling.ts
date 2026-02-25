@@ -4,7 +4,7 @@ import store from '../../../shared/store';
 import { selectMessagesForTopic } from '../../../shared/store/selectors/messageSelectors';
 import { sendMessage, deleteMessage, regenerateResponse } from '../../../shared/store/thunks/messageThunk';
 import { loadTopicMessagesThunk } from '../../../shared/store/slices/newMessagesSlice';
-import { versionService } from '../../../shared/services/VersionService';
+import { versionService } from '../../../shared/services/messages/VersionService';
 import type { SiliconFlowImageFormat } from '../../../shared/types';
 import type { AppDispatch } from '../../../shared/store';
 import { findModelInProviders } from '../../../shared/utils/modelUtils';

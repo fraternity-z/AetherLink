@@ -5,9 +5,9 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { detectRuntime, RuntimeType } from '../utils/platformDetection';
-import { dexieStorage } from './storage/DexieStorageService';
-import type { FileType, FileContent } from '../types';
+import { detectRuntime, RuntimeType } from '../../utils/platformDetection';
+import { dexieStorage } from '../storage/DexieStorageService';
+import type { FileType, FileContent } from '../../types';
 
 // 文件类型常量
 const FileTypes = {

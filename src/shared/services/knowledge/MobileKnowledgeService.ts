@@ -4,7 +4,7 @@
  */
 import { v4 as uuid } from 'uuid';
 import { dexieStorage } from '../storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from '../EventService';
+import { EventEmitter, EVENT_NAMES } from '../infra/EventService';
 import { MobileEmbeddingService } from './MobileEmbeddingService';
 import { EnhancedRAGService } from './EnhancedRAGService';
 import {

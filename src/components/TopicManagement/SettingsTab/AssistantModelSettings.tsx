@@ -35,7 +35,7 @@ import { updateAssistant } from '../../../shared/store/slices/assistantsSlice';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
 import type { Assistant, CustomParameter, CustomParameterType } from '../../../shared/types/Assistant';
 import type { ThinkingOption } from '../../../shared/config/reasoningConfig';
-import { parameterSyncService } from '../../../shared/services/ParameterSyncService';
+import { parameterSyncService } from '../../../shared/services/assistant/ParameterSyncService';
 
 // TabPanel组件
 interface TabPanelProps {

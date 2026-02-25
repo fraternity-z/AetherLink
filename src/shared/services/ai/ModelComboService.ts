@@ -4,13 +4,13 @@ import type {
   ModelComboResult,
   ModelComboTemplate,
   RoutingCondition
-} from '../types/ModelCombo';
-import type { Model } from '../types';
-import { dexieStorage } from './storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from './EventEmitter';
-import { sendChatRequest } from '../api';
-import store from '../store';
-import { modelMatchesIdentity, parseModelIdentityKey } from '../utils/modelUtils';
+} from '../../types/ModelCombo';
+import type { Model } from '../../types';
+import { dexieStorage } from '../storage/DexieStorageService';
+import { EventEmitter, EVENT_NAMES } from '../infra/EventEmitter';
+import { sendChatRequest } from '../../api';
+import store from '../../store';
+import { modelMatchesIdentity, parseModelIdentityKey } from '../../utils/modelUtils';
 
 /**
  * 模型组合服务

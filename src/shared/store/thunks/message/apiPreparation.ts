@@ -11,7 +11,7 @@ import store, { type RootState } from '../../index';
 import { getKnowledgeSelectionFromStore } from '../../../hooks/useKnowledgeContext';
 import { clearSelectedKnowledgeBase } from '../../slices/knowledgeSelectionSlice';
 import { injectSystemPromptVariables } from '../../../utils/systemPromptVariables';
-import { EventEmitter, EVENT_NAMES } from '../../../services/EventService';
+import { EventEmitter, EVENT_NAMES } from '../../../services/infra/EventService';
 import { getContextSettings, estimateMessagesTokenCount, truncateConversation } from '../../../services/messages/messageService';
 import { applyRegexRulesForSending } from '../../../utils/regexUtils';
 import type { AssistantRegex } from '../../../types/Assistant';

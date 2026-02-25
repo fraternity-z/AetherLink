@@ -10,7 +10,7 @@ import {
 } from '../utils/platformDetection';
 import { 
   harmonyOSPermissionService 
-} from '../services/HarmonyOSPermissionService';
+} from '../services/platform/harmonyos/HarmonyOSPermissionService';
 import { 
   HarmonyOSPermission,
   HARMONYOS_CLIPBOARD_CONFIG,

@@ -20,10 +20,10 @@ import SystemPromptBubble from '../prompts/SystemPromptBubble';
 import SystemPromptDialog from '../dialogs/SystemPromptDialog';
 import type { ChatTopic, Assistant } from '../../shared/types/Assistant';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
-import { topicCacheManager } from '../../shared/services/TopicCacheManager';
+import { topicCacheManager } from '../../shared/services/topics/TopicCacheManager';
 import { getGroupedMessages, MessageGroupingType } from '../../shared/utils/messageGrouping';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
-import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventEmitter';
+import { EventEmitter, EVENT_NAMES } from '../../shared/services/infra/EventEmitter';
 
 interface SolidMessageListProps {
   messages: Message[];

@@ -1,7 +1,7 @@
 import store from '../../../store';
 import { dexieStorage } from '../../storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from '../../EventService';
-import { createStreamProcessor } from '../../StreamProcessingService';
+import { EventEmitter, EVENT_NAMES } from '../../infra/EventService';
+import { createStreamProcessor } from '../StreamProcessingService';
 import { MessageBlockStatus, AssistantMessageStatus, MessageBlockType } from '../../../types/newMessage';
 import { newMessagesActions } from '../../../store/slices/newMessagesSlice';
 import type { ErrorInfo } from '../../../store/slices/newMessagesSlice';

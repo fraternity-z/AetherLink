@@ -8,7 +8,7 @@ import '../markdown.css';
 
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { ToolMessageBlock } from '../../../shared/types/newMessage';
-import { EventEmitter } from '../../../shared/services/EventEmitter';
+import { EventEmitter } from '../../../shared/services/infra/EventEmitter';
 import { MessageWebSearchTool } from '../MessageWebSearchTool';
 
 interface Props {

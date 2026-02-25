@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import LoggerService from '../LoggerService';
+import LoggerService from '../infra/LoggerService';
 
 // 请求记录类型
 export interface RequestRecord {

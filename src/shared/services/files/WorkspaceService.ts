@@ -4,7 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { dexieStorage } from './storage/DexieStorageService';
+import { dexieStorage } from '../storage/DexieStorageService';
 import { unifiedFileManager } from './UnifiedFileManagerService';
 import type {
   Workspace,
@@ -13,7 +13,7 @@ import type {
   WorkspaceListResponse,
   WorkspaceFilesResponse,
   WorkspaceActionResult
-} from '../types/workspace';
+} from '../../types/workspace';
 
 const WORKSPACE_STORAGE_KEY = 'workspaces';
 export const ENABLE_WORKSPACE_SIDEBAR_KEY = 'ENABLE_WORKSPACE_SIDEBAR';

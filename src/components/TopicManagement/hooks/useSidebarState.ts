@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { createSelector } from '@reduxjs/toolkit';
 import { useAssistant } from '../../../shared/hooks';
 import { AssistantService } from '../../../shared/services';
-import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
+import { EventEmitter, EVENT_NAMES } from '../../../shared/services/infra/EventService';
 import { setSidebarTabIndex } from '../../../shared/store/settingsSlice';
 import type { Assistant } from '../../../shared/types/Assistant';
 import type { RootState } from '../../../shared/store';

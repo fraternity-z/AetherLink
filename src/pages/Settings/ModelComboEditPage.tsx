@@ -26,7 +26,7 @@ import DropdownModelSelector from '../ChatPage/components/DropdownModelSelector'
 import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../shared/utils/modelUtils';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useTranslation } from 'react-i18next';
-import { modelComboService } from '../../shared/services/ModelComboService';
+import { modelComboService } from '../../shared/services/ai/ModelComboService';
 import { useModelComboSync } from '../../shared/hooks/useModelComboSync';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
 

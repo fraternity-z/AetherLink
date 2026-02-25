@@ -5,7 +5,7 @@ import { DataRepository } from '../../../services/storage/DataRepository';
 import { createAssistantMessage } from '../../../utils/messageUtils';
 import { saveMessageAndBlocksToDB } from './utils';
 import { processAssistantResponse } from './assistantResponse';
-import { versionService } from '../../../services/VersionService';
+import { versionService } from '../../../services/messages/VersionService';
 import { getMainTextContent } from '../../../utils/blockUtils';
 import { getModelIdentityKey } from '../../../utils/modelUtils';
 import type { Message } from '../../../types/newMessage';

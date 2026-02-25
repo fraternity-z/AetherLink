@@ -45,7 +45,7 @@ import {
   togglePanelVisibility,
 } from '../../shared/store/slices/agenticFilesSlice';
 import type { FileChange, FileOperationType } from '../../shared/store/slices/agenticFilesSlice';
-import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/files/UnifiedFileManagerService';
 import SimpleDiffViewer from './SimpleDiffViewer';
 
 /** 获取操作类型的图标 */

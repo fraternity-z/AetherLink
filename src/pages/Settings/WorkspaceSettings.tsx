@@ -42,7 +42,7 @@ import {
   FolderOpen as FolderOpenIcon,
   Shield as ShieldIcon
 } from 'lucide-react';
-import { workspaceService, ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/WorkspaceService';
+import { workspaceService, ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/files/WorkspaceService';
 import { WorkspaceCreateDialog } from '../../components/dialogs/WorkspaceCreateDialog';
 import { toastManager } from '../../components/EnhancedToast';
 import type { Workspace } from '../../shared/types/workspace';

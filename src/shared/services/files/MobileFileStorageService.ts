@@ -5,9 +5,9 @@
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
-import { dexieStorage } from './storage/DexieStorageService';
-import type { FileType } from '../types';
-import { getFileTypeByExtension, getFileMimeType } from '../utils/fileUtils';
+import { dexieStorage } from '../storage/DexieStorageService';
+import type { FileType } from '../../types';
+import { getFileTypeByExtension, getFileMimeType } from '../../utils/fileUtils';
 
 // 文件类型常量
 export const FileTypes = {

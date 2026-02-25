@@ -1,5 +1,5 @@
 import store from '../../store';
-import { EventEmitter, EVENT_NAMES } from '../EventService';
+import { EventEmitter, EVENT_NAMES } from '../infra/EventService';
 import { AssistantMessageStatus } from '../../types/newMessage';
 import { newMessagesActions } from '../../store/slices/newMessagesSlice';
 import type { Chunk, TextDeltaChunk } from '../../types/chunk';

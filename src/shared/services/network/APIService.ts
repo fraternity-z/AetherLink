@@ -1,14 +1,14 @@
 import type { Model } from '../../types';
-import { logApiRequest, logApiResponse } from '../LoggerService';
+import { logApiRequest, logApiResponse } from '../infra/LoggerService';
 import { handleError } from '../../utils/error';
 import type { ImageGenerationParams, GeneratedImage } from '../../types';
 import { ModelType } from '../../types';
-import { log } from '../LoggerService';
+import { log } from '../infra/LoggerService';
 import { generateImage as openaiGenerateImage, generateVideo as openaiGenerateVideo } from '../../api/openai';
 import { generateVideoWithVeo } from '../../api/gemini-aisdk/veo';
 import type { VideoGenerationParams } from '../../api/openai/video';
 import type { GoogleVeoParams } from '../../api/gemini-aisdk/veo';
-import { fetchModels as factoryFetchModels } from '../ProviderFactory';
+import { fetchModels as factoryFetchModels } from '../ai/ProviderFactory';
 import { getModelIdentityKey } from '../../utils/modelUtils';
 
 // 重新导出类型

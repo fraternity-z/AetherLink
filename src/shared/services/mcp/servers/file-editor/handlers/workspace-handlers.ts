@@ -2,7 +2,7 @@
  * 工作区相关处理器
  */
 
-import { workspaceService } from '../../../../WorkspaceService';
+import { workspaceService } from '../../../../files/WorkspaceService';
 import { createSuccessResponse } from '../utils/response';
 
 /** 工作区缓存 */

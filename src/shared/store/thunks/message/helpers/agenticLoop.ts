@@ -3,8 +3,8 @@
  */
 import { v4 as uuid } from 'uuid';
 import store from '../../../index';
-import { agenticLoopService } from '../../../../services/AgenticLoopService';
-import { agenticFileTracker } from '../../../../services/AgenticFileTracker';
+import { agenticLoopService } from '../../../../services/ai/AgenticLoopService';
+import { agenticFileTracker } from '../../../../services/ai/AgenticFileTracker';
 import type { MessageBlock, ToolMessageBlock } from '../../../../types/newMessage';
 import { MessageBlockType, MessageBlockStatus } from '../../../../types/newMessage';
 import { 

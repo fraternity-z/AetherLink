@@ -5,7 +5,7 @@
 import OpenAI from 'openai';
 import type { ClientOptions } from 'openai';
 import type { Model } from '../../types';
-import { logApiRequest } from '../../services/LoggerService';
+import { logApiRequest } from '../../services/infra/LoggerService';
 import { isReasoningModel } from '../../../config/models';
 import { createPlatformFetch, createHeaderFilterFetch } from '../../utils/universalFetch';
 

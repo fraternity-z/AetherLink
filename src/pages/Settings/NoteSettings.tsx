@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { simpleNoteService } from '../../shared/services/notes/SimpleNoteService';
-import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/files/UnifiedFileManagerService';
 import { useNotesSearch } from '../../shared/hooks/useNotesSearch';
 import { toastManager } from '../../components/EnhancedToast';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';

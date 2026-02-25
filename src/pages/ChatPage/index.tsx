@@ -14,9 +14,9 @@ import {
   selectTopicStreaming
 } from '../../shared/store/selectors/messageSelectors';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from '../../shared/services/EventService';
+import { EventEmitter, EVENT_NAMES } from '../../shared/services/infra/EventService';
 import { TopicService } from '../../shared/services/topics/TopicService';
-import { VideoTaskManager } from '../../shared/services/VideoTaskManager';
+import { VideoTaskManager } from '../../shared/services/ai/VideoTaskManager';
 import { newMessagesActions } from '../../shared/store/slices/newMessagesSlice';
 import { addTopic } from '../../shared/store/slices/assistantsSlice';
 import { useActiveTopic } from '../../hooks/useActiveTopic';

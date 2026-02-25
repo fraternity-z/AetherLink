@@ -5,7 +5,7 @@ import type { MessageBlock } from '../../../types/newMessage';
 import type { Chunk, TextDeltaChunk, TextCompleteChunk, ThinkingDeltaChunk, ThinkingCompleteChunk } from '../../../types/chunk';
 import { ChunkType } from '../../../types/chunk';
 import { v4 as uuid } from 'uuid';
-import { EventEmitter, EVENT_NAMES } from '../../EventService';
+import { EventEmitter, EVENT_NAMES } from '../../infra/EventService';
 
 // 1. 定义服务接口，便于测试和解耦
 interface StorageService {

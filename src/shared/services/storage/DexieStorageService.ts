@@ -8,7 +8,7 @@ import { DB_CONFIG, VERSION_CONFIGS, type Memory } from '../../database/config';
 import { databaseMigrationManager } from '../../database/migrations';
 import { throttle } from 'lodash';
 import { makeSerializable, diagnoseSerializationIssues } from '../../utils/serialization';
-import { DataRepairService } from '../DataRepairService';
+import { DataRepairService } from './DataRepairService';
 
 
 /**

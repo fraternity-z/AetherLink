@@ -3,7 +3,7 @@
  * 提供错误格式化、错误详情提取、统一错误处理等功能
  * 添加完整的 AI SDK 错误序列化支持
  */
-import LoggerService from '../services/LoggerService';
+import LoggerService from '../services/infra/LoggerService';
 import type {
   AiSdkErrorUnion,
   SerializedError,

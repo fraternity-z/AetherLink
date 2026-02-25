@@ -6,7 +6,7 @@
 import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
-import { longTextPasteService, type PasteResult } from '../services/LongTextPasteService';
+import { longTextPasteService, type PasteResult } from '../services/files/LongTextPasteService';
 import type { FileContent } from '../types';
 
 export interface UseLongTextPasteOptions {

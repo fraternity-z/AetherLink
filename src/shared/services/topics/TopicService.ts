@@ -9,7 +9,7 @@ import { updateOneBlock, upsertManyBlocks } from '../../store/slices/messageBloc
 import { formatDateForTopicTitle } from '../../utils';
 import { DEFAULT_TOPIC_PROMPT } from '../../config/prompts';
 import { dexieStorage } from '../storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from '../EventService';
+import { EventEmitter, EVENT_NAMES } from '../infra/EventService';
 import { createUserMessage } from '../../utils/messageUtils';
 import { newMessagesActions } from '../../store/slices/newMessagesSlice';
 // 导入助手类型模块，避免动态导入

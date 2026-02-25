@@ -2,7 +2,7 @@
  * 思考内容调试服务
  * 专门用于追踪和调试思考内容的处理过程，帮助发现内容丢失问题
  */
-import { getStorageItem, setStorageItem, removeStorageItem } from '../utils/storage';
+import { getStorageItem, setStorageItem, removeStorageItem } from '../../utils/storage';
 
 export interface ThinkingDebugEntry {
   id: string;

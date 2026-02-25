@@ -11,7 +11,7 @@ import { Bot, MessageSquare, Settings, FileText, FolderOpen, Languages } from 'l
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { ENABLE_NOTE_SIDEBAR_KEY } from '../../shared/services/notes/SimpleNoteService';
-import { ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/WorkspaceService';
+import { ENABLE_WORKSPACE_SIDEBAR_KEY } from '../../shared/services/files/WorkspaceService';
 import { useNavigate } from 'react-router-dom';
 
 /**

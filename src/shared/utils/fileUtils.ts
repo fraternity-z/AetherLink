@@ -2,7 +2,7 @@
  * 文件处理工具
  * 提供文件处理相关的工具函数
  */
-import { mobileFileStorage } from '../services/MobileFileStorageService';
+import { mobileFileStorage } from '../services/files/MobileFileStorageService';
 
 /**
  * 文件类型接口

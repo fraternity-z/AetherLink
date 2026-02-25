@@ -23,7 +23,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { loadLanguage } from '@uiw/codemirror-extensions-langs';
 import { EditorView } from '@codemirror/view';
 
-import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/files/UnifiedFileManagerService';
 import { formatFileSize, getFileType, getLanguage, isEditableFile } from './utils';
 import type { DesktopFileViewerProps, WorkspaceFile, EditorSettings } from './types';
 

@@ -18,7 +18,7 @@ import { abortCompletion } from '../../../shared/utils/abortController';
 import store from '../../../shared/store';
 import { setActiveProviderId } from '../../../shared/store/slices/webSearchSlice';
 import { TopicService } from '../../../shared/services/topics/TopicService';
-import { VideoTaskManager } from '../../../shared/services/VideoTaskManager';
+import { VideoTaskManager } from '../../../shared/services/ai/VideoTaskManager';
 import type { SiliconFlowImageFormat, GoogleVeoParams } from '../../../shared/types';
 
 /**

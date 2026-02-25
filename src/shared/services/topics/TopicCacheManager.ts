@@ -3,8 +3,8 @@
  * 使用 Promise 缓存解决重复查询和竞态条件
  */
 
-import { dexieStorage } from './storage/DexieStorageService';
-import type { ChatTopic } from '../types/Assistant';
+import { dexieStorage } from '../storage/DexieStorageService';
+import type { ChatTopic } from '../../types/Assistant';
 
 const CACHE_TTL = 30000; // 30秒
 const MAX_CACHE_SIZE = 100;

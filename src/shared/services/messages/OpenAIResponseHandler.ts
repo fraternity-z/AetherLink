@@ -1,5 +1,5 @@
 import store from '../../store';
-import { EventEmitter } from '../EventService';
+import { EventEmitter } from '../infra/EventService';
 import { AssistantMessageStatus } from '../../types/newMessage';
 import { newMessagesActions } from '../../store/slices/newMessagesSlice';
 import { addOneBlock, updateOneBlock } from '../../store/slices/messageBlocksSlice';

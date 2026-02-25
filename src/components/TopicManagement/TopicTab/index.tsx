@@ -38,7 +38,7 @@ import { addItemToGroup } from '../../../shared/store/slices/groupsSlice';
 import { removeTopic, addTopic } from '../../../shared/store/slices/assistantsSlice';
 import GroupDialog from '../GroupDialog';
 import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
-import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventService';
+import { EventEmitter, EVENT_NAMES } from '../../../shared/services/infra/EventService';
 import { getMainTextContent } from '../../../shared/utils/blockUtils';
 import type { ChatTopic } from '../../../shared/types';
 import type { Assistant } from '../../../shared/types/Assistant';

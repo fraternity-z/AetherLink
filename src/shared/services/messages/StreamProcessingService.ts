@@ -1,7 +1,7 @@
 /**
  * 流处理服务 - 参考最佳实例架构，简化流处理逻辑
  */
-import { AssistantMessageStatus } from '../types/newMessage';
+import { AssistantMessageStatus } from '../../types/newMessage';
 import type {
   Chunk,
   TextDeltaChunk,
@@ -9,8 +9,8 @@ import type {
   ThinkingDeltaChunk,
   ThinkingCompleteChunk,
   BlockCompleteChunk
-} from '../types/chunk';
-import { ChunkType } from '../types/chunk';
+} from '../../types/chunk';
+import { ChunkType } from '../../types/chunk';
 
 // 流处理器回调接口 - 简化版本，参考最佳实例
 export interface StreamProcessorCallbacks {

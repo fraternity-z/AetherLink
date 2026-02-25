@@ -20,7 +20,7 @@ import ErrorBoundary from '../../../components/ErrorBoundary';
 import AgenticFilesList from '../../../components/AgenticFilesList';
 import type { DebateConfig } from '../../../shared/services/AIDebateService';
 import { createSelector } from 'reselect';
-import { contextCondenseService } from '../../../shared/services/ContextCondenseService';
+import { contextCondenseService } from '../../../shared/services/ai/ContextCondenseService';
 import { Z_INDEX } from '../../../shared/constants/zIndex';
 
 

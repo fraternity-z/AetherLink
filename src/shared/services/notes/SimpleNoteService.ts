@@ -1,4 +1,4 @@
-import { unifiedFileManager } from '../UnifiedFileManagerService';
+import { unifiedFileManager } from '../files/UnifiedFileManagerService';
 import { dexieStorage } from '../../services/storage/DexieStorageService';
 import type { NoteFile } from '../../types/note';
 

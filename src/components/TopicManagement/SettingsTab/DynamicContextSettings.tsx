@@ -26,7 +26,7 @@ import { collapsibleHeaderStyle } from './scrollOptimization';
 import type { ProviderType } from '../../../shared/api/parameters/types';
 import { detectProviderFromModel } from '../../../shared/config/parameterMetadata';
 import ParameterEditor from '../../ParameterEditor/ParameterEditor';
-import { parameterSyncService, PARAMETER_EVENT_MAP, type SyncableParameterKey } from '../../../shared/services/ParameterSyncService';
+import { parameterSyncService, PARAMETER_EVENT_MAP, type SyncableParameterKey } from '../../../shared/services/assistant/ParameterSyncService';
 
 interface DynamicContextSettingsProps {
   /** 当前模型 ID */

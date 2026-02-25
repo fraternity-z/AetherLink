@@ -6,7 +6,7 @@ import App from './App';
 import './index.css';
 import { initStorageService, dexieStorage } from './shared/services/storage/storageService';
 import { initializeServices } from './shared/services';
-import { initAgenticFileTracker } from './shared/services/AgenticFileTrackerInit';
+import { initAgenticFileTracker } from './shared/services/ai/AgenticFileTrackerInit';
 // 🚀 性能优化：i18n 初始化改为静态导入，避免动态导入冲突
 import './i18n/config';
 // 移除旧的系统提示词slice引用

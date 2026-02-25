@@ -9,7 +9,7 @@ import { newMessagesActions } from '../shared/store/slices/newMessagesSlice';
 import { setCurrentAssistant, setAssistants } from '../shared/store/slices/assistantsSlice';
 import { initGroups } from '../shared/store/slices/groupsSlice';
 import { useModelComboSync } from '../shared/hooks/useModelComboSync';
-import { unifiedFileManager } from '../shared/services/UnifiedFileManagerService';
+import { unifiedFileManager } from '../shared/services/files/UnifiedFileManagerService';
 
 // 全局初始化标志，防止多个组件实例同时初始化
 let globalInitialized = false;

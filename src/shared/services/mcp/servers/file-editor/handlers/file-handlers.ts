@@ -2,7 +2,7 @@
  * 文件读写相关处理器
  */
 
-import { unifiedFileManager } from '../../../../UnifiedFileManagerService';
+import { unifiedFileManager } from '../../../../files/UnifiedFileManagerService';
 import { createSuccessResponse } from '../utils/response';
 import { validateFileTokenBudget, extractCodeDefinitions } from '../utils/code-analysis';
 import { truncateFileContent } from '../utils/text-processing';

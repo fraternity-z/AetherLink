@@ -7,7 +7,7 @@ import type { ImageContent, FileContent } from '../../../shared/types';
 import type { FileStatus } from '../../preview/FilePreview';
 import IntegratedFilePreview from '../../preview/IntegratedFilePreview';
 import { toastManager } from '../../EnhancedToast';
-import { topicCacheManager } from '../../../shared/services/TopicCacheManager';
+import { topicCacheManager } from '../../../shared/services/topics/TopicCacheManager';
 
 interface FileUploadManagerProps {
   images: ImageContent[];

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { safeAreaService, type SafeAreaInsets } from '../../shared/services/SafeAreaService';
+import { safeAreaService, type SafeAreaInsets } from '../../shared/services/platform/SafeAreaService';
 
 /**
  * 安全区域调试组件

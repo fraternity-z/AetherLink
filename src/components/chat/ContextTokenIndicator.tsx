@@ -4,7 +4,7 @@ import { Zap, Database } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
 import { selectMessagesForTopic } from '../../shared/store/selectors/messageSelectors';
-import { estimateMessagesTokens } from '../../shared/services/ContextCondenseService';
+import { estimateMessagesTokens } from '../../shared/services/ai/ContextCondenseService';
 import { findModelInProviders } from '../../shared/utils/modelUtils';
 import { getMainTextContent } from '../../shared/utils/blockUtils';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';

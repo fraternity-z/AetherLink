@@ -2,7 +2,7 @@
  * 搜索相关处理器
  */
 
-import { unifiedFileManager } from '../../../../UnifiedFileManagerService';
+import { unifiedFileManager } from '../../../../files/UnifiedFileManagerService';
 import { createSuccessResponse } from '../utils/response';
 
 /**

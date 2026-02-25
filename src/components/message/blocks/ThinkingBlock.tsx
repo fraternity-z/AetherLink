@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
 import type { ThinkingMessageBlock } from '../../../shared/types/newMessage';
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
-import { EventEmitter, EVENT_NAMES } from '../../../shared/services/EventEmitter';
+import { EventEmitter, EVENT_NAMES } from '../../../shared/services/infra/EventEmitter';
 import { useDeepMemo } from '../../../hooks/useMemoization';
 import ThinkingDisplayRenderer from './ThinkingDisplayRenderer';
 import { useTranslation } from '../../../i18n';

@@ -6,7 +6,7 @@
  * 避免循环依赖问题
  */
 
-import type { FileOperationType } from '../store/slices/agenticFilesSlice';
+import type { FileOperationType } from '../../store/slices/agenticFilesSlice';
 
 /** 文件修改事件数据 */
 export interface FileChangeEvent {

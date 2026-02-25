@@ -9,7 +9,7 @@ import {
   openAIChunkToTextDelta
 } from '../../utils/streamUtils';
 import type { OpenAIStreamChunk } from '../../utils/streamUtils';
-import { EventEmitter, EVENT_NAMES } from '../../services/EventEmitter';
+import { EventEmitter, EVENT_NAMES } from '../../services/infra/EventEmitter';
 import { getAppropriateTag } from '../../config/reasoningTags';
 import { extractReasoningMiddleware } from '../../middlewares/extractReasoningMiddleware';
 import { createAbortController, isAbortError } from '../../utils/abortController';

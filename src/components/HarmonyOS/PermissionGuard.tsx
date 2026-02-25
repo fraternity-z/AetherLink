@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { HarmonyOSPermission } from '../../shared/config/harmonyOSConfig';
-import { harmonyOSPermissionService } from '../../shared/services/HarmonyOSPermissionService';
+import { harmonyOSPermissionService } from '../../shared/services/platform/harmonyos/HarmonyOSPermissionService';
 import { isHarmonyOS } from '../../shared/utils/platformDetection';
 import HarmonyOSPermissionDialog from './PermissionDialog';
 

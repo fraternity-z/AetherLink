@@ -3,10 +3,10 @@
  * 集中处理不同AI模型的思考过程数据
  */
 
-import type { Message, Model } from '../types';
-import { isReasoningModel } from '../../config/models';
-import type { ThinkingOption } from '../config/reasoningConfig';
-import { getThinkingBudget } from '../config/reasoningConfig';
+import type { Message, Model } from '../../types';
+import { isReasoningModel } from '../../../config/models';
+import type { ThinkingOption } from '../../config/reasoningConfig';
+import { getThinkingBudget } from '../../config/reasoningConfig';
 
 // 思考过程源类型 - 使用常量对象而不是enum（解决编译错误）
 export const ThinkingSourceType = {

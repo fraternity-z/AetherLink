@@ -39,7 +39,7 @@ import ConsolePanel from '../components/DevTools/ConsolePanel';
 import type { ConsolePanelRef } from '../components/DevTools/ConsolePanel';
 import NetworkPanel from '../components/DevTools/NetworkPanel';
 import type { NetworkPanelRef } from '../components/DevTools/NetworkPanel';
-import EnhancedConsoleService from '../shared/services/EnhancedConsoleService';
+import EnhancedConsoleService from '../shared/services/infra/EnhancedConsoleService';
 import EnhancedNetworkService from '../shared/services/network/EnhancedNetworkService';
 import { SafeAreaContainer } from '../components/settings/SettingComponents';
 import { toastManager } from '../components/EnhancedToast';

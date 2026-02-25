@@ -22,8 +22,8 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { loadLanguage } from '@uiw/codemirror-extensions-langs';
 import { EditorView } from '@codemirror/view';
 
-import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
-import { statusBarService } from '../../shared/services/StatusBarService';
+import { unifiedFileManager } from '../../shared/services/files/UnifiedFileManagerService';
+import { statusBarService } from '../../shared/services/platform/StatusBarService';
 import { usePinchZoom } from './hooks/usePinchZoom';
 import { FileIcon } from './components/FileIcon';
 import { ZoomControls } from './components/ZoomControls';

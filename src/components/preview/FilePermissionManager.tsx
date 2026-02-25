@@ -24,7 +24,7 @@ import {
   FileText,
   Settings
 } from 'lucide-react';
-import { unifiedFileManager } from '../../shared/services/UnifiedFileManagerService';
+import { unifiedFileManager } from '../../shared/services/files/UnifiedFileManagerService';
 import { toastManager } from '../EnhancedToast';
 import { Capacitor } from '@capacitor/core';
 
