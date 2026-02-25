@@ -438,6 +438,101 @@ export function logFetchUsage(originalUrl: string, finalUrl: string, method: str
   console.log(`[Universal Fetch] ${method} ${originalUrl} -> ${finalUrl}`);
 }
 
+// ==================== 统一 fetch 层（供各 Provider client.ts 使用） ====================
+
+/**
+ * 创建 Web 端 CORS 代理 fetch
+ * 将跨域请求重写为 localhost:8888 代理
+ */
+export function createProxyFetch(): typeof fetch {
+  return async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as any).url;
+
+    if (needsCORSProxy(urlStr)) {
+      const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(urlStr)}`;
+      console.log(`[ProxyFetch] 使用代理: ${urlStr.substring(0, 50)}...`);
+
+      try {
+        return await fetch(proxyUrl, init);
+      } catch (error) {
+        console.error(`[ProxyFetch] 代理请求失败:`, error);
+        throw error;
+      }
+    }
+
+    return fetch(urlStr, init);
+  };
+}
+
+/**
+ * 创建平台适配的 fetch 函数（核心统一函数）
+ * 所有 Provider 的 client.ts 都应使用此函数，而非各自实现平台检测逻辑
+ *
+ * @param model 模型配置，需包含 useCorsPlugin 字段（可选）
+ * @returns 平台适配的 fetch 函数，或 undefined（使用 SDK 默认 fetch）
+ */
+export function createPlatformFetch(model: { useCorsPlugin?: boolean }): typeof fetch | undefined {
+  const isTauriEnv = isTauri();
+  const isCapacitorNative = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
+  const isWeb = !isTauriEnv && !isCapacitorNative;
+
+  if (isTauriEnv) {
+    console.log(`[PlatformFetch] Tauri 平台：使用 universalFetch`);
+    return async (url: RequestInfo | URL, init?: RequestInit) => {
+      return universalFetch(url.toString(), init);
+    };
+  }
+
+  if (isCapacitorNative) {
+    const fetchMode = model.useCorsPlugin ? 'CorsBypass Plugin' : 'Standard Fetch';
+    console.log(`[PlatformFetch] Capacitor Native 平台：使用 ${fetchMode}`);
+    return async (url: RequestInfo | URL, init?: RequestInit) => {
+      const fetchOptions = { ...init, useCorsPlugin: model.useCorsPlugin };
+      return universalFetch(url.toString(), fetchOptions);
+    };
+  }
+
+  if (isWeb) {
+    console.log(`[PlatformFetch] Web 端：使用 CORS 代理服务器`);
+    return createProxyFetch();
+  }
+
+  return undefined;
+}
+
+/**
+ * 包装 fetch 以过滤指定的请求头
+ * 用于处理 providerExtraHeaders 中标记为 'REMOVE' 的头部
+ *
+ * @param baseFetch 原始 fetch 函数
+ * @param headersToRemove 需要删除的头部名称列表（小写）
+ * @param customFilter 可选的自定义过滤回调（如 anthropic 特有的模糊匹配逻辑）
+ * @returns 包装后的 fetch 函数
+ */
+export function createHeaderFilterFetch(
+  baseFetch: typeof fetch,
+  headersToRemove: string[],
+  customFilter?: (headers: Headers) => void
+): typeof fetch {
+  return async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.headers && headersToRemove.length > 0) {
+      const headers = new Headers(init.headers);
+
+      headersToRemove.forEach(headerName => {
+        headers.delete(headerName);
+      });
+
+      // 执行自定义过滤逻辑（如 stainless/anthropic 头部模糊匹配）
+      if (customFilter) {
+        customFilter(headers);
+      }
+
+      init.headers = headers;
+    }
+    return baseFetch(url.toString(), init);
+  };
+}
+
 /**
  * 序列化请求体，确保兼容 CorsBypass 插件
  */

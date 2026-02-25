@@ -13,6 +13,7 @@ import { AnthropicAISDKProvider } from '../api/anthropic-aisdk';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 import { getDefaultGroupName } from '../utils/modelUtils';
 import ApiKeyManager from './ApiKeyManager';
+import { universalFetch } from '../utils/universalFetch';
 
 /**
  * 获取实际的提供商类型 - 支持智能路由
@@ -375,7 +376,7 @@ async function fetchModelsFromEndpoint(provider: any, providerType: string): Pro
             const geminiModelsUrl = `${geminiBaseUrl}/models?key=${apiKey}`;
             console.log(`[fetchModelsFromEndpoint] Gemini获取模型列表: ${geminiBaseUrl}/models`);
             
-            const geminiResponse = await fetch(geminiModelsUrl);
+            const geminiResponse = await universalFetch(geminiModelsUrl);
             if (geminiResponse.ok) {
               const geminiData = await geminiResponse.json();
               if (geminiData.models && Array.isArray(geminiData.models)) {

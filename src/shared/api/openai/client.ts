@@ -7,58 +7,7 @@ import type { ClientOptions } from 'openai';
 import type { Model } from '../../types';
 import { logApiRequest } from '../../services/LoggerService';
 import { isReasoningModel } from '../../../config/models';
-import { universalFetch } from '../../utils/universalFetch';
-import { isTauri } from '../../utils/platformDetection';
-import { Capacitor } from '@capacitor/core';
-
-/**
- * 检查是否需要使用 CORS 代理
- */
-function needsCORSProxy(url: string): boolean {
-  try {
-    const urlObj = new URL(url);
-    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-
-    // 本地地址不需要代理
-    const hostname = urlObj.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
-      return false;
-    }
-
-    // Web端：跨域请求需要代理
-    const needsProxy = urlObj.origin !== currentOrigin;
-    return needsProxy;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * 创建代理 fetch 函数
- */
-function createProxyFetch(originalFetch?: (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
-  const baseFetch = originalFetch || fetch;
-  
-  return async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as any).url;
-    
-    // 检查是否需要使用代理
-    if (needsCORSProxy(urlStr)) {
-      const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(urlStr)}`;
-      console.log(`[OpenAI ProxyFetch] 使用代理: ${urlStr} -> ${proxyUrl}`);
-      
-      try {
-        return await baseFetch(proxyUrl, init);
-      } catch (error) {
-        console.error(`[OpenAI ProxyFetch] 代理请求失败: ${error}`);
-        throw error;
-      }
-    }
-    
-    // 不需要代理，直接请求
-    return baseFetch(urlStr, init);
-  };
-}
+import { createPlatformFetch, createHeaderFilterFetch } from '../../utils/universalFetch';
 
 /**
  * 创建OpenAI客户端
@@ -128,29 +77,10 @@ export function createClient(model: Model): OpenAI {
       dangerouslyAllowBrowser: true // 允许在浏览器环境中使用
     };
 
-    // 【第一步】先设置代理 fetch（如果需要）
-    // 这必须在处理自定义头部之前完成，确保代理配置不会被覆盖
-    const isTauriEnv = isTauri();
-    const isCapacitorNative = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
-    const isWeb = !isTauriEnv && !isCapacitorNative;
-    
-    if (isTauriEnv) {
-      config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
-        console.log(`[OpenAI createClient] Tauri 平台使用 universalFetch 请求: ${url.toString()}`);
-        return universalFetch(url.toString(), init);
-      };
-      console.log(`[OpenAI createClient] Tauri 平台：使用 Tauri HTTP 插件`);
-    } else if (isCapacitorNative) {
-      config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
-        console.log(`[OpenAI createClient] Capacitor Native 平台使用 universalFetch 请求: ${url.toString()}`);
-        const fetchOptions = { ...init, useCorsPlugin: model.useCorsPlugin };
-        return universalFetch(url.toString(), fetchOptions);
-      };
-      const fetchMode = model.useCorsPlugin ? 'CorsBypass Plugin' : 'Standard Fetch';
-      console.log(`[OpenAI createClient] Capacitor Native 平台：使用 ${fetchMode}`);
-    } else if (isWeb) {
-      config.fetch = createProxyFetch();
-      console.log(`[OpenAI createClient] Web 端：使用 CORS 代理服务器`);
+    // 设置平台适配的 fetch（统一由 universalFetch 模块提供）
+    const platformFetch = createPlatformFetch(model);
+    if (platformFetch) {
+      config.fetch = platformFetch;
     }
 
     // Azure OpenAI特殊配置
@@ -192,36 +122,23 @@ export function createClient(model: Model): OpenAI {
         }
       });
 
-      // 如果有需要删除的头部，创建自定义的 fetch 函数来拦截和删除这些头部
+      // 如果有需要删除的头部，使用统一的 header 过滤函数
       if (headersToRemove.length > 0) {
-        // 使用已经配置好的 config.fetch（可能是代理、Tauri 或 Capacitor）
         const originalFetch = config.fetch || fetch;
-        
-        config.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
-          if (init?.headers) {
-            const headers = new Headers(init.headers);
-
-            // 删除指定的头部
-            headersToRemove.forEach(headerName => {
-              // 删除完全匹配的头部
-              headers.delete(headerName);
-
-              // 对于 stainless 相关头部，进行模糊匹配删除
-              if (headerName.includes('stainless')) {
-                const keysToDelete: string[] = [];
-                for (const [key] of headers.entries()) {
-                  if (key.toLowerCase().includes('stainless')) {
-                    keysToDelete.push(key);
-                  }
-                }
-                keysToDelete.forEach(key => headers.delete(key));
+        config.fetch = createHeaderFilterFetch(
+          originalFetch as typeof fetch,
+          headersToRemove,
+          (headers) => {
+            // OpenAI 特有：stainless 相关头部模糊匹配删除
+            const keysToDelete: string[] = [];
+            for (const [key] of headers.entries()) {
+              if (key.toLowerCase().includes('stainless')) {
+                keysToDelete.push(key);
               }
-            });
-
-            init.headers = headers;
+            }
+            keysToDelete.forEach(key => headers.delete(key));
           }
-          return originalFetch(url.toString(), init);
-        };
+        );
         console.log(`[OpenAI createClient] 配置删除请求头: ${headersToRemove.join(', ')}`);
       }
 

@@ -7,117 +7,8 @@ import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import type { AnthropicProvider as AISDKAnthropicProvider } from '@ai-sdk/anthropic';
 import type { Model } from '../../types';
-import { universalFetch } from '../../utils/universalFetch';
-import { isTauri } from '../../utils/platformDetection';
-import { Capacitor } from '@capacitor/core';
+import { createPlatformFetch, createHeaderFilterFetch } from '../../utils/universalFetch';
 
-/**
- * 检查是否需要使用 CORS 代理
- */
-function needsCORSProxy(url: string): boolean {
-  try {
-    const urlObj = new URL(url);
-    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-
-    // 本地地址不需要代理
-    const hostname = urlObj.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
-      return false;
-    }
-
-    // Web端：跨域请求需要代理
-    return urlObj.origin !== currentOrigin;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * 创建代理 fetch 函数（用于 Web 端）
- */
-function createProxyFetch() {
-  return async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as any).url;
-    
-    if (needsCORSProxy(urlStr)) {
-      const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(urlStr)}`;
-      console.log(`[Anthropic SDK ProxyFetch] 使用代理: ${urlStr.substring(0, 50)}...`);
-      
-      try {
-        return await fetch(proxyUrl, init);
-      } catch (error) {
-        console.error(`[Anthropic SDK ProxyFetch] 代理请求失败:`, error);
-        throw error;
-      }
-    }
-    
-    return fetch(urlStr, init);
-  };
-}
-
-/**
- * 创建平台适配的 fetch 函数
- */
-function createPlatformFetch(model: Model): typeof fetch | undefined {
-  const isTauriEnv = isTauri();
-  const isCapacitorNative = Capacitor.isNativePlatform && Capacitor.isNativePlatform();
-  const isWeb = !isTauriEnv && !isCapacitorNative;
-
-  if (isTauriEnv) {
-    console.log(`[Anthropic SDK Client] Tauri 平台：使用 universalFetch`);
-    return async (url: RequestInfo | URL, init?: RequestInit) => {
-      return universalFetch(url.toString(), init);
-    };
-  }
-
-  if (isCapacitorNative) {
-    const fetchMode = model.useCorsPlugin ? 'CorsBypass Plugin' : 'Standard Fetch';
-    console.log(`[Anthropic SDK Client] Capacitor Native 平台：使用 ${fetchMode}`);
-    return async (url: RequestInfo | URL, init?: RequestInit) => {
-      const fetchOptions = { ...init, useCorsPlugin: model.useCorsPlugin };
-      return universalFetch(url.toString(), fetchOptions);
-    };
-  }
-
-  if (isWeb) {
-    console.log(`[Anthropic SDK Client] Web 端：使用 CORS 代理服务器`);
-    return createProxyFetch();
-  }
-
-  return undefined;
-}
-
-/**
- * 处理自定义请求头（支持禁用特定头部）
- */
-function createHeaderFilterFetch(
-  baseFetch: typeof fetch,
-  headersToRemove: string[]
-): typeof fetch {
-  return async (url: RequestInfo | URL, init?: RequestInit) => {
-    if (init?.headers && headersToRemove.length > 0) {
-      const headers = new Headers(init.headers);
-
-      headersToRemove.forEach(headerName => {
-        headers.delete(headerName);
-        
-        // 对于 anthropic 相关头部，进行模糊匹配删除
-        if (headerName.includes('anthropic')) {
-          const keysToDelete: string[] = [];
-          for (const [key] of headers.entries()) {
-            if (key.toLowerCase().includes('anthropic') && key.toLowerCase() !== 'anthropic-version') {
-              keysToDelete.push(key);
-            }
-          }
-          keysToDelete.forEach(key => headers.delete(key));
-        }
-      });
-
-      init.headers = headers;
-    }
-    return baseFetch(url.toString(), init);
-  };
-}
 
 /**
  * 检查模型是否支持多模态（视觉）
@@ -226,7 +117,7 @@ export function createClient(model: Model): AISDKAnthropicProvider {
       baseURL,
     };
 
-    // 设置平台适配的 fetch
+    // 设置平台适配的 fetch（统一由 universalFetch 模块提供）
     let customFetch = createPlatformFetch(model);
 
     // 收集自定义头部
@@ -256,9 +147,18 @@ export function createClient(model: Model): AISDKAnthropicProvider {
       }
     }
 
-    // 如果有需要删除的头部，包装 fetch
+    // 如果有需要删除的头部，使用统一的 header 过滤函数
     if (headersToRemove.length > 0 && customFetch) {
-      customFetch = createHeaderFilterFetch(customFetch, headersToRemove);
+      customFetch = createHeaderFilterFetch(customFetch, headersToRemove, (headers) => {
+        // Anthropic 特有：模糊匹配删除 anthropic 相关头部（保留 anthropic-version）
+        const keysToDelete: string[] = [];
+        for (const [key] of headers.entries()) {
+          if (key.toLowerCase().includes('anthropic') && key.toLowerCase() !== 'anthropic-version') {
+            keysToDelete.push(key);
+          }
+        }
+        keysToDelete.forEach(key => headers.delete(key));
+      });
     }
 
     // 设置配置
