@@ -23,7 +23,7 @@ import {
 } from 'ai';
 
 // FinishReason 类型定义（AI SDK 内部类型）
-export type FinishReason = 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'unknown';
+export type FinishReason = 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other';
 
 // Serializable 类型定义
 export type Serializable =
