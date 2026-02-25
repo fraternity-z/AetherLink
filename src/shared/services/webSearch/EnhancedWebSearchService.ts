@@ -7,6 +7,7 @@ import { AssistantMessageStatus } from '../../types/newMessage';
 import { bingFreeSearchService } from './BingFreeSearchService';
 import { Capacitor } from '@capacitor/core';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
+import { buildCorsProxyRequestUrl } from '../../utils/universalFetch';
 
 /**
  * 增强版网络搜索服务
@@ -311,7 +312,7 @@ class EnhancedWebSearchService {
         console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Exa API');
         
         const exaApiUrl = 'https://api.exa.ai/search';
-        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(exaApiUrl)}`;
+        const proxyUrl = buildCorsProxyRequestUrl(exaApiUrl);
 
         response = await fetch(proxyUrl, {
           method: 'POST',
@@ -410,7 +411,7 @@ class EnhancedWebSearchService {
         console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Bocha API');
         
         const bochaApiUrl = 'https://api.bocha.ai/v1/web-search';
-        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(bochaApiUrl)}`;
+        const proxyUrl = buildCorsProxyRequestUrl(bochaApiUrl);
 
         response = await fetch(proxyUrl, {
           method: 'POST',
@@ -507,7 +508,7 @@ class EnhancedWebSearchService {
         console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Firecrawl API');
         
         const firecrawlApiUrl = 'https://api.firecrawl.dev/v1/search';
-        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(firecrawlApiUrl)}`;
+        const proxyUrl = buildCorsProxyRequestUrl(firecrawlApiUrl);
 
         response = await fetch(proxyUrl, {
           method: 'POST',
@@ -645,7 +646,7 @@ class EnhancedWebSearchService {
         // Web端使用通用 CORS 代理
         console.log('[EnhancedWebSearchService] Web端使用 CORS 代理请求 Cloudflare AI Search API');
         
-        const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(apiUrl)}`;
+        const proxyUrl = buildCorsProxyRequestUrl(apiUrl);
 
         response = await fetch(proxyUrl, {
           method: 'POST',

@@ -11,6 +11,34 @@ import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
 import { isTauri } from './platformDetection';
 import { getStorageItem } from './storage';
 
+// ==================== CORS 代理 URL 配置 ====================
+
+const DEFAULT_CORS_PROXY_URL = 'http://localhost:8888';
+let _corsProxyBaseUrl = DEFAULT_CORS_PROXY_URL;
+
+/**
+ * 获取当前 CORS 代理基础 URL
+ */
+export function getCorsProxyUrl(): string {
+  return _corsProxyBaseUrl;
+}
+
+/**
+ * 设置 CORS 代理基础 URL
+ * @param url 代理服务器地址，如 http://localhost:8888
+ */
+export function setCorsProxyUrl(url: string): void {
+  _corsProxyBaseUrl = url.replace(/\/$/, ''); // 去除末尾斜杠
+  console.log(`[CorsProxy] 代理 URL 已更新: ${_corsProxyBaseUrl}`);
+}
+
+/**
+ * 构建完整的 CORS 代理请求 URL
+ */
+export function buildCorsProxyRequestUrl(targetUrl: string): string {
+  return `${_corsProxyBaseUrl}/proxy?url=${encodeURIComponent(targetUrl)}`;
+}
+
 // 代理配置接口（与 networkProxySlice 保持一致）
 interface ProxyConfig {
   enabled: boolean;
@@ -410,7 +438,7 @@ export function getPlatformUrl(originalUrl: string): string {
   // 统一处理：根据是否跨域决定是否使用代理
   if (needsCORSProxy(originalUrl)) {
     // 使用通用 CORS 代理服务器
-    return `http://localhost:8888/proxy?url=${encodeURIComponent(originalUrl)}`;
+    return buildCorsProxyRequestUrl(originalUrl);
   } else {
     // 不需要代理：返回原始 URL
     return originalUrl;
@@ -423,8 +451,7 @@ export function getPlatformUrl(originalUrl: string): string {
 export function getFullProxyUrl(originalUrl: string): string {
   // 统一处理：根据是否跨域决定是否使用代理
   if (needsCORSProxy(originalUrl)) {
-    // 使用通用 CORS 代理服务器
-    return `http://localhost:8888/proxy?url=${encodeURIComponent(originalUrl)}`;
+    return buildCorsProxyRequestUrl(originalUrl);
   } else {
     // 不需要代理：返回原始 URL
     return originalUrl;
@@ -442,14 +469,14 @@ export function logFetchUsage(originalUrl: string, finalUrl: string, method: str
 
 /**
  * 创建 Web 端 CORS 代理 fetch
- * 将跨域请求重写为 localhost:8888 代理
+ * 将跨域请求通过可配置的 CORS 代理服务器转发
  */
 export function createProxyFetch(): typeof fetch {
   return async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as any).url;
 
     if (needsCORSProxy(urlStr)) {
-      const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(urlStr)}`;
+      const proxyUrl = buildCorsProxyRequestUrl(urlStr);
       console.log(`[ProxyFetch] 使用代理: ${urlStr.substring(0, 50)}...`);
 
       try {

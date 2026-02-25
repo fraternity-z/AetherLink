@@ -6,6 +6,7 @@ import { toastManager } from '../components/EnhancedToast';
 import { Toast } from '@capacitor/toast';
 import { Capacitor } from '@capacitor/core';
 import { CorsBypass } from 'capacitor-cors-bypass-enhanced';
+import { buildCorsProxyRequestUrl } from '../shared/utils/universalFetch';
 
 // Notion API 配置
 export const getNotionApiUrl = (endpoint: string): string => {
@@ -14,10 +15,9 @@ export const getNotionApiUrl = (endpoint: string): string => {
     return `https://api.notion.com${endpoint}`;
   }
   
-  // Web 端使用通用 CORS 代理
+  // Web 端使用 CORS 代理
   const notionApiUrl = `https://api.notion.com${endpoint}`;
-  const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(notionApiUrl)}`;
-  return proxyUrl;
+  return buildCorsProxyRequestUrl(notionApiUrl);
 };
 
 /**

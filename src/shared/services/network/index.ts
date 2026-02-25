@@ -22,6 +22,4 @@ export type { NativeHttpResponse } from './NativeHttpService';
 export { default as RequestInterceptorService, RequestStore } from './RequestInterceptorService';
 export type { RequestRecord } from './RequestInterceptorService';
 
-// CORS绕过服务
-export { CORSBypassService, corsService } from './CORSBypassService';
-export type { CORSBypassRequestOptions, CORSBypassResponse } from './CORSBypassService';
+// CORSBypassService: 仅由 WebDavManagerService 直接导入，不再从 barrel 导出

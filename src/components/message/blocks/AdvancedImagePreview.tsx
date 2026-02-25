@@ -1,4 +1,5 @@
 import React, { useState, useCallback, memo, useEffect } from 'react';
+import { buildCorsProxyRequestUrl } from '../../../shared/utils/universalFetch';
 import {
   Box,
   Dialog,
@@ -145,7 +146,7 @@ const AdvancedImagePreview: React.FC<AdvancedImagePreviewProps> = ({
         } else {
           // Web 端：使用代理服务器
           console.log('[AdvancedImagePreview] Web 端通过代理加载外部图片:', src);
-          const proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(src)}`;
+          const proxyUrl = buildCorsProxyRequestUrl(src);
           response = await fetch(proxyUrl, {
             method: 'GET',
           });

@@ -2,6 +2,7 @@ import type { WebDavConfig, WebDavConnectionResult, WebDavUploadResult, WebDavDo
 import { corsService } from '../network/CORSBypassService';
 import { getPlatformInfo, RuntimeType } from '../../utils/platformDetection';
 import { getStorageItem } from '../../utils/storage';
+import { buildCorsProxyRequestUrl } from '../../utils/universalFetch';
 
 // 代理配置接口
 interface ProxyConfig {
@@ -253,7 +254,7 @@ export class WebDavManagerService {
 
     if (options.url.startsWith('http')) {
       // 所有 WebDAV 服务都使用通用 CORS 代理
-      proxyUrl = `http://localhost:8888/proxy?url=${encodeURIComponent(options.url)}`;
+      proxyUrl = buildCorsProxyRequestUrl(options.url);
       useProxy = true;
       console.log(`🌐 [WebDAV] ${provider} 使用通用 CORS 代理转发请求`);
     }
