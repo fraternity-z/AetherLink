@@ -138,6 +138,9 @@ const AssistantTab = React.memo(function AssistantTab({
     handleChatBackgroundChange,
     // 记忆开关处理函数
     handleMemoryEnabledChange,
+    // 技能绑定状态和处理函数
+    editSkillIds,
+    handleSkillIdsChange,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,
@@ -380,6 +383,8 @@ const AssistantTab = React.memo(function AssistantTab({
         assistantId={editingAssistant?.id || ''}
         memoryEnabled={editMemoryEnabled}
         onMemoryEnabledChange={handleMemoryEnabledChange}
+        skillIds={editSkillIds}
+        onSkillIdsChange={handleSkillIdsChange}
       />
 
       {/* 智能体提示词选择器 */}

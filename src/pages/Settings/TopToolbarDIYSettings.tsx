@@ -238,8 +238,9 @@ const TopToolbarDIYSettings: React.FC = () => {
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
 
-    // 限制在预览区域内，但允许更大的范围
-    const clampedX = Math.max(0, Math.min(100, x));
+    // 限制在预览区域内，左右保留空气墙边距
+    const EDGE_PADDING = 1; // 左右边缘空气墙（百分比）
+    const clampedX = Math.max(EDGE_PADDING, Math.min(100 - EDGE_PADDING, x));
     const clampedY = Math.max(0, Math.min(100, y));
 
     const newPositions = [...(topToolbar.componentPositions || [])];
@@ -657,9 +658,11 @@ const TopToolbarDIYSettings: React.FC = () => {
               variant="outlined"
               startIcon={<Settings size={16} />}
               onClick={() => {
-                // 矫正所有组件到水平中线（50%）
+                // 矫正对齐：垂直居中 + 左右空气墙约束
+                const EDGE_PADDING = 1; // 左右边缘空气墙（百分比）
                 const correctedPositions = currentDIYComponents.map(pos => ({
                   ...pos,
+                  x: Math.max(EDGE_PADDING, Math.min(100 - EDGE_PADDING, pos.x)),
                   y: 50 // 统一设置为50%，即工具栏的垂直中心
                 }));
 

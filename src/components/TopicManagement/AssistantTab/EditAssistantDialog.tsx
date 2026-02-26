@@ -13,7 +13,7 @@ import {
   type Theme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { ChevronLeft, Settings, FileText, Settings2, Wand2, Brain } from 'lucide-react';
+import { ChevronLeft, Settings, FileText, Settings2, Wand2, Brain, Zap } from 'lucide-react';
 import { useKeyboard } from '../../../shared/hooks/useKeyboard';
 import { ParameterEditor } from '../../ParameterEditor';
 import { detectProviderFromModel } from '../../../shared/config/parameterMetadata';
@@ -22,6 +22,7 @@ import { BasicSettingsTab } from './BasicSettingsTab';
 import type { AssistantChatBackground } from './BasicSettingsTab';
 import { PromptTab } from './PromptTab';
 import { MemoryTab } from './MemoryTab';
+import { SkillsTab } from './SkillsTab';
 import type { AssistantRegex } from '../../../shared/types/Assistant';
 
 // 样式常量
@@ -152,6 +153,10 @@ export interface EditAssistantDialogProps {
   memoryEnabled?: boolean;
   /** 记忆开关变化回调 */
   onMemoryEnabledChange?: (enabled: boolean) => void;
+  /** 绑定的技能 ID 列表 */
+  skillIds?: string[];
+  /** 技能绑定变化回调 */
+  onSkillIdsChange?: (skillIds: string[]) => void;
 }
 
 /**
@@ -180,6 +185,8 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
   assistantId = '',
   memoryEnabled = false,
   onMemoryEnabledChange,
+  skillIds = [],
+  onSkillIdsChange,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -344,6 +351,12 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
             iconPosition="start"
             sx={{ minHeight: isMobile ? 40 : 36 }}
           />
+          <Tab 
+            label="技能" 
+            icon={<Zap size={16} />} 
+            iconPosition="start"
+            sx={{ minHeight: isMobile ? 40 : 36 }}
+          />
         </Tabs>
       </Box>
 
@@ -417,6 +430,17 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               assistantId={assistantId}
               memoryEnabled={memoryEnabled}
               onMemoryEnabledChange={onMemoryEnabledChange}
+            />
+          </Box>
+        )}
+
+        {/* 技能 Tab 内容 */}
+        {tabValue === 5 && (
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
+            <SkillsTab
+              assistantId={assistantId}
+              skillIds={skillIds}
+              onSkillIdsChange={onSkillIdsChange}
             />
           </Box>
         )}

@@ -4,6 +4,10 @@ import { mcpService } from '../services/mcp';
 import { nanoid } from './index';
 // 🚀 导入网络搜索工具
 import { executeWebSearch, formatSearchResultsForAI } from '../services/webSearch';
+// 🔌 导入 MCP 桥梁工具
+import { MCP_BRIDGE_TOOL_NAME, executeBridgeToolCall } from '../services/mcp/McpBridgeTool';
+// 📖 导入 read_skill 虚拟工具
+import { READ_SKILL_TOOL_NAME, executeReadSkill } from '../services/skills/SkillReadTool';
 
 /**
  * 根据名称查找 MCP 工具（支持转换后的名称）
@@ -129,6 +133,18 @@ export async function callMCPTool(toolResponse: MCPToolResponse): Promise<MCPCal
   console.log(`[MCP] 调用工具: ${toolResponse.tool.serverName || 'builtin'}.${toolName}`, toolResponse.arguments);
 
   try {
+    // 🔌 检查是否为 MCP 桥梁工具
+    if (toolName === MCP_BRIDGE_TOOL_NAME) {
+      console.log(`[McpBridge] 桥梁工具调用:`, toolResponse.arguments);
+      return await executeBridgeToolCall(toolResponse.arguments as Record<string, any>);
+    }
+
+    // 📖 检查是否为 read_skill 虚拟工具
+    if (toolName === READ_SKILL_TOOL_NAME) {
+      console.log(`[ReadSkill] 读取技能:`, toolResponse.arguments);
+      return await executeReadSkill(toolResponse.arguments as Record<string, any>);
+    }
+
     // 🚀 检查是否为内置网络搜索工具
     if (toolName === 'builtin_web_search') {
       console.log(`[WebSearch] AI 自主调用网络搜索工具`);

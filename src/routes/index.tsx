@@ -80,6 +80,8 @@ const NotionSettings = lazy(() => import('../pages/Settings/NotionSettings'));
 const NetworkProxySettings = lazy(() => import('../pages/Settings/NetworkProxySettings'));
 // 导入记忆设置页面
 const MemorySettings = lazy(() => import('../pages/Settings/MemorySettings'));
+const SkillsSettings = lazy(() => import('../pages/Settings/SkillsSettings'));
+const SkillEditor = lazy(() => import('../pages/Settings/SkillEditor'));
 // 导入翻译页面
 const TranslatePage = lazy(() => import('../pages/TranslatePage'));
 
@@ -186,6 +188,8 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/notion" element={<NotionSettings />} />
         <Route path="/settings/network-proxy" element={<NetworkProxySettings />} />
         <Route path="/settings/memory" element={<MemorySettings />} />
+        <Route path="/settings/skills" element={<SkillsSettings />} />
+        <Route path="/settings/skills/:skillId" element={<SkillEditor />} />
         <Route path="/settings/web-search" element={<WebSearchSettings />} />
         <Route path="/settings/mcp-server" element={<MCPServerSettings />} />
         <Route path="/settings/mcp-server/:serverId" element={<MCPServerDetail />} />

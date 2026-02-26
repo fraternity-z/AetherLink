@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { upsertOneBlock, upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlice';
@@ -46,7 +46,19 @@ export const useChatFeatures = (
     const saved = localStorage.getItem('mcp-tools-enabled');
     return saved !== null ? JSON.parse(saved) : false; // 默认关闭
   });
-  
+
+  // 监听自定义事件（技能激活/停用时触发 MCP 工具开关联动）
+  useEffect(() => {
+    const handleToggle = (e: Event) => {
+      const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
+      const enabled = detail.enabled;
+      setToolsEnabled(enabled);
+      localStorage.setItem('mcp-tools-enabled', JSON.stringify(enabled));
+    };
+    window.addEventListener('mcp-tools-toggle', handleToggle);
+    return () => window.removeEventListener('mcp-tools-toggle', handleToggle);
+  }, []);
+
   // MCP 工具调用模式 - 从 localStorage 读取
   const [mcpMode, setMcpMode] = useState<'prompt' | 'function'>(() => {
     const saved = localStorage.getItem('mcp-mode');

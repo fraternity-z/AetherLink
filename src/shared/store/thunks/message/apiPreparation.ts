@@ -16,6 +16,8 @@ import { getContextSettings, estimateMessagesTokenCount, truncateConversation } 
 import { applyRegexRulesForSending } from '../../../utils/regexUtils';
 import type { AssistantRegex } from '../../../types/Assistant';
 import { searchRelevantMemories, buildMemoryPrompt, isMemoryEnabled } from './memoryIntegration';
+import { SkillPromptBuilder } from '../../../services/skills/SkillPromptBuilder';
+import { SkillManager } from '../../../services/skills/SkillManager';
 
 /**
  * 在API调用前检查是否需要进行知识库搜索（风格：新模式）
@@ -269,20 +271,33 @@ export const prepareMessagesForApi = async (
   // 获取话题信息（用于话题提示词）
   const topic = await dexieStorage.getTopic(topicId);
   
-  // 修改：实现追加模式 - 如果设置了话题提示词，则追加到助手提示词之后
-  // 逻辑：助手提示词 + 话题提示词追加（如果有的话）
+  // 修改：实现追加模式 - 助手提示词 + Skills摘要/激活内容 + 话题提示词
   if (assistant) {
-    // 使用助手的系统提示词作为基础
-    systemPrompt = assistant.systemPrompt || '';
+    const assistantPrompt = assistant.systemPrompt || '';
+    const topicPrompt = (topic?.prompt && topic.prompt.trim()) ? topic.prompt : '';
 
-    // 只有当话题提示词不为空时才追加
-    if (topic && topic.prompt && topic.prompt.trim()) {
-      if (systemPrompt) {
-        // 如果助手有提示词，则追加话题提示词
-        systemPrompt = systemPrompt + '\n\n' + topic.prompt;
-      } else {
-        // 如果助手没有提示词，则单独使用话题提示词
-        systemPrompt = topic.prompt;
+    // 获取助手绑定的已启用技能（OpenClaw 风格：无激活概念，全部精简注入）
+    let enabledSkills: import('../../../types/Skill').Skill[] = [];
+    try {
+      if (assistant.skillIds?.length) {
+        enabledSkills = await SkillManager.getSkillsForAssistant(assistant.id);
+      }
+    } catch (error) {
+      console.warn('[prepareMessagesForApi] 获取技能信息失败，降级到无技能模式:', error);
+    }
+
+    // 使用 SkillPromptBuilder 统一组装 system prompt（OpenClaw 风格精简列表）
+    if (enabledSkills.length > 0) {
+      systemPrompt = SkillPromptBuilder.assembleSystemPrompt({
+        assistantPrompt,
+        enabledSkills,
+        topicPrompt: topicPrompt || undefined,
+      });
+    } else {
+      // 无技能时保持原有逻辑
+      systemPrompt = assistantPrompt;
+      if (topicPrompt) {
+        systemPrompt = systemPrompt ? systemPrompt + '\n\n' + topicPrompt : topicPrompt;
       }
     }
   } else if (topic && topic.prompt && topic.prompt.trim()) {

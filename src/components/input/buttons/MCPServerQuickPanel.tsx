@@ -28,6 +28,7 @@ import type { MCPServer, MCPServerType } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
 import CustomSwitch from '../../CustomSwitch';
 import { useMCPServerStateManager } from '../../../hooks/useMCPServerStateManager';
+import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 
 // 服务器类型配置常量 — 颜色与 MCPServerSettings 保持一致
 const SERVER_TYPE_CONFIG = {
@@ -87,6 +88,22 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
   const [loadingServers, setLoadingServers] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // 🔌 桥梁模式状态（本地管理，存储到 IndexedDB）
+  const [bridgeMode, setBridgeModeState] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      getStorageItem<boolean>('mcp-bridge-mode').then(val => {
+        setBridgeModeState(val ?? false);
+      });
+    }
+  }, [open]);
+
+  const handleBridgeModeChange = useCallback((enabled: boolean) => {
+    setBridgeModeState(enabled);
+    setStorageItem('mcp-bridge-mode', enabled);
+  }, []);
 
   // 使用共享的MCP状态管理Hook
   const { createMCPToggleHandler } = useMCPServerStateManager();
@@ -222,6 +239,38 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
       </AppBar>
 
       <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+        {/* 桥梁模式开关 */}
+        <Box sx={{
+          mx: 2,
+          mt: 2,
+          p: 1.5,
+          borderRadius: 2,
+          bgcolor: bridgeMode
+            ? (isDark ? alpha('#8b5cf6', 0.1) : alpha('#8b5cf6', 0.06))
+            : (isDark ? alpha('#fff', 0.03) : alpha('#000', 0.02)),
+          border: '1px solid',
+          borderColor: bridgeMode
+            ? (isDark ? alpha('#8b5cf6', 0.3) : alpha('#8b5cf6', 0.2))
+            : 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem', color: bridgeMode ? '#8b5cf6' : 'text.primary' }}>
+              🔌 桥梁模式
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.3 }}>
+              {bridgeMode ? '已启用 — 1 个工具替代全部，按需动态调用' : '关闭 — 使用传统模式注入所有工具'}
+            </Typography>
+          </Box>
+          <CustomSwitch
+            checked={bridgeMode}
+            onChange={(e) => handleBridgeModeChange(e.target.checked)}
+          />
+        </Box>
+
         {/* 错误提示 */}
         {error && (
           <Box sx={{ px: 2, pt: 2, flexShrink: 0 }}>

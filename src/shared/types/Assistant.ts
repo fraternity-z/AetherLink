@@ -90,6 +90,10 @@ export interface Assistant {
   
   // 助手级别记忆功能
   memoryEnabled?: boolean;
+  
+  // Skills 关联
+  skillIds?: string[];           // 绑定的技能 ID 列表
+  activeSkillId?: string | null; // 当前激活的技能 ID（会话级别）
 }
 
 export interface ChatTopic {

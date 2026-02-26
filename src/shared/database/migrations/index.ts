@@ -77,6 +77,9 @@ export class DatabaseMigrationManager {
         case 8:
           await this.migrateToV8(db);
           break;
+        case 9:
+          await this.migrateToV9(db);
+          break;
         default:
           throw new Error(`未找到版本 ${version} 的迁移逻辑`);
       }
@@ -297,6 +300,23 @@ export class DatabaseMigrationManager {
       this.log('数据库升级到版本8完成');
     } catch (error) {
       this.log(`版本8迁移失败: ${error}`, 'error');
+      throw error;
+    }
+  }
+
+  /**
+   * 迁移到版本9：添加skills表用于存储技能系统数据
+   */
+  private async migrateToV9(_db: any): Promise<void> {
+    this.log('开始升级到数据库版本9: 添加skills表...');
+
+    try {
+      // skills表会由Dexie自动创建，无需特殊处理
+      // 内置技能的导入在 SkillManager.initializeBuiltinSkills() 中完成
+
+      this.log('数据库升级到版本9完成');
+    } catch (error) {
+      this.log(`版本9迁移失败: ${error}`, 'error');
       throw error;
     }
   }

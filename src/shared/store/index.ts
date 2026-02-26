@@ -45,6 +45,7 @@ import networkProxyReducer, { loadNetworkProxySettings, applyGlobalProxy } from 
 import { Capacitor } from '@capacitor/core';
 import agenticFilesReducer from './slices/agenticFilesSlice';
 import memoryReducer, { initializeMemoryService } from './slices/memorySlice';
+import skillsReducer, { loadSkills } from './slices/skillsSlice';
 import knowledgeSelectionReducer from './slices/knowledgeSelectionSlice';
 import { eventMiddleware } from './middleware/eventMiddleware';
 import { useDispatch, useSelector } from 'react-redux';
@@ -65,6 +66,7 @@ const rootReducer = combineReducers({
   agenticFiles: agenticFilesReducer,
   memory: memoryReducer,
   knowledgeSelection: knowledgeSelectionReducer,
+  skills: skillsReducer,
 });
 
 // 配置Redux持久化
@@ -75,7 +77,7 @@ const persistConfig = {
   // 与电脑端保持一致，不持久化messages和messageBlocks
   // 同时排除assistants，因为它包含非序列化的React元素
   // 排除runtime，因为它包含运行时状态
-  blacklist: ['messages', 'messageBlocks', 'assistants', 'runtime', 'agenticFiles', 'knowledgeSelection'],
+  blacklist: ['messages', 'messageBlocks', 'assistants', 'runtime', 'agenticFiles', 'knowledgeSelection', 'skills'],
   // 🚀 性能优化：节流持久化写入，减少 localStorage 操作频率
   throttle: 1000, // 1秒内最多写入一次
   // 禁用 rehydrate 超时（timeout: 0 = falsy，不会触发 setTimeout）
@@ -140,6 +142,9 @@ store.dispatch(loadNetworkProxySettings() as any).then((result: any) => {
 
 // 初始化记忆服务
 store.dispatch(initializeMemoryService() as any);
+
+// 初始化技能系统
+store.dispatch(loadSkills() as any);
 
 // 导出类型
 export type RootState = ReturnType<typeof rootReducer>;

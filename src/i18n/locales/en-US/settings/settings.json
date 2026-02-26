@@ -11,8 +11,10 @@
   "groups": {
     "basic": "Basic Settings",
     "modelService": "Model Services",
+    "promptsAndTools": "Prompts & Tools",
     "shortcuts": "Shortcuts",
-    "other": "Other Settings"
+    "dataAndKnowledge": "Data & Knowledge",
+    "system": "System"
   },
   "items": {
     "appearance": {
@@ -94,6 +96,18 @@
     "contextCondense": {
       "title": "Context Condense",
       "description": "Intelligently compress conversation history to save tokens"
+    },
+    "skills": {
+      "title": "Skills Management",
+      "description": "Manage AI skills to enhance assistant capabilities"
+    },
+    "memory": {
+      "title": "Memory",
+      "description": "Manage AI long-term memory, auto-remember user preferences"
+    },
+    "notes": {
+      "title": "Notes Settings",
+      "description": "Configure local note storage path and display options"
     }
   },
   "contextCondense": {

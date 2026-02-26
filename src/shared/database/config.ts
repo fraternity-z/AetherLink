@@ -51,7 +51,7 @@ export interface Memory {
 // 统一的数据库配置
 export const DB_CONFIG = {
   NAME: 'aetherlink-db-new',
-  VERSION: 8, // 当前数据库版本
+  VERSION: 9, // 当前数据库版本
   STORES: {
     TOPICS: 'topics' as const,
     ASSISTANTS: 'assistants' as const,
@@ -65,7 +65,8 @@ export const DB_CONFIG = {
     FILES: 'files' as const,
     KNOWLEDGE_BASES: 'knowledge_bases' as const,
     KNOWLEDGE_DOCUMENTS: 'knowledge_documents' as const,
-    QUICK_PHRASES: 'quick_phrases' as const
+    QUICK_PHRASES: 'quick_phrases' as const,
+    SKILLS: 'skills' as const
   }
 };
 
@@ -149,6 +150,25 @@ export const VERSION_CONFIGS = {
       [DB_CONFIG.STORES.MEMORIES]: 'id, type, userId, hash, createdAt, updatedAt, isDeleted',
     },
     description: '扩展memories表支持长期记忆系统（Cherry Studio风格）'
+  },
+  9: {
+    stores: {
+      [DB_CONFIG.STORES.ASSISTANTS]: 'id',
+      [DB_CONFIG.STORES.TOPICS]: 'id, _lastMessageTimeNum, messages',
+      [DB_CONFIG.STORES.SETTINGS]: 'id',
+      [DB_CONFIG.STORES.IMAGES]: 'id',
+      [DB_CONFIG.STORES.IMAGE_METADATA]: 'id, topicId, created',
+      [DB_CONFIG.STORES.METADATA]: 'id',
+      [DB_CONFIG.STORES.MESSAGE_BLOCKS]: 'id, messageId',
+      [DB_CONFIG.STORES.MESSAGES]: 'id, topicId, assistantId',
+      [DB_CONFIG.STORES.FILES]: 'id, name, origin_name, size, ext, type, created_at, count, hash',
+      [DB_CONFIG.STORES.KNOWLEDGE_BASES]: 'id, name, model, dimensions, created_at, updated_at',
+      [DB_CONFIG.STORES.KNOWLEDGE_DOCUMENTS]: 'id, knowledgeBaseId, content, metadata.source, metadata.timestamp',
+      [DB_CONFIG.STORES.QUICK_PHRASES]: 'id, title, content, createdAt, updatedAt, order',
+      [DB_CONFIG.STORES.MEMORIES]: 'id, type, userId, hash, createdAt, updatedAt, isDeleted',
+      [DB_CONFIG.STORES.SKILLS]: 'id, name, source, enabled, updatedAt',
+    },
+    description: '添加skills表用于存储技能系统数据'
   }
 };
 

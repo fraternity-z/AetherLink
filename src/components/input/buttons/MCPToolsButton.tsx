@@ -67,6 +67,10 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
 
   useEffect(() => {
     loadServers();
+    // 监听技能联动触发的 MCP 服务器状态变化
+    const handleServersChanged = () => loadServers();
+    window.addEventListener('mcp-servers-changed', handleServersChanged);
+    return () => window.removeEventListener('mcp-servers-changed', handleServersChanged);
   }, [loadServers]);
 
   const handleOpen = useCallback(() => {

@@ -48,6 +48,10 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     '/settings/voice': '/settings',
     '/settings/about': '/settings',
     '/settings/notes': '/settings',
+    '/settings/skills': '/settings',
+    '/settings/memory': '/settings',
+    '/settings/context-condense': '/settings',
+    '/settings/network-proxy': '/settings',
     
     // 开发者工具(三级页面) - 从关于我们进入
     '/devtools': '/settings/about',
@@ -94,6 +98,10 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     }
     // 如果匹配失败，默认返回到二级页面
     navigate('/settings/default-model');
+    return;
+  }
+  if (pathWithoutQuery.startsWith('/settings/skills/') && pathWithoutQuery !== '/settings/skills') {
+    navigate('/settings/skills');
     return;
   }
   if (pathWithoutQuery.startsWith('/settings/mcp-server/') && pathWithoutQuery !== '/settings/mcp-server') {

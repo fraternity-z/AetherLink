@@ -95,6 +95,7 @@ export function useAssistantTabLogic(
   const [editRegexRules, setEditRegexRules] = useState<AssistantRegex[]>([]); // 正则替换规则
   const [editChatBackground, setEditChatBackground] = useState<Assistant['chatBackground']>(undefined); // 聊天壁纸
   const [editMemoryEnabled, setEditMemoryEnabled] = useState(false); // 助手记忆开关
+  const [editSkillIds, setEditSkillIds] = useState<string[]>([]); // 助手技能绑定
 
   // 提示词选择器状态
   const [promptSelectorOpen, setPromptSelectorOpen] = useState(false);
@@ -223,6 +224,7 @@ export function useAssistantTabLogic(
     setEditRegexRules(latestAssistant.regexRules || []);
     setEditChatBackground(latestAssistant.chatBackground);
     setEditMemoryEnabled(latestAssistant.memoryEnabled || false);
+    setEditSkillIds(latestAssistant.skillIds || []);
     setEditDialogOpen(true);
     handleCloseAssistantMenu();
   };
@@ -235,6 +237,7 @@ export function useAssistantTabLogic(
     setEditRegexRules([]); // 清理正则规则状态
     setEditChatBackground(undefined); // 清理壁纸状态
     setEditMemoryEnabled(false); // 清理记忆状态
+    setEditSkillIds([]); // 清理技能状态
   };
 
   // 保存编辑后的助手
@@ -254,7 +257,9 @@ export function useAssistantTabLogic(
         // 聊天壁纸
         chatBackground: editChatBackground,
         // 助手记忆开关
-        memoryEnabled: editMemoryEnabled
+        memoryEnabled: editMemoryEnabled,
+        // 技能绑定
+        skillIds: editSkillIds,
       };
 
       // 直接保存到数据库，确保数据持久化
@@ -602,6 +607,9 @@ export function useAssistantTabLogic(
     // 记忆开关状态和处理函数
     editMemoryEnabled,
     handleMemoryEnabledChange: setEditMemoryEnabled,
+    // 技能绑定状态和处理函数
+    editSkillIds,
+    handleSkillIdsChange: setEditSkillIds,
     // 搜索相关处理函数
     handleSearchClick,
     handleCloseSearch,

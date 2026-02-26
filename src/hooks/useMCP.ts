@@ -13,6 +13,7 @@ interface MCPState {
   resources: MCPResource[];
   mode: MCPMode;
   enabled: boolean;
+  bridgeMode: boolean;
   loading: boolean;
 }
 
@@ -21,6 +22,7 @@ interface MCPActions {
   toggleServer: (serverId: string, isActive: boolean) => Promise<void>;
   setMode: (mode: MCPMode) => void;
   setEnabled: (enabled: boolean) => void;
+  setBridgeMode: (enabled: boolean) => void;
   loadServerData: (server: MCPServer) => Promise<void>;
   callTool: (server: MCPServer, toolName: string, args: Record<string, any>) => Promise<any>;
 }
@@ -38,6 +40,7 @@ export const useMCP = (): MCPState & MCPActions => {
     resources: [],
     mode: 'function',
     enabled: false,
+    bridgeMode: false,
     loading: false
   });
 
@@ -47,11 +50,13 @@ export const useMCP = (): MCPState & MCPActions => {
       try {
         const savedMode = await getStorageItem<MCPMode>('mcp_mode');
         const savedEnabled = await getStorageItem<boolean>('mcp-tools-enabled');
+        const savedBridgeMode = await getStorageItem<boolean>('mcp-bridge-mode');
 
         setState(prev => ({
           ...prev,
           mode: savedMode || 'function',
-          enabled: savedEnabled ?? false
+          enabled: savedEnabled ?? false,
+          bridgeMode: savedBridgeMode ?? false
         }));
       } catch (error) {
         console.error('[MCP Hook] 加载设置失败:', error);
@@ -105,6 +110,12 @@ export const useMCP = (): MCPState & MCPActions => {
   const setEnabled = useCallback((enabled: boolean) => {
     setState(prev => ({ ...prev, enabled }));
     setStorageItem('mcp-tools-enabled', enabled);
+  }, []);
+
+  // 设置桥梁模式
+  const setBridgeMode = useCallback((enabled: boolean) => {
+    setState(prev => ({ ...prev, bridgeMode: enabled }));
+    setStorageItem('mcp-bridge-mode', enabled);
   }, []);
 
   // 加载服务器数据（工具、提示词、资源）
@@ -198,6 +209,7 @@ export const useMCP = (): MCPState & MCPActions => {
     toggleServer,
     setMode,
     setEnabled,
+    setBridgeMode,
     loadServerData,
     callTool
   };

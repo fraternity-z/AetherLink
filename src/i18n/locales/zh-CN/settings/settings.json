@@ -11,8 +11,10 @@
   "groups": {
     "basic": "基本设置",
     "modelService": "模型服务",
+    "promptsAndTools": "提示词与工具",
     "shortcuts": "快捷方式",
-    "other": "其他设置"
+    "dataAndKnowledge": "数据与知识",
+    "system": "系统"
   },
   "items": {
     "appearance": {
@@ -94,6 +96,18 @@
     "contextCondense": {
       "title": "上下文压缩",
       "description": "智能压缩对话历史，节省Token成本"
+    },
+    "skills": {
+      "title": "技能管理 Skills",
+      "description": "管理AI技能，增强助手能力"
+    },
+    "memory": {
+      "title": "记忆功能",
+      "description": "管理AI长期记忆，自动记住用户偏好"
+    },
+    "notes": {
+      "title": "笔记设置",
+      "description": "配置本地笔记存储路径和显示选项"
     }
   },
   "contextCondense": {

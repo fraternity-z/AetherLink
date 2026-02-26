@@ -12,6 +12,7 @@ import {
   Settings as SettingsApplicationsIcon,
   Sliders as TuneIcon,
   Wand2 as AutoFixHighIcon,
+  Zap as SkillsIcon,
   GitBranch,
   MessageSquare as ForumIcon,
   BookOpen as MenuBookIcon,
@@ -150,14 +151,6 @@ const SettingsPage: React.FC = () => {
           onClick: () => navigateTo('/settings/assistant-model'),
         },
         {
-          id: 'agent-prompts',
-          title: t('settings.items.agentPrompts.title'),
-          description: t('settings.items.agentPrompts.description'),
-          icon: <AutoFixHighIcon size={24} />,
-          path: '/settings/agent-prompts',
-          onClick: () => navigateTo('/settings/agent-prompts'),
-        },
-        {
           id: 'ai-debate',
           title: t('settings.items.aiDebate.title'),
           description: t('settings.items.aiDebate.description'),
@@ -180,6 +173,27 @@ const SettingsPage: React.FC = () => {
           icon: <CustomIcon name="foldVertical" size={24} />,
           path: '/settings/context-condense',
           onClick: () => navigateTo('/settings/context-condense'),
+        },
+      ],
+    },
+    {
+      title: t('settings.groups.promptsAndTools'),
+      items: [
+        {
+          id: 'agent-prompts',
+          title: t('settings.items.agentPrompts.title'),
+          description: t('settings.items.agentPrompts.description'),
+          icon: <AutoFixHighIcon size={24} />,
+          path: '/settings/agent-prompts',
+          onClick: () => navigateTo('/settings/agent-prompts'),
+        },
+        {
+          id: 'skills',
+          title: t('settings.items.skills.title'),
+          description: t('settings.items.skills.description'),
+          icon: <SkillsIcon size={24} />,
+          path: '/settings/skills',
+          onClick: () => navigateTo('/settings/skills'),
         },
         {
           id: 'web-search',
@@ -213,7 +227,7 @@ const SettingsPage: React.FC = () => {
       ],
     },
     {
-      title: t('settings.groups.other'),
+      title: t('settings.groups.dataAndKnowledge'),
       items: [
         {
           id: 'workspace-settings',
@@ -233,16 +247,16 @@ const SettingsPage: React.FC = () => {
         },
         {
           id: 'memory-settings',
-          title: '记忆功能',
-          description: '管理AI长期记忆，自动记住用户偏好',
+          title: t('settings.items.memory.title'),
+          description: t('settings.items.memory.description'),
           icon: <DatabaseIcon size={24} />,
           path: '/settings/memory',
           onClick: () => navigateTo('/settings/memory'),
         },
         {
           id: 'note-settings',
-          title: '笔记设置',
-          description: '配置本地笔记存储路径和显示选项',
+          title: t('settings.items.notes.title'),
+          description: t('settings.items.notes.description'),
           icon: <NoteIcon size={24} />,
           path: '/settings/notes',
           onClick: () => navigateTo('/settings/notes'),
@@ -263,6 +277,11 @@ const SettingsPage: React.FC = () => {
           path: '/settings/notion',
           onClick: () => navigateTo('/settings/notion'),
         },
+      ],
+    },
+    {
+      title: t('settings.groups.system'),
+      items: [
         {
           id: 'voice-settings',
           title: t('settings.items.voice.title'),

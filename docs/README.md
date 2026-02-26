@@ -36,6 +36,7 @@
 | [streaming-performance.md](design/streaming-performance.md) | 流式输出性能优化方案 |
 | [custom-params-fix.md](design/custom-params-fix.md) | 自定义参数功能修复方案 |
 | [agent-prompt-collection.md](design/agent-prompt-collection.md) | 智能体提示词集合 |
+| [skills-system.md](design/skills-system.md) | Skills 技能系统设计方案 |
 
 ## architecture-upgrade/ — 架构升级
 

@@ -4,6 +4,7 @@ import type { Assistant } from '../../types/Assistant';
 import type { ChatTopic, QuickPhrase } from '../../types';
 import type { MessageBlock } from '../../types';
 import type { Message } from '../../types/newMessage.ts';
+import type { Skill } from '../../types/Skill';
 import { DB_CONFIG, VERSION_CONFIGS, type Memory } from '../../database/config';
 import { databaseMigrationManager } from '../../database/migrations';
 import { throttle } from 'lodash';
@@ -28,6 +29,7 @@ export class DexieStorageService extends Dexie {
   knowledge_documents!: Dexie.Table<any, string>;
   quick_phrases!: Dexie.Table<QuickPhrase, string>;
   memories!: Dexie.Table<Memory, string>;
+  skills!: Dexie.Table<Skill, string>;
 
 
   private static instance: DexieStorageService;
@@ -73,6 +75,14 @@ export class DexieStorageService extends Dexie {
         const result = await databaseMigrationManager.executeSingleMigration(this, 8);
         if (!result.success) {
           throw new Error(`版本8迁移失败: ${result.error}`);
+        }
+      });
+
+    this.version(9).stores(VERSION_CONFIGS[9].stores)
+      .upgrade(async () => {
+        const result = await databaseMigrationManager.executeSingleMigration(this, 9);
+        if (!result.success) {
+          throw new Error(`版本9迁移失败: ${result.error}`);
         }
       });
   }

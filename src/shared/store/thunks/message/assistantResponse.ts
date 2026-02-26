@@ -235,8 +235,9 @@ export const processAssistantResponse = async (
       changes: { blocks: [placeholderBlock.id] }
     }));
 
-    // 5. 获取 MCP 工具
-    const mcpTools = await fetchMcpTools(toolsEnabled);
+    // 5. 获取 MCP 工具（传入 hasSkills 以注入 read_skill 工具）
+    const hasSkills = !!(assistant?.skillIds?.length);
+    const mcpTools = await fetchMcpTools(toolsEnabled, hasSkills);
 
     // 6. 检测并启动 Agentic 模式
     if (checkAgenticMode(mcpTools)) {
