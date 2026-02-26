@@ -288,7 +288,8 @@ export function SolidBridge<T extends Record<string, any>>({
             updates[key] = serializeValue(value);
           }
           if (debug) {
-            log(`  - ${key}:`, prevProps[key], '→', props[key]);
+            const fmt = (v: any) => typeof v === 'function' ? `[Function ${v.name || 'anonymous'}]` : Array.isArray(v) ? `[Array(${v.length})]` : v;
+            log(`  - ${key}:`, fmt(prevProps[key]), '→', fmt(props[key]));
           }
         }
       }

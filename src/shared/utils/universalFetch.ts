@@ -71,10 +71,11 @@ async function getTauriProxyConfig(): Promise<{ url: string; basicAuth?: { usern
     let proxyUrl: string;
     
     // 根据代理类型构建正确的协议前缀
+    // socks5h / socks4a: DNS 解析在代理服务器端进行，避免本地 DNS 污染或解析不一致导致连接失败
     if (type === 'socks5') {
-      proxyUrl = `socks5://${host}:${port}`;
+      proxyUrl = `socks5h://${host}:${port}`;
     } else if (type === 'socks4') {
-      proxyUrl = `socks4://${host}:${port}`;
+      proxyUrl = `socks4a://${host}:${port}`;
     } else if (type === 'https') {
       // HTTPS 代理使用 https:// 协议
       proxyUrl = `https://${host}:${port}`;
@@ -661,9 +662,9 @@ export async function testTauriProxyConnection(
     // 构建代理 URL
     let proxyUrl: string;
     if (proxyConfig.type === 'socks5') {
-      proxyUrl = `socks5://${proxyConfig.host}:${proxyConfig.port}`;
+      proxyUrl = `socks5h://${proxyConfig.host}:${proxyConfig.port}`;
     } else if (proxyConfig.type === 'socks4') {
-      proxyUrl = `socks4://${proxyConfig.host}:${proxyConfig.port}`;
+      proxyUrl = `socks4a://${proxyConfig.host}:${proxyConfig.port}`;
     } else if (proxyConfig.type === 'https') {
       proxyUrl = `https://${proxyConfig.host}:${proxyConfig.port}`;
     } else {

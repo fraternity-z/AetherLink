@@ -15,31 +15,32 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.5.5", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2", features = ["devtools", "tray-icon"] }
+tauri = { version = "2.10.2", features = ["devtools", "tray-icon"] }
 
-tauri-plugin-log = "2"
+tauri-plugin-log = "2.8.0"
 # HTTP 插件，启用 socks 特性以支持 SOCKS4/SOCKS5 代理
-tauri-plugin-http = { version = "2.5", features = ["socks"] }
+# 使用 fork 版本，包含 SOCKS5 代理 body 读取挂起修复（通过 [patch.crates-io] 覆盖）
+tauri-plugin-http = { version = "2.5.7", features = ["socks"] }
 
 # 官方 dialog 插件 - 文件选择器
-tauri-plugin-dialog = "2"
+tauri-plugin-dialog = "2.6.0"
 # 官方 fs 插件 - 文件系统操作
-tauri-plugin-fs = "2"
-tauri-plugin-shell = "2"
+tauri-plugin-fs = "2.4.5"
+tauri-plugin-shell = "2.3.5"
 # P0修复：剪贴板插件 - 支持原生剪贴板访问
-tauri-plugin-clipboard-manager = "2"
+tauri-plugin-clipboard-manager = "2.3.2"
 # 单例运行插件 - 防止多实例运行
-tauri-plugin-single-instance = "2"
+tauri-plugin-single-instance = "2.4.0"
 
 # 仅桌面端：窗口状态记忆插件
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-window-state = "2"
+tauri-plugin-window-state = "2.4.1"
 
 # 仅 Android 端：边缘到边缘显示插件
 [target.'cfg(target_os = "android")'.dependencies]
@@ -79,3 +80,8 @@ codegen-units = 1
 panic = "abort"
 # 去除调试信息
 debug = false
+
+# 使用 fork 的 tauri-plugin-http，包含 SOCKS5 代理 body 读取挂起修复
+[patch.crates-io]
+tauri-plugin-http = { git = "https://github.com/1600822305/plugins-workspace", branch = "v2" }
+tauri-plugin-fs = { git = "https://github.com/1600822305/plugins-workspace", branch = "v2" }
