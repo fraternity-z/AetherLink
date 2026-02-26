@@ -211,12 +211,10 @@ A: 不会！所有旧的 API 都保持兼容，现有代码可以正常运行。
 A: 当您需要针对特定操作系统或平台提供不同功能时。
 
 ### Q: 如何测试不同平台？
-A: 使用 `PlatformTest` 组件或 `PlatformDetectionExample` 组件进行测试。
+A: 在开发者工具中调用 `getPlatformInfo()` 查看当前平台信息，或使用 `usePlatformInfo()` Hook 在组件中调试。
 
 ## 参考资料
 
-- [平台检测 API 文档](./src/shared/utils/platformDetection.ts)
-- [平台适配器文档](./src/shared/adapters/PlatformAdapter.ts)
-- [React Hook 文档](./src/hooks/usePlatform.ts)
-- [测试组件示例](./src/components/PlatformTest.tsx)
-- [使用示例](./src/examples/PlatformDetectionExample.tsx)
+- `src/shared/utils/platformDetection.ts` — 平台检测 API
+- `src/shared/adapters/PlatformAdapter.ts` — 平台适配器
+- `src/hooks/usePlatform.ts` — React Hook（usePlatformInfo 等）

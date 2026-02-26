@@ -26,7 +26,7 @@ import { Capacitor } from '@capacitor/core';
 
 1. **清理旧构建**
 ```bash
-cd J:\Cherry\AetherLink-app3
+cd K:\Cherry\AetherLink-app3
 npm run clean
 ```
 
@@ -235,7 +235,7 @@ await CapacitorHaptics.impact({ style: ImpactStyle.Light });
 
 ```bash
 # 1. 重新构建
-cd J:\Cherry\AetherLink-app3
+cd K:\Cherry\AetherLink-app3
 npm run build:android
 
 # 2. 打开 Android Studio

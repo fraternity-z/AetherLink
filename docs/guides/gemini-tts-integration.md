@@ -2,17 +2,39 @@
 
 ## 概述
 
-本文档介绍如何在 AetherLink 应用中使用 Google Gemini TTS (Text-to-Speech) 服务。Gemini TTS 是 Google 最新推出的文本转语音服务，提供高质量的语音合成能力，支持单说话人和多说话人模式。
+本文档介绍 AetherLink 中 Google Gemini TTS 的集成方式。TTS 系统已重构为 **tts-v2 架构**，基于 `TTSManager` + 多引擎插件设计。
+
+## 架构
+
+```
+src/shared/services/tts-v2/
+├── TTSManager.ts           # 统一管理器（单例）
+├── types.ts                # 类型定义
+├── index.ts                # 导出入口
+├── engines/
+│   ├── BaseTTSEngine.ts    # 引擎抽象基类
+│   ├── GeminiEngine.ts     # Gemini TTS 引擎
+│   ├── AzureEngine.ts      # Azure TTS
+│   ├── OpenAIEngine.ts     # OpenAI TTS
+│   ├── SiliconFlowEngine.ts
+│   ├── ElevenLabsEngine.ts
+│   ├── MiniMaxEngine.ts
+│   ├── VolcanoEngine.ts
+│   ├── CapacitorEngine.ts  # 原生设备 TTS
+│   └── WebSpeechEngine.ts  # 浏览器 Web Speech API
+└── utils/
+    ├── AudioPlayer.ts      # 音频播放器
+    └── textProcessor.ts    # 文本预处理/分块
+```
 
 ## 功能特性
 
-### 核心功能
-- ✅ **单说话人模式**：使用单一语音进行文本转语音
-- ✅ **多说话人模式**：支持最多2个说话人的对话场景
-- ✅ **风格控制**：通过自然语言提示词控制语音风格、语调、节奏和情感
-- ✅ **30种预设语音**：提供多样化的语音选择
-- ✅ **24种语言支持**：包括中文、英文、日文等主流语言
-- ✅ **自动语言检测**：无需手动指定语言
+- **单说话人模式**：使用单一语音进行文本转语音
+- **多说话人模式**：支持最多 2 个说话人的对话场景
+- **风格控制**：通过自然语言提示词控制语音风格、语调、节奏和情感
+- **30 种预设语音**
+- **自动引擎降级**：活动引擎失败时按优先级自动降级到其他引擎
+- **文本分块播放**：长文本自动分块，逐块合成和播放
 
 ### 支持的模型
 - `gemini-2.5-flash-preview-tts` - 快速响应，适合实时应用
@@ -30,21 +52,34 @@
 ### 基本配置
 
 ```typescript
-import { TTSService } from '@/shared/services/TTSService';
+import { TTSManager } from '@/shared/services/tts-v2';
 
-const ttsService = TTSService.getInstance();
+const tts = TTSManager.getInstance();
 
-// 设置 Gemini API Key
-ttsService.setGeminiApiKey('your-api-key-here');
+// 设置活动引擎为 Gemini
+tts.setActiveEngine('gemini');
 
-// 启用 Gemini TTS
-ttsService.setUseGemini(true);
+// 配置 Gemini 引擎
+tts.configureEngine('gemini', {
+  enabled: true,
+  apiKey: 'your-api-key-here',
+  model: 'gemini-2.5-flash-preview-tts',
+  voice: 'Kore',
+});
+```
 
-// 设置模型（可选）
-ttsService.setGeminiModel('gemini-2.5-flash-preview-tts');
+### GeminiTTSConfig 类型定义
 
-// 设置语音（可选）
-ttsService.setGeminiVoice('Kore');
+```typescript
+interface GeminiTTSConfig {
+  enabled: boolean;
+  apiKey: string;
+  model: 'gemini-2.5-flash-preview-tts' | 'gemini-2.5-pro-preview-tts';
+  voice: string;           // 30 种预设语音
+  stylePrompt?: string;    // 风格提示词
+  useMultiSpeaker: boolean;
+  speakers?: Array<{ speaker: string; voiceName: string }>;
+}
 ```
 
 ## 语音选项
@@ -89,54 +124,71 @@ ttsService.setGeminiVoice('Kore');
 ### 单说话人模式
 
 ```typescript
+import { TTSManager } from '@/shared/services/tts-v2';
+
+const tts = TTSManager.getInstance();
+
 // 基本使用
-await ttsService.speak('你好，欢迎使用 Gemini TTS！');
+await tts.speak('你好，欢迎使用 Gemini TTS！');
 
 // 带风格控制
-ttsService.setGeminiStylePrompt('Say cheerfully:');
-await ttsService.speak('今天天气真好！');
+tts.configureEngine('gemini', { stylePrompt: 'Say cheerfully:' });
+await tts.speak('今天天气真好！');
 
-// 使用不同语音
-ttsService.setGeminiVoice('Puck');
-await ttsService.speak('这是一个乐观的声音。');
+// 切换语音
+tts.configureEngine('gemini', { voice: 'Puck' });
+await tts.speak('这是一个乐观的声音。');
 ```
 
 ### 多说话人模式
 
 ```typescript
 // 启用多说话人模式
-ttsService.setUseGeminiMultiSpeaker(true);
+tts.configureEngine('gemini', {
+  useMultiSpeaker: true,
+  speakers: [
+    { speaker: 'Alice', voiceName: 'Kore' },
+    { speaker: 'Bob', voiceName: 'Puck' },
+  ],
+});
 
-// 配置说话人
-ttsService.setGeminiSpeakers([
-  { speaker: 'Alice', voiceName: 'Kore' },
-  { speaker: 'Bob', voiceName: 'Puck' }
-]);
-
-// 使用多说话人文本格式
 const dialogueText = `
 TTS the following conversation between Alice and Bob:
 Alice: 你好，Bob！今天过得怎么样？
 Bob: 很好！我刚完成了一个项目。
 `;
 
-await ttsService.speak(dialogueText);
+await tts.speak(dialogueText);
 ```
 
-### 风格控制示例
+### 播放控制
 
 ```typescript
-// 恐怖风格
-ttsService.setGeminiStylePrompt('Say in a spooky whisper:');
-await ttsService.speak('黑暗中传来了奇怪的声音...');
+// 暂停
+tts.pause();
 
-// 兴奋风格
-ttsService.setGeminiStylePrompt('Say excitedly:');
-await ttsService.speak('我们赢了！');
+// 恢复
+await tts.resume();
 
-// 疲惫风格
-ttsService.setGeminiStylePrompt('Make the speaker sound tired and bored:');
-await ttsService.speak('今天真是漫长的一天...');
+// 停止
+tts.stop();
+
+// 获取播放进度
+const progress = tts.getProgress();
+// { current: 2, total: 5, percentage: 40 }
+
+// 事件监听
+const removeListener = tts.addEventListener((event) => {
+  switch (event.type) {
+    case 'start': console.log('开始播放'); break;
+    case 'end':   console.log('播放结束'); break;
+    case 'pause': console.log('已暂停'); break;
+    case 'error': console.log('错误:', event.error); break;
+  }
+});
+
+// 移除监听
+removeListener();
 ```
 
 ## 支持的语言
@@ -235,15 +287,7 @@ https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
 
 ### 音频处理
 
-TTSService 自动处理 PCM 到 WAV 的转换：
-
-```typescript
-private createWavBlob(pcmData: Uint8Array, sampleRate: number, channels: number, bitsPerSample: number): Blob {
-  // 创建 WAV 文件头
-  // 写入 PCM 数据
-  // 返回可播放的 WAV Blob
-}
-```
+`GeminiEngine` 自动处理 PCM 到 WAV 的转换（`pcmToWav` 方法），转换后的 WAV 数据交给 `AudioPlayer` 播放。长文本会通过 `textProcessor.ts` 的 `chunkText()` 自动分块，逐块合成和播放。
 
 ## 限制和注意事项
 
@@ -271,7 +315,7 @@ private createWavBlob(pcmData: Uint8Array, sampleRate: number, channels: number,
 4. **性能优化**
    - 合理控制文本长度
    - 避免频繁切换配置
-   - 复用 TTSService 实例
+   - `TTSManager` 为单例，通过 `getInstance()` 获取
 
 ## 故障排查
 
@@ -301,15 +345,19 @@ private createWavBlob(pcmData: Uint8Array, sampleRate: number, channels: number,
 - [Google AI Studio](https://aistudio.google.com/)
 - [Gemini TTS Cookbook](https://colab.research.google.com/github/google-gemini/cookbook/blob/main/quickstarts/Get_started_TTS.ipynb)
 
-## 更新日志
+## 所有支持的 TTS 引擎
 
-### v1.0.0 (2025-01-17)
-- ✅ 初始集成 Gemini TTS
-- ✅ 支持单说话人和多说话人模式
-- ✅ 实现风格控制功能
-- ✅ 添加30种预设语音
-- ✅ 自动 PCM 到 WAV 转换
-- ✅ 完整的类型定义和文档
+| 引擎 | TTSEngineType | 优先级 | 说明 |
+|------|--------------|--------|------|
+| Capacitor | `capacitor` | - | 原生设备 TTS（directPlay） |
+| Gemini | `gemini` | 2 | Google Gemini TTS |
+| Azure | `azure` | - | 微软 Azure TTS |
+| OpenAI | `openai` | - | OpenAI TTS |
+| SiliconFlow | `siliconflow` | - | 硅基流动 TTS |
+| ElevenLabs | `elevenlabs` | - | ElevenLabs TTS |
+| MiniMax | `minimax` | - | MiniMax TTS |
+| Volcano | `volcano` | - | 火山引擎 TTS（字节跳动） |
+| WebSpeech | `webspeech` | - | 浏览器 Web Speech API（directPlay） |
 
 ---
 
