@@ -20,6 +20,7 @@ export { TimeServer } from './servers/TimeServer.js';
 export { FetchServer } from './servers/FetchServer.js';
 export { CalculatorServer } from './servers/CalculatorServer.js';
 export { FileEditorServer } from './servers/FileEditorServer.js';
+export { SearXNGServer } from './servers/SearXNGServer.js';
 
 // 类型定义 (从共享类型中重新导出)
 export type {

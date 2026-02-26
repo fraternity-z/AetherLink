@@ -1064,21 +1064,6 @@ const MCPServerSettings: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: { xs: 1.5, sm: 2 },
-            maxHeight: { xs: 'calc(100vh - 200px)', sm: '70vh', md: '80vh' },
-            overflow: 'auto',
-            pr: { xs: 0.5, sm: 1 },
-            // 移动端滚动优化
-            WebkitOverflowScrolling: 'touch',
-            '&::-webkit-scrollbar': {
-              width: { xs: '2px', sm: '4px' }
-            },
-            '&::-webkit-scrollbar-track': {
-              background: 'transparent'
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: 'rgba(0, 0, 0, 0.2)',
-              borderRadius: '2px'
-            }
           }}>
             {builtinServers.map((builtinServer) => {
               const isAdded = isBuiltinServerAdded(builtinServer.name);

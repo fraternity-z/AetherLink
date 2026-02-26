@@ -92,6 +92,19 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     provider: 'AetherAI',
     logoUrl: '',
     tags: ['DEX', 'Smali', 'APK', '逆向', '编辑', 'Android', '工具']
+  },
+  {
+    id: 'builtin-searxng',
+    name: '@aether/searxng',
+    type: 'inMemory',
+    description: '基于自部署 SearXNG 的元搜索引擎，聚合 Google、Bing、DuckDuckGo 等 70+ 搜索引擎。支持互联网搜索和网页内容抓取',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['搜索', '网页', '抓取', '工具'],
+    env: {
+      SEARXNG_BASE_URL: 'http://154.37.208.52:39281'
+    }
   }
 ];
 
