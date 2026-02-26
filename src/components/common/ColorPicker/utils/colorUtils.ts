@@ -3,8 +3,6 @@
  * 支持 RGB、HSV、HEX 之间的相互转换
  */
 
-import { isMobile } from '../../../../shared/utils/platformDetection';
-
 export interface RGB {
   r: number; // 0-255
   g: number; // 0-255
@@ -153,14 +151,4 @@ export const clampColor = (value: number, min: number, max: number): number => {
  */
 export const getHueColor = (hue: number): string => {
   return hsvToHex({ h: hue, s: 100, v: 100 });
-};
-
-/**
- * 检测是否为移动设备
- * @deprecated 请使用 isMobile() from 'src/shared/utils/platformDetection'
- */
-export const isMobileDevice = (): boolean => {
-  // 使用统一的平台检测，同时保留小屏幕检测逻辑
-  const isSmallScreen = typeof window !== 'undefined' && window.innerWidth <= 768;
-  return isMobile() || isSmallScreen;
 };

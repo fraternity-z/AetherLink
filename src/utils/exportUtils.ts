@@ -1,7 +1,7 @@
 import type { Message } from '../shared/types/newMessage';
 import { getMainTextContent, findThinkingBlocks, findCitationBlocks, findToolBlocks } from '../shared/utils/messageUtils';
 import type { ToolMessageBlock } from '../shared/types/newMessage';
-import { convertMathFormula, removeSpecialCharactersForFileName } from './formats';
+import { processLatexBrackets, removeSpecialCharactersForFileName } from './formats';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
@@ -60,7 +60,7 @@ function createBaseMarkdown(message: Message, includeReasoning = false, forceDol
   }
 
   // 内容部分
-  const contentSection = forceDollarMathInMarkdown ? convertMathFormula(content) : content;
+  const contentSection = forceDollarMathInMarkdown ? processLatexBrackets(content) : content;
 
   // 工具调用部分
   let toolSection = '';
@@ -695,7 +695,7 @@ function messageWithBlocksToMarkdown(message: any, exportReasoning = false): str
   
   // 内容部分
   const mainContent = mainTextBlocks.map((block: any) => block.content).join('\n\n');
-  const contentSection = convertMathFormula(mainContent);
+  const contentSection = processLatexBrackets(mainContent);
   
   // 引用部分
   let citation = '';

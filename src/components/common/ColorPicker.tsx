@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import { Palette } from 'lucide-react';
 import MobileColorPicker from './ColorPicker/components/MobileColorPicker';
-import { isMobileDevice } from './ColorPicker/utils/colorUtils';
 
 interface ColorPickerProps {
   value: string;
@@ -50,7 +49,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   presetColors = DEFAULT_PRESET_COLORS
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md')) || isMobileDevice();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [customColor, setCustomColor] = useState(value);
   const [mobileDialogOpen, setMobileDialogOpen] = useState(false);

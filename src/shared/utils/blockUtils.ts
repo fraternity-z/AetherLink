@@ -182,23 +182,6 @@ export function getMainTextContent(message: Message): string {
     // 从Redux状态获取所有块
     const state = store.getState();
 
-    //  首先检查是否有模型对比块，并且有选中的内容
-    for (const blockId of message.blocks) {
-      try {
-        const block = messageBlocksSelectors.selectById(state, blockId);
-        if (block && block.type === MessageBlockType.MULTI_MODEL) {
-          // 检查是否是对比块且有选中内容
-          const comparisonBlock = block as any;
-          if (comparisonBlock.subType === 'comparison' && comparisonBlock.selectedContent) {
-            return comparisonBlock.selectedContent;
-          }
-        }
-      } catch (error) {
-        console.error(`[blockUtils.getMainTextContent] 检查对比块 ${blockId} 失败:`, error);
-      }
-    }
-
-    // 如果没有对比块选中内容，继续查找普通文本块
     const blocks = message.blocks
       .map(blockId => messageBlocksSelectors.selectById(state, blockId))
       .filter(Boolean) as MessageBlock[];
@@ -307,14 +290,6 @@ export function getCodeBlocks(message: Message): MessageBlock[] {
   return blocks.filter(block => block.type === MessageBlockType.CODE);
 }
 
-/**
- * 更新消息块内容
- * @deprecated 此功能已移至useMessageHandling.ts中的throttledUpdateBlock
- */
-export function updateBlockContent(_blockId: string, _content: string): void {
-  // 实现已移至useMessageHandling.ts中的throttledUpdateBlock
-  console.log('更新块内容已被重构到useMessageHandling.ts中的throttledUpdateBlock函数');
-}
 
 /**
  * 获取特定类型的块
