@@ -45,7 +45,11 @@
       "advancedTip1": "绑定多个技能时，AI 根据用户请求自动匹配最合适的技能",
       "advancedTip2": "点击右上角 + 号可以创建自己的技能",
       "advancedTip3": "支持导入/导出 JSON 和 SKILL.md 格式，兼容 OpenClaw 技能生态",
-      "advancedTip4": "技能可以关联 MCP 工具服务器，激活技能时自动启动对应工具"
+      "advancedTip4": "技能可以关联 MCP 工具服务器，激活技能时自动启动对应工具",
+      "bridgeMode": "搭配桥梁模式",
+      "bridgeModeTip1": "开启桥梁模式后，AI 同时拥有 read_skill（读取技能）和 mcp_bridge（调用 MCP 工具）两个工具",
+      "bridgeModeTip2": "AI 可以先读取技能指令，再通过桥梁模式动态调用 MCP 工具完成复杂任务",
+      "bridgeModeTip3": "不开桥梁模式也能用技能 — read_skill 工具独立于桥梁模式，始终可用"
     },
     "editor": {
       "editSkill": "编辑技能",

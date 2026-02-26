@@ -29,6 +29,7 @@ import { meetingNotesSkill } from './meetingNotes';
 // —— 数据与信息类 ——
 import { dataAnalysisSkill } from './dataAnalysis';
 import { webSummarySkill } from './webSummary';
+import { newsAnalysisSkill } from './newsAnalysis';
 
 // —— 语言工具类 ——
 import { translationSkill } from './translation';
@@ -81,6 +82,7 @@ export const skillCategories: SkillCategory[] = [
     skills: [
       dataAnalysisSkill,
       webSummarySkill,
+      newsAnalysisSkill,
     ],
   },
   {

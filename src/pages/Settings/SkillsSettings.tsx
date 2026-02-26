@@ -537,6 +537,23 @@ const SkillsSettings: React.FC = () => {
                 </Typography>
               </Box>
             </Box>
+
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                🔌 {t('settings.skillsSettings.tutorial.bridgeMode')}
+              </Typography>
+              <Box component="ul" sx={{ m: 0, pl: 2.5, '& li': { mb: 0.5 } }}>
+                <Typography component="li" variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  {t('settings.skillsSettings.tutorial.bridgeModeTip1')}
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  {t('settings.skillsSettings.tutorial.bridgeModeTip2')}
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                  {t('settings.skillsSettings.tutorial.bridgeModeTip3')}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         </Paper>
       </Box>

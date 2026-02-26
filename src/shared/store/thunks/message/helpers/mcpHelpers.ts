@@ -15,7 +15,20 @@ import type { MCPTool } from '../../../../types';
  * @param hasSkills 助手是否绑定了技能（用于注入 read_skill 工具）
  */
 export async function fetchMcpTools(toolsEnabled?: boolean, hasSkills?: boolean): Promise<MCPTool[]> {
+  // 技能独立开关（与 MCP 总开关分离）
+  const skillsEnabledRaw = localStorage.getItem('skills-enabled');
+  const skillsEnabled = (() => {
+    try { return JSON.parse(skillsEnabledRaw || 'false'); }
+    catch { return false; }
+  })();
+  const shouldInjectSkills = skillsEnabled && hasSkills;
+  console.log(`[MCP] fetchMcpTools 参数: toolsEnabled=${toolsEnabled}, hasSkills=${hasSkills}, skillsEnabled=${skillsEnabled} (raw=${skillsEnabledRaw}), shouldInjectSkills=${shouldInjectSkills}`);
+
   if (!toolsEnabled) {
+    if (shouldInjectSkills) {
+      console.log(`[MCP] MCP 工具未启用，但技能已开启 — 仅注入 read_skill`);
+      return [READ_SKILL_TOOL_DEFINITION];
+    }
     console.log(`[MCP] 工具未启用 (toolsEnabled=${toolsEnabled})`);
     return [];
   }
@@ -33,8 +46,8 @@ export async function fetchMcpTools(toolsEnabled?: boolean, hasSkills?: boolean)
       console.log(`[Memory] 添加 ${memoryTools.length} 个记忆工具`);
     }
 
-    // read_skill 独立注入（OpenClaw 风格：只要有技能就可用）
-    if (hasSkills) {
+    // read_skill 独立注入（受技能开关控制）
+    if (shouldInjectSkills) {
       tools.push(READ_SKILL_TOOL_DEFINITION);
       console.log(`[Skill] 添加 read_skill 工具`);
     }
@@ -53,8 +66,8 @@ export async function fetchMcpTools(toolsEnabled?: boolean, hasSkills?: boolean)
       console.log(`[Memory] 添加 ${memoryTools.length} 个记忆工具`);
     }
 
-    // read_skill 独立注入（OpenClaw 风格：只要有技能就可用，不依赖桥梁模式）
-    if (hasSkills) {
+    // read_skill 独立注入（受技能开关控制）
+    if (shouldInjectSkills) {
       mcpTools.push(READ_SKILL_TOOL_DEFINITION);
       console.log(`[Skill] 添加 read_skill 工具`);
     }

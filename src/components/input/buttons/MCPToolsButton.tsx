@@ -9,8 +9,6 @@ import {
 import { Wrench } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
-import type { MCPServer } from '../../../shared/types';
-import { mcpService } from '../../../shared/services/mcp';
 import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../../../shared/styles/toolbarStyles';
 import MCPServerQuickPanel from './MCPServerQuickPanel';
 
@@ -34,17 +32,11 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [open, setOpen] = useState(false);
-  const [servers, setServers] = useState<MCPServer[]>([]);
 
   // 使用稳定的选择器
   const toolbarDisplayStyle = useSelector(selectToolbarDisplayStyle) as 'icon' | 'text' | 'both';
   const toolbarStyle = useSelector(selectToolbarStyle) as 'glassmorphism' | 'transparent';
 
-  // 计算活跃服务器
-  const activeServers = useMemo(
-    () => servers.filter(server => server.isActive),
-    [servers]
-  );
 
   // 根据设置选择样式
   const currentStyles = useMemo(() =>
@@ -54,24 +46,6 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
     [toolbarStyle, isDarkMode]
   );
 
-  // 加载服务器列表
-  const loadServers = useCallback(async () => {
-    try {
-      // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
-      const allServers = await mcpService.getServersAsync();
-      setServers(allServers);
-    } catch (error) {
-      console.error('加载服务器列表失败:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadServers();
-    // 监听技能联动触发的 MCP 服务器状态变化
-    const handleServersChanged = () => loadServers();
-    window.addEventListener('mcp-servers-changed', handleServersChanged);
-    return () => window.removeEventListener('mcp-servers-changed', handleServersChanged);
-  }, [loadServers]);
 
   const handleOpen = useCallback(() => {
     setOpen(true);
@@ -81,8 +55,7 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
 
   const handleClose = useCallback(() => {
     setOpen(false);
-    loadServers(); // 关闭时刷新状态
-  }, [loadServers]);
+  }, []);
 
   // 键盘导航处理
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -92,14 +65,62 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
     }
   }, [handleOpen]);
 
-  const hasActiveServers = activeServers.length > 0;
+
+
+  // 技能状态（独立开关 + 有绑定技能）
+  const currentAssistant = useSelector((state: RootState) => state.assistants.currentAssistant);
+  const [skillsEnabled, setSkillsEnabled] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skills-enabled') || 'false'); }
+    catch { return false; }
+  });
+  useEffect(() => {
+    const handler = () => {
+      try { setSkillsEnabled(JSON.parse(localStorage.getItem('skills-enabled') || 'false')); }
+      catch { setSkillsEnabled(false); }
+    };
+    window.addEventListener('skills-enabled-changed', handler);
+    return () => window.removeEventListener('skills-enabled-changed', handler);
+  }, []);
+  // 刷新：面板关闭时同步
+  useEffect(() => {
+    if (!open) {
+      try { setSkillsEnabled(JSON.parse(localStorage.getItem('skills-enabled') || 'false')); }
+      catch { setSkillsEnabled(false); }
+    }
+  }, [open]);
+  const hasSkills = skillsEnabled && !!(currentAssistant?.skillIds?.length);
+
+  // MCP 激活状态：总开关开启即为激活
+  const hasMcp = !!toolsEnabled;
+  // 任一激活
+  const isActive = hasMcp || hasSkills;
+
+  // 颜色常量
+  const mcpColor = 'rgba(16, 185, 129'; // 绿色
+  const skillColor = 'rgba(245, 158, 11'; // 琥珀色
+  const mcpHex = '#10b981';
+  const skillHex = '#f59e0b';
+
+  // 变色图标：纯绿(MCP) / 纯琥珀(技能) / 拼色(都开)
+  const renderSplitIcon = (size: number, defaultColor: string) => {
+    if (hasMcp && hasSkills) {
+      // 都开 → 拼色
+      return (
+        <Box sx={{ position: 'relative', display: 'inline-flex', width: size, height: size, flexShrink: 0 }}>
+          <Wrench size={size} color={mcpHex} style={{ position: 'absolute', top: 0, left: 0, clipPath: 'inset(0 50% 0 0)' }} />
+          <Wrench size={size} color={skillHex} style={{ position: 'absolute', top: 0, left: 0, clipPath: 'inset(0 0 0 50%)' }} />
+        </Box>
+      );
+    }
+    if (hasMcp) return <Wrench size={size} color={mcpHex} />;
+    if (hasSkills) return <Wrench size={size} color={skillHex} />;
+    return <Wrench size={size} color={defaultColor} />;
+  };
 
   // 根据 variant 渲染不同的按钮样式
   const renderButton = () => {
     if (variant === 'icon-button-compact') {
-      const iconColor = hasActiveServers
-        ? '#4CAF50'
-        : (isDarkMode ? '#B0B0B0' : '#555');
+      const baseColor = isDarkMode ? '#B0B0B0' : '#555';
       
       return (
         <Tooltip title="MCP工具">
@@ -107,32 +128,26 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
             size="small"
             onClick={handleOpen}
             sx={{
-              color: iconColor,
-              backgroundColor: hasActiveServers ? `${iconColor}15` : 'transparent',
-              border: hasActiveServers ? `1px solid ${iconColor}30` : '1px solid transparent',
               width: 34,
               height: 34,
               borderRadius: '8px',
               transition: 'all 0.2s ease',
+              backgroundColor: isActive ? `${hasMcp ? mcpHex : skillHex}15` : 'transparent',
+              border: isActive ? `1px solid ${hasMcp ? mcpHex : skillHex}30` : '1px solid transparent',
               '&:hover': {
-                backgroundColor: `${iconColor}20`,
-                borderColor: `${iconColor}50`,
-                color: iconColor,
                 transform: 'translateY(-1px)',
-                boxShadow: `0 2px 8px ${iconColor}20`
+                backgroundColor: isActive ? `${hasMcp ? mcpHex : skillHex}20` : undefined,
               }
             }}
           >
-            <Wrench size={20} />
+            {renderSplitIcon(20, baseColor)}
           </IconButton>
         </Tooltip>
       );
     }
 
     if (variant === 'icon-button-integrated') {
-      const iconColor = hasActiveServers
-        ? '#4CAF50'
-        : (isDarkMode ? '#ffffff' : '#000000');
+      const baseColor = isDarkMode ? '#ffffff' : '#000000';
       
       return (
         <Tooltip title="MCP工具">
@@ -141,21 +156,24 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
               size="medium"
               onClick={handleOpen}
               disabled={false}
-              style={{
-                color: iconColor,
+              sx={{
                 padding: '6px',
-                backgroundColor: hasActiveServers ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                transition: 'all 0.2s ease-in-out'
+                backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                transition: 'all 0.2s ease-in-out',
               }}
             >
-              <Wrench size={20} />
+              {renderSplitIcon(20, baseColor)}
             </IconButton>
           </span>
         </Tooltip>
       );
     }
 
-    // toolbar 样式
+    // toolbar 样式 — 主色取决于激活状态
+    const activeColor = hasMcp && hasSkills
+      ? mcpColor  // 两者都有时用绿色为主
+      : hasMcp ? mcpColor : skillColor;
+
     return (
       <Box
         role="button"
@@ -165,56 +183,52 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
         onKeyDown={handleKeyDown}
         sx={{
           ...currentStyles.button,
-          ...(hasActiveServers && toolbarStyle === 'glassmorphism' && {
+          position: 'relative',
+          overflow: 'visible',
+          ...(isActive && toolbarStyle === 'glassmorphism' && {
             background: isDarkMode
-              ? 'rgba(16, 185, 129, 0.15)'
-              : 'rgba(16, 185, 129, 0.2)',
+              ? `${activeColor}, 0.15)`
+              : `${activeColor}, 0.2)`,
             border: isDarkMode
-              ? '1px solid rgba(16, 185, 129, 0.25)'
-              : '1px solid rgba(16, 185, 129, 0.35)',
+              ? `1px solid ${activeColor}, 0.25)`
+              : `1px solid ${activeColor}, 0.35)`,
             boxShadow: isDarkMode
-              ? '0 4px 16px rgba(16, 185, 129, 0.1), 0 1px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(16, 185, 129, 0.2)'
-              : '0 4px 16px rgba(16, 185, 129, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(16, 185, 129, 0.3)'
+              ? `0 4px 16px ${activeColor}, 0.1), 0 1px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 ${activeColor}, 0.2)`
+              : `0 4px 16px ${activeColor}, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04), inset 0 1px 0 ${activeColor}, 0.3)`
           }),
-          ...(hasActiveServers && toolbarStyle === 'transparent' && {
-            background: isDarkMode ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.05)'
+          ...(isActive && toolbarStyle === 'transparent' && {
+            background: isDarkMode ? `${activeColor}, 0.08)` : `${activeColor}, 0.05)`
           }),
           margin: toolbarStyle === 'glassmorphism' ? '0 4px' : '0 2px',
           '&:hover': {
             ...currentStyles.buttonHover,
-            ...(hasActiveServers && toolbarStyle === 'glassmorphism' && {
+            ...(isActive && toolbarStyle === 'glassmorphism' && {
               background: isDarkMode
-                ? 'rgba(16, 185, 129, 0.2)'
-                : 'rgba(16, 185, 129, 0.25)',
+                ? `${activeColor}, 0.2)`
+                : `${activeColor}, 0.25)`,
               border: isDarkMode
-                ? '1px solid rgba(16, 185, 129, 0.3)'
-                : '1px solid rgba(16, 185, 129, 0.4)',
+                ? `1px solid ${activeColor}, 0.3)`
+                : `1px solid ${activeColor}, 0.4)`,
               boxShadow: isDarkMode
-                ? '0 6px 24px rgba(16, 185, 129, 0.15), 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(16, 185, 129, 0.25)'
-                : '0 6px 24px rgba(16, 185, 129, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(16, 185, 129, 0.4)'
+                ? `0 6px 24px ${activeColor}, 0.15), 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 ${activeColor}, 0.25)`
+                : `0 6px 24px ${activeColor}, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 0 ${activeColor}, 0.4)`
             }),
-            ...(hasActiveServers && toolbarStyle === 'transparent' && {
-              background: isDarkMode ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)'
+            ...(isActive && toolbarStyle === 'transparent' && {
+              background: isDarkMode ? `${activeColor}, 0.12)` : `${activeColor}, 0.08)`
             })
           },
           '&:active': {
             ...currentStyles.buttonActive
           },
           '&:focus': {
-            outline: `2px solid ${isDarkMode ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.6)'}`,
+            outline: `2px solid ${isDarkMode ? `${activeColor}, 0.8)` : `${activeColor}, 0.6)`}`,
             outlineOffset: '2px',
           }
         }}
         title="MCP 工具"
       >
         {toolbarDisplayStyle !== 'text' && (
-          <Wrench
-            size={16}
-            color={hasActiveServers
-              ? (isDarkMode ? 'rgba(16, 185, 129, 0.9)' : 'rgba(16, 185, 129, 0.8)')
-              : (isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.75)')
-            }
-          />
+          renderSplitIcon(16, isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.75)')
         )}
         {toolbarDisplayStyle !== 'icon' && (
           <Typography
@@ -222,8 +236,8 @@ const MCPToolsButtonInner: React.FC<MCPToolsButtonProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '13px',
-              color: hasActiveServers
-                ? (isDarkMode ? 'rgba(16, 185, 129, 0.95)' : 'rgba(16, 185, 129, 0.9)')
+              color: isActive
+                ? (isDarkMode ? `${activeColor}, 0.95)` : `${activeColor}, 0.9)`)
                 : (isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)'),
               textShadow: isDarkMode
                 ? '0 1px 2px rgba(0, 0, 0, 0.3)'

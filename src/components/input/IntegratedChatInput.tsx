@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Box } from '@mui/material';
 import KnowledgeChip from '../chat/KnowledgeChip';
-import SkillActivationTags from '../chat/SkillActivationTags';
 
 import { useChatInputLogic } from '../../shared/hooks/useChatInputLogic';
 import { useKnowledgeContext } from '../../shared/hooks/useKnowledgeContext';
@@ -369,8 +368,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
         );
       })()}
 
-      {/* 技能激活标签 */}
-      <SkillActivationTags />
 
       {/* 已选多模型显示 */}
       {menuManager.renderMentionedModels()}

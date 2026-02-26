@@ -23,12 +23,18 @@ export class SkillPromptBuilder {
       .join('\n');
 
     return [
+      '## Skills (HIGHEST PRIORITY — execute before any other tool)',
+      '',
       '<available_skills>',
       entries,
       '</available_skills>',
       '',
-      '你拥有以上技能。当用户请求明确匹配某个技能时，调用 read_skill 工具（参数 skill_name）获取完整指令并严格遵循。',
-      '如果没有匹配的技能，按你的通用能力回答。不要猜测技能内容，必须先 read_skill。',
+      'CRITICAL: Before replying and before calling ANY other tool (including mcp_bridge), you MUST:',
+      '1. Scan every <description> in <available_skills> above.',
+      '2. If one or more skills match the user request: call read_skill with the most specific skill name FIRST.',
+      '3. Only after reading and following the skill instructions may you use other tools.',
+      '4. If no skill applies: skip read_skill and respond normally.',
+      'Constraints: read exactly one skill; never guess skill content — always read_skill first.',
     ].join('\n');
   }
 
@@ -41,13 +47,15 @@ export class SkillPromptBuilder {
     enabledSkills: Skill[];
     topicPrompt?: string;
   }): string {
-    let systemPrompt = params.assistantPrompt;
+    let systemPrompt = '';
 
-    // 技能精简列表（OpenClaw 风格）
+    // 技能指令放在最前面（优先级最高，确保模型先看到）
     if (params.enabledSkills.length > 0) {
       const summary = this.buildSkillsSummary(params.enabledSkills);
-      systemPrompt += `\n\n${summary}`;
+      systemPrompt = summary + '\n\n';
     }
+
+    systemPrompt += params.assistantPrompt;
 
     // 话题追加指令
     if (params.topicPrompt?.trim()) {

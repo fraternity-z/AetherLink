@@ -280,7 +280,11 @@ export const prepareMessagesForApi = async (
     let enabledSkills: import('../../../types/Skill').Skill[] = [];
     try {
       if (assistant.skillIds?.length) {
+        console.log(`[prepareMessagesForApi] 助手有 ${assistant.skillIds.length} 个绑定技能 ID:`, assistant.skillIds);
         enabledSkills = await SkillManager.getSkillsForAssistant(assistant.id);
+        console.log(`[prepareMessagesForApi] 获取到 ${enabledSkills.length} 个已启用技能:`, enabledSkills.map(s => s.name));
+      } else {
+        console.log(`[prepareMessagesForApi] 助手没有绑定技能 (skillIds=${JSON.stringify(assistant.skillIds)})`);
       }
     } catch (error) {
       console.warn('[prepareMessagesForApi] 获取技能信息失败，降级到无技能模式:', error);
