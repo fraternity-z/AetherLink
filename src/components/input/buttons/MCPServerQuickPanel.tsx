@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  DialogTitle,
+  AppBar,
+  Toolbar,
   DialogContent,
   DialogActions,
   List,
   ListItem,
   ListItemText,
-  ListItemIcon,
+  ListItemAvatar,
   Typography,
   Box,
   Chip,
@@ -15,22 +16,24 @@ import {
   Button,
   Divider,
   Alert,
+  IconButton,
   CircularProgress,
-  Skeleton
+  Skeleton,
+  useTheme
 } from '@mui/material';
 import BackButtonDialog from '../../common/BackButtonDialog';
-import { Plug, Server, Wifi, Cpu, Terminal, Cog } from 'lucide-react';
+import { ArrowLeft, Plug, Server, Wifi, Cpu, Terminal, Cog, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { MCPServer, MCPServerType } from '../../../shared/types';
 import { mcpService } from '../../../shared/services/mcp';
 import CustomSwitch from '../../CustomSwitch';
 import { useMCPServerStateManager } from '../../../hooks/useMCPServerStateManager';
 
-// 服务器类型配置常量
+// 服务器类型配置常量 — 颜色与 MCPServerSettings 保持一致
 const SERVER_TYPE_CONFIG = {
   httpStream: {
     icon: Wifi,
-    color: '#9c27b0',
+    color: '#ff5722',
     label: 'HTTP Stream'
   },
   sse: {
@@ -77,6 +80,8 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
   toolsEnabled = false,
   onToolsEnabledChange
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [loadingServers, setLoadingServers] = useState<Record<string, boolean>>({});
@@ -97,7 +102,6 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
   // 加载服务器列表
   const loadServers = useCallback(async () => {
     try {
-      // 🔧 修复：使用异步方法确保数据完整加载，避免竞态条件
       const allServers = await mcpService.getServersAsync();
       setServers(allServers);
       setError(null);
@@ -163,17 +167,9 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
     [createMCPToggleHandler, loadServers, onToolsEnabledChange]
   );
 
-  // 获取服务器类型图标
-  const getServerTypeIcon = useCallback((type: MCPServerType) => {
-    const config = SERVER_TYPE_CONFIG[type as keyof typeof SERVER_TYPE_CONFIG] || SERVER_TYPE_CONFIG.default;
-    const IconComponent = config.icon;
-    return <IconComponent size={16} />;
-  }, []);
-
-  // 获取服务器类型颜色
-  const getServerTypeColor = useCallback((type: MCPServerType) => {
-    const config = SERVER_TYPE_CONFIG[type as keyof typeof SERVER_TYPE_CONFIG] || SERVER_TYPE_CONFIG.default;
-    return config.color;
+  // 获取服务器类型配置
+  const getServerConfig = useCallback((type: MCPServerType) => {
+    return SERVER_TYPE_CONFIG[type as keyof typeof SERVER_TYPE_CONFIG] || SERVER_TYPE_CONFIG.default;
   }, []);
 
   return (
@@ -181,39 +177,54 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
       open={open}
       onClose={onClose}
       fullScreen
+      safeArea={false}
     >
-      <DialogTitle sx={{ 
-        pb: 1, 
-        flexShrink: 0
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Plug size={20} color="#10b981" />
-            <Typography variant="h6" fontWeight={600}>
-              MCP 工具服务器
-            </Typography>
-            {hasActiveServers && (
-              <Chip
-                label={`${activeServers.length} 个运行中`}
-                size="small"
-                color="success"
-                variant="outlined"
-              />
-            )}
-          </Box>
+      {/* 顶部导航栏 */}
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          backgroundColor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          paddingTop: 'var(--safe-area-top, 0px)',
+        }}
+      >
+        <Toolbar sx={{ minHeight: 56, px: 1 }}>
+          <IconButton onClick={onClose} edge="start" sx={{ mr: 0.5, color: 'text.primary' }}>
+            <ArrowLeft size={22} />
+          </IconButton>
+          <Typography variant="h6" sx={{ fontWeight: 600, flex: 1, color: 'text.primary' }}>
+            MCP 工具
+          </Typography>
+          {hasActiveServers && (
+            <Chip
+              label={`${activeServers.length} 运行中`}
+              size="small"
+              sx={{
+                mr: 1,
+                height: 22,
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                bgcolor: isDark ? alpha('#10b981', 0.15) : '#dcfce7',
+                color: isDark ? '#6ee7b7' : '#166534',
+                border: `1px solid ${isDark ? alpha('#10b981', 0.3) : '#bbf7d0'}`,
+              }}
+            />
+          )}
           {onToolsEnabledChange && (
             <CustomSwitch
               checked={toolsEnabled}
               onChange={(e) => handleToolsEnabledChange(e.target.checked)}
             />
           )}
-        </Box>
-      </DialogTitle>
+        </Toolbar>
+      </AppBar>
 
       <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
         {/* 错误提示 */}
         {error && (
-          <Box sx={{ p: 2, flexShrink: 0 }}>
+          <Box sx={{ px: 2, pt: 2, flexShrink: 0 }}>
             <Alert severity="error" onClose={() => setError(null)}>
               {error}
             </Alert>
@@ -221,123 +232,151 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
         )}
 
         {/* 可滚动的服务器列表区域 */}
-        <Box sx={{ 
-          flex: 1, 
+        <Box sx={{
+          flex: 1,
           overflow: 'auto',
-          '&::-webkit-scrollbar': { display: 'none' },
-          msOverflowStyle: 'none',
-          scrollbarWidth: 'none'
+          WebkitOverflowScrolling: 'touch',
         }}>
           {isInitialLoading ? (
-            // 骨架屏加载状态
-            <List sx={{ py: 0 }}>
-              {[1, 2, 3, 4, 5].map((index) => (
-                <ListItem key={index} sx={{ py: 2 }}>
-                  <ListItemIcon>
-                    <Skeleton variant="circular" width={32} height={32} />
-                  </ListItemIcon>
+            <List disablePadding>
+              {[1, 2, 3, 4].map((index) => (
+                <ListItem key={index} sx={{ px: 2, py: 1.5 }}>
+                  <ListItemAvatar sx={{ minWidth: 44 }}>
+                    <Skeleton variant="circular" width={36} height={36} />
+                  </ListItemAvatar>
                   <ListItemText
-                    primary={<Skeleton variant="text" width="60%" height={24} />}
-                    secondary={
-                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                        <Skeleton variant="rectangular" width={60} height={20} sx={{ borderRadius: '10px' }} />
-                        <Skeleton variant="rectangular" width={50} height={20} sx={{ borderRadius: '10px' }} />
-                      </Box>
-                    }
-                    secondaryTypographyProps={{ component: 'div' }}
+                    primary={<Skeleton variant="text" width="50%" height={22} />}
+                    secondary={<Skeleton variant="text" width={60} height={18} />}
                   />
-                  <Box sx={{ ml: 'auto' }}>
-                    <Skeleton variant="rectangular" width={40} height={24} sx={{ borderRadius: '12px' }} />
-                  </Box>
+                  <Skeleton variant="rectangular" width={40} height={22} sx={{ borderRadius: '11px' }} />
                 </ListItem>
               ))}
             </List>
           ) : servers.length === 0 ? (
-            <Box sx={{ p: 3, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <Plug size={64} color="rgba(0,0,0,0.3)" style={{ marginBottom: 24 }} />
-              <Typography variant="h6" gutterBottom>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              p: 4,
+              color: 'text.secondary',
+            }}>
+              <Plug size={56} style={{ opacity: 0.3, marginBottom: 16 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, color: 'text.primary' }}>
                 还没有配置 MCP 服务器
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                MCP 服务器可以为 AI 提供额外的工具和功能
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+                MCP 服务器可以为 AI 提供额外的工具和能力
               </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Settings size={16} />}
+                onClick={handleNavigateToSettings}
+              >
+                前往配置
+              </Button>
             </Box>
           ) : (
-            <List sx={{ py: 0 }}>
-              {servers.map((server, index) => (
-                <React.Fragment key={server.id}>
-                  <ListItem
-                    sx={{ py: 2 }}
-                    secondaryAction={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {loadingServers[server.id] && (
-                          <CircularProgress size={16} />
-                        )}
-                        <CustomSwitch
-                          checked={server.isActive}
-                          onChange={(e) => handleToggleServer(server.id, e.target.checked)}
-                          disabled={loadingServers[server.id] || false}
-                        />
-                      </Box>
-                    }
-                  >
-                    <ListItemIcon>
-                      <Avatar
-                        sx={{
-                          bgcolor: alpha(getServerTypeColor(server.type), 0.1),
-                          color: getServerTypeColor(server.type),
-                          width: 32,
-                          height: 32
-                        }}
-                      >
-                        {getServerTypeIcon(server.type)}
-                      </Avatar>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {server.name}
-                          </Typography>
-                          {server.isActive && (
-                            <Chip
-                              label="运行中"
-                              size="small"
-                              color="success"
-                              variant="outlined"
-                            />
+            <List disablePadding>
+              {servers.map((server, index) => {
+                const config = getServerConfig(server.type);
+                const typeColor = config.color;
+                return (
+                  <React.Fragment key={server.id}>
+                    <ListItem
+                      sx={{
+                        px: 2,
+                        py: 1.5,
+                        '&:active': { bgcolor: alpha(theme.palette.action.active, 0.05) },
+                      }}
+                      secondaryAction={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {loadingServers[server.id] && (
+                            <CircularProgress size={16} sx={{ color: 'text.secondary' }} />
                           )}
+                          <CustomSwitch
+                            checked={server.isActive}
+                            onChange={(e) => handleToggleServer(server.id, e.target.checked)}
+                            disabled={loadingServers[server.id] || false}
+                          />
                         </Box>
                       }
-                    />
-                  </ListItem>
-                  {index < servers.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
+                    >
+                      <ListItemAvatar sx={{ minWidth: 44 }}>
+                        <Avatar
+                          sx={{
+                            bgcolor: alpha(typeColor, 0.12),
+                            color: typeColor,
+                            width: 36,
+                            height: 36,
+                          }}
+                        >
+                          <config.icon size={18} />
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Typography variant="body1" sx={{ fontWeight: 600, fontSize: '0.925rem' }}>
+                            {server.name}
+                          </Typography>
+                        }
+                        secondary={
+                          <Chip
+                            label={config.label}
+                            size="small"
+                            sx={{
+                              mt: 0.5,
+                              height: 20,
+                              fontSize: '0.7rem',
+                              fontWeight: 500,
+                              bgcolor: alpha(typeColor, 0.08),
+                              color: typeColor,
+                              border: 'none',
+                            }}
+                          />
+                        }
+                        secondaryTypographyProps={{ component: 'div' }}
+                      />
+                    </ListItem>
+                    {index < servers.length - 1 && <Divider component="li" />}
+                  </React.Fragment>
+                );
+              })}
             </List>
           )}
         </Box>
       </DialogContent>
 
-      {/* 固定底部按钮区域 */}
-      <DialogActions sx={{ 
-        flexDirection: 'column', 
-        gap: 1, 
+      {/* 固定底部按钮 */}
+      <DialogActions sx={{
+        flexDirection: 'column',
+        gap: 1,
         p: 2,
-        borderTop: '1px solid', 
+        pb: 'calc(var(--safe-area-bottom-computed, 0px) + 16px)',
+        borderTop: '1px solid',
         borderColor: 'divider',
-        flexShrink: 0
       }}>
         <Button
           fullWidth
-          variant="contained"
-          startIcon={<Cog size={16} />}
+          startIcon={<Settings size={16} />}
           onClick={handleNavigateToSettings}
-          color="success"
+          sx={{
+            background: '#10b981',
+            color: '#fff',
+            fontWeight: 600,
+            borderRadius: 2,
+            py: 1.2,
+            textTransform: 'none',
+            '&:hover': { background: '#059669' },
+          }}
         >
           管理 MCP 服务器
         </Button>
-        <Button fullWidth variant="outlined" onClick={onClose}>关闭</Button>
+        <Button fullWidth variant="outlined" onClick={onClose}>
+          关闭
+        </Button>
       </DialogActions>
     </BackButtonDialog>
   );
