@@ -227,7 +227,6 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
               margin: 0,
               maxHeight: '100vh',
               height: '100vh',
-              borderRadius: 0,
               display: 'flex',
               flexDirection: 'column'
             })
@@ -246,7 +245,6 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
         borderBottom: 1,
         borderColor: 'divider',
         backgroundColor: 'transparent',
-        // 移动端适配顶部安全区域
         ...(isMobile && {
           paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
           minHeight: '64px'
@@ -432,10 +430,8 @@ const EditAssistantDialog: React.FC<EditAssistantDialogProps> = ({
           `1px solid ${theme.palette.mode === 'dark'
             ? 'rgba(255, 255, 255, 0.1)'
             : 'rgba(0, 0, 0, 0.1)'}`,
-        // 移动端底部安全区域适配
         ...(isMobile && {
-          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))',
-          minHeight: '60px' // 减少最小高度
+          minHeight: '60px'
         })
       }}>
         <Button

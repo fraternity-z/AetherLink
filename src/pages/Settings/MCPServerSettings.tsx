@@ -1034,16 +1034,13 @@ const MCPServerSettings: React.FC = () => {
         sx={{
           '& .MuiDialog-paper': {
             maxHeight: { xs: '100vh', sm: '90vh' },
-            margin: { xs: 0, sm: 2 },
-            borderRadius: { xs: 0, sm: 2 }
+            margin: { xs: 0, sm: 2 }
           }
         }}
       >
         <DialogTitle sx={{
           px: { xs: 2, sm: 3 },
           py: { xs: 2, sm: 2.5 },
-          // 移动端全屏时添加顶部安全区域
-          pt: { xs: 'calc(var(--safe-area-top) + 16px)', sm: 2.5 },
           fontSize: { xs: '1.25rem', sm: '1.5rem' },
           fontWeight: 600,
           borderBottom: '1px solid',
@@ -1272,8 +1269,6 @@ const MCPServerSettings: React.FC = () => {
         <DialogActions sx={{
           px: { xs: 2, sm: 3 },
           py: { xs: 2, sm: 2.5 },
-          // 移动端全屏时添加底部安全区域
-          pb: { xs: 'calc(var(--safe-area-bottom-computed) + 16px)', sm: 2.5 },
           borderTop: '1px solid',
           borderColor: 'divider',
           gap: { xs: 1, sm: 2 }

@@ -115,11 +115,8 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
               margin: 0,
               maxHeight: '100vh',
               height: '100vh',
-              borderRadius: 0,
               display: 'flex',
-              flexDirection: 'column',
-              // 顶部安全区域适配
-              paddingTop: 'calc(16px + var(--safe-area-top, 0px))'
+              flexDirection: 'column'
             })
           }
         }
@@ -186,7 +183,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
                       width: isMobile ? 250 : 200,
                       height: isMobile ? 250 : 200,
                     },
-                                      }}
+                  }}
                 />
               </Box>
               <Box sx={{ width: '100%', mt: 2 }}>
@@ -222,9 +219,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({
         </Box>
       </DialogContent>
       <DialogActions sx={{
-        // 移动端底部安全区域适配
         ...(isMobile && {
-          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))',
           px: 2
         })
       }}>

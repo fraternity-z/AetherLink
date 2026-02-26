@@ -340,7 +340,7 @@ const CodeEditorDrawer: React.FC<CodeEditorDrawerProps> = ({
         fullScreen={isMobile}
         PaperProps={{
           sx: {
-            borderRadius: isMobile ? 0 : 2,
+            borderRadius: 2,
             backdropFilter: 'blur(10px)',
             border: theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
             // flex布局确保子元素填满

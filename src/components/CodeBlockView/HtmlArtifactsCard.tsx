@@ -514,13 +514,8 @@ const HtmlArtifactsPopup: React.FC<HtmlArtifactsPopupProps> = memo(({
           width: effectiveFullscreen ? '100vw' : '90vw',
           maxWidth: effectiveFullscreen ? '100vw' : '1400px',
           height: effectiveFullscreen ? '100vh' : '85vh',
-          borderRadius: effectiveFullscreen ? 0 : '12px',
+          borderRadius: '12px',
           overflow: 'hidden',
-          // 移动端安全区域
-          ...(isMobile && {
-            paddingTop: 'env(safe-area-inset-top, 0px)',
-            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          }),
         }
       }}
     >

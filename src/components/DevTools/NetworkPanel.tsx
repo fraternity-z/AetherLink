@@ -175,15 +175,13 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
       fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: isMobile ? 0 : 2,
+          borderRadius: 2,
         },
       }}
     >
       <DialogTitle sx={{
         pb: 1,
-        // 移动端适配顶部安全区域
         ...(isMobile && {
-          paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
           minHeight: '64px'
         })
       }}>
@@ -253,10 +251,6 @@ const NetworkPanel = forwardRef<NetworkPanelRef, NetworkPanelProps>(({
       <Divider />
       <DialogContent sx={{
         pt: 3,
-        // 移动端适配底部安全区域
-        ...(isMobile && {
-          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))'
-        })
       }}>
         {selectedEntry && (
           <Box>

@@ -323,7 +323,6 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
     fullScreen={isMobile}
     PaperProps={{
       sx: {
-        borderRadius: isMobile ? 0 : 2,
         bgcolor: 'background.paper',
         backdropFilter: 'blur(10px)',
         border: '1px solid',
@@ -347,7 +346,6 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
       pb: 1,
       // 移动端适配顶部安全区域
       ...(isMobile && {
-        paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
         minHeight: '64px'
       })
     }}>
@@ -498,7 +496,7 @@ const SystemPromptDialog: React.FC<SystemPromptDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{
-        padding: isMobile ? '16px 24px calc(16px + var(--safe-area-bottom-computed, 0px))' : '8px 24px 16px 24px',
+        padding: isMobile ? '16px 24px' : '8px 24px 16px 24px',
         borderTop: `1px solid ${theme.palette.divider}`,
         mt: 0,
         // 移动端按钮区域适配

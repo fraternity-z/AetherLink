@@ -149,10 +149,8 @@ const WallpaperEditor: React.FC<WallpaperEditorProps> = ({
               margin: 0,
               maxHeight: '100vh',
               height: '100vh',
-              borderRadius: 0,
               display: 'flex',
-              flexDirection: 'column',
-              paddingTop: 'calc(16px + var(--safe-area-top, 0px))'
+              flexDirection: 'column'
             })
           }
         }
@@ -274,7 +272,6 @@ const WallpaperEditor: React.FC<WallpaperEditorProps> = ({
       </DialogContent>
       <DialogActions sx={{
         ...(isMobile && {
-          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))',
           px: 2
         })
       }}>

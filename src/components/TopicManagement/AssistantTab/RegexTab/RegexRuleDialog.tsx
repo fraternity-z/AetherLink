@@ -168,7 +168,8 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
             maxHeight: '100vh',
             height: '100vh',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            borderRadius: 0
           })
         }
       }}
@@ -181,9 +182,7 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
           justifyContent: 'space-between',
           borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
           py: 1.5,
-          // 移动端适配顶部安全区域
           ...(isMobile && {
-            paddingTop: 'calc(16px + var(--safe-area-top, 0px))',
             minHeight: '64px'
           })
         }}
@@ -434,9 +433,7 @@ const RegexRuleDialog: React.FC<RegexRuleDialogProps> = ({
         px: 3, 
         py: 2, 
         borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-        // 移动端底部安全区域适配
         ...(isMobile && {
-          paddingBottom: 'calc(16px + var(--safe-area-bottom-computed, 0px))',
           minHeight: '60px'
         })
       }}>

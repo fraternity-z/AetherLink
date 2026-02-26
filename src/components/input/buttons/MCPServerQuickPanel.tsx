@@ -181,19 +181,10 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
       open={open}
       onClose={onClose}
       fullScreen
-      transitionDuration={0}
-      slotProps={{
-        paper: {
-          sx: {
-            borderRadius: 0
-          }
-        }
-      }}
     >
       <DialogTitle sx={{ 
         pb: 1, 
-        flexShrink: 0,
-        pt: 'calc(var(--safe-area-top, 0px) + 16px)'
+        flexShrink: 0
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -333,7 +324,6 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
         flexDirection: 'column', 
         gap: 1, 
         p: 2,
-        pb: 'calc(var(--safe-area-bottom-computed, 0px) + 16px)',
         borderTop: '1px solid', 
         borderColor: 'divider',
         flexShrink: 0
