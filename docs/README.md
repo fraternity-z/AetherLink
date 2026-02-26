@@ -41,11 +41,8 @@
 
 | 文档 | 说明 |
 |------|------|
-| [01-current-architecture-analysis.md](architecture-upgrade/01-current-architecture-analysis.md) | 当前架构分析 |
-| [02-cherry-studio-comparison.md](architecture-upgrade/02-cherry-studio-comparison.md) | Cherry Studio 对比 |
-| [06-implementation-roadmap.md](architecture-upgrade/06-implementation-roadmap.md) | 实施路线图 |
-| [cloud-sync-system-design.md](architecture-upgrade/cloud-sync-system-design.md) | 云同步系统设计 |
-| [unified-network-layer.md](architecture-upgrade/unified-network-layer.md) | 统一网络层设计 |
+| [cloud-sync-system-design.md](architecture-upgrade/cloud-sync-system-design.md) | 云同步系统设计（活跃） |
+| [archive/](architecture-upgrade/archive/) | 已完成/取消的阶段文档（5 篇） |
 
 ## refactoring/ — 进行中的重构
 
