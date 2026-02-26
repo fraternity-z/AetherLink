@@ -107,7 +107,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     handleKeyDown,
     handleChange,
     textareaHeight,
-    showCharCount,
     handleCompositionStart,
     handleCompositionEnd,
     isMobile,
@@ -127,7 +126,6 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     setFiles,
     enableTextareaResize: true,
     enableCompositionHandling: true,
-    enableCharacterCount: true,
     availableModels
   });
 
@@ -407,8 +405,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
               message={message}
               textareaRef={textareaRef}
               textareaHeight={textareaHeight}
-              showCharCount={showCharCount}
-              handleChange={expandableContainer.enhancedHandleChange}
+              handleChange={expandableContainer.handleChange}
               handleKeyDown={handleKeyDown}
               handleCompositionStart={handleCompositionStart}
               handleCompositionEnd={handleCompositionEnd}

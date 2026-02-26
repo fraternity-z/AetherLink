@@ -21,7 +21,6 @@ interface UseChatInputLogicProps {
   // ChatInput 特有的功能
   enableTextareaResize?: boolean;
   enableCompositionHandling?: boolean;
-  enableCharacterCount?: boolean;
   availableModels?: Model[];
 }
 
@@ -38,8 +37,7 @@ export const useChatInputLogic = ({
   setImages,
   setFiles,
   enableTextareaResize = false,
-  enableCompositionHandling = false,
-  enableCharacterCount = false
+  enableCompositionHandling = false
 }: UseChatInputLogicProps) => {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -60,7 +58,6 @@ export const useChatInputLogic = ({
     enableTextareaResize ? (isMobile ? 32 : isTablet ? 36 : 34) : 40
   );
   const [isComposing, setIsComposing] = useState(false);
-  const [showCharCount, setShowCharCount] = useState(false);
 
   // 大文本处理性能优化状态
   const [isLargeText, setIsLargeText] = useState(false);
@@ -90,18 +87,20 @@ export const useChatInputLogic = ({
       requestAnimationFrame(() => {
         if (!textarea) return;
         
-        // 批量读取DOM属性（避免强制重排）
+        const minHeight = isMobile ? 32 : isTablet ? 36 : 34;
+        
+        // 关键：先重置为auto，让浏览器根据内容重新计算scrollHeight
+        // 如果不先重置，当内容减少时scrollHeight不会变小（因为容器仍撑开着）
+        textarea.style.height = 'auto';
+        
+        // 此时读取scrollHeight才是真实的内容高度
         const scrollHeight = textarea.scrollHeight;
         
-        // 计算新高度
-        const newHeight = Math.max(
-          isMobile ? 32 : isTablet ? 36 : 34, // 最小高度
-          Math.min(scrollHeight, 120) // 最大高度120px
-        );
-
-        // 批量写入DOM属性（减少重排次数）
-        textarea.style.height = 'auto'; // 先重置
-        textarea.style.height = `${newHeight}px`; // 再设置新高度
+        // 计算新高度：clamp在[minHeight, 120]之间
+        const newHeight = Math.max(minHeight, Math.min(scrollHeight, 120));
+        
+        // 设置计算后的高度
+        textarea.style.height = `${newHeight}px`;
         
         // 只在高度真正变化时才更新状态，避免不必要的重渲染
         setTextareaHeight(prev => prev !== newHeight ? newHeight : prev);
@@ -122,14 +121,11 @@ export const useChatInputLogic = ({
     if (imageGenerationMode && onSendImagePrompt) {
       onSendImagePrompt(processedMessage);
       setMessage('');
-
-      // 重置输入框高度到默认值（ChatInput 特有）
-      if (enableTextareaResize) {
-        const defaultHeight = isMobile ? 24 : 28;
-        setTextareaHeight(defaultHeight);
-        if (textareaRef.current) {
-          textareaRef.current.style.height = `${defaultHeight}px`;
-        }
+      // 高度重置统一在函数末尾处理
+      if (enableTextareaResize && textareaRef.current) {
+        requestAnimationFrame(() => {
+          if (textareaRef.current) adjustTextareaHeight(textareaRef.current);
+        });
       }
       return;
     }
@@ -138,14 +134,10 @@ export const useChatInputLogic = ({
     if (videoGenerationMode && onSendImagePrompt) {
       onSendImagePrompt(processedMessage);
       setMessage('');
-
-      // 重置输入框高度到默认值（ChatInput 特有）
-      if (enableTextareaResize) {
-        const defaultHeight = isMobile ? 24 : 28;
-        setTextareaHeight(defaultHeight);
-        if (textareaRef.current) {
-          textareaRef.current.style.height = `${defaultHeight}px`;
-        }
+      if (enableTextareaResize && textareaRef.current) {
+        requestAnimationFrame(() => {
+          if (textareaRef.current) adjustTextareaHeight(textareaRef.current);
+        });
       }
       return;
     }
@@ -170,22 +162,19 @@ export const useChatInputLogic = ({
       // 重置大文本相关状态
       setIsLargeText(false);
       setPerformanceWarning(false);
-      setShowCharCount(false);
     });
 
-    // 重置输入框高度到默认值（ChatInput 特有）- 保持同步以避免视觉跳跃
-    if (enableTextareaResize) {
-      const defaultHeight = isMobile ? 24 : 28;
-      setTextareaHeight(defaultHeight);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = `${defaultHeight}px`;
-      }
+    // 发送后统一通过 adjustTextareaHeight 重置高度（内容已清空，会自动算出最小高度）
+    if (enableTextareaResize && textareaRef.current) {
+      requestAnimationFrame(() => {
+        if (textareaRef.current) adjustTextareaHeight(textareaRef.current);
+      });
     }
   }, [
     message, images, files, isLoading, allowConsecutiveMessages,
     imageGenerationMode, videoGenerationMode, onSendImagePrompt,
-    enableTextareaResize, isMobile, onSendMessage, toolsEnabled,
-    setMessage, setImages, setFiles, setTextareaHeight
+    enableTextareaResize, onSendMessage, toolsEnabled,
+    setMessage, setImages, setFiles, adjustTextareaHeight
   ]);
 
   // 处理键盘事件 - 使用useCallback优化性能
@@ -252,10 +241,6 @@ export const useChatInputLogic = ({
           setIsLargeText(textLength > 5000);
           // 性能警告（超过10000字符）
           setPerformanceWarning(textLength > 10000);
-          // 字符计数显示控制（ChatInput 特有）
-          if (enableCharacterCount) {
-            setShowCharCount(textLength > 500);
-          }
         });
       }, { timeout: 100 });
     } else {
@@ -265,30 +250,14 @@ export const useChatInputLogic = ({
         setIsLargeText(textLength > 5000);
         // 性能警告（超过10000字符）
         setPerformanceWarning(textLength > 10000);
-        // 字符计数显示控制（ChatInput 特有）
-        if (enableCharacterCount) {
-          setShowCharCount(textLength > 500);
-        }
       });
     }
 
-    // 高度调整：使用requestAnimationFrame优化DOM操作
+    // 高度调整：直接调用，防抖由 adjustTextareaHeight 内部的 setTimeout 负责
     if (enableTextareaResize) {
-      // 对于大文本和小文本都使用requestAnimationFrame，确保流畅性
-      requestAnimationFrame(() => {
-        adjustTextareaHeight(e.target);
-      });
+      adjustTextareaHeight(e.target);
     }
-  }, [enableCharacterCount, enableTextareaResize, adjustTextareaHeight]);
-
-  // 监听消息变化以检测字符数（ChatInput 特有）- 使用startTransition优化
-  useEffect(() => {
-    if (enableCharacterCount && message.length <= 500) {
-      startTransition(() => {
-        setShowCharCount(false);
-      });
-    }
-  }, [message, enableCharacterCount]);
+  }, [enableTextareaResize, adjustTextareaHeight]);
 
   // 清理防抖定时器
   useEffect(() => {
@@ -310,7 +279,6 @@ export const useChatInputLogic = ({
     // ChatInput 特有的返回值
     textareaHeight,
     isComposing,
-    showCharCount,
     adjustTextareaHeight,
     handleCompositionStart,
     handleCompositionEnd,

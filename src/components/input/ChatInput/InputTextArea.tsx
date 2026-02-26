@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 
 // 添加自定义滚动条样式
 const addCustomScrollbarStyles = (isDarkMode: boolean) => {
@@ -37,7 +37,6 @@ interface InputTextAreaProps {
   message: string;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   textareaHeight: number;
-  showCharCount: boolean;
   handleChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handleCompositionStart: (e: React.CompositionEvent<HTMLTextAreaElement>) => void;
@@ -60,7 +59,6 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   message,
   textareaRef,
   textareaHeight,
-  showCharCount,
   handleChange,
   handleKeyDown,
   handleCompositionStart,
@@ -86,25 +84,6 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
     addCustomScrollbarStyles(isDarkMode);
   }, [isDarkMode]);
 
-  // 修复折叠时高度异常：只在expanded变化时执行，避免每次输入都触发
-  // 注意：这个组件中不需要额外处理，因为父组件已经处理了
-  // 这里保留是为了确保IntegratedChatInput也能正确工作
-  const prevExpandedRef = useRef(expanded);
-  useEffect(() => {
-    // 只处理从展开到折叠的状态变化
-    if (prevExpandedRef.current && !expanded && textareaRef.current) {
-      // 使用requestAnimationFrame确保DOM更新完成
-      requestAnimationFrame(() => {
-        if (textareaRef.current) {
-          // 重置高度，让CSS的height属性重新生效
-          textareaRef.current.style.height = 'auto';
-        }
-      });
-    }
-    // 更新上一次的expanded状态
-    prevExpandedRef.current = expanded;
-  }, [expanded, textareaRef]); // 移除message依赖，避免每次输入都触发
-
   // 增强的 handleKeyDown 以支持展开功能 - 使用 useCallback 避免重复创建
   const enhancedHandleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     handleKeyDown(e);
@@ -114,60 +93,15 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
     }
   }, [handleKeyDown, onExpandToggle]);
 
-  // 增强的焦点处理，适应iOS设备 - 添加初始化防护
+  // 初始化：设置初始高度
   useEffect(() => {
-    const currentTextarea = textareaRef.current; // 保存当前的 ref 值
+    const currentTextarea = textareaRef.current;
+    if (!currentTextarea || currentTextarea.dataset.initialized === 'true') return;
 
-    // 添加初始化标记，避免重复初始化
-    if (!currentTextarea) {
-      return;
-    }
-
-    // 检查是否已经初始化过
-    if (currentTextarea.dataset.initialized === 'true') {
-      return;
-    }
-
-    // 只设置初始高度，不执行焦点操作避免闪烁
-    const timer = setTimeout(() => {
-      if (currentTextarea && currentTextarea.dataset.initialized !== 'true') {
-        // 确保初始高度正确设置，以显示完整的placeholder
-        const initialHeight = isMobile ? 32 : isTablet ? 36 : 34;
-        currentTextarea.style.height = `${initialHeight}px`;
-
-        // 标记为已初始化
-        currentTextarea.dataset.initialized = 'true';
-
-        // 初始化完成
-      }
-    }, 100); // 减少延迟时间
-
-    // 添加键盘显示检测
-    // 注意：移除了 iOS 特殊滚动处理，因为输入框已使用 position: fixed + bottom: keyboardHeight
-    // 通过 useKeyboard hook 正确处理键盘弹出，不需要手动滚动页面
-    // 这样可以避免滚动聊天界面时输入框位置异常的问题
-    const handleFocus = () => {
-      // 键盘弹出时的位置调整由 ChatPageUI 的 InputContainer 通过 keyboardHeight 处理
-    };
-
-    const handleBlur = () => {
-      // 输入框失去焦点处理
-    };
-
-    if (currentTextarea) {
-      currentTextarea.addEventListener('focus', handleFocus);
-      currentTextarea.addEventListener('blur', handleBlur);
-    }
-
-    return () => {
-      clearTimeout(timer);
-      if (currentTextarea) {
-        currentTextarea.removeEventListener('focus', handleFocus);
-        currentTextarea.removeEventListener('blur', handleBlur);
-        // 不要重置初始化标记，保持已初始化状态
-      }
-    };
-  }, []); // 移除所有依赖，只在组件挂载时执行一次
+    const initialHeight = isMobile ? 32 : isTablet ? 36 : 34;
+    currentTextarea.style.height = `${initialHeight}px`;
+    currentTextarea.dataset.initialized = 'true';
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 缓存样式对象避免重复创建
   // 🚀 性能优化：移除 margin transition，避免重排
@@ -226,22 +160,6 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
         rows={1}
       />
 
-      {/* 字符计数显示 */}
-      {showCharCount && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '-20px',
-            right: '0',
-            fontSize: '12px',
-            color: message.length > 1000 ? '#f44336' : isDarkMode ? '#888' : '#666',
-            opacity: 0.8,
-            transition: 'all 0.2s ease'
-          }}
-        >
-          {message.length}{message.length > 1000 ? ' (过长)' : ''}
-        </div>
-      )}
     </div>
   );
 };

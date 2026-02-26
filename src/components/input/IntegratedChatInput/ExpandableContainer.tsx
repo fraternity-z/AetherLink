@@ -107,13 +107,6 @@ const useExpandableContainer = ({
     };
   }, [buttonVisibility]);
 
-  // 优化的 handleChange - 移除重复调用，只保留核心逻辑
-  const enhancedHandleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    // 调用 hook 提供的 handleChange
-    handleChange(e);
-    // 移除重复的checkButtonVisibility调用，由useEffect统一处理
-  }, [handleChange]);
-
   // 展开切换函数
   const handleExpandToggle = useCallback(() => {
     setExpanded(!expanded);
@@ -252,7 +245,7 @@ const useExpandableContainer = ({
   return {
     expanded,
     showExpandButton,
-    enhancedHandleChange,
+    handleChange,
     handleExpandToggle,
     renderContainer
   };
