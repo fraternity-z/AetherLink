@@ -187,7 +187,7 @@ const MCPServerQuickPanelInner: React.FC<MCPServerQuickPanelProps> = ({
           backgroundColor: 'background.paper',
           borderBottom: '1px solid',
           borderColor: 'divider',
-          paddingTop: 'var(--safe-area-top, 0px)',
+          paddingTop: 'max(var(--titlebar-height, 0px), var(--safe-area-top, 0px))',
         }}
       >
         <Toolbar sx={{ minHeight: 56, px: 1 }}>

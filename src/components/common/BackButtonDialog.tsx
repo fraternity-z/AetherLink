@@ -93,7 +93,7 @@ const BackButtonDialog: React.FC<BackButtonDialogProps> = ({
       ...(safeArea && {
         // 自动添加安全区域内边距，子组件不需要再手动处理
         '& .MuiDialogTitle-root': {
-          paddingTop: 'calc(var(--safe-area-top, 0px) + 16px)',
+          paddingTop: 'calc(max(var(--titlebar-height, 0px), var(--safe-area-top, 0px)) + 16px)',
         },
         '& .MuiDialogActions-root': {
           paddingBottom: 'calc(var(--safe-area-bottom-computed, 0px) + 16px)',

@@ -74,7 +74,7 @@
 
 /* 全屏模式下标题栏额外顶部间距 */
 .solid-dialog.fullscreen .solid-dialog-header {
-  padding-top: max(16px, env(safe-area-inset-top, 16px));
+  padding-top: max(16px, var(--titlebar-height, 0px), env(safe-area-inset-top, 16px));
 }
 
 .solid-dialog-title {

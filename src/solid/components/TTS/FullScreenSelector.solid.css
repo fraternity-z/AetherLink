@@ -65,7 +65,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-top: calc(12px + max(var(--titlebar-height, 0px), env(safe-area-inset-top, 0px)));
   background: var(--theme-bg-paper, #ffffff);
   border-bottom: 1px solid var(--theme-border-default, rgba(0, 0, 0, 0.12));
   backdrop-filter: blur(18px);

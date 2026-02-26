@@ -72,7 +72,7 @@
 }
 
 .solid-multi-dialog.fullscreen .solid-multi-dialog-header {
-  padding-top: max(16px, env(safe-area-inset-top, 16px));
+  padding-top: max(16px, var(--titlebar-height, 0px), env(safe-area-inset-top, 16px));
 }
 
 .solid-multi-dialog-title {
