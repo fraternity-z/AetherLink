@@ -221,6 +221,135 @@ export class MobileEmbeddingService {
   }
 
   /**
+   * 批量获取向量嵌入
+   * OpenAI 兼容 API 支持 input 传数组，一次请求多个文本
+   * @param texts 文本数组
+   * @param modelId 模型ID
+   * @param batchSize 每批大小（默认20）
+   * @returns 与 texts 顺序对应的向量数组
+   */
+  public async getBatchEmbeddings(
+    texts: string[],
+    modelId: string,
+    batchSize: number = 20
+  ): Promise<number[][]> {
+    if (texts.length === 0) return [];
+    if (texts.length === 1) return [await this.getEmbedding(texts[0], modelId)];
+
+    const model = this.getModelById(modelId);
+    if (!model) {
+      throw new Error(`未找到嵌入模型: ${modelId}`);
+    }
+
+    // Gemini 不支持批量 input，回退到并发单请求
+    if (isGeminiEmbeddingModel(model)) {
+      return this.concurrentEmbeddings(texts, modelId, 3);
+    }
+
+    // 分离已缓存和未缓存的文本
+    const results: (number[] | null)[] = texts.map(text => {
+      const cacheKey = `${modelId}:${text}`;
+      const cached = this.embeddingCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+        return cached.vector;
+      }
+      return null;
+    });
+
+    // 收集需要请求的文本及其原始索引
+    const uncached: { index: number; text: string }[] = [];
+    results.forEach((r, i) => {
+      if (r === null) uncached.push({ index: i, text: texts[i] });
+    });
+
+    if (uncached.length === 0) {
+      return results as number[][];
+    }
+
+    if (!model.apiKey) throw new Error(`模型 ${modelId} 未配置API密钥`);
+    if (!model.baseUrl) throw new Error(`模型 ${modelId} 未配置API端点`);
+
+    let apiEndpoint = model.baseUrl;
+    if (!apiEndpoint.endsWith('/')) apiEndpoint += '/';
+    apiEndpoint += 'embeddings';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${model.apiKey}`
+    };
+
+    // 分批请求
+    for (let batchStart = 0; batchStart < uncached.length; batchStart += batchSize) {
+      const batch = uncached.slice(batchStart, batchStart + batchSize);
+      const batchTexts = batch.map(b => b.text);
+
+      const response = await universalFetch(apiEndpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: modelId,
+          input: batchTexts
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = `API错误: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage += ` - ${JSON.stringify(errorData)}`;
+        } catch {
+          errorMessage += ` - ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      // OpenAI 格式：data.data 是数组，每个元素有 embedding 和 index
+      if (data.data && Array.isArray(data.data)) {
+        // 按 index 排序确保顺序正确
+        const sorted = [...data.data].sort((a: { index: number }, b: { index: number }) => a.index - b.index);
+        sorted.forEach((item: { embedding: number[] }, i: number) => {
+          const originalIndex = batch[i].index;
+          const embedding = item.embedding;
+          results[originalIndex] = embedding;
+          // 缓存
+          const cacheKey = `${modelId}:${batch[i].text}`;
+          this.embeddingCache.set(cacheKey, { vector: embedding, timestamp: Date.now() });
+        });
+      } else {
+        throw new Error('批量嵌入响应格式不支持');
+      }
+    }
+
+    this.cleanExpiredCache();
+    return results as number[][];
+  }
+
+  /**
+   * 并发单请求（用于不支持批量 input 的 API）
+   */
+  private async concurrentEmbeddings(
+    texts: string[],
+    modelId: string,
+    concurrency: number = 3
+  ): Promise<number[][]> {
+    const results: number[][] = new Array(texts.length);
+    let cursor = 0;
+
+    const worker = async () => {
+      while (cursor < texts.length) {
+        const i = cursor++;
+        results[i] = await this.getEmbedding(texts[i], modelId);
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(concurrency, texts.length) }, () => worker());
+    await Promise.all(workers);
+    return results;
+  }
+
+  /**
    * 搜索向量
    * 由于移动端性能考虑，直接使用本地计算
    */

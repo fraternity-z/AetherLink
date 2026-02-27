@@ -197,56 +197,57 @@ export class MobileKnowledgeService {
 
       console.log(`[MobileKnowledgeService] 文档分块: ${chunks.length} 个块`);
 
-      // 批量获取嵌入向量
+      // 批量获取嵌入向量（一次 API 请求处理多个文本）
       const documents: KnowledgeDocument[] = [];
+      const embeddingService = MobileEmbeddingService.getInstance();
+      const BATCH_SIZE = 20;
 
-      // 每个块处理
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
+      for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
+        const batchChunks = chunks.slice(batchStart, batchStart + BATCH_SIZE);
 
         try {
-          // 获取向量嵌入（使用云端API）
-          let vector: number[];
-          try {
-            const embeddingService = MobileEmbeddingService.getInstance();
-            vector = await embeddingService.getEmbedding(chunk, knowledgeBase.model);
-          } catch (embeddingError) {
-            // 不使用随机向量，直接抛出错误让用户知道
-            console.error(`[MobileKnowledgeService] 云端嵌入API失败:`, embeddingError);
-            throw new Error(`无法获取文本向量嵌入，请检查嵌入模型配置和网络连接。错误: ${embeddingError instanceof Error ? embeddingError.message : String(embeddingError)}`);
+          // 批量嵌入：一次请求最多 BATCH_SIZE 个文本
+          const vectors = await embeddingService.getBatchEmbeddings(
+            batchChunks,
+            knowledgeBase.model,
+            BATCH_SIZE
+          );
+
+          // 创建文档并保存
+          for (let j = 0; j < batchChunks.length; j++) {
+            const globalIndex = batchStart + j;
+            const document: KnowledgeDocument = {
+              id: uuid(),
+              knowledgeBaseId: params.knowledgeBaseId,
+              content: batchChunks[j],
+              vector: vectors[j],
+              metadata: {
+                source: params.metadata.source,
+                fileName: params.metadata.fileName,
+                fileId: params.metadata.fileId,
+                chunkIndex: globalIndex,
+                timestamp: Date.now()
+              }
+            };
+
+            await dexieStorage.knowledge_documents.put(document);
+            documents.push(document);
+
+            // 发出进度事件
+            EventEmitter.emit(EVENT_NAMES.KNOWLEDGE_DOCUMENT_PROCESSED, {
+              documentId: document.id,
+              knowledgeBaseId: params.knowledgeBaseId,
+              progress: {
+                current: globalIndex + 1,
+                total: chunks.length
+              }
+            });
           }
 
-          // 创建文档记录
-          const document: KnowledgeDocument = {
-            id: uuid(),
-            knowledgeBaseId: params.knowledgeBaseId,
-            content: chunk,
-            vector,
-            metadata: {
-              source: params.metadata.source,
-              fileName: params.metadata.fileName,
-              fileId: params.metadata.fileId,
-              chunkIndex: i,
-              timestamp: Date.now()
-            }
-          };
-
-          // 保存到数据库
-          await dexieStorage.knowledge_documents.put(document);
-          documents.push(document);
-
-          // 发出进度事件
-          EventEmitter.emit(EVENT_NAMES.KNOWLEDGE_DOCUMENT_PROCESSED, {
-            documentId: document.id,
-            knowledgeBaseId: params.knowledgeBaseId,
-            progress: {
-              current: i + 1,
-              total: chunks.length
-            }
-          });
+          console.log(`[MobileKnowledgeService] 批量嵌入完成: ${batchStart + batchChunks.length}/${chunks.length}`);
         } catch (error) {
-          console.error(`[MobileKnowledgeService] 处理文档块失败:`, error);
-          // 继续处理其他块
+          console.error(`[MobileKnowledgeService] 批量嵌入失败 (${batchStart}-${batchStart + batchChunks.length}):`, error);
+          throw new Error(`无法获取文本向量嵌入，请检查嵌入模型配置和网络连接。错误: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
 
