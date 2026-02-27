@@ -73,7 +73,7 @@
     "build:tauri-debug": "tauri build --debug"
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@latest",
+    "vite": "8.0.0-beta.16",
     "mathjax-full": "3.2.2",
     "chevrotain": "11.0.3"
   },
@@ -210,7 +210,6 @@
     "remark-rehype": "^11.1.2",
     "remark-stringify": "^11.0.0",
     "reselect": "^5.1.1",
-    "rolldown-vite": "^7.3.0",
     "shiki": "^3.20.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
@@ -220,7 +219,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "uuid": "^13.0.0",
-    "vite": "npm:rolldown-vite@latest",
+    "vite": "8.0.0-beta.16",
     "web-vitals": "^5.1.0",
     "xlsx": "^0.18.5",
     "zod": "^3.25.64",
