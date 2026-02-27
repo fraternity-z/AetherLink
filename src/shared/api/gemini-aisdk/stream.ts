@@ -193,6 +193,10 @@ export async function streamCompletion(
       providerOptions.google.useSearchGrounding = true;
     }
 
+    // 🛡️ Prompt 模式防幻觉：添加 stopSequences
+    const isPromptMode = !enableTools && mcpTools.length > 0;
+    const stopSequences = isPromptMode ? ['<tool_use_result'] : undefined;
+
     console.log(`[Gemini AI SDK Stream] 创建流式请求`);
 
     const result = await streamText({
@@ -203,6 +207,7 @@ export async function streamCompletion(
       abortSignal: signal,
       ...(tools && Object.keys(tools).length > 0 && { tools }),
       ...(providerOptions && { providerOptions }),
+      ...(stopSequences && { stopSequences }),
     });
 
     // Gemini 启用 thinkingConfig 后，思考内容通过 reasoning-delta 返回，不需要 ThinkTagParser
@@ -447,6 +452,10 @@ export async function nonStreamCompletion(
       providerOptions = { google: googleOptions };
     }
 
+    // 🛡️ Prompt 模式防幻觉：添加 stopSequences
+    const isPromptMode = !enableTools && mcpTools.length > 0;
+    const stopSequences = isPromptMode ? ['<tool_use_result'] : undefined;
+
     const result = await generateText({
       model: client(modelId),
       messages: processedMessages,
@@ -455,6 +464,7 @@ export async function nonStreamCompletion(
       abortSignal: signal,
       ...(tools && Object.keys(tools).length > 0 && { tools }),
       ...(providerOptions && { providerOptions }),
+      ...(stopSequences && { stopSequences }),
     });
 
     const endTime = Date.now();

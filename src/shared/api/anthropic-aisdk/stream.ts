@@ -201,6 +201,10 @@ export async function streamCompletion(
       console.log(`[Anthropic SDK Stream] 启用 ${Object.keys(tools).length} 个工具`);
     }
 
+    // 🛡️ Prompt 模式防幻觉：添加 stopSequences
+    const isPromptMode = !enableTools && mcpTools.length > 0;
+    const stopSequences = isPromptMode ? ['<tool_use_result'] : undefined;
+
     // 准备 providerOptions
     let providerOptions: Record<string, any> = {};
     
@@ -242,6 +246,7 @@ export async function streamCompletion(
       ...(tools && { tools }),
       ...(Object.keys(providerOptions).length > 0 && { providerOptions }),
       ...(headers && { headers }),
+      ...(stopSequences && { stopSequences }),
     });
 
     let fullContent = '';
@@ -449,6 +454,10 @@ export async function nonStreamCompletion(
       tools = convertMcpToolsToAISDK(mcpTools);
     }
 
+    // 🛡️ Prompt 模式防幻觉：添加 stopSequences
+    const isPromptMode = !enableTools && mcpTools.length > 0;
+    const stopSequences = isPromptMode ? ['<tool_use_result'] : undefined;
+
     // 准备 providerOptions
     let providerOptions: Record<string, any> = {};
     
@@ -472,6 +481,7 @@ export async function nonStreamCompletion(
       abortSignal: signal,
       ...(tools && { tools }),
       ...(Object.keys(providerOptions).length > 0 && { providerOptions }),
+      ...(stopSequences && { stopSequences }),
     });
 
     const endTime = Date.now();

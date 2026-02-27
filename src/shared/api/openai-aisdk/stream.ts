@@ -266,6 +266,13 @@ export async function streamCompletion(
       console.log(`[AI SDK Stream] 启用 ${Object.keys(tools).length} 个工具`);
     }
 
+    // 🛡️ Prompt 模式防幻觉：添加 stopSequences
+    // 当工具通过系统提示词注入（非原生函数调用）时，模型可能在 </tool_use> 后
+    // 继续生成 <tool_use_result> 幻觉内容。添加 stop sequence 强制模型停止，
+    // 让多轮循环（provider.ts while loop）真正发挥作用
+    const isPromptMode = !enableTools && mcpTools.length > 0;
+    const stopSequences = isPromptMode ? ['<tool_use_result'] : undefined;
+
     // 准备 providerOptions（用于传递 extraBody）
     let providerOptions: Record<string, any> | undefined;
     if (extraBody && typeof extraBody === 'object' && Object.keys(extraBody).length > 0) {
@@ -292,6 +299,7 @@ export async function streamCompletion(
       abortSignal: signal,
       ...(tools && { tools }),
       ...(providerOptions && { providerOptions }),
+      ...(stopSequences && { stopSequences }),
       // 启用原始 chunk 输出，用于提取第三方 API 的 reasoning_content 字段
       includeRawChunks: true,
     });
@@ -525,6 +533,10 @@ export async function nonStreamCompletion(
       tools = convertMcpToolsToAISDK(mcpTools);
     }
 
+    // 🛡️ Prompt 模式防幻觉：添加 stopSequences
+    const isPromptMode = !enableTools && mcpTools.length > 0;
+    const stopSequences = isPromptMode ? ['<tool_use_result'] : undefined;
+
     // 准备 providerOptions（用于传递 extraBody）
     let providerOptions: Record<string, any> | undefined;
     if (extraBody && typeof extraBody === 'object' && Object.keys(extraBody).length > 0) {
@@ -549,6 +561,7 @@ export async function nonStreamCompletion(
       abortSignal: signal,
       ...(tools && { tools }),
       ...(providerOptions && { providerOptions }),
+      ...(stopSequences && { stopSequences }),
     });
 
     const endTime = Date.now();

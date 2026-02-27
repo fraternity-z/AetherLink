@@ -419,6 +419,17 @@ export function mcpToolCallResponseToMessage(
 }
 
 /**
+ * 🛡️ 移除模型幻觉的 <tool_use_result> 标签
+ * 当模型在 prompt 模式下自行编造工具返回结果时，需要将这些内容剥离
+ * 防止幻觉内容污染对话历史
+ */
+export function stripToolUseResultTags(content: string): string {
+  if (!content) return content;
+  // 移除所有 <tool_use_result>...</tool_use_result> 块
+  return content.replace(/<tool_use_result>([\s\S]*?)<\/tool_use_result>/g, '').trim();
+}
+
+/**
  * 从内容中移除工具使用标签
  * 支持两种格式的移除
  */

@@ -12,7 +12,7 @@ import { OpenAIParameterFormatter } from '../parameters/formatters';
 import { isReasoningModel } from '../../../config/models';
 import { AbstractBaseProvider } from '../baseProvider';
 import type { Message, Model, MCPTool, MCPToolResponse, MCPCallToolResponse } from '../../types';
-import { parseAndCallTools, parseToolUse, removeToolUseTags } from '../../utils/mcpToolParser';
+import { parseAndCallTools, parseToolUse, removeToolUseTags, stripToolUseResultTags } from '../../utils/mcpToolParser';
 import {
   convertMcpToolsToOpenAI,
   mcpToolCallResponseToOpenAIMessage,
@@ -453,7 +453,9 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
           );
 
           if (xmlToolResults.length > 0) {
-            currentMessages.push({ role: 'assistant', content });
+            // 🛡️ 清理模型幻觉的 <tool_use_result> 内容，防止污染对话历史
+            const sanitizedContent = stripToolUseResultTags(content);
+            currentMessages.push({ role: 'assistant', content: sanitizedContent });
             currentMessages.push(...xmlToolResults);
 
             if (hasCompletion) {
@@ -634,7 +636,9 @@ export class OpenAIAISDKProvider extends BaseOpenAIAISDKProvider {
             onChunk({ type: ChunkType.TEXT_COMPLETE, text: textWithoutTools });
           }
 
-          currentMessages.push({ role: 'assistant', content });
+          // 🛡️ 清理模型幻觉的 <tool_use_result> 内容，防止污染对话历史
+          const sanitizedXmlContent = stripToolUseResultTags(content);
+          currentMessages.push({ role: 'assistant', content: sanitizedXmlContent });
 
           const xmlResult = await this.processToolUses(content, mcpTools, onChunk);
           toolResults = toolResults.concat(xmlResult.messages);

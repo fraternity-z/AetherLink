@@ -86,6 +86,9 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
   let lastProcessedTextLength = 0;
   // 累积过滤后的文本内容（工具标签已移除）
   let accumulatedCleanText = '';
+  // 🛡️ 幻觉防护：一旦检测到工具调用，丢弃后续所有非标签文本
+  // 参考 Cherry Studio ToolUseExtractionMiddleware 的 hasAnyToolUse 守卫
+  let hasAnyToolUse = false;
 
   // 事件监听器清理函数
   let eventCleanupFunctions: (() => void)[] = [];
@@ -187,6 +190,7 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
         // 重置状态准备新块
         lastProcessedTextLength = text.length;
         accumulatedCleanText = '';
+        hasAnyToolUse = false;  // 🛡️ 重置幻觉守卫，新一轮可能输出最终文本答案
         chunkProcessor.resetTextBlock();
         toolExtractionProcessor.reset();  // 🔧 修复：重置工具提取器，避免内容重复
         incrementalText = text;  // 新一轮从头开始处理
@@ -201,8 +205,9 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
       for (const result of results) {
         switch (result.type) {
           case 'text':
-            if (result.content) {
-              // 累积过滤后的文本（工具标签已移除）
+            if (result.content && !hasAnyToolUse) {
+              // 🛡️ 只有在尚未检测到工具调用时才累积文本
+              // 检测到工具后的文本内容（如 <tool_use_result> 幻觉）会被丢弃
               accumulatedCleanText += result.content;
               
               // ⭐ Step 4: 发送累积内容给 chunkProcessor（参考 Cherry Studio TextChunkMiddleware）
@@ -216,16 +221,12 @@ export function createResponseHandler({ messageId, blockId, topicId, toolNames =
 
           case 'tool_created':
             // 检测到工具时的块切换逻辑
-            // ⭐ 重要修复：不再调用 resetTextBlock()
-            // 原因：当模型一次性输出多个工具调用时，每次检测到工具都会创建新文本块
-            // 导致文本块都在流式响应过程中创建，工具块在完成后创建，顺序错乱
-            // 正确做法：只完成当前文本块，不创建新块，让后续文本继续追加
             if (result.responses && result.responses.length > 0) {
+              // 🛡️ 标记已检测到工具调用，后续文本将被丢弃（防止幻觉）
+              hasAnyToolUse = true;
               // 只完成当前文本块，不重置状态
               const completedBlockId = chunkProcessor.completeCurrentTextBlock();
-              console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}，不创建新块`);
-              // 注意：不调用 resetTextBlock() 和不清空 accumulatedCleanText
-              // 后续文本会继续更新同一个文本块
+              console.log(`[ResponseHandler] 工具检测：完成文本块 ${completedBlockId}，标记 hasAnyToolUse=true`);
             }
             break;
         }
