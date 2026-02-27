@@ -117,8 +117,15 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     return;
   }
   
-  // 处理知识库详情页面（/knowledge/:id）
+  // 处理知识库相关页面
   if (pathWithoutQuery.startsWith('/knowledge/') && pathWithoutQuery !== '/knowledge') {
+    // Level 4: /knowledge/:id/document/:fileName → 返回 Level 3
+    const knowledgeDocMatch = pathWithoutQuery.match(/^\/knowledge\/([^/]+)\/document\/.+$/);
+    if (knowledgeDocMatch) {
+      navigate(`/knowledge/${knowledgeDocMatch[1]}`);
+      return;
+    }
+    // Level 3: /knowledge/:id → 返回 Level 2
     navigate('/settings/knowledge');
     return;
   }

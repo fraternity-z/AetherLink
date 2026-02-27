@@ -31,7 +31,7 @@ import {
   DEFAULT_CHUNK_OVERLAP,
   DEFAULT_KNOWLEDGE_THRESHOLD
 } from '../../shared/constants/knowledge';
-import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
+import type { KnowledgeBase, ChunkStrategy } from '../../shared/types/KnowledgeBase';
 import type { Model } from '../../shared/types';
 
 interface CreateKnowledgeDialogProps {
@@ -57,6 +57,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
     documentCount: initialData?.documentCount || DEFAULT_KNOWLEDGE_DOCUMENT_COUNT,
     chunkSize: initialData?.chunkSize || DEFAULT_CHUNK_SIZE,
     chunkOverlap: initialData?.chunkOverlap || DEFAULT_CHUNK_OVERLAP,
+    chunkStrategy: initialData?.chunkStrategy || 'fixed',
     threshold: initialData?.threshold || DEFAULT_KNOWLEDGE_THRESHOLD,
   });
 
@@ -95,6 +96,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
         documentCount: initialData.documentCount || DEFAULT_KNOWLEDGE_DOCUMENT_COUNT,
         chunkSize: initialData.chunkSize || DEFAULT_CHUNK_SIZE,
         chunkOverlap: initialData.chunkOverlap || DEFAULT_CHUNK_OVERLAP,
+        chunkStrategy: initialData.chunkStrategy || 'fixed',
         threshold: initialData.threshold || DEFAULT_KNOWLEDGE_THRESHOLD,
       });
     } else {
@@ -106,6 +108,7 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
         documentCount: DEFAULT_KNOWLEDGE_DOCUMENT_COUNT,
         chunkSize: DEFAULT_CHUNK_SIZE,
         chunkOverlap: DEFAULT_CHUNK_OVERLAP,
+        chunkStrategy: 'fixed',
         threshold: DEFAULT_KNOWLEDGE_THRESHOLD,
       });
     }
@@ -319,6 +322,31 @@ const CreateKnowledgeDialog: React.FC<CreateKnowledgeDialogProps> = ({
 
           <Collapse in={showAdvanced}>
             <Stack spacing={3} sx={{ mt: 2 }}>
+              {/* 分块策略 */}
+              <FormControl fullWidth>
+                <InputLabel>分块策略</InputLabel>
+                <Select
+                  name="chunkStrategy"
+                  value={formData.chunkStrategy || 'fixed'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, chunkStrategy: e.target.value as ChunkStrategy }))}
+                  label="分块策略"
+                  MenuProps={{ disableAutoFocus: true, disableRestoreFocus: true }}
+                >
+                  <MenuItem value="fixed">固定大小</MenuItem>
+                  <MenuItem value="paragraph">按段落</MenuItem>
+                  <MenuItem value="markdown">按 Markdown 标题</MenuItem>
+                  <MenuItem value="code">按代码结构</MenuItem>
+                </Select>
+                <FormHelperText>
+                  {{
+                    fixed: '按固定字符数分割，保留句子边界',
+                    paragraph: '按段落（双换行）分割，保持段落完整',
+                    markdown: '按 Markdown 标题层级分割，适合文档类内容',
+                    code: '按函数/类定义分割，适合代码文件',
+                  }[formData.chunkStrategy || 'fixed']}
+                </FormHelperText>
+              </FormControl>
+
               {/* 分块大小 */}
               <TextField
                 name="chunkSize"

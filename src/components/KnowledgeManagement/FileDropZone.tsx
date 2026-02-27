@@ -8,14 +8,66 @@ import { styled } from '@mui/material/styles';
 import { Upload as UploadIcon, File as FileIcon } from 'lucide-react';
 import { getPlatformInfo } from '../../shared/utils/platformDetection';
 import { ALL_SUPPORTED_EXTENSIONS, SUPPORTED_FILE_EXTENSIONS } from '../../shared/services/knowledge/FileParserService';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 
-// Capacitor 文件选择器
-const loadCapacitorFilePicker = async () => {
+// 将文件扩展名转换为 MIME 类型（Capacitor FilePicker 要求 MIME 类型）
+const extToMimeType = (ext: string): string => {
+  const map: Record<string, string> = {
+    txt: 'text/plain',
+    md: 'text/markdown',
+    markdown: 'text/markdown',
+    csv: 'text/csv',
+    json: 'application/json',
+    html: 'text/html',
+    htm: 'text/html',
+    xml: 'application/xml',
+    yaml: 'text/yaml',
+    yml: 'text/yaml',
+    ini: 'text/plain',
+    conf: 'text/plain',
+    log: 'text/plain',
+    js: 'text/javascript',
+    ts: 'text/typescript',
+    jsx: 'text/javascript',
+    tsx: 'text/typescript',
+    py: 'text/x-python',
+    java: 'text/x-java-source',
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword',
+    rtf: 'application/rtf',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    xls: 'application/vnd.ms-excel',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ppt: 'application/vnd.ms-powerpoint',
+    epub: 'application/epub+zip',
+  };
+  return map[ext.toLowerCase()] || 'application/octet-stream';
+};
+
+// 将 accept 字符串（扩展名列表）转换为 MIME 类型数组
+const acceptToMimeTypes = (accept: string): string[] => {
+  const mimeTypes = accept
+    .split(',')
+    .map(ext => ext.trim().replace(/^\./, ''))
+    .map(ext => extToMimeType(ext))
+    .filter(Boolean);
+  // 去重
+  return [...new Set(mimeTypes)];
+};
+
+// 安全地将 base64 解码为 UTF-8 文本
+const base64ToUtf8 = (base64: string): string => {
   try {
-    const { FilePicker } = await import('@capawesome/capacitor-file-picker');
-    return FilePicker;
+    const binaryStr = atob(base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    return new TextDecoder('utf-8').decode(bytes);
   } catch {
-    return null;
+    // 降级：直接用 atob
+    return atob(base64);
   }
 };
 
@@ -225,30 +277,51 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
   };
 
   // Capacitor 原生文件选择
-  const handleCapacitorFilePick = async () => {
-    const FilePicker = await loadCapacitorFilePicker();
-    if (!FilePicker) return;
-
+  const handleCapacitorFilePick = useCallback(async () => {
     try {
+      const mimeTypes = acceptToMimeTypes(accept);
       const result = await FilePicker.pickFiles({
-        types: accept.split(',').map(ext => ext.trim().replace('.', '')),
+        types: mimeTypes,
         readData: true,
-        limit: multiple ? 0 : 1, // 0 表示不限制数量
+        limit: multiple ? 0 : 1,
       });
 
-      const files: FileInfo[] = result.files.map(file => ({
-        name: file.name,
-        size: file.size,
-        type: file.mimeType || getFileType(file.name),
-        content: file.data ? atob(file.data) : undefined,
-        path: file.path,
-      }));
+      if (!result || !result.files || result.files.length === 0) {
+        return;
+      }
+
+      const files: FileInfo[] = result.files.map(file => {
+        let content: string | undefined;
+        if (file.data) {
+          if (isBinaryFile(file.name)) {
+            // 二进制文件保留 base64 原始数据
+            content = file.data;
+          } else {
+            // 文本文件：正确解码 base64 为 UTF-8
+            content = base64ToUtf8(file.data);
+          }
+        }
+        return {
+          name: file.name,
+          size: file.size,
+          type: file.mimeType || getFileType(file.name),
+          content,
+          path: file.path,
+        };
+      });
 
       onFilesSelected(files);
-    } catch (err) {
+    } catch (err: any) {
+      // 用户取消选择不算错误
+      if (err?.message?.includes('cancel') || err?.message?.includes('Cancel')) {
+        return;
+      }
       console.error('Capacitor 文件选择失败:', err);
+      // 回退到 Web 文件选择
+      console.warn('回退到 Web 文件选择器');
+      fileInputRef.current?.click();
     }
-  };
+  }, [accept, multiple, onFilesSelected]);
 
   // Tauri 原生文件选择
   const handleTauriFilePick = async () => {
@@ -305,7 +378,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
     } else {
       fileInputRef.current?.click();
     }
-  }, [disabled, platformInfo]);
+  }, [disabled, platformInfo, handleCapacitorFilePick, handleTauriFilePick]);
 
   // 处理拖拽进入
   const handleDragEnter = useCallback((e: React.DragEvent) => {

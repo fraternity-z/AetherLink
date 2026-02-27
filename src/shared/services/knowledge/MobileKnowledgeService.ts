@@ -49,6 +49,7 @@ export class MobileKnowledgeService {
     documentCount?: number;
     chunkSize?: number;
     chunkOverlap?: number;
+    chunkStrategy?: KnowledgeBase['chunkStrategy'];
     threshold?: number;
   }): Promise<KnowledgeBase> {
     const now = new Date().toISOString();
@@ -62,6 +63,7 @@ export class MobileKnowledgeService {
       documentCount: params.documentCount || DEFAULT_KNOWLEDGE_DOCUMENT_COUNT,
       chunkSize: params.chunkSize || DEFAULT_CHUNK_SIZE,
       chunkOverlap: params.chunkOverlap || DEFAULT_CHUNK_OVERLAP,
+      chunkStrategy: params.chunkStrategy || 'fixed',
       threshold: params.threshold || DEFAULT_KNOWLEDGE_THRESHOLD,
       created_at: now,
       updated_at: now
@@ -185,11 +187,12 @@ export class MobileKnowledgeService {
         throw new Error(`知识库不存在: ${params.knowledgeBaseId}`);
       }
 
-      // 使用智能分块（基于句子边界）
+      // 使用智能分块（支持多种策略）
       const chunks = chunkText(params.content, {
         chunkSize: knowledgeBase.chunkSize || DEFAULT_CHUNK_SIZE,
         chunkOverlap: knowledgeBase.chunkOverlap || DEFAULT_CHUNK_OVERLAP,
-        preserveSentences: true
+        preserveSentences: true,
+        strategy: knowledgeBase.chunkStrategy || 'fixed',
       });
 
       console.log(`[MobileKnowledgeService] 文档分块: ${chunks.length} 个块`);
@@ -455,6 +458,7 @@ export class MobileKnowledgeService {
     limit: number
   ): KnowledgeSearchResult[] {
     return documents
+      .filter(doc => doc.metadata.enabled !== false)
       .map(doc => {
         // 使用统一的余弦相似度计算
         const similarity = cosineSimilarity(queryVector, doc.vector);

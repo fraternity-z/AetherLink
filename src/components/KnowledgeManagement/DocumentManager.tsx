@@ -4,6 +4,7 @@
  * 兼容 Capacitor 移动端和 Tauri 桌面端
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -23,10 +24,12 @@ import {
   TextField,
   InputAdornment,
   Chip,
-  Stack,
   CircularProgress,
   Alert,
   Collapse,
+  Menu,
+  MenuItem,
+  ListItemIcon as MuiListItemIcon,
 } from '@mui/material';
 import BackButtonDialog from '../common/BackButtonDialog';
 import {
@@ -37,6 +40,8 @@ import {
   RefreshCw as RefreshIcon,
   ChevronDown as ExpandIcon,
   ChevronUp as CollapseIcon,
+  MoreVertical as MoreIcon,
+  ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 
 import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
@@ -94,6 +99,13 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDropZone, setShowDropZone] = useState(true);
+  const [menuAnchor, setMenuAnchor] = useState<{
+    el: HTMLElement;
+    fileName: string;
+    docs: KnowledgeDocument[];
+    firstDoc: KnowledgeDocument;
+  } | null>(null);
+  const navigate = useNavigate();
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
@@ -486,25 +498,26 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
   const failedItems = documentItems.filter(item => item.status === 'failed');
 
   return (
-    <Box sx={{ width: '100%', overflow: 'auto', maxHeight: 'calc(100vh - 300px)' }}>
+    <Box sx={{ width: '100%' }}>
       {/* 拖拽上传区域 */}
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 1.5 }}>
         <Box 
           sx={{ 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            mb: 1 
+            mb: 0.75,
           }}
         >
-          <Typography variant="subtitle2" color="textSecondary">
+          <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
             文件上传
           </Typography>
           <IconButton 
             size="small" 
             onClick={() => setShowDropZone(!showDropZone)}
+            sx={{ p: 0.5 }}
           >
-            {showDropZone ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
+            {showDropZone ? <CollapseIcon size={14} /> : <ExpandIcon size={14} />}
           </IconButton>
         </Box>
         
@@ -520,26 +533,26 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {/* 上传进度（细化显示） */}
       {progress.active && (
-        <Paper variant="outlined" sx={{ mb: 2, p: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" fontWeight="medium">
+        <Paper variant="outlined" sx={{ mb: 1.5, p: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+            <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.8rem' }}>
               处理文件 ({progress.current}/{progress.total})
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="caption" color="text.secondary">
               {Math.round((progress.current / progress.total) * 100)}%
             </Typography>
           </Box>
           <LinearProgress
             variant="determinate"
             value={(progress.current / progress.total) * 100}
-            sx={{ mb: 1.5, height: 6, borderRadius: 3 }}
+            sx={{ mb: 1, height: 4, borderRadius: 2 }}
           />
           
           {/* 当前文件进度 */}
           {progress.currentFileName && (
-            <Box sx={{ mt: 1.5, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+            <Box sx={{ p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="caption" noWrap sx={{ maxWidth: '60%' }}>
+                <Typography variant="caption" noWrap sx={{ maxWidth: '55%', fontSize: '0.7rem' }}>
                   {progress.currentFileName}
                 </Typography>
                 <Chip 
@@ -547,13 +560,13 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                   size="small" 
                   color="primary" 
                   variant="outlined"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
+                  sx={{ height: 18, fontSize: '0.65rem' }}
                 />
               </Box>
               <LinearProgress
                 variant="determinate"
                 value={progress.currentFileProgress || 0}
-                sx={{ height: 4, borderRadius: 2 }}
+                sx={{ height: 3, borderRadius: 1.5 }}
                 color="secondary"
               />
             </Box>
@@ -563,23 +576,25 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {/* 处理中的项目 */}
       {processingItems.length > 0 && (
-        <Paper variant="outlined" sx={{ mb: 2, p: 1 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        <Paper variant="outlined" sx={{ mb: 1.5, p: 1 }}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
             处理中 ({processingItems.length})
           </Typography>
-          <List dense>
+          <List dense disablePadding>
             {processingItems.map(item => (
-              <ListItem key={item.id}>
-                <ListItemIcon sx={{ minWidth: 40 }}>
+              <ListItem key={item.id} sx={{ px: 0.5, py: 0.25 }}>
+                <ListItemIcon sx={{ minWidth: 32 }}>
                   <ProcessingStatusIcon 
                     status={item.status} 
                     progress={item.progress}
-                    size={20}
+                    size={18}
                   />
                 </ListItemIcon>
                 <ListItemText 
                   primary={item.fileName}
                   secondary={`${(item.fileSize / 1024).toFixed(1)} KB`}
+                  primaryTypographyProps={{ variant: 'body2', fontSize: '0.8rem', noWrap: true }}
+                  secondaryTypographyProps={{ variant: 'caption', fontSize: '0.7rem' }}
                 />
               </ListItem>
             ))}
@@ -591,24 +606,25 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       {failedItems.length > 0 && (
         <Alert 
           severity="error" 
-          sx={{ mb: 2 }}
+          sx={{ mb: 1.5, '& .MuiAlert-message': { width: '100%' } }}
           action={
             <Button 
               size="small" 
               onClick={() => setDocumentItems(prev => 
                 prev.filter(item => item.status !== 'failed')
               )}
+              sx={{ fontSize: '0.75rem' }}
             >
-              清除全部
+              清除
             </Button>
           }
         >
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            处理失败 ({failedItems.length})
+          <Typography variant="subtitle2" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+            失败 ({failedItems.length})
           </Typography>
           {failedItems.map(item => (
-            <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-              <Typography variant="body2">{item.fileName}</Typography>
+            <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+              <Typography variant="caption" noWrap sx={{ flex: 1 }}>{item.fileName}</Typography>
               <ProcessingStatusIcon
                 status="failed"
                 error={item.error}
@@ -616,13 +632,14 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                   ? () => handleRetryDocument(item.id) 
                   : undefined
                 }
-                size={16}
+                size={14}
               />
               <IconButton 
                 size="small" 
                 onClick={() => handleRemoveFailedItem(item.id)}
+                sx={{ p: 0.25 }}
               >
-                <CloseIcon size={14} />
+                <CloseIcon size={12} />
               </IconButton>
             </Box>
           ))}
@@ -631,13 +648,13 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {/* 错误消息 */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 1.5 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
       {/* 搜索和操作栏 */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mb={2} alignItems="center">
+      <Box sx={{ display: 'flex', gap: 1, mb: 1.5, alignItems: 'center' }}>
         <TextField
           placeholder="搜索文档..."
           variant="outlined"
@@ -646,11 +663,17 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
           value={searchTerm}
           onChange={handleSearch}
           disabled={loading}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              height: 36,
+              fontSize: '0.85rem',
+            },
+          }}
           slotProps={{
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon size={20} />
+                  <SearchIcon size={16} />
                 </InputAdornment>
               ),
               endAdornment: searchTerm ? (
@@ -658,8 +681,9 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                   <IconButton
                     onClick={() => setSearchTerm('')}
                     size="small"
+                    sx={{ p: 0.25 }}
                   >
-                    <CloseIcon size={20} />
+                    <CloseIcon size={14} />
                   </IconButton>
                 </InputAdornment>
               ) : null,
@@ -668,48 +692,52 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
         />
 
         {documents.length > 0 && (
-          <Button
-            variant="outlined"
+          <IconButton
             color="error"
-            startIcon={<DeleteIcon size={16} />}
             onClick={() => setClearAllDialogOpen(true)}
             disabled={uploading || loading}
-            sx={{ whiteSpace: 'nowrap' }}
+            size="small"
+            title="清理全部"
+            sx={{
+              border: 1,
+              borderColor: 'error.main',
+              borderRadius: 1,
+              p: 0.75,
+              flexShrink: 0,
+            }}
           >
-            清理全部
-          </Button>
+            <DeleteIcon size={16} />
+          </IconButton>
         )}
-      </Stack>
+      </Box>
 
       {/* 文档统计 */}
       {groupedDocuments.length > 0 && (
-        <Box sx={{ display: 'flex', gap: 2, mb: 1.5, flexWrap: 'wrap' }}>
-          <Typography variant="caption" color="text.secondary">
-            共 {groupedDocuments.length} 个文件，{filteredDocuments.length} 个块
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            总大小: {formatFileSize(filteredDocuments.reduce((sum, d) => sum + d.content.length, 0))}
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 1, px: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+            {groupedDocuments.length} 个文件 · {filteredDocuments.length} 个块 · {formatFileSize(filteredDocuments.reduce((sum, d) => sum + d.content.length, 0))}
           </Typography>
         </Box>
       )}
 
       {/* 文档列表（虚拟化） */}
-      <Paper variant="outlined">
+      <Paper variant="outlined" sx={{ borderRadius: 1.5, overflow: 'hidden' }}>
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" p={4}>
-            <CircularProgress size={32} />
-            <Typography ml={2} variant="body1">加载文档中...</Typography>
+          <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+            <CircularProgress size={24} />
+            <Typography ml={1.5} variant="body2" color="text.secondary">加载文档中...</Typography>
           </Box>
         ) : groupedDocuments.length > 0 ? (
           <Box
             ref={listContainerRef}
             sx={{
-              height: 400,
+              height: Math.min(groupedDocuments.length * 64, 360),
               overflow: 'auto',
-              '&::-webkit-scrollbar': { width: 6 },
+              WebkitOverflowScrolling: 'touch',
+              '&::-webkit-scrollbar': { width: 4 },
               '&::-webkit-scrollbar-thumb': { 
                 backgroundColor: 'action.disabled',
-                borderRadius: 3,
+                borderRadius: 2,
               },
             }}
           >
@@ -739,97 +767,136 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
                     }}
                   >
                     {virtualRow.index > 0 && <Divider />}
-                    <ListItem
-                      sx={{ py: 1.5 }}
-                      secondaryAction={
-                        <Stack direction="row" spacing={0.5}>
-                          <IconButton
-                            onClick={() => handleRefreshDocument(firstDoc)}
-                            size="small"
-                            title="重新处理"
-                          >
-                            <RefreshIcon size={18} />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => {
-                              // 删除该文件的所有块
-                              group.docs.forEach(d => handleDeleteDocument(d.id));
-                            }}
-                            size="small"
-                            title="删除"
-                          >
-                            <DeleteIcon size={18} />
-                          </IconButton>
-                        </Stack>
-                      }
+                    <Box
+                      onClick={() => navigate(`/knowledge/${knowledgeBaseId}/document/${encodeURIComponent(group.fileName)}`)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        px: { xs: 1, sm: 1.5 },
+                        py: 1,
+                        gap: 1,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        '&:active': { bgcolor: 'action.selected' },
+                      }}
                     >
-                      <ListItemIcon>
-                        <Box
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 1,
-                            bgcolor: 'action.hover',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <InsertDriveFileIcon size={20} />
+                      {/* 文件图标 */}
+                      <Box
+                        sx={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 1,
+                          bgcolor: 'action.hover',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <InsertDriveFileIcon size={16} />
+                      </Box>
+
+                      {/* 文件信息 */}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight={500}
+                            noWrap
+                            sx={{ fontSize: '0.8rem', flex: 1, minWidth: 0 }}
+                          >
+                            {group.fileName}
+                          </Typography>
+                          <Chip
+                            label={ext}
+                            size="small"
+                            sx={{ 
+                              height: 16, 
+                              fontSize: '0.6rem',
+                              bgcolor: 'primary.main',
+                              color: 'primary.contrastText',
+                              flexShrink: 0,
+                              '& .MuiChip-label': { px: 0.75 },
+                            }}
+                          />
                         </Box>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography
-                              variant="body2"
-                              fontWeight="medium"
-                              noWrap
-                              sx={{ maxWidth: 200 }}
-                            >
-                              {group.fileName}
-                            </Typography>
-                            <Chip
-                              label={ext}
-                              size="small"
-                              sx={{ 
-                                height: 18, 
-                                fontSize: '0.65rem',
-                                bgcolor: 'primary.main',
-                                color: 'primary.contrastText',
-                              }}
-                            />
-                          </Box>
-                        }
-                        secondary={
-                          <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatFileSize(group.totalSize)}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {group.docs.length} 块
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {formatTime(group.timestamp)}
-                            </Typography>
-                          </Box>
-                        }
-                        secondaryTypographyProps={{ component: 'div' }}
-                      />
-                    </ListItem>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.68rem' }}>
+                          {formatFileSize(group.totalSize)} · {group.docs.length} 块 · {formatTime(group.timestamp)}
+                        </Typography>
+                      </Box>
+
+                      {/* 操作区域 */}
+                      <Box
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuAnchor({ el: e.currentTarget, fileName: group.fileName, docs: group.docs, firstDoc });
+                        }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexShrink: 0,
+                          gap: 0.5,
+                          px: 1,
+                          py: 0.75,
+                          ml: 0.5,
+                          borderRadius: 1.5,
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s',
+                          '&:hover': { bgcolor: 'action.hover' },
+                          '&:active': { bgcolor: 'action.selected' },
+                        }}
+                      >
+                        <MoreIcon size={18} style={{ opacity: 0.5 }} />
+                        <ChevronRightIcon size={16} style={{ opacity: 0.3 }} />
+                      </Box>
+                    </Box>
                   </Box>
                 );
               })}
             </Box>
           </Box>
         ) : (
-          <Box p={4} textAlign="center">
-            <Typography color="textSecondary">
-              {searchTerm ? '没有找到匹配的文档' : '暂无文档，请拖拽文件上传'}
+          <Box p={3} textAlign="center">
+            <InsertDriveFileIcon size={32} style={{ opacity: 0.2, marginBottom: 8 }} />
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+              {searchTerm ? '没有找到匹配的文档' : '暂无文档，上传文件开始使用'}
             </Typography>
           </Box>
         )}
       </Paper>
+
+      {/* 文档操作菜单 */}
+      <Menu
+        anchorEl={menuAnchor?.el}
+        open={!!menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={() => {
+          if (menuAnchor) {
+            handleRefreshDocument(menuAnchor.firstDoc);
+            setMenuAnchor(null);
+          }
+        }}>
+          <MuiListItemIcon sx={{ minWidth: 32 }}>
+            <RefreshIcon size={16} />
+          </MuiListItemIcon>
+          重新处理
+        </MenuItem>
+        <MenuItem onClick={() => {
+          if (menuAnchor) {
+            menuAnchor.docs.forEach(d => handleDeleteDocument(d.id));
+            setMenuAnchor(null);
+          }
+        }} sx={{ color: 'error.main' }}>
+          <MuiListItemIcon sx={{ minWidth: 32, color: 'error.main' }}>
+            <DeleteIcon size={16} />
+          </MuiListItemIcon>
+          删除文档
+        </MenuItem>
+      </Menu>
 
       {/* 清理确认对话框 */}
       <BackButtonDialog

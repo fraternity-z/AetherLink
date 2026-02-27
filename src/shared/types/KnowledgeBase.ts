@@ -5,6 +5,9 @@
 // 文档处理状态
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
+// 分块策略
+export type ChunkStrategy = 'fixed' | 'paragraph' | 'markdown' | 'code';
+
 // 知识库模型
 export interface KnowledgeBase {
   id: string;
@@ -15,6 +18,7 @@ export interface KnowledgeBase {
   documentCount?: number; // 文档数量限制
   chunkSize?: number;
   chunkOverlap?: number;
+  chunkStrategy?: ChunkStrategy; // 分块策略
   threshold?: number;
   created_at: string;
   updated_at: string;
@@ -49,6 +53,7 @@ export interface KnowledgeDocument {
     chunkIndex: number;
     timestamp: number;
     fileId?: string; // 关联到files表
+    enabled?: boolean; // 是否启用（参与搜索），默认 true
   };
 }
 

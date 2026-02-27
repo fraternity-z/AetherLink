@@ -15,6 +15,7 @@ const TopToolbarDIYSettings = lazy(() => import('../pages/Settings/TopToolbarDIY
 const DefaultModelSettings = lazy(() => import('../pages/Settings/DefaultModelSettings'));
 // 导入知识库页面
 const KnowledgeBaseDetail = lazy(() => import('../pages/KnowledgeBase/KnowledgeBaseDetail'));
+const DocumentChunkView = lazy(() => import('../pages/KnowledgeBase/DocumentChunkView'));
 const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings'));
 
 // 辅助模型设置（话题命名、AI意图分析等）
@@ -210,6 +211,8 @@ const AppRouter: React.FC = () => {
         <Route path="/translate" element={<TranslatePage />} />
         {/* 知识库详情页 - 从设置页跳转 */}
         <Route path="/knowledge/:id" element={<KnowledgeBaseDetail />} />
+        {/* 文档分块查看页（Level 4） */}
+        <Route path="/knowledge/:id/document/:fileName" element={<DocumentChunkView />} />
       </Routes>
     </Suspense>
   );

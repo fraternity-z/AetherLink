@@ -211,10 +211,11 @@ export class EnhancedRAGService {
     const results: RetrievalResult[] = [];
 
     // 获取所有文档
-    const allDocuments = await dexieStorage.knowledge_documents
+    const allDocumentsRaw = await dexieStorage.knowledge_documents
       .where('knowledgeBaseId')
       .equals(knowledgeBaseId)
       .toArray();
+    const allDocuments = allDocumentsRaw.filter(doc => doc.metadata.enabled !== false);
 
     if (allDocuments.length === 0) {
       return results;
