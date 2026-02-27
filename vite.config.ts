@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'  // SWC 高性能编译，基于 Rust，比 Babel 快 10-75 倍
+import react from '@vitejs/plugin-react'  // Vite 8 + Oxc 原生 React transform
 import solidPlugin from 'vite-plugin-solid'
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 
@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
     solidPlugin({
       include: /\.solid\.(tsx|jsx|ts|js)$/,
     }),
-    // SWC 高性能 React 插件（基于 Rust，比 Babel 快 10-75 倍）
+    // Vite 8 官方 React 插件（v5+ 使用 Oxc 原生 React refresh transform）
     react(),
     // 🖼️ 图片优化插件 - 仅在构建时启用，开发环境跳过
     ...(mode === 'production' ? [
