@@ -53,6 +53,7 @@ import { supportedLanguages } from '../../i18n';
 import { Globe } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 import CustomSwitch from '../../components/CustomSwitch';
 import ShareAppearanceDialog from '../../components/dialogs/ShareAppearanceDialog';
 import ImportAppearanceDialog from '../../components/dialogs/ImportAppearanceDialog';
@@ -355,22 +356,13 @@ const AppearanceSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          // 不需要 margin-top，因为 AppBar 是 static
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* 主题和字体设置 */}
@@ -908,7 +900,7 @@ const AppearanceSettings: React.FC = () => {
             </Box>
           </Box>
         </Paper>
-      </Box>
+      </Scrollbar>
 
       {/* 分享外观设置对话框 */}
       <ShareAppearanceDialog

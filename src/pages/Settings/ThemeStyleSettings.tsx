@@ -13,6 +13,7 @@ import ThemeStyleSelector from '../../components/settings/ThemeStyleSelector';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 const ThemeStyleSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -69,21 +70,13 @@ const ThemeStyleSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 2, sm: 3 },
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* Theme Style Selector */}
@@ -103,7 +96,7 @@ const ThemeStyleSettings: React.FC = () => {
             <ThemeStyleSelector compact={false} />
           </Box>
         </Paper>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

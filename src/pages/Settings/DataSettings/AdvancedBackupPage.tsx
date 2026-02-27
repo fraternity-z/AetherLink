@@ -36,6 +36,7 @@ import { FileOpener } from '@capacitor-community/file-opener';
 import { getAllTopicsFromDB, getAllAssistantsFromDB } from '../../../shared/services/storage/storageService';
 import { alpha } from '@mui/material/styles';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import Scrollbar from '../../../components/Scrollbar';
 
 const DEFAULT_BACKUP_DIRECTORY = 'AetherLink/backups';
 
@@ -365,19 +366,13 @@ const AdvancedBackupPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{
-        flexGrow: 1,
-        overflowY: 'auto',
-        p: 2,
-        pb: 'var(--content-bottom-padding)',
-        '&::-webkit-scrollbar': {
-          width: '6px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'rgba(0,0,0,0.1)',
-          borderRadius: '3px',
-        },
-      }}>
+      <Scrollbar
+        style={{
+          flexGrow: 1,
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
+        }}
+      >
         <Container maxWidth="sm" sx={{ my: 2 }}>
           <Paper
             elevation={0}
@@ -679,7 +674,7 @@ const AdvancedBackupPage: React.FC = () => {
             </List>
           </Paper>
         </Container>
-      </Box>
+      </Scrollbar>
 
       <Snackbar
         open={snackbar.open}

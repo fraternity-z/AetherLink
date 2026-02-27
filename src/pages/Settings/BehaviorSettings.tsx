@@ -35,6 +35,7 @@ import useScrollPosition from '../../hooks/useScrollPosition';
 import { Haptics } from '../../shared/utils/hapticFeedback';
 import CustomSwitch from '../../components/CustomSwitch';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 const BehaviorSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -93,21 +94,13 @@ const BehaviorSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* 行为设置 */}
@@ -561,7 +554,7 @@ const BehaviorSettings: React.FC = () => {
             )}
           </List>
         </Paper>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

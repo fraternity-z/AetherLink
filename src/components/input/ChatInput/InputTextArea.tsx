@@ -1,37 +1,5 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
-
-// 添加自定义滚动条样式
-const addCustomScrollbarStyles = (isDarkMode: boolean) => {
-  const styleId = 'custom-thin-scrollbar-styles';
-
-  // 检查是否已经添加了样式
-  if (document.getElementById(styleId)) {
-    return;
-  }
-
-  const style = document.createElement('style');
-  style.id = styleId;
-  style.textContent = `
-    .custom-thin-scrollbar::-webkit-scrollbar {
-      width: 1px;
-    }
-
-    .custom-thin-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .custom-thin-scrollbar::-webkit-scrollbar-thumb {
-      background: ${isDarkMode ? '#555' : '#ccc'};
-      border-radius: 0px;
-    }
-
-    .custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: ${isDarkMode ? '#666' : '#999'};
-    }
-  `;
-
-  document.head.appendChild(style);
-};
+import Scrollbar from '../../Scrollbar';
 
 interface InputTextAreaProps {
   message: string;
@@ -71,19 +39,11 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   webSearchActive,
   isMobile,
   isTablet,
-  isDarkMode,
+  isDarkMode: _isDarkMode,
   shouldHideVoiceButton,
   expanded,
   onExpandToggle
 }) => {
-  // 注意：移除了 isIOS 状态和检测，因为不再需要 iOS 特殊滚动处理
-  // 输入框位置调整由 ChatPageUI 的 InputContainer 通过 keyboardHeight 处理
-
-  // 添加自定义滚动条样式
-  useEffect(() => {
-    addCustomScrollbarStyles(isDarkMode);
-  }, [isDarkMode]);
-
   // 增强的 handleKeyDown 以支持展开功能 - 使用 useCallback 避免重复创建
   const enhancedHandleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     handleKeyDown(e);
@@ -108,10 +68,9 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
   const containerStyle = useMemo(() => ({
     flexGrow: 1,
     margin: shouldHideVoiceButton
-      ? (isTablet ? '0 12px 0 4px' : '0 8px 0 2px')
-      : (isTablet ? '0 12px' : '0 8px'),
+      ? (isTablet ? '0 4px 0 4px' : '0 2px 0 2px')
+      : (isTablet ? '0 4px 0 12px' : '0 2px 0 8px'),
     position: 'relative' as const,
-    // 移除 margin transition，语音按钮切换不需要动画
   }), [shouldHideVoiceButton, isTablet]);
 
   // 缓存 placeholder 文本避免重复计算
@@ -122,44 +81,45 @@ const InputTextArea: React.FC<InputTextAreaProps> = ({
     return "和ai助手说点什么... (Ctrl+Enter 展开)";
   }, [imageGenerationMode, videoGenerationMode, webSearchActive]);
 
+  // Scrollbar 容器样式：控制最大高度和滚动
+  const scrollbarStyle = useMemo(() => ({
+    minHeight: expanded ? '70vh' : `${isMobile ? 32 : isTablet ? 36 : 34}px`,
+    maxHeight: expanded ? '70vh' : `${isMobile ? 200 : 250}px`,
+    transition: 'min-height 0.3s ease-out, max-height 0.3s ease',
+  }), [expanded, isMobile, isTablet]);
+
   return (
     <div style={containerStyle}>
-
-
-      <textarea
-        ref={textareaRef}
-        className="custom-thin-scrollbar"
-        style={{
-          fontSize: isTablet ? '17px' : '16px',
-          padding: isTablet ? '10px 0' : '8px 0',
-          border: 'none',
-          outline: 'none',
-          width: '100%',
-          backgroundColor: 'transparent',
-          lineHeight: '1.4',
-          fontFamily: 'inherit',
-          resize: 'none',
-          overflow: message.trim().length > 0 ? 'auto' : 'hidden',
-          minHeight: expanded ? '70vh' : `${isMobile ? 32 : isTablet ? 36 : 34}px`,
-          height: expanded ? '70vh' : `${textareaHeight}px`,
-          maxHeight: expanded ? '70vh' : `${isMobile ? 200 : 250}px`,
-          color: 'var(--theme-text-primary)',
-          transition: 'height 0.3s ease-out, min-height 0.3s ease-out, max-height 0.3s ease',
-          // Firefox 滚动条样式
-          scrollbarWidth: 'thin',
-          scrollbarColor: `${isDarkMode ? '#555' : '#ccc'} transparent`
-        }}
-        placeholder={placeholderText}
-        value={message}
-        onChange={handleChange}
-        onKeyDown={enhancedHandleKeyDown}
-        onCompositionStart={handleCompositionStart}
-        onCompositionEnd={handleCompositionEnd}
-        onPaste={onPaste}
-        disabled={isLoading && !allowConsecutiveMessages}
-        rows={1}
-      />
-
+      <Scrollbar style={scrollbarStyle}>
+        <textarea
+          ref={textareaRef}
+          style={{
+            fontSize: isTablet ? '17px' : '16px',
+            padding: isTablet ? '10px 0' : '8px 0',
+            border: 'none',
+            outline: 'none',
+            width: '100%',
+            backgroundColor: 'transparent',
+            lineHeight: '1.4',
+            fontFamily: 'inherit',
+            resize: 'none',
+            overflow: 'hidden',
+            minHeight: `${isMobile ? 32 : isTablet ? 36 : 34}px`,
+            height: expanded ? '70vh' : `${textareaHeight}px`,
+            color: 'var(--theme-text-primary)',
+            transition: 'height 0.3s ease-out',
+          }}
+          placeholder={placeholderText}
+          value={message}
+          onChange={handleChange}
+          onKeyDown={enhancedHandleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
+          onPaste={onPaste}
+          disabled={isLoading && !allowConsecutiveMessages}
+          rows={1}
+        />
+      </Scrollbar>
     </div>
   );
 };

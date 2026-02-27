@@ -24,6 +24,7 @@ import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMess
 import { useTranslation } from '../../i18n';
 import CustomSwitch from '../../components/CustomSwitch';
 import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 const ThinkingProcessSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -126,19 +127,11 @@ const ThinkingProcessSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 1, sm: 2 },
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* 思考过程显示设置 */}
@@ -305,7 +298,7 @@ const ThinkingProcessSettings: React.FC = () => {
 
         {/* 底部间距 */}
         <Box sx={{ height: '20px' }} />
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

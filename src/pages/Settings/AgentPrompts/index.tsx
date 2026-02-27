@@ -22,6 +22,7 @@ import SystemPromptVariablesPanel from '../../../components/prompts/SystemPrompt
 // 🚀 性能优化：虚拟滚动
 import VirtualScroller from '../../../components/common/VirtualScroller';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import Scrollbar from '../../../components/Scrollbar';
 
 /**
  * 智能体提示词集合 - 主页面组件
@@ -265,18 +266,10 @@ const AgentPromptsSettings: React.FC = () => {
       </AppBar>
 
       {/* 主要内容区域 */}
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
         }}
       >
         {/* 系统提示词变量注入面板 */}
@@ -412,7 +405,7 @@ const AgentPromptsSettings: React.FC = () => {
 
         {/* 类别列表 */}
         {!searchQuery.trim() && categories.map(renderCategory)}
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

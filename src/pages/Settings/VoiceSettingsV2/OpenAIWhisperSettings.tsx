@@ -13,12 +13,12 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { alpha } from '@mui/material/styles';
 import { getStorageItem, setStorageItem } from '../../../shared/utils/storage';
 import { OpenAIWhisperTab, WhisperTestSection } from '../../../components/VoiceRecognition';
 import type { VoiceRecognitionSettings, OpenAIWhisperSettings as OpenAIWhisperSettingsType } from '../../../shared/types/voice';
 import { useTranslation } from '../../../i18n';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import Scrollbar from '../../../components/Scrollbar';
 
 const OpenAIWhisperSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -206,21 +206,10 @@ const OpenAIWhisperSettings: React.FC = () => {
       </AppBar>
 
       {/* 可滚动的内容区域 */}
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          bgcolor: (theme) => theme.palette.mode === 'light'
-            ? alpha(theme.palette.primary.main, 0.02)
-            : alpha(theme.palette.background.default, 0.9),
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
         }}
       >
         <Box
@@ -279,7 +268,7 @@ const OpenAIWhisperSettings: React.FC = () => {
             />
           </Paper>
         </Box>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

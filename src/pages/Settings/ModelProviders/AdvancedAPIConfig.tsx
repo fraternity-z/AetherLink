@@ -19,6 +19,7 @@ import { updateProvider } from '../../../shared/store/settingsSlice';
 import { alpha } from '@mui/material/styles';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaContainer } from "../../../components/settings/SettingComponents";
+import Scrollbar from '../../../components/Scrollbar';
 
 const AdvancedAPIConfigPage: React.FC = () => {
   const { t } = useTranslation();
@@ -228,19 +229,11 @@ const AdvancedAPIConfigPage: React.FC = () => {
       </Box>
 
       {/* 内容区域 */}
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 3,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* Headers Tab */}
@@ -544,7 +537,7 @@ const AdvancedAPIConfigPage: React.FC = () => {
             </Paper>
           </Stack>
         )}
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

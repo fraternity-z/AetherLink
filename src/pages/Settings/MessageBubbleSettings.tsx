@@ -27,6 +27,7 @@ import MessageBubblePreview from '../../components/preview/MessageBubblePreview'
 import ColorPicker from '../../components/common/ColorPicker';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 const MessageBubbleSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -250,19 +251,11 @@ const MessageBubbleSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 2, sm: 3 },
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* 功能设置 */}
@@ -768,7 +761,7 @@ const MessageBubbleSettings: React.FC = () => {
 
         {/* 底部间距 */}
         <Box sx={{ height: '40px' }} />
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

@@ -47,6 +47,7 @@ import { WorkspaceCreateDialog } from '../../components/dialogs/WorkspaceCreateD
 import { toastManager } from '../../components/EnhancedToast';
 import type { Workspace } from '../../shared/types/workspace';
 import useScrollPosition from '../../hooks/useScrollPosition';
+import Scrollbar from '../../components/Scrollbar';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
@@ -234,20 +235,12 @@ const WorkspaceSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
         }}
       >
         {/* 错误提示 */}
@@ -533,7 +526,7 @@ const WorkspaceSettings: React.FC = () => {
             </ListItem>
           </List>
         </Paper>
-      </Box>
+      </Scrollbar>
 
       {/* 创建工作区对话框 */}
       <WorkspaceCreateDialog

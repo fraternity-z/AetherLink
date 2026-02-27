@@ -32,6 +32,7 @@ import {
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 const ChatInterfaceSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -286,21 +287,13 @@ const ChatInterfaceSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 2, sm: 3 },
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* 多模型对比显示设置 */}
@@ -667,7 +660,7 @@ const ChatInterfaceSettings: React.FC = () => {
 
         {/* 底部间距 */}
         <Box sx={{ height: '40px' }} />
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

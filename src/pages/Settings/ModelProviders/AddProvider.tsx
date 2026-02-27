@@ -21,6 +21,7 @@ import { useAppDispatch } from '../../../shared/store';
 import { addProvider } from '../../../shared/store/settingsSlice';
 import { generateId } from '../../../shared/utils';
 import { SafeAreaContainer } from "../../../components/settings/SettingComponents";
+import Scrollbar from '../../../components/Scrollbar';
 import { providerTypeOptions } from './components/constants';
 
 // 使用统一的供应商类型列表（排除 custom 和 google，添加时应选择具体类型）
@@ -150,19 +151,11 @@ const AddProviderPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         <Paper
@@ -315,7 +308,7 @@ const AddProviderPage: React.FC = () => {
             </Button>
           </Box>
         </Paper>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

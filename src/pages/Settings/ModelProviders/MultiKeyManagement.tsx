@@ -15,6 +15,7 @@ import { updateProvider } from '../../../shared/store/settingsSlice';
 import MultiKeyManager from '../../../components/settings/MultiKeyManager';
 import type { ApiKeyConfig, LoadBalanceStrategy } from '../../../shared/config/defaultModels';
 import { SafeAreaContainer } from "../../../components/settings/SettingComponents";
+import Scrollbar from '../../../components/Scrollbar';
 
 const MultiKeyManagementPage: React.FC = () => {
   const { providerId } = useParams<{ providerId: string }>();
@@ -101,19 +102,11 @@ const MultiKeyManagementPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         <Paper
@@ -136,7 +129,7 @@ const MultiKeyManagementPage: React.FC = () => {
             onStrategyChange={handleStrategyChange}
           />
         </Paper>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

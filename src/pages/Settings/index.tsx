@@ -346,13 +346,6 @@ const SettingsPage: React.FC = () => {
           contain: 'layout style paint',
           // 禁用平滑滚动，提升性能
           scrollBehavior: 'auto',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
         }}
       >
         {isCompactMode ? (

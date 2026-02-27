@@ -37,6 +37,7 @@ import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProv
 import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import { toastManager } from '../../components/EnhancedToast';
 import { SafeAreaContainer, SettingsCard } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 const Container = styled(SafeAreaContainer)(() => ({
   position: 'relative',
@@ -310,21 +311,13 @@ const KnowledgeSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ 
-        flexGrow: 1, 
-        overflow: 'auto', 
-        px: 2, 
-        py: 2, 
-        pb: 'var(--content-bottom-padding)',
-        WebkitOverflowScrolling: 'touch',
-        '&::-webkit-scrollbar': {
-          width: '6px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'rgba(0,0,0,0.2)',
-          borderRadius: '3px',
-        },
-      }}>
+      <Scrollbar
+        style={{
+          flexGrow: 1,
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
+        }}
+      >
         {/* 统计信息卡片 */}
         <SettingsCard title="知识库统计" flat>
           {loading ? (
@@ -470,7 +463,7 @@ const KnowledgeSettings: React.FC = () => {
               </Button>
             </Box>
         </SettingsCard>
-      </Box>
+      </Scrollbar>
 
       {/* 创建知识库对话框 */}
       <BackButtonDialog

@@ -27,6 +27,7 @@ import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { cssVar } from '../../../shared/utils/cssVariables';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import Scrollbar from '../../../components/Scrollbar';
 import type { GeminiVoiceName } from '../../../shared/types/voice';
 import { GeminiVoiceDescriptions } from '../../../shared/types/voice';
 
@@ -351,21 +352,13 @@ const GeminiTTSSettings: React.FC = () => {
       </AppBar>
 
       {/* 可滚动的内容区域 */}
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flex: 1,
-          overflow: 'auto',
-          pt: 2,
-          pb: 'var(--content-bottom-padding)',
-          px: { xs: 1.5, sm: 2.5, md: 4 },
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: toolbarShadow,
-            borderRadius: 3,
-            border: `1px solid ${borderSubtle}`,
-          },
+          paddingTop: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
+          paddingLeft: '16px',
+          paddingRight: '16px',
         }}
       >
         <Box sx={{ maxWidth: 960, mx: 'auto', width: '100%' }}>
@@ -574,7 +567,7 @@ const GeminiTTSSettings: React.FC = () => {
             siliconFlowApiKey=""
           />
         </Box>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

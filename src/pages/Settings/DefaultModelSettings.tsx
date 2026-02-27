@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../hooks/useScrollPosition';
 import { getProviderIcon } from '../../shared/utils/providerIcons';
 import { SafeAreaContainer } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 /**
  * 默认模型设置组件
@@ -312,21 +313,13 @@ const DefaultModelSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         <Paper
@@ -610,7 +603,7 @@ const DefaultModelSettings: React.FC = () => {
             </ListItem>
           </List>
         </Paper>
-      </Box>
+      </Scrollbar>
 
       {/* 编辑供应商弹窗 */}
       <BackButtonDialog

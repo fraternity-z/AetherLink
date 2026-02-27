@@ -42,6 +42,7 @@ import { toastManager } from '../../components/EnhancedToast';
 import { useTranslation } from 'react-i18next';
 import CustomSwitch from '../../components/CustomSwitch';
 import { SafeAreaContainer, SettingsCard, SettingRow } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 // AI辩论配置默认值常量
 const DEFAULT_CONFIG = {
@@ -776,19 +777,11 @@ const AIDebateSettings: React.FC = () => {
       </AppBar>
 
       {/* 主要内容 */}
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 1, sm: 2 },
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
 
@@ -1126,7 +1119,7 @@ const AIDebateSettings: React.FC = () => {
             </Box>
           )}
         </SettingsCard>
-      </Box>
+      </Scrollbar>
 
       {/* 角色编辑对话框 */}
       <BackButtonDialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="md" fullWidth>

@@ -59,6 +59,7 @@ import { useTranslation } from 'react-i18next';
 import type { Model } from '../../../shared/types';
 import { getDefaultGroupName } from '../../../shared/utils/modelUtils';
 import useScrollPosition from '../../../hooks/useScrollPosition';
+import Scrollbar from '../../../components/Scrollbar';
 import { getProviderIcon } from '../../../shared/utils/providerIcons';
 
 const ModelProviderSettings: React.FC = () => {
@@ -269,21 +270,13 @@ const ModelProviderSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* API配置部分 */}
@@ -1007,7 +1000,7 @@ const ModelProviderSettings: React.FC = () => {
           onClose={() => setTestResultDialogOpen(false)}
           testResult={testResult}
         />
-      </Box>
+      </Scrollbar>
 
       {/* 添加模型对话框 */}
       <AddModelDialog

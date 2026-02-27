@@ -21,6 +21,7 @@ import DraggableButtonConfig from '../../components/DraggableButtonConfig';
 import { IntegratedChatInput } from '../../components/input';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 
 // 输入框预览组件 - 模仿真实聊天页面布局
 const InputBoxPreview: React.FC<{
@@ -284,19 +285,11 @@ const InputBoxSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: { xs: 1, sm: 2 },
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {/* 实时预览区域 */}
@@ -372,7 +365,7 @@ const InputBoxSettings: React.FC = () => {
 
         {/* 底部间距 */}
         <Box sx={{ height: '20px' }} />
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

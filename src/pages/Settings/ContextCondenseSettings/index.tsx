@@ -24,6 +24,7 @@ import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from
 import { ModelSelector } from '../../ChatPage/components/ModelSelector';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../../hooks/useScrollPosition';
+import Scrollbar from '../../../components/Scrollbar';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { CustomIcon } from '../../../components/icons/CustomIcon';
 
@@ -173,20 +174,12 @@ const ContextCondenseSettingsPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
         }}
       >
         {/* 功能说明卡片 */}
@@ -455,7 +448,7 @@ const ContextCondenseSettingsPage: React.FC = () => {
             </Typography>
           </Box>
         </Paper>
-      </Box>
+      </Scrollbar>
     </Box>
   );
 };

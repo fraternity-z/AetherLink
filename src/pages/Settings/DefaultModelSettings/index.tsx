@@ -23,6 +23,7 @@ import { getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from
 import { ModelSelector } from '../../ChatPage/components/ModelSelector';
 import { useTranslation } from 'react-i18next';
 import useScrollPosition from '../../../hooks/useScrollPosition';
+import Scrollbar from '../../../components/Scrollbar';
 import CustomSwitch from '../../../components/CustomSwitch';
 
 
@@ -201,20 +202,12 @@ const DefaultModelSettingsPage: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
         }}
       >
         <Paper
@@ -439,7 +432,7 @@ const DefaultModelSettingsPage: React.FC = () => {
             </>
           )}
         </Paper>
-      </Box>
+      </Scrollbar>
     </Box>
   );
 };

@@ -24,6 +24,7 @@ import { useTranslation } from '../../../i18n';
 import { cssVar } from '../../../shared/utils/cssVariables';
 import useScrollPosition from '../../../hooks/useScrollPosition';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import Scrollbar from '../../../components/Scrollbar';
 
 // TTS服务配置 - 将在组件内使用 i18n
 const getTTSServices = (t: any) => [
@@ -279,30 +280,15 @@ const VoiceSettingsV2: React.FC = () => {
       </AppBar>
 
       {/* 可滚动的内容区域 */}
-      <Box
+      <Scrollbar
         ref={containerRef}
         onScroll={handleScroll}
-        sx={{
+        style={{
           flex: 1,
-          overflow: 'auto',
-          overflowX: 'hidden',
-          pt: 2,
-          // 使用全局统一的底部 padding 变量
-          pb: 'var(--content-bottom-padding)',
-          px: { xs: 1, sm: 2, md: 3 },
-          WebkitOverflowScrolling: 'touch',
-          scrollBehavior: 'auto',
-          '&::-webkit-scrollbar': {
-            width: { xs: '4px', sm: '6px' },
-          },
-          '&::-webkit-scrollbar-track': {
-            background: 'transparent',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: toolbarShadow,
-            borderRadius: '10px',
-            border: `1px solid ${borderSubtle}`,
-          },
+          paddingTop: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
+          paddingLeft: '16px',
+          paddingRight: '16px',
         }}
       >
         <Box
@@ -567,7 +553,7 @@ const VoiceSettingsV2: React.FC = () => {
             ))}
           </Box>
         </Box>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

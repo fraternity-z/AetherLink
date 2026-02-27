@@ -26,6 +26,7 @@ import TTSTestSection from '../../../components/TTS/TTSTestSection';
 import CustomSwitch from '../../../components/CustomSwitch';
 import { useTranslation } from '../../../i18n';
 import { SafeAreaContainer } from '../../../components/settings/SettingComponents';
+import Scrollbar from '../../../components/Scrollbar';
 
 const AzureTTSSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -366,21 +367,13 @@ const AzureTTSSettings: React.FC = () => {
       </AppBar>
 
       {/* 可滚动的内容区域 */}
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flex: 1,
-          overflow: 'auto',
-          pt: 2,
-          pb: 'var(--content-bottom-padding)',
-          px: { xs: 1.5, sm: 2.5, md: 4 },
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: toolbarShadow,
-            borderRadius: 3,
-            border: `1px solid ${borderSubtle}`,
-          },
+          paddingTop: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
+          paddingLeft: '16px',
+          paddingRight: '16px',
         }}
       >
         <Box sx={{ maxWidth: 960, mx: 'auto', width: '100%' }}>
@@ -450,7 +443,7 @@ const AzureTTSSettings: React.FC = () => {
             siliconFlowApiKey=""
           />
         </Box>
-      </Box>
+      </Scrollbar>
     </SafeAreaContainer>
   );
 };

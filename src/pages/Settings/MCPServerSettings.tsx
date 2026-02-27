@@ -46,6 +46,7 @@ import type { MCPServer, MCPServerType } from '../../shared/types';
 import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
+import Scrollbar from '../../components/Scrollbar';
 import { isTauri, isDesktop } from '../../shared/utils/platformDetection';
 
 const MCPServerSettings: React.FC = () => {
@@ -499,19 +500,11 @@ const MCPServerSettings: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
+      <Scrollbar
+        style={{
           flexGrow: 1,
-          overflowY: 'auto',
-          p: 2,
-          pb: 'var(--content-bottom-padding)',
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderRadius: '3px',
-          },
+          padding: '16px',
+          paddingBottom: 'var(--content-bottom-padding)',
         }}
       >
         {servers.length === 0 ? (
@@ -866,7 +859,7 @@ const MCPServerSettings: React.FC = () => {
             </ListItem>
           </List>
         </Paper>
-      </Box>
+      </Scrollbar>
 
       {/* 添加服务器对话框 */}
       <BackButtonDialog
