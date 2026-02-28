@@ -10,7 +10,6 @@ export interface MessageListContainerProps {
   onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
   onScrollToTop?: () => void;
   onScrollToBottom?: () => void;
-  onContainerReady?: (el: HTMLDivElement | null) => void;
   autoScrollToBottom?: boolean;
   isStreaming?: boolean;
   chatBackground?: {
@@ -73,9 +72,11 @@ export function MessageListContainer(props: MessageListContainerProps) {
     });
   };
   
-  // 容器挂载后通知 React 层并进行初始滚动
+  // 暴露滚动方法到全局（供 React 调用）
   onMount(() => {
-    props.onContainerReady?.(containerRef ?? null);
+    // 创建全局方法供 React 调用
+    (window as any).__solidMessageListScrollToBottom = scrollToBottom;
+    (window as any).__solidMessageListGetContainer = () => containerRef;
     
     // 初始滚动到底部
     if (props.autoScrollToBottom !== false) {
@@ -97,7 +98,8 @@ export function MessageListContainer(props: MessageListContainerProps) {
     if (rafId) {
       cancelAnimationFrame(rafId);
     }
-    props.onContainerReady?.(null);
+    delete (window as any).__solidMessageListScrollToBottom;
+    delete (window as any).__solidMessageListGetContainer;
   });
   
   // 获取背景样式

@@ -7,8 +7,7 @@ import { upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlic
 export const useMessageBlocks = (
   message: Message, 
   blocks: MessageBlock[], 
-  forceUpdate?: () => void,
-  blockLoadMode: 'auto' | 'prefetched' = 'auto'
+  forceUpdate?: () => void
 ) => {
   const dispatch = useDispatch();
   const forceUpdateRef = useRef(forceUpdate);
@@ -20,10 +19,6 @@ export const useMessageBlocks = (
 
   // 如果Redux中没有块，从数据库加载
   useEffect(() => {
-    if (blockLoadMode === 'prefetched') {
-      return;
-    }
-
     const loadBlocks = async () => {
       if (blocks.length === 0 && message.blocks.length > 0) {
         try {
@@ -60,7 +55,7 @@ export const useMessageBlocks = (
     };
 
     loadBlocks();
-  }, [message.blocks, blocks.length, dispatch, message.id, blockLoadMode]);
+  }, [message.blocks, blocks.length, dispatch]);
 
   // 🚀 优化流式更新逻辑，避免定时器导致的抖动
   useEffect(() => {

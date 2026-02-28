@@ -82,14 +82,6 @@ function TactileButton(props: { children: any; class?: string }) {
   const [local, others] = splitProps(props, ['children', 'class']);
   const [pressed, setPressed] = createSignal(false);
 
-  const handleMouseDown = (event: MouseEvent) => {
-    const target = event.target;
-    const isActionButton = target instanceof Element && target.closest('.model-item-action-btn');
-    if (!isActionButton) {
-      setPressed(true);
-    }
-  };
-
   return (
     <div
       class="tactile-button"
@@ -97,7 +89,7 @@ function TactileButton(props: { children: any; class?: string }) {
         pressed: pressed(),
         [local.class || '']: !!local.class 
       }}
-      onMouseDown={handleMouseDown}
+      onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
       onMouseLeave={() => setPressed(false)}
       {...others}

@@ -9,8 +9,6 @@ import { findModelInProviders } from '../../shared/utils/modelUtils';
 import { getMainTextContent } from '../../shared/utils/blockUtils';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import { Haptics } from '../../shared/utils/hapticFeedback';
-import { useAppSettingsStore } from '../../shared/hooks/useAppSettingsStore';
-import { useGlobalPointerSubscription } from '../../shared/hooks/useGlobalPointerSubscription';
 
 interface ContextTokenIndicatorProps {
   topicId?: string;
@@ -34,7 +32,6 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
   const touchStartTime = useRef<number>(0);
-  const lastMoveTimeRef = useRef<number>(0);
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
   
   // 获取触觉反馈设置
@@ -58,15 +55,6 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
       setIsVisible(false);
     }, 1500); // 1.5秒后自动隐藏，与导航组件保持一致
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (hideTimer.current) {
-        clearTimeout(hideTimer.current);
-        hideTimer.current = null;
-      }
-    };
-  }, []);
   
   // 计算触发区域位置（在导航呼吸灯上方 150px，避免重叠）
   const getTriggerArea = useCallback(() => {
@@ -85,36 +73,40 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
     };
   }, [keyboardHeight]);
   
-  useGlobalPointerSubscription((event) => {
-    if (!showContextTokenIndicator) {
-      return;
-    }
-
-    if (event.type === 'touchstart') {
-      if (!isMobile) return;
+  // 移动端左滑触发逻辑
+  useEffect(() => {
+    if (!isMobile || !showContextTokenIndicator) return;
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      // 🚀 侧边栏打开时不捕获手势，避免与侧边栏左滑关闭冲突
       if (document.body.hasAttribute('data-sidebar-open')) return;
-
+      
+      const touch = e.touches[0];
+      if (!touch) return;
+      
       const area = getTriggerArea();
-      const isInTriggerArea = event.clientX > area.left &&
-        event.clientY > area.top &&
-        event.clientY < area.bottom;
-
+      const isInTriggerArea = touch.clientX > area.left &&
+                             touch.clientY > area.top &&
+                             touch.clientY < area.bottom;
+      
       if (isInTriggerArea) {
-        touchStartX.current = event.clientX;
-        touchStartY.current = event.clientY;
-        touchStartTime.current = event.timestamp;
+        touchStartX.current = touch.clientX;
+        touchStartY.current = touch.clientY;
+        touchStartTime.current = Date.now();
       }
-      return;
-    }
-
-    if (event.type === 'touchmove') {
-      if (!isMobile) return;
+    };
+    
+    const handleTouchMove = (e: TouchEvent) => {
       if (touchStartX.current === 0) return;
-
-      const deltaX = event.clientX - touchStartX.current;
-      const deltaY = Math.abs(event.clientY - touchStartY.current);
-      const deltaTime = event.timestamp - touchStartTime.current;
-
+      
+      const touch = e.touches[0];
+      if (!touch) return;
+      
+      const deltaX = touch.clientX - touchStartX.current;
+      const deltaY = Math.abs(touch.clientY - touchStartY.current);
+      const deltaTime = Date.now() - touchStartTime.current;
+      
+      // 左滑触发：向左滑动至少40px
       if (deltaX < -40 && deltaY < 30 && deltaTime < 500) {
         setIsVisible(true);
         resetHideTimer();
@@ -125,56 +117,81 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
         touchStartY.current = 0;
         touchStartTime.current = 0;
       }
-      return;
-    }
-
-    if (event.type === 'touchend') {
-      if (!isMobile) return;
+    };
+    
+    const handleTouchEnd = () => {
       touchStartX.current = 0;
       touchStartY.current = 0;
       touchStartTime.current = 0;
-      return;
-    }
-
-    if (event.type === 'mousemove') {
-      if (isMobile) return;
-      if (event.timestamp - lastMoveTimeRef.current < 50) return;
-      lastMoveTimeRef.current = event.timestamp;
-
+    };
+    
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
+      }
+    };
+  }, [isMobile, showContextTokenIndicator, isHapticEnabled, resetHideTimer, getTriggerArea]);
+  
+  // 桌面端鼠标悬停触发逻辑
+  useEffect(() => {
+    if (isMobile || !showContextTokenIndicator) return;
+    
+    let lastMoveTime = 0;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastMoveTime < 50) return; // 节流
+      lastMoveTime = now;
+      
       const area = getTriggerArea();
-      const isInTriggerArea = event.clientX > area.left &&
-        event.clientY > area.top &&
-        event.clientY < area.bottom;
-
+      const isInTriggerArea = e.clientX > area.left &&
+                             e.clientY > area.top &&
+                             e.clientY < area.bottom;
+      
       if (isInTriggerArea) {
+        // 鼠标进入触发区域，显示卡片
         setIsVisible(true);
         resetHideTimer();
-        return;
+      } else if (isVisible) {
+        // 卡片已显示时，检查是否在卡片范围内
+        const cardElement = document.querySelector('[data-testid="context-token-card"]') as HTMLElement;
+        if (cardElement) {
+          const cardRect = cardElement.getBoundingClientRect();
+          const isInCardArea = e.clientX >= cardRect.left - 10 && // 左边留10px缓冲
+                               e.clientX <= cardRect.right + 10 && // 右边留10px缓冲
+                               e.clientY >= cardRect.top - 10 && // 上方留10px缓冲
+                               e.clientY <= cardRect.bottom + 10; // 下方留10px缓冲
+          
+          if (isInCardArea) {
+            // 在卡片范围内，重置隐藏计时器
+            resetHideTimer();
+          } else {
+            // 离开卡片范围，立即隐藏
+            setIsVisible(false);
+          }
+        } else {
+          // 找不到卡片元素，立即隐藏
+          setIsVisible(false);
+        }
       }
-
-      if (!isVisible) {
-        return;
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
       }
-
-      const cardElement = document.querySelector('[data-testid="context-token-card"]') as HTMLElement | null;
-      if (!cardElement) {
-        setIsVisible(false);
-        return;
-      }
-
-      const cardRect = cardElement.getBoundingClientRect();
-      const isInCardArea = event.clientX >= cardRect.left - 10 &&
-        event.clientX <= cardRect.right + 10 &&
-        event.clientY >= cardRect.top - 10 &&
-        event.clientY <= cardRect.bottom + 10;
-
-      if (isInCardArea) {
-        resetHideTimer();
-      } else {
-        setIsVisible(false);
-      }
-    }
-  }, showContextTokenIndicator);
+    };
+  }, [isMobile, showContextTokenIndicator, resetHideTimer, getTriggerArea, isVisible]);
   
   // 获取当前话题的消息
   const currentMessages = useSelector((state: RootState) => {
@@ -187,16 +204,52 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
   const providers = useSelector((state: RootState) => state.settings.providers);
   const currentModelId = useSelector((state: RootState) => state.settings.currentModelId);
   
-  const contextWindowSize = useAppSettingsStore(
-    settings => typeof settings.contextWindowSize === 'number' ? settings.contextWindowSize : 100000
-  );
-  const contextCount = useAppSettingsStore(
-    settings => typeof settings.contextCount === 'number' ? settings.contextCount : 20
-  );
-  const contextSettings = useMemo(() => ({
-    contextWindowSize,
-    contextCount
-  }), [contextWindowSize, contextCount]);
+  // 获取上下文设置
+  const [contextSettings, setContextSettings] = useState<{ contextWindowSize: number; contextCount: number }>({
+    contextWindowSize: 100000, // 默认 10 万 Token
+    contextCount: 20
+  });
+  
+  // 异步加载上下文设置
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const appSettingsJSON = localStorage.getItem('appSettings');
+        if (appSettingsJSON) {
+          const appSettings = JSON.parse(appSettingsJSON);
+          setContextSettings({
+            contextWindowSize: appSettings.contextWindowSize || 100000,
+            contextCount: appSettings.contextCount || 20
+          });
+        }
+      } catch (error) {
+        console.error('读取上下文设置失败:', error);
+      }
+    };
+    
+    // 初始加载
+    loadSettings();
+    
+    // 监听 localStorage 变化（其他标签页）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'appSettings') {
+        loadSettings();
+      }
+    };
+    
+    // 监听自定义事件（当前页面设置变化）
+    const handleAppSettingsChanged = () => {
+      loadSettings();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('appSettingsChanged', handleAppSettingsChanged);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('appSettingsChanged', handleAppSettingsChanged);
+    };
+  }, []);
   
   // 计算Token统计信息（类似 Roo Code 逻辑）
   const tokenStats = useMemo(() => {
