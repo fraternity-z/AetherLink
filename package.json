@@ -74,8 +74,7 @@
   },
   "overrides": {
     "vite": "8.0.0-beta.16",
-    "mathjax-full": "3.2.2",
-    "chevrotain": "11.0.3"
+    "mathjax-full": "3.2.2"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.47",
@@ -88,7 +87,7 @@
     "@capacitor/app": "^7.1.0",
     "@capacitor/browser": "^7.0.2",
     "@capacitor/camera": "^7.0.2",
-    "@capacitor/cli": "http://154.37.208.52:4873/@capacitor%2Fcli/-/cli-8.0.1.tgz",
+    "@capacitor/cli": "8.1.0",
     "@capacitor/clipboard": "^7.0.2",
     "@capacitor/core": "http://154.37.208.52:4873/@capacitor%2Fcore/-/core-8.0.1.tgz",
     "@capacitor/device": "^7.0.2",
@@ -226,7 +225,6 @@
     "zustand": "^5.0.4"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2.10.0",
     "@types/file-saver": "^2.0.7",
