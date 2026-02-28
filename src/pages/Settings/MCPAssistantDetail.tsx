@@ -213,6 +213,24 @@ const MCPAssistantDetail: React.FC = () => {
     }
   };
 
+  // 分组总开关：批量启用/禁用某个领域下所有工具
+  const handleToggleDomainAll = async (domainTools: MCPTool[], enabled: boolean) => {
+    if (!server) return;
+    try {
+      const toolNames = domainTools.map(t => t.name);
+      const currentDisabled = server.disabledTools || [];
+      const newDisabled = enabled
+        ? currentDisabled.filter(name => !toolNames.includes(name))
+        : [...new Set([...currentDisabled, ...toolNames])];
+
+      const updated = { ...server, disabledTools: newDisabled };
+      await mcpService.updateServer(updated);
+      setServer(updated);
+    } catch (error) {
+      setSnackbar({ open: true, message: t('settings.mcpServer.messages.saveFailed'), severity: 'error' });
+    }
+  };
+
   // 搜索过滤
   const filteredTools = searchQuery.trim()
     ? tools.filter(tool =>
@@ -392,12 +410,14 @@ const MCPAssistantDetail: React.FC = () => {
                 onChange={() => handleToggleDomain(domain)}
                 disableGutters
                 elevation={0}
+                TransitionProps={{ unmountOnExit: true, timeout: 200 }}
                 sx={{
                   mt: 2,
                   border: '1px solid',
                   borderColor: 'divider',
                   borderRadius: '12px !important',
                   overflow: 'hidden',
+                  contain: 'content',
                   '&:before': { display: 'none' },
                   '&.Mui-expanded': { margin: '16px 0 0 0' }
                 }}
@@ -428,8 +448,15 @@ const MCPAssistantDetail: React.FC = () => {
                       }
                     }}
                   />
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CustomSwitch
+                      checked={enabledCount > 0}
+                      onChange={(e) => handleToggleDomainAll(domainTools, e.target.checked)}
+                    />
+                  </Box>
                 </AccordionSummary>
-                <AccordionDetails sx={{ p: 0 }}>
+                <AccordionDetails sx={{ p: 0, maxHeight: { xs: 360, sm: 420 }, overflowY: 'auto' }}>
                   <Divider />
                   <List disablePadding>
                     {domainTools.map((tool, index) => {
