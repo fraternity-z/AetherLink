@@ -9,7 +9,7 @@ import '../markdown.css';
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { ToolMessageBlock } from '../../../shared/types/newMessage';
 import { EventEmitter } from '../../../shared/services/infra/EventEmitter';
-import { MessageWebSearchTool } from '../MessageWebSearchTool';
+// MessageWebSearchTool 已移除 - Web 搜索结果统一由 CitationBlock 渲染
 
 interface Props {
   block: ToolMessageBlock;
@@ -28,15 +28,6 @@ const isCompletionTool = (block: ToolMessageBlock): boolean => {
          (block.metadata as any)?.isCompletionTool === true;
 };
 
-/**
- * 检查是否是网络搜索工具
- */
-const isWebSearchTool = (block: ToolMessageBlock): boolean => {
-  const toolName = block.toolName || block.metadata?.rawMcpToolResponse?.tool?.name || '';
-  return toolName === 'builtin_web_search' || 
-         toolName === 'web_search' ||
-         toolName.includes('web_search');
-};
 
 /**
  * 工具调用块组件 - 简约版
@@ -47,7 +38,6 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
   
   // 检查是否是完成工具
   const isCompletion = isCompletionTool(block);
-  const isWebSearch = isWebSearchTool(block);
 
   const toolResponse = block.metadata?.rawMcpToolResponse;
   const isProcessing = block.status === MessageBlockStatus.STREAMING ||
@@ -104,11 +94,6 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
       EventEmitter.emit('ui:copy_success', { content: '已复制结果' });
     }
   }, [getResult]);
-
-  // 🚀 检查是否是网络搜索工具，使用专门的 UI 组件（所有 hooks 必须在此之前调用）
-  if (isWebSearch) {
-    return <MessageWebSearchTool block={block} />;
-  }
 
   const toolName = block.toolName || toolResponse?.tool?.name || '工具';
   const params = formatParams();

@@ -1,8 +1,8 @@
 import type { RootState } from '../index';
-import type { MessageBlock, KnowledgeReferenceMessageBlock, CitationMessageBlock } from '../../types/newMessage';
+import type { MessageBlock, CitationMessageBlock } from '../../types/newMessage';
 import { MessageBlockType } from '../../types/newMessage';
 import type { Citation } from '../../types/citation';
-import { extractCitationsFromToolBlock, isWebSearchToolBlock, extractHostname } from '../../utils/citation';
+import { extractHostname } from '../../utils/citation';
 
 // 稳定的空数组引用
 const EMPTY_CITATIONS_ARRAY: Citation[] = [];
@@ -135,44 +135,7 @@ export const selectCitationsForMessage = (state: RootState, messageId?: string):
         });
       }
 
-      // 旧格式 sources 兜底（向后兼容）
-      if (citations.length === 0 && citBlock.sources && citBlock.sources.length > 0) {
-        citations.push(...extractCitationsFromToolBlock(citBlock as unknown as any));
       }
-    }
-
-    // 兼容旧的 web search 工具块
-    if (isWebSearchToolBlock(block as any)) {
-      citations.push(...extractCitationsFromToolBlock(block as any));
-    }
-
-    // 兼容旧的知识库引用块
-    if (block.type === MessageBlockType.KNOWLEDGE_REFERENCE) {
-      const kbBlock = block as KnowledgeReferenceMessageBlock;
-      if (kbBlock.metadata?.isCombined && kbBlock.metadata.results) {
-        kbBlock.metadata.results.forEach((result) => {
-          citations.push({
-            number: result.index,
-            url: `knowledge://${kbBlock.knowledgeBaseId}/${result.documentId || result.index}`,
-            title: kbBlock.metadata?.fileName || kbBlock.source || '知识库',
-            content: result.content?.substring(0, 200),
-            type: 'knowledge',
-            showFavicon: false,
-            metadata: { similarity: result.similarity }
-          });
-        });
-      } else if (kbBlock.content) {
-        citations.push({
-          number: 1,
-          url: `knowledge://${kbBlock.knowledgeBaseId}`,
-          title: kbBlock.metadata?.fileName || kbBlock.source || '知识库',
-          content: kbBlock.content.substring(0, 200),
-          type: 'knowledge',
-          showFavicon: false,
-          metadata: { similarity: kbBlock.similarity }
-        });
-      }
-    }
   }
   
   // 如果结果为空，返回稳定的空数组

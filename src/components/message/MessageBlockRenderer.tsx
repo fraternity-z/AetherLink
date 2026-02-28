@@ -3,7 +3,7 @@ import { useSelector, shallowEqual } from 'react-redux';
 import { Box, Fade, CircularProgress, Typography } from '@mui/material';
 import type { RootState } from '../../shared/store';
 import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
-import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock, MainTextMessageBlock, CodeMessageBlock, ToolMessageBlock, KnowledgeReferenceMessageBlock, ContextSummaryMessageBlock } from '../../shared/types/newMessage';
+import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock, MainTextMessageBlock, CodeMessageBlock, ToolMessageBlock, ContextSummaryMessageBlock } from '../../shared/types/newMessage';
 import { MessageBlockType, MessageBlockStatus, AssistantMessageStatus } from '../../shared/types/newMessage';
 
 
@@ -22,7 +22,7 @@ import MathBlock from './blocks/MathBlock';
 import ChartBlock from './blocks/ChartBlock';
 import FileBlock from './blocks/FileBlock';
 import PlaceholderBlock from './blocks/PlaceholderBlock';
-import KnowledgeReferenceBlock from './blocks/KnowledgeReferenceBlock';
+// KnowledgeReferenceBlock 已移除 - 知识库引用统一由 CitationBlock 渲染
 import ContextSummaryBlock from './blocks/ContextSummaryBlock';
 import ToolBlock from './blocks/ToolBlock';
 
@@ -118,12 +118,6 @@ const isToolBlock = (block: MessageBlock): block is ToolMessageBlock => {
   return block.type === MessageBlockType.TOOL;
 };
 
-/**
- * 类型守卫：判断是否为知识引用块
- */
-const isKnowledgeReferenceBlock = (block: MessageBlock): block is KnowledgeReferenceMessageBlock => {
-  return block.type === MessageBlockType.KNOWLEDGE_REFERENCE;
-};
 
 /**
  * 类型守卫：判断是否为上下文摘要块
@@ -387,10 +381,7 @@ const MessageBlockRenderer: React.FC<Props> = ({
                 }
                 break;
               case MessageBlockType.KNOWLEDGE_REFERENCE:
-                // 使用类型守卫
-                if (isKnowledgeReferenceBlock(block)) {
-                  blockComponent = <KnowledgeReferenceBlock block={block} />;
-                }
+                // 旧格式已废弃，知识库引用统一由 CitationBlock 渲染
                 break;
               case MessageBlockType.CONTEXT_SUMMARY:
                 // 使用类型守卫
