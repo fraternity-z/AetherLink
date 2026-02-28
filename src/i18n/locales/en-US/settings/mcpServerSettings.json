@@ -25,6 +25,11 @@
         "description": "Add pre-configured servers"
       }
     },
+    "tabs": {
+      "external": "External",
+      "builtin": "Built-in Tools",
+      "assistant": "AI Assistant"
+    },
     "serverTypes": {
       "sse": "Server-Sent Events (SSE)",
       "streamableHttp": "Streamable HTTP",

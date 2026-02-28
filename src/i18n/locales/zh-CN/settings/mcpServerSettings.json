@@ -25,6 +25,11 @@
         "description": "添加预配置的内置 MCP 服务器"
       }
     },
+    "tabs": {
+      "external": "外部服务器",
+      "builtin": "内置工具",
+      "assistant": "智能助手"
+    },
     "serverTypes": {
       "sse": "服务器发送事件 (sse)",
       "streamableHttp": "可流式传输的 HTTP (streamableHttp)",

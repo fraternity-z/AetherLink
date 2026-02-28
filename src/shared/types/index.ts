@@ -394,6 +394,14 @@ export interface QuickPhrase {
  */
 export type MCPServerType = 'inMemory' | 'sse' | 'streamableHttp' | 'stdio' | 'httpStream';
 
+/**
+ * MCP 服务器分类
+ * - external:  用户配置的远程服务器
+ * - builtin:   内置工具（calculator, time, fetch 等）
+ * - assistant: AI 智能助手（settings 等，管理应用本身）
+ */
+export type MCPServerCategory = 'external' | 'builtin' | 'assistant';
+
 export interface MCPServer {
   id: string;
   name: string;
@@ -409,6 +417,7 @@ export interface MCPServer {
   providerUrl?: string;
   logoUrl?: string;
   tags?: string[];
+  category?: MCPServerCategory;
   timeout?: number;
   // stdio 传输专用字段
   command?: string; // 要执行的命令（如 'npx', 'node', 'python' 等）

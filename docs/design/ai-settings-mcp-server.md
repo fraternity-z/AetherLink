@@ -40,34 +40,51 @@
 
 ---
 
-## 3. 目录结构
+## 3. 服务器分类体系
+
+MCP 服务器通过 `MCPServerCategory` 字段进行逻辑分类，与传输类型 `MCPServerType` 正交：
+
+| 分类 | 说明 | 管理方式 |
+|------|------|----------|
+| `external` | 用户配置的远程服务器 | 通用 MCP 服务器详情页 |
+| `builtin` | 内置工具（time, fetch, calculator 等） | Tab 内直接启停 |
+| `assistant` | AI 智能助手（settings 等） | 独立管理页（逻域分组 + 工具级控制） |
+
+---
+
+## 4. 目录结构
 
 ```
-src/shared/services/mcp/
-├── confirmation/                          # 确认系统
-│   ├── types.ts                           # ToolConfirmationRequest, RiskLevel 等
-│   └── ToolConfirmationService.ts         # 确认服务（单例 + 事件驱动）
-├── core/
-│   ├── MCPService.ts                      # callTool() 集成确认拦截
-│   └── MCPServerFactory.ts               # 注册 @aether/settings
-└── servers/settings/                      # Settings MCP Server
-    ├── types.ts                           # ToolPermission, SettingsTool, ToolModule
-    ├── storeAccess.ts                     # Redux Store 安全访问层
-    ├── SettingsServer.ts                  # Server 主类
-    └── tools/
-        ├── index.ts                       # 工具注册中心
-        └── knowledge.tools.ts             # 知识库工具（MVP）
+src/shared/
+├── types/index.ts                             # MCPServerCategory, MCPServer.category
+└── config/builtinMCPServers.ts                 # 内置服务器配置（含 category 字段）
 
-src/shared/config/
-└── builtinMCPServers.ts                   # 内置服务器配置（含 builtin-settings）
+src/shared/services/mcp/
+├── confirmation/                              # 确认系统
+│   ├── types.ts                               # ToolConfirmationRequest, RiskLevel 等
+│   └── ToolConfirmationService.ts             # 确认服务（单例 + 事件驱动）
+├── core/
+│   ├── MCPService.ts                          # callTool() 集成确认拦截
+│   └── MCPServerFactory.ts                   # 注册 @aether/settings
+└── servers/settings/                          # Settings MCP Server
+    ├── types.ts                               # ToolPermission, SettingsTool, ToolModule
+    ├── storeAccess.ts                         # Redux Store 安全访问层
+    ├── SettingsServer.ts                      # Server 主类
+    └── tools/
+        ├── index.ts                           # 工具注册中心
+        └── knowledge.tools.ts                 # 知识库工具（MVP）
+
+src/pages/Settings/
+├── MCPServerSettings.tsx                      # Tab 分类列表（外部/内置/助手）
+└── MCPAssistantDetail.tsx                     # 助手独立管理页（可折叠分组 + 搜索）
 
 src/components/message/blocks/
-└── ToolBlock.tsx                           # 工具块 UI（含内联确认）
+└── ToolBlock.tsx                               # 工具块 UI（含内联确认）
 ```
 
 ---
 
-## 4. 权限分级
+## 5. 权限分级
 
 | 级别 | 说明 | 执行方式 |
 |------|------|----------|
@@ -78,7 +95,7 @@ src/components/message/blocks/
 
 ---
 
-## 5. 知识库工具清单（MVP）
+## 6. 知识库工具清单（MVP）
 
 ### 知识库级
 
@@ -101,16 +118,16 @@ src/components/message/blocks/
 
 ---
 
-## 6. 敏感操作确认系统
+## 7. 敏感操作确认系统
 
-### 6.1 设计原则
+### 7.1 设计原则
 
 - **拦截点在 MCPService 网关层**：不在各 Server 内部判断，覆盖所有 MCP 工具
 - **事件驱动解耦**：服务层通过 EventEmitter 与 UI 通信，互不依赖
 - **UI 内嵌 ToolBlock**：不弹 Dialog，用户在聊天上下文中操作
 - **超时自动拒绝**：60 秒无响应自动拒绝，防止 Promise 泄漏
 
-### 6.2 确认流程
+### 7.2 确认流程
 
 ```
 AI 调用 confirm 级工具
@@ -137,7 +154,7 @@ ToolBlock（已处于 PROCESSING 状态）
        └─ 拒绝 → respond(id, false) → Promise resolve(false) → 返回"用户已拒绝"
 ```
 
-### 6.3 事件定义
+### 7.3 事件定义
 
 ```typescript
 CONFIRMATION_EVENTS = {
@@ -146,7 +163,7 @@ CONFIRMATION_EVENTS = {
 }
 ```
 
-### 6.4 ToolConfirmationService API
+### 7.4 ToolConfirmationService API
 
 ```typescript
 class ToolConfirmationService {
@@ -170,7 +187,35 @@ class ToolConfirmationService {
 
 ---
 
-## 7. 扩展指南
+## 8. 管理 UI 架构
+
+### MCP 服务器设置页（MCPServerSettings.tsx）
+
+Tab 分类布局，三个 Tab 共用统一的 `Paper > List > ListItem` 风格：
+
+| Tab | 内容 | 操作 |
+|-----|------|------|
+| 外部服务器 | 用户配置的服务器列表 | 添加 / 导入 / 编辑 / 启停 / 删除 |
+| 内置工具 | builtin 模板列表 | 一键添加 / 启停 / 删除 |
+| 智能助手 | assistant 模板列表 | 添加后点击进入独立管理页 |
+
+### 助手管理页（MCPAssistantDetail.tsx）
+
+专为 assistant 类服务器设计，支持工具级粒度控制：
+
+- **服务器信息卡片**：名称 + 描述 + 全局启停开关
+- **搜索栏**：实时过滤工具（名称 + 描述），搜索时自动展开匹配分组
+- **可折叠分组**：按领域折叠（knowledge, appearance, providers...），显示已启用/总数徽章
+- **工具列表项**：权限图标 + 工具名 + 权限 Chip + 描述 + 独立启停开关
+- **权限说明**：四种权限级别的可视化图例
+
+工具的启用/禁用通过 `MCPServer.disabledTools` 字段持久化。
+
+路由：`/settings/mcp-assistant/:serverId`
+
+---
+
+## 9. 扩展指南
 
 ### 添加新工具领域
 
@@ -210,10 +255,12 @@ confirmService.registerConfirmable('external_tool_name', 'high');
 
 ---
 
-## 8. 关键文件索引
+## 10. 关键文件索引
 
 | 文件 | 职责 |
 |------|------|
+| `shared/types/index.ts` | MCPServerCategory, MCPServer.category |
+| `shared/config/builtinMCPServers.ts` | 内置服务器声明（含 category） |
 | `confirmation/types.ts` | 确认请求/响应类型 |
 | `confirmation/ToolConfirmationService.ts` | 确认服务单例 |
 | `servers/settings/types.ts` | ToolPermission, SettingsTool 等核心类型 |
@@ -223,5 +270,6 @@ confirmService.registerConfirmable('external_tool_name', 'high');
 | `servers/settings/tools/index.ts` | 模块注册中心 |
 | `core/MCPService.ts` | callTool() 确认拦截集成点 |
 | `core/MCPServerFactory.ts` | @aether/settings 工厂注册 |
-| `config/builtinMCPServers.ts` | 内置服务器声明 |
+| `pages/Settings/MCPServerSettings.tsx` | Tab 分类列表页 |
+| `pages/Settings/MCPAssistantDetail.tsx` | 助手独立管理页 |
 | `components/message/blocks/ToolBlock.tsx` | 内联确认 UI |
