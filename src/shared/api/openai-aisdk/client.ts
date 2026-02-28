@@ -16,7 +16,7 @@ import { isReasoningModel } from '../../../config/models';
  */
 export function isAzureOpenAI(model: Model): boolean {
   return Boolean(
-    (model as any).providerType === 'azure-openai' ||
+    model.providerType === 'azure-openai' ||
     model.provider === 'azure-openai' ||
     (model.baseUrl && model.baseUrl.includes('openai.azure.com'))
   );
@@ -148,8 +148,8 @@ export function createClient(model: Model): AISDKOpenAIProvider {
     }
 
     // 添加供应商级别额外头部
-    if ((model as any).providerExtraHeaders) {
-      const providerHeaders = (model as any).providerExtraHeaders;
+    if (model.providerExtraHeaders) {
+      const providerHeaders = model.providerExtraHeaders;
       
       Object.entries(providerHeaders).forEach(([key, value]) => {
         if (value === 'REMOVE') {

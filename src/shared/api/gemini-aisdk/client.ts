@@ -126,8 +126,8 @@ export function createClient(model: Model): GoogleGenerativeAIProvider {
     }
 
     // 添加供应商级别额外头部
-    if ((model as any).providerExtraHeaders) {
-      const providerHeaders = (model as any).providerExtraHeaders;
+    if (model.providerExtraHeaders) {
+      const providerHeaders = model.providerExtraHeaders;
       
       Object.entries(providerHeaders).forEach(([key, value]) => {
         if (value === 'REMOVE') {

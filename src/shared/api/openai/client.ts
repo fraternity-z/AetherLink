@@ -107,8 +107,8 @@ export function createClient(model: Model): OpenAI {
     }
 
     // 添加供应商级别的额外头部（如果有）
-    if ((model as any).providerExtraHeaders) {
-      const providerHeaders = (model as any).providerExtraHeaders;
+    if (model.providerExtraHeaders) {
+      const providerHeaders = model.providerExtraHeaders;
 
       // 处理禁用的请求头（值为 'REMOVE' 的头部将被删除）
       const filteredHeaders: Record<string, string> = {};
@@ -178,7 +178,7 @@ export function createClient(model: Model): OpenAI {
  * @returns 是否为Azure OpenAI
  */
 export function isAzureOpenAI(model: Model): boolean {
-  return Boolean((model as any).providerType === 'azure-openai' ||
+  return Boolean(model.providerType === 'azure-openai' ||
          model.provider === 'azure-openai' ||
          (model.baseUrl && model.baseUrl.includes('openai.azure.com')));
 }

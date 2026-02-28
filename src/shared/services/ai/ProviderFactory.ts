@@ -28,7 +28,7 @@ export function getActualProviderType(model: Model): string {
   }
 
   // 优先使用providerType字段(如果存在)，否则回退到provider字段
-  let providerType = (model as any).providerType || model.provider;
+  let providerType = model.providerType || model.provider;
 
   // 智能路由：只有在没有明确指定provider或provider为'auto'时才进行推断
   // 如果用户明确选择了供应商，就使用用户的选择，不进行自动推断
@@ -84,7 +84,7 @@ function inferProviderFromModel(model: Model): string {
  * @returns 是否为Azure OpenAI
  */
 function isAzureOpenAI(model: Model): boolean {
-  return Boolean((model as any).providerType === 'azure-openai' ||
+  return Boolean(model.providerType === 'azure-openai' ||
          model.provider === 'azure-openai' ||
          (model.baseUrl && model.baseUrl.includes('openai.azure.com')));
 }

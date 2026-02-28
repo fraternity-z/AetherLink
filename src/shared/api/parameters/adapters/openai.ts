@@ -600,7 +600,7 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
     }
 
     // 合并自定义请求体参数
-    const extraBody = (model as any).extraBody || (model as any).providerExtraBody;
+    const extraBody = model.extraBody || model.providerExtraBody;
     if (extraBody && typeof extraBody === 'object') {
       Object.assign(completeParams, extraBody);
       console.log(`[OpenAIParameterAdapter] 合并自定义请求体参数: ${Object.keys(extraBody).join(', ')}`);
