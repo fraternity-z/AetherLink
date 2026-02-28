@@ -316,7 +316,15 @@ const FileBlock: React.FC<Props> = ({ block }) => {
 
     {/* 文件查看器 - 按需懒加载，仅在打开时加载重型编辑器依赖 */}
     {viewerOpen && workspaceFile && (
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={(
+          <Box sx={{ p: 2 }}>
+            <Typography variant="caption" color="text.secondary">
+              正在加载文件查看器...
+            </Typography>
+          </Box>
+        )}
+      >
         {isMobile ? (
           <LazyMobileFileViewer
             open={viewerOpen}

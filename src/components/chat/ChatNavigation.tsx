@@ -46,6 +46,8 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, containerE
 
   // 判断是否启用导航触觉反馈
   const isNavigationHapticEnabled = hapticFeedback?.enabled && hapticFeedback?.enableOnNavigation;
+  // 仅在按钮导航模式启用全局指针订阅，避免无效监听
+  const showNavigation = messageNavigation === 'buttons';
 
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) {
@@ -293,7 +295,7 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, containerE
       touchStartY.current = 0;
       touchStartTime.current = 0;
     }
-  }, true);
+  }, showNavigation);
 
   // 监听滚动事件
   useEffect(() => {
@@ -362,9 +364,6 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, containerE
       scale: 1
     };
   }, [keyboardHeight]);
-
-  // 是否显示导航按钮
-  const showNavigation = messageNavigation === 'buttons';
 
   return (
     <>

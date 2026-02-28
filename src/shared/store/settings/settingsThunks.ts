@@ -31,7 +31,7 @@ const normalizeSettings = (savedSettings: SettingsState): SettingsState => {
   savedSettings.defaultModelId = ensureModelIdentityKey(savedSettings.defaultModelId || getDefaultModelId(providers), providers);
   savedSettings.currentModelId = ensureModelIdentityKey(savedSettings.currentModelId || savedSettings.defaultModelId, providers);
   savedSettings.topicNamingModelId = ensureModelIdentityKey(savedSettings.topicNamingModelId, providers);
-  setDefaultFlags(providers, savedSettings.defaultModelId);
+  const providersWithDefaultFlags = setDefaultFlags(providers, savedSettings.defaultModelId);
 
   if (!savedSettings.thinkingDisplayStyle) {
     savedSettings.thinkingDisplayStyle = ThinkingDisplayStyle.COMPACT;
@@ -202,7 +202,7 @@ const normalizeSettings = (savedSettings: SettingsState): SettingsState => {
 
   return {
     ...savedSettings,
-    providers,
+    providers: providersWithDefaultFlags,
     isLoading: false
   };
 };
@@ -223,8 +223,7 @@ export const loadSettings = createAsyncThunk('settings/load', async () => {
 
 export const saveSettings = createAsyncThunk('settings/save', async (state: SettingsState) => {
   try {
-    await setStorageItem('settings', state);
-    return true;
+    return await setStorageItem('settings', state);
   } catch (error) {
     console.error('Failed to save settings to storage', error);
     return false;

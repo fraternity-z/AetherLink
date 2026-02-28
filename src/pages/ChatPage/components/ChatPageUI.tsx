@@ -749,6 +749,7 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   ), [
     // 只包含真正影响InputContainer的关键依赖
     isDrawerVisible,
+    LAYOUT_CONFIGS,
     inputComponent,
     isMobile,
     keyboardHeight, // 键盘高度变化时重新渲染

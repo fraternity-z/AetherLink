@@ -1,40 +1,47 @@
 import { useSyncExternalStore } from 'react';
+import { getStorageItem } from '../utils/storage';
 
 type AppSettingsSnapshot = Record<string, any>;
 
 type SettingsListener = () => void;
+type StorageItemChangedDetail = {
+  key?: string;
+};
 
 const APP_SETTINGS_KEY = 'appSettings';
+const STORAGE_ITEM_CHANGED_EVENT = 'storageItemChanged';
 const listeners = new Set<SettingsListener>();
 let windowEventsBound = false;
 let cache: AppSettingsSnapshot = {};
 
-const readSettingsFromStorage = (): AppSettingsSnapshot => {
+const loadSettingsFromStorage = async (): Promise<void> => {
   if (typeof window === 'undefined') {
-    return {};
+    return;
   }
 
   try {
-    const raw = localStorage.getItem(APP_SETTINGS_KEY);
-    if (!raw) {
-      return {};
+    const stored = await getStorageItem<AppSettingsSnapshot>(APP_SETTINGS_KEY);
+    if (!stored || typeof stored !== 'object') {
+      cache = {};
+      return;
     }
 
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') {
-      return {};
-    }
-
-    return parsed;
+    cache = stored;
   } catch (error) {
     console.error('[useAppSettingsStore] 读取 appSettings 失败:', error);
-    return {};
+    cache = {};
   }
 };
 
 const emitChanges = () => {
-  cache = readSettingsFromStorage();
-  listeners.forEach(listener => listener());
+  listeners.forEach(listener => {
+    listener();
+  });
+};
+
+const syncFromStorage = async () => {
+  await loadSettingsFromStorage();
+  emitChanges();
 };
 
 const onStorage = (event: StorageEvent) => {
@@ -42,11 +49,20 @@ const onStorage = (event: StorageEvent) => {
     return;
   }
 
-  emitChanges();
+  void syncFromStorage();
 };
 
 const onAppSettingsChanged = () => {
-  emitChanges();
+  void syncFromStorage();
+};
+
+const onStorageItemChanged = (event: Event) => {
+  const detail = (event as CustomEvent<StorageItemChangedDetail>).detail;
+  if (detail?.key && detail.key !== APP_SETTINGS_KEY) {
+    return;
+  }
+
+  void syncFromStorage();
 };
 
 const bindWindowEvents = () => {
@@ -54,9 +70,10 @@ const bindWindowEvents = () => {
     return;
   }
 
-  cache = readSettingsFromStorage();
+  void syncFromStorage();
   window.addEventListener('storage', onStorage);
   window.addEventListener('appSettingsChanged', onAppSettingsChanged as EventListener);
+  window.addEventListener(STORAGE_ITEM_CHANGED_EVENT, onStorageItemChanged as EventListener);
   windowEventsBound = true;
 };
 

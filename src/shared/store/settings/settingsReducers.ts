@@ -71,7 +71,7 @@ export const settingsReducers = {
       const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
       if (defaultMatch) {
         state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
-        setDefaultFlags(state.providers, state.defaultModelId);
+        state.providers = setDefaultFlags(state.providers, state.defaultModelId);
       } else {
         const replacement = state.providers
           .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
@@ -79,7 +79,7 @@ export const settingsReducers = {
 
         if (replacement) {
           state.defaultModelId = canonicalModelKey(replacement.model, replacement.provider.id);
-          setDefaultFlags(state.providers, state.defaultModelId);
+          state.providers = setDefaultFlags(state.providers, state.defaultModelId);
         } else {
           state.defaultModelId = undefined;
         }
@@ -95,7 +95,7 @@ export const settingsReducers = {
       state.models.forEach(model => {
         model.isDefault = modelMatchesIdentity(model, identity);
       });
-      setDefaultFlags(state.providers, action.payload);
+      state.providers = setDefaultFlags(state.providers, action.payload);
       state.defaultModelId = identity ? getModelIdentityKey(identity) : action.payload;
     },
     setCurrentModel: (state, action: PayloadAction<string>) => {
@@ -174,7 +174,7 @@ export const settingsReducers = {
         const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
         if (defaultMatch) {
           state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
-          setDefaultFlags(state.providers, state.defaultModelId);
+          state.providers = setDefaultFlags(state.providers, state.defaultModelId);
         } else {
           const replacement = state.providers
             .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
@@ -182,7 +182,7 @@ export const settingsReducers = {
 
           if (replacement) {
             state.defaultModelId = canonicalModelKey(replacement.model, replacement.provider.id);
-            setDefaultFlags(state.providers, state.defaultModelId);
+            state.providers = setDefaultFlags(state.providers, state.defaultModelId);
           } else {
             state.defaultModelId = undefined;
           }
@@ -226,7 +226,7 @@ export const settingsReducers = {
 
       if (updates.defaultModelId !== undefined) {
         updates.defaultModelId = ensureModelIdentityKey(updates.defaultModelId, state.providers);
-        setDefaultFlags(state.providers, updates.defaultModelId);
+        state.providers = setDefaultFlags(state.providers, updates.defaultModelId);
       }
 
       if (updates.currentModelId !== undefined) {

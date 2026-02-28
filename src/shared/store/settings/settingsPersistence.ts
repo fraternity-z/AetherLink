@@ -13,10 +13,11 @@ export const saveSettingsToStorage = (state: SettingsRootState) => (
 
 export const settingsMiddleware = (store: any) => (next: any) => (action: any) => {
   const result = next(action);
+  const actionType = typeof action?.type === 'string' ? action.type : '';
 
-  if (action.type.startsWith('settings/') &&
-      !action.type.includes('load') &&
-      !action.type.includes('save')) {
+  if (actionType.startsWith('settings/') &&
+      !actionType.includes('load') &&
+      !actionType.includes('save')) {
     store.dispatch(saveSettings(store.getState().settings));
   }
 

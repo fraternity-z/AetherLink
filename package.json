@@ -88,7 +88,7 @@
     "@capacitor/app": "^7.1.0",
     "@capacitor/browser": "^7.0.2",
     "@capacitor/camera": "^7.0.2",
-    "@capacitor/cli": "8.1.0",
+    "@capacitor/cli": "8.0.1",
     "@capacitor/clipboard": "^7.0.2",
     "@capacitor/core": "http://154.37.208.52:4873/@capacitor%2Fcore/-/core-8.0.1.tgz",
     "@capacitor/device": "^7.0.2",

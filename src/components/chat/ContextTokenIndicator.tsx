@@ -156,7 +156,7 @@ const ContextTokenIndicator: React.FC<ContextTokenIndicatorProps> = ({
         return;
       }
 
-      const cardElement = document.querySelector('[data-testid=\"context-token-card\"]') as HTMLElement | null;
+      const cardElement = document.querySelector('[data-testid="context-token-card"]') as HTMLElement | null;
       if (!cardElement) {
         setIsVisible(false);
         return;

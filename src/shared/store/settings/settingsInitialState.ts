@@ -137,7 +137,7 @@ export const getInitialSettingsState = (): SettingsState => {
   };
 
   const defaultModelId = getDefaultModelId(initialProviders);
-  setDefaultFlags(defaultState.providers, defaultModelId);
+  defaultState.providers = setDefaultFlags(defaultState.providers, defaultModelId);
   return {
     ...defaultState,
     defaultModelId,
