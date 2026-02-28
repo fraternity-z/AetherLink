@@ -460,24 +460,27 @@ export const getModelIcon = (provider: string, isDark?: boolean): string => {
   return getProviderIcon(provider, theme);
 };
 
-// 获取模型提供商名称
+// 内置供应商名称映射（用于无 Redux store 时的回退）
+const BUILTIN_PROVIDER_NAMES: Record<string, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  google: 'Google',
+  grok: 'xAI (Grok)',
+  siliconflow: '硅基流动 (SiliconFlow)',
+  volcengine: '火山引擎 (VolcEngine)',
+  custom: '自定义',
+};
+
+// 获取模型提供商名称（优先从 Redux store 查询，支持自定义供应商）
 export const getProviderName = (provider: string): string => {
-  switch (provider) {
-    case 'openai':
-      return 'OpenAI';
-    case 'anthropic':
-      return 'Anthropic';
-    case 'google':
-      return 'Google';
-    case 'grok':
-      return 'xAI (Grok)';
-    case 'siliconflow':
-      return '硅基流动 (SiliconFlow)';
-    case 'volcengine':
-      return '火山引擎 (VolcEngine)';
-    case 'custom':
-      return '自定义';
-    default:
-      return provider;
+  if (!provider) return '';
+  try {
+    const store = require('../store').default;
+    const state = store.getState();
+    const found = state?.settings?.providers?.find((p: any) => p.id === provider);
+    if (found?.name) return found.name;
+  } catch {
+    // store 未初始化时忽略
   }
+  return BUILTIN_PROVIDER_NAMES[provider] || provider;
 };

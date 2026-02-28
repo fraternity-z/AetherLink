@@ -253,7 +253,7 @@ const ImageGenerationDialog: React.FC<ImageGenerationDialogProps> = ({
             )}
             {availableModels.map((model) => (
               <MenuItem key={model.identityKey} value={model.identityKey}>
-                {model.name} ({model.provider})
+                {model.name} ({model.providerName || model.provider})
               </MenuItem>
             ))}
           </Select>

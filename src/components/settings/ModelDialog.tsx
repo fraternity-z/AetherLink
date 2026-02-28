@@ -18,7 +18,7 @@ import BackButtonDialog from '../common/BackButtonDialog';
 import type { Model, PresetModel } from '../../shared/types';
 import { getDefaultModelProviders } from '../../shared/config/defaultModels';
 import { ModelType } from '../../shared/types';
-import { presetModels } from '../../shared/data/presetModels';
+import { presetModels, getProviderName } from '../../shared/data/presetModels';
 import { generateId } from '../../shared/utils';
 import { matchModelTypes } from '../../shared/data/modelTypeRules';
 import EnhancedModelTypeSelector from './EnhancedModelTypeSelector';
@@ -219,7 +219,7 @@ const ModelDialog: React.FC<ModelDialogProps> = ({
               <MenuItem value="">自定义模型</MenuItem>
               {presetModels.map((preset) => (
                 <MenuItem key={preset.id} value={preset.id}>
-                  {preset.name} ({preset.provider})
+                  {preset.name} ({getProviderName(preset.provider)})
                 </MenuItem>
               ))}
             </Select>
