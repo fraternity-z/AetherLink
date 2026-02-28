@@ -12,6 +12,8 @@ import { v4 as uuid } from 'uuid';
 import { EventEmitter, EVENT_NAMES } from '../infra/EventService';
 import { MobileKnowledgeService } from './MobileKnowledgeService';
 import { fileParserService } from './FileParserService';
+import store from '../../store';
+import type { PreprocessProviderConfig } from './preprocess/types';
 import type {
   TaskItem,
   TaskType,
@@ -106,6 +108,35 @@ export class KnowledgeTaskQueue {
    */
   updateConfig(config: Partial<QueueConfig>): void {
     this.config = { ...this.config, ...config };
+  }
+
+  /**
+   * 从 Redux 设置中读取 PDF 云端预处理配置，注入到 FileParserService
+   */
+  private injectCloudPreprocessConfig(): void {
+    try {
+      const pdfPreprocess = store.getState().pdfPreprocess;
+      const activeId = pdfPreprocess.activeProviderId;
+
+      if (activeId && pdfPreprocess.providers[activeId]) {
+        const p = pdfPreprocess.providers[activeId];
+        const config: PreprocessProviderConfig = {
+          id: p.id as PreprocessProviderConfig['id'],
+          name: p.name,
+          apiKey: p.apiKey,
+          apiHost: p.apiHost,
+          model: p.model,
+        };
+        fileParserService.setCloudPreprocessConfig(config);
+      } else {
+        fileParserService.setCloudPreprocessConfig(null);
+      }
+
+      // 注入 PDF 解析模式
+      fileParserService.setPdfParseMode(pdfPreprocess.parseMode || 'auto');
+    } catch (err) {
+      console.warn('[KnowledgeTaskQueue] 读取云端预处理配置失败:', err);
+    }
   }
 
   // ============ 事件系统 ============
@@ -363,6 +394,9 @@ export class KnowledgeTaskQueue {
     // 阶段2: 解析二进制文件 (10-30%)
     if (isBinaryFile(task.fileName)) {
       this.updateTaskProgress(task, 15, 'parsing');
+
+      // 注入云端 PDF 预处理配置（从 Redux 设置读取）
+      this.injectCloudPreprocessConfig();
 
       try {
         const arrayBuffer = task.arrayBuffer ||

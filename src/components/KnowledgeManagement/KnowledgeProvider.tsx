@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import { EventEmitter, EVENT_NAMES } from '../../shared/services/infra/EventService';
 import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
@@ -32,7 +32,11 @@ export const KnowledgeProvider: React.FC<KnowledgeProviderProps> = ({ children }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchKnowledgeBases = async () => {
+  // 用 ref 追踪当前选中的知识库，避免 fetchKnowledgeBases 依赖 state 导致循环
+  const selectedKbRef = useRef(selectedKnowledgeBase);
+  selectedKbRef.current = selectedKnowledgeBase;
+
+  const fetchKnowledgeBases = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -40,13 +44,10 @@ export const KnowledgeProvider: React.FC<KnowledgeProviderProps> = ({ children }
       setKnowledgeBases(bases);
       
       // 如果有已选择的知识库，更新它的信息
-      if (selectedKnowledgeBase) {
-        const updated = bases.find(b => b.id === selectedKnowledgeBase.id);
-        if (updated) {
-          setSelectedKnowledgeBase(updated);
-        } else {
-          setSelectedKnowledgeBase(null);
-        }
+      const current = selectedKbRef.current;
+      if (current) {
+        const updated = bases.find(b => b.id === current.id);
+        setSelectedKnowledgeBase(updated || null);
       }
     } catch (err) {
       console.error('Error fetching knowledge bases:', err);
@@ -54,9 +55,9 @@ export const KnowledgeProvider: React.FC<KnowledgeProviderProps> = ({ children }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
   
-  const selectKnowledgeBase = async (id: string | null) => {
+  const selectKnowledgeBase = useCallback(async (id: string | null) => {
     if (!id) {
       setSelectedKnowledgeBase(null);
       return;
@@ -74,7 +75,7 @@ export const KnowledgeProvider: React.FC<KnowledgeProviderProps> = ({ children }
       console.error(`Error selecting knowledge base ${id}:`, err);
       setSelectedKnowledgeBase(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchKnowledgeBases();

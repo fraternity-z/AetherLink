@@ -55,7 +55,7 @@ export const getInitialState = (): SettingsState => {
     modelSelectorStyle: 'dialog' as 'dialog' | 'dropdown',
     
     // 🚀 AI 意图分析设置
-    enableAIIntentAnalysis: false, // 默认关闭，使用规则匹配
+    enableAIIntentAnalysis: false, // 默认关闭，直接注入搜索工具让 LLM 自行决定
     aiIntentAnalysisUseCurrentModel: true, // 默认使用当前话题模型
     aiIntentAnalysisModelId: undefined as string | undefined,
     thinkingDisplayStyle: ThinkingDisplayStyle.COMPACT,

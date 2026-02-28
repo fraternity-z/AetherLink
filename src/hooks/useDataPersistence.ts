@@ -189,9 +189,12 @@ export function useDataPersistence() {
       // 尝试触发异步保存（可能不会完成）
       flushAllPendingWrites();
       
-      // 某些浏览器需要这个来显示确认对话框
-      e.preventDefault();
-      e.returnValue = '';
+      // 生产环境：显示确认对话框防止意外关闭
+      // 开发环境：跳过确认，避免 HMR 热更新时每次弹窗
+      if (import.meta.env.PROD) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
     };
     
     // 3. 移动端：监听页面可见性变化（切换到后台时保存）

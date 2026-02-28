@@ -5,6 +5,7 @@
  */
 
 import { getPlatformInfo } from '../../utils/platformDetection';
+import type { PreprocessProviderConfig, PreprocessProgressCallback } from './preprocess/types';
 
 // 平台特定限制
 const PLATFORM_LIMITS = {
@@ -97,6 +98,12 @@ class FileParserService {
   private platformInfo = getPlatformInfo();
   private limits: typeof PLATFORM_LIMITS.web;
 
+  // 云端 PDF 预处理配置
+  private cloudPreprocessConfig: PreprocessProviderConfig | null = null;
+  private cloudProgressCallback?: PreprocessProgressCallback;
+  // PDF 解析模式: 'local' 仅本地 | 'auto' 自动降级 | 'cloud' 强制云端
+  private pdfParseMode: 'local' | 'auto' | 'cloud' = 'auto';
+
   private constructor() {
     // 根据平台设置限制
     if (this.platformInfo.isCapacitor && this.platformInfo.isMobile) {
@@ -113,6 +120,32 @@ class FileParserService {
       FileParserService.instance = new FileParserService();
     }
     return FileParserService.instance;
+  }
+
+  /**
+   * 配置云端 PDF 预处理 Provider
+   * 设置后，PDF 解析会在 pdfjs 失败/文本层不足时自动降级到云端
+   */
+  public setCloudPreprocessConfig(
+    config: PreprocessProviderConfig | null,
+    onProgress?: PreprocessProgressCallback
+  ): void {
+    this.cloudPreprocessConfig = config;
+    this.cloudProgressCallback = onProgress;
+  }
+
+  /**
+   * 设置 PDF 解析模式
+   */
+  public setPdfParseMode(mode: 'local' | 'auto' | 'cloud'): void {
+    this.pdfParseMode = mode;
+  }
+
+  /**
+   * 获取当前云端预处理配置
+   */
+  public getCloudPreprocessConfig(): PreprocessProviderConfig | null {
+    return this.cloudPreprocessConfig;
   }
 
   /**
@@ -209,48 +242,87 @@ class FileParserService {
 
   /**
    * 解析 PDF 文件
-   * 使用 pdf.js 或降级为提示用户
+   * 降级链：pdfjs（本地）→ 云端 Provider → 降级提示
    */
   private async parsePdfFile(file: File | ArrayBuffer, _options: ParseOptions): Promise<string> {
     const fileSize = file instanceof File ? file.size : file.byteLength;
-    
-    // 检查平台限制
+    const arrayBuffer = file instanceof File ? await file.arrayBuffer() : file;
+    const mode = this.pdfParseMode;
+
+    // 强制云端模式：跳过本地解析
+    if (mode === 'cloud' && this.cloudPreprocessConfig) {
+      try {
+        console.log(`[FileParser] 强制云端模式，使用 ${this.cloudPreprocessConfig.id} 解析 PDF`);
+        const { preprocessPdfWithCloud } = await import('./preprocess');
+        const result = await preprocessPdfWithCloud(
+          arrayBuffer,
+          'document.pdf',
+          this.cloudPreprocessConfig,
+          this.cloudProgressCallback
+        );
+        return result.content;
+      } catch (err) {
+        console.error('[FileParser] 云端 PDF 解析失败，降级到本地:', err);
+        // 云端失败仍尝试本地
+      }
+    }
+
+    // 1️⃣ 尝试 pdfjs 本地解析（仅桌面端/Web，且平台支持）
+    if (this.limits.pdfSupported && fileSize <= this.limits.maxPdfSize) {
+      try {
+        const pdfjsLib = await this.loadPdfJs();
+        if (pdfjsLib) {
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+          const textParts: string[] = [];
+          const numPages = pdf.numPages;
+
+          for (let i = 1; i <= numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+              .map((item: any) => item.str)
+              .join(' ');
+            textParts.push(`--- 第 ${i} 页 ---\n${pageText}`);
+          }
+
+          const localResult = textParts.join('\n\n');
+
+          // 检查文本层是否足够（扫描件 PDF 文本层为空或极少）
+          const actualTextLength = localResult.replace(/---\s*第\s*\d+\s*页\s*---/g, '').trim().length;
+          if (actualTextLength > 50) {
+            // 文本层充足，直接返回
+            return localResult;
+          }
+
+          console.warn(`[FileParser] PDF 文本层过少 (${actualTextLength} 字符)，可能为扫描件`);
+        }
+      } catch (err) {
+        console.warn('[FileParser] pdfjs 解析失败:', err);
+      }
+    }
+
+    // 2️⃣ 尝试云端 Provider 解析（仅 auto 模式）
+    if (mode !== 'local' && this.cloudPreprocessConfig) {
+      try {
+        console.log(`[FileParser] 使用云端 Provider (${this.cloudPreprocessConfig.id}) 解析 PDF`);
+        const { preprocessPdfWithCloud } = await import('./preprocess');
+        const result = await preprocessPdfWithCloud(
+          arrayBuffer,
+          'document.pdf',
+          this.cloudPreprocessConfig,
+          this.cloudProgressCallback
+        );
+        return result.content;
+      } catch (err) {
+        console.error('[FileParser] 云端 PDF 解析失败:', err);
+      }
+    }
+
+    // 3️⃣ 降级提示
     if (!this.limits.pdfSupported) {
       return this.getMobilePdfMessage();
     }
-    
-    if (fileSize > this.limits.maxPdfSize) {
-      throw new Error(`PDF 文件过大: ${this.formatSize(fileSize)} > ${this.formatSize(this.limits.maxPdfSize)}`);
-    }
-
-    try {
-      // 尝试动态加载 pdfjs-dist
-      const pdfjsLib = await this.loadPdfJs();
-      
-      if (!pdfjsLib) {
-        return this.getPdfFallbackMessage();
-      }
-
-      const arrayBuffer = file instanceof File ? await file.arrayBuffer() : file;
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      
-      const textParts: string[] = [];
-      const numPages = pdf.numPages;
-
-      for (let i = 1; i <= numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        textParts.push(`--- 第 ${i} 页 ---\n${pageText}`);
-      }
-
-      return textParts.join('\n\n');
-    } catch (err) {
-      console.warn('PDF 解析失败，使用降级方案:', err);
-      return this.getPdfFallbackMessage();
-    }
+    return this.getPdfFallbackMessage();
   }
 
   /**
@@ -261,10 +333,11 @@ class FileParserService {
       // @ts-ignore - 动态导入
       const pdfjsLib = await import('pdfjs-dist');
       
-      // 设置 worker
+      // 设置 worker（使用本地文件，避免 CDN 不可用）
       if (pdfjsLib.GlobalWorkerOptions) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 
-          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        // @ts-ignore - Vite ?url 导入返回资源 URL
+        const workerModule = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
       }
       
       return pdfjsLib;

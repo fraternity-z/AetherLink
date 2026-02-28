@@ -31,5 +31,4 @@ export const enhancedWebSearchService = enhancedWebSearchServiceInstance;
 
 // 🚀 导出 AI Tool Use 相关模块
 export * from './WebSearchTool';
-export * from './SearchIntentAnalyzer';
 export * from './AIIntentAnalyzer';

@@ -373,7 +373,7 @@ const DefaultModelSettingsPage: React.FC = () => {
               {t('modelSettings.defaultModel.aiIntentAnalysis', 'AI 意图分析')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {t('modelSettings.defaultModel.aiIntentAnalysisDesc', '使用 AI 分析用户消息，判断是否需要进行网络搜索（仅在手动模式下生效）')}
+              {t('modelSettings.defaultModel.aiIntentAnalysisDesc', '使用 AI 分析用户消息，智能判断是否需要进行网络搜索或知识库搜索')}
             </Typography>
           </Box>
 
@@ -383,7 +383,7 @@ const DefaultModelSettingsPage: React.FC = () => {
             <ListItem>
               <ListItemText 
                 primary={t('modelSettings.defaultModel.enableAIIntentAnalysis', '启用 AI 意图分析')} 
-                secondary={t('modelSettings.defaultModel.enableAIIntentAnalysisDesc', '关闭时使用规则匹配（快速），开启时使用 AI 分析（更准确）')}
+                secondary={t('modelSettings.defaultModel.enableAIIntentAnalysisDesc', '关闭时直接注入搜索工具，开启时使用 AI 预分析提取关键词（更精准）')}
               />
               <CustomSwitch
                 checked={enableAIIntentAnalysis ?? false}
