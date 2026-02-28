@@ -328,7 +328,7 @@ const KnowledgeEditPage: React.FC = () => {
                     {availableModels.length > 0 ? (
                       availableModels.map((model: Model) => (
                         <MenuItem key={model.id} value={model.id}>
-                          {model.name} (来自 {model.provider})
+                          {model.name} (来自 {model.providerName || model.provider})
                         </MenuItem>
                       ))
                     ) : (

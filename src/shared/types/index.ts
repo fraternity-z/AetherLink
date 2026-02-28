@@ -329,6 +329,7 @@ export interface Model {
   providerExtraHeaders?: Record<string, string>; // 从供应商继承的额外请求头
   providerExtraBody?: Record<string, any>; // 从供应商继承的额外请求体参数
   useCorsPlugin?: boolean; // 移动端是否使用CORS插件（默认false，使用标准fetch保持流式输出）
+  providerName?: string; // 供应商显示名称（运行时注入，非持久化）
 }
 
 // 设置类型

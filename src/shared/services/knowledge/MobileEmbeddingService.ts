@@ -46,7 +46,8 @@ export function getAvailableEmbeddingModels(): Model[] {
               ...model,
               apiKey: model.apiKey || provider.apiKey,
               baseUrl: model.baseUrl || provider.baseUrl,
-              providerType: model.providerType || provider.providerType || provider.id
+              providerType: model.providerType || provider.providerType || provider.id,
+              providerName: provider.name
             });
           }
         }
