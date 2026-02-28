@@ -109,6 +109,13 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     return;
   }
   if (pathWithoutQuery.startsWith('/settings/mcp-assistant/')) {
+    // /settings/mcp-assistant/:serverId/domain/:domain → 返回助手详情
+    const domainMatch = pathWithoutQuery.match(/^\/settings\/mcp-assistant\/([^/]+)\/domain\/.+$/);
+    if (domainMatch) {
+      navigate(`/settings/mcp-assistant/${domainMatch[1]}`);
+      return;
+    }
+    // /settings/mcp-assistant/:serverId → 返回 MCP 设置（智能助手 tab）
     navigate('/settings/mcp-server?tab=2');
     return;
   }

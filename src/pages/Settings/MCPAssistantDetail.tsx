@@ -9,36 +9,19 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon,
   Chip,
   alpha,
   Snackbar,
   Alert,
   Divider,
   CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  TextField,
-  InputAdornment,
-  Badge,
-  Menu,
-  MenuItem,
-  ListItemIcon as MuiListItemIcon,
-  ListItemText as MuiListItemText
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ArrowLeft as ArrowBackIcon,
   Bot as BotIcon,
-  Eye as ReadIcon,
-  Pencil as WriteIcon,
-  ShieldAlert as ConfirmIcon,
-  Navigation as NavIcon,
-  ChevronDown as ExpandMoreIcon,
-  Search as SearchIcon,
-  X as ClearIcon
+  ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 
 import type { MCPServer, MCPTool } from '../../shared/types';
@@ -46,22 +29,6 @@ import { mcpService } from '../../shared/services/mcp';
 import { useTranslation } from '../../i18n';
 import { SafeAreaContainer, CARD_STYLES } from '../../components/settings/SettingComponents';
 import Scrollbar from '../../components/Scrollbar';
-
-/** 权限级别对应的颜色和标签 */
-const PERMISSION_CONFIG: Record<string, { color: string; label: string; labelEn: string }> = {
-  read:    { color: '#4CAF50', label: '只读',   labelEn: 'Read' },
-  write:   { color: '#ff9800', label: '写入',   labelEn: 'Write' },
-  confirm: { color: '#f44336', label: '需确认', labelEn: 'Confirm' },
-  navigate:{ color: '#2196f3', label: '导航',   labelEn: 'Navigate' }
-};
-
-/** 从工具名推断权限级别（回退用，正常情况服务端会提供） */
-function inferPermission(toolName: string): string {
-  if (toolName.startsWith('delete_') || toolName.startsWith('create_') || toolName.startsWith('add_')) return 'confirm';
-  if (toolName.startsWith('update_') || toolName.startsWith('set_') || toolName.startsWith('toggle_')) return 'write';
-  if (toolName.startsWith('list_') || toolName.startsWith('get_') || toolName.startsWith('search_')) return 'read';
-  return 'read';
-}
 
 /** 从工具名推断所属领域 */
 function inferDomain(toolName: string): string {
@@ -71,11 +38,18 @@ function inferDomain(toolName: string): string {
   return 'general';
 }
 
-const DOMAIN_LABELS: Record<string, { zh: string; en: string }> = {
-  knowledge:  { zh: '知识库管理', en: 'Knowledge Base' },
-  appearance: { zh: '外观设置',   en: 'Appearance' },
-  providers:  { zh: '模型管理',   en: 'Model Providers' },
-  general:    { zh: '通用工具',   en: 'General Tools' }
+const DOMAIN_LABELS: Record<string, { zh: string; icon: string }> = {
+  knowledge:  { zh: '知识库管理', icon: '📚' },
+  appearance: { zh: '外观设置',   icon: '🎨' },
+  providers:  { zh: '模型管理',   icon: '🧠' },
+  general:    { zh: '通用工具',   icon: '🔧' }
+};
+
+const DOMAIN_COLORS: Record<string, string> = {
+  knowledge: '#8b5cf6',
+  appearance: '#06b6d4',
+  providers: '#f59e0b',
+  general: '#6b7280',
 };
 
 const MCPAssistantDetail: React.FC = () => {
@@ -86,8 +60,6 @@ const MCPAssistantDetail: React.FC = () => {
   const [server, setServer] = useState<MCPServer | null>(null);
   const [tools, setTools] = useState<MCPTool[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({});
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -153,135 +125,13 @@ const MCPAssistantDetail: React.FC = () => {
     return server?.disabledTools?.includes(toolName) ?? false;
   };
 
-  // 获取工具的有效权限（覆写优先，否则推断）
-  const getEffectivePermission = (toolName: string): string => {
-    const overrides = server?.toolPermissionOverrides || {};
-    return overrides[toolName] || inferPermission(toolName);
-  };
-
-  // 权限编辑菜单状态
-  const [permMenuAnchor, setPermMenuAnchor] = useState<null | HTMLElement>(null);
-  const [permMenuTool, setPermMenuTool] = useState<string>('');
-
-  const handleOpenPermMenu = (event: React.MouseEvent<HTMLElement>, toolName: string) => {
-    event.stopPropagation();
-    setPermMenuAnchor(event.currentTarget);
-    setPermMenuTool(toolName);
-  };
-
-  const handleClosePermMenu = () => {
-    setPermMenuAnchor(null);
-    setPermMenuTool('');
-  };
-
-  const handleChangePermission = async (toolName: string, newPerm: 'read' | 'write' | 'confirm') => {
-    if (!server) return;
-    handleClosePermMenu();
-    try {
-      const currentOverrides = { ...(server.toolPermissionOverrides || {}) };
-      const defaultPerm = inferPermission(toolName);
-
-      // 如果和默认一致就删除覆写，保持干净
-      if (newPerm === defaultPerm) {
-        delete currentOverrides[toolName];
-      } else {
-        currentOverrides[toolName] = newPerm;
-      }
-
-      const updated = { ...server, toolPermissionOverrides: currentOverrides };
-      await mcpService.updateServer(updated);
-      setServer(updated);
-      setSnackbar({ open: true, message: `${toolName} 权限已更改为「${PERMISSION_CONFIG[newPerm]?.label || newPerm}」`, severity: 'success' });
-    } catch (error) {
-      setSnackbar({ open: true, message: t('settings.mcpServer.messages.saveFailed'), severity: 'error' });
-    }
-  };
-
-  const handleToggleTool = async (toolName: string, enabled: boolean) => {
-    if (!server) return;
-    try {
-      const currentDisabled = server.disabledTools || [];
-      const newDisabled = enabled
-        ? currentDisabled.filter(t => t !== toolName)
-        : [...currentDisabled, toolName];
-
-      const updated = { ...server, disabledTools: newDisabled };
-      await mcpService.updateServer(updated);
-      setServer(updated);
-    } catch (error) {
-      setSnackbar({ open: true, message: t('settings.mcpServer.messages.saveFailed'), severity: 'error' });
-    }
-  };
-
-  // 分组总开关：批量启用/禁用某个领域下所有工具
-  const handleToggleDomainAll = async (domainTools: MCPTool[], enabled: boolean) => {
-    if (!server) return;
-    try {
-      const toolNames = domainTools.map(t => t.name);
-      const currentDisabled = server.disabledTools || [];
-      const newDisabled = enabled
-        ? currentDisabled.filter(name => !toolNames.includes(name))
-        : [...new Set([...currentDisabled, ...toolNames])];
-
-      const updated = { ...server, disabledTools: newDisabled };
-      await mcpService.updateServer(updated);
-      setServer(updated);
-    } catch (error) {
-      setSnackbar({ open: true, message: t('settings.mcpServer.messages.saveFailed'), severity: 'error' });
-    }
-  };
-
-  // 搜索过滤
-  const filteredTools = searchQuery.trim()
-    ? tools.filter(tool =>
-        tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (tool.description || '').toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : tools;
-
   // 按领域分组工具
-  const groupedTools = filteredTools.reduce<Record<string, MCPTool[]>>((acc, tool) => {
+  const groupedTools = tools.reduce<Record<string, MCPTool[]>>((acc, tool) => {
     const domain = inferDomain(tool.name);
     if (!acc[domain]) acc[domain] = [];
     acc[domain].push(tool);
     return acc;
   }, {});
-
-  // 初始化时展开所有分组
-  useEffect(() => {
-    if (tools.length > 0 && Object.keys(expandedDomains).length === 0) {
-      const initial: Record<string, boolean> = {};
-      for (const tool of tools) {
-        initial[inferDomain(tool.name)] = true;
-      }
-      setExpandedDomains(initial);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tools]);
-
-  // 搜索时自动展开所有匹配分组
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      const allExpanded: Record<string, boolean> = {};
-      Object.keys(groupedTools).forEach(d => { allExpanded[d] = true; });
-      setExpandedDomains(allExpanded);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
-
-  const handleToggleDomain = (domain: string) => {
-    setExpandedDomains(prev => ({ ...prev, [domain]: !prev[domain] }));
-  };
-
-  const getPermissionIcon = (permission: string) => {
-    switch (permission) {
-      case 'read': return <ReadIcon size={16} />;
-      case 'write': return <WriteIcon size={16} />;
-      case 'confirm': return <ConfirmIcon size={16} />;
-      case 'navigate': return <NavIcon size={16} />;
-      default: return <ReadIcon size={16} />;
-    }
-  };
 
   if (!server) {
     return (
@@ -349,33 +199,7 @@ const MCPAssistantDetail: React.FC = () => {
           </Box>
         </Paper>
 
-        {/* ─── 搜索栏 ─── */}
-        {server.isActive && tools.length > 0 && (
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="搜索工具名称或描述..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ mt: 2 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon size={18} style={{ opacity: 0.5 }} />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')}>
-                    <ClearIcon size={16} />
-                  </IconButton>
-                </InputAdornment>
-              ) : null
-            }}
-          />
-        )}
-
-        {/* ─── 工具列表（按领域可折叠分组） ─── */}
+        {/* ─── 工具领域列表（点击进入详情） ─── */}
         {!server.isActive ? (
           <Paper elevation={0} sx={{ ...CARD_STYLES.elevated, mt: 2 }}>
             <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -391,219 +215,78 @@ const MCPAssistantDetail: React.FC = () => {
               <Typography variant="body2" color="text.secondary">加载工具列表...</Typography>
             </Box>
           </Paper>
-        ) : Object.keys(groupedTools).length === 0 && searchQuery.trim() ? (
+        ) : Object.keys(groupedTools).length === 0 ? (
           <Paper elevation={0} sx={{ ...CARD_STYLES.elevated, mt: 2 }}>
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <SearchIcon size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
-              <Typography variant="body2" color="text.secondary">
-                没有找到匹配「{searchQuery}」的工具
-              </Typography>
+              <Typography variant="body2" color="text.secondary">暂无工具</Typography>
             </Box>
           </Paper>
         ) : (
-          Object.entries(groupedTools).map(([domain, domainTools]) => {
-            const enabledCount = domainTools.filter(t => !isToolDisabled(t.name)).length;
-            return (
-              <Accordion
-                key={domain}
-                expanded={expandedDomains[domain] ?? true}
-                onChange={() => handleToggleDomain(domain)}
-                disableGutters
-                elevation={0}
-                TransitionProps={{ unmountOnExit: true, timeout: 200 }}
-                sx={{
-                  mt: 2,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  borderRadius: '12px !important',
-                  overflow: 'hidden',
-                  contain: 'content',
-                  '&:before': { display: 'none' },
-                  '&.Mui-expanded': { margin: '16px 0 0 0' }
-                }}
-              >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon size={18} />}
-                  sx={{
-                    px: { xs: 2, sm: 2.5 },
-                    minHeight: 56,
-                    '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1.5 }
-                  }}
-                >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-                    {DOMAIN_LABELS[domain]?.zh || domain}
-                  </Typography>
-                  <Badge
-                    badgeContent={`${enabledCount}/${domainTools.length}`}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        position: 'static',
-                        transform: 'none',
-                        fontSize: '0.7rem',
-                        height: 20,
-                        minWidth: 36,
-                        borderRadius: 10,
-                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-                        color: 'primary.main'
-                      }
-                    }}
-                  />
-                  <Box sx={{ flexGrow: 1 }} />
-                  <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CustomSwitch
-                      checked={enabledCount > 0}
-                      onChange={(e) => handleToggleDomainAll(domainTools, e.target.checked)}
-                    />
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: 0, maxHeight: { xs: 360, sm: 420 }, overflowY: 'auto' }}>
-                  <Divider />
-                  <List disablePadding>
-                    {domainTools.map((tool, index) => {
-                      const permission = getEffectivePermission(tool.name);
-                      const permConfig = PERMISSION_CONFIG[permission] || PERMISSION_CONFIG['read'];
-                      const isOverridden = !!(server?.toolPermissionOverrides || {})[tool.name];
-                      const disabled = isToolDisabled(tool.name);
-
-                      return (
-                        <React.Fragment key={tool.name}>
-                          <ListItem sx={{
-                            py: 1.5,
-                            px: { xs: 1.5, sm: 2.5 },
-                            opacity: disabled ? 0.5 : 1,
-                            transition: 'all 0.2s',
-                            gap: { xs: 0.5, sm: 1 },
-                            '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04) }
-                          }}>
-                            <ListItemIcon sx={{ minWidth: { xs: 28, sm: 36 }, display: { xs: 'none', sm: 'flex' } }}>
-                              <Box sx={{ color: permConfig.color }}>
-                                {getPermissionIcon(permission)}
-                              </Box>
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                  <Typography sx={{
-                                    fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.9rem' }, fontFamily: 'monospace',
-                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: '45vw', sm: 'none' }
-                                  }}>
-                                    {tool.name}
-                                  </Typography>
-                                  <Chip
-                                    label={isOverridden ? `${permConfig.label} ✎` : permConfig.label}
-                                    size="small"
-                                    onClick={(e) => handleOpenPermMenu(e, tool.name)}
-                                    sx={{
-                                      height: 20, fontSize: '0.65rem', fontWeight: 600,
-                                      bgcolor: alpha(permConfig.color, 0.1),
-                                      color: permConfig.color,
-                                      border: `1px solid ${alpha(permConfig.color, isOverridden ? 0.6 : 0.3)}`,
-                                      cursor: 'pointer',
-                                      '&:hover': { bgcolor: alpha(permConfig.color, 0.2) }
-                                    }}
-                                  />
-                                </Box>
-                              }
-                              secondary={
-                                <Typography variant="body2" color="text.secondary" component="div"
-                                  sx={{
-                                    mt: 0.5, fontSize: { xs: '0.75rem', sm: '0.8rem' }, lineHeight: 1.4,
-                                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                                  }}
-                                >
-                                  {tool.description || '无描述'}
-                                </Typography>
-                              }
-                              secondaryTypographyProps={{ component: 'div' }}
-                            />
-                            <Box sx={{ flexShrink: 0, ml: { xs: 0.5, sm: 1 } }}>
-                              <CustomSwitch
-                                checked={!disabled}
-                                onChange={(e) => handleToggleTool(tool.name, e.target.checked)}
-                              />
-                            </Box>
-                          </ListItem>
-                          {index < domainTools.length - 1 && <Divider component="li" />}
-                        </React.Fragment>
-                      );
-                    })}
-                  </List>
-                </AccordionDetails>
-              </Accordion>
-            );
-          })
+          <Paper elevation={0} sx={{ ...CARD_STYLES.elevated, mt: 2 }}>
+            <List disablePadding>
+              {Object.entries(groupedTools).map(([domain, domainToolsList], index) => {
+                const enabledCount = domainToolsList.filter(t => !isToolDisabled(t.name)).length;
+                const domainInfo = DOMAIN_LABELS[domain];
+                const domainColor = DOMAIN_COLORS[domain] || '#6b7280';
+                return (
+                  <React.Fragment key={domain}>
+                    <ListItem
+                      component="div"
+                      onClick={() => navigate(`/settings/mcp-assistant/${serverId}/domain/${domain}`)}
+                      sx={{
+                        py: 2,
+                        px: { xs: 2, sm: 2.5 },
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04) },
+                        '&:active': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08) }
+                      }}
+                    >
+                      <Box sx={{
+                        width: 40, height: 40, borderRadius: 2,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: alpha(domainColor, 0.1), mr: 2, fontSize: '1.2rem'
+                      }}>
+                        {domainInfo?.icon || '🔧'}
+                      </Box>
+                      <ListItemText
+                        primary={
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                            {domainInfo?.zh || domain}
+                          </Typography>
+                        }
+                        secondary={
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mt: 0.25 }}>
+                            {domainToolsList.length} 个工具
+                          </Typography>
+                        }
+                      />
+                      <Chip
+                        label={`${enabledCount}/${domainToolsList.length}`}
+                        size="small"
+                        sx={{
+                          height: 24, fontSize: '0.75rem', fontWeight: 600, mr: 1,
+                          bgcolor: enabledCount === domainToolsList.length
+                            ? (theme) => alpha(theme.palette.success.main, 0.1)
+                            : enabledCount === 0
+                              ? (theme) => alpha(theme.palette.error.main, 0.1)
+                              : (theme) => alpha(theme.palette.warning.main, 0.1),
+                          color: enabledCount === domainToolsList.length
+                            ? 'success.main'
+                            : enabledCount === 0
+                              ? 'error.main'
+                              : 'warning.main'
+                        }}
+                      />
+                      <ChevronRightIcon size={18} style={{ opacity: 0.4 }} />
+                    </ListItem>
+                    {index < Object.keys(groupedTools).length - 1 && <Divider component="li" />}
+                  </React.Fragment>
+                );
+              })}
+            </List>
+          </Paper>
         )}
-
-        {/* ─── 权限说明 ─── */}
-        <Paper elevation={0} sx={{ ...CARD_STYLES.elevated, mt: 2 }}>
-          <Box sx={CARD_STYLES.header}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.1rem' } }}>
-              权限说明
-            </Typography>
-          </Box>
-          <Divider />
-          <Box sx={{ p: { xs: 2, sm: 2.5 }, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {Object.entries(PERMISSION_CONFIG).map(([key, config]) => (
-              <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ color: config.color, display: 'flex', alignItems: 'center' }}>
-                  {getPermissionIcon(key)}
-                </Box>
-                <Chip label={config.label} size="small"
-                  sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, bgcolor: alpha(config.color, 0.1), color: config.color }}
-                />
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                  {key === 'read' && '只读取数据，不修改任何内容'}
-                  {key === 'write' && '可修改数据，但不涉及创建或删除'}
-                  {key === 'confirm' && '敏感操作（创建/删除），执行前需要用户确认'}
-                  {key === 'navigate' && '页面跳转操作'}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Paper>
       </Scrollbar>
-
-      {/* ─── 权限编辑菜单 ─── */}
-      <Menu
-        anchorEl={permMenuAnchor}
-        open={Boolean(permMenuAnchor)}
-        onClose={handleClosePermMenu}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { sx: { minWidth: 180, borderRadius: 2 } } }}
-      >
-        {(['read', 'write', 'confirm'] as const).map((perm) => {
-          const config = PERMISSION_CONFIG[perm];
-          const isCurrentPerm = Boolean(permMenuTool) && getEffectivePermission(permMenuTool) === perm;
-          const isDefault = Boolean(permMenuTool) && inferPermission(permMenuTool) === perm;
-          return (
-            <MenuItem
-              key={perm}
-              selected={isCurrentPerm}
-              onClick={() => handleChangePermission(permMenuTool, perm)}
-              sx={{ py: 1 }}
-            >
-              <MuiListItemIcon sx={{ minWidth: 32, color: config.color }}>
-                {getPermissionIcon(perm)}
-              </MuiListItemIcon>
-              <MuiListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography sx={{ fontSize: '0.85rem', fontWeight: isCurrentPerm ? 700 : 400 }}>
-                      {config.label}
-                    </Typography>
-                    {isDefault && (
-                      <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
-                        (默认)
-                      </Typography>
-                    )}
-                  </Box>
-                }
-              />
-            </MenuItem>
-          );
-        })}
-      </Menu>
 
       <Snackbar
         open={snackbar.open}

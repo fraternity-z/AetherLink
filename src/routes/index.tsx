@@ -48,6 +48,7 @@ const AdvancedBackupPage = lazy(() => import('../pages/Settings/DataSettings/Adv
 const MCPServerSettings = lazy(() => import('../pages/Settings/MCPServerSettings'));
 const MCPServerDetail = lazy(() => import('../pages/Settings/MCPServerDetail'));
 const MCPAssistantDetail = lazy(() => import('../pages/Settings/MCPAssistantDetail'));
+const MCPToolDomainDetail = lazy(() => import('../pages/Settings/MCPToolDomainDetail'));
 // 导入模型组合页面
 const ModelComboSettings = lazy(() => import('../pages/Settings/ModelComboSettings'));
 const ModelComboEditPage = lazy(() => import('../pages/Settings/ModelComboEditPage'));
@@ -197,6 +198,7 @@ const AppRouter: React.FC = () => {
         <Route path="/settings/mcp-server" element={<MCPServerSettings />} />
         <Route path="/settings/mcp-server/:serverId" element={<MCPServerDetail />} />
         <Route path="/settings/mcp-assistant/:serverId" element={<MCPAssistantDetail />} />
+        <Route path="/settings/mcp-assistant/:serverId/domain/:domain" element={<MCPToolDomainDetail />} />
         <Route path="/settings/model-combo" element={<ModelComboSettings />} />
         <Route path="/settings/model-combo/:comboId" element={<ModelComboEditPage />} />
         <Route path="/settings/context-condense" element={<ContextCondenseSettings />} />
