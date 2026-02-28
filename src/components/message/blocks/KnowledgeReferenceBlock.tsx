@@ -21,6 +21,9 @@ const StyledPaper = styled(Paper)(({ theme }) => {
     position: 'relative',
     cursor: 'pointer',
     transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+    WebkitTapHighlightColor: 'transparent',
+    outline: 'none',
+    userSelect: 'none',
     '&:hover': {
       backgroundColor: isDark ? 'rgba(45, 45, 45, 0.92)' : 'rgba(250, 250, 250, 0.95)',
       borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
@@ -74,6 +77,9 @@ const ResultItem = styled(Box)(({ theme }) => {
     border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`,
     transition: 'all 0.15s ease',
     cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    outline: 'none',
+    userSelect: 'none',
     '&:hover': {
       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
     },
