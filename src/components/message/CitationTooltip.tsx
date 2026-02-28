@@ -16,9 +16,10 @@ import {
   Drawer,
   useMediaQuery,
   IconButton,
-  Button
+  Button,
+  Collapse
 } from '@mui/material';
-import { X, ExternalLink, Globe, BookOpen } from 'lucide-react';
+import { X, ExternalLink, Globe, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import type { CitationSupData } from '../../shared/types/citation';
 import { parseCitationData, extractHostname } from '../../shared/utils/citation';
 
@@ -61,12 +62,17 @@ const CitationContent: React.FC<{
   isKnowledgeUrl?: boolean;
 }> = ({ citationData, hostname, displayTitle, onOpenLink, onClose, isMobile, isKnowledgeUrl }) => {
   const theme = useTheme();
+  const [expanded, setExpanded] = useState(false);
+  
+  // 知识库引用内容超过 100 字符才显示展开按钮
+  const canExpand = isKnowledgeUrl && citationData.content && citationData.content.length > 100;
   
   return (
     <Box sx={{ 
       p: 2,
-      maxWidth: isMobile ? '100%' : 360,
-      minWidth: isMobile ? '100%' : 280
+      maxWidth: isMobile ? '100%' : (expanded ? 480 : 360),
+      minWidth: isMobile ? '100%' : 280,
+      transition: 'max-width 0.2s ease'
     }}>
       {/* 头部：标题 + 关闭按钮 */}
       <Box sx={{ 
@@ -144,22 +150,74 @@ const CitationContent: React.FC<{
         </IconButton>
       </Box>
       
-      {/* 内容摘要 */}
+      {/* 内容摘要 / 全文 */}
       {citationData.content && (
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-            display: '-webkit-box',
-            WebkitLineClamp: 4,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: 1.6,
-            mb: 2
-          }}
-        >
-          {citationData.content}
-        </Typography>
+        <Box sx={{ mb: 1.5 }}>
+          {!expanded ? (
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                display: '-webkit-box',
+                WebkitLineClamp: isKnowledgeUrl ? 3 : 4,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: 1.6,
+              }}
+            >
+              {citationData.content}
+            </Typography>
+          ) : (
+            <Collapse in={expanded}>
+              <Box
+                sx={{
+                  maxHeight: isMobile ? '40vh' : 320,
+                  overflowY: 'auto',
+                  pr: 0.5,
+                  '&::-webkit-scrollbar': { width: 4 },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: alpha(theme.palette.text.primary, 0.2),
+                    borderRadius: 2
+                  }
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                    lineHeight: 1.7,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {citationData.content}
+                </Typography>
+              </Box>
+            </Collapse>
+          )}
+          
+          {/* 展开/收起按钮 */}
+          {canExpand && (
+            <Box
+              onClick={() => setExpanded(!expanded)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                mt: 0.5,
+                cursor: 'pointer',
+                color: 'primary.main',
+                fontSize: '0.8rem',
+                '&:hover': { opacity: 0.8 }
+              }}
+            >
+              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              <Typography variant="caption" sx={{ color: 'inherit', fontWeight: 500 }}>
+                {expanded ? '收起' : '查看全文'}
+              </Typography>
+            </Box>
+          )}
+        </Box>
       )}
       
       {/* 底部：URL + 打开按钮 */}

@@ -84,11 +84,13 @@ export function withCitationTags(content: string, citations: Citation[]): string
  * @returns 引用标签字符串
  */
 export function generateCitationTag(citation: Citation, number: number): string {
+  // 知识库引用保留更多内容，便于用户在弹窗中查看全文
+  const contentLimit = citation.type === 'knowledge' ? 800 : 200;
   const supData: CitationSupData = {
     id: number,
     url: citation.url || '',
     title: citation.title || citation.hostname || '',
-    content: citation.content?.substring(0, 200)
+    content: citation.content?.substring(0, contentLimit)
   };
   
   const citationJson = encodeHTML(JSON.stringify(supData));

@@ -112,7 +112,7 @@ export const selectCitationsForMessage = (state: RootState, messageId?: string):
             number: k.index,
             url: k.sourceUrl || `knowledge://${k.knowledgeBaseId || 'unknown'}/${k.documentId || k.index}`,
             title: k.knowledgeBaseName || '知识库',
-            content: k.content?.substring(0, 200),
+            content: k.content?.substring(0, 800),
             type: 'knowledge',
             showFavicon: false,
             metadata: { similarity: k.similarity }
