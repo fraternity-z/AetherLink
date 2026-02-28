@@ -1,9 +1,9 @@
 /**
  * SearXNG MCP Server
- * 基于自部署的 SearXNG 元搜索引擎，提供搜索和网页内容抓取功能
+ * 基于自部署的 SearXNG 元搜索引擎，提供搜索、网页内容抓取和自动补全功能
  * 
  * 功能：
- * - searxng_search: 聚合搜索（Google、Bing、DuckDuckGo 等 70+ 引擎）
+ * - searxng_search: 聚合搜索（Google、Bing、DuckDuckGo 等 70+ 引擎），支持翻页、安全搜索，返回建议/直接答案/信息卡片
  * - searxng_read_url: 抓取任意网页内容并提取正文
  */
 
@@ -68,6 +68,17 @@ const SEARXNG_SEARCH_TOOL: Tool = {
         type: 'string',
         enum: ['day', 'week', 'month', 'year', ''],
         description: '时间范围过滤：day=近24小时, week=近一周, month=近一月, year=近一年。查询实时信息时建议设置此参数',
+      },
+      pageno: {
+        type: 'number',
+        description: '搜索结果页码，默认 1。当第一页结果不够时可翻页获取更多结果',
+        default: 1
+      },
+      safesearch: {
+        type: 'number',
+        enum: [0, 1, 2],
+        description: '安全搜索级别：0=关闭, 1=中等过滤, 2=严格过滤。默认 0',
+        default: 0
       }
     },
     required: ['query']
@@ -149,6 +160,8 @@ export class SearXNGServer {
           categories?: string;
           maxResults?: number;
           timeRange?: string;
+          pageno?: number;
+          safesearch?: number;
         });
       } else if (name === 'searxng_read_url') {
         return this.readUrl(args as {
@@ -174,6 +187,8 @@ export class SearXNGServer {
       categories?: string;
       maxResults?: number;
       timeRange?: string;
+      pageno?: number;
+      safesearch?: number;
     }
   ): Promise<{
     content: Array<{ type: string; text: string }>;
@@ -186,7 +201,9 @@ export class SearXNGServer {
         language = 'zh-CN',
         categories = 'general',
         maxResults = 10,
-        timeRange
+        timeRange,
+        pageno = 1,
+        safesearch = 0
       } = params;
 
       // 构建搜索 URL 参数
@@ -195,6 +212,8 @@ export class SearXNGServer {
         format: 'json',
         language: language,
         categories: categories,
+        pageno: String(pageno),
+        safesearch: String(safesearch),
       });
 
       if (engines) {
@@ -207,7 +226,7 @@ export class SearXNGServer {
 
       const searchUrl = `${this.baseUrl}/search?${searchParams.toString()}`;
 
-      console.log('[SearXNG] 开始搜索:', { query, engines, language, categories, timeRange });
+      console.log('[SearXNG] 开始搜索:', { query, engines, language, categories, timeRange, pageno, safesearch });
 
       // 发送搜索请求
       const response = await universalFetch(searchUrl, {
@@ -227,17 +246,61 @@ export class SearXNGServer {
       // 提取搜索结果
       const results = (data.results || []).slice(0, maxResults);
       const totalResults = data.number_of_results || results.length;
+      const suggestions: string[] = data.suggestions || [];
+      const answers: string[] = data.answers || [];
+      const corrections: string[] = data.corrections || [];
+      const infoboxes: any[] = data.infoboxes || [];
 
-      console.log(`[SearXNG] 搜索完成，找到 ${results.length} 个结果`);
+      console.log(`[SearXNG] 搜索完成，找到 ${results.length} 个结果，${suggestions.length} 条建议，${answers.length} 个直接答案，${infoboxes.length} 个信息卡片`);
 
       // 格式化输出
       let resultText = `## SearXNG 搜索结果\n\n`;
       resultText += `**查询**: ${query}\n`;
       resultText += `**结果数**: ${results.length} / ${totalResults}\n`;
+      resultText += `**页码**: ${pageno}\n`;
       if (engines) resultText += `**引擎**: ${engines}\n`;
       if (timeRange) resultText += `**时间范围**: ${timeRange}\n`;
       resultText += `\n---\n\n`;
 
+      // 直接答案（如计算结果、翻译等）
+      if (answers.length > 0) {
+        resultText += `## 直接答案\n\n`;
+        answers.forEach((answer: string) => {
+          resultText += `> ${answer}\n\n`;
+        });
+        resultText += `---\n\n`;
+      }
+
+      // 拼写纠正
+      if (corrections.length > 0) {
+        resultText += `**拼写建议**: ${corrections.join(', ')}\n\n`;
+      }
+
+      // 信息卡片（维基百科等）
+      if (infoboxes.length > 0) {
+        infoboxes.forEach((box: any) => {
+          resultText += `## 📋 ${box.infobox || '信息卡片'}\n\n`;
+          if (box.content) {
+            resultText += `${box.content}\n\n`;
+          }
+          if (box.urls && box.urls.length > 0) {
+            resultText += `**相关链接**:\n`;
+            box.urls.forEach((u: any) => {
+              resultText += `- [${u.title || u.url}](${u.url})\n`;
+            });
+            resultText += `\n`;
+          }
+          if (box.attributes && box.attributes.length > 0) {
+            box.attributes.forEach((attr: any) => {
+              resultText += `- **${attr.label}**: ${attr.value}\n`;
+            });
+            resultText += `\n`;
+          }
+          resultText += `---\n\n`;
+        });
+      }
+
+      // 搜索结果列表
       if (results.length > 0) {
         results.forEach((item: any, index: number) => {
           resultText += `### ${index + 1}. ${item.title || '无标题'}\n\n`;
@@ -266,6 +329,15 @@ export class SearXNGServer {
         });
       } else {
         resultText += '未找到相关结果\n\n';
+      }
+
+      // 搜索建议
+      if (suggestions.length > 0) {
+        resultText += `## 相关搜索建议\n\n`;
+        suggestions.forEach((s: string) => {
+          resultText += `- ${s}\n`;
+        });
+        resultText += `\n`;
       }
 
       resultText += `*数据来源: SearXNG 元搜索引擎*`;
