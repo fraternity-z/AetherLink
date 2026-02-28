@@ -28,7 +28,7 @@ export interface SettingsState {
   thinkingDisplayStyle: string;
   toolbarDisplayStyle: 'icon' | 'text' | 'both';
   inputBoxStyle: 'default' | 'modern' | 'minimal';
-  inputLayoutStyle: 'integrated';
+  inputLayoutStyle: 'integrated' | 'default';
   codeThemeLight: string;
   codeThemeDark: string;
   editorTheme: string;
