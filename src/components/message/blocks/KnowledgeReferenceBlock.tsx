@@ -8,20 +8,29 @@ interface KnowledgeReferenceBlockProps {
   block: KnowledgeReferenceMessageBlock;
 }
 
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(1.5),
-  marginBottom: theme.spacing(1),
-  borderRadius: theme.spacing(1),
-  border: `1px solid ${theme.palette.divider}`,
-  backgroundColor: 'var(--theme-msg-block-bg)',
-  position: 'relative',
-  cursor: 'pointer',
-  '&:hover': {
-    backgroundColor: 'var(--theme-msg-block-bg-hover)',
-    borderColor: theme.palette.primary.main,
-    boxShadow: theme.shadows[3],
-  }
-}));
+const StyledPaper = styled(Paper)(({ theme }) => {
+  const isDark = theme.palette.mode === 'dark';
+  return {
+    padding: theme.spacing(1.5),
+    marginBottom: theme.spacing(1),
+    borderRadius: '16px',
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    position: 'relative',
+    cursor: 'pointer',
+    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&:hover': {
+      backgroundColor: isDark ? 'rgba(45, 45, 45, 0.92)' : 'rgba(250, 250, 250, 0.95)',
+      borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)',
+      transform: 'translateY(-1px)',
+      boxShadow: isDark
+        ? '0 4px 12px rgba(0,0,0,0.3)'
+        : '0 4px 12px rgba(0,0,0,0.08)',
+    }
+  };
+});
 
 const SimilarityChip = styled(Chip)(({ theme }) => ({
   marginLeft: theme.spacing(1),
@@ -55,21 +64,24 @@ const KnowledgeIcon = styled(Box)(({ theme }) => ({
   fontWeight: 'bold',
 }));
 
-const ResultItem = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(1),
-  padding: theme.spacing(1.25),
-  backgroundColor: 'var(--theme-msg-block-bg-content)',
-  borderRadius: theme.spacing(0.75),
-  border: `1px solid ${theme.palette.divider}`,
-  transition: 'background-color 0.15s ease',
-  cursor: 'pointer',
-  '&:hover': {
-    backgroundColor: 'var(--theme-msg-block-bg-hover)'
-  },
-  '&:last-child': {
-    marginBottom: 0,
-  }
-}));
+const ResultItem = styled(Box)(({ theme }) => {
+  const isDark = theme.palette.mode === 'dark';
+  return {
+    marginBottom: theme.spacing(1),
+    padding: theme.spacing(1.25),
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+    borderRadius: theme.spacing(0.75),
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`,
+    transition: 'all 0.15s ease',
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    '&:last-child': {
+      marginBottom: 0,
+    }
+  };
+});
 
 const ScrollableContent = styled(Box)(() => ({
   maxHeight: '120px',
