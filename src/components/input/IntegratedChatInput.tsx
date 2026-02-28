@@ -81,7 +81,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   // 使用共享的 hooks
   const { styles, isDarkMode, inputBoxStyle } = useInputStyles();
-  const { hasKnowledgeContext, getStoredKnowledgeContext, clearStoredKnowledgeContext } = useKnowledgeContext();
+  const { hasKnowledgeContext, getSelectedKnowledgeBases, removeKnowledgeBase } = useKnowledgeContext();
 
   // 获取AI辩论按钮显示设置
   const showAIDebateButton = useSelector((state: RootState) => state.settings.showAIDebateButton ?? true);
@@ -351,19 +351,32 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
 
   return expandableContainer.renderContainer(
     <>
-      {/* 知识库状态显示 */}
+      {/* 知识库状态显示（支持多选，横向滚动，对齐CS风格） */}
       {hasKnowledgeContext() && (() => {
-        const contextData = getStoredKnowledgeContext();
-        const knowledgeBaseName = contextData?.knowledgeBase?.name || '未知知识库';
+        const selectedKBs = getSelectedKnowledgeBases();
         return (
-          <Box key={`knowledge-${knowledgeRefreshKey}`} sx={{ px: 1, mb: 1 }}>
-            <KnowledgeChip
-              knowledgeBaseName={knowledgeBaseName}
-              onRemove={() => {
-                clearStoredKnowledgeContext();
-                refreshKnowledge();
-              }}
-            />
+          <Box key={`knowledge-${knowledgeRefreshKey}`} sx={{
+            px: 1,
+            pt: 0.5,
+            pb: 0,
+            display: 'flex',
+            gap: 0.5,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            whiteSpace: 'nowrap',
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}>
+            {selectedKBs.map((kb) => (
+              <KnowledgeChip
+                key={kb.id}
+                knowledgeBaseName={kb.name}
+                onRemove={() => {
+                  removeKnowledgeBase(kb.id);
+                  refreshKnowledge();
+                }}
+              />
+            ))}
           </Box>
         );
       })()}

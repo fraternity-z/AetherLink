@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Box, Typography, Paper, IconButton, Chip } from '@mui/material';
-import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Link as LinkIcon } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Box, Typography, Paper, IconButton, Chip, Tooltip } from '@mui/material';
+import { ChevronDown as ExpandMoreIcon, ChevronUp as ExpandLessIcon, Link as LinkIcon, Copy, Check } from 'lucide-react';
 import type { KnowledgeReferenceMessageBlock } from '../../../shared/types/newMessage';
 import { styled } from '@mui/material/styles';
 
@@ -96,6 +96,16 @@ const ScrollableContent = styled(Box)(() => ({
 const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block }) => {
   const [expanded, setExpanded] = useState(false);
   const [activeReference, setActiveReference] = useState<number | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const handleCopyContent = useCallback((content: string, index: number) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }).catch(err => {
+      console.error('复制失败:', err);
+    });
+  }, []);
 
   const formatSimilarity = (similarity?: number) => {
     if (!similarity) return '匹配度未知';
@@ -278,6 +288,18 @@ const KnowledgeReferenceBlock: React.FC<KnowledgeReferenceBlockProps> = ({ block
                 >
                   {summary}
                 </Typography>
+                <Tooltip title={copiedIndex === referenceIndex ? '已复制' : '复制内容'} arrow>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyContent(result.content || '', referenceIndex);
+                    }}
+                    sx={{ opacity: 0.6, '&:hover': { opacity: 1 } }}
+                  >
+                    {copiedIndex === referenceIndex ? <Check size={14} /> : <Copy size={14} />}
+                  </IconButton>
+                </Tooltip>
                 <IconButton
                   size="small"
                   onClick={(e) => {

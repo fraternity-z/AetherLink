@@ -3,9 +3,9 @@ import { useDialogBackHandler } from '../../hooks/useDialogBackHandler';
 import { Box, Typography, useTheme, Menu, MenuItem, alpha } from '@mui/material';
 import { Plus, Trash2, AlertTriangle, BookOpen, Video, Wrench } from 'lucide-react';
 import { CustomIcon } from '../icons';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import type { RootState } from '../../shared/store';
-import { setSelectedKnowledgeBase } from '../../shared/store/slices/knowledgeSelectionSlice';
+// KnowledgeSelector 内部已处理 Redux dispatch（多选模式）
 import { useTopicManagement } from '../../shared/hooks/useTopicManagement';
 import WebSearchProviderSelector from '../WebSearchProviderSelector';
 import KnowledgeSelector from '../chat/KnowledgeSelector';
@@ -121,17 +121,9 @@ const ToolsMenu: React.FC<ToolsMenuProps> = ({
   };
 
   // 处理知识库选择
-  const dispatch = useDispatch();
-
   const handleKnowledgeSelect = (knowledgeBase: { id: string; name: string }, searchResults: unknown[]) => {
     console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
-
-    // 通过 Redux 存储选中的知识库信息
-    dispatch(setSelectedKnowledgeBase({
-      id: knowledgeBase.id,
-      name: knowledgeBase.name
-    }));
-
+    // Redux dispatch 已由 KnowledgeSelector 内部处理（支持多选）
     // 关闭选择器
     setShowKnowledgeSelector(false);
   };

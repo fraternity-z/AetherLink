@@ -8,8 +8,8 @@
 import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../store';
-import { clearSelectedKnowledgeBase } from '../store/slices/knowledgeSelectionSlice';
-import type { KnowledgeSelectionState } from '../store/slices/knowledgeSelectionSlice';
+import { clearSelectedKnowledgeBase, removeSelectedKnowledgeBase } from '../store/slices/knowledgeSelectionSlice';
+import type { KnowledgeSelectionState, SelectedKnowledgeInfo } from '../store/slices/knowledgeSelectionSlice';
 import { REFERENCE_PROMPT } from '../config/prompts';
 
 export interface KnowledgeContextData {
@@ -30,11 +30,25 @@ export const useKnowledgeContext = () => {
   const dispatch = useDispatch();
 
   /**
-   * 获取存储的知识库上下文
+   * 获取存储的知识库上下文（向后兼容单选）
    */
   const getStoredKnowledgeContext = useCallback((): KnowledgeContextData | null => {
     return knowledgeSelection.selectedKnowledgeBase || null;
   }, [knowledgeSelection.selectedKnowledgeBase]);
+
+  /**
+   * 获取所有已选中的知识库列表（多选模式）
+   */
+  const getSelectedKnowledgeBases = useCallback((): SelectedKnowledgeInfo[] => {
+    return knowledgeSelection.selectedKnowledgeBases || [];
+  }, [knowledgeSelection.selectedKnowledgeBases]);
+
+  /**
+   * 移除单个知识库
+   */
+  const removeKnowledgeBase = useCallback((id: string) => {
+    dispatch(removeSelectedKnowledgeBase(id));
+  }, [dispatch]);
 
   /**
    * 清除存储的知识库上下文
@@ -124,12 +138,15 @@ export const useKnowledgeContext = () => {
   }, [getStoredKnowledgeContext]);
 
   /**
-   * 检查是否有知识库上下文
+   * 检查是否有知识库上下文（支持多选）
    */
   const hasKnowledgeContext = useCallback((): boolean => {
+    // 优先检查多选列表
+    if (knowledgeSelection.selectedKnowledgeBases?.length > 0) return true;
+    // 兼容旧的单选
     const contextData = getStoredKnowledgeContext();
     return !!(contextData && contextData.isSelected && contextData.searchOnSend);
-  }, [getStoredKnowledgeContext]);
+  }, [knowledgeSelection.selectedKnowledgeBases, getStoredKnowledgeContext]);
 
   /**
    * 获取知识库信息摘要
@@ -146,7 +163,9 @@ export const useKnowledgeContext = () => {
 
   return {
     getStoredKnowledgeContext,
+    getSelectedKnowledgeBases,
     clearStoredKnowledgeContext,
+    removeKnowledgeBase,
     applyKnowledgeContext,
     hasKnowledgeContext,
     getKnowledgeContextSummary

@@ -18,7 +18,7 @@ import {
   IconButton,
   Button
 } from '@mui/material';
-import { X, ExternalLink, Globe } from 'lucide-react';
+import { X, ExternalLink, Globe, BookOpen } from 'lucide-react';
 import type { CitationSupData } from '../../shared/types/citation';
 import { parseCitationData, extractHostname } from '../../shared/utils/citation';
 
@@ -58,7 +58,8 @@ const CitationContent: React.FC<{
   onOpenLink: () => void;
   onClose: () => void;
   isMobile: boolean;
-}> = ({ citationData, hostname, displayTitle, onOpenLink, onClose, isMobile }) => {
+  isKnowledgeUrl?: boolean;
+}> = ({ citationData, hostname, displayTitle, onOpenLink, onClose, isMobile, isKnowledgeUrl }) => {
   const theme = useTheme();
   
   return (
@@ -90,7 +91,9 @@ const CitationContent: React.FC<{
               overflow: 'hidden'
             }}
           >
-            {hostname ? (
+            {isKnowledgeUrl ? (
+              <BookOpen size={14} />
+            ) : hostname ? (
               <img
                 src={getFaviconUrl(hostname)}
                 alt=""
@@ -178,24 +181,26 @@ const CitationContent: React.FC<{
             flex: 1
           }}
         >
-          {hostname}
+          {isKnowledgeUrl ? citationData.title || '知识库' : hostname}
         </Typography>
         
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<ExternalLink size={14} />}
-          onClick={onOpenLink}
-          sx={{
-            textTransform: 'none',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            fontSize: '0.8rem'
-          }}
-        >
-          打开链接
-        </Button>
+        {!isKnowledgeUrl && (
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<ExternalLink size={14} />}
+            onClick={onOpenLink}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 2,
+              py: 0.5,
+              fontSize: '0.8rem'
+            }}
+          >
+            打开链接
+          </Button>
+        )}
       </Box>
     </Box>
   );
@@ -233,6 +238,9 @@ export const CitationTooltip: React.FC<CitationTooltipProps> = ({ citation, chil
   const displayTitle = useMemo(() => {
     return citationData?.title?.trim() || hostname || '未知来源';
   }, [citationData?.title, hostname]);
+  
+  // 检测是否为知识库引用
+  const isKnowledgeUrl = citationData?.url?.startsWith('knowledge://') ?? false;
   
   // 点击打开弹窗
   const handleClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
@@ -312,6 +320,7 @@ export const CitationTooltip: React.FC<CitationTooltipProps> = ({ citation, chil
             onOpenLink={handleOpenLink}
             onClose={handleClose}
             isMobile={false}
+            isKnowledgeUrl={isKnowledgeUrl}
           />
         </Popover>
       )}
@@ -354,6 +363,7 @@ export const CitationTooltip: React.FC<CitationTooltipProps> = ({ citation, chil
             onOpenLink={handleOpenLink}
             onClose={handleClose}
             isMobile={true}
+            isKnowledgeUrl={isKnowledgeUrl}
           />
         </Drawer>
       )}

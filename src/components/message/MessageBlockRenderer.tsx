@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { useSelector, shallowEqual } from 'react-redux';
-import { Box, Fade } from '@mui/material';
+import { Box, Fade, CircularProgress, Typography } from '@mui/material';
 import type { RootState } from '../../shared/store';
 import { selectBlocksByIds } from '../../shared/store/selectors/messageBlockSelectors';
 import type { MessageBlock, Message, ImageMessageBlock, VideoMessageBlock, MainTextMessageBlock, CodeMessageBlock, ToolMessageBlock, KnowledgeReferenceMessageBlock, ContextSummaryMessageBlock } from '../../shared/types/newMessage';
-import { MessageBlockType, MessageBlockStatus } from '../../shared/types/newMessage';
+import { MessageBlockType, MessageBlockStatus, AssistantMessageStatus } from '../../shared/types/newMessage';
 
 
 // 直接导入块组件，与最佳实例保持一致
@@ -135,7 +135,7 @@ const isContextSummaryBlock = (block: MessageBlock): block is ContextSummaryMess
 /**
  * 动画状态列表
  */
-const ANIMATING_STATUSES = ['streaming', 'processing'];
+const ANIMATING_STATUSES = ['streaming', 'processing', 'searching'];
 
 const groupSimilarBlocks = (blocks: MessageBlock[]): GroupedBlock[] => {
   const seenVideoPaths = new Set<string>();
@@ -255,8 +255,30 @@ const MessageBlockRenderer: React.FC<Props> = ({
   // 是否启用动画 - 使用显式状态比较
   const enableAnimation = ANIMATING_STATUSES.includes(message.status);
 
+  // 是否正在搜索知识库
+  const isSearching = message.status === AssistantMessageStatus.SEARCHING;
+
   return (
     <Box sx={{ width: '100%' }}>
+      {/* 知识库搜索中状态指示器 */}
+      {isSearching && (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          p: 1.5,
+          mb: 1,
+          borderRadius: 1,
+          bgcolor: 'action.hover',
+          border: '1px solid',
+          borderColor: 'divider'
+        }}>
+          <CircularProgress size={18} thickness={4} />
+          <Typography variant="body2" color="text.secondary">
+            正在搜索知识库...
+          </Typography>
+        </Box>
+      )}
       {/* 只有在没有渲染块且消息状态为streaming时才显示占位符 */}
       {renderedBlocks.length === 0 && message.status === 'streaming' ? (
         renderPlaceholder()

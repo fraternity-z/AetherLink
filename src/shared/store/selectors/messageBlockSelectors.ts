@@ -1,5 +1,5 @@
 import type { RootState } from '../index';
-import type { MessageBlock } from '../../types/newMessage';
+import type { MessageBlock, KnowledgeReferenceMessageBlock } from '../../types/newMessage';
 import { MessageBlockType } from '../../types/newMessage';
 import type { Citation } from '../../types/citation';
 import { extractCitationsFromToolBlock, isWebSearchToolBlock } from '../../utils/citation';
@@ -107,6 +107,34 @@ export const selectCitationsForMessage = (state: RootState, messageId?: string):
     // 兼容旧的 web search 工具块
     if (isWebSearchToolBlock(block as any)) {
       citations.push(...extractCitationsFromToolBlock(block as any));
+    }
+    // 知识库引用块 → 提取为 knowledge 类型的 citation
+    if (block.type === MessageBlockType.KNOWLEDGE_REFERENCE) {
+      const kbBlock = block as KnowledgeReferenceMessageBlock;
+      if (kbBlock.metadata?.isCombined && kbBlock.metadata.results) {
+        kbBlock.metadata.results.forEach((result) => {
+          citations.push({
+            number: result.index,
+            url: `knowledge://${kbBlock.knowledgeBaseId}/${result.documentId || result.index}`,
+            title: kbBlock.metadata?.fileName || kbBlock.source || '知识库',
+            content: result.content?.substring(0, 200),
+            type: 'knowledge',
+            showFavicon: false,
+            metadata: { similarity: result.similarity }
+          });
+        });
+      } else if (kbBlock.content) {
+        // 单条引用
+        citations.push({
+          number: 1,
+          url: `knowledge://${kbBlock.knowledgeBaseId}`,
+          title: kbBlock.metadata?.fileName || kbBlock.source || '知识库',
+          content: kbBlock.content.substring(0, 200),
+          type: 'knowledge',
+          showFavicon: false,
+          metadata: { similarity: kbBlock.similarity }
+        });
+      }
     }
   }
   

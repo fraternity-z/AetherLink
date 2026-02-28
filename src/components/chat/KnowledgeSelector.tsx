@@ -9,10 +9,11 @@ import BackButtonDrawer from '../common/BackButtonDrawer';
 import { alpha } from '@mui/material/styles';
 import styled from '@emotion/styled';
 import { useTheme } from '@mui/material/styles';
-import { BookOpen as MenuBookIcon, Plus, Trash2 } from 'lucide-react';
+import { BookOpen as MenuBookIcon, Plus, Trash2, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { clearSelectedKnowledgeBase } from '../../shared/store/slices/knowledgeSelectionSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../../shared/store';
+import { clearSelectedKnowledgeBase, toggleKnowledgeBase } from '../../shared/store/slices/knowledgeSelectionSlice';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
 import type { KnowledgeBase as FullKnowledgeBase, KnowledgeSearchResult } from '../../shared/types/KnowledgeBase';
 
@@ -156,7 +157,9 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
   const navigate = useNavigate();
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseDisplay[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedKB, setSelectedKB] = useState<string>('');
+  // 从 Redux 读取已选中的知识库 ID
+  const reduxSelectedKBs = useSelector((state: RootState) => state.knowledgeSelection.selectedKnowledgeBases);
+  const selectedKBIds = useMemo(() => new Set(reduxSelectedKBs.map(kb => kb.id)), [reduxSelectedKBs]);
   const [error, setError] = useState<string>('');
   const isMountedRef = useRef(true);
 
@@ -205,7 +208,6 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
   }, []);
 
   const handleClose = useCallback(() => {
-    setSelectedKB('');
     setError('');
     onClose();
   }, [onClose]);
@@ -226,21 +228,18 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
   }, [handleClose, navigate]);
 
   const handleSelectKB = useCallback((kb: KnowledgeBaseDisplay) => {
-    if (selectedKB === kb.id) {
-      onSelect(kb, []);
-      handleClose();
-    } else {
-      setSelectedKB(kb.id);
-    }
-  }, [selectedKB, onSelect, handleClose]);
+    // 立即 dispatch 到 Redux，关闭面板不会丢失选择
+    dispatch(toggleKnowledgeBase({ id: kb.id, name: kb.name }));
+  }, [dispatch]);
 
   const handleConfirm = useCallback(() => {
-    const selected = knowledgeBases.find(kb => kb.id === selectedKB);
-    if (selected) {
-      onSelect(selected, []);
-      handleClose();
+    // 选择已实时同步到 Redux，直接关闭并回调
+    const firstSelected = knowledgeBases.find(kb => selectedKBIds.has(kb.id));
+    if (firstSelected) {
+      onSelect(firstSelected, []);
     }
-  }, [selectedKB, knowledgeBases, onSelect, handleClose]);
+    handleClose();
+  }, [knowledgeBases, selectedKBIds, onSelect, handleClose]);
 
   useEffect(() => {
     if (open) {
@@ -263,7 +262,7 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
       if (e.key === 'Escape') {
         e.preventDefault();
         handleClose();
-      } else if (e.key === 'Enter' && selectedKB) {
+      } else if (e.key === 'Enter' && selectedKBIds.size > 0) {
         e.preventDefault();
         handleConfirm();
       }
@@ -273,7 +272,7 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [open, selectedKB, handleClose, handleConfirm]);
+  }, [open, selectedKBIds, handleClose, handleConfirm]);
 
   return (
     <BackButtonDrawer
@@ -342,15 +341,15 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
                   <KnowledgePanelItem
                     key={kb.id}
                     theme={theme}
-                    selected={selectedKB === kb.id}
+                    selected={selectedKBIds.has(kb.id)}
                     onClick={() => handleSelectKB(kb)}
                   >
                     <KnowledgePanelItemLeft>
-                      <KnowledgePanelItemIcon theme={theme} selected={selectedKB === kb.id}>
-                        <MenuBookIcon size={20} />
+                      <KnowledgePanelItemIcon theme={theme} selected={selectedKBIds.has(kb.id)}>
+                        {selectedKBIds.has(kb.id) ? <Check size={20} /> : <MenuBookIcon size={20} />}
                       </KnowledgePanelItemIcon>
                       <KnowledgePanelItemContent>
-                        <KnowledgePanelItemLabel selected={selectedKB === kb.id}>
+                        <KnowledgePanelItemLabel selected={selectedKBIds.has(kb.id)}>
                           {kb.name}
                         </KnowledgePanelItemLabel>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -400,7 +399,7 @@ const KnowledgeSelector: React.FC<KnowledgeSelectorProps> = ({ open, onClose, on
             </KnowledgePanelFooterTitle>
             <KnowledgePanelFooterTips theme={theme}>
               <span>ESC 关闭</span>
-              <span>单击选择</span>
+              <span>多选</span>
               <span>↩︎ 确认</span>
             </KnowledgePanelFooterTips>
           </KnowledgePanelFooter>

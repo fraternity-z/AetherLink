@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
 import { BookOpen } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import type { RootState } from '../../../shared/store';
-import { setSelectedKnowledgeBase } from '../../../shared/store/slices/knowledgeSelectionSlice';
+// KnowledgeSelector 内部已处理 Redux dispatch（多选模式）
 import KnowledgeSelector from '../../chat/KnowledgeSelector';
 import { getGlassmorphismToolbarStyles, getTransparentToolbarStyles } from '../../../shared/styles/toolbarStyles';
 
@@ -46,22 +46,13 @@ const KnowledgeButton: React.FC<KnowledgeButtonProps> = ({
   }, []);
 
   // 处理知识库选择
-  const dispatch = useDispatch();
-
   const handleKnowledgeSelect = useCallback((knowledgeBase: KnowledgeBaseSelection, searchResults?: unknown[]) => {
     console.log('选择了知识库:', knowledgeBase, '搜索结果:', searchResults);
-
-    // 通过 Redux 存储选中的知识库信息
-    dispatch(setSelectedKnowledgeBase({
-      id: knowledgeBase.id,
-      name: knowledgeBase.name
-    }));
-
+    // Redux dispatch 已由 KnowledgeSelector 内部处理（支持多选）
     console.log(`[知识库选择] 已选择知识库: ${knowledgeBase.name}，将在发送消息时自动搜索相关内容`);
-
     // 关闭知识库选择器
     setShowKnowledgeSelector(false);
-  }, [dispatch]);
+  }, []);
 
   // 根据 variant 渲染不同的按钮样式
   const renderButton = () => {

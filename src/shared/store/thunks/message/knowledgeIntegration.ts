@@ -7,6 +7,7 @@ import type { Message } from '../../../types/newMessage';
 import type { AppDispatch, RootState } from '../../index';
 import { getKnowledgeSelectionFromStore } from '../../../hooks/useKnowledgeContext';
 import { clearSelectedKnowledgeBase } from '../../slices/knowledgeSelectionSlice';
+import type { SelectedKnowledgeInfo } from '../../slices/knowledgeSelectionSlice';
 
 export const processKnowledgeSearch = async (
   assistantMessage: Message,
@@ -17,24 +18,26 @@ export const processKnowledgeSearch = async (
   try {
     console.log('[processKnowledgeSearch] 开始检查知识库选择状态...');
 
-    // 从 Redux store 获取知识库选择状态
-    const contextData = getKnowledgeSelectionFromStore(getState());
-    console.log('[processKnowledgeSearch] Redux状态数据:', contextData);
+    const state = getState();
+    // 优先使用多选列表，兼容旧的单选
+    const selectedKBs = state.knowledgeSelection.selectedKnowledgeBases;
+    const contextData = getKnowledgeSelectionFromStore(state);
 
-    if (!contextData) {
+    if (selectedKBs.length === 0 && !contextData) {
       console.log('[processKnowledgeSearch] 没有选中知识库，直接返回');
-      return; // 没有选中知识库，直接返回
+      return;
     }
 
-    if (!contextData.isSelected || !contextData.searchOnSend) {
-      console.log('[processKnowledgeSearch] 不需要搜索，直接返回', {
-        isSelected: contextData.isSelected,
-        searchOnSend: contextData.searchOnSend
-      });
-      return; // 不需要搜索，直接返回
+    // 确定要搜索的知识库列表
+    const knowledgeBasesToSearch: SelectedKnowledgeInfo[] = selectedKBs.length > 0
+      ? selectedKBs
+      : contextData ? [contextData.knowledgeBase] : [];
+
+    if (knowledgeBasesToSearch.length === 0) {
+      return;
     }
 
-    console.log('[processKnowledgeSearch] 检测到知识库选择，开始搜索...');
+    console.log(`[processKnowledgeSearch] 检测到 ${knowledgeBasesToSearch.length} 个知识库，开始并行搜索...`);
 
     // 设置消息状态为搜索中
     dispatch(newMessagesActions.updateMessage({
@@ -71,34 +74,65 @@ export const processKnowledgeSearch = async (
       return;
     }
 
-    // 搜索知识库 - 使用增强RAG
+    // 并行搜索所有选中的知识库
     const knowledgeService = MobileKnowledgeService.getInstance();
-    const searchResults = await knowledgeService.search({
-      knowledgeBaseId: contextData.knowledgeBase.id,
-      query: userContent.trim(),
-      threshold: 0.6,
-      limit: contextData.knowledgeBase.documentCount || 5, // 使用知识库配置的文档数量
-      useEnhancedRAG: true // 启用增强RAG搜索
+    const searchPromises = knowledgeBasesToSearch.map(async (kb) => {
+      try {
+        const results = await knowledgeService.search({
+          knowledgeBaseId: kb.id,
+          query: userContent.trim(),
+          threshold: 0.6,
+          limit: kb.documentCount || 5,
+          useEnhancedRAG: true
+        });
+        return { kb, results };
+      } catch (err) {
+        console.warn(`[processKnowledgeSearch] 知识库 "${kb.name}" 搜索失败:`, err);
+        return { kb, results: [] };
+      }
     });
 
-    console.log(`[processKnowledgeSearch] 搜索到 ${searchResults.length} 个相关内容`);
+    const allSearchResults = await Promise.all(searchPromises);
 
-    if (searchResults.length > 0) {
-      // 转换为KnowledgeReference格式
-      const references = searchResults.map((result, index) => ({
-        id: index + 1,
-        content: result.content,
-        type: 'file' as const,
-        similarity: result.similarity,
-        knowledgeBaseId: contextData.knowledgeBase.id,
-        knowledgeBaseName: contextData.knowledgeBase.name,
-        sourceUrl: `knowledge://${contextData.knowledgeBase.id}/${result.documentId || index}`
-      }));
+    // 合并所有结果并按相似度降序排列
+    let globalIndex = 1;
+    const allReferences: Array<{
+      id: number;
+      content: string;
+      type: 'file';
+      similarity: number;
+      knowledgeBaseId: string;
+      knowledgeBaseName: string;
+      sourceUrl: string;
+    }> = [];
 
-      // 缓存搜索结果（模拟的window.keyv）
+    for (const { kb, results } of allSearchResults) {
+      for (const result of results) {
+        allReferences.push({
+          id: globalIndex++,
+          content: result.content,
+          type: 'file' as const,
+          similarity: result.similarity,
+          knowledgeBaseId: kb.id,
+          knowledgeBaseName: kb.name,
+          sourceUrl: `knowledge://${kb.id}/${result.documentId || (globalIndex - 1)}`
+        });
+      }
+    }
+
+    // 按相似度降序排列
+    allReferences.sort((a, b) => b.similarity - a.similarity);
+
+    // 重新编号
+    allReferences.forEach((ref, i) => { ref.id = i + 1; });
+
+    const totalResults = allReferences.length;
+    console.log(`[processKnowledgeSearch] 并行搜索完成: ${knowledgeBasesToSearch.length} 个知识库, ${totalResults} 个结果`);
+
+    if (totalResults > 0) {
+      // 缓存搜索结果
       const cacheKey = `knowledge-search-${userMessage.id}`;
-      window.sessionStorage.setItem(cacheKey, JSON.stringify(references));
-
+      window.sessionStorage.setItem(cacheKey, JSON.stringify(allReferences));
       console.log(`[processKnowledgeSearch] 知识库搜索结果已缓存: ${cacheKey}`);
     }
 
@@ -107,8 +141,6 @@ export const processKnowledgeSearch = async (
 
   } catch (error) {
     console.error('[processKnowledgeSearch] 知识库搜索失败:', error);
-
-    // 清除知识库选择状态
     dispatch(clearSelectedKnowledgeBase());
   }
 };

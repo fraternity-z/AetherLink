@@ -7,6 +7,7 @@ import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import Markdown from '../Markdown';
 import { selectCitationsForMessage } from '../../../shared/store/selectors/messageBlockSelectors';
 import type { Citation } from '../../../shared/types/citation';
+import { withCitationTags } from '../../../shared/utils/citation';
 import { applyRegexRulesForDisplay } from '../../../shared/utils/regexUtils';
 
 // 稳定的空数组引用
@@ -46,10 +47,11 @@ const MainTextBlock: React.FC<Props> = ({ block, role, messageId }) => {
   });
   
   // 🏷️ 创建内容后处理函数（引用标记转换）
+  // 将 AI 回复中的 [1] [2] 标记转换为可点击的 <sup> 标签
   const postProcessContent = useCallback((rawContent: string): string => {
     if (citations.length === 0) return rawContent;
-    return rawContent; // 已在 Markdown 内处理 citations 时再决定是否转换
-  }, [citations.length]);
+    return withCitationTags(rawContent, citations);
+  }, [citations]);
 
   // 渲染内容
   const renderedContent = useMemo(() => {
