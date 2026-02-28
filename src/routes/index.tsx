@@ -15,6 +15,7 @@ const TopToolbarDIYSettings = lazy(() => import('../pages/Settings/TopToolbarDIY
 const DefaultModelSettings = lazy(() => import('../pages/Settings/DefaultModelSettings'));
 // 导入知识库页面
 const KnowledgeBaseDetail = lazy(() => import('../pages/KnowledgeBase/KnowledgeBaseDetail'));
+const KnowledgeEditPage = lazy(() => import('../pages/KnowledgeBase/KnowledgeEditPage'));
 const DocumentChunkView = lazy(() => import('../pages/KnowledgeBase/DocumentChunkView'));
 const KnowledgeSettings = lazy(() => import('../pages/Settings/KnowledgeSettings'));
 
@@ -209,6 +210,9 @@ const AppRouter: React.FC = () => {
         <Route path="/devtools" element={<DevToolsPage />} />
         {/* 翻译页面 */}
         <Route path="/translate" element={<TranslatePage />} />
+        {/* 知识库 - 新建/编辑页 */}
+        <Route path="/knowledge/create" element={<KnowledgeEditPage />} />
+        <Route path="/knowledge/:id/edit" element={<KnowledgeEditPage />} />
         {/* 知识库详情页 - 从设置页跳转 */}
         <Route path="/knowledge/:id" element={<KnowledgeBaseDetail />} />
         {/* 文档分块查看页（Level 4） */}

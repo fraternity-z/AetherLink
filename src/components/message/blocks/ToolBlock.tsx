@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Typography, Collapse, IconButton, useTheme, alpha, Divider } from '@mui/material';
-import { ChevronRight, Copy, Check, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Box, Typography, Collapse, IconButton, useTheme, alpha, Divider, Button, Chip } from '@mui/material';
+import { ChevronRight, Copy, Check, AlertCircle, Loader2, ShieldAlert } from 'lucide-react';
 import { keyframes, styled } from '@mui/material/styles';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,6 +9,11 @@ import '../markdown.css';
 import { MessageBlockStatus } from '../../../shared/types/newMessage';
 import type { ToolMessageBlock } from '../../../shared/types/newMessage';
 import { EventEmitter } from '../../../shared/services/infra/EventEmitter';
+import {
+  ToolConfirmationService,
+  CONFIRMATION_EVENTS
+} from '../../../shared/services/mcp/confirmation/ToolConfirmationService';
+import type { ToolConfirmationRequest } from '../../../shared/services/mcp/confirmation/types';
 // MessageWebSearchTool 已移除 - Web 搜索结果统一由 CitationBlock 渲染
 
 interface Props {
@@ -44,6 +49,57 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
                        block.status === MessageBlockStatus.PROCESSING;
   const isCompleted = block.status === MessageBlockStatus.SUCCESS;
   const hasError = block.status === MessageBlockStatus.ERROR;
+
+  // ─── 敏感操作确认状态 ───
+  const [confirmationRequest, setConfirmationRequest] = useState<ToolConfirmationRequest | null>(null);
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setConfirmationRequest(null);
+      return;
+    }
+
+    const handleRequired = (req: unknown) => {
+      const r = req as ToolConfirmationRequest;
+      if (r.toolName === (block.toolName || '')) {
+        setConfirmationRequest(r);
+      }
+    };
+
+    const handleExpired = (data: unknown) => {
+      const { requestId } = data as { requestId: string };
+      setConfirmationRequest(prev => (prev?.id === requestId ? null : prev));
+    };
+
+    EventEmitter.on(CONFIRMATION_EVENTS.REQUIRED, handleRequired);
+    EventEmitter.on(CONFIRMATION_EVENTS.EXPIRED, handleExpired);
+
+    return () => {
+      EventEmitter.off(CONFIRMATION_EVENTS.REQUIRED, handleRequired);
+      EventEmitter.off(CONFIRMATION_EVENTS.EXPIRED, handleExpired);
+    };
+  }, [isProcessing, block.toolName]);
+
+  // 有确认请求时自动展开
+  useEffect(() => {
+    if (confirmationRequest) {
+      setExpanded(true);
+    }
+  }, [confirmationRequest]);
+
+  const handleConfirmApprove = useCallback(() => {
+    if (confirmationRequest) {
+      ToolConfirmationService.getInstance().respond(confirmationRequest.id, true);
+      setConfirmationRequest(null);
+    }
+  }, [confirmationRequest]);
+
+  const handleConfirmReject = useCallback(() => {
+    if (confirmationRequest) {
+      ToolConfirmationService.getInstance().respond(confirmationRequest.id, false);
+      setConfirmationRequest(null);
+    }
+  }, [confirmationRequest]);
 
   const toggleExpanded = useCallback(() => setExpanded(prev => !prev), []);
 
@@ -241,7 +297,17 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
           >
             @{toolName}
           </Typography>
-          {isCompleted && !hasError && (
+          {confirmationRequest && (
+            <Chip
+              icon={<ShieldAlert size={12} />}
+              label="需要确认"
+              size="small"
+              color="warning"
+              variant="outlined"
+              sx={{ height: 20, fontSize: '0.7rem' }}
+            />
+          )}
+          {isCompleted && !hasError && !confirmationRequest && (
             <Typography variant="caption" sx={{ color: 'success.main' }}>✓</Typography>
           )}
         </Box>
@@ -273,8 +339,46 @@ const ToolBlock: React.FC<Props> = ({ block }) => {
 
           {params && (result || isProcessing) && <Divider sx={{ my: 1.5, borderStyle: 'dashed' }} />}
 
-          {/* 执行结果 */}
-          {isProcessing ? (
+          {/* 执行结果 / 确认区域 */}
+          {isProcessing && confirmationRequest ? (
+            <Box sx={{ py: 1 }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 1.5,
+                p: 1.5,
+                borderRadius: 1,
+                bgcolor: (t) => alpha(t.palette.warning.main, 0.08),
+                border: (t) => `1px solid ${alpha(t.palette.warning.main, 0.2)}`
+              }}>
+                <ShieldAlert size={16} color={theme.palette.warning.main} />
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {confirmationRequest.summary}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  onClick={handleConfirmReject}
+                  sx={{ textTransform: 'none', minWidth: 64 }}
+                >
+                  拒绝
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color={confirmationRequest.risk === 'high' ? 'error' : 'warning'}
+                  onClick={handleConfirmApprove}
+                  sx={{ textTransform: 'none', minWidth: 64 }}
+                >
+                  确认执行
+                </Button>
+              </Box>
+            </Box>
+          ) : isProcessing ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
               <Loader2 size={14} style={{ animation: `${spin} 1s linear infinite`, color: statusColor }} />
               <Typography variant="caption" color="text.secondary">执行中...</Typography>

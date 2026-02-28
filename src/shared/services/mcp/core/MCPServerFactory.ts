@@ -9,6 +9,7 @@ import { MetasoSearchServer } from '../servers/MetasoSearchServer';
 import { FileEditorServer } from '../servers/FileEditorServer';
 import { DexEditorServer } from '../servers/DexEditorServer';
 import { SearXNGServer } from '../servers/SearXNGServer';
+import { SettingsServer } from '../servers/settings/SettingsServer';
 
 /**
  * 创建内存 MCP 服务器
@@ -56,6 +57,10 @@ export function createInMemoryMCPServer(name: string, args: string[] = [], envs:
       const searxngBaseUrl = envs.SEARXNG_BASE_URL || 'http://154.37.208.52:39281';
       const searxngServer = new SearXNGServer(searxngBaseUrl);
       return searxngServer.server;
+    }
+
+    case '@aether/settings': {
+      return new SettingsServer().server;
     }
 
     default:

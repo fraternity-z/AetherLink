@@ -20,8 +20,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { KnowledgeSearch } from './KnowledgeSearch';
-import CreateKnowledgeDialog from './CreateKnowledgeDialog';
-import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 
 interface KnowledgeToolbarProps {
   currentKnowledgeBaseId?: string;
@@ -37,7 +35,6 @@ export const KnowledgeToolbar: React.FC<KnowledgeToolbarProps> = ({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [searchDrawerOpen, setSearchDrawerOpen] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const handleSearchClick = () => {
     if (onSearchClick) {
@@ -53,17 +50,6 @@ export const KnowledgeToolbar: React.FC<KnowledgeToolbarProps> = ({
     }
   };
 
-  const handleCreateKnowledgeBase = async (knowledgeBase: any) => {
-    try {
-      const createdKB = await MobileKnowledgeService.getInstance().createKnowledgeBase(knowledgeBase);
-      setCreateDialogOpen(false);
-      // 创建成功后导航到新知识库详情页
-      navigate(`/knowledge/${createdKB.id}`);
-    } catch (error) {
-      console.error('Failed to create knowledge base:', error);
-    }
-  };
-
   const handleListClick = () => {
     navigate('/knowledge');
   };
@@ -71,7 +57,7 @@ export const KnowledgeToolbar: React.FC<KnowledgeToolbarProps> = ({
   const actions = [
     { icon: <Search size={20} />, name: '搜索知识', action: handleSearchClick, disabled: !currentKnowledgeBaseId },
     { icon: <Upload size={20} />, name: '上传文件', action: handleUploadClick, disabled: !currentKnowledgeBaseId },
-    { icon: <Plus size={20} />, name: '新建知识库', action: () => setCreateDialogOpen(true) },
+    { icon: <Plus size={20} />, name: '新建知识库', action: () => navigate('/knowledge/create') },
     { icon: <BookOpen size={20} />, name: '知识库列表', action: handleListClick },
   ];
 
@@ -130,12 +116,6 @@ export const KnowledgeToolbar: React.FC<KnowledgeToolbarProps> = ({
         )}
       </Drawer>
 
-      {/* 创建知识库对话框 */}
-      <CreateKnowledgeDialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        onSave={handleCreateKnowledgeBase}
-      />
     </>
   );
 };

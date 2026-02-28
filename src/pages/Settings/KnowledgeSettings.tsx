@@ -47,10 +47,8 @@ import {
 } from 'lucide-react';
 import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
 import { dexieStorage } from '../../shared/services/storage/DexieStorageService';
-import type { KnowledgeBase } from '../../shared/types/KnowledgeBase';
 import { useNavigate } from 'react-router-dom';
 import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProvider';
-import CreateKnowledgeDialog from '../../components/KnowledgeManagement/CreateKnowledgeDialog';
 import { toastManager } from '../../components/EnhancedToast';
 import { SafeAreaContainer, HeaderBar } from '../../components/settings/SettingComponents';
 import Scrollbar from '../../components/Scrollbar';
@@ -156,7 +154,6 @@ const KnowledgeSettings: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState(0);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
@@ -221,21 +218,6 @@ const KnowledgeSettings: React.FC = () => {
 
   const handleBack = () => navigate('/settings');
   const handleViewDetails = (id: string) => navigate(`/knowledge/${id}`);
-
-  const handleSubmitKnowledgeBase = async (formData: Partial<KnowledgeBase>) => {
-    try {
-      setLoading(true);
-      await MobileKnowledgeService.getInstance().createKnowledgeBase(formData as any);
-      setCreateDialogOpen(false);
-      refreshKnowledgeBases();
-      toastManager.success('知识库创建成功！', '创建成功');
-    } catch (error) {
-      console.error('创建知识库失败:', error);
-      toastManager.error('创建失败，请重试', '创建失败');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -708,7 +690,7 @@ const KnowledgeSettings: React.FC = () => {
             variant="contained"
             size="small"
             startIcon={<Plus size={16} />}
-            onClick={() => setCreateDialogOpen(true)}
+            onClick={() => navigate('/knowledge/create')}
             sx={{
               borderRadius: 2,
               textTransform: 'none',
@@ -745,15 +727,6 @@ const KnowledgeSettings: React.FC = () => {
       </Scrollbar>
 
       {/* ==================== Dialogs ==================== */}
-
-      <BackButtonDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)}>
-        <CreateKnowledgeDialog
-          open={true}
-          onClose={() => setCreateDialogOpen(false)}
-          onSave={handleSubmitKnowledgeBase}
-          isEditing={false}
-        />
-      </BackButtonDialog>
 
       <BackButtonDialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)}>
         <DialogTitle>导入知识库数据</DialogTitle>

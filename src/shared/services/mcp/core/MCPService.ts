@@ -9,6 +9,7 @@ import { AiSdkMCPClient } from '../clients/AiSdkMCPClient';
 import { StdioMCPClient } from '../clients/StdioMCPClient';
 import { isMemoryTool } from '../../memory/memoryTools';
 import { handleMemoryToolCall } from '../../memory/memoryToolHandler';
+import { ToolConfirmationService } from '../confirmation/ToolConfirmationService';
 import { Capacitor } from '@capacitor/core';
 import { 
   MCPCorsError, 
@@ -715,6 +716,22 @@ export class MCPService {
         content: [{ type: 'text', text: result.message }],
         isError: !result.success
       };
+    }
+
+    // 敏感操作确认拦截
+    const confirmService = ToolConfirmationService.getInstance();
+    if (confirmService.needsConfirmation(toolName)) {
+      const approved = await confirmService.requestConfirmation(
+        server.name,
+        toolName,
+        args
+      );
+      if (!approved) {
+        return {
+          content: [{ type: 'text', text: '用户已拒绝此操作。' }],
+          isError: true
+        };
+      }
     }
 
     const maxRetries = 3;

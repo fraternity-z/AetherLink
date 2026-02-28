@@ -6,8 +6,10 @@ import {
   CircularProgress,
   Chip,
   alpha,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { FileText, Search, Database, Layers, Scissors, Blend, SlidersHorizontal, LayoutList } from 'lucide-react';
+import { FileText, Search, Database, Layers, Scissors, Blend, SlidersHorizontal, LayoutList, Pencil } from 'lucide-react';
 import DocumentManager from '../../components/KnowledgeManagement/DocumentManager';
 import { KnowledgeSearch } from '../../components/KnowledgeManagement/KnowledgeSearch';
 import { useKnowledge } from '../../components/KnowledgeManagement/KnowledgeProvider';
@@ -112,6 +114,19 @@ const KnowledgeBaseDetail: React.FC = () => {
       <HeaderBar
         title={selectedKnowledgeBase?.name || '知识库详情'}
         onBackPress={handleGoBack}
+        rightButton={
+          selectedKnowledgeBase ? (
+            <Tooltip title="编辑知识库">
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/knowledge/${id}/edit`)}
+                sx={{ color: 'primary.main' }}
+              >
+                <Pencil size={18} />
+              </IconButton>
+            </Tooltip>
+          ) : undefined
+        }
       />
 
       {/* 主内容区 */}

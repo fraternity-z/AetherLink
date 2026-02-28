@@ -105,6 +105,16 @@ export const BUILTIN_MCP_SERVERS: MCPServer[] = [
     env: {
       SEARXNG_BASE_URL: 'http://154.37.208.52:39281'
     }
+  },
+  {
+    id: 'builtin-settings',
+    name: '@aether/settings',
+    type: 'inMemory',
+    description: '智能设置助手，让 AI 管理知识库（创建、编辑、删除、搜索）和应用设置。支持自然语言操作，危险操作需用户确认。',
+    isActive: false,
+    provider: 'AetherAI',
+    logoUrl: '',
+    tags: ['设置', '知识库', '管理', 'AI', '工具']
   }
 ];
 
