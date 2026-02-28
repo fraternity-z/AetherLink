@@ -22,6 +22,7 @@ import type { DebateConfig } from '../../../shared/services/ai/AIDebateService';
 import { createSelector } from 'reselect';
 import { contextCondenseService } from '../../../shared/services/ai/ContextCondenseService';
 import { Z_INDEX } from '../../../shared/constants/zIndex';
+import { useAppSettingsStore } from '../../../shared/hooks/useAppSettingsStore';
 
 
 
@@ -51,20 +52,6 @@ const ANIMATION_CONFIG = {
 const BUTTON_ANIMATION_CONFIG = {
   duration: 0.1
 } as const;
-
-// 从 localStorage 读取侧边栏宽度
-const getStoredSidebarWidth = (): number => {
-  try {
-    const appSettings = localStorage.getItem('appSettings');
-    if (appSettings) {
-      const settings = JSON.parse(appSettings);
-      return settings.sidebarWidth || DEFAULT_DRAWER_WIDTH;
-    }
-  } catch (e) {
-    console.error('读取侧边栏宽度失败:', e);
-  }
-  return DEFAULT_DRAWER_WIDTH;
-};
 
 // 动态计算布局配置
 const getLayoutConfigs = (drawerWidth: number) => ({
@@ -237,21 +224,10 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
   }, [setDrawerOpen]);
 
   // 本地状态
-  // 侧边栏宽度状态 - 动态读取并监听变化
-  const [sidebarWidth, setSidebarWidth] = useState(getStoredSidebarWidth);
-  
-  // 监听侧边栏宽度变化
-  useEffect(() => {
-    const handleSettingsChange = (e: CustomEvent) => {
-      if (e.detail?.settingId === 'sidebarWidth') {
-        setSidebarWidth(e.detail.value);
-      }
-    };
-    window.addEventListener('appSettingsChanged', handleSettingsChange as EventListener);
-    return () => {
-      window.removeEventListener('appSettingsChanged', handleSettingsChange as EventListener);
-    };
-  }, []);
+  const sidebarWidth = useAppSettingsStore(
+    settings => settings.sidebarWidth || DEFAULT_DRAWER_WIDTH
+  );
+  const [messageListContainerEl, setMessageListContainerEl] = useState<HTMLElement | null>(null);
 
   // 动态计算布局配置
   const LAYOUT_CONFIGS = useMemo(() => getLayoutConfigs(sidebarWidth), [sidebarWidth]);
@@ -968,12 +944,17 @@ const ChatPageUIComponent: React.FC<ChatPageUIProps> = ({
                     onDelete={handleDeleteMessage}
                     onSwitchVersion={handleSwitchMessageVersion}
                     onResend={handleResendMessage}
+                    onContainerReady={setMessageListContainerEl}
                   />
                 </ErrorBoundary>
               </Box>
 
               {/* 对话导航组件 */}
-              <ChatNavigation containerId="messageList" topicId={currentTopic?.id} />
+              <ChatNavigation
+                containerId="messageList"
+                containerEl={messageListContainerEl}
+                topicId={currentTopic?.id}
+              />
 
               {/* 输入框容器，固定在底部 */}
               <ErrorBoundary>

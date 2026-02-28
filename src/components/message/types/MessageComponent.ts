@@ -5,6 +5,7 @@ export interface MessageItemProps {
   message: Message;
   showAvatar?: boolean;
   isCompact?: boolean;
+  blockLoadMode?: 'auto' | 'prefetched';
   messageIndex?: number;
   onRegenerate?: (messageId: string) => void;
   onDelete?: (messageId: string) => void;

@@ -29,6 +29,8 @@ interface MultiModelMessageGroupProps {
   userMessage: Message;
   /** 助手消息数组（共享同一个 askId） */
   assistantMessages: Message[];
+  /** 消息块加载模式 */
+  blockLoadMode?: 'auto' | 'prefetched';
   /** 强制更新函数 */
   forceUpdate?: () => void;
   /** 重新生成回调 */
@@ -44,6 +46,7 @@ interface MultiModelMessageGroupProps {
 const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
   userMessage,
   assistantMessages,
+  blockLoadMode = 'auto',
   forceUpdate,
   onRegenerate,
   onDelete,
@@ -307,6 +310,7 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
       >
         <MessageItem
           message={message}
+          blockLoadMode={blockLoadMode}
           forceUpdate={forceUpdate}
           onRegenerate={onRegenerate}
           onDelete={onDelete}
@@ -324,6 +328,7 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
       {/* 用户消息 */}
       <MessageItem
         message={userMessage}
+        blockLoadMode={blockLoadMode}
         forceUpdate={forceUpdate}
         onRegenerate={onRegenerate}
         onDelete={onDelete}
@@ -362,6 +367,7 @@ const MultiModelMessageGroup: React.FC<MultiModelMessageGroupProps> = ({
         {popoverMessage && (
           <MessageItem
             message={popoverMessage}
+            blockLoadMode={blockLoadMode}
             forceUpdate={forceUpdate}
             onRegenerate={onRegenerate}
             onDelete={onDelete}

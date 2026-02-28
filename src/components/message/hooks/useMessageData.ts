@@ -5,15 +5,17 @@ import { useTheme } from '@mui/material';
 import type { RootState } from '../../../shared/store';
 import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
 import type { Message, MessageBlock } from '../../../shared/types/newMessage';
-import { getMessageDividerSetting } from '../../../shared/utils/settingsUtils';
 import { getUserAvatar, getAssistantAvatar, getModelAvatar } from '../../../shared/utils/avatarUtils';
+import { useAppSettingsStore } from '../../../shared/hooks/useAppSettingsStore';
 
 export const useMessageData = (message: Message) => {
   const theme = useTheme();
   const [modelAvatar, setModelAvatar] = useState<string | null>(null);
   const [assistantAvatar, setAssistantAvatar] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const [showMessageDivider, setShowMessageDivider] = useState<boolean>(true);
+  const showMessageDivider = useAppSettingsStore(
+    settings => settings.showMessageDivider !== undefined ? settings.showMessageDivider : true
+  );
 
   // 创建一个稳定的空数组引用
   const EMPTY_BLOCKS_ARRAY = useMemo(() => [], []);
@@ -97,40 +99,6 @@ export const useMessageData = (message: Message) => {
 
   // 使用记忆化的 selector
   const blocks = useSelector(selectMessageBlocks);
-
-  // 获取消息分割线设置
-  useEffect(() => {
-    const fetchMessageDividerSetting = () => {
-      try {
-        const dividerSetting = getMessageDividerSetting();
-        setShowMessageDivider(dividerSetting);
-      } catch (error) {
-        console.error('获取消息分割线设置失败:', error);
-      }
-    };
-
-    fetchMessageDividerSetting();
-
-    // 监听 localStorage 变化，实时更新设置
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'appSettings') {
-        fetchMessageDividerSetting();
-      }
-    };
-
-    // 使用自定义事件监听设置变化（用于同一页面内的变化）
-    const handleCustomSettingChange = () => {
-      fetchMessageDividerSetting();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('settingsChanged', handleCustomSettingChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('settingsChanged', handleCustomSettingChange);
-    };
-  }, []);
 
   // 初始化头像 - 使用统一的头像工具函数
   useEffect(() => {

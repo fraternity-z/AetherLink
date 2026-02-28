@@ -34,6 +34,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({
   message,
   showAvatar = true,
   isCompact = false,
+  blockLoadMode = 'auto',
   messageIndex,
   onRegenerate,
   onDelete,
@@ -43,7 +44,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({
 }) => {
   // 使用自定义hooks获取消息数据
   const messageData = useMessageData(message);
-  const { loading } = useMessageBlocks(message, messageData.blocks, forceUpdate);
+  const { loading } = useMessageBlocks(message, messageData.blocks, forceUpdate, blockLoadMode);
 
   // 🚀 使用useMemo缓存styleProps
   // 依赖项与 memo 比较函数保持一致，只依赖会触发重渲染的属性
@@ -117,6 +118,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({
     areArraysEqual(prevProps.message.blocks, nextProps.message.blocks) &&
     prevProps.showAvatar === nextProps.showAvatar &&
     prevProps.isCompact === nextProps.isCompact &&
+    prevProps.blockLoadMode === nextProps.blockLoadMode &&
     prevProps.messageIndex === nextProps.messageIndex &&
     prevProps.forceUpdate === nextProps.forceUpdate &&
     // ✅ 比较回调函数引用（假设父组件使用了 useCallback）

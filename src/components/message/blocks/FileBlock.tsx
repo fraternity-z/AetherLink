@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { Box, Typography, IconButton, Chip, useTheme, useMediaQuery } from '@mui/material';
 import {
   File as FileIcon,
@@ -11,9 +11,18 @@ import {
 } from 'lucide-react';
 import type { FileMessageBlock } from '../../../shared/types/newMessage';
 import { FileTypes } from '../../../shared/utils/fileUtils';
-import { MobileFileViewer, DesktopFileViewer } from '../../MobileFileViewer';
 import { isEditableFile as checkIsEditableFile } from '../../MobileFileViewer/utils';
 import type { WorkspaceFile } from '../../MobileFileViewer/types';
+
+const LazyMobileFileViewer = lazy(async () => {
+  const module = await import('../../MobileFileViewer');
+  return { default: module.MobileFileViewer };
+});
+
+const LazyDesktopFileViewer = lazy(async () => {
+  const module = await import('../../MobileFileViewer');
+  return { default: module.DesktopFileViewer };
+});
 
 interface Props {
   block: FileMessageBlock;
@@ -305,27 +314,31 @@ const FileBlock: React.FC<Props> = ({ block }) => {
       </Box>
     </Box>
 
-    {/* 文件查看器 - 根据设备类型选择 */}
-    {isMobile ? (
-      <MobileFileViewer
-        open={viewerOpen}
-        file={workspaceFile}
-        onClose={handleCloseViewer}
-        onSave={handleSaveFile}
-        customFileReader={createFileReaderService(block)}
-      />
-    ) : (
-      <DesktopFileViewer
-        open={viewerOpen}
-        file={workspaceFile}
-        onClose={handleCloseViewer}
-        onSave={handleSaveFile}
-        customFileReader={createFileReaderService(block)}
-        width="95vw"
-        height="90vh"
-        maxWidth="95vw"
-        maxHeight="90vh"
-      />
+    {/* 文件查看器 - 按需懒加载，仅在打开时加载重型编辑器依赖 */}
+    {viewerOpen && workspaceFile && (
+      <Suspense fallback={null}>
+        {isMobile ? (
+          <LazyMobileFileViewer
+            open={viewerOpen}
+            file={workspaceFile}
+            onClose={handleCloseViewer}
+            onSave={handleSaveFile}
+            customFileReader={createFileReaderService(block)}
+          />
+        ) : (
+          <LazyDesktopFileViewer
+            open={viewerOpen}
+            file={workspaceFile}
+            onClose={handleCloseViewer}
+            onSave={handleSaveFile}
+            customFileReader={createFileReaderService(block)}
+            width="95vw"
+            height="90vh"
+            maxWidth="95vw"
+            maxHeight="90vh"
+          />
+        )}
+      </Suspense>
     )}
   </>
   );

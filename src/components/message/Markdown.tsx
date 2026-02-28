@@ -16,7 +16,7 @@ import { isEmpty, omit } from 'lodash';
 import type { MainTextMessageBlock, TranslationMessageBlock, ThinkingMessageBlock } from '../../shared/types/newMessage';
 import { processLatexBrackets, removeSvgEmptyLines } from '../../utils/formats';
 import { getCodeBlockId, removeTrailingDoubleSpaces } from '../../utils/markdown';
-import { getAppSettings } from '../../shared/utils/settingsUtils';
+import { useAppSettingsStore } from '../../shared/hooks/useAppSettingsStore';
 import remarkDisableConstructs from '../../utils/remarkDisableConstructs';
 import MarkdownCodeBlock from './blocks/MarkdownCodeBlock';
 import AdvancedImagePreview from './blocks/AdvancedImagePreview';
@@ -40,42 +40,10 @@ interface Props {
 }
 
 const Markdown: React.FC<Props> = ({ block, content, allowHtml = false, messageRole, isStreaming = false, postProcess }) => {
-  // 从用户设置获取数学引擎配置
-  // 使用 useState 和 useEffect 来监听设置变化
-  const [mathEngine, setMathEngine] = React.useState<string>('KaTeX');
-  const [mathEnableSingleDollar, setMathEnableSingleDollar] = React.useState<boolean>(true);
-
-  React.useEffect(() => {
-    const updateMathSettings = () => {
-      const settings = getAppSettings();
-      setMathEngine(settings.mathRenderer || 'KaTeX');
-      setMathEnableSingleDollar(settings.mathEnableSingleDollar !== undefined ? settings.mathEnableSingleDollar : true);
-    };
-
-    // 初始加载
-    updateMathSettings();
-
-    // 监听 localStorage 变化
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'appSettings') {
-        updateMathSettings();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // 监听自定义事件（同一页面内的设置变化）
-    const handleSettingsChange = () => {
-      updateMathSettings();
-    };
-
-    window.addEventListener('appSettingsChanged', handleSettingsChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('appSettingsChanged', handleSettingsChange);
-    };
-  }, []);
+  const mathEngine = useAppSettingsStore(settings => settings.mathRenderer || 'KaTeX');
+  const mathEnableSingleDollar = useAppSettingsStore(
+    settings => settings.mathEnableSingleDollar !== undefined ? settings.mathEnableSingleDollar : true
+  );
 
   const remarkPlugins = useMemo((): PluggableList => {
     const plugins: PluggableList = [
