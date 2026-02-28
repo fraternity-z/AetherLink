@@ -1,6 +1,9 @@
 import type { SettingsRootState } from './settingsTypes';
 import { saveSettings } from './settingsThunks';
 
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+const SAVE_DEBOUNCE_MS = 300;
+
 export const saveSettingsToStorage = (state: SettingsRootState) => (
   async (dispatch: any) => {
     try {
@@ -18,7 +21,13 @@ export const settingsMiddleware = (store: any) => (next: any) => (action: any) =
   if (actionType.startsWith('settings/') &&
       !actionType.includes('load') &&
       !actionType.includes('save')) {
-    store.dispatch(saveSettings(store.getState().settings));
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    saveTimeout = setTimeout(() => {
+      store.dispatch(saveSettings(store.getState().settings));
+      saveTimeout = null;
+    }, SAVE_DEBOUNCE_MS);
   }
 
   return result;

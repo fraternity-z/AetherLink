@@ -22,7 +22,8 @@ const ensureModelComboProvider = (providers: ModelProvider[]): ModelProvider[] =
 
 const normalizeSettings = (savedSettings: SettingsState): SettingsState => {
   const initialProviders = getDefaultModelProviders();
-  const providers = ensureModelComboProvider(savedSettings.providers || initialProviders);
+  const hasSavedProviders = Array.isArray(savedSettings.providers) && savedSettings.providers.length > 0;
+  const providers = ensureModelComboProvider(hasSavedProviders ? savedSettings.providers : initialProviders);
 
   if (!savedSettings.currentModelId) {
     savedSettings.currentModelId = savedSettings.defaultModelId || getDefaultModelId(providers);

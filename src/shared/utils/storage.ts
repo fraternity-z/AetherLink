@@ -94,6 +94,7 @@ export async function setStorageItem<T>(key: string, value: T): Promise<boolean>
 export async function removeStorageItem(key: string): Promise<void> {
   try {
     await dexieStorage.deleteSetting(key);
+    emitStorageItemChanged(key);
   } catch (error) {
     console.error(`Error removing item "${key}" from database:`, error);
   }
@@ -105,8 +106,12 @@ export async function removeStorageItem(key: string): Promise<void> {
  */
 export async function clearStorage(): Promise<void> {
   try {
+    const keysBeforeClear = await getAllStorageKeys();
     // 使用Dexie提供的clear方法清空设置表
     await dexieStorage.settings.clear();
+    keysBeforeClear.forEach(key => {
+      emitStorageItemChanged(key);
+    });
     console.log('Settings store has been cleared.');
   } catch (error) {
     console.error('Error clearing settings store:', error);
