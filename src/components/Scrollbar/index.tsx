@@ -108,6 +108,7 @@ interface ScrollBarContainerProps {
 const ScrollBarContainer = styled.div<ScrollBarContainerProps>`
   overflow-y: auto;
   overflow-x: ${(props) => (props.$horizontal ? 'auto' : 'hidden')};
+  scrollbar-gutter: stable;
 
   &::-webkit-scrollbar {
     width: ${(props) => props.$scrollbarWidth || SCROLLBAR_DEFAULTS.width};
