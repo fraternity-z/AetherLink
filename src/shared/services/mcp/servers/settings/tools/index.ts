@@ -11,16 +11,16 @@ import type { SettingsTool, ToolModule } from '../types';
 
 // ─── 导入工具模块 ───
 import { knowledgeModule } from './knowledge.tools';
+import { providersModule } from './providers.tools';
 // 后续扩展示例：
 // import { appearanceModule } from './appearance.tools';
-// import { providersModule } from './providers.tools';
 // import { navigationModule } from './navigation.tools';
 
 /** 所有已注册的工具模块 */
 const MODULES: ToolModule[] = [
   knowledgeModule,
+  providersModule,
   // appearanceModule,
-  // providersModule,
   // navigationModule,
 ];
 

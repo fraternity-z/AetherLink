@@ -58,7 +58,7 @@ const PERMISSION_CONFIG: Record<string, { color: string; label: string; labelEn:
 /** 从工具名推断权限级别（回退用，正常情况服务端会提供） */
 function inferPermission(toolName: string): string {
   if (toolName.startsWith('delete_') || toolName.startsWith('create_') || toolName.startsWith('add_')) return 'confirm';
-  if (toolName.startsWith('update_')) return 'write';
+  if (toolName.startsWith('update_') || toolName.startsWith('set_') || toolName.startsWith('toggle_')) return 'write';
   if (toolName.startsWith('list_') || toolName.startsWith('get_') || toolName.startsWith('search_')) return 'read';
   return 'read';
 }
