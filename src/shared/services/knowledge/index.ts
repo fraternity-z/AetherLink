@@ -16,5 +16,8 @@ export { MobileEmbeddingService, getModelDimensions } from './MobileEmbeddingSer
 export { KnowledgeContextService } from './KnowledgeContextService';
 export type { KnowledgeReference } from './KnowledgeContextService';
 
+// 任务队列服务
+export { KnowledgeTaskQueue } from './KnowledgeTaskQueue';
+
 // 默认导出主要服务
 export default MobileKnowledgeService;

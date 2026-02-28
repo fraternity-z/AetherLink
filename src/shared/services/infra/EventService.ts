@@ -30,6 +30,14 @@ export const EVENT_NAMES = {
   KNOWLEDGE_DOCUMENTS_ADDED: 'knowledge_documents:added',
   KNOWLEDGE_DOCUMENT_DELETED: 'knowledge_document:deleted',
   KNOWLEDGE_SEARCH_COMPLETED: 'knowledge_search:completed',
+
+  // 知识库任务队列事件
+  KNOWLEDGE_TASK_QUEUED: 'knowledge_task:queued',
+  KNOWLEDGE_TASK_STARTED: 'knowledge_task:started',
+  KNOWLEDGE_TASK_PROGRESS: 'knowledge_task:progress',
+  KNOWLEDGE_TASK_COMPLETED: 'knowledge_task:completed',
+  KNOWLEDGE_TASK_FAILED: 'knowledge_task:failed',
+  KNOWLEDGE_QUEUE_DRAINED: 'knowledge_queue:drained',
 } as const;
 
 // 提供一个更简洁的事件服务使用方式

@@ -73,3 +73,61 @@ export interface VectorSearchOptions {
   includeMetadata?: boolean;
   filter?: (doc: KnowledgeDocument) => boolean;
 }
+
+// ============ 任务队列相关类型 ============
+
+// 任务类型
+export type TaskType = 'file' | 'url' | 'note' | 'refresh';
+
+// 任务状态机: pending → processing → done | failed | cancelled
+export type TaskState = 'pending' | 'processing' | 'done' | 'failed' | 'cancelled';
+
+// 任务处理阶段
+export type TaskStage = 'reading' | 'parsing' | 'chunking' | 'embedding' | 'saving';
+
+// 任务项
+export interface TaskItem {
+  id: string;
+  type: TaskType;
+  state: TaskState;
+
+  // 任务上下文
+  knowledgeBaseId: string;
+  fileName: string;
+  content: string;
+  arrayBuffer?: ArrayBuffer;
+  fileSize: number;
+
+  // 进度跟踪
+  progress: number;          // 0-100
+  stage?: TaskStage;
+  error?: string;
+
+  // 重试
+  retryCount: number;
+  maxRetries: number;
+
+  // 时间戳
+  createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
+}
+
+// 队列配置
+export interface QueueConfig {
+  maxConcurrent: number;     // 最大并发数
+  maxWorkload: number;       // 最大工作负载 (bytes)
+  maxRetries: number;        // 最大重试次数
+  retryDelay: number;        // 重试延迟 (ms)
+}
+
+// 队列状态快照
+export interface QueueStatus {
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  totalWorkload: number;
+  maxWorkload: number;
+  isAtCapacity: boolean;
+}

@@ -292,10 +292,22 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
 
       const files: FileInfo[] = result.files.map(file => {
         let content: string | undefined;
+        let arrayBuffer: ArrayBuffer | undefined;
         if (file.data) {
           if (isBinaryFile(file.name)) {
             // 二进制文件保留 base64 原始数据
             content = file.data;
+            // 同时转换为 ArrayBuffer 供 TaskQueue 使用
+            try {
+              const binaryStr = atob(file.data);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+              }
+              arrayBuffer = bytes.buffer;
+            } catch (e) {
+              console.warn('Capacitor: base64 转 ArrayBuffer 失败:', e);
+            }
           } else {
             // 文本文件：正确解码 base64 为 UTF-8
             content = base64ToUtf8(file.data);
@@ -306,6 +318,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
           size: file.size,
           type: file.mimeType || getFileType(file.name),
           content,
+          arrayBuffer,
           path: file.path,
         };
       });
@@ -323,7 +336,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
     }
   }, [accept, multiple, onFilesSelected]);
 
-  // Tauri 原生文件选择
+  // Tauri 原生文件选择（支持文本和二进制文件）
   const handleTauriFilePick = async () => {
     const openDialog = await loadTauriDialog();
     const fs = await loadTauriFs();
@@ -333,7 +346,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
       const selected = await openDialog({
         multiple,
         filters: [{
-          name: '文本文件',
+          name: '支持的文件',
           extensions: accept.split(',').map(ext => ext.trim().replace('.', '')),
         }],
       });
@@ -345,17 +358,39 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
 
       for (const filePath of paths) {
         try {
-          const content = await fs.readTextFile(filePath);
           const fileName = filePath.split(/[/\\]/).pop() || filePath;
           const stat = await fs.stat(filePath);
 
-          files.push({
-            name: fileName,
-            size: stat.size,
-            type: getFileType(fileName),
-            content,
-            path: filePath,
-          });
+          if (isBinaryFile(fileName)) {
+            // 二进制文件：读取为 Uint8Array → ArrayBuffer
+            const bytes = await fs.readFile(filePath);
+            const arrayBuffer = bytes.buffer.slice(
+              bytes.byteOffset,
+              bytes.byteOffset + bytes.byteLength
+            );
+            // 同时生成 base64 用于兼容
+            const base64 = btoa(
+              Array.from(bytes).map(b => String.fromCharCode(b)).join('')
+            );
+            files.push({
+              name: fileName,
+              size: stat.size,
+              type: getFileType(fileName),
+              content: base64,
+              arrayBuffer,
+              path: filePath,
+            });
+          } else {
+            // 文本文件：直接读取
+            const content = await fs.readTextFile(filePath);
+            files.push({
+              name: fileName,
+              size: stat.size,
+              type: getFileType(fileName),
+              content,
+              path: filePath,
+            });
+          }
         } catch (err) {
           console.error(`读取文件失败: ${filePath}`, err);
         }
@@ -472,7 +507,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
           </Typography>
           
           <Typography variant="caption" color="textSecondary">
-            支持 TXT, MD, CSV, JSON, HTML, XML 格式
+            支持 TXT, MD, CSV, JSON, PDF, DOCX, XLSX, PPTX 等格式
           </Typography>
 
           {!isMobileNative && (

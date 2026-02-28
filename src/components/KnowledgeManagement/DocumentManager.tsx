@@ -1,6 +1,7 @@
 /**
- * 文档管理器组件 v2.1
- * 支持拖拽上传、处理状态追踪、刷新/重试功能、虚拟列表
+ * 文档管理器组件 v3.0
+ * 支持拖拽上传、并发任务队列、处理状态追踪、刷新/重试功能、虚拟列表
+ * 基于 KnowledgeTaskQueue 实现工作负载感知的并发调度
  * 兼容 Capacitor 移动端和 Tauri 桌面端
  */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -45,8 +46,8 @@ import {
 } from 'lucide-react';
 
 import { MobileKnowledgeService } from '../../shared/services/knowledge/MobileKnowledgeService';
-import { fileParserService } from '../../shared/services/knowledge/FileParserService';
-import type { KnowledgeDocument, ProcessingStatus } from '../../shared/types/KnowledgeBase';
+import { KnowledgeTaskQueue } from '../../shared/services/knowledge/KnowledgeTaskQueue';
+import type { KnowledgeDocument, ProcessingStatus, TaskItem } from '../../shared/types/KnowledgeBase';
 import FileDropZone, { type FileInfo } from './FileDropZone';
 import ProcessingStatusIcon from './ProcessingStatusIcon';
 import { v4 as uuidv4 } from 'uuid';
@@ -107,9 +108,9 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
   } | null>(null);
   const navigate = useNavigate();
 
-  const abortControllerRef = useRef<AbortController | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const knowledgeService = MobileKnowledgeService.getInstance();
+  const taskQueue = useRef(KnowledgeTaskQueue.getInstance()).current;
 
   // 格式化文件大小
   const formatFileSize = useCallback((bytes: number): string => {
@@ -156,13 +157,6 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
     }
   }, []);
 
-  // 检查是否为二进制文件
-  const isBinaryFile = useCallback((fileName: string): boolean => {
-    const ext = '.' + (fileName.split('.').pop()?.toLowerCase() || '');
-    const binaryExts = ['.pdf', '.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt', '.epub', '.rtf', '.odt'];
-    return binaryExts.includes(ext);
-  }, []);
-
   // 加载文档列表
   const loadDocuments = useCallback(async () => {
     try {
@@ -183,11 +177,10 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
     }
 
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      // 组件卸载时取消所有进行中的任务
+      taskQueue.cancelAll();
     };
-  }, [knowledgeBaseId, loadDocuments]);
+  }, [knowledgeBaseId, loadDocuments, taskQueue]);
 
   // 更新文档项状态
   const updateDocumentItemStatus = useCallback((
@@ -199,118 +192,68 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
     ));
   }, []);
 
-  // 处理单个文档（带细化进度，支持二进制文件解析）
-  const processDocument = useCallback(async (item: DocumentItemState & { arrayBuffer?: ArrayBuffer }) => {
-    updateDocumentItemStatus(item.id, { status: 'processing', progress: 0 });
-
-    try {
-      let contentToProcess = item.fileContent;
-
-      // 阶段1: 读取文件 (0-10%)
+  // ============ 任务队列事件监听 ============
+  useEffect(() => {
+    const offStarted = taskQueue.on('task:started', (task: TaskItem) => {
+      updateDocumentItemStatus(task.id, { status: 'processing', progress: 0 });
       setProgress(prev => ({
         ...prev,
-        currentFileProgress: 5,
+        currentFileName: task.fileName,
+        currentFileProgress: 0,
         currentStage: 'reading',
       }));
-      updateDocumentItemStatus(item.id, { progress: 5 });
-      await new Promise(resolve => setTimeout(resolve, 50));
-      updateDocumentItemStatus(item.id, { progress: 10 });
-      setProgress(prev => ({ ...prev, currentFileProgress: 10 }));
+    });
 
-      // 阶段2: 解析内容 (10-30%) - 仅二进制文件需要
-      if (isBinaryFile(item.fileName)) {
-        setProgress(prev => ({
-          ...prev,
-          currentFileProgress: 15,
-          currentStage: 'parsing',
-        }));
-        updateDocumentItemStatus(item.id, { progress: 15 });
-
-        try {
-          // 使用 FileParserService 解析二进制文件
-          const arrayBuffer = item.arrayBuffer || 
-            (item.fileContent ? Uint8Array.from(atob(item.fileContent), c => c.charCodeAt(0)).buffer : null);
-          
-          if (arrayBuffer) {
-            const parsed = await fileParserService.parseFile(
-              arrayBuffer,
-              item.fileName
-            );
-            contentToProcess = parsed.content;
-          }
-        } catch (parseErr) {
-          console.warn('文件解析失败，使用原始内容:', parseErr);
-          // 解析失败时使用提示信息
-          contentToProcess = `[${item.fileName}]\n\n此文件格式需要额外依赖才能解析。\n\n${parseErr instanceof Error ? parseErr.message : '解析失败'}`;
-        }
-
-        updateDocumentItemStatus(item.id, { progress: 30 });
-        setProgress(prev => ({ ...prev, currentFileProgress: 30 }));
-      } else {
-        updateDocumentItemStatus(item.id, { progress: 30 });
-        setProgress(prev => ({ ...prev, currentFileProgress: 30 }));
-      }
-
-      // 阶段3: 分块处理 (30-50%)
+    const offProgress = taskQueue.on('task:progress', (task: TaskItem) => {
+      updateDocumentItemStatus(task.id, { progress: task.progress });
       setProgress(prev => ({
         ...prev,
-        currentFileProgress: 40,
-        currentStage: 'chunking',
+        currentFileName: task.fileName,
+        currentFileProgress: task.progress,
+        currentStage: task.stage,
       }));
-      updateDocumentItemStatus(item.id, { progress: 40 });
-      await new Promise(resolve => setTimeout(resolve, 50));
-      updateDocumentItemStatus(item.id, { progress: 50 });
-      setProgress(prev => ({ ...prev, currentFileProgress: 50 }));
+    });
 
-      // 阶段4: 向量化 (50-85%)
+    const offCompleted = taskQueue.on('task:completed', (task: TaskItem) => {
+      updateDocumentItemStatus(task.id, { status: 'completed', progress: 100 });
       setProgress(prev => ({
         ...prev,
-        currentFileProgress: 60,
-        currentStage: 'embedding',
+        current: prev.current + 1,
+        currentFileProgress: 100,
       }));
-      updateDocumentItemStatus(item.id, { progress: 60 });
+    });
 
-      // 添加到知识库
-      await knowledgeService.addDocument({
-        knowledgeBaseId,
-        content: contentToProcess,
-        metadata: {
-          source: item.fileName,
-          fileName: item.fileName,
-        }
-      });
-
-      updateDocumentItemStatus(item.id, { progress: 85 });
-      setProgress(prev => ({ ...prev, currentFileProgress: 85 }));
-
-      // 阶段5: 保存 (85-100%)
-      setProgress(prev => ({
-        ...prev,
-        currentFileProgress: 95,
-        currentStage: 'saving',
-      }));
-      updateDocumentItemStatus(item.id, { progress: 95 });
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      updateDocumentItemStatus(item.id, { 
-        status: 'completed', 
-        progress: 100 
-      });
-      setProgress(prev => ({ ...prev, currentFileProgress: 100 }));
-
-      return true;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '处理失败';
-      updateDocumentItemStatus(item.id, {
+    const offFailed = taskQueue.on('task:failed', (task: TaskItem) => {
+      updateDocumentItemStatus(task.id, {
         status: 'failed',
-        error: errorMessage,
-        retryCount: item.retryCount + 1,
+        error: task.error,
+        retryCount: task.retryCount,
       });
-      return false;
-    }
-  }, [knowledgeBaseId, knowledgeService, updateDocumentItemStatus]);
+    });
 
-  // 处理文件选择（来自拖拽区域）
+    const offDrained = taskQueue.on('queue:drained', () => {
+      // 队列清空后重新加载文档并重置状态
+      loadDocuments();
+      if (onDocumentsAdded) {
+        onDocumentsAdded();
+      }
+      setUploading(false);
+      setProgress({ active: false, current: 0, total: 0 });
+      // 清理已完成的项目
+      setDocumentItems(prev => prev.filter(item => item.status !== 'completed'));
+      taskQueue.resetCounters();
+    });
+
+    return () => {
+      offStarted();
+      offProgress();
+      offCompleted();
+      offFailed();
+      offDrained();
+    };
+  }, [taskQueue, updateDocumentItemStatus, loadDocuments, onDocumentsAdded]);
+
+  // 处理文件选择（来自拖拽区域）— 使用任务队列并发调度
   const handleFilesSelected = useCallback(async (files: FileInfo[]) => {
     if (files.length === 0) return;
 
@@ -322,7 +265,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       total: files.length,
     });
 
-    // 创建文档项
+    // 创建文档项用于 UI 展示
     const newItems: DocumentItemState[] = files.map(file => ({
       id: uuidv4(),
       fileName: file.name,
@@ -337,44 +280,43 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
 
     setDocumentItems(prev => [...prev, ...newItems]);
 
-    // 依次处理每个文档
-    let successCount = 0;
-    for (let i = 0; i < newItems.length; i++) {
-      const item = newItems[i];
-      setProgress(prev => ({
-        ...prev,
-        current: i,
-        currentFileName: item.fileName,
-      }));
+    // 创建任务并提交到队列 — 队列自动管理并发和工作负载
+    const tasks = newItems.map((item, index) =>
+      taskQueue.createTask({
+        type: 'file',
+        knowledgeBaseId,
+        fileName: item.fileName,
+        content: item.fileContent,
+        fileSize: item.fileSize,
+        arrayBuffer: (files[index] as FileInfo & { arrayBuffer?: ArrayBuffer }).arrayBuffer,
+      })
+    );
 
-      const success = await processDocument(item);
-      if (success) successCount++;
-
-      setProgress(prev => ({
-        ...prev,
-        current: i + 1,
-      }));
-    }
-
-    // 完成后重新加载文档
-    await loadDocuments();
-    
-    if (onDocumentsAdded && successCount > 0) {
-      onDocumentsAdded();
-    }
-
-    setUploading(false);
-    setProgress({
-      active: false,
-      current: 0,
-      total: 0,
+    // 同步任务 ID 到文档项（使 UI 事件能匹配）
+    tasks.forEach((task, index) => {
+      newItems[index].id = task.id;
     });
+    setDocumentItems(prev =>
+      prev.map(item => {
+        const matchIndex = newItems.findIndex(ni => ni.fileName === item.fileName && ni.created_at === item.created_at);
+        if (matchIndex !== -1) {
+          return { ...item, id: newItems[matchIndex].id };
+        }
+        return item;
+      })
+    );
 
-    // 清理已完成的项目
-    setDocumentItems(prev => prev.filter(item => item.status !== 'completed'));
-  }, [processDocument, loadDocuments, onDocumentsAdded]);
+    // 批量提交 — 队列自动并发调度，不再逐个 await
+    // queue:drained 事件会触发 loadDocuments 和状态重置
+    taskQueue.addTasks(tasks).catch(err => {
+      console.error('[DocumentManager] 任务队列提交失败:', err);
+      setError('文档处理失败，请重试');
+      setUploading(false);
+      setProgress({ active: false, current: 0, total: 0 });
+    });
+  }, [knowledgeBaseId, taskQueue]);
 
-  // 重试失败的文档
+  // 重试失败的文档 — 通过任务队列重新提交
   const handleRetryDocument = useCallback(async (itemId: string) => {
     const item = documentItems.find(i => i.id === itemId);
     if (!item || item.retryCount >= MAX_RETRY_COUNT) {
@@ -382,9 +324,30 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       return;
     }
 
-    await processDocument(item);
-    await loadDocuments();
-  }, [documentItems, processDocument, loadDocuments]);
+    // 尝试通过队列重试（如果任务还在队列中）
+    const retried = taskQueue.retryTask(itemId);
+    if (!retried) {
+      // 任务不在队列中，创建新任务重新提交
+      const task = taskQueue.createTask({
+        type: 'file',
+        knowledgeBaseId,
+        fileName: item.fileName,
+        content: item.fileContent,
+        fileSize: item.fileSize,
+      });
+      // 用原 ID 保持 UI 关联
+      (task as TaskItem & { id: string }).id = itemId;
+      updateDocumentItemStatus(itemId, { status: 'pending', progress: 0, error: undefined });
+
+      setUploading(true);
+      setProgress(prev => ({ ...prev, active: true, total: prev.total || 1 }));
+      taskQueue.addTask(task).catch(err => {
+        console.error('[DocumentManager] 重试任务失败:', err);
+      });
+    } else {
+      updateDocumentItemStatus(itemId, { status: 'pending', progress: 0, error: undefined });
+    }
+  }, [documentItems, knowledgeBaseId, taskQueue, updateDocumentItemStatus]);
 
   // 删除文档
   const handleDeleteDocument = useCallback(async (documentId: string) => {
@@ -418,16 +381,27 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
     }
   }, [documents, knowledgeService, loadDocuments]);
 
-  // 刷新文档（重新向量化）
+  // 刷新文档（重新向量化）— 通过任务队列提交
   const handleRefreshDocument = useCallback(async (doc: KnowledgeDocument) => {
     try {
       // 删除旧的向量
       await knowledgeService.deleteDocument(doc.id);
-      
-      // 创建新的文档项进行处理
+
+      const fileName = doc.metadata.fileName || doc.metadata.source;
+
+      // 创建任务提交到队列
+      const task = taskQueue.createTask({
+        type: 'refresh',
+        knowledgeBaseId,
+        fileName,
+        content: doc.content,
+        fileSize: doc.content.length,
+      });
+
+      // 创建文档项用于 UI 展示
       const newItem: DocumentItemState = {
-        id: uuidv4(),
-        fileName: doc.metadata.fileName || doc.metadata.source,
+        id: task.id,
+        fileName,
         fileSize: doc.content.length,
         fileContent: doc.content,
         status: 'pending',
@@ -438,16 +412,19 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
       };
 
       setDocumentItems(prev => [...prev, newItem]);
-      await processDocument(newItem);
-      await loadDocuments();
-      
-      // 清理已完成的项目
-      setDocumentItems(prev => prev.filter(item => item.status !== 'completed'));
+      setUploading(true);
+      setProgress({ active: true, current: 0, total: 1 });
+
+      // 提交到队列 — queue:drained 事件会触发 loadDocuments
+      taskQueue.addTask(task).catch(err => {
+        console.error('[DocumentManager] 刷新任务失败:', err);
+        setError('刷新文档失败，请稍后再试');
+      });
     } catch (err) {
       console.error('刷新文档失败:', err);
       setError('刷新文档失败，请稍后再试');
     }
-  }, [knowledgeService, processDocument, loadDocuments]);
+  }, [knowledgeService, knowledgeBaseId, taskQueue]);
 
   // 搜索处理
   const handleSearch = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -525,7 +502,6 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({
           <FileDropZone
             onFilesSelected={handleFilesSelected}
             disabled={uploading}
-            accept=".txt,.md,.csv,.json,.html,.xml"
             multiple
           />
         </Collapse>
