@@ -31,6 +31,7 @@ interface SolidMessageListProps {
   onDelete?: (messageId: string) => void;
   onSwitchVersion?: (versionId: string) => void;
   onResend?: (messageId: string) => void;
+  onContainerReady?: (el: HTMLElement | null) => void;
 }
 
 const INITIAL_DISPLAY_COUNT = 15;
@@ -43,12 +44,17 @@ const computeDisplayMessages = (messages: Message[], startIndex: number, display
   return messages.slice(actualStartIndex, actualEndIndex);
 };
 
+const isPortalHostElement = (value: unknown): value is HTMLElement => {
+  return typeof HTMLElement !== 'undefined' && value instanceof HTMLElement;
+};
+
 const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
   messages,
   onRegenerate,
   onDelete,
   onSwitchVersion,
-  onResend
+  onResend,
+  onContainerReady
 }) => {
   const theme = useTheme();
   const dispatch = useDispatch();
@@ -65,6 +71,7 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
 
   // Portal 容器
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLElement | null>(null);
 
   // 显示状态
   const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
@@ -241,22 +248,12 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
     };
   }, [messages, relatedBlockSet, dispatch, handleError]);
 
-  // 监听 Portal 容器
-  useEffect(() => {
-    const checkContainer = () => {
-      const container = document.getElementById('messageList');
-      if (container !== portalContainer) {
-        setPortalContainer(container);
-      }
-    };
-
-    checkContainer();
-
-    const observer = new MutationObserver(checkContainer);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => observer.disconnect();
-  }, [portalContainer]);
+  const handleContainerReady = useCallback((container: HTMLElement | null) => {
+    const validContainer = isPortalHostElement(container) ? container : null;
+    containerRef.current = validContainer;
+    setPortalContainer(validContainer);
+    onContainerReady?.(validContainer);
+  }, [onContainerReady]);
 
   // ⭐ 监听助手更新事件
   const currentAssistantRef = useRef(currentAssistant);
@@ -290,8 +287,7 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
     if (!hasMore || isLoadingMore) return;
 
     // 记录当前滚动高度
-    const container = document.getElementById('messageList');
-    prevScrollHeightRef.current = container?.scrollHeight || null;
+    prevScrollHeightRef.current = containerRef.current?.scrollHeight || null;
 
     setIsLoadingMore(true);
     setTimeout(() => {
@@ -303,7 +299,7 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
   // ⭐ 加载更多后保持滚动位置
   useLayoutEffect(() => {
     if (prevScrollHeightRef.current !== null && displayCount > prevDisplayCountRef.current) {
-      const container = document.getElementById('messageList');
+      const container = containerRef.current;
       if (container) {
         const heightDiff = container.scrollHeight - prevScrollHeightRef.current;
         container.scrollTop += heightDiff;
@@ -328,15 +324,9 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
 
   // 滚动到底部的方法
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
-    const scrollFn = (window as any).__solidMessageListScrollToBottom;
-    if (scrollFn) {
-      scrollFn(behavior);
-    } else {
-      // 备用方案：直接操作容器
-      const container = document.getElementById('messageList');
-      if (container) {
-        container.scrollTo({ top: container.scrollHeight, behavior });
-      }
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior });
     }
   }, []);
 
@@ -392,7 +382,7 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
     const throttledTextDeltaHandler = throttle(() => {
       if (!autoScrollToBottom) return;
       
-      const container = document.getElementById('messageList');
+      const container = containerRef.current;
       if (container) {
         const gap = container.scrollHeight - container.scrollTop - container.clientHeight;
         const isNearBottom = gap < 120;
@@ -470,10 +460,11 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
     themeMode: theme.palette.mode,
     onScroll: handleScroll,
     onScrollToTop: loadMoreMessages,
+    onContainerReady: handleContainerReady,
     autoScrollToBottom,
     isStreaming: hasStreamingMessage,
     chatBackground
-  }), [theme.palette.mode, handleScroll, loadMoreMessages, autoScrollToBottom, hasStreamingMessage, chatBackground]);
+  }), [theme.palette.mode, handleScroll, loadMoreMessages, handleContainerReady, autoScrollToBottom, hasStreamingMessage, chatBackground]);
 
   // React 内容
   const messageContent = useMemo(() => (
@@ -657,7 +648,7 @@ const SolidMessageList: React.FC<SolidMessageListProps> = React.memo(({
         style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}
       />
       {/* 通过 Portal 将 React 内容渲染到 Solid 组件内部 */}
-      {portalContainer && createPortal(messageContent, portalContainer)}
+      {isPortalHostElement(portalContainer) && createPortal(messageContent, portalContainer)}
     </>
   );
 });

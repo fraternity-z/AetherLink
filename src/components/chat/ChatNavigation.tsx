@@ -7,13 +7,15 @@ import { updateSettings } from '../../shared/store/settingsSlice';
 import { Haptics } from '../../shared/utils/hapticFeedback';
 import { useKeyboard } from '../../shared/hooks/useKeyboard';
 import ContextTokenIndicator from './ContextTokenIndicator';
+import { useGlobalPointerSubscription } from '../../shared/hooks/useGlobalPointerSubscription';
 
 interface ChatNavigationProps {
   containerId: string;
+  containerEl?: HTMLElement | null;
   topicId?: string; // 当前话题ID，用于Token指示器
 }
 
-const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId }) => {
+const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, containerEl, topicId }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isNearButtons, setIsNearButtons] = useState(false);
   const hideTimer = useRef<NodeJS.Timeout | null>(null);
@@ -44,6 +46,8 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
 
   // 判断是否启用导航触觉反馈
   const isNavigationHapticEnabled = hapticFeedback?.enabled && hapticFeedback?.enableOnNavigation;
+  // 仅在按钮导航模式启用全局指针订阅，避免无效监听
+  const showNavigation = messageNavigation === 'buttons';
 
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) {
@@ -73,38 +77,45 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
     resetHideTimer();
   }, [resetHideTimer, isMobile]);
 
+  const getContainer = useCallback(() => {
+    if (containerEl) {
+      return containerEl;
+    }
+    return document.getElementById(containerId);
+  }, [containerEl, containerId]);
+
   // 查找所有消息元素
   const findAllMessages = useCallback(() => {
-    const container = document.getElementById(containerId);
+    const container = getContainer();
     if (!container) return [];
 
     const allMessages = Array.from(container.querySelectorAll('[id^="message-"]'));
     return allMessages as HTMLElement[];
-  }, [containerId]);
+  }, [getContainer]);
 
   const scrollToMessage = useCallback((element: HTMLElement) => {
     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   const scrollToTop = useCallback(() => {
-    const container = document.getElementById(containerId);
+    const container = getContainer();
     if (container) {
       container.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [containerId]);
+  }, [getContainer]);
 
   const scrollToBottom = useCallback(() => {
-    const container = document.getElementById(containerId);
+    const container = getContainer();
     if (container) {
       container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
     }
-  }, [containerId]);
+  }, [getContainer]);
 
   const getCurrentVisibleIndex = useCallback(() => {
     const allMessages = findAllMessages();
     if (allMessages.length === 0) return -1;
 
-    const container = document.getElementById(containerId);
+    const container = getContainer();
     if (!container) return -1;
 
     const containerRect = container.getBoundingClientRect();
@@ -126,7 +137,7 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
     }
 
     return -1;
-  }, [findAllMessages, containerId]);
+  }, [findAllMessages, getContainer]);
 
   const handlePrevMessage = useCallback(() => {
     if (isNavigationHapticEnabled) {
@@ -205,27 +216,24 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
     }));
   }, [dispatch, showNavigationOnScroll, isNavigationHapticEnabled]);
 
-  useEffect(() => {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+  useGlobalPointerSubscription((event) => {
+    if (!getContainer()) {
+      return;
+    }
 
-    const handleMouseMove = (e: MouseEvent) => {
-      // 桌面端鼠标移动逻辑
+    if (event.type === 'mousemove') {
       if (isMobile) return;
 
-      const now = Date.now();
-      if (now - lastMoveTime.current < 100) return;
-      lastMoveTime.current = now;
+      if (event.timestamp - lastMoveTime.current < 100) return;
+      lastMoveTime.current = event.timestamp;
 
       const triggerWidth = 30;
       const centerY = window.innerHeight / 2;
       const triggerHeight = 120;
-      
-      // 导航呼吸灯区域：右侧边缘，从中央开始往下（避免与 Token 呼吸灯重叠）
-      // Token 呼吸灯在中央上方 150px，所以导航从中央开始
-      const isInTriggerArea = e.clientX > window.innerWidth - triggerWidth &&
-                             e.clientY > centerY - 30 &&
-                             e.clientY < centerY + triggerHeight;
+
+      const isInTriggerArea = event.clientX > window.innerWidth - triggerWidth &&
+        event.clientY > centerY - 30 &&
+        event.clientY < centerY + triggerHeight;
 
       if (isInTriggerArea && !isNearButtons) {
         setIsVisible(true);
@@ -233,96 +241,66 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
       } else if (!isInTriggerArea && !isNearButtons) {
         setIsVisible(false);
       }
-    };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      // 移动端左滑显示导航：在呼吸灯区域左滑触发
+      return;
+    }
+
+    if (event.type === 'touchstart') {
       if (!isMobile) return;
-      
-      // 🚀 侧边栏打开时不捕获手势，避免与侧边栏左滑关闭冲突
       if (document.body.hasAttribute('data-sidebar-open')) return;
 
-      const touch = e.touches[0];
-      if (!touch) return;
-
-      const triggerWidth = 80; // 移动端触发区域（呼吸灯区域）
-      const triggerHeight = 120; // 减小高度，避免与 Token 呼吸灯重叠
+      const triggerWidth = 80;
+      const triggerHeight = 120;
       const centerY = window.innerHeight / 2;
 
-      // 检查是否在呼吸灯区域（右侧边缘，从中央往下延伸）
-      // Token 呼吸灯在中央上方 150px，导航呼吸灯从中央开始往下
-      const isInTriggerArea = touch.clientX > window.innerWidth - triggerWidth &&
-                             touch.clientY > centerY - 30 && // 中央上方只留 30px
-                             touch.clientY < centerY + triggerHeight - 30; // 主要向下延伸
+      const isInTriggerArea = event.clientX > window.innerWidth - triggerWidth &&
+        event.clientY > centerY - 30 &&
+        event.clientY < centerY + triggerHeight - 30;
 
       if (isInTriggerArea) {
-        // 记录触摸起始位置和时间
-        touchStartX.current = touch.clientX;
-        touchStartY.current = touch.clientY;
-        touchStartTime.current = Date.now();
+        touchStartX.current = event.clientX;
+        touchStartY.current = event.clientY;
+        touchStartTime.current = event.timestamp;
       }
-    };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      // 检测左滑显示：从右侧呼吸灯向左滑动显示导航面板
+      return;
+    }
+
+    if (event.type === 'touchmove') {
       if (!isMobile) return;
-      if (touchStartX.current === 0) return; // 没有在触发区域开始触摸
+      if (touchStartX.current === 0) return;
 
-      const touch = e.touches[0];
-      if (!touch) return;
+      const deltaX = event.clientX - touchStartX.current;
+      const deltaY = Math.abs(event.clientY - touchStartY.current);
+      const deltaTime = event.timestamp - touchStartTime.current;
 
-      const deltaX = touch.clientX - touchStartX.current;
-      const deltaY = Math.abs(touch.clientY - touchStartY.current);
-      const deltaTime = Date.now() - touchStartTime.current;
-
-      // 左滑显示条件：向左滑动至少50px，垂直偏移小于30px，时间小于500ms
       if (deltaX < -50 && deltaY < 30 && deltaTime < 500) {
         setIsVisible(true);
         setIsNearButtons(false);
         resetHideTimer();
-        // 触发触觉反馈
         if (isNavigationHapticEnabled) {
           Haptics.light();
         }
-        // 重置触摸状态
         touchStartX.current = 0;
         touchStartY.current = 0;
         touchStartTime.current = 0;
       }
-    };
 
-    const handleTouchEnd = () => {
-      // 重置触摸状态
+      return;
+    }
+
+    if (event.type === 'touchend') {
       if (!isMobile) return;
       touchStartX.current = 0;
       touchStartY.current = 0;
       touchStartTime.current = 0;
-    };
-
-    if (isMobile) {
-      window.addEventListener('touchstart', handleTouchStart, { passive: true });
-      window.addEventListener('touchmove', handleTouchMove, { passive: true });
-      window.addEventListener('touchend', handleTouchEnd, { passive: true });
-    } else {
-      window.addEventListener('mousemove', handleMouseMove);
     }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-      if (hideTimer.current) {
-        clearTimeout(hideTimer.current);
-        hideTimer.current = null;
-      }
-    };
-  }, [containerId, isNearButtons, resetHideTimer, isMobile, isNavigationHapticEnabled]);
+  }, showNavigation);
 
   // 监听滚动事件
   useEffect(() => {
     if (!showNavigationOnScroll) return;
-    const container = document.getElementById(containerId);
+    const container = getContainer();
     if (!container) return;
 
     let throttleTimer: NodeJS.Timeout | null = null;
@@ -348,7 +326,7 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
         scrollTimer.current = null;
       }
     };
-  }, [containerId, showNavigationOnScroll, isNearButtons]);
+  }, [getContainer, showNavigationOnScroll, isNearButtons]);
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -386,9 +364,6 @@ const ChatNavigation: React.FC<ChatNavigationProps> = ({ containerId, topicId })
       scale: 1
     };
   }, [keyboardHeight]);
-
-  // 是否显示导航按钮
-  const showNavigation = messageNavigation === 'buttons';
 
   return (
     <>

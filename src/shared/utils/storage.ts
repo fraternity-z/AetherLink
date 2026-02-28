@@ -7,6 +7,17 @@ import { dexieStorage } from '../services/storage/DexieStorageService';
 // 🚀 性能优化：减少开发模式下的冗余日志
 const isDevelopment = import.meta.env.DEV;
 const enableVerboseLogging = false; // 设置为 true 可启用详细日志
+const STORAGE_ITEM_CHANGED_EVENT = 'storageItemChanged';
+
+const emitStorageItemChanged = (key: string): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(STORAGE_ITEM_CHANGED_EVENT, {
+    detail: { key }
+  }));
+};
 
 /**
  * 从数据库获取数据
@@ -57,6 +68,7 @@ export async function setStorageItem<T>(key: string, value: T): Promise<boolean>
       console.log(`[storage] 开始保存数据: ${key}`);
     }
     await dexieStorage.saveSetting(key, value);
+    emitStorageItemChanged(key);
     if (enableVerboseLogging && isDevelopment) {
       console.log(`[storage] 数据保存成功: ${key}`);
     }
@@ -82,6 +94,7 @@ export async function setStorageItem<T>(key: string, value: T): Promise<boolean>
 export async function removeStorageItem(key: string): Promise<void> {
   try {
     await dexieStorage.deleteSetting(key);
+    emitStorageItemChanged(key);
   } catch (error) {
     console.error(`Error removing item "${key}" from database:`, error);
   }
@@ -93,8 +106,12 @@ export async function removeStorageItem(key: string): Promise<void> {
  */
 export async function clearStorage(): Promise<void> {
   try {
+    const keysBeforeClear = await getAllStorageKeys();
     // 使用Dexie提供的clear方法清空设置表
     await dexieStorage.settings.clear();
+    keysBeforeClear.forEach(key => {
+      emitStorageItemChanged(key);
+    });
     console.log('Settings store has been cleared.');
   } catch (error) {
     console.error('Error clearing settings store:', error);
@@ -123,9 +140,11 @@ export async function getAllStorageKeys(): Promise<string[]> {
  * @returns 保存是否成功
  */
 export async function setStorageItems(items: Record<string, any>): Promise<boolean> {
+  const keys = Object.keys(items);
+
   try {
     if (enableVerboseLogging && isDevelopment) {
-      console.log(`[storage] 开始批量保存数据，键数量: ${Object.keys(items).length}`);
+      console.log(`[storage] 开始批量保存数据，键数量: ${keys.length}`);
     }
 
     // 使用Dexie事务批量保存设置
@@ -141,6 +160,10 @@ export async function setStorageItems(items: Record<string, any>): Promise<boole
     if (enableVerboseLogging && isDevelopment) {
       console.log('[storage] 批量保存数据成功');
     }
+
+    keys.forEach(key => {
+      emitStorageItemChanged(key);
+    });
     return true;
   } catch (error) {
     console.error('[storage] Error setting multiple items to database:', error);
@@ -164,6 +187,7 @@ export async function setStorageItems(items: Record<string, any>): Promise<boole
           console.log(`[storage] 单独保存键: ${key}`);
         }
         await dexieStorage.saveSetting(key, value);
+        emitStorageItemChanged(key);
       } catch (itemError) {
         console.error(`[storage] 保存键 ${key} 失败:`, itemError);
         allSuccess = false;

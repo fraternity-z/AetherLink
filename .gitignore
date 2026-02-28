@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 .claude/
 .history/
+.omc/
 
 # Keystore files (排除 release-keystore.jks 用于统一签名)
 *.keystore
