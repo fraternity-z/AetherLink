@@ -95,7 +95,7 @@ const selectChatPageSettings = createSelector(
     
     return {
       themeStyle,
-      inputLayoutStyle: inputLayoutStyle || 'default',
+      inputLayoutStyle: inputLayoutStyle || 'integrated',
       topToolbar,
       modelSelectorStyle,
       chatBackground: effectiveChatBackground || {
