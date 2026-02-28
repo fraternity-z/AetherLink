@@ -2,6 +2,7 @@ import type { Model } from '../../types';
 import type { GeneratedImage } from '../../types';
 import type { ThemeStyle } from '../../config/themes';
 import type { ModelProvider } from '../../config/defaultModels';
+import type { ThinkingDisplayStyle } from '../../../components/message/blocks/ThinkingBlock';
 
 export interface SettingsState {
   theme: 'light' | 'dark' | 'system';
@@ -25,7 +26,7 @@ export interface SettingsState {
   enableAIIntentAnalysis?: boolean;
   aiIntentAnalysisUseCurrentModel?: boolean;
   aiIntentAnalysisModelId?: string;
-  thinkingDisplayStyle: string;
+  thinkingDisplayStyle: ThinkingDisplayStyle;
   toolbarDisplayStyle: 'icon' | 'text' | 'both';
   inputBoxStyle: 'default' | 'modern' | 'minimal';
   inputLayoutStyle: 'integrated' | 'default';

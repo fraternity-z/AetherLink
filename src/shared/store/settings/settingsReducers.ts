@@ -7,6 +7,37 @@ import type { SettingsState } from './settingsTypes';
 import { findModelInProviders, getModelIdentityKey, modelMatchesIdentity, parseModelIdentityKey } from '../../utils/modelUtils';
 import { canonicalModelKey, ensureModelIdentityKey, setDefaultFlags } from './settingsModelIdentity';
 
+const reconcileModelSelection = (state: SettingsState): void => {
+  const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
+
+  if (defaultMatch) {
+    state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
+  } else {
+    const replacement = state.providers
+      .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
+      .find(({ model }) => model.enabled);
+
+    state.defaultModelId = replacement
+      ? canonicalModelKey(replacement.model, replacement.provider.id)
+      : undefined;
+  }
+
+  state.providers = setDefaultFlags(state.providers, state.defaultModelId);
+
+  if (!findModelInProviders(state.providers, state.currentModelId, { includeDisabled: true })) {
+    state.currentModelId = state.defaultModelId;
+  }
+};
+
+const getScopedModelIdentity = (modelId: string, providerId: string) => {
+  const identity = parseModelIdentityKey(modelId);
+  if (!identity) {
+    return null;
+  }
+
+  return identity.provider ? identity : { ...identity, provider: providerId };
+};
+
 export const settingsReducers = {
     setTheme: (state, action: PayloadAction<'light' | 'dark' | 'system'>) => {
       state.theme = action.payload;
@@ -66,29 +97,7 @@ export const settingsReducers = {
           );
         });
       }
-
-      // 校验默认模型是否仍然存在
-      const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
-      if (defaultMatch) {
-        state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
-        state.providers = setDefaultFlags(state.providers, state.defaultModelId);
-      } else {
-        const replacement = state.providers
-          .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
-          .find(({ model }) => model.enabled);
-
-        if (replacement) {
-          state.defaultModelId = canonicalModelKey(replacement.model, replacement.provider.id);
-          state.providers = setDefaultFlags(state.providers, state.defaultModelId);
-        } else {
-          state.defaultModelId = undefined;
-        }
-      }
-
-      // 如果删除的是当前选中的模型，需要重新设置当前模型
-      if (!findModelInProviders(state.providers, state.currentModelId, { includeDisabled: true })) {
-        state.currentModelId = state.defaultModelId;
-      }
+      reconcileModelSelection(state);
     },
     setDefaultModel: (state, action: PayloadAction<string>) => {
       const identity = parseModelIdentityKey(action.payload);
@@ -116,16 +125,28 @@ export const settingsReducers = {
             ...model,
             apiKey: updates.apiKey !== undefined ? updates.apiKey : model.apiKey,
             baseUrl: updates.baseUrl !== undefined ? updates.baseUrl : model.baseUrl,
-            providerExtraHeaders: updates.extraHeaders !== undefined ? updates.extraHeaders : (model as any).providerExtraHeaders,
-            providerExtraBody: updates.extraBody !== undefined ? updates.extraBody : (model as any).providerExtraBody,
+            extraHeaders: updates.extraHeaders !== undefined ? updates.extraHeaders : model.extraHeaders,
+            extraBody: updates.extraBody !== undefined ? updates.extraBody : model.extraBody,
             useCorsPlugin: updates.useCorsPlugin !== undefined ? updates.useCorsPlugin : model.useCorsPlugin,
-            providerType: updates.providerType !== undefined ? updates.providerType : (model as any).providerType
+            providerType: updates.providerType !== undefined ? updates.providerType : model.providerType
           }));
         }
       }
     },
     deleteProvider: (state, action: PayloadAction<string>) => {
-      state.providers = state.providers.filter((provider: ModelProvider) => provider.id !== action.payload);
+      const providerId = action.payload;
+      const providerToDelete = state.providers.find((provider: ModelProvider) => provider.id === providerId);
+      if (!providerToDelete) {
+        return;
+      }
+
+      const removedModelIds = new Set(providerToDelete.models.map((model: Model) => model.id));
+      state.providers = state.providers.filter((provider: ModelProvider) => provider.id !== providerId);
+      state.models = state.models.filter((model: Model) =>
+        model.provider !== providerId && (model.provider || !removedModelIds.has(model.id))
+      );
+
+      reconcileModelSelection(state);
     },
     reorderProviders: (state, action: PayloadAction<ModelProvider[]>) => {
       state.providers = action.payload;
@@ -166,31 +187,18 @@ export const settingsReducers = {
       const providerIndex = state.providers.findIndex((provider: ModelProvider) => provider.id === providerId);
 
       if (providerIndex !== -1) {
+        const identity = getScopedModelIdentity(modelId, providerId);
+        if (!identity) {
+          return;
+        }
+
         // 从provider的models数组中删除模型
         state.providers[providerIndex].models = state.providers[providerIndex].models.filter(
-          (model: Model) => model.id !== modelId
+          (model: Model) => !modelMatchesIdentity(model, identity, providerId)
         );
+        state.models = state.models.filter((model: Model) => !modelMatchesIdentity(model, identity, providerId));
 
-        const defaultMatch = findModelInProviders(state.providers, state.defaultModelId, { includeDisabled: true });
-        if (defaultMatch) {
-          state.defaultModelId = canonicalModelKey(defaultMatch.model, defaultMatch.provider.id);
-          state.providers = setDefaultFlags(state.providers, state.defaultModelId);
-        } else {
-          const replacement = state.providers
-            .flatMap((provider: ModelProvider) => provider.models.map(model => ({ model, provider })))
-            .find(({ model }) => model.enabled);
-
-          if (replacement) {
-            state.defaultModelId = canonicalModelKey(replacement.model, replacement.provider.id);
-            state.providers = setDefaultFlags(state.providers, state.defaultModelId);
-          } else {
-            state.defaultModelId = undefined;
-          }
-        }
-
-        if (!findModelInProviders(state.providers, state.currentModelId, { includeDisabled: true })) {
-          state.currentModelId = state.defaultModelId;
-        }
+        reconcileModelSelection(state);
       }
     },
     addGeneratedImage: (state, action: PayloadAction<GeneratedImage>) => {
