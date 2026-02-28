@@ -413,6 +413,7 @@ export interface MCPServer {
   args?: string[];
   isActive: boolean;
   disabledTools?: string[];
+  toolPermissionOverrides?: Record<string, 'read' | 'write' | 'confirm'>;
   provider?: string;
   providerUrl?: string;
   logoUrl?: string;

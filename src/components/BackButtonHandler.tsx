@@ -105,11 +105,11 @@ const handleSettingsBack = (pathname: string, navigate: (path: string) => void) 
     return;
   }
   if (pathWithoutQuery.startsWith('/settings/mcp-server/') && pathWithoutQuery !== '/settings/mcp-server') {
-    navigate('/settings/mcp-server');
+    navigate('/settings/mcp-server?tab=0');
     return;
   }
   if (pathWithoutQuery.startsWith('/settings/mcp-assistant/')) {
-    navigate('/settings/mcp-server');
+    navigate('/settings/mcp-server?tab=2');
     return;
   }
   if (pathWithoutQuery.startsWith('/settings/model-combo/') && pathWithoutQuery !== '/settings/model-combo') {

@@ -683,7 +683,7 @@ export class MCPService {
       const result = await client.listTools();
       console.log(`[MCP] listTools 响应:`, result);
 
-      const tools = result.tools.map(tool => ({
+      const allTools = result.tools.map(tool => ({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
@@ -692,6 +692,15 @@ export class MCPService {
         id: buildFunctionCallToolName(server.name, tool.name)
       }));
 
+      // 过滤掉用户禁用的工具，使其对 AI 不可见
+      const disabledTools = server.disabledTools || [];
+      const tools = disabledTools.length > 0
+        ? allTools.filter(tool => !disabledTools.includes(tool.name))
+        : allTools;
+
+      if (disabledTools.length > 0) {
+        console.log(`[MCP] 服务器 ${server.name} 过滤了 ${allTools.length - tools.length} 个禁用工具`);
+      }
       console.log(`[MCP] 服务器 ${server.name} 返回 ${tools.length} 个工具:`, tools.map(t => t.name));
       return tools;
     } catch (error) {
@@ -718,9 +727,27 @@ export class MCPService {
       };
     }
 
-    // 敏感操作确认拦截
+    // 禁用工具拦截 — 即使 AI 硬编码工具名也无法调用
+    const disabledTools = server.disabledTools || [];
+    if (disabledTools.includes(toolName)) {
+      console.warn(`[MCP] 工具 ${toolName} 已被用户禁用，拒绝调用`);
+      return {
+        content: [{ type: 'text', text: `工具 ${toolName} 已被用户禁用。` }],
+        isError: true
+      };
+    }
+
+    // 敏感操作确认拦截（支持用户权限覆写）
     const confirmService = ToolConfirmationService.getInstance();
-    if (confirmService.needsConfirmation(toolName)) {
+    const permOverrides = server.toolPermissionOverrides || {};
+    const overriddenPerm = permOverrides[toolName];
+
+    // 判断是否需要确认：覆写权限优先，否则回退到默认注册表
+    const needsConfirm = overriddenPerm
+      ? overriddenPerm === 'confirm'
+      : confirmService.needsConfirmation(toolName);
+
+    if (needsConfirm) {
       const approved = await confirmService.requestConfirmation(
         server.name,
         toolName,

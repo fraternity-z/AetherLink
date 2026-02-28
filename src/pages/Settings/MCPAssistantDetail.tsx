@@ -21,7 +21,11 @@ import {
   AccordionDetails,
   TextField,
   InputAdornment,
-  Badge
+  Badge,
+  Menu,
+  MenuItem,
+  ListItemIcon as MuiListItemIcon,
+  ListItemText as MuiListItemText
 } from '@mui/material';
 import CustomSwitch from '../../components/CustomSwitch';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -147,6 +151,50 @@ const MCPAssistantDetail: React.FC = () => {
 
   const isToolDisabled = (toolName: string): boolean => {
     return server?.disabledTools?.includes(toolName) ?? false;
+  };
+
+  // 获取工具的有效权限（覆写优先，否则推断）
+  const getEffectivePermission = (toolName: string): string => {
+    const overrides = server?.toolPermissionOverrides || {};
+    return overrides[toolName] || inferPermission(toolName);
+  };
+
+  // 权限编辑菜单状态
+  const [permMenuAnchor, setPermMenuAnchor] = useState<null | HTMLElement>(null);
+  const [permMenuTool, setPermMenuTool] = useState<string>('');
+
+  const handleOpenPermMenu = (event: React.MouseEvent<HTMLElement>, toolName: string) => {
+    event.stopPropagation();
+    setPermMenuAnchor(event.currentTarget);
+    setPermMenuTool(toolName);
+  };
+
+  const handleClosePermMenu = () => {
+    setPermMenuAnchor(null);
+    setPermMenuTool('');
+  };
+
+  const handleChangePermission = async (toolName: string, newPerm: 'read' | 'write' | 'confirm') => {
+    if (!server) return;
+    handleClosePermMenu();
+    try {
+      const currentOverrides = { ...(server.toolPermissionOverrides || {}) };
+      const defaultPerm = inferPermission(toolName);
+
+      // 如果和默认一致就删除覆写，保持干净
+      if (newPerm === defaultPerm) {
+        delete currentOverrides[toolName];
+      } else {
+        currentOverrides[toolName] = newPerm;
+      }
+
+      const updated = { ...server, toolPermissionOverrides: currentOverrides };
+      await mcpService.updateServer(updated);
+      setServer(updated);
+      setSnackbar({ open: true, message: `${toolName} 权限已更改为「${PERMISSION_CONFIG[newPerm]?.label || newPerm}」`, severity: 'success' });
+    } catch (error) {
+      setSnackbar({ open: true, message: t('settings.mcpServer.messages.saveFailed'), severity: 'error' });
+    }
   };
 
   const handleToggleTool = async (toolName: string, enabled: boolean) => {
@@ -385,20 +433,22 @@ const MCPAssistantDetail: React.FC = () => {
                   <Divider />
                   <List disablePadding>
                     {domainTools.map((tool, index) => {
-                      const permission = inferPermission(tool.name);
+                      const permission = getEffectivePermission(tool.name);
                       const permConfig = PERMISSION_CONFIG[permission] || PERMISSION_CONFIG['read'];
+                      const isOverridden = !!(server?.toolPermissionOverrides || {})[tool.name];
                       const disabled = isToolDisabled(tool.name);
 
                       return (
                         <React.Fragment key={tool.name}>
                           <ListItem sx={{
                             py: 1.5,
-                            px: { xs: 2, sm: 2.5 },
+                            px: { xs: 1.5, sm: 2.5 },
                             opacity: disabled ? 0.5 : 1,
                             transition: 'all 0.2s',
+                            gap: { xs: 0.5, sm: 1 },
                             '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04) }
                           }}>
-                            <ListItemIcon sx={{ minWidth: 36 }}>
+                            <ListItemIcon sx={{ minWidth: { xs: 28, sm: 36 }, display: { xs: 'none', sm: 'flex' } }}>
                               <Box sx={{ color: permConfig.color }}>
                                 {getPermissionIcon(permission)}
                               </Box>
@@ -406,17 +456,23 @@ const MCPAssistantDetail: React.FC = () => {
                             <ListItemText
                               primary={
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                  <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.85rem', sm: '0.9rem' }, fontFamily: 'monospace' }}>
+                                  <Typography sx={{
+                                    fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.9rem' }, fontFamily: 'monospace',
+                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: '45vw', sm: 'none' }
+                                  }}>
                                     {tool.name}
                                   </Typography>
                                   <Chip
-                                    label={permConfig.label}
+                                    label={isOverridden ? `${permConfig.label} ✎` : permConfig.label}
                                     size="small"
+                                    onClick={(e) => handleOpenPermMenu(e, tool.name)}
                                     sx={{
                                       height: 20, fontSize: '0.65rem', fontWeight: 600,
                                       bgcolor: alpha(permConfig.color, 0.1),
                                       color: permConfig.color,
-                                      border: `1px solid ${alpha(permConfig.color, 0.3)}`
+                                      border: `1px solid ${alpha(permConfig.color, isOverridden ? 0.6 : 0.3)}`,
+                                      cursor: 'pointer',
+                                      '&:hover': { bgcolor: alpha(permConfig.color, 0.2) }
                                     }}
                                   />
                                 </Box>
@@ -433,10 +489,12 @@ const MCPAssistantDetail: React.FC = () => {
                               }
                               secondaryTypographyProps={{ component: 'div' }}
                             />
-                            <CustomSwitch
-                              checked={!disabled}
-                              onChange={(e) => handleToggleTool(tool.name, e.target.checked)}
-                            />
+                            <Box sx={{ flexShrink: 0, ml: { xs: 0.5, sm: 1 } }}>
+                              <CustomSwitch
+                                checked={!disabled}
+                                onChange={(e) => handleToggleTool(tool.name, e.target.checked)}
+                              />
+                            </Box>
                           </ListItem>
                           {index < domainTools.length - 1 && <Divider component="li" />}
                         </React.Fragment>
@@ -477,6 +535,48 @@ const MCPAssistantDetail: React.FC = () => {
           </Box>
         </Paper>
       </Scrollbar>
+
+      {/* ─── 权限编辑菜单 ─── */}
+      <Menu
+        anchorEl={permMenuAnchor}
+        open={Boolean(permMenuAnchor)}
+        onClose={handleClosePermMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{ paper: { sx: { minWidth: 180, borderRadius: 2 } } }}
+      >
+        {(['read', 'write', 'confirm'] as const).map((perm) => {
+          const config = PERMISSION_CONFIG[perm];
+          const isCurrentPerm = Boolean(permMenuTool) && getEffectivePermission(permMenuTool) === perm;
+          const isDefault = Boolean(permMenuTool) && inferPermission(permMenuTool) === perm;
+          return (
+            <MenuItem
+              key={perm}
+              selected={isCurrentPerm}
+              onClick={() => handleChangePermission(permMenuTool, perm)}
+              sx={{ py: 1 }}
+            >
+              <MuiListItemIcon sx={{ minWidth: 32, color: config.color }}>
+                {getPermissionIcon(perm)}
+              </MuiListItemIcon>
+              <MuiListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: isCurrentPerm ? 700 : 400 }}>
+                      {config.label}
+                    </Typography>
+                    {isDefault && (
+                      <Typography sx={{ fontSize: '0.65rem', color: 'text.secondary' }}>
+                        (默认)
+                      </Typography>
+                    )}
+                  </Box>
+                }
+              />
+            </MenuItem>
+          );
+        })}
+      </Menu>
 
       <Snackbar
         open={snackbar.open}
