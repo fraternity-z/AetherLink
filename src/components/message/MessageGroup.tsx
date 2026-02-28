@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { Box, Paper, Typography, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ChevronDown as ExpandMoreIcon } from 'lucide-react';
@@ -10,8 +10,7 @@ import MessageItem from './MessageItem';
 import MultiModelMessageGroup from './MultiModelMessageGroup';
 import ConversationDivider from './ConversationDivider';
 import type { Message } from '../../shared/types/newMessage';
-import { shouldShowConversationDivider } from '../../shared/utils/settingsUtils';
-import { useAppSettingsStore } from '../../shared/hooks/useAppSettingsStore';
+import { getMessageDividerSetting, shouldShowConversationDivider } from '../../shared/utils/settingsUtils';
 
 // 全局设置 dayjs 语言
 dayjs.locale('zh-cn');
@@ -137,9 +136,44 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
     state.settings.messageGrouping ?? 'byDate'
   );
 
-  const showMessageDivider = useAppSettingsStore(
-    settings => settings.showMessageDivider !== undefined ? settings.showMessageDivider : true
-  );
+  // 获取消息分割线设置
+  const [showMessageDivider, setShowMessageDivider] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchMessageDividerSetting = () => {
+      try {
+        const dividerSetting = getMessageDividerSetting();
+        setShowMessageDivider(dividerSetting);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('获取消息分割线设置失败:', error);
+        }
+        // 保持默认值 true
+      }
+    };
+
+    fetchMessageDividerSetting();
+
+    // 监听 localStorage 变化，实时更新设置
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'appSettings') {
+        fetchMessageDividerSetting();
+      }
+    };
+
+    // 使用自定义事件监听设置变化（用于同一页面内的变化）
+    const handleCustomSettingChange = () => {
+      fetchMessageDividerSetting();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('appSettingsChanged', handleCustomSettingChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('appSettingsChanged', handleCustomSettingChange);
+    };
+  }, []);
 
   // 格式化日期 - locale已全局设置
   const formattedDate = useMemo(() => {
@@ -166,7 +200,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
             key={`multi-${item.userMessage.id}`}
             userMessage={item.userMessage}
             assistantMessages={item.assistantMessages}
-            blockLoadMode="prefetched"
             onRegenerate={onRegenerate}
             onDelete={onDelete}
             onSwitchVersion={onSwitchVersion}
@@ -181,7 +214,6 @@ const MessageGroup: React.FC<MessageGroupProps> = ({
           <React.Fragment key={item.id}>
             <MessageItem
               message={item}
-              blockLoadMode="prefetched"
               messageIndex={startIndex + originalIndex}
               onRegenerate={onRegenerate}
               onDelete={onDelete}

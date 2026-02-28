@@ -69,11 +69,6 @@ function serializeValue(value: any): any {
   if (typeof value !== 'object') return value;
   if (value instanceof Date) return value;
   if (value instanceof Error) return value;
-  // 保留原生 DOM/浏览器对象，避免序列化后丢失原型（例如 HTMLElement 会退化成 {}）
-  if (typeof Node !== 'undefined' && value instanceof Node) return value;
-  if (typeof Event !== 'undefined' && value instanceof Event) return value;
-  if (typeof Window !== 'undefined' && value instanceof Window) return value;
-  if (typeof Document !== 'undefined' && value instanceof Document) return value;
   if (typeof value === 'function') return value;
   if (value instanceof Array) return value.map(serializeValue);
   

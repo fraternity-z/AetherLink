@@ -291,13 +291,12 @@
 
 /* ==================== 触感按钮 ==================== */
 .tactile-button {
-  transform: none;
-  transition: filter 0.12s ease;
+  transform: scale(1);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tactile-button.pressed {
-  transform: none;
-  filter: brightness(0.98);
+  transform: scale(0.97);
 }
 
 .model-item-wrapper {
@@ -370,7 +369,6 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  touch-action: manipulation;
 }
 
 .model-item-action-btn.action-add {
