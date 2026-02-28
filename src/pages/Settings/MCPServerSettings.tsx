@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   AppBar,
@@ -68,9 +68,29 @@ const MCPServerSettings: React.FC = () => {
   })();
   const [activeTab, setActiveTab] = useState(initialTab);
 
+  // ─── 左右滑动切换 Tab ───
+  const TAB_COUNT = 3;
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  }, []);
 
-
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    // 水平滑动距离 > 60px 且水平位移大于垂直位移（防止误触纵向滚动）
+    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      setActiveTab(prev => {
+        if (deltaX < 0) return Math.min(prev + 1, TAB_COUNT - 1); // 左滑 → 下一个
+        return Math.max(prev - 1, 0); // 右滑 → 上一个
+      });
+    }
+  }, []);
 
   // 新服务器表单状态
   const [newServer, setNewServer] = useState<Partial<MCPServer>>({
@@ -396,6 +416,8 @@ const MCPServerSettings: React.FC = () => {
           padding: '16px',
           paddingBottom: 'var(--content-bottom-padding)',
         }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* ═══════ Tab 0: 外部服务器 ═══════ */}
         {activeTab === 0 && (
