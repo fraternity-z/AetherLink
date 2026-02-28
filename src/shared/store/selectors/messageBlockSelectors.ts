@@ -1,8 +1,8 @@
 import type { RootState } from '../index';
-import type { MessageBlock, KnowledgeReferenceMessageBlock } from '../../types/newMessage';
+import type { MessageBlock, KnowledgeReferenceMessageBlock, CitationMessageBlock } from '../../types/newMessage';
 import { MessageBlockType } from '../../types/newMessage';
 import type { Citation } from '../../types/citation';
-import { extractCitationsFromToolBlock, isWebSearchToolBlock } from '../../utils/citation';
+import { extractCitationsFromToolBlock, isWebSearchToolBlock, extractHostname } from '../../utils/citation';
 
 // 稳定的空数组引用
 const EMPTY_CITATIONS_ARRAY: Citation[] = [];
@@ -100,15 +100,53 @@ export const selectCitationsForMessage = (state: RootState, messageId?: string):
   for (const blockId of messageBlocks) {
     const block = blockEntities[blockId];
     if (!block) continue;
-    // 直接支持 citation 块
+
+    // ✅ 统一引用块（新格式）：从 knowledge[] 和 webSearch[] 提取
     if (block.type === MessageBlockType.CITATION) {
-      citations.push(...extractCitationsFromToolBlock(block as unknown as any));
+      const citBlock = block as CitationMessageBlock;
+
+      // 知识库引用
+      if (citBlock.knowledge && citBlock.knowledge.length > 0) {
+        citBlock.knowledge.forEach((k) => {
+          citations.push({
+            number: k.index,
+            url: k.sourceUrl || `knowledge://${k.knowledgeBaseId || 'unknown'}/${k.documentId || k.index}`,
+            title: k.knowledgeBaseName || '知识库',
+            content: k.content?.substring(0, 200),
+            type: 'knowledge',
+            showFavicon: false,
+            metadata: { similarity: k.similarity }
+          });
+        });
+      }
+
+      // Web 搜索引用
+      if (citBlock.webSearch && citBlock.webSearch.length > 0) {
+        citBlock.webSearch.forEach((w) => {
+          citations.push({
+            number: w.index,
+            url: w.url,
+            title: w.title || '',
+            content: (w.snippet || w.content || '').substring(0, 200),
+            hostname: extractHostname(w.url),
+            type: 'websearch',
+            showFavicon: true,
+          });
+        });
+      }
+
+      // 旧格式 sources 兜底（向后兼容）
+      if (citations.length === 0 && citBlock.sources && citBlock.sources.length > 0) {
+        citations.push(...extractCitationsFromToolBlock(citBlock as unknown as any));
+      }
     }
+
     // 兼容旧的 web search 工具块
     if (isWebSearchToolBlock(block as any)) {
       citations.push(...extractCitationsFromToolBlock(block as any));
     }
-    // 知识库引用块 → 提取为 knowledge 类型的 citation
+
+    // 兼容旧的知识库引用块
     if (block.type === MessageBlockType.KNOWLEDGE_REFERENCE) {
       const kbBlock = block as KnowledgeReferenceMessageBlock;
       if (kbBlock.metadata?.isCombined && kbBlock.metadata.results) {
@@ -124,7 +162,6 @@ export const selectCitationsForMessage = (state: RootState, messageId?: string):
           });
         });
       } else if (kbBlock.content) {
-        // 单条引用
         citations.push({
           number: 1,
           url: `knowledge://${kbBlock.knowledgeBaseId}`,

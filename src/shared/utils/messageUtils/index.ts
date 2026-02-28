@@ -33,7 +33,8 @@ export {
   createTranslationBlock,
   createChartBlock,
   createMathBlock,
-  createKnowledgeReferenceBlock
+  createKnowledgeReferenceBlock,
+  createCitationBlock
 } from './blockFactory';
 
 // 块查找函数

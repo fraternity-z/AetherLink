@@ -156,19 +156,51 @@ export interface ErrorMessageBlock extends BaseMessageBlock {
   code?: string
 }
 
-// 引用消息块
+// 知识库引用条目（统一引用系统）
+export interface KnowledgeReferenceItem {
+  index: number;
+  content: string;
+  similarity: number;
+  documentId?: string;
+  knowledgeBaseId?: string;
+  knowledgeBaseName?: string;
+  sourceUrl?: string;
+}
+
+// Web 搜索引用条目（统一引用系统）
+export interface WebSearchReferenceItem {
+  index: number;
+  title: string;
+  url: string;
+  snippet?: string;
+  content?: string;
+  provider?: string;
+}
+
+// 引用消息块 — 统一引用系统
+// 同时承载知识库引用、Web 搜索引用等多种引用来源
 export interface CitationMessageBlock extends BaseMessageBlock {
   type: typeof MessageBlockType.CITATION
   content: string
   source?: string
   url?: string
+  // 旧字段：保持向后兼容
   sources?: Array<{
     title?: string
     url?: string
     content?: string
   }>
   response?: any
-  knowledge?: any[]
+  // 统一引用数据
+  knowledge?: KnowledgeReferenceItem[]
+  webSearch?: WebSearchReferenceItem[]
+  // 元数据
+  citationMetadata?: {
+    searchQuery?: string;
+    knowledgeBaseIds?: string[];
+    knowledgeBaseNames?: string[];
+    webSearchProvider?: string;
+  }
 }
 
 // 翻译块

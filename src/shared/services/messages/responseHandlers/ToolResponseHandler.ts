@@ -1,12 +1,12 @@
 import store from '../../../store';
 import { dexieStorage } from '../../storage/DexieStorageService';
 import { MessageBlockStatus } from '../../../types/newMessage';
-import type { ToolMessageBlock } from '../../../types/newMessage';
+import type { ToolMessageBlock, WebSearchReferenceItem } from '../../../types/newMessage';
 import { newMessagesActions } from '../../../store/slices/newMessagesSlice';
 import { updateOneBlock, addOneBlock } from '../../../store/slices/messageBlocksSlice';
 import { ChunkType } from '../../../types/chunk';
 import { globalToolTracker } from '../../../utils/toolExecutionSync';
-import { createToolBlock } from '../../../utils/messageUtils';
+import { createToolBlock, createCitationBlock } from '../../../utils/messageUtils';
 // callMCPTool 不再需要 - 工具执行由 Provider 层统一处理
 import type { MCPTool } from '../../../types';
 
@@ -262,6 +262,79 @@ export class ToolResponseHandler {
   }
 
   /**
+   * 检查工具是否为 Web 搜索，若是则创建统一引用块
+   */
+  private async maybeCreateWebSearchCitationBlock(toolResponse: any, _toolBlockId: string) {
+    try {
+      const toolName = (toolResponse.tool?.name || '').toLowerCase();
+      const isWebSearch =
+        toolName.includes('web_search') ||
+        toolName.includes('websearch') ||
+        toolName === 'builtin_web_search';
+
+      if (!isWebSearch) return;
+
+      // 从 toolResponse 中提取搜索结果
+      const rawResponse = toolResponse.response;
+      let webSearchResults: any[] = [];
+
+      if (rawResponse?.webSearchResult?.results) {
+        webSearchResults = rawResponse.webSearchResult.results;
+      } else if (rawResponse?.results && Array.isArray(rawResponse.results)) {
+        webSearchResults = rawResponse.results;
+      }
+
+      if (webSearchResults.length === 0) {
+        console.log(`[ToolResponseHandler] Web 搜索无结果，跳过引用块创建`);
+        return;
+      }
+
+      // 转换为 WebSearchReferenceItem 格式
+      const webSearchItems: WebSearchReferenceItem[] = webSearchResults.map((r: any, i: number) => ({
+        index: i + 1,
+        title: r.title || '未知标题',
+        url: r.url || '',
+        snippet: r.snippet || '',
+        content: r.content || r.snippet || '',
+        provider: r.provider,
+      }));
+
+      // 创建统一引用块
+      const citationBlock = createCitationBlock(this.messageId, {
+        webSearch: webSearchItems,
+        webSearchProvider: webSearchItems[0]?.provider,
+      });
+
+      console.log(`[ToolResponseHandler] 创建 Web 搜索引用块: ${citationBlock.id}，包含 ${webSearchItems.length} 条结果`);
+
+      // 添加到 Redux
+      store.dispatch(addOneBlock(citationBlock));
+
+      // 保存到数据库
+      await dexieStorage.saveMessageBlock(citationBlock);
+
+      // 将引用块添加到消息 blocks 数组（紧跟在工具块之后）
+      const currentMessage = store.getState().messages.entities[this.messageId];
+      if (currentMessage) {
+        const updatedBlocks = [...(currentMessage.blocks || []), citationBlock.id];
+
+        store.dispatch(newMessagesActions.updateMessage({
+          id: this.messageId,
+          changes: { blocks: updatedBlocks }
+        }));
+
+        await dexieStorage.updateMessage(this.messageId, {
+          blocks: updatedBlocks
+        });
+
+        console.log(`[ToolResponseHandler] Web 搜索引用块已添加到消息: ${citationBlock.id}`);
+      }
+    } catch (error) {
+      console.error(`[ToolResponseHandler] 创建 Web 搜索引用块失败:`, error);
+    }
+  }
+
+  /**
    * 清理工具执行 - 参考 Cline 的清理机制
    */
   async cleanupToolExecution(toolId: string) {
@@ -355,6 +428,11 @@ export class ToolResponseHandler {
 
             // 参考 Cline：标记工具执行完成
             globalToolTracker.completeTool(toolResponse.id, finalStatus === MessageBlockStatus.SUCCESS);
+
+            // 🔍 Web 搜索完成后，创建统一引用块
+            if (finalStatus === MessageBlockStatus.SUCCESS) {
+              await this.maybeCreateWebSearchCitationBlock(toolResponse, existingBlockId);
+            }
 
             // 参考 Cline：工具完成后的清理工作
             await this.cleanupToolExecution(toolResponse.id);

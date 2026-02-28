@@ -8,7 +8,10 @@ import type {
   TranslationMessageBlock,
   ChartMessageBlock,
   MathMessageBlock,
-  KnowledgeReferenceMessageBlock
+  KnowledgeReferenceMessageBlock,
+  CitationMessageBlock,
+  KnowledgeReferenceItem,
+  WebSearchReferenceItem
 } from '../../types/newMessage';
 // 注意：MultiModelMessageBlock 已移除，多模型功能现在通过 askId 分组多个独立的助手消息实现
 import {
@@ -228,7 +231,44 @@ export function createMathBlock(
 }
 
 /**
- * 创建知识库引用块
+ * 创建统一引用块（知识库 + Web搜索）
+ */
+export function createCitationBlock(
+  messageId: string,
+  options: {
+    knowledge?: KnowledgeReferenceItem[];
+    webSearch?: WebSearchReferenceItem[];
+    searchQuery?: string;
+    knowledgeBaseIds?: string[];
+    knowledgeBaseNames?: string[];
+    webSearchProvider?: string;
+  }
+): CitationMessageBlock {
+  const parts: string[] = [];
+  if (options.knowledge?.length) {
+    parts.push(`知识库引用 (${options.knowledge.length} 条)`);
+  }
+  if (options.webSearch?.length) {
+    parts.push(`网络搜索 (${options.webSearch.length} 条)`);
+  }
+  const content = parts.join(' + ') || '引用';
+
+  return createBaseBlock(messageId, MessageBlockType.CITATION, {
+    content,
+    knowledge: options.knowledge,
+    webSearch: options.webSearch,
+    citationMetadata: {
+      searchQuery: options.searchQuery,
+      knowledgeBaseIds: options.knowledgeBaseIds,
+      knowledgeBaseNames: options.knowledgeBaseNames,
+      webSearchProvider: options.webSearchProvider,
+    },
+    status: MessageBlockStatus.SUCCESS,
+  }) as CitationMessageBlock;
+}
+
+/**
+ * 创建知识库引用块（旧接口，保持向后兼容）
  */
 export function createKnowledgeReferenceBlock(
   messageId: string,
