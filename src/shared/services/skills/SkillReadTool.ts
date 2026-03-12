@@ -18,13 +18,13 @@ export const READ_SKILL_TOOL_NAME = 'read_skill';
 /** read_skill 工具的 MCPTool 定义 */
 export const READ_SKILL_TOOL_DEFINITION: MCPTool = {
   name: READ_SKILL_TOOL_NAME,
-  description: '读取指定技能的完整指令内容。当 system prompt 中的 <available_skills> 列表包含匹配用户请求的技能时，使用此工具获取该技能的详细指令。',
+  description: '读取指定技能的完整指令内容。当 system prompt 中的 Available skills 列表包含匹配用户请求的技能时，使用此工具获取详细指令。',
   inputSchema: {
     type: 'object',
     properties: {
       skill_name: {
         type: 'string',
-        description: '技能名称，对应 <available_skills> 中的 <name> 值',
+        description: '技能名称，对应 Available skills 列表中的名称',
       },
     },
     required: ['skill_name'],
