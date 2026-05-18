@@ -489,9 +489,12 @@ export class OpenAIProvider extends BaseOpenAIProvider {
               console.log(`[OpenAIProvider] 流式：对话历史保留完整内容（含工具调用），长度: ${content.length}`);
 
               // 添加助手消息到对话历史（保留工具调用标签）
+              // 同样需要保留 reasoning_content 以兼容 DeepSeek V4 thinking 模式
+              const reasoning = (result as any).reasoning;
               currentMessages.push({
                 role: 'assistant',
-                content: content
+                content: content,
+                ...(reasoning && { reasoning_content: reasoning })
               });
 
               // 添加工具结果到对话历史
@@ -512,9 +515,14 @@ export class OpenAIProvider extends BaseOpenAIProvider {
               console.log(`[OpenAIProvider] 函数调用模式：检测到 ${nativeToolCalls.length} 个原生工具调用`);
 
               // 添加助手消息到对话历史（包含 tool_calls）
+              // 注意：DeepSeek V4 thinking 模式要求把 reasoning_content 原样回传，
+              // 否则下一轮会报 400 "The `reasoning_content` in the thinking mode must be passed back to the API."
+              // 其他 OpenAI 兼容 API 通常会忽略未知字段，所以条件性添加是安全的。
+              const reasoning = (result as any).reasoning;
               currentMessages.push({
                 role: 'assistant',
                 content: content || '',
+                ...(reasoning && { reasoning_content: reasoning }),
                 tool_calls: nativeToolCalls
               });
 
@@ -636,9 +644,11 @@ export class OpenAIProvider extends BaseOpenAIProvider {
             });
           }
 
+          // 注意：DeepSeek V4 thinking 模式要求把 reasoning_content 原样回传
           currentMessages.push({
             role: 'assistant',
             content: content || '',
+            ...(reasoning && { reasoning_content: reasoning }),
             tool_calls: toolCalls
           });
 
@@ -664,9 +674,11 @@ export class OpenAIProvider extends BaseOpenAIProvider {
             finalContent = textWithoutTools;
 
             // 添加助手消息到对话历史（保留完整内容，包含工具调用标签）
+            // 注意：DeepSeek V4 thinking 模式要求把 reasoning_content 原样回传
             currentMessages.push({
               role: 'assistant',
-              content: content  // 保留工具调用标签，让模型知道自己调用了什么
+              content: content,  // 保留工具调用标签，让模型知道自己调用了什么
+              ...(reasoning && { reasoning_content: reasoning })
             });
           }
 
