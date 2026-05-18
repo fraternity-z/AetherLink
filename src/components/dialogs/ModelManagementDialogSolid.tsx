@@ -23,7 +23,7 @@ interface ModelManagementDialogSolidProps {
 
 /**
  * ModelManagementDialog - SolidJS 增强版
- * 
+ *
  * 特点：
  * - ✅ 使用 SolidJS 细粒度响应式系统
  * - ✅ 性能优于 React 版本
@@ -43,33 +43,41 @@ const ModelManagementDialogSolid: React.FC<ModelManagementDialogSolidProps> = ({
   const theme = useTheme();
   const [loading, setLoading] = useState<boolean>(false);
   const [models, setModels] = useState<Model[]>([]);
-  const initialProviderRef = useRef<any>(null);
+  // 单调递增的请求序号，用来丢弃乱序回来的旧请求结果，避免快速重开/切换 provider
+  // 时旧响应覆盖新响应
+  const latestRequestRef = useRef(0);
 
   // 注册返回键处理，使手机系统返回键关闭此抽屉而非导航回上一页
   useDialogBackHandler('model-management-drawer', open, onClose);
 
   // 加载模型列表
   const loadModels = async () => {
+    if (!provider) return;
+    const requestId = ++latestRequestRef.current;
+    setLoading(true);
     try {
-      setLoading(true);
-      const providerToUse = initialProviderRef.current || provider;
-      const fetchedModels = await fetchModels(providerToUse);
+      const fetchedModels = await fetchModels(provider);
+      if (requestId !== latestRequestRef.current) return;
       setModels(fetchedModels);
     } catch (error) {
+      if (requestId !== latestRequestRef.current) return;
       console.error('加载模型失败:', error);
       setModels([]);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // 当对话框打开时加载模型
+  // 每次对话框打开时都重新加载模型，保证用户能拿到最新结果
+  // 之前用 ref 缓存了首次打开时的 provider，导致同一 provider 重复打开时不会刷新
   useEffect(() => {
-    if (open && provider && (!initialProviderRef.current || initialProviderRef.current.id !== provider.id)) {
-      initialProviderRef.current = provider;
+    if (open && provider) {
       loadModels();
     }
-  }, [open, provider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, provider?.id, provider?.apiKey, provider?.baseUrl]);
 
   // 主题模式
   const themeMode = useMemo(() => theme.palette.mode as 'light' | 'dark', [theme.palette.mode]);
