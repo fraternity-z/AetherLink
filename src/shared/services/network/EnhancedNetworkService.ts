@@ -4,6 +4,8 @@
  * 捕获所有网络请求，包括 fetch、XMLHttpRequest、axios 等
  */
 
+import { isAbortError } from '../../utils/abortController';
+
 export type NetworkMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
 export type NetworkStatus = 'pending' | 'success' | 'error' | 'cancelled';
 
@@ -79,16 +81,16 @@ class EnhancedNetworkService {
   private interceptFetch(): void {
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const id = this.generateId();
-      const url = typeof input === 'string' ? input : 
-                  input instanceof URL ? input.toString() : 
+      const url = typeof input === 'string' ? input :
+                  input instanceof URL ? input.toString() :
                   (input as Request).url;
-      
-      const method = (init?.method || 
+
+      const method = (init?.method ||
                      (input instanceof Request ? input.method : 'GET')).toUpperCase() as NetworkMethod;
 
-      const requestHeaders = this.extractHeaders(init?.headers || 
+      const requestHeaders = this.extractHeaders(init?.headers ||
                                                (input instanceof Request ? input.headers : undefined));
-      
+
       const entry: NetworkEntry = {
         id,
         method,
@@ -127,7 +129,7 @@ class EnhancedNetworkService {
           // 对于流式响应，使用 tee() 创建两个独立的流
           // 一个用于捕获数据，一个返回给原始调用者
           const [stream1, stream2] = response.body?.tee() || [null, null];
-          
+
           if (stream1 && stream2) {
             // 创建新的响应对象返回给调用者
             const newResponse = new Response(stream2, {
@@ -138,7 +140,7 @@ class EnhancedNetworkService {
 
             // 异步捕获流式数据
             this.captureStreamData(stream1, id);
-            
+
             // 立即更新基本信息
             this.updateEntry(id, {
               status: response.ok ? 'success' : 'error',
@@ -210,7 +212,7 @@ class EnhancedNetworkService {
         return response;
       } catch (error: any) {
         const endTime = performance.now();
-        
+
         this.updateEntry(id, {
           status: 'error',
           endTime,
@@ -365,9 +367,9 @@ class EnhancedNetworkService {
 
   private extractHeaders(headers: HeadersInit | Headers | undefined): Record<string, string> {
     const result: Record<string, string> = {};
-    
+
     if (!headers) return result;
-    
+
     if (headers instanceof Headers) {
       headers.forEach((value, key) => {
         result[key.toLowerCase()] = value;
@@ -381,7 +383,7 @@ class EnhancedNetworkService {
         result[key.toLowerCase()] = value;
       });
     }
-    
+
     return result;
   }
 
@@ -389,7 +391,7 @@ class EnhancedNetworkService {
 
   private serializeRequestBodySync(body: any): any {
     if (!body) return undefined;
-    
+
     if (typeof body === 'string') return body;
     if (body instanceof FormData) {
       const result: Record<string, any> = {};
@@ -408,7 +410,7 @@ class EnhancedNetworkService {
     if (body instanceof ArrayBuffer || body instanceof Uint8Array) {
       return `[Binary Data: ${body.byteLength} bytes]`;
     }
-    
+
     try {
       return JSON.parse(JSON.stringify(body));
     } catch {
@@ -469,18 +471,18 @@ class EnhancedNetworkService {
       const decoder = new TextDecoder();
       const chunks: string[] = [];
       let totalSize = 0;
-      
+
       // 读取所有chunk直到流结束
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
-        
+
         if (value) {
           const text = decoder.decode(value, { stream: true });
           chunks.push(text);
           totalSize += value.length;
-          
+
           // 实时更新进度(每10个chunk更新一次UI)
           if (chunks.length % 10 === 0) {
             this.updateEntry(id, {
@@ -490,20 +492,29 @@ class EnhancedNetworkService {
           }
         }
       }
-      
+
       // 关闭reader
       reader.releaseLock();
-      
+
       // 最终更新,显示完整捕获的数据
       const capturedData = chunks.join('');
-      
+
       this.updateEntry(id, {
         responseData: capturedData,
         responseSize: totalSize
       });
-      
+
       console.log(`[EnhancedNetworkService] 流式响应捕获完成: ${chunks.length} chunks, ${this.formatSize(totalSize)}`);
     } catch (error) {
+      if (isAbortError(error)) {
+        console.log('[EnhancedNetworkService] 流式响应捕获已取消:', (error as Error).message);
+        this.updateEntry(id, {
+          status: 'cancelled',
+          responseData: '[Streaming Response - Cancelled]'
+        });
+        return;
+      }
+
       console.error('[EnhancedNetworkService] 捕获流式数据失败:', error);
       this.updateEntry(id, {
         responseData: '[Streaming Response - Capture Failed: ' + (error as Error).message + ']'
@@ -513,12 +524,12 @@ class EnhancedNetworkService {
 
   private addEntry(entry: NetworkEntry): void {
     this.entries.push(entry);
-    
+
     // 限制条目数量
     if (this.entries.length > this.maxEntries) {
       this.entries = this.entries.slice(-this.maxEntries);
     }
-    
+
     this.notifyListeners();
   }
 
@@ -550,22 +561,22 @@ class EnhancedNetworkService {
       if (!filter.methods.has(entry.method)) {
         return false;
       }
-      
+
       // 状态过滤
       if (!filter.statuses.has(entry.status)) {
         return false;
       }
-      
+
       // 只显示错误
       if (filter.onlyErrors && entry.status !== 'error') {
         return false;
       }
-      
+
       // 隐藏 data URLs
       if (filter.hideDataUrls && entry.url.startsWith('data:')) {
         return false;
       }
-      
+
       // 文本搜索
       if (filter.searchText) {
         const searchLower = filter.searchText.toLowerCase();
@@ -575,14 +586,14 @@ class EnhancedNetworkService {
           return false;
         }
       }
-      
+
       return true;
     });
   }
 
   public addListener(listener: (entries: NetworkEntry[]) => void): () => void {
     this.listeners.push(listener);
-    
+
     return () => {
       const index = this.listeners.indexOf(listener);
       if (index > -1) {

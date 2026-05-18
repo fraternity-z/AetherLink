@@ -5,6 +5,7 @@ import store from '../store';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 import type { ModelProvider } from '../config/defaultModels';
 import { ChunkType } from '../types/chunk';
+import { isAbortError } from '../utils/abortController';
 
 /**
  * API模块索引文件
@@ -68,7 +69,7 @@ export const testApiConnection = async (model: Model): Promise<boolean> => {
     // 对于测试连接，直接使用传入的模型对象，不从数据库查找
     // 这样可以测试未添加到 provider 列表中的模型
     const api = getProviderApi(model);
-    
+
     // 构造测试消息
     const testMessages = [{
       id: 'test-msg',
@@ -79,7 +80,7 @@ export const testApiConnection = async (model: Model): Promise<boolean> => {
 
     // 直接调用 API 的 sendChatRequest 方法
     const response = await api.sendChatRequest(testMessages, model);
-    
+
     // 检查响应
     const content = typeof response === 'string' ? response : response.content;
     return Boolean(content && content.length > 0);
@@ -100,6 +101,11 @@ export const sendChatRequest = async (options: ChatRequest): Promise<{ success: 
 
     return processModelRequest(model, options);
   } catch (error) {
+    if (isAbortError(error)) {
+      console.log('[sendChatRequest] 请求已取消:', error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+
     console.error('[sendChatRequest] 请求失败:', error instanceof Error ? error.message : String(error));
     throw error;
   }
@@ -191,10 +197,20 @@ async function processModelRequest(model: Model, options: ChatRequest): Promise<
         reasoningTime
       };
     } catch (error) {
+      if (isAbortError(error)) {
+        console.log('[processModelRequest] API调用已取消:', error instanceof Error ? error.message : String(error));
+        throw error;
+      }
+
       console.error('[processModelRequest] API调用失败:', error instanceof Error ? error.message : String(error));
       throw error;
     }
   } catch (error) {
+    if (isAbortError(error)) {
+      console.log('[processModelRequest] 请求已取消:', error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+
     console.error('[processModelRequest] 请求失败:', error instanceof Error ? error.message : String(error));
     throw error;
   }
@@ -214,15 +230,15 @@ export function getStoreProviders(): ModelProvider[] {
  */
 export function getProviderByModel(model?: Model): ModelProvider | null {
   if (!model) return null;
-  
+
   const providers = getStoreProviders();
   const provider = providers.find((p) => p.id === model.provider);
-  
+
   if (!provider) {
     // 如果没找到，尝试返回第一个启用的 provider
     return providers.find((p) => p.isEnabled) || providers[0] || null;
   }
-  
+
   return provider;
 }
 
@@ -256,12 +272,12 @@ function findModelById(modelId: string): Model | null {
       if (identity.provider && provider.id !== identity.provider) {
         continue;
       }
-      
+
       if (provider.models && Array.isArray(provider.models)) {
-        const providerModel = provider.models.find((m: Model) => 
+        const providerModel = provider.models.find((m: Model) =>
           modelMatchesIdentity(m, identity, provider.id)
         );
-        
+
         if (providerModel) {
           // 🚀 合并 provider 的配置到模型中，确保使用最新的 apiKey 和 baseUrl
           return {

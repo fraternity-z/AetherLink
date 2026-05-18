@@ -26,6 +26,7 @@ import {
   convertToolCallsToMcpResponses
 } from './tools';
 import { ChunkType } from '../../types/chunk';
+import { isAbortError } from '../../utils/abortController';
 
 
 
@@ -90,13 +91,13 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
     const unified = this.parameterManager.getUnifiedParameters(isReasoningModel(this.model));
     const { customParameters, ...standardParams } = unified;
     const apiParams = OpenAIParameterFormatter.toAPIFormat(standardParams, this.model);
-    
+
     // 🆕 合并自定义参数到 API 请求
     const finalParams = {
       ...apiParams,
       ...customParameters, // 自定义参数直接展开到请求中
     };
-    
+
     return { unified, apiParams: finalParams };
   }
 
@@ -207,7 +208,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
   /** 检测工具列表是否包含 attempt_completion（支持带前缀的名称） */
   private hasCompletionTool(toolNames: string[]): boolean {
-    return toolNames.some(name => 
+    return toolNames.some(name =>
       name === 'attempt_completion' || name.endsWith('-attempt_completion')
     );
   }
@@ -224,7 +225,7 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
     const toolNames = toolCalls.map(tc => tc.function?.name || tc.name || '');
     const hasCompletion = this.hasCompletionTool(toolNames);
-    
+
     console.log(`[OpenAI] 处理 ${toolCalls.length} 个工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
 
     const mcpToolResponses = this.convertToolCallsToMcpResponses(toolCalls, mcpTools);
@@ -251,12 +252,12 @@ export abstract class BaseOpenAIProvider extends AbstractBaseProvider {
 
     const toolNames = toolResponses.map(tr => tr.tool?.name || tr.tool?.id || '');
     const hasCompletion = this.hasCompletionTool(toolNames);
-    
+
     console.log(`[OpenAI] 处理 ${toolResponses.length} 个 XML 工具调用${hasCompletion ? '（含 attempt_completion）' : ''}`);
 
     const results = await parseAndCallTools(content, mcpTools, onChunk);
     const messages: any[] = [];
-    
+
     for (let i = 0; i < Math.min(results.length, toolResponses.length); i++) {
       const msg = this.mcpToolCallResponseToMessage(toolResponses[i], results[i], this.model);
       if (msg) messages.push(msg);
@@ -394,7 +395,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         const modelName = this.model.name || this.model.id;
         const currentMaxTokens = requestParams.max_tokens;
         console.error(`[OpenAIProvider] ${modelName} 模型的 max_tokens 参数超出限制: ${currentMaxTokens}`);
-        throw new Error(`模型 ${modelName} 不支持当前的最大输出token设置 (${currentMaxTokens})。请在模型设置中降低最大输出token数量。`);
+        throw new Error(`模型 ${modelName} 不支持当前的最大输出token设置 (${currentMaxTokens})。请在模型设置中降低最大输出token数量。`, { cause: error });
       }
 
       console.error('[OpenAIProvider.sendChatMessage] API请求失败:', error);
@@ -541,6 +542,11 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         return result;
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        console.log('[OpenAIProvider] 流式请求已取消:', error instanceof Error ? error.message : String(error));
+        throw new DOMException('Operation aborted', 'AbortError');
+      }
+
       console.error('[OpenAIProvider] 流式请求失败:', error);
       throw error;
     }
@@ -548,7 +554,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
 
   /**
    * 处理非流式响应
-   * 
+   *
    * ============= 非流式输出链路 =============
    * while (iteration < maxIterations) {
    *   1. 发送 THINKING_COMPLETE (全量 reasoning) → 创建/更新思考块
@@ -561,7 +567,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
    *   4. 有工具结果 → continue 下一轮
    *   5. 无工具结果 → 发送最终 TEXT_COMPLETE → break
    * }
-   * 
+   *
    * ============= 关键设计 =============
    * - 所有 onChunk 调用都 await，确保块创建完成后再继续
    * - 只发 COMPLETE，不发 DELTA（非流式是全量数据）
@@ -646,7 +652,7 @@ export class OpenAIProvider extends BaseOpenAIProvider {
         if (content && content.length > 0 && enableTools && mcpTools.length > 0) {
           const textWithoutTools = removeToolUseTags(content);
           const hasToolTags = textWithoutTools.length < content.length;
-          
+
           if (hasToolTags) {
             // 先发送去除工具标签后的文本（用于 UI 显示）
             if (textWithoutTools.trim() && onChunk) {
@@ -656,14 +662,14 @@ export class OpenAIProvider extends BaseOpenAIProvider {
               });
             }
             finalContent = textWithoutTools;
-            
+
             // 添加助手消息到对话历史（保留完整内容，包含工具调用标签）
             currentMessages.push({
               role: 'assistant',
               content: content  // 保留工具调用标签，让模型知道自己调用了什么
             });
           }
-          
+
           // 然后处理工具调用
           const xmlResult = await this.processToolUses(content, mcpTools, onChunk);
           toolResults = toolResults.concat(xmlResult.messages);
@@ -695,8 +701,8 @@ export class OpenAIProvider extends BaseOpenAIProvider {
       }
 
       // 返回结果 - 合并所有轮次的 reasoning
-      const finalReasoning = allReasoningParts.length > 0 
-        ? allReasoningParts.join('\n\n---\n\n') 
+      const finalReasoning = allReasoningParts.length > 0
+        ? allReasoningParts.join('\n\n---\n\n')
         : undefined;
 
       if (finalReasoning) {

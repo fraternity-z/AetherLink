@@ -6,6 +6,7 @@
 import type { Message, Model, MCPTool } from '../../types';
 import type { Chunk } from '../../types/chunk';
 import { logApiRequest } from '../../services/infra/LoggerService';
+import { isAbortError } from '../../utils/abortController';
 import { OpenAIProvider } from './provider';
 
 /**
@@ -118,6 +119,16 @@ function logChatRequest(messages: Message[], model: Model, options: NormalizedCh
  * 处理聊天错误
  */
 function handleChatError(error: any, model: Model): never {
+  // 用户主动中断是正常控制流，不按错误打印堆栈
+  if (isAbortError(error)) {
+    console.log('[OpenAI Chat] 聊天请求已取消:', {
+      model: model.id,
+      provider: model.provider,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    throw new DOMException('Operation aborted', 'AbortError');
+  }
+
   console.error('[OpenAI Chat] 聊天请求失败:', error);
   console.error('[OpenAI Chat] 错误详情:', {
     message: error instanceof Error ? error.message : '未知错误',
@@ -125,11 +136,6 @@ function handleChatError(error: any, model: Model): never {
     provider: model.provider,
     stack: error instanceof Error ? error.stack : undefined
   });
-
-  // 检查是否为中断错误
-  if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
-    throw new DOMException('Operation aborted', 'AbortError');
-  }
 
   // 重新抛出原始错误
   throw error;
@@ -198,4 +204,3 @@ export async function sendChatMessage(
     handleChatError(error, model);
   }
 }
-

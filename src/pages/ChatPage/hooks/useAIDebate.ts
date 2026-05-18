@@ -9,19 +9,52 @@ import type { SiliconFlowImageFormat, ChatTopic } from '../../../shared/types';
 import type { Model } from '../../../shared/types';
 import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
 import { findModelInProviders } from '../../../shared/utils/modelUtils';
+import { TopicService } from '../../../shared/services/topics/TopicService';
+import { dexieStorage } from '../../../shared/services/storage/DexieStorageService';
+import { flushThrottledUpdates, throttledBlockUpdate } from '../../../shared/store/thunks/message/utils';
+import { isAbortError } from '../../../shared/utils/abortController';
 
 interface UseAIDebateProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
   currentTopic: ChatTopic | null;
 }
 
-export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) => {
+export const useAIDebate = ({ currentTopic }: UseAIDebateProps) => {
   const dispatch = useDispatch();
   const providers = useSelector(selectProviders);
   const [isDebating, setIsDebating] = useState(false);
   const [currentDebateConfig, setCurrentDebateConfig] = useState<DebateConfig | null>(null);
   const debateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const abortableDelay = useCallback((ms: number, signal?: AbortSignal) => {
+    return new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException('Operation aborted', 'AbortError'));
+        return;
+      }
+
+      const timer = setTimeout(resolve, ms);
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timer);
+        reject(new DOMException('Operation aborted', 'AbortError'));
+      }, { once: true });
+    });
+  }, []);
+
+  const cleanupDebateRuntime = useCallback(() => {
+    if (debateTimeoutRef.current) {
+      clearTimeout(debateTimeoutRef.current);
+      debateTimeoutRef.current = null;
+    }
+
+    abortControllerRef.current = null;
+
+    if (currentTopic?.id) {
+      dispatch(newMessagesActions.setTopicLoading({ topicId: currentTopic.id, loading: false }));
+      dispatch(newMessagesActions.setTopicStreaming({ topicId: currentTopic.id, streaming: false }));
+    }
+  }, [currentTopic?.id, dispatch]);
 
   // 把 role.modelId（可能是 JSON 身份键）解析为真实的 Model 对象与纯 id
   const resolveRoleModel = useCallback(
@@ -63,21 +96,17 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
         mainTextBlock.status = MessageBlockStatus.SUCCESS;
       }
 
-      // 添加消息到Redux store
-      dispatch(newMessagesActions.addMessage({
-        topicId: currentTopic.id,
-        message
-      }));
-      dispatch(upsertManyBlocks(blocks));
+      // 先保存到 Dexie，再由 TopicService 同步写入 Redux，保持与普通消息链路一致
+      await TopicService.saveMessageAndBlocks(message, blocks);
 
       console.log(`✅ AI消息已发送: ${roleName}`);
     } catch (error) {
       console.error('发送AI消息失败:', error);
     }
-  }, [dispatch, currentTopic]);
+  }, [currentTopic]);
 
   // 开始AI辩论
-  const handleStartDebate = useCallback(async (question: string, config: DebateConfig) => {
+  const handleStartDebate = async (question: string, config: DebateConfig) => {
     if (!currentTopic || isDebating) {
       return;
     }
@@ -92,44 +121,42 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       debateTimeoutRef.current = setTimeout(() => {}, 0);
 
       // 创建 AbortController 用于中断正在进行的请求与轮间等待
-      abortControllerRef.current = new AbortController();
+      const debateController = new AbortController();
+      abortControllerRef.current = debateController;
 
       // 发送辩论开始消息（使用系统消息，不使用当前选择的模型）
       const startMessage = `🎯 **AI辩论开始**\n\n**辩论主题：** ${question}\n\n**参与角色：**\n${config.roles.map(role => `• **${role.name}** (${role.stance === 'pro' ? '正方' : role.stance === 'con' ? '反方' : role.stance === 'neutral' ? '中立' : '主持人'})`).join('\n')}\n\n**最大轮数：** ${config.maxRounds}\n\n---\n\n让我们开始辩论！`;
 
       await sendAIMessage(startMessage, '系统');
 
-      // 等待一下再开始辩论流程，让开始消息先显示
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 等待一下再开始辩论流程，让开始消息先显示；该等待必须可中断
+      await abortableDelay(1000, debateController.signal);
 
       // 开始辩论流程
       await startDebateFlow(question, config);
 
     } catch (error) {
-      console.error('开始AI辩论失败:', error);
+      if (isAbortError(error)) {
+        console.log('AI辩论启动阶段已被中断');
+      } else {
+        console.error('开始AI辩论失败:', error);
+      }
       setIsDebating(false);
       setCurrentDebateConfig(null);
-      if (debateTimeoutRef.current) {
-        clearTimeout(debateTimeoutRef.current);
-        debateTimeoutRef.current = null;
-      }
+      cleanupDebateRuntime();
     }
-  }, [currentTopic, isDebating, onSendMessage]);
+  };
 
   // 停止AI辩论
   const handleStopDebate = useCallback(async () => {
     console.log('🛑 用户请求停止辩论');
 
-    if (debateTimeoutRef.current) {
-      clearTimeout(debateTimeoutRef.current);
-      debateTimeoutRef.current = null;
+    // 中断正在进行的 AI 请求和等待
+    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+      abortControllerRef.current.abort('user_stop');
     }
 
-    // 中断正在进行的 AI 请求和轮间等待
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
+    cleanupDebateRuntime();
 
     if (isDebating) {
       setIsDebating(false);
@@ -138,7 +165,7 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       // 发送辩论结束消息
       await sendAIMessage('🛑 **AI辩论已停止**\n\n辩论被用户手动终止。', '系统');
     }
-  }, [isDebating, sendAIMessage]);
+  }, [isDebating, sendAIMessage, cleanupDebateRuntime]);
 
   // 辩论流程
   const startDebateFlow = async (question: string, config: DebateConfig) => {
@@ -183,7 +210,7 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
           // 检查主持人是否建议结束（但至少要进行2轮完整辩论）
           if (response && role.stance === 'moderator' && currentRound >= 2 && checkEndSuggestion(response)) {
             console.log('🏁 主持人建议结束辩论');
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await abortableDelay(2000, abortControllerRef.current?.signal);
             await endDebateWithSummary(question, conversationHistory, config);
             return;
           }
@@ -192,27 +219,22 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
           if (shouldContinue) {
             console.log(`⏳ 等待3秒后继续...`);
             try {
-              await new Promise<void>((resolve, reject) => {
-                const signal = abortControllerRef.current?.signal;
-                if (signal?.aborted) {
-                  return reject(new DOMException('Aborted', 'AbortError'));
-                }
-                debateTimeoutRef.current = setTimeout(resolve, 3000);
-                signal?.addEventListener('abort', () => {
-                  if (debateTimeoutRef.current) {
-                    clearTimeout(debateTimeoutRef.current);
-                    debateTimeoutRef.current = null;
-                  }
-                  reject(new DOMException('Aborted', 'AbortError'));
-                }, { once: true });
-              });
-            } catch {
-              shouldContinue = false;
-              break;
+              await abortableDelay(3000, abortControllerRef.current?.signal);
+            } catch (error) {
+              if (isAbortError(error)) {
+                shouldContinue = false;
+                break;
+              }
+              throw error;
             }
             shouldContinue = debateTimeoutRef.current !== null;
           }
         } catch (error) {
+          if (isAbortError(error)) {
+            console.log(`🛑 角色 ${role.name} 发言被中断`);
+            shouldContinue = false;
+            break;
+          }
           console.error(`❌ 角色 ${role.name} 发言失败:`, error);
         }
 
@@ -221,6 +243,10 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
 
         // 检查是否应该继续（通过ref检查最新状态）
         shouldContinue = debateTimeoutRef.current !== null;
+      }
+
+      if (!shouldContinue) {
+        break;
       }
 
       currentRound++;
@@ -306,6 +332,7 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       const { sendChatRequest } = await import('../../../shared/api');
 
       let accumulated = '';
+      const signal = abortControllerRef.current?.signal;
 
       // 调用真实的AI API
       const response = await sendChatRequest({
@@ -315,8 +342,11 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
         }],
         modelId: role.modelId,
         systemPrompt: role.systemPrompt,
-        abortSignal: abortControllerRef.current?.signal,
+        abortSignal: signal,
         onChunk: (chunk: string) => {
+          if (signal?.aborted) {
+            throw new DOMException('Operation aborted', 'AbortError');
+          }
           if (!chunk) return;
 
           if (accumulated && chunk.startsWith(accumulated)) {
@@ -328,6 +358,10 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
           emitDelta(chunk);
         }
       });
+
+      if (signal?.aborted) {
+        throw new DOMException('Operation aborted', 'AbortError');
+      }
 
       const responseContent = response.content ?? '';
       const finalContent = accumulated || responseContent;
@@ -345,6 +379,11 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       console.log(`[DEBUG] 完整响应对象:`, response);
       return fallback();
     } catch (error) {
+      if (isAbortError(error)) {
+        console.log(`🛑 ${role.name} AI请求已中断`);
+        throw error;
+      }
+
       console.error(`❌ ${role.name} AI请求异常:`, error);
       return fallback();
     }
@@ -379,35 +418,51 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       return '';
     }
 
-    // 先把空框架插入消息流
-    dispatch(newMessagesActions.addMessage({
-      topicId: currentTopic.id,
-      message
-    }));
-    dispatch(upsertManyBlocks(blocks));
+    // 先保存到 Dexie，再由 TopicService 同步写入 Redux
+    await TopicService.saveMessageAndBlocks(message, blocks);
+    dispatch(newMessagesActions.setTopicLoading({ topicId: currentTopic.id, loading: true }));
+    dispatch(newMessagesActions.setTopicStreaming({ topicId: currentTopic.id, streaming: true }));
 
     let accumulatedContent = '';
 
     const updateMessageStatus = (status: AssistantMessageStatus) => {
+      const changes = {
+        status,
+        updatedAt: new Date().toISOString()
+      };
+
       dispatch(newMessagesActions.updateMessage({
         id: message.id,
-        changes: {
-          status,
-          updatedAt: new Date().toISOString()
-        }
+        changes
       }));
+
+      void dexieStorage.updateMessage(message.id, changes).catch(error => {
+        console.error(`[AI Debate] 持久化消息状态失败 (${message.id}):`, error);
+      });
     };
 
     const updateBlockContent = (content: string, status: MessageBlockStatus) => {
-      dispatch(upsertManyBlocks([{
-        ...mainTextBlock,
+      const changes = {
         content: header + content,
         status,
         updatedAt: new Date().toISOString()
-      }]));
-    };
+      };
+      const updatedBlock = {
+        ...mainTextBlock,
+        ...changes
+      };
 
-    updateMessageStatus(AssistantMessageStatus.STREAMING);
+      dispatch(upsertManyBlocks([updatedBlock]));
+
+      if (status === MessageBlockStatus.STREAMING) {
+        throttledBlockUpdate(mainTextBlock.id, changes);
+      } else {
+        flushThrottledUpdates();
+        void dexieStorage.updateMessageBlock(mainTextBlock.id, changes).catch(error => {
+          console.error(`[AI Debate] 持久化消息块失败 (${mainTextBlock.id}):`, error);
+        });
+      }
+    };
 
     const handleDelta = (delta: string) => {
       if (!delta) return;
@@ -421,13 +476,29 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       updateBlockContent(accumulatedContent, MessageBlockStatus.STREAMING);
     };
 
-    const response = await sendAIRequest(role, context, { onDelta: handleDelta });
-    const finalContent = accumulatedContent || response || '';
+    try {
+      updateMessageStatus(AssistantMessageStatus.STREAMING);
 
-    updateBlockContent(finalContent, MessageBlockStatus.SUCCESS);
-    updateMessageStatus(AssistantMessageStatus.SUCCESS);
+      const response = await sendAIRequest(role, context, { onDelta: handleDelta });
+      const finalContent = accumulatedContent || response || '';
 
-    return finalContent;
+      updateBlockContent(finalContent, MessageBlockStatus.SUCCESS);
+      updateMessageStatus(AssistantMessageStatus.SUCCESS);
+
+      return finalContent;
+    } catch (error) {
+      if (isAbortError(error)) {
+        updateBlockContent(accumulatedContent, MessageBlockStatus.PAUSED);
+        updateMessageStatus(AssistantMessageStatus.PAUSED);
+      } else {
+        updateBlockContent(accumulatedContent, MessageBlockStatus.ERROR);
+        updateMessageStatus(AssistantMessageStatus.ERROR);
+      }
+      throw error;
+    } finally {
+      dispatch(newMessagesActions.setTopicLoading({ topicId: currentTopic.id, loading: false }));
+      dispatch(newMessagesActions.setTopicStreaming({ topicId: currentTopic.id, streaming: false }));
+    }
   };
 
   // 获取模拟响应（作为备用）
@@ -487,27 +558,65 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       setIsDebating(false);
       setCurrentDebateConfig(null);
       await sendAIMessage('🏁 **AI辩论结束**\n\n感谢各位的精彩辩论！', '系统');
+      cleanupDebateRuntime();
       return;
     }
 
     try {
       // 生成总结
-      const summary = await generateSummary(question, history);
+      const summary = await generateSummary(question, history, config);
 
       const finalMessage = `🏁 **AI辩论结束**\n\n## 辩论总结\n\n${summary}\n\n---\n\n感谢各位AI角色的精彩辩论！`;
       await sendAIMessage(finalMessage, '系统');
 
     } catch (error) {
+      if (isAbortError(error)) {
+        console.log('🛑 辩论总结生成被中断');
+        throw error;
+      }
+
       console.error('生成辩论总结失败:', error);
       await sendAIMessage('🏁 **AI辩论结束**\n\n辩论已结束，但总结生成失败。', '系统');
     } finally {
       setIsDebating(false);
       setCurrentDebateConfig(null);
+      cleanupDebateRuntime();
     }
   };
 
+  const createFallbackSummary = (question: string, history: string[], reason: string): string => {
+    const speeches = history.filter(item => !item.startsWith('辩论主题：'));
+    const speechCount = speeches.length;
+    const recentSpeeches = speeches.slice(-6);
+
+    const debateRecord = recentSpeeches.length > 0
+      ? recentSpeeches.map((item, index) => `${index + 1}. ${item}`).join('\n')
+      : '暂无有效角色发言记录。';
+
+    return `
+**辩论主题：** ${question}
+
+**总结状态：** 使用本地模板总结
+
+**原因：** ${reason}
+
+**已记录发言数：** ${speechCount} 条
+
+**最近发言摘录：**
+${debateRecord}
+
+**简要结论：**
+本轮辩论已完成或被系统收束。由于当前没有可用的总结模型，本次未调用 AI 进行深度归纳。你可以在 AI 辩论设置中为“总结角色”配置模型，或确保至少一个辩论角色配置了可用模型，下次将自动使用该模型生成完整总结。
+
+**建议：**
+- 如果希望获得高质量总结，请添加一个 summary 总结角色并选择模型。
+- 如果不需要 AI 总结，可以在 AI 辩论设置中关闭“生成总结”。
+- 当前发言内容已经保留在上方消息中，可直接基于原文继续讨论。
+    `.trim();
+  };
+
   // 生成辩论总结
-  const generateSummary = async (question: string, history: string[]): Promise<string> => {
+  const generateSummary = async (question: string, history: string[], config: DebateConfig): Promise<string> => {
     try {
       console.log('🤖 开始生成AI辩论总结...');
 
@@ -533,16 +642,17 @@ ${history.join('\n\n')}
       // 导入API服务
       const { sendChatRequest } = await import('../../../shared/api');
 
-      // 优先找总结角色，如果没有则找其他配置了模型的角色
-      let summaryRole = currentDebateConfig?.roles?.find(role => role.stance === 'summary' && role.modelId);
+      // 优先找总结角色，如果没有则找其他配置了模型的角色。
+      // 注意：这里必须使用本次 start 传入的 config，不能依赖 React state 闭包里的 currentDebateConfig。
+      let summaryRole = config.roles?.find(role => role.stance === 'summary' && role.modelId);
 
       if (!summaryRole) {
         // 如果没有专门的总结角色，找任意一个配置了模型的角色
-        summaryRole = currentDebateConfig?.roles?.find(role => role.modelId);
+        summaryRole = config.roles?.find(role => role.modelId);
       }
 
       if (!summaryRole?.modelId) {
-        throw new Error('没有找到配置了模型的角色来生成总结');
+        return createFallbackSummary(question, history, '未配置总结角色，也没有找到任何配置了模型的辩论角色。');
       }
 
       console.log(`🤖 使用${summaryRole.stance === 'summary' ? '专门的总结角色' : '辩论角色'} ${summaryRole.modelId} (${summaryRole.name}) 生成总结`);
@@ -554,7 +664,8 @@ ${history.join('\n\n')}
           content: summaryPrompt
         }],
         modelId: summaryRole.modelId,
-        systemPrompt: '你是一位专业的辩论分析师，擅长客观分析和总结辩论内容。请提供深入、平衡的分析。'
+        systemPrompt: '你是一位专业的辩论分析师，擅长客观分析和总结辩论内容。请提供深入、平衡的分析。',
+        abortSignal: abortControllerRef.current?.signal
       });
 
       if (response.success && response.content) {
@@ -565,28 +676,17 @@ ${history.join('\n\n')}
         throw new Error('AI总结生成失败');
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+
       console.error('生成AI总结时发生错误:', error);
 
-      // 如果AI生成失败，返回基础模板总结
-      return `
-**辩论主题：** ${question}
-
-**主要观点：**
-- 正方强调了积极影响和实际效益
-- 反方指出了潜在风险和实施困难
-- 中立方提供了平衡的分析视角
-
-**核心分歧：**
-双方在实施可行性和长期影响方面存在分歧。
-
-**可能共识：**
-各方都认同需要谨慎考虑和充分准备。
-
-**建议：**
-建议进一步研究和小规模试点，在实践中验证各方观点。
-
-*注：本总结由于技术原因使用了模板格式，未能调用AI进行深度分析。*
-      `.trim();
+      return createFallbackSummary(
+        question,
+        history,
+        `AI 总结生成失败：${error instanceof Error ? error.message : String(error)}`
+      );
     }
   };
 

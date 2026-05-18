@@ -109,11 +109,7 @@ export class UnifiedStreamProcessor {
     } catch (error) {
       if (isAbortError(error)) {
         console.log('[UnifiedStreamProcessor] 流式响应被用户中断');
-        return {
-          content: this.state.content,
-          reasoning: this.state.reasoning || undefined,
-          reasoningTime: this.state.reasoningStartTime > 0 ? (Date.now() - this.state.reasoningStartTime) : undefined
-        };
+        throw new DOMException('Operation aborted', 'AbortError');
       }
       console.error('[UnifiedStreamProcessor] 处理流式响应失败:', error);
       throw error;
@@ -153,9 +149,13 @@ export class UnifiedStreamProcessor {
     // 处理流
     for await (const chunk of readableStreamAsyncIterable(processedStream)) {
       if (this.isAborted()) {
-        break;
+        throw new DOMException('Operation aborted', 'AbortError');
       }
       await this.handleAdvancedChunk(chunk);
+    }
+
+    if (this.isAborted()) {
+      throw new DOMException('Operation aborted', 'AbortError');
     }
 
     return this.buildResult();
@@ -427,8 +427,12 @@ export async function unifiedStreamCompletion(
     top_p,  // 某些 API 不支持此参数
     ...apiParams
   } = additionalParams || {};
-  
-  // 创建流
+
+  if (signal?.aborted) {
+    throw new DOMException('Operation aborted', 'AbortError');
+  }
+
+  // 创建流。OpenAI SDK 的 abort signal 需要作为 request options 传入，而不是放进请求 body。
   const stream = await client.chat.completions.create({
     model: modelId,
     messages,
@@ -437,15 +441,19 @@ export async function unifiedStreamCompletion(
     stream: true,
     stream_options: { include_usage: true },
     ...apiParams
-  });
+  }, signal ? { signal } : undefined);
+
+  if (signal?.aborted) {
+    throw new DOMException('Operation aborted', 'AbortError');
+  }
 
   const result = await processor.processStream(stream as any);
-  
+
   // 兼容原接口
   if (result.hasToolCalls) {
     return result;
   }
-  
+
   return result.content;
 }
 
