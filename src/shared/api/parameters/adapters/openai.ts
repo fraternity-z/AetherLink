@@ -19,7 +19,8 @@ import {
   isGeminiReasoningModel,
   isQwenReasoningModel,
   isGrokReasoningModel,
-  isDeepSeekReasoningModel
+  isDeepSeekReasoningModel,
+  isDeepSeekHybridReasoningModel
 } from '../../../../config/models';
 import { EFFORT_RATIO, DEFAULT_MAX_TOKENS, findTokenLimit } from '../../../config/constants';
 import { getDefaultThinkingEffort, getAppSettings } from '../../../utils/settingsUtils';
@@ -330,7 +331,12 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
       return { reasoning_effort: 'none' };
     }
 
-    // DeepSeek、OpenAI、Grok 模型：不支持禁用推理
+    // DeepSeek V4 混合模型：通过 thinking.type=disabled 显式关闭思考模式
+    if (isDeepSeekHybridReasoningModel(model)) {
+      return { thinking: { type: 'disabled' } };
+    }
+
+    // DeepSeek legacy、OpenAI、Grok 模型：不支持禁用推理
     if (isDeepSeekReasoningModel(model) ||
         isOpenAIReasoningModel(model) ||
         isGrokReasoningModel(model)) {
@@ -410,6 +416,16 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
   private getDefaultReasoningParameters(reasoningEffort: string): ReasoningParameters {
     const model = this.unifiedManager.getModel();
 
+    // DeepSeek V4 混合模型：启用思考 + effort 映射
+    // 服务端映射规则：low/medium -> high, xhigh -> max
+    if (isDeepSeekHybridReasoningModel(model)) {
+      const mappedEffort = this.mapDeepSeekV4Effort(reasoningEffort);
+      return {
+        thinking: { type: 'enabled' },
+        reasoning_effort: mappedEffort
+      };
+    }
+
     if (isDeepSeekReasoningModel(model)) {
       const supportedEffort = reasoningEffort === 'medium' ? 'high' : reasoningEffort;
       if (supportedEffort === 'low' || supportedEffort === 'high') {
@@ -420,6 +436,17 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
     }
 
     return { reasoning_effort: reasoningEffort };
+  }
+
+  /**
+   * 将通用 effort 值映射为 DeepSeek V4 服务端接受的值
+   * V4 规则：low/medium -> high，xhigh -> max，high -> high、max -> max
+   */
+  private mapDeepSeekV4Effort(effort: string): string {
+    if (effort === 'low' || effort === 'medium') return 'high';
+    if (effort === 'xhigh') return 'max';
+    if (effort === 'high' || effort === 'max') return effort;
+    return 'high';
   }
 
   /**
@@ -435,6 +462,15 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
           effort: reasoningEffort,
           summary: 'auto'
         }
+      };
+    }
+
+    // DeepSeek V4 混合模型（Responses API 路径）
+    if (isDeepSeekHybridReasoningModel(model)) {
+      const mappedEffort = this.mapDeepSeekV4Effort(reasoningEffort);
+      return {
+        thinking: { type: 'enabled' },
+        reasoning_effort: mappedEffort
       };
     }
 
@@ -466,7 +502,16 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
       return { reasoning_effort: reasoningEffort };
     }
 
-    // DeepSeek 推理模型
+    // DeepSeek V4 混合模型（优先判定）
+    if (isDeepSeekHybridReasoningModel(model)) {
+      const mappedEffort = this.mapDeepSeekV4Effort(reasoningEffort);
+      return {
+        thinking: { type: 'enabled' },
+        reasoning_effort: mappedEffort
+      };
+    }
+
+    // DeepSeek legacy 推理模型
     if (isDeepSeekReasoningModel(model)) {
       const supportedEffort = reasoningEffort === 'medium' ? 'high' : reasoningEffort;
       if (supportedEffort === 'low' || supportedEffort === 'high') {
@@ -534,7 +579,16 @@ export class OpenAIParameterAdapter implements ParameterAdapter<'openai'> {
       };
     }
 
-    // DeepSeek 推理模型
+    // DeepSeek V4 混合模型（优先判定，Responses API 路径）
+    if (isDeepSeekHybridReasoningModel(model)) {
+      const mappedEffort = this.mapDeepSeekV4Effort(reasoningEffort);
+      return {
+        thinking: { type: 'enabled' },
+        reasoning_effort: mappedEffort
+      };
+    }
+
+    // DeepSeek legacy 推理模型
     if (isDeepSeekReasoningModel(model)) {
       const supportedEffort = reasoningEffort === 'medium' ? 'high' : reasoningEffort;
       if (supportedEffort === 'low' || supportedEffort === 'high') {

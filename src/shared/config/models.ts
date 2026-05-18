@@ -380,7 +380,13 @@ export function findTokenLimit(modelId: string): { max: number; input?: number; 
     // Claude 3 系列
     'claude-3-opus': { max: 200000, input: 200000, output: 4096 },
     'claude-3-sonnet': { max: 200000, input: 200000, output: 4096 },
-    'claude-3-haiku': { max: 200000, input: 200000, output: 4096 }
+    'claude-3-haiku': { max: 200000, input: 200000, output: 4096 },
+    // DeepSeek V4 系列（2026-04-24 发布，1M 上下文）
+    'deepseek-v4-pro': { max: 1048576, input: 1048576, output: 65536 },
+    'deepseek-v4-flash': { max: 1048576, input: 1048576, output: 65536 },
+    // DeepSeek legacy（路由到 v4-flash，将于 2026-07-24 停用）
+    'deepseek-chat': { max: 1048576, input: 1048576, output: 65536 },
+    'deepseek-reasoner': { max: 1048576, input: 1048576, output: 65536 }
   };
 
   return limits[modelId] || null;

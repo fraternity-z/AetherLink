@@ -432,8 +432,10 @@ async function fetchModelsFromEndpoint(provider: any, providerType: string): Pro
           } catch (error) {
             console.warn(`[fetchModelsFromEndpoint] DeepSeek模型获取失败，返回预设列表:`, error);
             rawModels = [
-              { id: 'deepseek-chat', name: 'DeepSeek-V3', description: 'DeepSeek最新的大型语言模型，具有优秀的中文和代码能力。', owned_by: 'deepseek' },
-              { id: 'deepseek-reasoner', name: 'DeepSeek-R1', description: 'DeepSeek的推理模型，擅长解决复杂推理问题。', owned_by: 'deepseek' }
+              { id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro', description: 'DeepSeek-V4 旗舰模型（1.6T/49B），1M 上下文，混合思考模式。', owned_by: 'deepseek' },
+              { id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash', description: 'DeepSeek-V4 高性价比模型（284B/13B），1M 上下文，混合思考模式。', owned_by: 'deepseek' },
+              { id: 'deepseek-chat', name: 'DeepSeek Chat (Legacy)', description: '⚠️ 2026-07-24 停用，路由到 deepseek-v4-flash 非思考模式。', owned_by: 'deepseek' },
+              { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (Legacy)', description: '⚠️ 2026-07-24 停用，路由到 deepseek-v4-flash 思考模式。', owned_by: 'deepseek' }
             ];
           }
           break;

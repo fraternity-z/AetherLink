@@ -55,7 +55,8 @@ export const MODEL_SUPPORTED_REASONING_EFFORT: Record<ThinkingModelType, readonl
   mimo: ['auto'],
   zhipu: ['auto'],
   perplexity: ['low', 'medium', 'high'],
-  deepseek_hybrid: ['auto']
+  // DeepSeek V4: low/medium 服务端映射到 high, xhigh 映射到 max
+  deepseek_hybrid: ['low', 'medium', 'high', 'xhigh']
 };
 
 // 模型类型到支持选项的映射表
@@ -86,6 +87,7 @@ export const MODEL_SUPPORTED_OPTIONS: Record<ThinkingModelType, readonly Reasoni
   hunyuan: ['default', 'none', ...MODEL_SUPPORTED_REASONING_EFFORT.hunyuan],
   zhipu: ['default', 'none', ...MODEL_SUPPORTED_REASONING_EFFORT.zhipu],
   perplexity: ['default', ...MODEL_SUPPORTED_REASONING_EFFORT.perplexity],
+  // V4 混合模型支持显式禁用思考（thinking.type=disabled）
   deepseek_hybrid: ['default', 'none', ...MODEL_SUPPORTED_REASONING_EFFORT.deepseek_hybrid]
 };
 
@@ -184,24 +186,40 @@ export function isQwenAlwaysThinkModel(model?: Model): boolean {
 }
 
 /**
+ * 检查是否为 DeepSeek V4 混合推理模型（支持 thinking/non-thinking 双模式）
+ * V4 系列：deepseek-v4-pro / deepseek-v4-flash
+ */
+export function isDeepSeekHybridReasoningModel(model?: Model): boolean {
+  if (!model) return false;
+  const modelId = getLowerBaseModelName(model.id);
+  return modelId.includes('deepseek-v4');
+}
+
+/**
  * 检查是否为 DeepSeek 推理模型
+ * 包含：V4 混合模型、legacy reasoner/coder/r1
  */
 export function isDeepSeekReasoningModel(model?: Model): boolean {
   if (!model) return false;
   const modelId = getLowerBaseModelName(model.id);
-  
+
+  // V4 混合模型（pro/flash）默认启用思考，是推理模型
+  if (isDeepSeekHybridReasoningModel(model)) {
+    return true;
+  }
+
   if (modelId.includes('deepseek-reasoner') || modelId.includes('deepseek-coder')) {
     return true;
   }
-  
+
   if (model.name && (model.name.includes('DeepSeek-R') || model.name.includes('DeepSeek Reasoner'))) {
     return true;
   }
-  
+
   if (model.provider === 'deepseek' && (modelId.includes('reasoner') || modelId.includes('r1'))) {
     return true;
   }
-  
+
   return false;
 }
 

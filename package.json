@@ -73,7 +73,7 @@
     "build:tauri-debug": "tauri build --debug"
   },
   "overrides": {
-    "vite": "8.0.0-beta.16",
+    "vite": "8.0.13",
     "mathjax-full": "3.2.2",
     "chevrotain": "11.0.3"
   },
@@ -219,7 +219,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "uuid": "^13.0.0",
-    "vite": "8.0.0-beta.16",
+    "vite": "^8.0.13",
     "web-vitals": "^5.1.0",
     "xlsx": "^0.18.5",
     "zod": "^3.25.64",

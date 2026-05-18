@@ -275,8 +275,13 @@ export const getDefaultModelProviders = (): ModelProvider[] => [
     baseUrl: 'https://api.deepseek.com',
     providerType: 'openai',
     models: [
-      { id: 'deepseek-chat', name: 'DeepSeek Chat (V3.2-Exp)', provider: 'deepseek', enabled: true, isDefault: false, description: 'DeepSeek-V3.2-Exp非思考模式，128K上下文，支持JSON输出、函数调用等功能' },
-      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (V3.2-Exp)', provider: 'deepseek', enabled: true, isDefault: false, description: 'DeepSeek-V3.2-Exp思考模式，专门用于推理任务，128K上下文，最大输出64K tokens' },
+      // ========== DeepSeek-V4 系列 (2026-04-24 发布) ==========
+      { id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro', provider: 'deepseek', enabled: true, isDefault: false, description: 'DeepSeek-V4 旗舰模型（1.6T/49B），1M 上下文，支持思考/非思考双模式，开源 SOTA 智能体编码能力' },
+      { id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash', provider: 'deepseek', enabled: true, isDefault: false, description: 'DeepSeek-V4 高性价比模型（284B/13B），1M 上下文，支持思考/非思考双模式，响应更快' },
+
+      // ========== Legacy 模型 (将于 2026-07-24 停用) ==========
+      { id: 'deepseek-chat', name: 'DeepSeek Chat (Legacy)', provider: 'deepseek', enabled: false, isDefault: false, description: '⚠️ 2026-07-24 停用，当前路由到 deepseek-v4-flash 非思考模式' },
+      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner (Legacy)', provider: 'deepseek', enabled: false, isDefault: false, description: '⚠️ 2026-07-24 停用，当前路由到 deepseek-v4-flash 思考模式' },
     ]
   },
   {
