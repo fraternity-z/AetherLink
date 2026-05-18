@@ -1,11 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import type { DebateConfig, DebateRole } from '../../../shared/services/ai/AIDebateService';
 import { createAssistantMessage } from '../../../shared/utils/messageUtils';
 import { newMessagesActions } from '../../../shared/store/slices/newMessagesSlice';
 import { upsertManyBlocks } from '../../../shared/store/slices/messageBlocksSlice';
 import { AssistantMessageStatus, MessageBlockStatus, MessageBlockType } from '../../../shared/types/newMessage';
 import type { SiliconFlowImageFormat, ChatTopic } from '../../../shared/types';
+import type { Model } from '../../../shared/types';
+import { selectProviders } from '../../../shared/store/selectors/settingsSelectors';
+import { findModelInProviders } from '../../../shared/utils/modelUtils';
 
 interface UseAIDebateProps {
   onSendMessage: (message: string, images?: SiliconFlowImageFormat[], toolsEnabled?: boolean, files?: any[]) => void;
@@ -14,9 +17,27 @@ interface UseAIDebateProps {
 
 export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) => {
   const dispatch = useDispatch();
+  const providers = useSelector(selectProviders);
   const [isDebating, setIsDebating] = useState(false);
   const [currentDebateConfig, setCurrentDebateConfig] = useState<DebateConfig | null>(null);
   const debateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 把 role.modelId（可能是 JSON 身份键）解析为真实的 Model 对象与纯 id
+  const resolveRoleModel = useCallback(
+    (rawModelId?: string): { modelId: string; model?: Model } => {
+      if (!rawModelId) return { modelId: 'ai-debate' };
+      const found = findModelInProviders(providers, rawModelId, { includeDisabled: true });
+      if (found?.model) {
+        return {
+          modelId: found.model.id,
+          model: { ...found.model, provider: found.provider.id } as Model,
+        };
+      }
+      // 兜底：身份键无法解析时直接用原值（多半就是纯 id）
+      return { modelId: rawModelId };
+    },
+    [providers]
+  );
 
   // 发送AI消息（作为助手消息）
   const sendAIMessage = useCallback(async (content: string, roleName: string, modelId?: string) => {
@@ -311,10 +332,15 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
 
     const header = `**第${round}轮 - ${role.name}** (${getRoleStanceText(role.stance)})\n\n`;
 
+    // 把角色存储的身份键解析为真实 Model（含 name/provider），
+    // 避免气泡头部显示成 {"id":"...","provider":"..."} 的原始 JSON
+    const { modelId: resolvedModelId, model: resolvedModel } = resolveRoleModel(role.modelId);
+
     const { message, blocks } = createAssistantMessage({
       assistantId: currentTopic.assistantId || '',
       topicId: currentTopic.id,
-      modelId: role.modelId || 'ai-debate',
+      modelId: resolvedModelId,
+      model: resolvedModel,
       initialContent: header,
       status: AssistantMessageStatus.STREAMING
     });

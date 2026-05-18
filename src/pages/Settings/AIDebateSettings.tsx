@@ -807,8 +807,9 @@ const AIDebateSettings: React.FC = () => {
             />
           </SettingRow>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr' }, gap: 1.5, mb: 1.5 }}>
             <TextField
+              size="small"
               label={t('aiDebate.basicSettings.maxRounds')}
               value={config.maxRounds}
               onChange={(e) => {
@@ -823,8 +824,10 @@ const AIDebateSettings: React.FC = () => {
                 }
               }}
               helperText={t('aiDebate.basicSettings.maxRoundsHelper')}
+              FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.25, mx: 0 } }}
             />
             <TextField
+              size="small"
               label={t('aiDebate.basicSettings.maxTokensPerRound')}
               value={config.autoEndConditions.maxTokensPerRound}
               onChange={(e) => {
@@ -851,6 +854,7 @@ const AIDebateSettings: React.FC = () => {
                 }
               }}
               helperText={t('aiDebate.basicSettings.maxTokensPerRoundHelper')}
+              FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.25, mx: 0 } }}
             />
           </Box>
 
@@ -869,66 +873,229 @@ const AIDebateSettings: React.FC = () => {
           </SettingRow>
         </SettingsCard>
 
-        {/* 快速配置 */}
+        {/* 辩论场景（内置预设 + 我的分组） */}
         <SettingsCard
           title={t('aiDebate.quickSetup.title')}
           description={t('aiDebate.quickSetup.description')}
           icon={<Bot />}
           iconColor="#8b5cf6"
+          action={
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Plus size={14} />}
+              onClick={handleCreateGroup}
+              sx={{
+                background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #d97706, #b45309)',
+                },
+              }}
+            >
+              {t('aiDebate.groups.createGroup')}
+            </Button>
+          }
         >
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => handleQuickSetup('basic')}
-              sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🎯 {t('aiDebate.quickSetup.basic.name')}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('aiDebate.quickSetup.basic.description')}
-              </Typography>
-            </Button>
+          {/* 小节：内置场景 */}
+          <Typography
+            variant="overline"
+            sx={{
+              display: 'block',
+              color: 'text.secondary',
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              lineHeight: 1,
+              mb: 1,
+            }}
+          >
+            {t('aiDebate.quickSetup.builtinSectionLabel', '内置场景')}
+          </Typography>
+          {(() => {
+            const presets: Array<{
+              key: 'basic' | 'professional' | 'expert' | 'comprehensive';
+              emoji: string;
+              accent: string;
+            }> = [
+              { key: 'basic', emoji: '🎯', accent: '#f59e0b' },
+              { key: 'professional', emoji: '🏛️', accent: '#3b82f6' },
+              { key: 'expert', emoji: '🎓', accent: '#10b981' },
+              { key: 'comprehensive', emoji: '🌟', accent: '#8b5cf6' },
+            ];
+            return (
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1 }}>
+                {presets.map(({ key, emoji, accent }) => (
+                  <Box
+                    key={key}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleQuickSetup(key)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleQuickSetup(key);
+                      }
+                    }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1.25,
+                      py: 1,
+                      border: 1,
+                      borderColor: 'divider',
+                      borderLeft: `3px solid ${accent}`,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      bgcolor: 'background.paper',
+                      transition: 'all 0.15s ease',
+                      minWidth: 0,
+                      '&:hover': {
+                        borderColor: accent,
+                        borderLeftColor: accent,
+                        bgcolor: 'action.hover',
+                      },
+                      '&:focus-visible': {
+                        outline: `2px solid ${accent}`,
+                        outlineOffset: 1,
+                      },
+                    }}
+                  >
+                    <Box sx={{ fontSize: '1rem', lineHeight: 1, flexShrink: 0 }}>{emoji}</Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: '0.8125rem',
+                          lineHeight: 1.2,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {t(`aiDebate.quickSetup.${key}.name`)}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          display: 'block',
+                          fontSize: '0.6875rem',
+                          lineHeight: 1.25,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          mt: 0.25,
+                        }}
+                      >
+                        {t(`aiDebate.quickSetup.${key}.description`)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            );
+          })()}
 
-            <Button
-              variant="outlined"
-              onClick={() => handleQuickSetup('professional')}
-              sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🏛️ {t('aiDebate.quickSetup.professional.name')}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('aiDebate.quickSetup.professional.description')}
-              </Typography>
-            </Button>
+          {/* 小节：我的场景（用户保存的分组） */}
+          <Typography
+            variant="overline"
+            sx={{
+              display: 'block',
+              color: 'text.secondary',
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              lineHeight: 1,
+              mt: 2,
+              mb: 1,
+            }}
+          >
+            {t('aiDebate.quickSetup.mySectionLabel', '我的场景')} ({configGroups.length})
+          </Typography>
+          {configGroups.length === 0 ? (
+            <Alert severity="info" sx={{ py: 0.5 }}>
+              {t('aiDebate.groups.noGroups')}
+            </Alert>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {configGroups.map((group) => (
+                <Box
+                  key={group.id}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 1.5,
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                      borderColor: 'primary.main'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
+                    <Box sx={{ color: 'text.secondary', display: 'flex', mr: 1 }}>
+                      <FolderOpen size={16} />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {group.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        {t('aiDebate.roles.roleCount', { count: group.config.roles.length })} • {new Date(group.updatedAt).toLocaleDateString()}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-            <Button
-              variant="outlined"
-              onClick={() => handleQuickSetup('expert')}
-              sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🎓 {t('aiDebate.quickSetup.expert.name')}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('aiDebate.quickSetup.expert.description')}
-              </Typography>
-            </Button>
-
-            <Button
-              variant="outlined"
-              onClick={() => handleQuickSetup('comprehensive')}
-              sx={{ p: 2, textAlign: 'left', flexDirection: 'column', alignItems: 'flex-start' }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                🌟 {t('aiDebate.quickSetup.comprehensive.name')}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('aiDebate.quickSetup.comprehensive.description')}
-              </Typography>
-            </Button>
-          </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 2 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleLoadGroup(group)}
+                      variant="outlined"
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      {t('aiDebate.groups.loadGroup')}
+                    </Button>
+                    <IconButton size="small" onClick={() => handleEditGroup(group)} title={t('common.edit')}>
+                      <Edit size={16} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleUpdateGroup(group.id)}
+                      title={t('aiDebate.groups.saveGroup')}
+                      color="primary"
+                    >
+                      <Save size={16} />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => {
+                      setEditingGroup(null);
+                      setNewGroupName(`${group.name}${t('aiDebate.groupDialog.copySuffix')}`);
+                      setNewGroupDescription(t('aiDebate.groupDialog.copyDescription', { name: group.name }));
+                      setGroupDialogOpen(true);
+                    }} title={t('aiDebate.groups.copyGroup')}>
+                      <Copy size={16} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteGroup(group.id)}
+                      color="error"
+                      title={t('aiDebate.groups.deleteGroup')}
+                    >
+                      <Trash2 size={16} />
+                    </IconButton>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
         </SettingsCard>
 
         {/* 角色管理 */}
@@ -1008,109 +1175,6 @@ const AIDebateSettings: React.FC = () => {
                       <Edit size={16} />
                     </IconButton>
                     <IconButton size="small" onClick={() => handleDeleteRole(role.id)} color="error" title={t('aiDebate.roles.deleteRole')}>
-                      <Trash2 size={16} />
-                    </IconButton>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          )}
-        </SettingsCard>
-
-        {/* 配置分组管理 */}
-        <SettingsCard
-          title={t('aiDebate.groups.title')}
-          description={t('aiDebate.groups.description')}
-          action={
-            <Button
-              variant="contained"
-              startIcon={<Plus size={16} />}
-              onClick={handleCreateGroup}
-              sx={{
-                background: 'linear-gradient(90deg, #f59e0b, #d97706)',
-                fontWeight: 600,
-                '&:hover': {
-                  background: 'linear-gradient(90deg, #d97706, #b45309)',
-                },
-              }}
-            >
-              {t('aiDebate.groups.createGroup')}
-            </Button>
-          }
-        >
-          {configGroups.length === 0 ? (
-            <Alert severity="info">
-              {t('aiDebate.groups.noGroups')}
-            </Alert>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {configGroups.map((group) => (
-                <Box
-                  key={group.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    p: 1.5,
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    bgcolor: 'background.paper',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                      borderColor: 'primary.main'
-                    }
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0 }}>
-                    <Box sx={{ color: 'text.secondary', display: 'flex', mr: 1 }}>
-                      <FolderOpen size={16} />
-                    </Box>
-                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {group.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                        {t('aiDebate.roles.roleCount', { count: group.config.roles.length })} • {new Date(group.updatedAt).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 2 }}>
-                    <Button
-                      size="small"
-                      onClick={() => handleLoadGroup(group)}
-                      variant="outlined"
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      {t('aiDebate.groups.loadGroup')}
-                    </Button>
-                    <IconButton size="small" onClick={() => handleEditGroup(group)} title={t('common.edit')}>
-                      <Edit size={16} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleUpdateGroup(group.id)}
-                      title={t('aiDebate.groups.saveGroup')}
-                      color="primary"
-                    >
-                      <Save size={16} />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => {
-                      setEditingGroup(null);
-                      setNewGroupName(`${group.name}${t('aiDebate.groupDialog.copySuffix')}`);
-                      setNewGroupDescription(t('aiDebate.groupDialog.copyDescription', { name: group.name }));
-                      setGroupDialogOpen(true);
-                    }} title={t('aiDebate.groups.copyGroup')}>
-                      <Copy size={16} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteGroup(group.id)}
-                      color="error"
-                      title={t('aiDebate.groups.deleteGroup')}
-                    >
                       <Trash2 size={16} />
                     </IconButton>
                   </Box>

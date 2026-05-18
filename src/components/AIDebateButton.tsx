@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getStorageItem } from '../shared/utils/storage';
 import {
   IconButton,
   Tooltip,
@@ -171,12 +172,11 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
 
   // 加载配置和分组
   useEffect(() => {
-    const loadConfig = () => {
+    const loadConfig = async () => {
       try {
-        // 加载当前配置
-        const saved = localStorage.getItem('aiDebateConfig');
-        if (saved) {
-          const parsedConfig = JSON.parse(saved);
+        // 加载当前配置（与 AIDebateSettings 一致，使用 Dexie 存储）
+        const parsedConfig = await getStorageItem<DebateConfig>('aiDebateConfig');
+        if (parsedConfig) {
           setConfig(parsedConfig);
           setCustomSettings({
             maxRounds: parsedConfig.maxRounds || DEFAULT_CONFIG.MAX_ROUNDS,
@@ -186,9 +186,8 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
         }
 
         // 加载分组配置
-        const savedGroups = localStorage.getItem('aiDebateConfigGroups');
-        if (savedGroups) {
-          const parsedGroups = JSON.parse(savedGroups);
+        const parsedGroups = await getStorageItem<DebateConfigGroup[]>('aiDebateConfigGroups');
+        if (parsedGroups) {
           setConfigGroups(parsedGroups);
         }
       } catch (error) {
@@ -257,17 +256,22 @@ const AIDebateButton: React.FC<AIDebateButtonProps> = ({
         });
       }
     } else {
-      // 如果选择"当前配置"，重新加载当前配置
-      const saved = localStorage.getItem('aiDebateConfig');
-      if (saved) {
-        const parsedConfig = JSON.parse(saved);
-        setConfig(parsedConfig);
-        setCustomSettings({
-          maxRounds: parsedConfig.maxRounds || DEFAULT_CONFIG.MAX_ROUNDS,
-          enableModerator: parsedConfig.moderatorEnabled ?? DEFAULT_CONFIG.MODERATOR_ENABLED,
-          enableSummary: parsedConfig.summaryEnabled ?? DEFAULT_CONFIG.SUMMARY_ENABLED
-        });
-      }
+      // 如果选择"当前配置"，重新加载当前配置（与 AIDebateSettings 一致，使用 Dexie 存储）
+      (async () => {
+        try {
+          const parsedConfig = await getStorageItem<DebateConfig>('aiDebateConfig');
+          if (parsedConfig) {
+            setConfig(parsedConfig);
+            setCustomSettings({
+              maxRounds: parsedConfig.maxRounds || DEFAULT_CONFIG.MAX_ROUNDS,
+              enableModerator: parsedConfig.moderatorEnabled ?? DEFAULT_CONFIG.MODERATOR_ENABLED,
+              enableSummary: parsedConfig.summaryEnabled ?? DEFAULT_CONFIG.SUMMARY_ENABLED
+            });
+          }
+        } catch (error) {
+          console.error(t('errors.aiDebate.loadConfigFailed'), error);
+        }
+      })();
     }
   };
 
