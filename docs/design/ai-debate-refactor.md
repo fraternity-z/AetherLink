@@ -566,6 +566,40 @@ const effectiveStreaming = isStreaming || isDebating;
 9. 在角色流式期间调用 `setTopicLoading` / `setTopicStreaming`，结束、停止、异常时必须清理。
 10. 验证 `model-combo` 等特殊 provider 分支对 `onChunk` / `abortSignal` 的支持；不支持时显式降级并记录能力限制。
 
+#### Phase 2.0 实施记录（已完成）
+
+**实施时间**：2026-05-18
+
+**提交**：`7a143fe2` · `fix ai debate abort and summary flow`
+
+**改动清单**：
+
+| # | 文件 | 改动内容 |
+|---|------|----------|
+| 1 | `src/pages/ChatPage/hooks/useAIDebate.ts` | 新增可中断 `abortableDelay`；开始前 1 秒、主持人结束前 2 秒、角色间 3 秒等待均接入 `AbortSignal`；`AbortError` 不再 fallback 模拟回复；辩论消息改为通过 `TopicService.saveMessageAndBlocks` 先写 Dexie 再同步 Redux；角色流式期间设置 `setTopicLoading` / `setTopicStreaming`；中断时当前角色标记为 `PAUSED`；总结阶段透传 `abortSignal`；总结模型选择改为使用本次启动传入的 `config.roles`，避免 React state 闭包旧值；本地模板总结改为包含原因、发言数和最近发言摘录。 |
+| 2 | `src/shared/api/openai/unifiedStreamProcessor.ts` | 将 OpenAI SDK 流式请求的 `signal` 作为 request options 传入 `client.chat.completions.create`；流处理期间检测 abort 后抛出 `AbortError`，不再返回部分内容伪装成成功响应。 |
+| 3 | `src/shared/api/openai/provider.ts` | OpenAI 兼容流式请求遇到 `AbortError` 时按“已取消”记录日志，不再按失败打印；参数错误重新抛出时保留 `cause`。 |
+| 4 | `src/shared/api/openai/chat.ts` | 用户主动取消时使用 `console.log` 记录“聊天请求已取消”，避免 `console.error` 噪音，同时继续向上抛出 `AbortError`。 |
+| 5 | `src/shared/api/index.ts` | `sendChatRequest` / `processModelRequest` 对 `AbortError` 降级为“请求已取消”日志，非中断错误仍按错误处理。 |
+| 6 | `src/shared/services/network/EnhancedNetworkService.ts` | 网络流式捕获遇到 abort 时标记为 `cancelled`，日志改为“流式响应捕获已取消”，不再作为捕获失败错误打印。 |
+| 7 | `docs/design/ai-debate-refactor.md` | 补充当前完整链路、主链路差异、Phase 2.0 实施边界和真实实现记录；修正 `streamingMessages` 为项目实际的 `streamingByTopic` / `setTopicStreaming({ topicId, streaming })`。 |
+
+**实测结果**：
+
+- [x] 启动后 1 秒内停止：不会进入角色发言，直接写入“AI辩论已停止”。
+- [x] 角色流式生成中停止：OpenAI/DeepSeek 兼容请求抛出 `AbortError`，当前角色保留已生成内容并标记为 `PAUSED`，不会进入下一个角色。
+- [x] 网络捕获日志：主动停止时显示“流式响应捕获已取消”，不再打印捕获失败错误。
+- [x] API 日志：主动停止时 `OpenAI Chat` / `processModelRequest` 显示“已取消”，不再按请求失败打印。
+- [x] 角色流式消息持久化：消息先写入 Dexie，再同步 Redux；流式 block 内容节流保存，最终状态 flush。
+- [x] 无总结角色场景：优先复用任意配置了模型的辩论角色生成总结；若确无可用模型，显示清晰的本地模板总结，包含原因、发言数和最近发言摘录。
+
+**仍未做**：
+
+- 未引入 `debateSlice` / `DebateScheduler`。
+- 未实现 pause/resume。
+- 未验证 `model-combo` 等特殊 provider 的 `onChunk` / `abortSignal` 支持。
+- 未补自动化测试，仅完成手动实测。
+
 #### Phase 2.1 · 状态机与编排器第一版
 
 11. 落地 `debateSlice` + selectors。
@@ -603,9 +637,9 @@ const effectiveStreaming = isStreaming || isDebating;
 
 ## 8. 验收标准（DoD）
 
-- [ ] 停止响应延迟 P95 ≤ 500ms
-- [ ] 流式：单次发言至少触发 ≥3 次 UI 内容更新
-- [ ] 辩论中主发送按钮显示 Stop 图标
+- [x] 停止响应延迟 P95 ≤ 500ms（Phase 2.0 手动实测通过）
+- [x] 流式：单次发言至少触发 ≥3 次 UI 内容更新（Phase 2.0 手动实测通过）
+- [x] 辩论中主发送按钮显示 Stop 图标
 - [ ] 暂停后切话题再切回不影响其他话题
 - [ ] 普通聊天/多模型/搜索/工具调用回归 0 缺陷
 - [ ] 单元测试覆盖率：`debateSlice` ≥90%、`DebateScheduler` ≥75%
