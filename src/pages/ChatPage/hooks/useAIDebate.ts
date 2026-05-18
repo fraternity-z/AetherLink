@@ -21,6 +21,7 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
   const [isDebating, setIsDebating] = useState(false);
   const [currentDebateConfig, setCurrentDebateConfig] = useState<DebateConfig | null>(null);
   const debateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 把 role.modelId（可能是 JSON 身份键）解析为真实的 Model 对象与纯 id
   const resolveRoleModel = useCallback(
@@ -90,6 +91,9 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
       // 初始化timeout ref为非null值，表示辩论正在进行
       debateTimeoutRef.current = setTimeout(() => {}, 0);
 
+      // 创建 AbortController 用于中断正在进行的请求与轮间等待
+      abortControllerRef.current = new AbortController();
+
       // 发送辩论开始消息（使用系统消息，不使用当前选择的模型）
       const startMessage = `🎯 **AI辩论开始**\n\n**辩论主题：** ${question}\n\n**参与角色：**\n${config.roles.map(role => `• **${role.name}** (${role.stance === 'pro' ? '正方' : role.stance === 'con' ? '反方' : role.stance === 'neutral' ? '中立' : '主持人'})`).join('\n')}\n\n**最大轮数：** ${config.maxRounds}\n\n---\n\n让我们开始辩论！`;
 
@@ -119,6 +123,12 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
     if (debateTimeoutRef.current) {
       clearTimeout(debateTimeoutRef.current);
       debateTimeoutRef.current = null;
+    }
+
+    // 中断正在进行的 AI 请求和轮间等待
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
 
     if (isDebating) {
@@ -178,12 +188,28 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
             return;
           }
 
-          // 等待一段时间再继续
+          // 等待一段时间再继续（可中断）
           if (shouldContinue) {
             console.log(`⏳ 等待3秒后继续...`);
-            await new Promise(resolve => {
-              debateTimeoutRef.current = setTimeout(resolve, 3000);
-            });
+            try {
+              await new Promise<void>((resolve, reject) => {
+                const signal = abortControllerRef.current?.signal;
+                if (signal?.aborted) {
+                  return reject(new DOMException('Aborted', 'AbortError'));
+                }
+                debateTimeoutRef.current = setTimeout(resolve, 3000);
+                signal?.addEventListener('abort', () => {
+                  if (debateTimeoutRef.current) {
+                    clearTimeout(debateTimeoutRef.current);
+                    debateTimeoutRef.current = null;
+                  }
+                  reject(new DOMException('Aborted', 'AbortError'));
+                }, { once: true });
+              });
+            } catch {
+              shouldContinue = false;
+              break;
+            }
             shouldContinue = debateTimeoutRef.current !== null;
           }
         } catch (error) {
@@ -289,6 +315,7 @@ export const useAIDebate = ({ onSendMessage, currentTopic }: UseAIDebateProps) =
         }],
         modelId: role.modelId,
         systemPrompt: role.systemPrompt,
+        abortSignal: abortControllerRef.current?.signal,
         onChunk: (chunk: string) => {
           if (!chunk) return;
 

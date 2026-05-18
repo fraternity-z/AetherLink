@@ -27,6 +27,7 @@ interface ButtonToolbarProps {
   // 事件处理
   handleSubmit: () => void;
   onStopResponse?: () => void;
+  onStopDebate?: () => void;
   handleImageUploadLocal: (source?: 'camera' | 'photos') => Promise<void>;
   handleFileUploadLocal: () => Promise<void>;
   onClearTopic?: () => void;
@@ -75,6 +76,7 @@ const useButtonToolbar = ({
   files,
   handleSubmit,
   onStopResponse,
+  onStopDebate,
   handleImageUploadLocal,
   handleFileUploadLocal,
   onClearTopic,
@@ -249,11 +251,15 @@ const useButtonToolbar = ({
     },
     send: {
       id: 'send',
-      icon: isStreaming ? <Square size={18} /> : showLoadingIndicator ? <CircularProgress size={20} color="inherit" /> : imageGenerationMode ? <Image size={18} /> : <Send size={18} />,
-      tooltip: isStreaming ? '停止生成' : imageGenerationMode ? '生成图像' : '发送消息',
-      onClick: isStreaming && onStopResponse ? onStopResponse : handleSubmit,
-      color: isStreaming ? '#ff4d4f' : !canSendMessage() || (isLoading && !allowConsecutiveMessages) ? disabledColor : imageGenerationMode ? '#9C27B0' : isDarkMode ? '#4CAF50' : '#09bb07',
-      disabled: !isStreaming && (!canSendMessage() || (isLoading && !allowConsecutiveMessages)),
+      icon: (isStreaming || isDebating) ? <Square size={18} /> : showLoadingIndicator ? <CircularProgress size={20} color="inherit" /> : imageGenerationMode ? <Image size={18} /> : <Send size={18} />,
+      tooltip: isDebating ? '停止AI辩论' : isStreaming ? '停止生成' : imageGenerationMode ? '生成图像' : '发送消息',
+      onClick: isDebating && onStopDebate
+        ? onStopDebate
+        : isStreaming && onStopResponse
+          ? onStopResponse
+          : handleSubmit,
+      color: (isStreaming || isDebating) ? '#ff4d4f' : !canSendMessage() || (isLoading && !allowConsecutiveMessages) ? disabledColor : imageGenerationMode ? '#9C27B0' : isDarkMode ? '#4CAF50' : '#09bb07',
+      disabled: !(isStreaming || isDebating) && (!canSendMessage() || (isLoading && !allowConsecutiveMessages)),
       isActive: false
     },
     voice: voiceInputManager.getVoiceButtonConfig()

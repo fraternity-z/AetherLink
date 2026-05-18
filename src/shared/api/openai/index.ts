@@ -92,6 +92,8 @@ export async function sendChatRequest(
   model: Model,
   options?: {
     systemPrompt?: string;
+    onChunk?: (chunk: any) => void;
+    abortSignal?: AbortSignal;
   }
 ): Promise<string | { content: string; reasoning?: string; reasoningTime?: number }> {
   const systemPrompt = options?.systemPrompt || '';
@@ -99,7 +101,9 @@ export async function sendChatRequest(
   console.log(`[openai/index.ts] 使用统一聊天模块 - 模型ID: ${model.id}, 消息数量: ${messages.length}`);
 
   return sendChatMessage(messages, model, {
-    systemPrompt
+    systemPrompt,
+    onChunk: options?.onChunk,
+    abortSignal: options?.abortSignal
   });
 }
 

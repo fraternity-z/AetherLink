@@ -330,6 +330,7 @@ const IntegratedChatInput: React.FC<IntegratedChatInputProps> = ({
     files,
     handleSubmit: smartHandleSubmit, // 使用智能发送函数
     onStopResponse,
+    onStopDebate,
     handleImageUploadLocal,
     handleFileUploadLocal,
     onClearTopic,

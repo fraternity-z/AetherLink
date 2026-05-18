@@ -4,6 +4,7 @@ import { modelMatchesIdentity, parseModelIdentityKey } from '../utils/modelUtils
 import store from '../store';
 import { OpenAIResponseProvider } from '../providers/OpenAIResponseProvider';
 import type { ModelProvider } from '../config/defaultModels';
+import { ChunkType } from '../types/chunk';
 
 /**
  * API模块索引文件
@@ -161,7 +162,22 @@ async function processModelRequest(model: Model, options: ChatRequest): Promise<
         throw new DOMException('Operation aborted', 'AbortError');
       }
 
-      const response = await api.sendChatRequest(apiMessages, model);
+      // 将 provider 的结构化 Chunk 适配为字符串增量回调
+      const onChunkAdapter = options.onChunk
+        ? (chunk: any) => {
+            if (chunk?.type === ChunkType.TEXT_DELTA && typeof chunk.text === 'string') {
+              options.onChunk!(chunk.text);
+            } else if (chunk?.type === ChunkType.TEXT_COMPLETE && typeof chunk.text === 'string') {
+              options.onChunk!(chunk.text);
+            }
+          }
+        : undefined;
+
+      const response = await api.sendChatRequest(apiMessages, model, {
+        systemPrompt: options.systemPrompt,
+        onChunk: onChunkAdapter,
+        abortSignal: options.abortSignal
+      });
 
       // 处理响应格式
       const content = typeof response === 'string' ? response : response.content;

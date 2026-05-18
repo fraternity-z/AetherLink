@@ -112,9 +112,9 @@ export function getProviderApi(model: Model): any {
       // 使用 AI SDK Anthropic Provider
       console.log(`[ProviderFactory] 使用AI SDK Anthropic API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model) => {
+        sendChatRequest: async (messages: any[], model: Model, options?: any) => {
           const provider = new AnthropicAISDKProvider(model);
-          return await provider.sendChatMessage(messages, {});
+          return await provider.sendChatMessage(messages, options || {});
         },
         testConnection: async (model: Model) => {
           const provider = new AnthropicAISDKProvider(model);
@@ -125,9 +125,9 @@ export function getProviderApi(model: Model): any {
     case 'anthropic-aisdk':
       console.log(`[ProviderFactory] 使用AI SDK Anthropic API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model) => {
+        sendChatRequest: async (messages: any[], model: Model, options?: any) => {
           const provider = new AnthropicAISDKProvider(model);
-          return await provider.sendChatMessage(messages, {});
+          return await provider.sendChatMessage(messages, options || {});
         },
         testConnection: async (model: Model) => {
           const provider = new AnthropicAISDKProvider(model);
@@ -139,9 +139,9 @@ export function getProviderApi(model: Model): any {
       // 统一使用 AI SDK Gemini Provider
       console.log(`[ProviderFactory] 使用AI SDK Gemini API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model) => {
+        sendChatRequest: async (messages: any[], model: Model, options?: any) => {
           const provider = new GeminiAISDKProvider(model);
-          return await provider.sendChatMessage(messages, {});
+          return await provider.sendChatMessage(messages, options || {});
         },
         testConnection: async (model: Model) => {
           const provider = new GeminiAISDKProvider(model);
@@ -155,9 +155,9 @@ export function getProviderApi(model: Model): any {
     case 'openai-aisdk':
       console.log(`[ProviderFactory] 使用AI SDK OpenAI API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model) => {
+        sendChatRequest: async (messages: any[], model: Model, options?: any) => {
           const provider = new OpenAIAISDKProvider(model);
-          return await provider.sendChatMessage(messages, {});
+          return await provider.sendChatMessage(messages, options || {});
         },
         testConnection: async (model: Model) => {
           const provider = new OpenAIAISDKProvider(model);
@@ -167,9 +167,9 @@ export function getProviderApi(model: Model): any {
     case 'gemini-aisdk':
       console.log(`[ProviderFactory] 使用AI SDK Gemini API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model) => {
+        sendChatRequest: async (messages: any[], model: Model, options?: any) => {
           const provider = new GeminiAISDKProvider(model);
-          return await provider.sendChatMessage(messages, {});
+          return await provider.sendChatMessage(messages, options || {});
         },
         testConnection: async (model: Model) => {
           const provider = new GeminiAISDKProvider(model);
@@ -179,9 +179,9 @@ export function getProviderApi(model: Model): any {
     case 'dashscope':
       console.log(`[ProviderFactory] 使用 DashScope (阿里云百炼) API`);
       return {
-        sendChatRequest: async (messages: any[], model: Model) => {
+        sendChatRequest: async (messages: any[], model: Model, options?: any) => {
           const provider = new DashScopeProvider(model);
-          return await provider.sendChatMessage(messages, {});
+          return await provider.sendChatMessage(messages, options || {});
         },
         testConnection: async (model: Model) => {
           const provider = new DashScopeProvider(model);
